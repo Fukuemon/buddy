@@ -253,6 +253,7 @@ func TestCalendarCutoverPendingInDB(t *testing.T) {
 
 // TestCalendarCutoverRepositoryRecords は、CountPendingRecords が事業所の保留の版を持つ記録だけを数え、ListRecordVisits が
 // カレンダーの記録の確定した版の訪問の情報を、同行者と区分を付けて Google の予定の ID ごとに返し、保留の版の訪問の情報を返さないことを確認する。
+// 訪問の情報を持たない確定した記録には、ID の空の訪問の情報を返す。
 // DeleteRecords が事業所の記録を全て消し、記録だけが指していた訪問の情報を消して、予定も指す訪問の情報を残すことも確認する。
 func TestCalendarCutoverRepositoryRecords(t *testing.T) {
 	ctx := txContext(t)
@@ -303,8 +304,8 @@ func TestCalendarCutoverRepositoryRecords(t *testing.T) {
 	want := confirmedVisit
 	want.FacilityID = ""
 	slices.Sort(want.CategoryIDs)
-	if len(got) != 1 || !reflect.DeepEqual(got["confirmed"], want) {
-		t.Errorf("記録の訪問の情報 = %+v, want confirmed だけの %+v", got, want)
+	if normal, ok := got["normal"]; len(got) != 2 || !reflect.DeepEqual(got["confirmed"], want) || !ok || normal.ID != "" {
+		t.Errorf("記録の訪問の情報 = %+v, want confirmed の %+v と、訪問の情報の空の normal", got, want)
 	}
 
 	tx := ctx.Value(txKey{}).(pgx.Tx)

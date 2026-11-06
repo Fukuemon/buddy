@@ -611,9 +611,14 @@ func (b *planner) add(e entry) bool {
 
 // withRecordVisit は、予定の API の記録が e の予定の訪問の情報を持てば、e を記録の訪問の情報の訪問の予定にする。
 // タイトルを読めない予定も訪問の予定にし、日時を読めない予定と取り消した予定は変えない。
+// 繰り返しの予定の例外の回は、自分の確定した記録が無ければ、親の予定の記録の訪問の情報を使う。一覧（scheduleview）と同じ規則である（ADR-0026）。
+// 訪問の情報を持たない確定した記録（ID の空の visit.Info）の予定は、タイトルを読み替える。
 func (b *planner) withRecordVisit(e entry) entry {
 	v, ok := b.in.recordVisits[e.event.ID]
-	if !ok || e.unsupported || (e.cand.Kind == calendar.KindSkipped && e.cand.SkipReason != calendar.SkipUnreadableTitle) {
+	if !ok && e.event.RecurringEventID != "" {
+		v, ok = b.in.recordVisits[e.event.RecurringEventID]
+	}
+	if !ok || v.ID == "" || e.unsupported || (e.cand.Kind == calendar.KindSkipped && e.cand.SkipReason != calendar.SkipUnreadableTitle) {
 		return e
 	}
 	e.cand.Kind, e.cand.SkipReason, e.cand.Title = calendar.KindVisit, "", ""

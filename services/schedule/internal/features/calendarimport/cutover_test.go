@@ -542,6 +542,33 @@ func TestCutoverImportUsesRecordVisit(t *testing.T) {
 	}
 }
 
+// TestCutoverImportUsesParentRecordVisit は、予定の API の記録が繰り返しの予定の親に訪問の情報を持つとき、切り替えの取り込みが、
+// 自分の記録を持たない例外の回も、親の記録の訪問の情報（同行者を含む）で訪問の予定にすることを確認する。一覧（scheduleview）と同じ規則である。
+func TestCutoverImportUsesParentRecordVisit(t *testing.T) {
+	c := newCutoverEnv(t, fixture())
+	companion := inmem.CompanionID
+	recorded := visit.Info{
+		ID: "RECORDVISIT", FacilityID: inmem.FacilityID, PatientID: "PA", AssignedStaffID: inmem.StaffID, CompanionID: &companion, ServiceCodeID: codeI2,
+	}
+	c.store.Infos[recorded.ID] = recorded
+	c.store.Records["RECORD"] = calendar.EventRecord{
+		ScheduleID: "RECORD", FacilityID: inmem.FacilityID, ExternalCalendarID: calID, ExternalEventID: "weekly", VisitInfoID: &recorded.ID, Version: 1,
+	}
+	c.start(t)
+	c.importAll(t, []calendarimport.Decision{
+		{ExternalEventID: "ambiguous", Action: calendarimport.ActionPatient, PatientID: "PB2"},
+		{ExternalEventID: "missing", Action: calendarimport.ActionSkip},
+		{ExternalEventID: "biweekly", Action: calendarimport.ActionSkip},
+	})
+	sc := scheduleOf(t, c.env, "weekly_20261116")
+	if sc.VisitInfoID == nil || *sc.VisitInfoID == recorded.ID {
+		t.Fatalf("例外の回の予定の訪問の情報 = %v, want 親の記録とは別の訪問の情報", sc.VisitInfoID)
+	}
+	if got := c.store.Infos[*sc.VisitInfoID]; got.PatientID != "PA" || got.CompanionID == nil || *got.CompanionID != companion {
+		t.Errorf("例外の回の訪問の情報 = %+v, want 親の記録の訪問の情報 %+v を写したもの", got, recorded)
+	}
+}
+
 func isConflict(err error, code string) bool {
 	var ce *apperr.ConflictError
 	return errors.As(err, &ce) && ce.Code == code

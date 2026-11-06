@@ -59,6 +59,5 @@ var (
 	errUnwritable        = apperr.ConflictCode(CodeCalendarUnwritable, "%s", calendar.ErrUnwritable)
 	errEventRejected     = apperr.ConflictCode(CodeEventRejected, "Google カレンダーが予定を受け付けませんでした。入力を確認してください")
 	errRecurring         = apperr.Conflict("繰り返しの予定の全体は、まだ buddy から変えられません。Google カレンダーで変更してください")
-	errOccurrenceMove    = apperr.Conflict("繰り返しの予定の回の職員は、まだ buddy から替えられません。Google カレンダーで変更してください")
 	errReplaced          = apperr.Conflict("この回はすでに変えられています。変えた回の予定を開き直してください")
 )

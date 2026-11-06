@@ -224,9 +224,7 @@ func (b projectionBuilder) detail(e projectedEvent) Detail {
 		TypeName: b.normal.Name, StaffName: e.row.StaffName, Version: 1, CreatedAt: at, UpdatedAt: at,
 		Source: SourceGoogleCalendar,
 	}
-	if e.occurrence.IsZero() {
-		d.ETag = e.row.ETag
-	}
+	d.ETag = e.row.ETag
 	if strings.TrimSpace(rd.Title) != "" {
 		title := rd.Title
 		d.Title = &title

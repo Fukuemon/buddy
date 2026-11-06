@@ -485,6 +485,24 @@ func TestProjectedScheduleIDMatchesGo(t *testing.T) {
 	}
 }
 
+// TestOccurrenceScheduleIDMatchesGo は、DB の関数 occurrence_schedule_id が、元の開始の時刻（Asia/Tokyo の日付）と終日の元の日付のどちらでも、
+// scheduleview.OccurrenceScheduleID と同じ値を返し、元の開始が無ければ NULL を返すことを確認する。
+func TestOccurrenceScheduleIDMatchesGo(t *testing.T) {
+	ctx := context.Background()
+	day := civil.Date{Year: 2026, Month: 10, Day: 29}
+	at := time.Date(2026, 10, 29, 0, 30, 0, 0, calendar.Tokyo)
+	want := scheduleview.OccurrenceScheduleID(seedOkadaCalendar, "series", day)
+	var byTime, byDate string
+	var none *string
+	if err := testDB.QueryRow(ctx, "SELECT occurrence_schedule_id($1, $2, $3, NULL), occurrence_schedule_id($1, $2, NULL, $4), occurrence_schedule_id($1, $2, NULL, NULL)",
+		seedOkadaCalendar, "series", at, day.Time()).Scan(&byTime, &byDate, &none); err != nil {
+		t.Fatal(err)
+	}
+	if byTime != want || byDate != want || none != nil {
+		t.Errorf("occurrence_schedule_id = %s, %s, %v, want %s, %s, NULL", byTime, byDate, none, want, want)
+	}
+}
+
 // TestCalendarProjectionRepositoryGetBySchedule は、記録のある予定を記録の予定の ID で、記録の無い予定を一覧での ID で引けることと、
 // 一覧が記録の予定の ID を返すこと、access が両方の ID の事業所を引けることを確認する。
 func TestCalendarProjectionRepositoryGetBySchedule(t *testing.T) {
@@ -736,13 +754,17 @@ func TestCalendarProjectionRepositoryExceptionVisit(t *testing.T) {
 			t.Errorf("行 %s の訪問の情報 = %q, want %q", id, visits[id], info)
 		}
 	}
-	inherited, err := r.GetBySchedule(ctx, seedFacility, scheduleview.ProjectedScheduleID(exCalID, "series_inherited"))
-	if err != nil || inherited.Visit == nil || inherited.Visit.ID != parentInfo {
+	inheritedID := scheduleview.OccurrenceScheduleID(exCalID, "series", civil.Date{Year: 2099, Month: 11, Day: 4})
+	inherited, err := r.GetBySchedule(ctx, seedFacility, inheritedID)
+	if err != nil || inherited.EventID != "series_inherited" || inherited.ScheduleID != inheritedID || inherited.Visit == nil || inherited.Visit.ID != parentInfo {
 		t.Errorf("記録の無い例外の回の 1 件 = %+v, %v", inherited.Visit, err)
 	}
 	own, err := r.GetBySchedule(ctx, seedFacility, ownID)
 	if err != nil || own.Visit == nil || own.Visit.ID != ownInfo {
 		t.Errorf("記録のある例外の回の 1 件 = %+v, %v", own.Visit, err)
+	}
+	if f, err := NewScheduleRepository(testDB).GetFacilityID(ctx, inheritedID); err != nil || f != seedFacility {
+		t.Errorf("例外の回の一覧での ID の GetFacilityID = %s, %v, want %s", f, err, seedFacility)
 	}
 	if f, err := NewRecurringScheduleRepository(testDB).GetFacilityID(ctx, parentID); err != nil || f != seedFacility {
 		t.Errorf("繰り返しの予定の記録の GetFacilityID = %s, %v, want %s", f, err, seedFacility)

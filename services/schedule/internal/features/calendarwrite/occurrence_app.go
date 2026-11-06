@@ -15,6 +15,7 @@ import (
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/staff"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/visit"
 	"github.com/Fukuemon/buddy/services/schedule/internal/kernel"
+	"github.com/Fukuemon/buddy/services/schedule/internal/tx"
 )
 
 // beginOccurrence は、繰り返しの予定の 1 回（Google の回の予定）を in の内容に変える書き込みを、1 つ目のトランザクションの中で組み立てる。
@@ -23,7 +24,9 @@ import (
 //
 // 訪問の情報は親の予定の記録に持ち、回で訪問の情報を変えたときだけ回の記録を足す（ADR-0026）。回の記録があれば版を 1 つ進めた保留の版を書き、
 // 記録が無く訪問の情報を変えるときは、確定した版を 0 にした記録を作る。記録が無く訪問の情報を変えないときは、記録も保留の版も書かず、
-// 入力から作った訪問の情報を消す。予定の職員を替える入力は errOccurrenceMove で拒む。
+// 入力から作った訪問の情報を消す。
+// 予定の職員を替えると、元のカレンダーの回を取り消し、新しい職員のカレンダーに新しい ID の単発の予定を作る書き込みにする（Update.move）。
+// 移す先は保留の版に持ち、記録が無ければ訪問の情報によらず記録を作る。移した単発の予定の一覧での ID を、記録の主キー（回の一覧での ID）にするためである。
 func (u Update) beginOccurrence(ctx context.Context, facilityID, id string, rec *calendar.EventRecord, cal calendar.ExternalCalendar,
 	eventID, etag, staffID string, current *visit.Detail, in schedule.SlotInput) (change, error) {
 	var currentID *string
@@ -38,23 +41,35 @@ func (u Update) beginOccurrence(ctx context.Context, facilityID, id string, rec 
 	if err != nil {
 		return change{}, err
 	}
+	c := change{scheduleID: id, from: cal, fromEventID: eventID, to: cal, toEventID: eventID, etag: etag}
 	if sc.StaffID != staffID {
-		if err := deleteVisit(ctx, u.visits, sc.VisitInfoID); err != nil {
+		to, err := u.calendars.ActiveByStaff(ctx, sc.StaffID)
+		if errors.Is(err, apperr.ErrNotFound) {
+			return change{}, errCalendarNotLinked
+		}
+		if err != nil {
 			return change{}, err
 		}
-		return change{}, errOccurrenceMove
+		// 移す先には新しい ID の単発の予定を作る。単発の予定を移すときと同じく、消した予定の ID での作成を Google が 409 で拒むためである。
+		// 出典: https://developers.google.com/workspace/calendar/api/v3/reference/events/insert
+		if c.toEventID, err = calendar.EventIDOf(u.ids.NewID()); err != nil {
+			return change{}, err
+		}
+		c.to = to
 	}
-	c := change{scheduleID: id, from: cal, fromEventID: eventID, to: cal, toEventID: eventID, etag: etag}
 	if c.detail, err = describe(ctx, u.staffNames, u.details, sc, typ); err != nil {
 		return change{}, err
 	}
 	pending := &calendar.PendingWrite{Version: 1, State: calendar.PendingWriting, VisitInfoID: sc.VisitInfoID, Deadline: u.now().Add(WriteDeadline)}
+	if c.moving() {
+		pending.MoveTo = &calendar.EventLocation{ExternalCalendarID: c.to.ID, ExternalEventID: c.toEventID}
+	}
 	switch {
 	case rec != nil:
 		pending.Version = rec.Version + 1
 		rec.Pending = pending
 		err = u.records.Update(ctx, *rec)
-	case !sameVisit(in.Visit, current):
+	case c.moving() || !sameVisit(in.Visit, current):
 		err = u.records.Create(ctx, calendar.EventRecord{
 			ScheduleID: id, FacilityID: facilityID, ExternalCalendarID: cal.ID, ExternalEventID: eventID, Pending: pending,
 		})
@@ -150,11 +165,10 @@ func lockParent(ctx context.Context, records RecordRepository, projections Proje
 	return parentEvent{row: row, cal: cal}, nil
 }
 
-// requireUnchanged は、Google の回の予定 eventID を、事業所 facilityID でまだ buddy から変えていないことを確認する。
-// 回の一覧での ID の記録か、例外の回の Projection の行があれば、errReplaced を返す。記録に保留の版があれば errWritePending を返す。
+// requireUnchanged は、一覧での ID が id の回を、事業所 facilityID でまだ変えていないことを確認する。
+// 回の記録か、回の例外の回の Projection の行があれば、errReplaced を返す。記録に保留の版があれば errWritePending を返す。
 // 同じ日を 2 回置き換えない buddy_primary の繰り返しの予定の規則に合わせる。トランザクションの中で呼ぶ。
-func requireUnchanged(ctx context.Context, records RecordRepository, projections Projections, facilityID string, cal calendar.ExternalCalendar, eventID string) error {
-	id := scheduleview.ProjectedScheduleID(cal.ID, eventID)
+func requireUnchanged(ctx context.Context, records RecordRepository, projections Projections, facilityID, id string) error {
 	r, err := records.GetForUpdate(ctx, id)
 	switch {
 	case err == nil && r.Pending != nil:
@@ -172,6 +186,48 @@ func requireUnchanged(ctx context.Context, records RecordRepository, projections
 		return err
 	}
 	return nil
+}
+
+// findListedOccurrence は、事業所 facilityID の一覧での ID が id の予定が、繰り返しの予定の展開した回なら、その回を返す。
+// Projection の行の一覧での ID なら ok を false にする。回は、Projection を保持する期間（scheduleview.RetainedRange）の中で親を展開して探す。
+func findListedOccurrence(ctx context.Context, projections Projections, now func() time.Time, facilityID, id string) (scheduleview.Occurrence, bool, error) {
+	_, err := projections.GetBySchedule(ctx, facilityID, id)
+	if !errors.Is(err, apperr.ErrNotFound) {
+		return scheduleview.Occurrence{}, false, err
+	}
+	from, to := scheduleview.RetainedRange(now())
+	rows, err := projections.ListByFacility(ctx, facilityID, civil.DateOf(from.Time().AddDate(0, 0, -1)))
+	if err != nil {
+		return scheduleview.Occurrence{}, false, err
+	}
+	occ, ok := scheduleview.FindOccurrence(rows, calendar.ProjectionRules{}, id, from, to)
+	return occ, ok, nil
+}
+
+// requireParentETag は、繰り返しの予定の親 parent を Google から読み直し、etag が画面の読んだ etag と同じことを確認する。
+// 展開した回の一覧の etag は親の予定の etag なので、回に書く前に親で比べる。Google の回の予定は親と別の etag を持ちうるので、
+// 回の If-Match には付けない。違えば、読んだ親を Projection に写して errEventChanged を、取り消されていれば errEventNotFound を返す。
+// 読めなければ、予定が無いときは errEventNotFound を、ほかは ErrGoogleUnavailable を包んだエラーを返す。
+func requireParentETag(ctx context.Context, source calendar.EventSource, projections Projections, now func() time.Time, t tx.Transactor,
+	parent parentEvent, etag string) error {
+	ev, err := readEvent(ctx, source, parent.cal.CalendarID, parent.row.EventID)
+	switch {
+	case errors.Is(err, calendar.ErrEventNotFound):
+		return errEventNotFound
+	case err != nil:
+		return fmt.Errorf("%w: %w", ErrGoogleUnavailable, err)
+	case ev.Status != calendar.StatusCancelled && ev.ETag == etag:
+		return nil
+	}
+	if err := t.WithinTx(ctx, func(ctx context.Context) error {
+		return project(ctx, projections, civil.Today(now()), parent.cal, ev)
+	}); err != nil {
+		return err
+	}
+	if ev.Status == calendar.StatusCancelled {
+		return errEventNotFound
+	}
+	return errEventChanged
 }
 
 // findInstance は、カレンダー cal の繰り返しの予定 parentEventID の、元の規則で d に始まる回を、events.instances で Google から読む。

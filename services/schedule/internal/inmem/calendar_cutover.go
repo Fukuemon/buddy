@@ -153,11 +153,14 @@ func (s Cutovers) CountPendingRecords(_ context.Context, facilityID string) (int
 func (s Cutovers) ListRecordVisits(_ context.Context, externalCalendarID string) (map[string]visit.Info, error) {
 	out := map[string]visit.Info{}
 	for _, r := range s.Records {
-		if r.ExternalCalendarID != externalCalendarID || r.VisitInfoID == nil {
-			continue
-		}
-		if i, ok := s.Infos[*r.VisitInfoID]; ok {
-			out[r.ExternalEventID] = i
+		switch {
+		case r.ExternalCalendarID != externalCalendarID || r.Version == 0:
+		case r.VisitInfoID == nil:
+			out[r.ExternalEventID] = visit.Info{}
+		default:
+			if i, ok := s.Infos[*r.VisitInfoID]; ok {
+				out[r.ExternalEventID] = i
+			}
 		}
 	}
 	return out, nil

@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/Fukuemon/buddy/services/schedule/internal/civil"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendar"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/schedule"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/scheduleview"
@@ -133,6 +134,11 @@ func TestProjectedExceptionVisit(t *testing.T) {
 			t.Fatalf("予定 %s の訪問の情報が無い: %+v", d.Date, d)
 		}
 		visits[d.Date.Day] = d.Visit.ID
+		if d.Date.Day == 14 {
+			if want := scheduleview.OccurrenceScheduleID(targetCalendarID, "series", civil.Date{Year: 2026, Month: 10, Day: 13}); d.ID != want {
+				t.Errorf("記録の無い例外の回の ID = %s, want 元の日付の回の ID %s", d.ID, want)
+			}
+		}
 	}
 	want := map[int]string{6: parentInfoID, 14: parentInfoID, 21: ownInfoID, 27: parentInfoID}
 	if !reflect.DeepEqual(visits, want) {

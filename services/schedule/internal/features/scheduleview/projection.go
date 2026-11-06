@@ -180,12 +180,50 @@ func startsIn(rd EventReading, from, to civil.Date) bool {
 func dayBefore(d civil.Date) civil.Date { return civil.DateOf(d.Time().AddDate(0, 0, -1)) }
 
 // projectedID は、Projection の予定 e の、一覧を読むたびに同じになる ID を返す。展開した回でなければ、行の一覧での ID（ScheduleID）にする。
-// 繰り返しの回は、カレンダー、Google の予定の ID、回の日付から、ProjectedScheduleID と同じ形で作る。
+// 繰り返しの回は OccurrenceScheduleID にする。
 func projectedID(e projectedEvent) string {
 	if e.occurrence.IsZero() {
 		return e.row.ScheduleID
 	}
-	return hashID(e.row.ExternalCalendarID + "\x00" + e.row.EventID + "\x00" + e.occurrence.String())
+	return OccurrenceScheduleID(e.row.ExternalCalendarID, e.row.EventID, e.occurrence)
+}
+
+// OccurrenceScheduleID は、結び付けたカレンダー externalCalendarID の繰り返しの予定 parentEventID の、元の規則で d に始まる回の、
+// 一覧での予定の ID を返す。展開した回と、回を変えた例外の回の記録の無い行に使い、回を変えても ID が変わらない（ADR-0026）。
+// ProjectedScheduleID と同じ形で作り、DB の関数 occurrence_schedule_id も同じ値を返す。
+func OccurrenceScheduleID(externalCalendarID, parentEventID string, d civil.Date) string {
+	return hashID(externalCalendarID + "\x00" + parentEventID + "\x00" + d.String())
+}
+
+// OriginalDate は、例外の回 p が元の規則で始まるはずだった Asia/Tokyo の日付を返す。元の開始が無ければ false を返す。
+func (p Projection) OriginalDate() (civil.Date, bool) { return p.OriginalStart.day() }
+
+// Occurrence は、繰り返しの予定の親の行 Parent を展開した、元の規則で Date に始まる 1 回である。
+type Occurrence struct {
+	Parent ProjectionDetail
+	Date   civil.Date
+}
+
+// FindOccurrence は、Projection の行 rows の繰り返しの親を from から to までの回に展開し、一覧での ID が id の回を返す。
+// 変えた回と取り消した回は、展開した回に含めない。見つからなければ false を返す。
+func FindOccurrence(rows []ProjectionDetail, rules EventRules, id string, from, to civil.Date) (Occurrence, bool) {
+	e, ok := findOccurrence(rows, rules, id, from, to)
+	return Occurrence{Parent: e.row, Date: e.occurrence}, ok
+}
+
+func findOccurrence(rows []ProjectionDetail, rules EventRules, id string, from, to civil.Date) (projectedEvent, bool) {
+	for _, e := range expandProjections(rows, rules, from, to) {
+		if !e.occurrence.IsZero() && projectedID(e) == id {
+			return e, true
+		}
+	}
+	return projectedEvent{}, false
+}
+
+// RetainedRange は、今の時刻 now の、Projection を保持する期間（前々月の初日から 3 か月後の月末）の最初の日と最後の日を返す（ADR-0026）。
+// 一覧での ID から繰り返しの回を引くときに、親を展開する期間にする。
+func RetainedRange(now time.Time) (civil.Date, civil.Date) {
+	return projectionRange(ListQuery{}, now)
 }
 
 // ProjectedScheduleID は、記録の無い Projection の予定の、一覧を読むたびに同じになる予定の ID を返す。

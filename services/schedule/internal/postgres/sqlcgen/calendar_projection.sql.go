@@ -92,7 +92,8 @@ const getCalendarEventProjectionByListID = `-- name: GetCalendarEventProjectionB
 SELECT p.external_calendar_id, p.external_event_id, p.facility_id, p.staff_id, p.recurring_event_id, p.original_start_at, p.original_start_date,
        p.status, p.title, p.start_at, p.start_date, p.end_at, p.end_date, p.time_zone, p.recurrence, p.etag, p.google_updated_at,
        p.last_end_date, p.projected_at, u.username AS staff_name,
-       COALESCE(r.schedule_id, CASE WHEN t.schedule_id IS NULL THEN projected_schedule_id(p.external_calendar_id, p.external_event_id)
+       COALESCE(r.schedule_id, CASE WHEN p.recurring_event_id IS NOT NULL THEN COALESCE(occurrence_schedule_id(p.external_calendar_id, p.recurring_event_id, p.original_start_at, p.original_start_date), projected_schedule_id(p.external_calendar_id, p.external_event_id))
+                                    WHEN t.schedule_id IS NULL THEN projected_schedule_id(p.external_calendar_id, p.external_event_id)
                                     ELSE detached_schedule_id(p.external_calendar_id, p.external_event_id) END)::text AS schedule_id,
        COALESCE(r.visit_info_id, pr.visit_info_id) AS visit_info_id, vid.patient_id, vid.patient_name, vid.assigned_staff_id, vid.assigned_staff_name,
        vid.companion_id, vid.companion_name, vid.service_code_id, vid.service_code
@@ -105,9 +106,11 @@ LEFT JOIN calendar_event_records pr ON p.recurring_event_id IS NOT NULL AND (r.s
                                    AND pr.external_calendar_id = p.external_calendar_id AND pr.external_event_id = p.recurring_event_id
 LEFT JOIN visit_info_details vid ON vid.id = COALESCE(r.visit_info_id, pr.visit_info_id)
 WHERE (projected_schedule_id(p.external_calendar_id, p.external_event_id) = $1
-       OR detached_schedule_id(p.external_calendar_id, p.external_event_id) = $1)
+       OR detached_schedule_id(p.external_calendar_id, p.external_event_id) = $1
+       OR (p.recurring_event_id IS NOT NULL AND occurrence_schedule_id(p.external_calendar_id, p.recurring_event_id, p.original_start_at, p.original_start_date) = $1))
   AND r.schedule_id IS NULL
-  AND CASE WHEN t.schedule_id IS NULL THEN projected_schedule_id(p.external_calendar_id, p.external_event_id)
+  AND CASE WHEN p.recurring_event_id IS NOT NULL THEN COALESCE(occurrence_schedule_id(p.external_calendar_id, p.recurring_event_id, p.original_start_at, p.original_start_date), projected_schedule_id(p.external_calendar_id, p.external_event_id))
+                                    WHEN t.schedule_id IS NULL THEN projected_schedule_id(p.external_calendar_id, p.external_event_id)
            ELSE detached_schedule_id(p.external_calendar_id, p.external_event_id) END = $1
   AND p.facility_id = $2 AND c.disabled_at IS NULL
 ORDER BY p.external_calendar_id, p.external_event_id
@@ -152,7 +155,7 @@ type GetCalendarEventProjectionByListIDRow struct {
 	ServiceCode        *string
 }
 
-// 記録の無い予定を、一覧での予定の ID（projected_schedule_id か detached_schedule_id）で読む。列は ListCalendarEventProjectionsByFacility と同じである。
+// 記録の無い予定を、一覧での予定の ID（projected_schedule_id、detached_schedule_id、例外の回の occurrence_schedule_id）で読む。列は ListCalendarEventProjectionsByFacility と同じである。
 func (q *Queries) GetCalendarEventProjectionByListID(ctx context.Context, arg GetCalendarEventProjectionByListIDParams) (GetCalendarEventProjectionByListIDRow, error) {
 	row := q.db.QueryRow(ctx, getCalendarEventProjectionByListID, arg.ScheduleID, arg.FacilityID)
 	var i GetCalendarEventProjectionByListIDRow
@@ -195,7 +198,8 @@ const getCalendarEventProjectionByRecord = `-- name: GetCalendarEventProjectionB
 SELECT p.external_calendar_id, p.external_event_id, p.facility_id, p.staff_id, p.recurring_event_id, p.original_start_at, p.original_start_date,
        p.status, p.title, p.start_at, p.start_date, p.end_at, p.end_date, p.time_zone, p.recurrence, p.etag, p.google_updated_at,
        p.last_end_date, p.projected_at, u.username AS staff_name,
-       COALESCE(r.schedule_id, CASE WHEN t.schedule_id IS NULL THEN projected_schedule_id(p.external_calendar_id, p.external_event_id)
+       COALESCE(r.schedule_id, CASE WHEN p.recurring_event_id IS NOT NULL THEN COALESCE(occurrence_schedule_id(p.external_calendar_id, p.recurring_event_id, p.original_start_at, p.original_start_date), projected_schedule_id(p.external_calendar_id, p.external_event_id))
+                                    WHEN t.schedule_id IS NULL THEN projected_schedule_id(p.external_calendar_id, p.external_event_id)
                                     ELSE detached_schedule_id(p.external_calendar_id, p.external_event_id) END)::text AS schedule_id,
        COALESCE(r.visit_info_id, pr.visit_info_id) AS visit_info_id, vid.patient_id, vid.patient_name, vid.assigned_staff_id, vid.assigned_staff_name,
        vid.companion_id, vid.companion_name, vid.service_code_id, vid.service_code
@@ -291,7 +295,8 @@ const listCalendarEventProjectionsByFacility = `-- name: ListCalendarEventProjec
 SELECT p.external_calendar_id, p.external_event_id, p.facility_id, p.staff_id, p.recurring_event_id, p.original_start_at, p.original_start_date,
        p.status, p.title, p.start_at, p.start_date, p.end_at, p.end_date, p.time_zone, p.recurrence, p.etag, p.google_updated_at,
        p.last_end_date, p.projected_at, u.username AS staff_name,
-       COALESCE(r.schedule_id, CASE WHEN t.schedule_id IS NULL THEN projected_schedule_id(p.external_calendar_id, p.external_event_id)
+       COALESCE(r.schedule_id, CASE WHEN p.recurring_event_id IS NOT NULL THEN COALESCE(occurrence_schedule_id(p.external_calendar_id, p.recurring_event_id, p.original_start_at, p.original_start_date), projected_schedule_id(p.external_calendar_id, p.external_event_id))
+                                    WHEN t.schedule_id IS NULL THEN projected_schedule_id(p.external_calendar_id, p.external_event_id)
                                     ELSE detached_schedule_id(p.external_calendar_id, p.external_event_id) END)::text AS schedule_id,
        COALESCE(r.visit_info_id, pr.visit_info_id) AS visit_info_id, vid.patient_id, vid.patient_name, vid.assigned_staff_id, vid.assigned_staff_name,
        vid.companion_id, vid.companion_name, vid.service_code_id, vid.service_code
@@ -350,6 +355,7 @@ type ListCalendarEventProjectionsByFacilityRow struct {
 // 職員の名前と、一覧での予定の ID（schedule_id）を付けて読む。外したカレンダー（退職した職員のカレンダーを含む）の行は返さない。
 // 一覧での予定の ID は、記録のある予定では記録の主キーである。記録の無い予定では projected_schedule_id で、その値がほかの予定を指す
 // 記録の主キーと同じなら（予定を移した後に前のカレンダーに残った予定）、detached_schedule_id である。
+// 繰り返しの予定の例外の回で記録の無い行は、展開した回と同じ occurrence_schedule_id である。回を変えても一覧での ID が変わらないためである。
 // 記録のある予定には、記録の確定した版の訪問の情報（visit_info_id）を、名前を付けて読む。保留の版の訪問の情報は読まない。
 // 繰り返しの予定の例外の回で、回の記録が無いか確定した版を持たないときは、親の予定の記録の訪問の情報を読む（ADR-0026）。
 func (q *Queries) ListCalendarEventProjectionsByFacility(ctx context.Context, arg ListCalendarEventProjectionsByFacilityParams) ([]ListCalendarEventProjectionsByFacilityRow, error) {

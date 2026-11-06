@@ -24,10 +24,10 @@ func movedSlot() schedule.SlotInput {
 	return in
 }
 
-// exceptionID は、secondDate の回を変えた例外の回の一覧での ID である。
+// exceptionID は、secondDate の回の一覧での ID である。回を変える前と後で同じである。
 func exceptionID(t *testing.T) string {
 	t.Helper()
-	return scheduleview.ProjectedScheduleID(externalID, instanceID(t, secondDate))
+	return scheduleview.OccurrenceScheduleID(externalID, eventID(t), secondDate)
 }
 
 // TestChangeOccurrence は、繰り返しの予定の 1 回を変えると、Google に例外の回ができ、親の予定の EXDATE と記録が変わらないことを確認する。
@@ -101,7 +101,7 @@ func TestChangeOccurrenceVisit(t *testing.T) {
 	}
 }
 
-// TestChangeOccurrenceRejects は、回に当たらない日、予定の職員を替える入力、繰り返しでない予定、保留の版がある親を、
+// TestChangeOccurrenceRejects は、回に当たらない日、繰り返しでない予定、保留の版がある親を、
 // 回を Google に書かずに拒むことを確認する。
 func TestChangeOccurrenceRejects(t *testing.T) {
 	fx := newFixture(t)
@@ -111,12 +111,6 @@ func TestChangeOccurrenceRejects(t *testing.T) {
 	_, err := fx.changeOccurrence.Do(editorCtx(), inmem.FacilityID, scheduleID, civil.Date{Year: 2026, Month: 10, Day: 30}, movedSlot())
 	if !errors.Is(err, apperr.ErrInvalidInput) {
 		t.Errorf("回に当たらない日: err = %v", err)
-	}
-	in := movedSlot()
-	in.StaffID = inmem.CompanionID
-	in.Visit.AssignedStaffID, in.Visit.CompanionID = inmem.CompanionID, nil
-	if _, err := fx.changeOccurrence.Do(editorCtx(), inmem.FacilityID, scheduleID, secondDate, in); !errors.Is(err, apperr.ErrConflict) {
-		t.Errorf("予定の職員を替える: err = %v", err)
 	}
 	if _, err := fx.changeOccurrence.Do(editorCtx(), inmem.FacilityID, "01M3TC5H00QV17BC0J9V3393ZQ", secondDate, movedSlot()); !errors.Is(err, apperr.ErrNotFound) {
 		t.Errorf("無い繰り返しの予定: err = %v", err)
@@ -167,5 +161,87 @@ func TestUpdateAndCancelException(t *testing.T) {
 	}
 	if _, ok := fx.record(t); !ok {
 		t.Error("親の予定の記録が消えた")
+	}
+}
+
+// TestChangeOccurrenceMove は、回の予定の職員を替えると、元のカレンダーの回が取り消され、新しい職員のカレンダーに単発の予定ができ、
+// 回の一覧での ID の記録が移した単発の予定を指すことを確認する。応答と移した予定の ID は、回の一覧での ID のままである。
+func TestChangeOccurrenceMove(t *testing.T) {
+	fx := newFixture(t)
+	fx.seedRecurring(t)
+	in := movedSlot()
+	in.StaffID = inmem.CompanionID
+	in.Visit.AssignedStaffID, in.Visit.CompanionID = inmem.CompanionID, nil
+
+	got, err := fx.changeOccurrence.Do(editorCtx(), inmem.FacilityID, scheduleID, secondDate, in)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.ID != exceptionID(t) || got.StaffID != inmem.CompanionID {
+		t.Errorf("got = %+v", got)
+	}
+	if ev := fx.google.Event(calendarID, instanceID(t, secondDate)); ev == nil || ev.Status != "cancelled" {
+		t.Errorf("元のカレンダーの回 = %+v", ev)
+	}
+	moved := fx.google.Events(calendarID2)
+	if len(moved) != 1 || len(moved[0].Recurrence) != 0 || moved[0].Start.DateTime != "2026-10-29T13:00:00" ||
+		moved[0].ExtendedProperties.Private[calendar.PropScheduleID] != exceptionID(t) {
+		t.Fatalf("新しいカレンダーの予定 = %+v", moved)
+	}
+	r, ok := fx.store.Records[exceptionID(t)]
+	if !ok || r.Version != 1 || r.Pending != nil || r.ExternalCalendarID != externalID2 || r.ExternalEventID != moved[0].Id || r.VisitInfoID == nil {
+		t.Errorf("回の記録 = %+v, ok = %v", r, ok)
+	}
+	if ev := fx.google.Event(calendarID, eventID(t)); !slices.Equal(ev.Recurrence, weeklyRecurrence) {
+		t.Errorf("親の予定の繰り返し = %v", ev.Recurrence)
+	}
+	row, err := inmem.Projections{Store: fx.store}.GetBySchedule(editorCtx(), inmem.FacilityID, exceptionID(t))
+	if err != nil || row.ExternalCalendarID != externalID2 || row.IsException() {
+		t.Errorf("回の一覧での ID の行 = %+v, err = %v", row, err)
+	}
+}
+
+// TestUpdateAndCancelListedOccurrence は、一覧での ID と親の予定の etag で、変えていない回を Update と Cancel で変えて取り消せることと、
+// 読んだ後に親の予定が Google で変わっていれば、回に書かずに CodeEventChanged を返すことを確認する。
+func TestUpdateAndCancelListedOccurrence(t *testing.T) {
+	fx := newFixture(t)
+	fx.seedRecurring(t)
+	parentETag := fx.google.Event(calendarID, eventID(t)).Etag
+
+	if _, err := fx.update.Do(editorCtx(), inmem.FacilityID, exceptionID(t), `"old"`, movedSlot()); !isConflict(err, calendarwrite.CodeEventChanged) {
+		t.Errorf("古い親の etag: err = %v", err)
+	}
+	if ev := fx.google.Event(calendarID, instanceID(t, secondDate)); ev.Start.DateTime != "2026-10-29T09:00:00+09:00" {
+		t.Errorf("古い親の etag で回が変わった: %+v", ev.Start)
+	}
+	got, err := fx.update.Do(editorCtx(), inmem.FacilityID, exceptionID(t), parentETag, movedSlot())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.ID != exceptionID(t) || fx.google.Event(calendarID, instanceID(t, secondDate)).Start.DateTime != "2026-10-29T13:00:00" {
+		t.Errorf("変えた回 = %+v", got)
+	}
+	if ev := fx.google.Event(calendarID, eventID(t)); !slices.Equal(ev.Recurrence, weeklyRecurrence) {
+		t.Errorf("親の予定の繰り返し = %v", ev.Recurrence)
+	}
+
+	third := occurrenceDates[2]
+	thirdID := scheduleview.OccurrenceScheduleID(externalID, eventID(t), third)
+	cn, err := fx.cancel.Do(editorCtx(), inmem.FacilityID, thirdID, parentETag, "利用者の都合")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if cn.ScheduleID != thirdID || fx.google.Event(calendarID, instanceID(t, third)).Status != "cancelled" {
+		t.Errorf("取り消し = %+v", cn)
+	}
+	if ev := fx.google.Event(calendarID, instanceID(t, occurrenceDates[0])); ev.Status != "confirmed" {
+		t.Errorf("ほかの回 = %+v", ev)
+	}
+
+	r, _ := fx.record(t)
+	r.Pending = &calendar.PendingWrite{Version: 2, State: calendar.PendingUnknown, Deadline: fx.now}
+	fx.store.Records[scheduleID] = r
+	if _, err := fx.update.Do(editorCtx(), inmem.FacilityID, exceptionID(t), got.ETag, movedSlot()); !isConflict(err, calendarwrite.CodeWritePending) {
+		t.Errorf("親に保留の版がある例外の回の変更: err = %v", err)
 	}
 }

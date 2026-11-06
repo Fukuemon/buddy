@@ -9,7 +9,6 @@ import (
 	"strconv"
 	"strings"
 	"testing"
-	"time"
 
 	calendarv3 "google.golang.org/api/calendar/v3"
 
@@ -437,89 +436,5 @@ func TestReadScheduleGooglePrimaryRecordVisit(t *testing.T) {
 		if got["review_reason"] != "title_mismatch" || !reflect.DeepEqual(got["visit_info"], created["visit_info"]) || got["title"] != nil {
 			t.Errorf("%s: review_reason = %v, visit_info = %v, title = %v, want title_mismatch と作成の応答の visit_info", name, got["review_reason"], got["visit_info"], got["title"])
 		}
-	}
-}
-
-// TestRecurringScheduleGooglePrimary は、google_primary の事業所で、createRecurringSchedule が Google カレンダーに RRULE の
-// 繰り返しの予定を 1 つ作り、listSchedules が回ごとに返すことと、changeOccurrence が 1 回を Google の例外の回にし、親の予定の
-// EXDATE を変えないことを確認する。変えた回は、応答の id と etag で cancelSchedule から取り消せ、ほかの回は残る。
-func TestRecurringScheduleGooglePrimary(t *testing.T) {
-	const (
-		calendarAddr = "staff@example.com"
-		newID        = "01M3TC6CX4Y3D0KCGJ5A9N0WQZ"
-	)
-	google := &gcaltest.Server{Calendars: map[string][][]*calendarv3.Event{calendarAddr: {nil}}}
-	h, s := flowRouterOn(organization.SourceGooglePrimary, googleAccounts{gcaltest.Start(t, google)})
-	s.Calendars["CAL"] = calendar.ExternalCalendar{ID: "CAL", FacilityID: facilityID, StaffID: staffID, Provider: calendar.ProviderGoogle, CalendarID: calendarAddr}
-	slot := func(start, end string) string {
-		return `"schedule_type_id":"` + typeID + `","date":"2099-01-12","start_time":"` + start + `","end_time":"` + end +
-			`","staff_id":"` + staffID + `","title":"カンファレンス"`
-	}
-	body := `{"id":"` + newID + `","schedule_type_id":"` + typeID + `","date":"2099-01-05","start_time":"09:00","end_time":"10:00","staff_id":"` + staffID +
-		`","title":"カンファレンス","recurring_rule":{"frequency":"weekly","end_date":"2099-01-19"}}`
-	created := request(t, h, http.MethodPost, "/v1/facilities/"+facilityID+"/schedules/recurring", body, http.StatusCreated)
-	if created["id"] != newID || field(t, created, "recurring_rule", "frequency") != "weekly" {
-		t.Errorf("作成の応答 = %v", created)
-	}
-	parentID, err := calendar.EventIDOf(newID)
-	if err != nil {
-		t.Fatal(err)
-	}
-	events := google.Events(calendarAddr)
-	if len(events) != 1 || events[0].Id != parentID || len(events[0].Recurrence) != 1 || !strings.HasPrefix(events[0].Recurrence[0], "RRULE:FREQ=WEEKLY;BYDAY=MO;UNTIL=") {
-		t.Fatalf("Google の予定 = %+v", events)
-	}
-	recurrence := events[0].Recurrence
-	request(t, h, http.MethodPost, "/v1/facilities/"+facilityID+"/schedules/recurring", strings.Replace(body, `"id":"`+newID+`",`, "", 1), http.StatusBadRequest)
-
-	list := func() map[string]string {
-		got := request(t, h, http.MethodGet, "/v1/facilities/"+facilityID+"/schedules?date_from=2099-01-01&date_to=2099-01-31", "", http.StatusOK)
-		out := map[string]string{}
-		for _, v := range got["schedules"].([]any) {
-			sc := v.(map[string]any)
-			out[sc["date"].(string)] = sc["start_time"].(string)
-		}
-		return out
-	}
-	if got, want := list(), map[string]string{"2099-01-05": "09:00", "2099-01-12": "09:00", "2099-01-19": "09:00"}; !reflect.DeepEqual(got, want) {
-		t.Errorf("一覧 = %v, want %v", got, want)
-	}
-
-	var items []*calendarv3.Event
-	for _, day := range []int{5, 12, 19} {
-		start := time.Date(2099, 1, day, 9, 0, 0, 0, calendar.Tokyo)
-		items = append(items, &calendarv3.Event{
-			Id: parentID + "_" + start.UTC().Format("20060102T150405Z"), Status: "confirmed", Summary: "カンファレンス", RecurringEventId: parentID,
-			Etag:              `"i` + strconv.Itoa(day) + `"`,
-			OriginalStartTime: &calendarv3.EventDateTime{DateTime: start.Format(time.RFC3339), TimeZone: calendar.TimeZone},
-			Start:             &calendarv3.EventDateTime{DateTime: start.Format(time.RFC3339), TimeZone: calendar.TimeZone},
-			End:               &calendarv3.EventDateTime{DateTime: start.Add(time.Hour).Format(time.RFC3339), TimeZone: calendar.TimeZone},
-		})
-	}
-	google.Instances = map[string][]*calendarv3.Event{parentID: items}
-	occurrences := "/v1/schedules/recurring/" + newID + "/occurrences"
-	changed := request(t, h, http.MethodPost, occurrences, `{"original_date":"2099-01-12",`+slot("13:00", "14:00")+`}`, http.StatusCreated)
-	if changed["start_time"] != "13:00" || changed["source"] != "google_calendar" || changed["etag"] == nil {
-		t.Errorf("変えた回 = %v", changed)
-	}
-	if ev := google.Event(calendarAddr, items[1].Id); ev == nil || ev.RecurringEventId != parentID || ev.Start.DateTime != "2099-01-12T13:00:00" {
-		t.Errorf("Google の例外の回 = %+v", ev)
-	}
-	if ev := google.Event(calendarAddr, parentID); !reflect.DeepEqual(ev.Recurrence, recurrence) {
-		t.Errorf("親の予定の繰り返し = %v, want %v", ev.Recurrence, recurrence)
-	}
-	if got, want := list(), map[string]string{"2099-01-05": "09:00", "2099-01-12": "13:00", "2099-01-19": "09:00"}; !reflect.DeepEqual(got, want) {
-		t.Errorf("回を変えた後の一覧 = %v, want %v", got, want)
-	}
-	request(t, h, http.MethodPost, occurrences, `{"original_date":"2099-01-12",`+slot("13:00", "14:00")+`}`, http.StatusConflict)
-	request(t, h, http.MethodPost, occurrences, `{"original_date":"2099-01-13",`+slot("13:00", "14:00")+`}`, http.StatusBadRequest)
-
-	id := changed["id"].(string)
-	request(t, h, http.MethodPost, "/v1/schedules/"+id+"/cancel", `{"reason":"中止","etag":`+strconv.Quote(changed["etag"].(string))+`}`, http.StatusCreated)
-	if ev := google.Event(calendarAddr, items[1].Id); ev.Status != "cancelled" {
-		t.Errorf("取り消した回の状態 = %s", ev.Status)
-	}
-	if got, want := list(), map[string]string{"2099-01-05": "09:00", "2099-01-19": "09:00"}; !reflect.DeepEqual(got, want) {
-		t.Errorf("回を取り消した後の一覧 = %v, want %v", got, want)
 	}
 }

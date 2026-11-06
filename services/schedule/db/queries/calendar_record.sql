@@ -1,6 +1,10 @@
 -- name: GetCalendarEventRecordForUpdate :one
 SELECT * FROM calendar_event_records WHERE schedule_id = $1 FOR UPDATE;
 
+-- name: FindCalendarEventRecordAtForUpdate :one
+-- 繰り返しの予定の例外の回を変える書き込みが、親の予定の記録を、親の予定の場所で引く。
+SELECT * FROM calendar_event_records WHERE external_calendar_id = sqlc.arg(external_calendar_id) AND external_event_id = sqlc.arg(external_event_id) FOR UPDATE;
+
 -- name: CreateCalendarEventRecord :exec
 INSERT INTO calendar_event_records (
     schedule_id, facility_id, external_calendar_id, external_event_id, visit_info_id, version,

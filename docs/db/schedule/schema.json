@@ -6169,6 +6169,14 @@
           "columns": [
             "detached_schedule_id"
           ]
+        },
+        {
+          "name": "calendar_event_projections_occurrence_id_idx",
+          "def": "CREATE INDEX calendar_event_projections_occurrence_id_idx ON public.calendar_event_projections USING btree (occurrence_schedule_id(external_calendar_id, (recurring_event_id)::text, original_start_at, original_start_date)) WHERE (recurring_event_id IS NOT NULL)",
+          "table": "public.calendar_event_projections",
+          "columns": [
+            "occurrence_schedule_id"
+          ]
         }
       ],
       "constraints": [
@@ -8020,6 +8028,12 @@
       "name": "public.detached_schedule_id",
       "return_type": "text",
       "arguments": "external_calendar_id text, external_event_id text",
+      "type": "FUNCTION"
+    },
+    {
+      "name": "public.occurrence_schedule_id",
+      "return_type": "text",
+      "arguments": "external_calendar_id text, parent_event_id text, original_start_at timestamp with time zone, original_start_date date",
       "type": "FUNCTION"
     }
   ],

@@ -27,16 +27,21 @@ func NewCancelOccurrence(locks FacilityLock, cutovers Cutovers, staffRefs kernel
 
 // Do は、事業所 facilityID の、一覧での ID が recurringScheduleID の繰り返しの予定の、元の規則で originalDate に始まる回を取り消し、
 // 取り消しを返す。回は events.instances で Google から読み、読んだ回の etag を If-Match に付けて消す。保留の版は書かない（Cancel.Do と同じ）。
-// 取り消しの ID は、取り消した回の一覧での ID（scheduleview.ProjectedScheduleID）で、理由 reason は保存しない。
+// 取り消しの ID は、回の一覧での ID（scheduleview.OccurrenceScheduleID）で、理由 reason は保存しない。
 //
 // 繰り返しの予定が無いか、繰り返しの予定でないときは apperr.ErrNotFound を、originalDate が回に当たらないか、その回を取り消したときは
 // 入力のエラーを返す。その回をすでに変えたとき、親か回の記録に保留の版があるとき（CodeWritePending）は apperr.ErrConflict を返す。
 // 回を読めないときは ErrGoogleUnavailable を包んだエラーを返す。ほかのエラーは Cancel.Do と同じである。
 func (o CancelOccurrence) Do(ctx context.Context, facilityID, recurringScheduleID string, originalDate civil.Date, reason string) (schedule.Cancellation, error) {
-	c := o.cancel
 	if _, err := schedule.NewCancellation(recurringScheduleID, recurringScheduleID, reason); err != nil {
 		return schedule.Cancellation{}, err
 	}
+	return o.cancel.cancelOccurrence(ctx, facilityID, recurringScheduleID, originalDate, "", reason)
+}
+
+// cancelOccurrence は、CancelOccurrence.Do と、展開した回への Cancel.Do の取り消しを行う。etag が空でなければ、親の予定を読み直して
+// etag と比べ、違えば回を消さない（requireParentETag）。
+func (c Cancel) cancelOccurrence(ctx context.Context, facilityID, recurringScheduleID string, originalDate civil.Date, etag, reason string) (schedule.Cancellation, error) {
 	if c.accounts == nil {
 		return schedule.Cancellation{}, calendar.ErrNotConfigured
 	}
@@ -59,24 +64,28 @@ func (o CancelOccurrence) Do(ctx context.Context, facilityID, recurringScheduleI
 	if err != nil {
 		return schedule.Cancellation{}, err
 	}
+	if etag != "" {
+		if err := requireParentETag(ctx, source, c.projections, c.now, c.tx, parent, etag); err != nil {
+			return schedule.Cancellation{}, err
+		}
+	}
 	inst, err := findInstance(ctx, source, parent.cal, parent.row.EventID, originalDate)
 	if err != nil {
 		return schedule.Cancellation{}, err
 	}
+	id := scheduleview.OccurrenceScheduleID(parent.cal.ID, parent.row.EventID, originalDate)
 	err = c.tx.WithinTx(ctx, func(ctx context.Context) error {
 		if err := requireGooglePrimary(ctx, c.locks, c.cutovers, facilityID); err != nil {
 			return err
 		}
-		p, err := lockParent(ctx, c.records, c.projections, c.staffRefs, c.calendars, facilityID, recurringScheduleID)
-		if err != nil {
+		if _, err := lockParent(ctx, c.records, c.projections, c.staffRefs, c.calendars, facilityID, recurringScheduleID); err != nil {
 			return err
 		}
-		return requireUnchanged(ctx, c.records, c.projections, facilityID, p.cal, inst.ID)
+		return requireUnchanged(ctx, c.records, c.projections, facilityID, id)
 	})
 	if err != nil {
 		return schedule.Cancellation{}, err
 	}
-	id := scheduleview.ProjectedScheduleID(parent.cal.ID, inst.ID)
 	if err := c.remove(context.WithoutCancel(ctx), source, writer, id, parent.cal, inst.ID, inst.ETag); err != nil {
 		return schedule.Cancellation{}, err
 	}

@@ -26,7 +26,7 @@ type Detail struct {
 	Source Source
 	// ReviewReason は、Projection の予定のうち、確認が必要な予定の理由で、ほかの予定では空である。
 	ReviewReason ReviewReason
-	// ETag は、Projection の予定と Google カレンダーに書いた予定の、Google の etag である。buddy の予定と繰り返しの回では空である。
+	// ETag は、Projection の予定と Google カレンダーに書いた予定の、Google の etag である。繰り返しの予定の展開した回では、親の予定の etag である。buddy の予定では空である。
 	// 画面は、予定を変えるか取り消すときに、読んだ etag を送る。
 	ETag string
 }
