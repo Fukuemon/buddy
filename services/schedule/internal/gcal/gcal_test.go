@@ -1,6 +1,7 @@
 package gcal_test
 
 import (
+	"context"
 	"errors"
 	"net/http"
 	"net/http/httptest"
@@ -224,7 +225,8 @@ func TestWriterErrorKinds(t *testing.T) {
 		{"共有の権限が無い 403", http.StatusForbidden, "forbidden", schedcal.ErrUnwritable},
 		{"上限の 403", http.StatusForbidden, "rateLimitExceeded", schedcal.ErrUnavailable},
 		{"429", http.StatusTooManyRequests, "rateLimitExceeded", schedcal.ErrUnavailable},
-		{"500", http.StatusInternalServerError, "backendError", schedcal.ErrUnavailable},
+		{"500", http.StatusInternalServerError, "backendError", schedcal.ErrOutcomeUnknown},
+		{"503", http.StatusServiceUnavailable, "backendError", schedcal.ErrOutcomeUnknown},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -239,11 +241,35 @@ func TestWriterErrorKinds(t *testing.T) {
 				t.Fatal(err)
 			}
 			_, err = gcal.NewWriter(svc).Update(t.Context(), "staff@example.com", "ev1", `"1"`, schedcal.EventBody{})
-			if !errors.Is(err, tt.want) {
+			if !errors.Is(err, tt.want) || (!errors.Is(tt.want, schedcal.ErrOutcomeUnknown) && errors.Is(err, schedcal.ErrOutcomeUnknown)) {
 				t.Errorf("err = %v, want %v", err, tt.want)
 			}
 			if strings.Contains(err.Error(), "staff@example.com") {
 				t.Errorf("エラーの文がカレンダーの ID を含む: %v", err)
+			}
+		})
+	}
+}
+
+// 通信のエラーと時間切れは、Google が書いた後に応答だけが失われたことがあるので、結果の分からないエラーにする。
+func TestWriterOutcomeUnknownOnTransportError(t *testing.T) {
+	closed := httptest.NewServer(http.NotFoundHandler())
+	closed.Close()
+	done := make(chan struct{})
+	slow := httptest.NewServer(http.HandlerFunc(func(http.ResponseWriter, *http.Request) { <-done }))
+	defer slow.Close()
+	defer close(done)
+	for name, ts := range map[string]*httptest.Server{"通信のエラー": closed, "時間切れ": slow} {
+		t.Run(name, func(t *testing.T) {
+			svc, err := calendar.NewService(t.Context(), option.WithEndpoint(ts.URL+"/"), option.WithHTTPClient(ts.Client()))
+			if err != nil {
+				t.Fatal(err)
+			}
+			ctx, cancel := context.WithTimeout(t.Context(), 200*time.Millisecond)
+			defer cancel()
+			_, err = gcal.NewWriter(svc).Insert(ctx, "staff@example.com", "ev1", schedcal.EventBody{})
+			if !errors.Is(err, schedcal.ErrOutcomeUnknown) || errors.Is(err, schedcal.ErrUnavailable) || strings.Contains(err.Error(), "staff@example.com") {
+				t.Errorf("err = %v, want カレンダー ID を含まない ErrOutcomeUnknown", err)
 			}
 		})
 	}
@@ -323,7 +349,7 @@ func TestWriterPreconditionFailedWhenGetFails(t *testing.T) {
 			_, uerr := w.Update(t.Context(), "staff@example.com", "ev1", `"1"`, schedcal.EventBody{})
 			derr := w.Delete(t.Context(), "staff@example.com", "ev1", `"1"`)
 			for _, err := range []error{uerr, derr} {
-				if !errors.Is(err, tt.want) || errors.Is(err, schedcal.ErrEventGone) {
+				if !errors.Is(err, tt.want) || errors.Is(err, schedcal.ErrEventGone) || errors.Is(err, schedcal.ErrOutcomeUnknown) {
 					t.Errorf("err = %v, want %v", err, tt.want)
 				}
 				if strings.Contains(err.Error(), "staff@example.com") {

@@ -127,7 +127,7 @@ type Accounts interface {
 }
 
 // EventWriter は、外部のカレンダーに予定を書く。エラーは、ErrEventChanged、ErrEventGone、ErrEventNotFound、ErrEventExists、
-// ErrEventRejected、ErrUnwritable、ErrUnavailable のいずれかを包む。
+// ErrEventRejected、ErrUnwritable、ErrUnavailable、ErrOutcomeUnknown のいずれかを包む。
 type EventWriter interface {
 	// Insert は、ID が eventID の予定を作り、etag を返す。
 	Insert(ctx context.Context, calendarID, eventID string, b EventBody) (string, error)

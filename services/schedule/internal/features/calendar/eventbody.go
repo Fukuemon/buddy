@@ -51,6 +51,9 @@ var (
 	ErrEventExists = errors.New("外部のカレンダーに同じ ID の予定があります")
 	// ErrUnwritable は、サービスアカウントがカレンダーに予定を書けないことを表す。
 	ErrUnwritable = errors.New("カレンダーに予定を書けません。予定の変更の権限で共有されているかを確認してください")
+	// ErrOutcomeUnknown は、外部が書き込みを受けたかが分からないこと（5xx、通信のエラー、時間切れ）を表す。外部が書いた後に、
+	// 応答だけが失われたことがある。外部が拒んだことが確かな一時的なエラー（429 と、件数の上限による 403）は ErrUnavailable である（ADR-0026）。
+	ErrOutcomeUnknown = errors.New("外部のカレンダーが予定を書いたかを確認できませんでした")
 )
 
 var eventIDEncoding = base32.HexEncoding.WithPadding(base32.NoPadding)

@@ -333,6 +333,8 @@ func TestExportRecreatesEventDeletedInGoogle(t *testing.T) {
 	}
 }
 
+// TestExportRetriesTransientErrors は、503（書いたかが分からない calendar.ErrOutcomeUnknown）と 429（拒まれた calendar.ErrUnavailable）の
+// どちらの待ちも、書き直す時刻を持って書き直すことを確認する。
 func TestExportRetriesTransientErrors(t *testing.T) {
 	e := newExportEnv(t)
 	e.srv.Failures = []int{http.StatusServiceUnavailable, http.StatusTooManyRequests}
