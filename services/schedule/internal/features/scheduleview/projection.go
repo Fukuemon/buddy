@@ -195,6 +195,15 @@ func OccurrenceScheduleID(externalCalendarID, parentEventID string, d civil.Date
 	return hashID(externalCalendarID + "\x00" + parentEventID + "\x00" + d.String())
 }
 
+// DetachedOccurrenceScheduleID は、記録の無い例外の回の行の OccurrenceScheduleID が、ほかの予定を指す記録の主キーと同じときの、
+// 一覧での予定の ID を返す。回を別の職員のカレンダーに移すと、回の記録の主キーは移した単発の予定を指す。元の回を消せなかったとき、
+// 元のカレンダーに残った例外の回の行は記録を持たず、同じ OccurrenceScheduleID になるので、この ID で見分ける。
+// DetachedScheduleID と同じく、Google の予定の ID に使われない文字（0x01）と固定の語を親の予定の ID に足して作り、
+// DB の関数 detached_occurrence_schedule_id も同じ値を返す。
+func DetachedOccurrenceScheduleID(externalCalendarID, parentEventID string, d civil.Date) string {
+	return OccurrenceScheduleID(externalCalendarID, parentEventID+"\x01detached", d)
+}
+
 // OriginalDate は、例外の回 p が元の規則で始まるはずだった Asia/Tokyo の日付を返す。元の開始が無ければ false を返す。
 func (p Projection) OriginalDate() (civil.Date, bool) { return p.OriginalStart.day() }
 

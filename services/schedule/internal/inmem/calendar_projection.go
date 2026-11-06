@@ -108,7 +108,8 @@ func (s Projections) GetBySchedule(_ context.Context, facilityID, id string) (sc
 
 // detail は、行 p に、職員の名前と、一覧での予定の ID と、記録の確定した版の訪問の情報を付ける。
 // 例外の回の行で、回の記録が無いか確定した版を持たないときは、親の予定の記録の確定した版の訪問の情報を付ける。
-// 記録の無い例外の回の行の一覧での ID は、展開した回と同じ scheduleview.OccurrenceScheduleID にする。
+// 記録の無い例外の回の行の一覧での ID は、展開した回と同じ scheduleview.OccurrenceScheduleID にし、その値がほかの予定を指す記録の主キーなら
+// scheduleview.DetachedOccurrenceScheduleID にする。
 func (s Projections) detail(p scheduleview.Projection) scheduleview.ProjectionDetail {
 	d := scheduleview.ProjectionDetail{Projection: p, StaffName: s.Staff[p.StaffID].Username}
 	confirmed := false
@@ -116,6 +117,9 @@ func (s Projections) detail(p scheduleview.Projection) scheduleview.ProjectionDe
 		d.ScheduleID, d.Visit, confirmed = r.ScheduleID, s.visitOf(r.VisitInfoID), r.Version > 0
 	} else if d0, ok := p.OriginalDate(); ok && p.IsException() {
 		d.ScheduleID = scheduleview.OccurrenceScheduleID(p.ExternalCalendarID, p.RecurringEventID, d0)
+		if _, taken := s.Records[d.ScheduleID]; taken {
+			d.ScheduleID = scheduleview.DetachedOccurrenceScheduleID(p.ExternalCalendarID, p.RecurringEventID, d0)
+		}
 	} else {
 		_, taken := s.Records[scheduleview.ProjectedScheduleID(p.ExternalCalendarID, p.EventID)]
 		d.ScheduleID = scheduleview.ListScheduleID(p.ExternalCalendarID, p.EventID, taken)

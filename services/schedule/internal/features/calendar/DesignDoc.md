@@ -802,14 +802,17 @@ buddy で作った予定を作った後に一覧から開いて変えられ、�
   - 記録の無い例外の回の行も、同じ値を ID にする。回を Google の例外の回に変えても、一覧での ID は変わらない。
   - DB の関数 `occurrence_schedule_id` が同じ値を返し、例外の回の行の式の索引で 1 件を引く。元の日付は、元の開始の時刻の Asia/Tokyo の日付である。
   - 例外の回の記録の主キーも、この ID にする。
+  - 記録の無い例外の回の行の `OccurrenceScheduleID` が、ほかの予定を指す記録の主キーと同じときは、`scheduleview.DetachedOccurrenceScheduleID` を ID にする。回を別の職員のカレンダーに移した後に元の回を消せなかったとき、元のカレンダーに残った回が、移した予定と同じ ID になるためである。
+  - `DetachedScheduleID` と同じく、Google の予定の ID に使われない文字（0x01）と固定の語を親の予定の ID に足して作る。DB の関数 `detached_occurrence_schedule_id` が同じ値を返し、式の索引で引く。
 - 展開した回の `etag` は、親の予定の `etag` にする。Projection は回ごとの行を持たないためである。
 
 1 件の読み出し（`scheduleview.GetProjected`）は、ID が記録の主キーなら記録が指す行を引く。  
-記録の主キーでなければ、記録の無い行を、一覧と同じ規則で決めた ID（`projected_schedule_id`、`detached_schedule_id`、`occurrence_schedule_id`）で引く。  
+記録の主キーでなければ、記録の無い行を、一覧と同じ規則で決めた ID で引く。  
+引く ID は、`projected_schedule_id`、`detached_schedule_id`、`occurrence_schedule_id`、`detached_occurrence_schedule_id` の 4 つである。  
 どの行にも当たらなければ、事業所の繰り返しの予定の親を、Projection を保持する期間の中で展開し、同じ ID の回を返す。  
 閲覧の判定と事業所の分離は一覧と同じで、カレンダーの職員を予定の職員とみなす。  
 取り消した予定と繰り返しの予定の親は返さない。  
-認証のミドルウェアは、予定の ID の事業所を、buddy の予定、記録の主キー、`projected_schedule_id`、`detached_schedule_id`、例外の回の `occurrence_schedule_id` の順に引く。  
+認証のミドルウェアは、予定の ID の事業所を、buddy の予定、記録の主キー、一覧での ID の 4 つの関数の順に引く。  
 引いた事業所が職員の事業所と違えば、403 を返す。  
 展開した回の ID は親を展開しないと引けないので、ミドルウェアは引かず、予定の API が職員の事業所の中で回を引く。
 
@@ -942,6 +945,7 @@ sequenceDiagram
 - 回の予定を読んで `etag` を比べ、新しい職員のカレンダーに新しい ULID の ID で作ってから、回の予定を `If-Match` を付けて消す。Google は、消した回を取り消した例外の回にする。
 - 回の記録が無ければ、訪問の情報によらず、回の一覧での ID を主キーにした記録を作り、移す先を保留の版に持つ。確定すると、記録は作った単発の予定を指す。
   - 作った単発の予定の一覧での ID は、記録の主キー（回の一覧での ID）である。回を移しても ID は変わらない。
+  - 元の回を消せなかったときは、単発の予定を移すときと同じく、作った予定で保留の版を確定し、元の回を残す。残った元の回は `DetachedOccurrenceScheduleID` の ID で一覧に出て、職員が取り消せる。
 
 `calendarwrite.CancelOccurrence` は、1 回だけの取り消しを、`events.instances` で引いた回の予定を消して書く（`events.delete`）。  
 Google はその回を取り消した例外の回にし、親の予定の `EXDATE` とほかの回は変わらない。  
