@@ -109,8 +109,8 @@ describe('CalendarImportContainer', () => {
     })
 
     expect(screen.queryByTestId('calendar-import-result-preview')).toBeNull()
-    expect(screen.getByRole('alert')).toHaveTextContent(
-      '開始日は、終了日より前の日にしてください。',
+    expect(screen.getByTestId('calendar-import-start')).toHaveAccessibleDescription(
+      /開始日は、終了日より前の日にしてください。/,
     )
     expect(screen.getByTestId('calendar-import-preview')).toHaveAttribute('aria-disabled', 'true')
   })

@@ -45,7 +45,7 @@ export const FieldFrame = ({
       )}
     </label>
     {error !== undefined && (
-      <span className="mt-1 block text-caption text-danger" id={errorId} role="alert">
+      <span className="mt-1 block text-caption text-danger" id={errorId}>
         {error}
       </span>
     )}

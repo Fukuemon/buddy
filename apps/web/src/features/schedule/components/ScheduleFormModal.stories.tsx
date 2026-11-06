@@ -30,6 +30,8 @@ const ScheduleFormModalSample = ({ kind, mode = 'create', ...props }: SampleProp
       serviceCode: storyServiceCodes[0],
     }),
     resolver: zodResolver(schema),
+    // 誤りの欄へのフォーカスは ScheduleForm が移す。react-hook-form は閉じた編集の欄の誤りにフォーカスを移せない
+    shouldFocusError: false,
   })
   return (
     <ScheduleFormModal

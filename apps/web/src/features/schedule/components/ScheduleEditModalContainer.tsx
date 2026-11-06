@@ -52,6 +52,8 @@ const ScheduleEditForm = ({
   const form = useForm<ScheduleFormValues>({
     defaultValues: toScheduleFormValues(schedule),
     resolver: zodResolver(schema),
+    // 誤りの欄へのフォーカスは ScheduleForm が移す。react-hook-form は閉じた編集の欄の誤りにフォーカスを移せない
+    shouldFocusError: false,
   })
 
   // 繰り返しの回を保存すると、回は新しい単発の予定に置き換わるので、保存した予定の ID の詳細へ戻る

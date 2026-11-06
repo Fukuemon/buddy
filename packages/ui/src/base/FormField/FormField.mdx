@@ -87,7 +87,8 @@ import * as Stories from './FormField.stories'
 ## キーボードの操作
 
 - Tab で欄に移る。欄の操作はブラウザの入力欄に従う
-- 誤りの文は `role="alert"` で、出たときに読み上げる
+- 誤りの文は割り込みで読み上げない。欄の説明として、欄にフォーカスがあるときに読み上げる
+- 送った後に誤りがあれば、フォームの側が `useFocusFirstInvalid` で最初の誤りの欄へフォーカスを移す
 
 ## props
 
