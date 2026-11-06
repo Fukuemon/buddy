@@ -8,7 +8,7 @@
 # ブランチ名から計算し直さないのは、作った後にブランチ名を変えると、起動した環境の名前とずれるためである。.env が無ければ何もしない。
 # --rmi local は compose の image で名前を付けた broker と schedule のイメージを消さないので、名前で消す。
 # --rmi all は postgres などの取得したイメージも消し、メインの checkout の環境が使うイメージまで消えるので使わない。
-# portless compose down は、compose を止めるのに加えて、portless に登録したホスト名の経路も消す
+# portless compose down は、compose を止めるのに加えて、portless に登録したホスト名も消す
 pre-remove = '''
 p=$(sed -n 's/^COMPOSE_PROJECT_NAME=//p' .env 2>/dev/null)
 [ -z "$p" ] || { COMPOSE_PROJECT_NAME="$p" mise exec -- portless compose -p "$p" down -v --remove-orphans --rmi local && docker image rm -f "$p-broker" "$p-schedule"; }
