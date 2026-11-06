@@ -1,12 +1,14 @@
 # buddy のデザインシステム
 
 buddy の画面を作る人とコーディングエージェントが、画面を作る前に読む文書。  
-デジタル庁デザインシステム（DADS）のトークンとコンポーネントの指針に基づき、packages/ui のトークンとコンポーネントの使い方を決める。  
-トークンの層の分け方を決めた理由は ADR-0013 に、コンポーネントの配置先は ADR-0014 に、カタログの組み方は ADR-0018 にある。
+packages/ui のトークンとコンポーネントの使い方と、アクセシビリティと UI/UX の規則を決める。  
+値と規則はデジタル庁デザインシステム（DADS）を元にしたが、規則の正本はこの文書である。DADS の指針のうち buddy が使うものを、buddy の規則として書き、DADS は出典として示す。  
+トークンの層の分け方を決めた理由は ADR-0013 に、コンポーネントの配置先は ADR-0014 に、規則の書き方は ADR-0017 に、カタログの組み方は ADR-0018 にある。
 
 - 出典: [デジタル庁デザインシステム](https://design.digital.go.jp/dads/)
 - ADR-0013: [デザインシステムのトークンを、buddy に持つプリミティブトークン、セマンティックトークン、テーマ変数の 3 つの層にする](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0013-design-system-primitive-tokens.md)
 - ADR-0014: [packages/ui に、ドメインを持たない Base と Case のコンポーネントを置き、DADS の指針から外れる 3 点は理由を DESIGN.md に書く](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0014-ui-components.md)
+- ADR-0017: [アクセシビリティと UI/UX の規則は、DADS の指針を元にし、DESIGN.md に buddy の規則として書く](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0017-design-system-guidelines.md)
 - ADR-0018: [apps/web の Storybook を 1 つのカタログにする](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0018-storybook-catalog.md)
 
 トークンとコンポーネントの見た目と使い方は、[カタログ（Storybook）](https://buddy-docs.emon-apps.workers.dev/storybook/)で見る。  
@@ -285,19 +287,91 @@ apps/web の画面だけが使うアイコンは、`apps/web/src/assets/icons/` 
 - select は `Select` を使う。input と textarea には `fieldControlClassName`（`FormField` の中では `formFieldControlClassName`）を付ける。
 - 中に input を置く枠（`SearchBox` の枠、`DatePicker` の label）には `fieldBoxClassName` を付け、中の input の状態を `:has` で読む。
 - 確認: 全ての入力のコンポーネントの hover、無効、エラーの枠は、コンポーネントのテスト（`pnpm --filter @buddy/ui test` の `fieldStates.test.tsx`）が確認する。
+- エラーの枠は 2px にする。DADS のインプットテキストは 1px の赤だが、1px にすると、デフォルトの枠との違いが色だけになる。太さが違えば、色を見分けにくい人も誤りの欄を見つけられる。
 - 出典: [DADS のインプットテキストの CSS](https://github.com/digital-go-jp/design-system-example-components-html/blob/caa50d731cf515cfa5eae0093121f11ac5299235/src/components/input-text/input-text.css)
 
-### DADS の指針との違い
+### コンポーネントごとの規則
 
-| 対象 | DADS の指針 | buddy の使い方 | 理由 |
-| --- | --- | --- | --- |
-| `Modal` | モーダルのダイアログをフォームに使わない | 予定の作成と編集をダイアログで行う | カレンダーの上で予定を作り、閉じてカレンダーに戻る流れを画面仕様が決めている |
-| `DatePicker`、`TimePicker` | 年、月、日を 3 つの入力欄に分ける。`input type="date"` を避ける | ブラウザの `type="date"` と `type="time"` を使う | 予定の日付は近い日を選ぶことが多く、ブラウザのカレンダーから選ぶ方が手数が少ない |
-| 入力の欄のエラー | 誤りの枠を 1px の赤にする | 誤りの枠を 2px にする | 1px にすると、デフォルトの枠との違いが色だけになる。太さの違いがあれば、色を見分けにくい人も誤りの欄を見つけられる |
-| `ChipPicker` | 複数の選択には、チェックボックスの組を使う。チップで選ぶコンポーネントは無い | 名前で絞った候補から足し、選んだものだけをチップで並べる | 職員の権限の対象のように候補が数十人になり、チェックボックスで全てを並べると、選んだものを読み取れなくなる |
-| `Loading` | 回転する表示は画面全体の待ちだけに使う | ダイアログの中身の待ちにも使う | ダイアログを開いている間はほかを操作できず、画面全体の待ちと同じになる |
+上の表に加えて、コンポーネントごとに次の規則に従う。
+DADS から外れる規則は、外れることと理由を、その規則に書く。
 
-- 出典: [DADS のチェックボックス](https://design.digital.go.jp/dads/components/checkbox/)
+#### `Button`
+
+- 押せる領域は 44×44 CSS px 以上にする。S のボタンとアイコンのボタンは、見た目の外に押せる領域を広げる。
+- ラベルは文字にする。アイコンだけのボタンには、`aria-label` で名前を付ける。
+- 操作の重要度の違いを、色だけで示さない。塗りと枠線の違いでも示す。
+- 押せない間は `aria-disabled` を付け、押しても実行しない。`Button` は、`disabled` を渡すと `aria-disabled` を付け、クリックと送信を止める。
+- 出典: [DADS のボタンの使い方](https://design.digital.go.jp/dads/components/button/usage/)、[DADS のボタンのアクセシビリティ](https://design.digital.go.jp/dads/components/button/accessibility/)
+
+#### `Modal`、`Dialog`
+
+- ボタンを押したときだけ開く。押していないのに開くと、閉じたときにフォーカスを戻す先が無くなる。
+- 処理の完了と状態の変化の通知、ナビゲーションには使わない。
+- データを失う操作の確認と、ダイアログの中で完結する短い入力に `Dialog` を使う。
+- 予定の作成と編集は、URL を持つ `Modal` に入力のコンポーネントを置いて行う。DADS はモーダルのダイアログにフォームを入れないとしているが、カレンダーの上で予定を作り、閉じてカレンダーに戻る流れを画面仕様が決めている。
+- 出典: [DADS のモーダルダイアログ](https://design.digital.go.jp/dads/components/modal-dialog/)
+
+#### `Drawer`
+
+- モーダルとして扱い、開いている間は後ろを覆い、ドロワーの外を操作できなくする。
+- 画面の枠のメニューのボタンか、左の欄を開くボタンから開く。
+- 閉じるボタンを置く。
+- 出典: [DADS のドロワーの使い方](https://design.digital.go.jp/dads/components/drawer/usage/)
+
+#### `SegmentedControl`、`Select`
+
+- 選択肢から 1 つだけを選ぶ。複数を選ぶ入力には使わない。
+- 選択肢が少ないときは、`Select` を使わない。2 から 4 個ですぐ表示を切り替えるなら `SegmentedControl` にする。
+- `Select` の開いた一覧は、ブラウザと OS の標準の表示のままにする。
+- 出典: [DADS のラジオボタンの使い方](https://design.digital.go.jp/dads/components/radio/usage/)、[DADS のセレクトボックスの使い方](https://design.digital.go.jp/dads/components/select/usage/)
+
+#### `Table`、`RowTable`
+
+- 表は、同じ項目を持つ行の比較に使う。名前と値の組は `dl` にし、画面の配置に表を使わない。
+- 1 つの対象を 1 行にし、セルを結合しない。
+- 出典: [DADS のテーブルの使い方](https://design.digital.go.jp/dads/components/table/usage/)
+
+#### `Loading`
+
+- 回転する表示は、画面全体の待ちと、ダイアログの中身の待ちに使う。画面の一部の待ちには使わない。一部が動き続けると、ほかの部分が読みにくくなる。
+- DADS は回転する表示を画面全体の待ちに限るが、ダイアログを開いている間はほかを操作できず、画面全体の待ちと同じになるので、ダイアログの中身の待ちにも使う。
+- 出典: [DADS のプログレスインジケーター](https://design.digital.go.jp/dads/components/progress-indicator/)
+
+#### `DatePicker`、`TimePicker`、`MonthPicker`
+
+- カレンダーから選ぶ入力は、近い日付に使う。生年月日のように分かっている遠い日付には使わない。
+- ブラウザの `type="date"`、`type="time"`、`type="month"` を使う。DADS は年、月、日を分けた入力欄を勧め、`input type="date"` の使う場面を限るとしているが、予定の日付は近い日を選ぶことが多く、ブラウザのカレンダーから選ぶ方が手数が少ない。
+- 出典: [DADS の日付ピッカーの使い方](https://design.digital.go.jp/dads/components/date-picker/usage/)、[DADS の日付ピッカーのアクセシビリティ](https://design.digital.go.jp/dads/components/date-picker/accessibility/)
+
+#### `FormField`、`NumberPicker`、`TextareaField`
+
+- 見出しは欄の上に左寄せで置く。
+- 誤りの文には、何が誤りかと、どう直すかを書く。
+- 補足の文と誤りの文は、`aria-describedby` で欄に結び付ける。
+- `TextareaField` に文字数の上限があるときは、見出しか補足の文に上限を書く。
+- 出典: [DADS のインプットテキストの使い方](https://design.digital.go.jp/dads/components/input-text/usage/)、[DADS のテキストエリアの使い方](https://design.digital.go.jp/dads/components/textarea/usage/)
+
+#### `FileField`
+
+- ファイルを選ぶボタンを置く。ドラッグとドロップだけで選ばせない。
+- 出典: [DADS のファイルアップロードの使い方](https://design.digital.go.jp/dads/components/file-upload/usage/)
+
+#### `ChipPicker`
+
+- 選んだものだけをチップで並べ、チップの × で 1 つずつ外す。
+- 多い候補から少しを選ぶ入力に使う。DADS は複数の選択にチェックボックスの組を使うとしているが、職員の権限の対象のように候補が数十人になると、チェックボックスで全てを並べたときに選んだものを読み取れなくなる。
+- 出典: [DADS のチェックボックスの使い方](https://design.digital.go.jp/dads/components/checkbox/usage/)、[DADS のチップタグ](https://design.digital.go.jp/dads/components/chip-tag/)
+
+#### `StatusBadge`
+
+- 状態を、色だけでなく文字で示す。
+- 出典: [DADS のチップラベル](https://design.digital.go.jp/dads/components/chip-label/)
+
+#### `HelpToggle`、`MoreText`
+
+- 開かないと操作できない情報を入れない。閉じたままでも、画面の本文だけで操作できるようにする。
+- キーボードだけで開閉でき、`aria-expanded` で開閉を伝える。
+- 出典: [DADS のディスクロージャーの使い方](https://design.digital.go.jp/dads/components/disclosure/usage/)
 
 ## Storybook のカタログ
 
