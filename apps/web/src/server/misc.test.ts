@@ -86,6 +86,7 @@ describe('parseBffArgs', () => {
         args: [
           'f',
           { kind: 'other', title: '', staffId: 's', startsAt: 'a', endsAt: 'b', description: '' },
+          'schedule-1',
         ],
       }),
     ).toMatchObject({ ok: false, message: expect.stringContaining('kind') })

@@ -29,6 +29,7 @@ export const createBffBuddyApi = (callBff: CallBff = (data) => callBffFn({ data 
       get: call('schedules.get'),
       create: call('schedules.create'),
       update: call('schedules.update'),
+      cancel: call('schedules.cancel'),
     },
     staff: {
       list: call('staff.list'),

@@ -272,7 +272,13 @@ export const suspendedStaffBuddyApi = (base: BuddyApi = createFakeBuddyApi()): B
 const buddyApiOf = (operation: () => Promise<never>): BuddyApi => ({
   facilities: { get: operation },
   me: { get: operation, externalCalendar: operation },
-  schedules: { list: operation, get: operation, create: operation, update: operation },
+  schedules: {
+    list: operation,
+    get: operation,
+    create: operation,
+    update: operation,
+    cancel: operation,
+  },
   staff: {
     list: operation,
     listRecords: operation,

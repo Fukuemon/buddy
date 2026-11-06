@@ -8,6 +8,7 @@ import {
   SCHEDULE_REVIEW_REASON_LABEL,
 } from '../constants/scheduleLabels'
 import { formatDateTimeRange } from '../lib/dateTime'
+import { reviewFixMessage } from '../lib/reviewFix'
 
 export type ScheduleDetailModalProps = {
   schedule: Schedule
@@ -15,6 +16,8 @@ export type ScheduleDetailModalProps = {
   patient?: Patient
   /** 編集の画面へ移る。省くと編集のボタンを出さない。編集の権限が無い予定で省く。 */
   onEdit?: () => void
+  /** キャンセルのダイアログを開く。省くとキャンセルのボタンを出さない。キャンセルできない予定で省く。 */
+  onCancelSchedule?: () => void
   onClose: () => void
 }
 
@@ -35,14 +38,16 @@ const SectionHeading = ({ id, children }: { id: string; children: React.ReactNod
  * 予定の詳細をモーダルで出す。
  * 日時を見出しにし、その下に種類と主訪問者（通常の予定では予定者）を、訪問の予定では訪問の情報を、最後にメモをセクションに分けて並べる。メモが空なら、メモのセクションを出さない。
  * 見出しと値は、全てのセクションで同じ 1 列の並びにし、値の列の位置をそろえる。
- * 下端の右に「閉じる」と編集のボタンをこの順に置く。onEdit を省くと編集のボタンを出さない。キャンセルした予定は、先頭にキャンセルの理由を出し、下端を出さない。
- * Google カレンダーの予定（fromGoogleCalendar）は、先頭に Google カレンダーで変更する案内を出し、確認が必要な予定なら理由も出す。編集のボタンは呼ぶ側が省く。
+ * 下端の右に「閉じる」、予定をキャンセルするボタン、編集のボタンをこの順に置く。onCancelSchedule と onEdit を省くと、そのボタンを出さない。
+ * キャンセルした予定は、先頭にキャンセルの理由を出し、下端を出さない。
+ * Google カレンダーの予定（fromGoogleCalendar）は、先頭に、buddy で変えると Google カレンダーにも書く案内を出し、確認が必要な予定なら理由と直し方も出す。
  */
 export const ScheduleDetailModal = ({
   schedule,
   staff,
   patient,
   onEdit,
+  onCancelSchedule,
   onClose,
 }: ScheduleDetailModalProps) => {
   const visitHeadingId = useId()
@@ -63,6 +68,15 @@ export const ScheduleDetailModal = ({
                 >
                   閉じる
                 </Button>
+                {onCancelSchedule !== undefined && (
+                  <Button
+                    data-testid="schedule-detail-cancel-schedule"
+                    onClick={onCancelSchedule}
+                    variant="secondary"
+                  >
+                    予定をキャンセル
+                  </Button>
+                )}
                 {onEdit !== undefined && (
                   <Button data-testid="schedule-detail-edit" onClick={onEdit} variant="secondary">
                     編集
@@ -80,7 +94,8 @@ export const ScheduleDetailModal = ({
             className="rounded-8 border border-border px-4 py-3"
             data-testid="schedule-detail-google-calendar"
           >
-            この予定は Google カレンダーで変更してください。
+            Google カレンダーの予定です。buddy で変更かキャンセルすると、Google
+            カレンダーにも書きます。
           </p>
         )}
         {schedule.reviewReason !== undefined && (
@@ -89,8 +104,8 @@ export const ScheduleDetailModal = ({
             data-testid="schedule-detail-review-reason"
           >
             <span className="font-bold">確認が必要な予定です。</span>
-            {SCHEDULE_REVIEW_REASON_LABEL[schedule.reviewReason]}。Google
-            カレンダーでタイトルか繰り返しの規則を直してください。
+            {SCHEDULE_REVIEW_REASON_LABEL[schedule.reviewReason]}。
+            {reviewFixMessage(schedule.reviewReason)}
           </p>
         )}
         {schedule.cancel !== undefined && (

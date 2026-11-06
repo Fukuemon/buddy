@@ -7,7 +7,15 @@ import type { AppRouterParameters } from '#/storybook/withAppRouter'
 
 import * as stories from './ScheduleEditModalContainer.stories'
 
-const { Cancelled, Forbidden, GooglePrimary, NotFound, SuspendedStaff } = composeStories(stories)
+const {
+  Cancelled,
+  Forbidden,
+  GooglePrimary,
+  GooglePrimaryChangedInGoogle,
+  GooglePrimaryRecurrenceUnsupported,
+  NotFound,
+  SuspendedStaff,
+} = composeStories(stories)
 
 describe('ScheduleEditModalContainer', () => {
   afterEach(() => {
@@ -56,10 +64,45 @@ describe('ScheduleEditModalContainer', () => {
     expect(update.mock.calls[0]?.[2]).toMatchObject({ staffId: 'staff-2' })
   })
 
-  it('google_primary の事業所では、フォームの代わりに Google カレンダーで変更する案内を出す', async () => {
+  it('google_primary の事業所では、フォームを出し、編集を開いたときの etag で保存する', async () => {
+    const { api } = GooglePrimary.parameters.appRouter as AppRouterParameters
+    if (api === undefined) throw new Error('story にフェイクの API が無い')
+    const update = vi.spyOn(api.schedules, 'update')
     render(<GooglePrimary />)
-    expect(await screen.findByTestId('schedule-edit-google-primary')).toHaveTextContent(
-      'この事業所の予定は Google カレンダーで管理しています。',
+
+    await userEvent.click(await screen.findByTestId('schedule-edit-submit'))
+
+    await waitFor(() => expect(update).toHaveBeenCalledOnce())
+    expect(update.mock.calls[0]?.[3]).toBe('"etag-schedule-1"')
+  })
+
+  it('編集を開いた後に Google カレンダーで予定が変わっていたら、入力を残して最新の予定を出し、最新の etag で保存し直す', async () => {
+    const { api } = GooglePrimaryChangedInGoogle.parameters.appRouter as AppRouterParameters
+    if (api === undefined) throw new Error('story にフェイクの API が無い')
+    const update = vi.spyOn(api.schedules, 'update')
+    render(<GooglePrimaryChangedInGoogle />)
+
+    await userEvent.click(await screen.findByTestId('schedule-field-description'))
+    const description = screen.getByTestId('schedule-form-description') as HTMLTextAreaElement
+    const before = description.value
+    await userEvent.type(description, '追記')
+    await userEvent.click(screen.getByTestId('schedule-edit-submit'))
+
+    expect(await screen.findByTestId('schedule-edit-latest')).toBeInTheDocument()
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      'Google カレンダーで予定が変更されていました。最新の予定を確認してから、もう一度保存してください。',
+    )
+    expect(screen.getByTestId('schedule-form-description')).toHaveValue(`${before}追記`)
+    await userEvent.click(screen.getByTestId('schedule-edit-submit'))
+
+    await waitFor(() => expect(update).toHaveBeenCalledTimes(2))
+    expect(update.mock.calls.map((call) => call[3])).toEqual(['"etag-schedule-1"', '"etag-latest"'])
+  })
+
+  it('繰り返しの規則を buddy で表せない予定は、フォームを出さずに変えられないことを出す', async () => {
+    render(<GooglePrimaryRecurrenceUnsupported />)
+    expect(await screen.findByTestId('schedule-edit-recurrence-unsupported')).toHaveTextContent(
+      'buddy では変更できません',
     )
     expect(screen.queryByTestId('schedule-edit-submit')).not.toBeInTheDocument()
   })

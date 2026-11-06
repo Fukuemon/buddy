@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 
+import { ApiError, type BuddyApi } from '#/api/BuddyApi'
 import { createFakeBuddyApi } from '#/api/fake/fakeBuddyApi'
 import {
   failingBuddyApi,
@@ -11,6 +12,30 @@ import {
 
 import { ScheduleCreateModalContainer } from './ScheduleCreateModalContainer'
 import { selfEditViewer } from './storyData'
+
+/** google_primary の事業所で、最初の作成を 503（google_write_unknown）で返し、2 回目から作るフェイクの API。 */
+const writeUnknownOnceApi = (): BuddyApi => {
+  const api = createFakeBuddyApi({ sourceMode: 'google_primary' })
+  let failed = false
+  return {
+    ...api,
+    schedules: {
+      ...api.schedules,
+      create: async (...args) => {
+        if (!failed) {
+          failed = true
+          throw new ApiError(
+            503,
+            '予定を Google カレンダーに書けたかを確認できませんでした',
+            [],
+            'google_write_unknown',
+          )
+        }
+        return api.schedules.create(...args)
+      },
+    },
+  }
+}
 
 const route = (appRouter: Partial<AppRouterParameters>) => ({
   appRouter: { route: '/schedule/new', url: '/schedule/new', ...appRouter },
@@ -53,7 +78,15 @@ export const Loading: Story = { parameters: route({ api: pendingBuddyApi() }) }
 /** 自分の予定だけを編集できる職員。主訪問者の候補は自分だけになる。 */
 export const SelfEditOnly: Story = { parameters: route({ viewer: selfEditViewer }) }
 
-/** Google カレンダーを予定の正本にする事業所で URL から開いた。フォームの代わりに、Google カレンダーで作る案内を出す。 */
+/** Google カレンダーを予定の正本にする事業所。同じフォームを出し、予定の API が Google カレンダーに書く。 */
 export const GooglePrimary: Story = {
   parameters: route({ api: createFakeBuddyApi({ sourceMode: 'google_primary' }) }),
+}
+
+/** google_primary の事業所で、最初の作成の結果が分からない。もう一度「作成」を押すと、同じ予定の ID で送り直す。 */
+export const GooglePrimaryWriteUnknown: Story = {
+  parameters: route({
+    api: writeUnknownOnceApi(),
+    url: '/schedule/new?kind=normal&start=2026-10-21&time=13:00&staffId=staff-2',
+  }),
 }

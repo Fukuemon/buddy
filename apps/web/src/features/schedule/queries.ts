@@ -83,23 +83,30 @@ export const serviceCodeListQueryOptions = (api: BuddyApi, facilityId: FacilityI
     queryFn: () => api.serviceCodes.list(facilityId),
   })
 
-/** 予定を作る。成功すると、事業所の予定の取得の結果を捨てて取り直す。 */
-export const useCreateSchedule = () => {
+/**
+ * 画面が決めた ID が id の予定を作る。成功すると、事業所の予定の取得の結果を捨てて取り直す。
+ * 送り直すときは同じ id を渡す。google_primary の事業所で、Google カレンダーの予定を 1 つのままにするためである。
+ */
+export const useCreateSchedule = (id: Schedule['id']) => {
   const { api, facilityId } = useBuddyApi()
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (input: ScheduleInput) => api.schedules.create(facilityId, input),
+    mutationFn: (input: ScheduleInput) => api.schedules.create(facilityId, input, id),
     onSuccess: () =>
       queryClient.invalidateQueries({ queryKey: queryKeys.schedules.all(facilityId) }),
   })
 }
 
-/** 予定を更新する。成功すると、事業所の予定の取得の結果を捨てて取り直す。 */
+/**
+ * 予定を更新する。etag は、編集を開いたときに読んだ予定の etag で、buddy の予定では null である。
+ * 成功すると、事業所の予定の取得の結果を捨てて取り直す。
+ */
 export const useUpdateSchedule = (scheduleId: Schedule['id']) => {
   const { api, facilityId } = useBuddyApi()
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (input: ScheduleInput) => api.schedules.update(facilityId, scheduleId, input),
+    mutationFn: ({ input, etag }: { input: ScheduleInput; etag: string | null }) =>
+      api.schedules.update(facilityId, scheduleId, input, etag),
     onSuccess: (saved) => {
       // 繰り返しの回を保存すると、回は別の ID の単発の予定に置き換わり、元の回は読めなくなるので、読み直さずに捨てる
       if (saved.id !== scheduleId) {
@@ -107,6 +114,25 @@ export const useUpdateSchedule = (scheduleId: Schedule['id']) => {
           queryKey: scheduleQueryOptions(api, facilityId, scheduleId).queryKey,
         })
       }
+      return queryClient.invalidateQueries({ queryKey: queryKeys.schedules.all(facilityId) })
+    },
+  })
+}
+
+/**
+ * 予定を理由 reason でキャンセルする。etag は、キャンセルのモーダルを開いたときに読んだ予定の etag で、buddy の予定では null である。
+ * 成功すると、予定の 1 件の取得の結果を捨て、事業所の予定の取得の結果を捨てて取り直す。
+ */
+export const useCancelSchedule = (scheduleId: Schedule['id']) => {
+  const { api, facilityId } = useBuddyApi()
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ reason, etag }: { reason: string; etag: string | null }) =>
+      api.schedules.cancel(facilityId, scheduleId, reason, etag),
+    onSuccess: () => {
+      queryClient.removeQueries({
+        queryKey: scheduleQueryOptions(api, facilityId, scheduleId).queryKey,
+      })
       return queryClient.invalidateQueries({ queryKey: queryKeys.schedules.all(facilityId) })
     },
   })

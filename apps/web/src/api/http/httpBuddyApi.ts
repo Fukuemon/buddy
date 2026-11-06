@@ -61,6 +61,8 @@ const expectOk = async (promise: Promise<Result<unknown>>): Promise<void> => {
  * キャンセルした予定は画面で変換できなければ飛ばし、一覧の全体を失敗にしない。
  * schedules.get と schedules.update は、回の ID を受けると、繰り返しの予定のその回を読み、その回を置き換える。
  * schedules.update は、今の予定を読んでから置き換え、画面が持たない同行者などを keepCurrentVisit で引き継ぐ。
+ * etag は、画面が予定を読んだときの値を送り、今の予定を読み直した値は送らない。読んだ後の Google カレンダーでの変更を見落とさないためである。
+ * schedules.create は、画面が決めた id を送る。
  * schedules.get は、ほかの事業所の予定を指すと status が 403 の ApiError を投げる。
  */
 export const createHttpBuddyApi = ({ baseUrl, fetch }: HttpApiOptions): BuddyApi => {
@@ -185,8 +187,8 @@ export const createHttpBuddyApi = ({ baseUrl, fetch }: HttpApiOptions): BuddyApi
         }
         return fromApiSchedule(schedule)
       },
-      create: async (facilityId, input) => {
-        const body = toSlotRequest(input, await listMasters())
+      create: async (facilityId, input, id) => {
+        const body = { ...toSlotRequest(input, await listMasters()), id }
         const created = await unwrap(
           client.POST('/v1/facilities/{facility_id}/schedules', {
             params: { path: { facility_id: facilityId } },
@@ -195,7 +197,7 @@ export const createHttpBuddyApi = ({ baseUrl, fetch }: HttpApiOptions): BuddyApi
         )
         return fromApiSchedule(created)
       },
-      update: async (_facilityId, scheduleId, input) => {
+      update: async (_facilityId, scheduleId, input, etag) => {
         const occurrence = parseOccurrenceId(scheduleId)
         if (occurrence !== undefined) {
           const [current, masters] = await Promise.all([
@@ -225,10 +227,18 @@ export const createHttpBuddyApi = ({ baseUrl, fetch }: HttpApiOptions): BuddyApi
         const updated = await unwrap(
           client.PUT('/v1/schedules/{schedule_id}', {
             params: { path: { schedule_id: scheduleId } },
-            body,
+            body: etag === null ? body : { ...body, etag },
           }),
         )
         return fromApiSchedule(updated)
+      },
+      cancel: async (_facilityId, scheduleId, reason, etag) => {
+        await unwrap(
+          client.POST('/v1/schedules/{schedule_id}/cancel', {
+            params: { path: { schedule_id: scheduleId } },
+            body: etag === null ? { reason } : { reason, etag },
+          }),
+        )
       },
     },
     staff: {

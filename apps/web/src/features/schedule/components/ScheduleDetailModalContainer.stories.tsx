@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 
 import { createFakeBuddyApi } from '#/api/fake/fakeBuddyApi'
+import { MOCK_FACILITY_ID } from '#/mocks/scheduleData'
 import {
   failingBuddyApi,
   pendingBuddyApi,
@@ -10,6 +11,13 @@ import {
 
 import { ScheduleDetailModalContainer } from './ScheduleDetailModalContainer'
 import { selfEditViewer } from './storyData'
+
+/** 予定の正本を buddy に切り替えている、google_primary の事業所のフェイクの API。 */
+const cutoverBuddyApi = () => {
+  const api = createFakeBuddyApi({ sourceMode: 'google_primary', calendarSyncs: [] })
+  void api.calendars.startCutover(MOCK_FACILITY_ID)
+  return api
+}
 
 const route = (appRouter: Partial<AppRouterParameters>) => ({
   appRouter: { route: '/schedule/$scheduleId/', url: '/schedule/schedule-1', ...appRouter },
@@ -52,7 +60,7 @@ export const ReadOnly: Story = {
 /** 見る権限の無い予定。読み直しても変わらないので、権限が無いことを出す。 */
 export const Forbidden: Story = { parameters: route({ api: failingBuddyApi(403) }) }
 
-/** Google カレンダーを予定の正本にする事業所の予定。一覧から引いて出し、Google カレンダーで変更する案内を出し、編集のボタンを出さない。 */
+/** Google カレンダーを予定の正本にする事業所の予定。一覧から引いて出し、buddy で変えると Google カレンダーにも書く案内と、編集とキャンセルのボタンを出す。 */
 export const GoogleCalendar: Story = {
   parameters: route({
     url: '/schedule/gcal-schedule-3',
@@ -68,10 +76,15 @@ export const GoogleCalendarNeedsReview: Story = {
   }),
 }
 
-/** 繰り返しの規則を写せない予定。最初の回が表示の期間の外でも、確認が必要な予定から引いて出す。 */
+/** 繰り返しの規則を写せない予定。最初の回が表示の期間の外でも、確認が必要な予定から引いて出す。編集とキャンセルのボタンを出さない。 */
 export const GoogleCalendarRecurrenceUnsupported: Story = {
   parameters: route({
     url: '/schedule/gcal-review-3',
     api: createFakeBuddyApi({ sourceMode: 'google_primary' }),
   }),
+}
+
+/** 予定の正本を buddy に切り替えている事業所の予定。編集とキャンセルのボタンを出さない。 */
+export const GoogleCalendarCutover: Story = {
+  parameters: route({ url: '/schedule/gcal-schedule-3', api: cutoverBuddyApi() }),
 }

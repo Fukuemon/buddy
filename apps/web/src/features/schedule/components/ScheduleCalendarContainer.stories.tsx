@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 
 import { createFakeBuddyApi } from '#/api/fake/fakeBuddyApi'
+import { MOCK_FACILITY_ID } from '#/mocks/scheduleData'
 import {
   emptyBuddyApi,
   failingBuddyApi,
@@ -51,17 +52,29 @@ export const DaySelfEditOnly: Story = {
 }
 
 /**
- * Google カレンダーを予定の正本にする事業所。「予定を作成」を出さず、カレンダーの上に、Google カレンダーで編集する案内、
+ * Google カレンダーを予定の正本にする事業所。「予定を作成」を出し、カレンダーの上に、buddy と Google カレンダーのどちらでも作成、変更できる案内、
  * 同期の警告（石川 二葉は失敗、上田 三奈は未同期）、確認が必要な予定の 3 件を出す。予定には「要確認」の印を付ける。
  */
 export const GooglePrimary: Story = {
   parameters: route({ api: createFakeBuddyApi({ sourceMode: 'google_primary' }) }),
 }
 
-/** Google カレンダーを予定の正本にする事業所の日の表示。時間の枠を押して予定を作れない。 */
+/** Google カレンダーを予定の正本にする事業所の日の表示。時間の枠を押して予定を作れる。 */
 export const GooglePrimaryDay: Story = {
   parameters: route({
     url: '/schedule?view=day',
     api: createFakeBuddyApi({ sourceMode: 'google_primary' }),
+  }),
+}
+
+/** 予定の正本を buddy に切り替えている事業所の日の表示。「予定を作成」を出さず、時間の枠を押して予定を作れない。 */
+export const GooglePrimaryCutoverDay: Story = {
+  parameters: route({
+    url: '/schedule?view=day',
+    api: (() => {
+      const api = createFakeBuddyApi({ sourceMode: 'google_primary', calendarSyncs: [] })
+      void api.calendars.startCutover(MOCK_FACILITY_ID)
+      return api
+    })(),
   }),
 }

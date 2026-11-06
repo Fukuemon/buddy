@@ -4,11 +4,19 @@ import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vite-plus/test'
 
 import { mockServiceCodes } from '#/mocks/scheduleData'
+import type { AppRouterParameters } from '#/storybook/withAppRouter'
 
 import * as stories from './ScheduleCreateModalContainer.stories'
 
-const { FromOnLeaveStaffSlot, FromSlot, GooglePrimary, SelfEditOnly, Visit, WithSuspendedStaff } =
-  composeStories(stories)
+const {
+  FromOnLeaveStaffSlot,
+  FromSlot,
+  GooglePrimary,
+  GooglePrimaryWriteUnknown,
+  SelfEditOnly,
+  Visit,
+  WithSuspendedStaff,
+} = composeStories(stories)
 
 describe('ScheduleCreateModalContainer', () => {
   afterEach(() => {
@@ -111,11 +119,28 @@ describe('ScheduleCreateModalContainer', () => {
     )
   })
 
-  it('google_primary の事業所では、フォームの代わりに Google カレンダーで作る案内を出す', async () => {
+  it('google_primary の事業所でも、予定の作成のフォームを出す', async () => {
     render(<GooglePrimary />)
-    expect(await screen.findByTestId('schedule-new-google-primary')).toHaveTextContent(
-      'この事業所の予定は Google カレンダーで管理しています。',
+    expect(await screen.findByTestId('schedule-create-submit')).toBeInTheDocument()
+  })
+
+  it('Google カレンダーに書けたかを確認できなければ、送り直せることを示し、送り直しでも同じ予定の ID を送る', async () => {
+    const { api } = GooglePrimaryWriteUnknown.parameters.appRouter as AppRouterParameters
+    if (api === undefined) throw new Error('story にフェイクの API が無い')
+    const create = vi.spyOn(api.schedules, 'create')
+    render(<GooglePrimaryWriteUnknown />)
+
+    await userEvent.click(await screen.findByTestId('schedule-field-title'))
+    await userEvent.type(screen.getByTestId('schedule-form-title'), '研修')
+    await userEvent.click(screen.getByTestId('schedule-create-submit'))
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'もう一度「作成」を押すと、同じ予定として送り直します。',
     )
-    expect(screen.queryByTestId('schedule-create-submit')).not.toBeInTheDocument()
+    await userEvent.click(screen.getByTestId('schedule-create-submit'))
+
+    await waitFor(() => expect(create).toHaveBeenCalledTimes(2))
+    const [first, second] = create.mock.calls.map((call) => call[2])
+    expect(first).toMatch(/^[0-7][0-9A-HJKMNP-TV-Z]{25}$/)
+    expect(second).toBe(first)
   })
 })

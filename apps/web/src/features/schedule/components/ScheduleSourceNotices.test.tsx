@@ -44,7 +44,7 @@ describe('ScheduleSourceNotices', () => {
   it('同期が新しく確認が必要な予定も無ければ、案内だけを出す', () => {
     render(<GuideOnly />)
     expect(screen.getByTestId('schedule-calendar-google-primary')).toHaveTextContent(
-      '予定は Google カレンダーで管理しています',
+      'Google カレンダーと buddy のどちらでも作成、変更できます',
     )
     expect(screen.queryByTestId('schedule-calendar-sync-warning')).toBeNull()
     expect(screen.queryByTestId('schedule-calendar-needs-review')).toBeNull()

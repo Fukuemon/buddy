@@ -27,7 +27,7 @@ export type ScheduleSourceNoticesProps = {
 
 /**
  * Google カレンダーを予定の正本にする事業所（google_primary）で、カレンダーの上に出す通知。
- * Google カレンダーで予定を編集する案内を常に出し、同期が失敗しているか古いカレンダーがあれば同期の警告を、
+ * Google カレンダーと buddy のどちらでも予定を変えられる案内を常に出し、同期が失敗しているか古いカレンダーがあれば同期の警告を、
  * 確認が必要な予定があれば、予定ごとの日時、職員、理由を出す。予定の正本を buddy に切り替えている間は、切り替え中であることと、
  * Google カレンダーで予定を変えないよう頼み、buddy でも予定を変えられないことを伝える文と、切り替えを始めた職員と時刻を出す。
  * buddy_primary の事業所では何も出さない。
@@ -50,10 +50,11 @@ export const ScheduleSourceNotices = ({
         className="rounded-8 border border-border bg-surface px-4 py-3"
         data-testid="schedule-calendar-google-primary"
       >
-        <h2 className="text-label">予定は Google カレンダーで管理しています</h2>
+        <h2 className="text-label">予定は Google カレンダーと同期しています</h2>
         <p className="mt-2 text-body-dense">
-          この事業所の予定は Google カレンダーで作成、変更してください。buddy
-          には、同期した予定を表示します。
+          この事業所の予定は、Google カレンダーと buddy のどちらでも作成、変更できます。buddy
+          で保存した予定は Google カレンダーにも書き、Google カレンダーで変えた予定は数分のうちに
+          buddy に出ます。
         </p>
       </section>
       {cutover !== null && (

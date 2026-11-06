@@ -310,6 +310,7 @@ export const createMockProjectionSchedules = (base: Date): Schemas['Schedule'][]
         ? null
         : { ...schedule.visit_info, id: `gcal-${schedule.visit_info.id}` },
     source: 'google_calendar',
+    etag: `"etag-${schedule.id}"`,
   })
   const needsReview = (
     id: string,
