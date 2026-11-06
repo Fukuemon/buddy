@@ -357,7 +357,8 @@ Google カレンダーを正本にする事業所（`google_primary`）の予定
   - 確定した版の無い記録（保留の版だけの記録）は使わず、タイトルを読み替える。開始と完了が保留の版を拒むので、取り込みの時点ではこの記録は無い。
   - 日時を読めない予定と終日の予定は、記録があっても取り込まない。
   - プレビューと完了の確認も、同じ規則で読み替える。
-  - 繰り返しの予定の記録の扱いは、繰り返しの予定の書き込み（#743）で決める。今の予定の API は、繰り返しの予定の記録を作らない。
+  - 繰り返しの予定の親の記録の訪問の情報は、繰り返しの予定に使う。自分の確定した記録を持たない例外の回も、親の予定の記録の訪問の情報を使う。一覧（[Projection を読む側](#projection-を読む側)）と同じ規則である。
+    - 訪問の情報を持たない確定した記録（通常の予定）を持つ例外の回は、タイトルを読み替える。
 - 繰り返しの予定は、回に展開しない。
   - buddy の規則に写せない繰り返しの予定は、確認が必要な予定（`recurrence_unsupported`）にし、取り込み方は取り込まないだけを受ける。
 - 親の予定を規則のまま取り込まないとき（取り込まない予定、写せない予定、取り込まないを選んだ予定）は、その変えた回も取り込まない。
@@ -797,13 +798,20 @@ buddy で作った予定を作った後に一覧から開いて変えられ、�
   - Google で作った予定を buddy で変えると、記録の主キーはその予定の `ProjectedScheduleID` になる。予定を移した後に前の予定を消せなかったとき、前のカレンダーに残った予定は記録を持たず、移した予定と同じ ID になるためである。
   - Google の予定の ID に使われない文字（0x01）と固定の語を Google の予定の ID に足して作る。DB の関数 `detached_schedule_id` が同じ値を返し、式の索引で引く。
   - 移した予定の記録が残る間、残った予定の ID は変わらない。
-- 繰り返しの回の ID は、回の日付も含めて作る。回の変更と取り消しは、繰り返しの予定の書き込みで扱う。
+- 繰り返しの予定の展開した回の ID は、カレンダー、親の予定の Google の予定の ID、回の元の日付から作る（`scheduleview.OccurrenceScheduleID`）。
+  - 記録の無い例外の回の行も、同じ値を ID にする。回を Google の例外の回に変えても、一覧での ID は変わらない。
+  - DB の関数 `occurrence_schedule_id` が同じ値を返し、例外の回の行の式の索引で 1 件を引く。元の日付は、元の開始の時刻の Asia/Tokyo の日付である。
+  - 例外の回の記録の主キーも、この ID にする。
+- 展開した回の `etag` は、親の予定の `etag` にする。Projection は回ごとの行を持たないためである。
 
 1 件の読み出し（`scheduleview.GetProjected`）は、ID が記録の主キーなら記録が指す行を引く。  
-記録の主キーでなければ、記録の無い行を、一覧と同じ規則で決めた ID（`projected_schedule_id` か `detached_schedule_id`）で引く。  
+記録の主キーでなければ、記録の無い行を、一覧と同じ規則で決めた ID（`projected_schedule_id`、`detached_schedule_id`、`occurrence_schedule_id`）で引く。  
+どの行にも当たらなければ、事業所の繰り返しの予定の親を、Projection を保持する期間の中で展開し、同じ ID の回を返す。  
 閲覧の判定と事業所の分離は一覧と同じで、カレンダーの職員を予定の職員とみなす。  
 取り消した予定と繰り返しの予定の親は返さない。  
-認証のミドルウェアは、予定の ID の事業所を、buddy の予定、記録の主キー、`projected_schedule_id`、`detached_schedule_id` の順に引き、職員の事業所と違えば 403 を返す。
+認証のミドルウェアは、予定の ID の事業所を、buddy の予定、記録の主キー、`projected_schedule_id`、`detached_schedule_id`、例外の回の `occurrence_schedule_id` の順に引く。  
+引いた事業所が職員の事業所と違えば、403 を返す。  
+展開した回の ID は親を展開しないと引けないので、ミドルウェアは引かず、予定の API が職員の事業所の中で回を引く。
 
 #### 書き込みの手順
 
@@ -906,18 +914,45 @@ sequenceDiagram
 - 書き込みの手順、保留の版、送り直し、エラーと応答は、単発の予定の作成と同じにする。
   - `extendedProperties.private` には、単発の予定と同じく buddy の予定の ID（`buddyScheduleId`）と保留の版（`buddyVersion`）を置く。同期が、単発の予定と同じ規則で保留の版を確定するためである。
 
-`calendarwrite.ChangeOccurrence` は、`changeOccurrence` の 1 回だけの変更を、Google の例外の回として書く。
+1 回だけの変更と取り消しは、次の 2 つの API で受ける。
+
+- `updateSchedule` と `cancelSchedule` は、一覧の回の ID と、親の予定の `etag` で受ける。
+  - `calendarwrite.Update` と `calendarwrite.Cancel` は、ID が Projection の行に当たらなければ、事業所の繰り返しの予定の親を、Projection を保持する期間の中で展開して回を引く。
+  - 変更は `ChangeOccurrence` と、取り消しは `CancelOccurrence` と同じ手順で書く。
+- `changeOccurrence` は、パスの繰り返しの予定の ID（記録の主キーか、親の一覧での ID）と `original_date` で受ける。リクエストに `etag` が無いので、親の予定の `etag` は比べない。
+
+`calendarwrite.ChangeOccurrence` は、1 回だけの変更を Google の例外の回として書く。
 
 - `events.instances` で、元の規則で `original_date` に始まる回を引き、回の予定を部分更新する（`events.patch`）。親の予定の `EXDATE` は変えない。
+- 画面が送った親の予定の `etag` は、親の予定を `events.get` で読み直して比べる。違えば回に書かず、読んだ親を Projection に写して 409（`google_event_changed`）を返す。
+  - 回の予定の `If-Match` には、`events.instances` で読んだ回の `etag` を付け、親の予定の `etag` を付けない。公式の文書は、変えていない回の `etag` が親の予定の `etag` と同じかを書いていないためである。
+  - 出典: [Events: instances](https://developers.google.com/workspace/calendar/api/v3/reference/events/instances)
 - 回の訪問の情報は、親の予定の記録の確定した版を引き継ぐ。
-  - 回で訪問の情報を変えたときだけ回の記録を作り、単発の予定の変更と同じく保留の版を書く。
+  - 回で訪問の情報を変えたときだけ回の記録を作り、単発の予定の変更と同じく保留の版を書く。親の予定の保留の版とは別に持つ。
   - 訪問の情報を変えない回は、記録も保留の版も書かない。DB に残す訪問の情報が無いので、Google の結果が分からなくても失うものが無いためである。
+  - 回の訪問の情報を親の予定の訪問の情報に戻す操作は持たない。
+- 親の予定の記録に保留の版があれば、409（`google_write_pending`）で拒む。例外の回を `updateSchedule` で変えるときも同じである。
+- 同じ回を 2 回変えるときは、2 回目を 409（`conflict`）で拒む。`buddy_primary` の、同じ日を 2 回置き換えない規則に合わせる。変えた回は、一覧の回の ID の `updateSchedule` で変える。
 - 書き込みの手順、409 と 503 の扱いは、単発の予定の変更と同じにする。
-- Google で変えた回（例外の回）の変更と取り消しは、`calendarwrite.Update` と `calendarwrite.Cancel` が、単発の予定と同じく一覧での ID と `etag` で受ける。
+- Google で変えた回（例外の回）の変更と取り消しは、`calendarwrite.Update` と `calendarwrite.Cancel` が、単発の予定と同じく一覧での ID と、例外の回の `etag` で受ける。
+
+回の予定の職員（主訪問者）を替えると、元のカレンダーの回を取り消し、新しい職員のカレンダーに単発の予定を作る。  
+手順は、[主訪問者を替えるときの移し方](#主訪問者を替えるときの移し方) と同じである。
+
+- 回の予定を読んで `etag` を比べ、新しい職員のカレンダーに新しい ULID の ID で作ってから、回の予定を `If-Match` を付けて消す。Google は、消した回を取り消した例外の回にする。
+- 回の記録が無ければ、訪問の情報によらず、回の一覧での ID を主キーにした記録を作り、移す先を保留の版に持つ。確定すると、記録は作った単発の予定を指す。
+  - 作った単発の予定の一覧での ID は、記録の主キー（回の一覧での ID）である。回を移しても ID は変わらない。
 
 `calendarwrite.CancelOccurrence` は、1 回だけの取り消しを、`events.instances` で引いた回の予定を消して書く（`events.delete`）。  
 Google はその回を取り消した例外の回にし、親の予定の `EXDATE` とほかの回は変わらない。  
-保留の版は、単発の予定の取り消しと同じく書かない。
+親の予定の `etag` の比べ方は、`ChangeOccurrence` と同じである。保留の版は、単発の予定の取り消しと同じく書かない。  
+取り消した回は、`events.instances` が返さないので、もう一度変えるか取り消すと 400 を返す。
+
+次の操作は持たない。
+
+- 繰り返しの規則の変更。`buddy_primary` と一緒に別の issue で扱う。
+- 繰り返しの予定の全体の取り消しと、全体の予定の職員を替える移し方。`buddy_primary` に対応する操作が無いためである。親への `updateSchedule` と `cancelSchedule` は 409（`conflict`）で拒む。
+- 繰り返しの予定の 1 件の読み出し。`getRecurringSchedule` は buddy の繰り返しの予定のテーブルだけを読み、`google_primary` の事業所では 404 を返す。
 
 #### 主訪問者を替えるときの移し方
 
