@@ -113,7 +113,7 @@ packages/ui のトークンとコンポーネントの使い方と、アクセ�
 | `pnpm check:contrast` | セマンティックトークンの組のコントラスト比 | |
 | `pnpm check:design` | 画面のコードの色の値、プリミティブトークンの名前、原則に反するユーティリティ | `COLOR-TOKEN`、`TEXT-MIN-SIZE`、`FOCUS-ONE`、`SPACING-SCALE` |
 | `pnpm --filter @buddy/ui test` | コンポーネントの状態、押せる領域の大きさ、story のアクセシビリティ（axe） | `TARGET-SIZE` |
-| `pnpm e2e`（compose を起動してから） | 主な画面の、幅ごとのページの横方向のオーバーフロー。撮った画像は `packages/e2e/test-results/` に出る | `LAYOUT-OVERFLOW` |
+| `pnpm e2e`（compose を起動してから） | 主な画面の、幅ごとのページの横方向のオーバーフロー。撮った画像はローカルでは `packages/e2e/test-results/` に出て、CI では成果物の `e2e-layout-screens` に残る | `LAYOUT-OVERFLOW` |
 
 ### 受け入れ条件
 

@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test'
+import { expect, test, type Page } from '@playwright/test'
 
 import { pageRoot } from '../../selectors/page'
 
@@ -10,11 +10,31 @@ import { pageRoot } from '../../selectors/page'
 const WIDTHS = [390, 767, 768, 1280] as const
 
 const SCREENS = [
-  { name: '予定のカレンダー', path: '/schedule', ready: 'schedule-calendar' },
-  { name: '利用者の一覧', path: '/patients', ready: 'patient-list-table' },
-  { name: '職員の一覧', path: '/staff', ready: 'staff-list-table' },
-  { name: '部署とチーム', path: '/organization', ready: 'organization-list-department-table' },
-  { name: '照合', path: '/receipt', ready: 'receipt-check-submit' },
+  {
+    name: '予定のカレンダー',
+    path: '/schedule',
+    ready: (page: Page) => page.getByTestId('schedule-calendar'),
+  },
+  {
+    name: '利用者の一覧',
+    path: '/patients',
+    ready: (page: Page) => page.getByTestId('patient-list-table'),
+  },
+  {
+    name: '職員の一覧',
+    path: '/staff',
+    ready: (page: Page) => page.getByTestId('staff-list-table'),
+  },
+  {
+    name: '部署とチーム',
+    path: '/organization',
+    ready: (page: Page) => page.getByTestId('organization-list-department-table'),
+  },
+  {
+    name: '照合',
+    path: '/receipt',
+    ready: (page: Page) => page.getByTestId('receipt-check-submit'),
+  },
 ] as const
 
 test.describe('画面の枠', () => {
@@ -26,7 +46,7 @@ test.describe('画面の枠', () => {
         for (const width of WIDTHS) {
           await page.setViewportSize({ width, height: 900 })
           await page.goto(screen.path)
-          await expect(page.getByTestId(screen.ready)).toBeVisible()
+          await expect(screen.ready(page)).toBeVisible()
           await page.evaluate(() => document.fonts.ready)
 
           const overflow = await pageRoot(page).evaluate(
