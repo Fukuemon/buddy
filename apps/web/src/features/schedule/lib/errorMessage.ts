@@ -71,6 +71,8 @@ export const scheduleSubmitErrorMessage = (
       ? 'Google カレンダーに書けたかを確認できませんでした。もう一度「作成」を押すと、同じ予定として送り直します。'
       : 'Google カレンダーに書けたかを確認できませんでした。時間をおいて、予定を開き直してください。'
   }
+  if (error instanceof ApiError && error.code === 'google_event_changed' && verb === 'キャンセル')
+    return 'Google カレンダーで予定が変更されていました。予定を開き直して、最新の予定を確認してから、もう一度キャンセルしてください。'
   if (error instanceof ApiError && error.code !== undefined && error.code in GOOGLE_WRITE_MESSAGES)
     return GOOGLE_WRITE_MESSAGES[error.code]
   if (error instanceof ApiError && error.status === 400)

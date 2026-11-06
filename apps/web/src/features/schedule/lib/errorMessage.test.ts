@@ -46,6 +46,9 @@ describe('scheduleSubmitErrorMessage', () => {
     expect(scheduleSubmitErrorMessage(of('google_event_changed'), '更新')).toBe(
       'Google カレンダーで予定が変更されていました。最新の予定を確認してから、もう一度保存してください。',
     )
+    expect(scheduleSubmitErrorMessage(of('google_event_changed'), 'キャンセル')).toBe(
+      'Google カレンダーで予定が変更されていました。予定を開き直して、最新の予定を確認してから、もう一度キャンセルしてください。',
+    )
     expect(scheduleSubmitErrorMessage(of('google_write_pending'), 'キャンセル')).toBe(
       '前の保存の結果を確認しています。時間をおいて、予定を開き直してください。',
     )
