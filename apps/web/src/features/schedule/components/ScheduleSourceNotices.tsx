@@ -63,8 +63,7 @@ export const ScheduleSourceNotices = ({
         >
           <h2 className="text-label">予定の正本を buddy に切り替えています</h2>
           <p className="mt-2 text-body-dense">
-            切り替えが終わるまで、Google
-            カレンダーで予定を作成、変更しないでください。切り替えが終わるまで、buddy
+            切り替えが終わるまで、Google カレンダーで予定を作成、変更しないでください。buddy
             でも予定を作成、変更できません。切り替えの間も、buddy には Google
             カレンダーの予定を表示します。
           </p>
