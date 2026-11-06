@@ -611,10 +611,15 @@ Projection（`calendar_event_projections`）は、Google カレンダーの 1 �
 同じ予定を何度読んでも、行を書き直すので、行は重ならない。  
 保存する項目と保存しない項目は、ADR-0026 のとおりにする。
 
+Projection を書くのは、同期と予定の API の書き込みの 2 つで、書く順は決まらない。  
+そのため、行を書き直すのは、行の Google での更新の時刻（`google_updated_at`）が無いか、書く予定の更新の時刻の方が新しいときだけにする（`PutCalendarEventProjection` の条件）。  
+後から届いた古い内容で、新しい内容を上書きしないためである。
+
 - 行は、写した時点のカレンダーの事業所と職員の ID を持つ。
 - 新しい予定と変わった予定は、タイトル、開始と終了（日時か、終日の日付）、開始のタイムゾーン、繰り返しの規則、etag、Google での更新の時刻を書く。
-- 取り消した単発の予定と繰り返しの親の予定は、行を消す。
-  - 親の予定の行を消すときは、その例外の回の行も消す。
+- 取り消した単発の予定と繰り返しの親の予定は、行を消さず、状態を `cancelled` にした行に写す。タイトル、日時、繰り返しの規則は持たない。
+  - 行を消すと、予定の API の書き込みが、取り消す前に Google から受けた古い内容で予定を戻すためである。
+  - 例外の回の行は消さない。取り消した親の例外の回は、Projection を読む側が一覧に出さない。
 - 繰り返しの予定は展開せず、親の予定と例外の回を別の行に写す。
   - 例外の回は、親の予定の ID と元の開始の日時を持つ。
   - 取り消した回は、状態を `cancelled` にした行に写す。タイトルと日時は持たない。
@@ -626,6 +631,7 @@ Projection（`calendar_event_projections`）は、Google カレンダーの 1 �
 
 - 行は、Asia/Tokyo で予定が終わる日（`last_end_date`）を持つ。
   - 繰り返しの予定は最後の回が終わる日、取り消した回は元の開始の日である。
+  - 取り消した単発の予定と親の予定は、取り消しを写した日である。Google は取り消した予定の日時を返さないことがあるためである。
   - 最後の回は、取り込みと同じ読み替えの規則（`calendar.RuleFromRecurrence`）で決め、規則に写せないときは RRULE の `UNTIL` で決める。
   - 終わりの無い繰り返しと、`UNTIL` の無い写せない繰り返し（`COUNT` など）は、終わる日を持たず、期間では消さない。
 - 期間より前に終わった予定は、写さずに行を消す。
@@ -642,6 +648,7 @@ Projection（`calendar_event_projections`）は、Google カレンダーの 1 �
 Projection を読むのは、予定の表示の読み出し（`scheduleview` の `List`）だけである。  
 読む手順は、[予定の管理の Design Doc の予定の一覧の読み元](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/DesignDoc.md#予定の一覧の読み元) にある。
 
+- `cancelled` の行と、`cancelled` の親の例外の回は、一覧に出さない。
 - 行を buddy の予定に読み替える規則は、取り込みと同じ `Classify` と `RuleFromRecurrence` を使う。
   - `calendar.ProjectionRules` が、行を Google の予定の形（`calendar.Event`）にして 2 つの規則を呼ぶ。`scheduleview` は `calendar` を import できないので、組み立ての場所がこの値を渡す。
   - 行の日時は DB から UTC で読むので、Asia/Tokyo のオフセットの日時にしてから規則に渡す。`RuleFromRecurrence` が、タイムゾーンの無い予定をオフセットで Asia/Tokyo かを確認するためである。
