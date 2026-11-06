@@ -79,7 +79,8 @@ func (s *Syncer) readBack(ctx context.Context, p PendingCheck) outcome {
 			return err
 		}
 		rec, ok, err := calendar.LockPending(ctx, s.deps.Records, p.Record.ScheduleID, version)
-		if err != nil || !ok || rec.ExternalCalendarID != p.Calendar.ID || rec.ExternalEventID != p.Record.ExternalEventID {
+		if err != nil || !ok || rec.ExternalCalendarID != p.Calendar.ID || rec.ExternalEventID != p.Record.ExternalEventID ||
+			!sameAttempt(*rec.Pending, *p.Record.Pending) {
 			return err
 		}
 		if accepted {
@@ -100,6 +101,14 @@ func (s *Syncer) readBack(ctx context.Context, p PendingCheck) outcome {
 	}
 	s.log.ErrorContext(ctx, "calendar pending readback failed", append(attrs, slog.Any("error", err))...)
 	return outcomeFailed
+}
+
+// sameAttempt は、読み直した保留の版 cur が、読み戻しで取った保留の版 claimed と同じ書き込みかを返す。
+// 版の番号だけでは見分けられない。読み戻しの間に、送り直しが記録を消して同じ予定の ID で作り直すと、版の番号は 1 に戻るためである。
+// 書く期限と保留の訪問の情報は、書き込みごとに新しくなる。
+func sameAttempt(cur, claimed calendar.PendingWrite) bool {
+	return cur.Version == claimed.Version && cur.Deadline.Equal(claimed.Deadline) &&
+		(cur.VisitInfoID == nil) == (claimed.VisitInfoID == nil) && (cur.VisitInfoID == nil || *cur.VisitInfoID == *claimed.VisitInfoID)
 }
 
 // readEvent は、記録 p の予定を Google から読む。予定が無ければ、found を false にしてエラーを返さない。

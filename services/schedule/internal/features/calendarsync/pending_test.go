@@ -353,3 +353,27 @@ func TestReadBackKeepsRecordResolvedMeanwhile(t *testing.T) {
 		t.Errorf("記録 = %+v, want 次の版の保留の版を残す", e.store.Records[e.scheduleID])
 	}
 }
+
+// 読み戻しで Google を読む間に、送り直しが記録を消して同じ予定の ID で作り直すと、版の番号は同じ 1 になる。
+// 古い読み戻しの結果で、作り直した書き込みの保留の版を消さない。
+func TestReadBackKeepsRecordRecreatedMeanwhile(t *testing.T) {
+	e := newPendingEnv(t)
+	e.putRecord(0, calendar.PendingUnknown, pendingNow)
+	recreated := calendar.PendingWrite{Version: 1, State: calendar.PendingWriting, VisitInfoID: ptr("RECREATED"), Deadline: pendingNow.Add(2 * time.Minute)}
+	source := resolvingSource{EventSource: gcal.NewReader(gcaltest.Start(t, e.srv)), resolve: func() {
+		r := e.store.Records[e.scheduleID]
+		p := recreated
+		r.Pending = &p
+		e.store.Records[e.scheduleID] = r
+	}}
+	deps := syncerDeps(e.store, source, e.sources, inmem.Facilities{Store: e.store})
+	deps.Now = func() time.Time { return pendingNow }
+	syncer := calendarsync.NewSyncer(deps, testAppliers(e.store), &inmem.Tx{}, time.Minute, discardLog)
+	if _, err := syncer.ReadBackDue(t.Context()); err != nil {
+		t.Fatal(err)
+	}
+	r, ok := e.store.Records[e.scheduleID]
+	if !ok || r.Pending == nil || r.Pending.VisitInfoID == nil || *r.Pending.VisitInfoID != "RECREATED" || !r.Pending.Deadline.Equal(recreated.Deadline) {
+		t.Errorf("記録 = %+v, %v, want 作り直した書き込みの保留の版を残す", r, ok)
+	}
+}
