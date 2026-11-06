@@ -721,6 +721,8 @@ Projection を読むのは、予定の表示の読み出し（`scheduleview` の
   - 規則に写せない繰り返しの予定は、`recurrence_unsupported` を `title_mismatch` より先にする。
 - 訪問の情報の主訪問者が、予定のカレンダーの職員と違っても、理由を付けず、記録のとおり返す。buddy_primary の予定と同じ扱いである。
 - 通常の予定として書いた予定のタイトルを、Google で訪問の形に変えたときは、記録に訪問の情報が無いので、Google で作った予定と同じくタイトルを読み替える。
+- 繰り返しの予定の展開した回は、親の予定の記録の訪問の情報を返す。
+  - 例外の回は、回の記録の確定した版があればその訪問の情報を返し、無ければ親の予定の記録の訪問の情報を返す。訪問の情報は親の予定の記録に持ち、例外の回で変えたときだけ回の記録を足すためである（ADR-0026）。
 
 #### 職員の退職と同期
 
@@ -744,7 +746,8 @@ Projection を読むのは、予定の表示の読み出し（`scheduleview` の
 
 `google_primary` の事業所では、予定の API は職員が buddy で作り、変え、取り消す予定を、リクエストの中で Google カレンダーに書く。  
 書く操作は機能のパッケージ `calendarwrite` に置く。  
-`httpapi` の `createSchedule`、`updateSchedule`、`cancelSchedule` は、事業所のモードで `schedule` か `calendarwrite` を呼ぶ。  
+`httpapi` の予定の作成、変更、取り消しの API は、事業所のモードで `schedule` か `calendarwrite` を呼ぶ。  
+呼び分ける API は、`createSchedule`、`updateSchedule`、`cancelSchedule`、`createRecurringSchedule`、`changeOccurrence` の 5 つである。  
 単発の予定は、`calendarwrite.Create` が作り、`calendarwrite.Update` が変え、`calendarwrite.Cancel` が取り消す。  
 `updateSchedule`、`cancelSchedule`、`getSchedule` のパスは事業所を持たないので、`httpapi` は認証した職員の事業所のモードで呼び分ける。  
 予定がほかの事業所のものなら、認証のミドルウェアが予定の ID から事業所を引いて 403 を返す。
@@ -875,7 +878,7 @@ sequenceDiagram
   - Google が拒めば、記録ごと消し、Google で作った予定の扱いに戻る。
 - 確定した版のある記録では、版を 1 つ進めた保留の版を書く。拒まれたら保留の版を消し、確定した版の訪問の情報に戻す。
 - 読んだ後に Google で予定が変わっていれば（412）、Google は書き込みを受けない。予定の API は、保留の版を消し、Google の今の予定を読んで Projection に写し、409（`google_event_changed`）を返す。
-- 繰り返しの予定の親と例外の回は、409（`conflict`）で拒む。
+- 繰り返しの予定の親は、409（`conflict`）で拒む。例外の回の変更は、[繰り返しの予定の書き込み](#繰り返しの予定の書き込み) にある。
 
 `calendarwrite.Cancel` は、`etag` を `If-Match` に付けて Google の予定を消す（`events.delete`）。
 
@@ -885,6 +888,36 @@ sequenceDiagram
 - 取り消しの理由は、Google の予定に書く項目が無く、記録も消すので保存しない。応答のキャンセルの ID は、予定の ID と同じにする。
 - 保留の版は書かない。Google の予定の `extendedProperties.private` に版を置けないためである。結果が分からないときは 503（`google_write_unknown`）を返し、同期が取り消しを写す。
 - 記録に保留の版があれば、409（`google_write_pending`）で拒む。412 は変更と同じく扱う。
+- 繰り返しの予定の親は、409（`conflict`）で拒む。例外の回を消すと、Google はその回を取り消した例外の回にし、ほかの回は残る。
+
+#### 繰り返しの予定の書き込み
+
+繰り返しの予定は、Google の繰り返しの予定の形で書く。  
+`buddy_primary` の書き出しの、親の予定の `EXDATE` と別の単発の予定にする形は使わない。  
+訪問の情報は親の予定の記録に持ち、例外の回で訪問の情報を変えたときだけ回の記録を足す。
+
+- ADR-0026: [Google カレンダーとの連携を、事業所ごとの正本のモードで分ける](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0026-google-calendar-sync.md)
+
+`calendarwrite.CreateRecurring` は、繰り返しの予定を、書き出しと同じ RRULE の繰り返しの予定（`calendar.RecurringBody`）として、予定の職員のカレンダーに 1 つ作る。
+
+- 入力と規則は `schedule.PrepareRecurring` で確認し、`schedule.CreateRecurring` と同じ規則を当てる。
+- `createRecurringSchedule` のリクエストの `id` を記録の主キーにし、Google の予定の ID はこの ID から `calendar.EventIDOf` で決める。
+  - `google_primary` の事業所では `id` が必須で、`buddy_primary` の事業所では読まない。
+- 書き込みの手順、保留の版、送り直し、エラーと応答は、単発の予定の作成と同じにする。
+  - `extendedProperties.private` には、単発の予定と同じく buddy の予定の ID（`buddyScheduleId`）と保留の版（`buddyVersion`）を置く。同期が、単発の予定と同じ規則で保留の版を確定するためである。
+
+`calendarwrite.ChangeOccurrence` は、`changeOccurrence` の 1 回だけの変更を、Google の例外の回として書く。
+
+- `events.instances` で、元の規則で `original_date` に始まる回を引き、回の予定を部分更新する（`events.patch`）。親の予定の `EXDATE` は変えない。
+- 回の訪問の情報は、親の予定の記録の確定した版を引き継ぐ。
+  - 回で訪問の情報を変えたときだけ回の記録を作り、単発の予定の変更と同じく保留の版を書く。
+  - 訪問の情報を変えない回は、記録も保留の版も書かない。DB に残す訪問の情報が無いので、Google の結果が分からなくても失うものが無いためである。
+- 書き込みの手順、409 と 503 の扱いは、単発の予定の変更と同じにする。
+- Google で変えた回（例外の回）の変更と取り消しは、`calendarwrite.Update` と `calendarwrite.Cancel` が、単発の予定と同じく一覧での ID と `etag` で受ける。
+
+`calendarwrite.CancelOccurrence` は、1 回だけの取り消しを、`events.instances` で引いた回の予定を消して書く（`events.delete`）。  
+Google はその回を取り消した例外の回にし、親の予定の `EXDATE` とほかの回は変わらない。  
+保留の版は、単発の予定の取り消しと同じく書かない。
 
 #### 主訪問者を替えるときの移し方
 
