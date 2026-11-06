@@ -349,7 +349,7 @@ Google カレンダーを正本にする事業所（`google_primary`）の予定
 - 始めた職員が休職か退職していても、名前をそのまま返す。職員を退職にしても、名前は残るためである。
 - 予定の一覧を読める全ての職員に、始めた職員の名前を返す。予定の閲覧の権限では絞らない。
 - `buddy_primary` の事業所では、`open` の切り替えが無いので、`cutover` は常に `null` である。
-- 切り替えの間に画面の作成と編集の操作を閉じる条件は、`google_primary` の事業所で予定の作成と編集を開く画面の変更（#745）で入れる。
+- 画面は、`cutover` が `null` でない間、予定の作成、変更、キャンセルの操作を閉じる（[画面からの書き込み](#画面からの書き込み)）。
 
 #### 切り替えの取り込み
 
@@ -1135,6 +1135,26 @@ sequenceDiagram
 書き出しのフラグ（`GOOGLE_CALENDAR_EXPORT_ENABLED`）を無効にした環境では、サービスアカウントのスコープが読むだけの `calendar.readonly` になる。  
 そのため、Google は書き込みを 403 で拒み、予定の API は 409（`google_calendar_unwritable`）を返して保留の版を消す。  
 `google_primary` の事業所から予定を書く環境では、書き出しのフラグを有効にする。
+
+#### 画面からの書き込み
+
+web は、`google_primary` の事業所でも、`buddy_primary` の事業所と同じ予定の作成、編集、詳細の画面で、予定を作成、変更、キャンセルさせる。  
+画面の動きは、画面仕様書の [予定の作成](https://github.com/Fukuemon/buddy/blob/develop/docs/screens/schedule-new_予定の作成/index.md)、[予定の編集](https://github.com/Fukuemon/buddy/blob/develop/docs/screens/schedule-edit_予定の編集/index.md)、[予定の詳細](https://github.com/Fukuemon/buddy/blob/develop/docs/screens/schedule-detail_予定の詳細/index.md) にある。
+
+- 作成のフォームを開いたときに、予定の ID（ULID）を 1 つ作り、`createSchedule` の `id` に送る。
+  - 送り直しでも同じ ID を送るので、503（`google_write_unknown`）の後に「作成」を押し直すと、予定の API は同じ予定として扱う。
+- 変更とキャンセルでは、編集のフォームかキャンセルのモーダルを開いたときに読んだ予定の `etag` を送る。
+- 409（`google_event_changed`）では、入力を残し、予定を読み直して、フォームの上に最新の日時、タイトル、予定の職員を出す。送る `etag` は、読み直した予定のものに置き換える。
+- 409（`google_write_pending`）では、文を出して入力を残す。予定を自動で読み直さない。
+- 503（`google_write_unknown`）では、作成なら同じ ID で送り直せることを、変更とキャンセルなら予定を開き直すことを示す。
+- ほかの code では、code ごとに 1 文を出して入力を残す。文は `apps/web/src/features/schedule/lib/errorMessage.ts` にある。
+- 繰り返しの予定を作る画面は作らない。一覧の回は、単発の予定と同じく変更とキャンセルを開く。
+- 訪問の予定の主訪問者も変えられる。新しい主訪問者にカレンダーが無ければ、予定の API が返す 409（`calendar_not_linked`）の文を出す。
+- Google カレンダーで作った予定も変えられる。繰り返しの規則を buddy で表せない予定（`recurrence_unsupported`）だけ、変更とキャンセルを閉じる。
+- 操作を出す権限は、`buddy_primary` の事業所と同じく、予定の職員を編集できるか（`canEditScheduleOf`）で決める。
+- カレンダーで読んだ予定の一覧の `cutover` が `null` でなければ、作成、変更、キャンセルの操作を閉じる。
+  - 作成と編集の URL を直接開いたときは、保存で予定の API が返す 409（`cutover_open`）の文を出す。
+- キャンセルの理由は、詳細の「予定をキャンセル」で開くモーダルで入れる。`google_primary` の事業所では、Google の予定を消し、理由を保存しない。Google カレンダーの予定には、理由を書く場所が無いためである。
 
 ### ローカル環境と E2E の Google カレンダー
 

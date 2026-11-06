@@ -80,11 +80,19 @@ web と予定の API の責務と依存は、[buddy Design Doc](https://github.c
   - 訪問の担当は、今の担当が予定の職員と同じなら新しい予定の職員にし、違えば今の担当のまま送る。
 - 繰り返しの予定の回を保存すると、BFF はその回だけを単発の予定に置き換える（`POST /v1/schedules/recurring/{recurring_schedule_id}/occurrences`）。
   - 画面は、置き換えた予定の ID の詳細へ戻る。
-- 保存の失敗は、403、`google_primary` の code、400 をほかの失敗と分けて文を出す。
+- 予定のキャンセルは、詳細から開くモーダルで理由を入れ、`POST /v1/schedules/{schedule_id}/cancel` に送る。
+  - BFF が画面で展開した繰り返しの予定の回は、回だけを取り消す API が無いので、キャンセルの操作を出さない。
+- `google_primary` の事業所では、予定の API が Google カレンダーに書く。
+  - 作成は、フォームを開いたときに作った予定の ID（`apps/web/src/features/schedule/lib/scheduleId.ts`）を送る。送り直しでも同じ ID を送る。
+  - 変更とキャンセルは、フォームかモーダルを開いたときに読んだ予定の `etag` を送る。
+  - 予定の正本の切り替え中と、繰り返しの規則を buddy で表せない予定では、変更とキャンセルの操作を閉じる（`apps/web/src/features/schedule/lib/scheduleWritable.ts`）。
+  - 409（`google_event_changed`）では、入力を残して予定を読み直し、最新の予定をフォームの上に出し、送る `etag` を置き換える。
+  - 動きの全体は、`services/schedule/internal/features/calendar/DesignDoc.md` の「画面からの書き込み」にある。
+- 保存とキャンセルの失敗は、403、Google カレンダーに書けなかったときの code、400 をほかの失敗と分けて文を出す。
   - 文は `apps/web/src/features/schedule/lib/errorMessage.ts` の `scheduleSubmitErrorMessage` が決める。
-  - `google_primary` の code は、Google カレンダーを予定の正本にする事業所で、予定の API が予定の書き込みを拒んだことを表す。
+  - `google_primary` の code は、予定の API が、buddy を予定の正本にしていない事業所の予定を buddy の予定として書くのを拒んだことを表す。
   - 予定の API の 400 は合わない項目を返さないので、項目には示さない。
-- 保存に成功すると、事業所の予定の読み込みの結果を捨てて読み直す。
+- 保存とキャンセルに成功すると、事業所の予定の読み込みの結果を捨てて読み直す。
 
 ## Interface
 
