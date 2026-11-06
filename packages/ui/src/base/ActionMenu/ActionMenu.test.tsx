@@ -95,6 +95,60 @@ describe('ActionMenu', () => {
     expect(screen.getByRole('menu')).toBeInTheDocument()
   })
 
+  it('staysOpenUntilSettled の項目は、押しても閉じず、onSelect の Promise が決着したら閉じてフォーカスを開くボタンに戻す', async () => {
+    let settle = () => {}
+    const onReinstate = fn(
+      () =>
+        new Promise<void>((resolve) => {
+          settle = resolve
+        }),
+    )
+    render(
+      <Default
+        items={[
+          {
+            label: '復職にする',
+            onSelect: onReinstate,
+            'data-testid': 'reinstate',
+            staysOpenUntilSettled: true,
+          },
+        ]}
+      />,
+    )
+    await userEvent.click(openButton())
+    await userEvent.keyboard('{Enter}')
+    expect(onReinstate).toHaveBeenCalledTimes(1)
+    expect(screen.getByRole('menu')).toBeInTheDocument()
+    expect(screen.getByRole('menuitem', { name: '復職にする' })).toHaveFocus()
+
+    settle()
+    await expect.poll(() => screen.queryByRole('menu')).toBeNull()
+    expect(openButton()).toHaveFocus()
+  })
+
+  it('staysOpenUntilSettled の項目は、onSelect の Promise が拒まれても閉じる', async () => {
+    let reject = () => {}
+    render(
+      <Default
+        items={[
+          {
+            label: '復職にする',
+            onSelect: () =>
+              new Promise<void>((_, rejectPromise) => {
+                reject = () => rejectPromise(new Error('復職にできなかった'))
+              }),
+            'data-testid': 'reinstate',
+            staysOpenUntilSettled: true,
+          },
+        ]}
+      />,
+    )
+    await userEvent.click(openButton())
+    await userEvent.keyboard('{Enter}')
+    reject()
+    await expect.poll(() => screen.queryByRole('menu')).toBeNull()
+  })
+
   it('開くボタンと項目は、44 px 以上の高さで押せる', async () => {
     render(<Default />)
     const button = openButton().getBoundingClientRect()
