@@ -7,7 +7,7 @@ import type {
 /** 事業所の ID。API の `/v1/facilities/{facility_id}` に入る。 */
 export type FacilityId = string
 
-/** 事業所の予定の正本。google_primary は Google カレンダー、buddy_primary は buddy である（ADR-0026）。 */
+/** 事業所の予定の正本。google_primary は Google カレンダー、buddy_primary は buddy である（ADR-0028）。 */
 export type SourceMode = ScheduleComponents['schemas']['SourceMode']
 
 /** 事業所。API の型の ID、名前、予定の正本だけを使う。 */

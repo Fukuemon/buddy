@@ -1,5 +1,5 @@
 // Package calendarwrite は、Google カレンダーを予定の正本にする事業所（google_primary）で、職員が buddy から作り、変え、取り消す予定を、
-// リクエストの中で Google カレンダーに書く（ADR-0026）。書いた予定の訪問の情報と書き込みの保留の版は、記録（calendar.EventRecord）に持つ。
+// リクエストの中で Google カレンダーに書く（ADR-0028）。書いた予定の訪問の情報と書き込みの保留の版は、記録（calendar.EventRecord）に持つ。
 // 予定の閲覧と編集の判定、訪問の情報の規則は schedule の規則を使い、予定の本文と Projection の行は calendar の規則で作る。
 package calendarwrite
 
@@ -11,7 +11,7 @@ import (
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendar"
 )
 
-// Google を呼ぶ時間の上限と、書く期限（ADR-0026）。
+// Google を呼ぶ時間の上限と、書く期限（ADR-0028）。
 const (
 	// CallTimeout は、1 回の Google の呼び出し（作成、変更、削除か読み出し）を待つ時間の上限である。過ぎたら結果が分からないとみなす。
 	CallTimeout = 20 * time.Second

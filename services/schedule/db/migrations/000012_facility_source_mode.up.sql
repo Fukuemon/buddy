@@ -1,4 +1,4 @@
--- 事業所に、予定の正本のモードを持たせる（ADR-0026）。今ある事業所は buddy_primary にし、今の動作を変えない。
+-- 事業所に、予定の正本のモードを持たせる（ADR-0028）。今ある事業所は buddy_primary にし、今の動作を変えない。
 -- 新しい事業所のデフォルトは google_primary にする。
 ALTER TABLE facilities ADD COLUMN source_mode text NOT NULL DEFAULT 'buddy_primary';
 ALTER TABLE facilities ALTER COLUMN source_mode SET DEFAULT 'google_primary';

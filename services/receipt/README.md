@@ -132,7 +132,7 @@ curl -s -H "Authorization: Bearer $TOKEN" -F visits=@testdata/visits_utf8.csv -F
 共有の権限は、[基盤と運用の事業所を足す手順](../../context/operations.md#adding-a-facility) にある。  
 認証のしかたは、[DesignDoc.md](DesignDoc.md#予定のデータソース-google-カレンダー) の「予定のデータソース: Google カレンダー」にある。
 
-- ADR-0027: [職員のカレンダーを、事業所ごとのサービスアカウントへの共有で読み書きする](../../docs/adr/0027-google-calendar-service-accounts.md)
+- ADR-0029: [職員のカレンダーを、事業所ごとのサービスアカウントへの共有で読み書きする](../../docs/adr/0029-google-calendar-service-accounts.md)
 
 ローカルで検証の事業所のカレンダーを読む手順は、次のとおり。  
 この手順はメンテナー向けで、運営側の GCP のプロジェクトと検証の事業所のサービスアカウントを前提にする。  
@@ -140,7 +140,7 @@ curl -s -H "Authorization: Bearer $TOKEN" -F visits=@testdata/visits_utf8.csv -F
 
 1. 運営側に、検証の事業所のサービスアカウントのトークン作成者のロール（`roles/iam.serviceAccountTokenCreator`）を、自分のアカウントに付けてもらう。本番の事業所のアカウントのロールは付けない。
    - 検証の事業所のアカウントに、`serviceusage.services.use` を持つロールも要るかは、未確認である。
-     - ADR-0027: [承認の条件](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0027-google-calendar-service-accounts.md#承認の条件)
+     - ADR-0029: [承認の条件](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0029-google-calendar-service-accounts.md#承認の条件)
 2. 検証のカレンダーを、検証の事業所のサービスアカウントに、事業所を足す手順と同じ権限で共有する。
 3. 検証の事業所のサービスアカウントになりすました Application Default Credentials を作る。
    ```sh

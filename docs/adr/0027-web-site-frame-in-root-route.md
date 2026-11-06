@@ -1,4 +1,4 @@
-# ADR-0025: web の画面の枠を root の route の component で包み、左の欄を持つ画面だけを staticData で外す
+# ADR-0027: web の画面の枠を root の route の component で包み、左の欄を持つ画面だけを staticData で外す
 
 ## Status
 

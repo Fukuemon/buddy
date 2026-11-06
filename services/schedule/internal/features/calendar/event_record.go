@@ -9,7 +9,7 @@ import (
 )
 
 // EventRecord は、google_primary の事業所で予定の API が Google カレンダーに書いた 1 つの予定の、訪問の情報と書き込みの保留の版である
-// （ADR-0026）。予定の API の書き込み（calendarwrite）が作り、同期（calendarsync）が保留の版を確定するか消す。
+// （ADR-0028）。予定の API の書き込み（calendarwrite）が作り、同期（calendarsync）が保留の版を確定するか消す。
 // ScheduleID は buddy の予定の ID で、Google の予定の ID（ExternalEventID）はこの ID から EventIDOf で決める。
 // 通常の予定も、保留の版を持つために記録を作り、VisitInfoID は nil である。
 // Google で作った予定を buddy で変えたときは、ScheduleID はその予定の一覧での ID（scheduleview.ProjectedScheduleID）で、

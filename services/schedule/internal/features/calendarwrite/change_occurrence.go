@@ -14,7 +14,7 @@ import (
 	"github.com/Fukuemon/buddy/services/schedule/internal/tx"
 )
 
-// ChangeOccurrence は、google_primary の事業所の繰り返しの予定の 1 回を、Google カレンダーの例外の回にして変える（ADR-0026）。
+// ChangeOccurrence は、google_primary の事業所の繰り返しの予定の 1 回を、Google カレンダーの例外の回にして変える（ADR-0028）。
 // 親の予定の EXDATE は変えない。
 type ChangeOccurrence struct {
 	update Update

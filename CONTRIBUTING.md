@@ -160,7 +160,7 @@ pnpm e2e
 
 pull request では、ドキュメントサイトのプレビューを出さない。  
 変更が develop に入ると、本番のドキュメントサイトに出る。  
-ADR-0017: [カタログをドキュメントサイトと同じ Worker で、develop に入ったときだけ出す](docs/adr/0017-docs-site-publish.md)
+ADR-0019: [カタログをドキュメントサイトと同じ Worker で、develop に入ったときだけ出す](docs/adr/0019-docs-site-publish.md)
 
 - マージする前に公開した形で見るときは、ルートでサイトを組み立て、静的なファイルとして配信して開く。
 

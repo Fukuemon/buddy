@@ -114,7 +114,7 @@ func (c cutoverEnv) requireStillOpen(t *testing.T, id string) {
 }
 
 // TestCutover は、切り替えを始め、切り替えの期間で取り込み、同期の後に完了すると、事業所が buddy を予定の正本にし、
-// Projection の行を消し、切り替えを completed にすることを確認する（ADR-0028）。
+// Projection の行を消し、切り替えを completed にすることを確認する（ADR-0030）。
 func TestCutover(t *testing.T) {
 	c := newCutoverEnv(t, fixture())
 	cut := c.start(t)
@@ -457,7 +457,7 @@ func (c cutoverEnv) putPending() {
 }
 
 // TestCutoverRejectsPendingWrites は、予定の API の保留の版の記録がある事業所では、切り替えを始める操作と完了する操作が
-// google_write_pending を返して何も書かず、保留の版が解けた後は始められて完了できることを確認する（ADR-0028）。
+// google_write_pending を返して何も書かず、保留の版が解けた後は始められて完了できることを確認する（ADR-0030）。
 func TestCutoverRejectsPendingWrites(t *testing.T) {
 	c := newCutoverEnv(t, fixture())
 	c.putPending()

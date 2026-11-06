@@ -23,7 +23,7 @@ type Finder[T any] interface {
 }
 
 // Guard は、ctx の職員が職員の管理（StaffManage）を許されているかを確認し、許されないときは apperr.ErrForbidden を返す。
-// principal が organization と staff に依存するので、機能のパッケージは principal の判定を import せずに受け取る（ADR-0018）。
+// principal が organization と staff に依存するので、機能のパッケージは principal の判定を import せずに受け取る（ADR-0020）。
 type Guard func(ctx context.Context) error
 
 // ValidateText は、value が空白だけか maxLen 文字を超えるときに apperr.ValidationError を返す。

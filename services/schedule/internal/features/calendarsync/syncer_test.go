@@ -105,7 +105,7 @@ func newSyncEnv(t *testing.T) syncEnv {
 var discardLog = slog.New(slog.NewTextHandler(io.Discard, nil))
 
 // testAppliers は、Store s の上で、組み立て（assemble）と同じく google_primary の事業所の変更を ProjectionApplier で Projection に写す
-// Applier である。buddy_primary の事業所のカレンダーは読まない（ADR-0026）。
+// Applier である。buddy_primary の事業所のカレンダーは読まない（ADR-0028）。
 func testAppliers(s *inmem.Store) calendarsync.Appliers {
 	return calendarsync.Appliers{
 		organization.SourceGooglePrimary: calendarsync.NewProjectionApplier(inmem.Projections{Store: s}, inmem.CalendarEventRecords{Store: s}, inmem.VisitInfos{Store: s}, discardLog),

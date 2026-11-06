@@ -9,7 +9,7 @@ import (
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/schedule"
 )
 
-// GetProjected は、google_primary の事業所の Projection の単発の予定を、一覧と同じ ID と内容で返す（ADR-0026）。
+// GetProjected は、google_primary の事業所の Projection の単発の予定を、一覧と同じ ID と内容で返す（ADR-0028）。
 type GetProjected struct {
 	deps  ProjectionDeps
 	staff StaffRefs
