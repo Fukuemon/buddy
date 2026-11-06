@@ -16,7 +16,7 @@ import { extname, join, relative, resolve, sep } from "node:path";
 
 // 画面とコンポーネントのコードの置き場
 const TARGETS = ["./apps/web/src", "./apps/broker/src", "./packages/ui/src"];
-// トークンの段のファイルと生成物
+// トークンの層のファイルと生成物
 const EXCLUDES = ["./packages/ui/src/tokens", "./apps/web/src/api/generated"];
 const EXTENSIONS = [".css", ".ts", ".tsx", ".mdx"];
 const ALLOW_MARK = "design-system-allow";

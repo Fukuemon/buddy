@@ -11,7 +11,7 @@
 docs/screens/
 ├── _common/                    # 全ての画面のモックが読む CSS と JS。画面のディレクトリにコピーしない
 │   ├── mock.css                # 外枠、構成番号の印、ツールバー
-│   ├── tokens.css              # プリミティブトークンと buddy の意味のトークン。生成物
+│   ├── tokens.css              # プリミティブトークンと buddy のセマンティックトークン。生成物
 │   ├── wireframe.css           # 箱と線の見た目（wf-*）。色はトークンに当てる
 │   ├── mock.js                 # デバイスの切り替え、構成番号の印、親のページへの高さの通知
 │   ├── interact.js             # 画面の中の操作（モックの間の移動、チェック、開閉）
@@ -503,12 +503,12 @@ docs/screens/
 - ダイアログ、覆い、トーストは、`.screen` の中に `position: absolute` で置く。
   - `position: fixed` は使わない。
 - 色と角丸は `wireframe.css` の変数（`--wf-*`）で書く。
-  - `--wf-*` は、`tokens.css` の buddy の意味のトークン（`packages/ui/src/tokens/semantic.css` と同じ値）に当ててある。
-  - 足りない色は、意味のトークンを `--wf-*` に当てて足す。
-  - DADS の基本のトークンと 16 進の色は、画面の CSS に直に書かない。
+  - `--wf-*` は、`tokens.css` の buddy のセマンティックトークン（`packages/ui/src/tokens/semantic.css` と同じ値）に当ててある。
+  - 足りない色は、セマンティックトークンを `--wf-*` に当てて足す。
+  - プリミティブトークンと 16 進の色は、画面の CSS に直に書かない。
     - `wireframe.css` の `:root` で角丸と書体に当てるときだけ使う。
 - `tokens.css` は `pnpm build:tokens`（`scripts/build-static-tokens.mjs`）が作る生成物である。
-  - 意味のトークンを変えたら作り直す。
+  - セマンティックトークンを変えたら作り直す。
     - 食い違いは `pnpm check:generated` が見つける。
 - 画面だけの見た目は `mocks/<画面 ID>.css` に書く。
   - 2 つ以上の画面で使う見た目は `_common/wireframe.css` に移す。

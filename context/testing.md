@@ -19,7 +19,7 @@ status: stable
 | 照合の互換のテスト | Go の照合が、元の Python の実装と同じ結果を返す | `services/receipt/internal/check/parity_test.go` と `testdata/parity/` | `go test ./...`。期待値の作り直しは `tools/parity/run.sh` |
 | web の単体とコンポーネントのテスト | 変換、表示の規則（照合の印と CSV）、コンポーネントの操作 | 対象の隣の `*.test.ts(x)`。コンポーネントは story を `composeStories` で使う | `pnpm --filter @buddy/web test`（jsdom） |
 | デザインシステムのテスト | 押せる領域とフォーカスの移り方、story の描画とアクセシビリティ | `packages/ui/src` の `*.test.tsx` と story | `pnpm --filter @buddy/ui test`（ブラウザ） |
-| トークンのコントラスト | 意味のトークンの組が WCAG 2.2 のコントラスト比の基準に届く | `scripts/check-contrast.mjs` | `pnpm check:contrast` |
+| トークンのコントラスト | セマンティックトークンの組が WCAG 2.2 のコントラスト比の基準に届く | `scripts/check-contrast.mjs` | `pnpm check:contrast` |
 | 画面のコードの書き方 | 画面とコンポーネントのコードに、色の値、プリミティブトークンの名前、14px より小さい文字、`focus-ring` 以外のフォーカスの表示、余白の任意値がない | `scripts/check-raw-values.mjs`、`scripts/check-utilities.mjs` | `pnpm check:design` |
 | E2E | ログインから画面の操作までの流れが、compose の全体で動く | `packages/e2e/tests/` | `pnpm e2e`（[E2E のテスト](testing/e2e.md)） |
 | 生成物のそろい | `openapi.yaml` と SQL から生成したコードが最新である | `scripts/check-generated.sh` | `pnpm check:generated` |

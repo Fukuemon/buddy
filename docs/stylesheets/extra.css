@@ -1,4 +1,4 @@
-/* サイトの色を、buddy の意味のトークン（tokens.css）に当てる */
+/* サイトの色を、buddy のセマンティックトークン（tokens.css）に当てる */
 :root {
   --md-primary-fg-color: var(--buddy-color-primary);
   --md-primary-fg-color--light: var(--buddy-color-primary);

@@ -219,11 +219,11 @@ node scripts/check-links.mjs
 
 使い方の規則は [packages/ui/DESIGN.md](packages/ui/DESIGN.md) にある。  
 トークンを直すときは、スキル write-design-system に従う。  
-プリミティブトークン（`packages/ui/src/tokens/primitive.css`）か意味のトークン（`packages/ui/src/tokens/semantic.css`）を変えたら、次を流す。  
+プリミティブトークン（`packages/ui/src/tokens/primitive.css`）かセマンティックトークン（`packages/ui/src/tokens/semantic.css`）を変えたら、次を流す。  
 生成した `docs/screens/_common/tokens.css` は、同じコミットに入れる。
 
 ```sh
-pnpm check:contrast   # 意味のトークンの組が WCAG 2.2 のコントラスト比の基準に届くか
+pnpm check:contrast   # セマンティックトークンの組が WCAG 2.2 のコントラスト比の基準に届くか
 pnpm build:tokens     # 画面のモックとドキュメントサイトが読む tokens.css を作り直す
 ```
 

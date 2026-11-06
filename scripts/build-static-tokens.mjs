@@ -1,8 +1,8 @@
 #!/usr/bin/env node
-// 基本の段と意味の段の CSS を 1 つのファイルにまとめ、静的なファイル（画面仕様書のモック、文書のサイト）が読むトークンの CSS を作る。
+// プリミティブトークンとセマンティックトークンの CSS を 1 つのファイルにまとめ、静的なファイル（画面仕様書のモック、文書のサイト）が読むトークンの CSS を作る。
 // 静的な HTML はパッケージの CSS を import で読めないので、@import の行を外して中身を並べる。コメントは残す。外部の URL の @import を外したときは標準エラーに出す。
 // 使い方: node build-static-tokens.mjs [--check] --out <書き出すパス> <CSS のファイルかパッケージのパス>...
-//   基本の段を先に、意味の段を後に並べる。パッケージのパス（`@scope/name/dist/tokens.css` の形）は、カレントディレクトリの package.json から解決する
+//   プリミティブトークンを先に、セマンティックトークンを後に並べる。パッケージのパス（`@scope/name/dist/tokens.css` の形）は、カレントディレクトリの package.json から解決する
 //   --check は書き出さず、書き出すはずの中身と今のファイルを比べる。CI で生成物のずれを見つけるのに使う
 // 終了コード: 0 は書き出した（--check では一致した）、1 は --check で食い違うかファイルがない、2 は引数の誤りか CSS が読めない、@import が残る
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
@@ -31,7 +31,7 @@ const parts = sources.map((source) => {
   } catch (e) {
     fail(`読めない: ${source}\n${e.message}`);
   }
-  // 元の CSS は、次の段の CSS を @import で読む。中身は sources の順に並べるので、行ごと外す。
+  // 元の CSS は、手前の層の CSS を @import で読む。中身は sources の順に並べるので、行ごと外す。
   // コメント（ライセンスの /*! を含む）は残し、コメントの中の @import を文と取り違えないよう、コメントの外だけを見る
   css = css
     .split(/(\/\*[\s\S]*?\*\/)/)

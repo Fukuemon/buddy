@@ -1,5 +1,5 @@
 /*
- * buddy の意味のトークン。値は持たず、プリミティブトークン（primitive.css）を参照するだけにする。
+ * buddy のセマンティックトークン。値は持たず、プリミティブトークン（primitive.css）を参照するだけにする。
  * 例外は surface-canvas だけで、プリミティブトークンに無い値を直に持つ（docs/adr/0013-design-system-primitive-tokens.md）。
  * コンポーネントと画面は、この層を Tailwind のユーティリティ（theme.css）を通して使い、プリミティブトークンの名前を直に書かない。
  */
