@@ -1,14 +1,14 @@
-import { expect, test, type Page } from '@playwright/test'
+import { expect, test, type Locator, type Page } from '@playwright/test'
 
 import { EVIDENCE_VARIANTS, recordPrEvidence, storyUrl } from '../../fixtures/evidence'
 import { otherPositionOption } from '../../selectors/staffPosition'
 
 const ACTOR = 'ログインなし（Storybook の story）'
 
-/** story を開き、ready の testid の要素が出るまで待つ。 */
-const openStory = (id: string, ready: string) => async (page: Page) => {
+/** story を開き、ready が返す要素が出るまで待つ。 */
+const openStory = (id: string, ready: (page: Page) => Locator) => async (page: Page) => {
   await page.goto(storyUrl(id))
-  await expect(page.getByTestId(ready)).toBeVisible()
+  await expect(ready(page)).toBeVisible()
 }
 
 const RECEIPT = '画面-receipt-receiptcheckformcontainer--default'
@@ -32,17 +32,14 @@ test.describe('押せないボタンの条件の文', () => {
           actor: ACTOR,
           variant,
         },
-        openStory(RECEIPT, 'receipt-check-submit'),
+        openStory(RECEIPT, (p) => p.getByTestId('receipt-check-submit')),
         async ({ page, step, check }) => {
-          await openStory(RECEIPT, 'receipt-check-submit')(page)
+          await openStory(RECEIPT, (p) => p.getByTestId('receipt-check-submit'))(page)
           await step(
             '照合の画面（Storybook の ReceiptCheckFormContainer）を、実績の CSV を選ばずに開いている',
           )
           const submit = page.getByTestId('receipt-check-submit')
           await expect(submit).toHaveAttribute('aria-disabled', 'true')
-          await expect(page.getByTestId('receipt-check-submit-hint')).toHaveText(
-            '対象の月と実績の CSV を選んでください。',
-          )
           await expect(submit).toHaveAccessibleDescription(
             '対象の月と実績の CSV を選んでください。',
           )
@@ -65,9 +62,9 @@ test.describe('押せないボタンの条件の文', () => {
           actor: ACTOR,
           variant,
         },
-        openStory(CALENDAR_LINK, 'calendar-link-open-staff-3'),
+        openStory(CALENDAR_LINK, (p) => p.getByTestId('calendar-link-open-staff-3')),
         async ({ page, step, check }) => {
-          await openStory(CALENDAR_LINK, 'calendar-link-open-staff-3')(page)
+          await openStory(CALENDAR_LINK, (p) => p.getByTestId('calendar-link-open-staff-3'))(page)
           await step('カレンダーの連携の画面（Storybook の CalendarLinkContainer）を開いている')
 
           await step('カレンダーの無い職員の「結び付ける」を押し、カレンダーの ID の欄を空にする')
@@ -99,9 +96,9 @@ test.describe('押せないボタンの条件の文', () => {
           actor: ACTOR,
           variant,
         },
-        openStory(CALENDAR_IMPORT, 'calendar-import-start'),
+        openStory(CALENDAR_IMPORT, (p) => p.getByTestId('calendar-import-start')),
         async ({ page, step, check }) => {
-          await openStory(CALENDAR_IMPORT, 'calendar-import-start')(page)
+          await openStory(CALENDAR_IMPORT, (p) => p.getByTestId('calendar-import-start'))(page)
           await step(
             'カレンダーの取り込みの画面（Storybook の CalendarImportContainer）を開いている',
           )
@@ -110,7 +107,7 @@ test.describe('押せないボタンの条件の文', () => {
           await page.getByTestId('calendar-import-start').fill('')
           const preview = page.getByTestId('calendar-import-preview')
           await expect(preview).toHaveAttribute('aria-disabled', 'true')
-          await expect(page.getByTestId('calendar-import-preview-hint')).toHaveText(
+          await expect(preview).toHaveAccessibleDescription(
             '開始日と終了日を入れると、プレビューできます。',
           )
           await check(
@@ -132,22 +129,22 @@ test.describe('押せないボタンの条件の文', () => {
           actor: ACTOR,
           variant,
         },
-        openStory(STAFF_DETAIL, 'staff-detail-name'),
+        openStory(STAFF_DETAIL, (p) => p.getByTestId('staff-detail-name')),
         async ({ page, step, check }) => {
-          await openStory(STAFF_DETAIL, 'staff-detail-name')(page)
+          await openStory(STAFF_DETAIL, (p) => p.getByTestId('staff-detail-name'))(page)
           await step('職員の詳細（Storybook の StaffDetailContainer）を開いている')
 
           await step('役職の「変える」を押す')
           await page.getByTestId('staff-detail-position-change').click()
           const dialog = page.getByTestId('staff-position-dialog')
-          await expect(dialog.getByTestId('staff-position-submit-hint')).toHaveText(
+          await expect(dialog.getByTestId('staff-position-submit')).toHaveAccessibleDescription(
             '今の役職と違う役職を選んでください。',
           )
           await check('確定のボタンは押せず、上に「今の役職と違う役職を選んでください。」が出る')
 
           await step('今と違う役職を選ぶ')
           await otherPositionOption(dialog).check()
-          await expect(dialog.getByTestId('staff-position-submit-hint')).toBeHidden()
+          await expect(dialog.getByTestId('staff-position-submit')).toHaveAccessibleDescription('')
           await check('確定のボタンが押せるようになり、条件の文が消える')
         },
       )
@@ -165,17 +162,17 @@ test.describe('押せないボタンの条件の文', () => {
           actor: ACTOR,
           variant,
         },
-        openStory(STAFF_DETAIL, 'staff-detail-name'),
+        openStory(STAFF_DETAIL, (p) => p.getByTestId('staff-detail-name')),
         async ({ page, step, check }) => {
-          await openStory(STAFF_DETAIL, 'staff-detail-name')(page)
+          await openStory(STAFF_DETAIL, (p) => p.getByTestId('staff-detail-name'))(page)
           await step('職員の詳細（Storybook の StaffDetailContainer）を開いている')
 
           await step('権限のタブを開き、「権限を変える」を押す')
           await page.getByTestId('staff-detail-tab-policies').click()
           await page.getByTestId('staff-detail-policies-change').click()
           const dialog = page.getByTestId('staff-policies-dialog')
-          await dialog.getByTestId('staff-policies-submit-hint').scrollIntoViewIfNeeded()
-          await expect(dialog.getByTestId('staff-policies-submit-hint')).toHaveText(
+          await dialog.getByTestId('staff-policies-submit').scrollIntoViewIfNeeded()
+          await expect(dialog.getByTestId('staff-policies-submit')).toHaveAccessibleDescription(
             '付ける権限か外す権限を選んでください。',
           )
           await check('「保存」は押せず、上に「付ける権限か外す権限を選んでください。」が出る')
