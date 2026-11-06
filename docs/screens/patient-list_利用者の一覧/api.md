@@ -1,7 +1,9 @@
 # patient-list API との対応
 
 [利用者の一覧](index.md) の項目と、web の型と OpenAPI の項目の対応。  
-画面を作る人と API を変える人が読む。
+画面を作る人、API を変える人、仕様と実装を照合する人が読む。
+
+## 値の対応
 
 | 要素名 | 表示する値 | web の型の項目 | OpenAPI の項目 |
 | --- | --- | --- | --- |
@@ -17,6 +19,42 @@
 | 状態の絞り込み | 利用の終了か | `PatientRecord.ended_at` が `null` でないか | `Patient.ended_at` が `null` でないか |
 | 利用の終了にした日 | 日付 | `PatientRecord.ended_at` | `Patient.ended_at` の日付（事業所の現地の日付） |
 | 読み込みの失敗の文 | 読めなかったか | `ApiError` | `listPatients`、`listUsers` のエラー |
+
+## 条件の対応
+
+なし。
+
+- 「読み込みの失敗」の状態は、利用者の一覧（`listPatients`）か職員の一覧（`listUsers`）のどちらかを読めなかったときになる（`PatientListContainer.tsx` の `isError`）。
+
+## 要素の testid
+
+| 番号 | 要素名 | testid |
+| --- | --- | --- |
+| 1 | ナビゲーション | `site-nav` |
+| 2 | アカウント | `viewer-menu-open` |
+| 3 | ログアウト | `viewer-logout` |
+| 5 | ヘルプ | `patient-list-help` |
+| 6 | 利用者を登録 | `patient-list-new` |
+| 7 | 名前の検索 | `patient-list-search` |
+| 7 | 読み込み中の表示 | `patient-list-loading` |
+| 7 | 読み込みの失敗の文 | `patient-list-error` |
+| 8 | 担当の職員の絞り込み | `patient-list-filter-staff` |
+| 8 | 読み直す | `patient-list-retry` |
+| 9 | 状態の絞り込み | `patient-list-filter-status` |
+| 10 | 人数 | `patient-list-count` |
+| 11 | 利用者の一覧 | `patient-list-table` |
+| 11 | 利用者が無いことの文 | `patient-list-empty` |
+| 12 | 利用者の行 | `patient-list-row-{利用者の id}` |
+| 12 | 絞り込みを外す | `patient-list-filter-clear` |
+| 13 | 利用の終了にした日 | `patient-list-ended-on-{利用者の id}` |
+| 6 | 予定のカレンダーへ | `page-forbidden-back` |
+| 13 | メニュー | `site-nav-toggle` |
+| 14 | メニュー | `site-nav-toggle` |
+| 8 | メニュー | `site-nav-toggle` |
+| 9 | メニュー | `site-nav-toggle` |
+| 7 | メニュー | `site-nav-toggle` |
+
+- ヘルプの説明の `patient-list-help-text` と、権限が無いことの入れ物の `page-forbidden` は、構成要素の表に載せないので、この表に載せない。
 
 ## 操作
 
