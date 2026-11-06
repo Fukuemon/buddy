@@ -102,10 +102,10 @@
 | 保存の失敗 | 「前の保存の結果を確認しています。時間をおいて、予定を開き直してください。」 | `updateSchedule` が 409 `google_write_pending` |
 | 保存の失敗 | 「Google カレンダーに書けませんでした。時間をおいて、やり直してください。」 | `updateSchedule` が 503 `google_unavailable` |
 | 保存の失敗 | 「Google カレンダーに書けたかを確認できませんでした。時間をおいて、予定を開き直してください。」 | `updateSchedule` が 503 `google_write_unknown` |
-| 保存の失敗 | 「Google カレンダーに予定を書く権限がありません。カレンダーの共有の設定を、マネージャーに確認してください。」 | `updateSchedule` が 409 `google_calendar_unwritable` |
+| 保存の失敗 | 「Google カレンダーに予定を書く権限がありません。カレンダーの共有の設定を、事業所の管理者に確認してください。」 | `updateSchedule` が 409 `google_calendar_unwritable` |
 | 保存の失敗 | 「Google カレンダーが予定を受け付けませんでした。入力を確認してください。」 | `updateSchedule` が 409 `google_event_rejected` |
-| 保存の失敗 | 「予定の職員が Google カレンダーを結び付けていません。カレンダーの結び付けを、マネージャーに頼んでください。」 | `updateSchedule` が 409 `calendar_not_linked` |
-| 保存の失敗 | 「この事業所には、Google カレンダーと連携する設定がありません。マネージャーに確認してください。」 | `updateSchedule` が 503 `calendar_not_configured` |
+| 保存の失敗 | 「予定の職員が Google カレンダーを結び付けていません。カレンダーの結び付けを、事業所の管理者に頼んでください。」 | `updateSchedule` が 409 `calendar_not_linked` |
+| 保存の失敗 | 「この事業所には、Google カレンダーと連携する設定がありません。事業所の管理者に確認してください。」 | `updateSchedule` が 503 `calendar_not_configured` |
 | 保存の失敗 | 「予定の正本を buddy に切り替えています。切り替えが終わるまで、予定を作成、変更、キャンセルできません。」 | `updateSchedule` が 409 `cutover_open` |
 | 保存の失敗 | 「予定を更新できませんでした。」 | `updateSchedule` か `changeOccurrence` が、ここまでのほかの失敗（404、409 `conflict`、500 など）。保存の前の `getSchedule` の読み直しか、マスタ（`listScheduleTypes`、`listServiceCodes`、`listVisitCategories`）の取得が失敗。選んだ値に当たるマスタが無い。API に届かない |
 | 送信中 | なし（ログインの画面へ移るまで続く） | 保存の操作が 401 |

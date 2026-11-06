@@ -42,12 +42,12 @@ const GOOGLE_WRITE_MESSAGES: Record<string, string> = {
   google_write_pending: '前の保存の結果を確認しています。時間をおいて、予定を開き直してください。',
   google_unavailable: 'Google カレンダーに書けませんでした。時間をおいて、やり直してください。',
   google_calendar_unwritable:
-    'Google カレンダーに予定を書く権限がありません。カレンダーの共有の設定を、マネージャーに確認してください。',
+    'Google カレンダーに予定を書く権限がありません。カレンダーの共有の設定を、事業所の管理者に確認してください。',
   google_event_rejected: 'Google カレンダーが予定を受け付けませんでした。入力を確認してください。',
   calendar_not_linked:
-    '予定の職員が Google カレンダーを結び付けていません。カレンダーの結び付けを、マネージャーに頼んでください。',
+    '予定の職員が Google カレンダーを結び付けていません。カレンダーの結び付けを、事業所の管理者に頼んでください。',
   calendar_not_configured:
-    'この事業所には、Google カレンダーと連携する設定がありません。マネージャーに確認してください。',
+    'この事業所には、Google カレンダーと連携する設定がありません。事業所の管理者に確認してください。',
   cutover_open:
     '予定の正本を buddy に切り替えています。切り替えが終わるまで、予定を作成、変更、キャンセルできません。',
 }

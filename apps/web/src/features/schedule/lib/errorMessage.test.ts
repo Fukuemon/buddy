@@ -53,7 +53,7 @@ describe('scheduleSubmitErrorMessage', () => {
       '前の保存の結果を確認しています。時間をおいて、予定を開き直してください。',
     )
     expect(scheduleSubmitErrorMessage(of('calendar_not_linked'), '作成')).toBe(
-      '予定の職員が Google カレンダーを結び付けていません。カレンダーの結び付けを、マネージャーに頼んでください。',
+      '予定の職員が Google カレンダーを結び付けていません。カレンダーの結び付けを、事業所の管理者に頼んでください。',
     )
     expect(scheduleSubmitErrorMessage(of('cutover_open'), '更新')).toBe(
       '予定の正本を buddy に切り替えています。切り替えが終わるまで、予定を作成、変更、キャンセルできません。',

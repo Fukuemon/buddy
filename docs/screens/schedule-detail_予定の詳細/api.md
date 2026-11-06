@@ -106,10 +106,10 @@ OpenAPI の項目は、`getSchedule`（`GET /v1/schedules/{schedule_id}`）の�
 | キャンセルの失敗 | 「前の保存の結果を確認しています。時間をおいて、予定を開き直してください。」 | `cancelSchedule` が 409 `google_write_pending` |
 | キャンセルの失敗 | 「Google カレンダーに書けませんでした。時間をおいて、やり直してください。」 | `cancelSchedule` が 503 `google_unavailable` |
 | キャンセルの失敗 | 「Google カレンダーに書けたかを確認できませんでした。時間をおいて、予定を開き直してください。」 | `cancelSchedule` が 503 `google_write_unknown` |
-| キャンセルの失敗 | 「Google カレンダーに予定を書く権限がありません。カレンダーの共有の設定を、マネージャーに確認してください。」 | `cancelSchedule` が 409 `google_calendar_unwritable` |
+| キャンセルの失敗 | 「Google カレンダーに予定を書く権限がありません。カレンダーの共有の設定を、事業所の管理者に確認してください。」 | `cancelSchedule` が 409 `google_calendar_unwritable` |
 | キャンセルの失敗 | 「Google カレンダーが予定を受け付けませんでした。入力を確認してください。」 | `cancelSchedule` が 409 `google_event_rejected` |
-| キャンセルの失敗 | 「予定の職員が Google カレンダーを結び付けていません。カレンダーの結び付けを、マネージャーに頼んでください。」 | `cancelSchedule` が 409 `calendar_not_linked` |
-| キャンセルの失敗 | 「この事業所には、Google カレンダーと連携する設定がありません。マネージャーに確認してください。」 | `cancelSchedule` が 503 `calendar_not_configured` |
+| キャンセルの失敗 | 「予定の職員が Google カレンダーを結び付けていません。カレンダーの結び付けを、事業所の管理者に頼んでください。」 | `cancelSchedule` が 409 `calendar_not_linked` |
+| キャンセルの失敗 | 「この事業所には、Google カレンダーと連携する設定がありません。事業所の管理者に確認してください。」 | `cancelSchedule` が 503 `calendar_not_configured` |
 | キャンセルの失敗 | 「予定の正本を buddy に切り替えています。切り替えが終わるまで、予定を作成、変更、キャンセルできません。」 | `cancelSchedule` が 409 `cutover_open` |
 | キャンセルの失敗 | 「入力の内容では予定をキャンセルできません。内容を直してください。」 | `cancelSchedule` が 400 |
 | キャンセルの失敗 | 「予定をキャンセルできませんでした。」 | `cancelSchedule` が、ここまでのほかの失敗（404、409 `conflict`、500）。API に届かない |
