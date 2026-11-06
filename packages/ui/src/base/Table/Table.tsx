@@ -48,7 +48,10 @@ const cellClassName = (expanded: boolean) =>
 /** 列の見出しのセル。Table.Header の行に置く。 */
 const TableHeaderCell = ({ children, expanded = false, width }: TableCellProps) => (
   <th
-    className={clsx(cellClassName(expanded), 'font-normal text-text-secondary')}
+    className={clsx(
+      cellClassName(expanded),
+      'border-b border-border-strong font-bold text-text-secondary',
+    )}
     scope="col"
     style={{ minWidth: width }}
   >
