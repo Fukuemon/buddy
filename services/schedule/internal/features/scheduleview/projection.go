@@ -1,6 +1,7 @@
 package scheduleview
 
 import (
+	"context"
 	"crypto/sha256"
 	"encoding/binary"
 	"slices"
@@ -99,6 +100,9 @@ type projectedEvent struct {
 	occurrence civil.Date
 	// unsupported は、buddy の繰り返しの規則に写せない繰り返しの親を、最初の回の 1 件にしたときに true である。
 	unsupported bool
+	// left は、展開した回の OccurrenceScheduleID が、ほかの予定を指す記録の主キーと同じときに true である。回を別の職員の
+	// カレンダーに移した後に、元のカレンダーの回を Google から消せずに残ったときに当たる。一覧での ID を DetachedOccurrenceScheduleID にする。
+	left bool
 }
 
 // expandProjections は、Projection の行 rows を読み替え、from から to までの日に始まる予定と、from の前の日に始まり from に終わる予定を返す。
@@ -106,6 +110,7 @@ type projectedEvent struct {
 // 規則に写せない繰り返しの親は、回に展開せず、最初の回を、回が期間に重なりうるときに 1 件で返す。
 // 例外の回は、変えた回を単発の予定と同じく読み替え、取り消した回は返さない。rules.Read が読み替えない予定（終日の予定など）は返さない。
 // 取り消した単発の予定と繰り返しの親は返さず、取り消した親の例外の回も返さない。
+// 展開した回の残った回（left）は、markLeft で決める。
 func expandProjections(rows []ProjectionDetail, rules EventRules, from, to civil.Date) []projectedEvent {
 	replaced := map[string]map[civil.Date]bool{}
 	cancelled := map[string]bool{}
@@ -180,12 +185,129 @@ func startsIn(rd EventReading, from, to civil.Date) bool {
 func dayBefore(d civil.Date) civil.Date { return civil.DateOf(d.Time().AddDate(0, 0, -1)) }
 
 // projectedID は、Projection の予定 e の、一覧を読むたびに同じになる ID を返す。展開した回でなければ、行の一覧での ID（ScheduleID）にする。
-// 繰り返しの回は、カレンダー、Google の予定の ID、回の日付から、ProjectedScheduleID と同じ形で作る。
+// 繰り返しの回は OccurrenceScheduleID にする。
 func projectedID(e projectedEvent) string {
-	if e.occurrence.IsZero() {
+	switch {
+	case e.occurrence.IsZero():
 		return e.row.ScheduleID
+	case e.left:
+		return DetachedOccurrenceScheduleID(e.row.ExternalCalendarID, e.row.EventID, e.occurrence)
 	}
-	return hashID(e.row.ExternalCalendarID + "\x00" + e.row.EventID + "\x00" + e.occurrence.String())
+	return OccurrenceScheduleID(e.row.ExternalCalendarID, e.row.EventID, e.occurrence)
+}
+
+// occurrenceIDOf は、展開した回 e の OccurrenceScheduleID を返す。
+func occurrenceIDOf(e projectedEvent) string {
+	return OccurrenceScheduleID(e.row.ExternalCalendarID, e.row.EventID, e.occurrence)
+}
+
+// markLeft は、展開した回 events のうち、回の OccurrenceScheduleID を主キーに持つ記録が、回を移した先の予定を指す回を、残った回（left）にする。
+// 記録は recorded で 1 回にまとめて引く。移した先の単発の予定が読む日付の範囲の外にあっても、残った回の ID を変えないためである。
+func markLeft(ctx context.Context, recorded RecordedEvents, facilityID string, events []projectedEvent) error {
+	var ids []string
+	for _, e := range events {
+		if !e.occurrence.IsZero() {
+			ids = append(ids, occurrenceIDOf(e))
+		}
+	}
+	if len(ids) == 0 {
+		return nil
+	}
+	recs, err := recorded.ListRecordedEvents(ctx, facilityID, ids)
+	if err != nil {
+		return err
+	}
+	for i, e := range events {
+		if !e.occurrence.IsZero() {
+			events[i].left = movedAway(e, recs)
+		}
+	}
+	return nil
+}
+
+// movedAway は、展開した回 e の OccurrenceScheduleID を主キーに持つ記録が、回を移した先の予定を指すかを返す。
+// 確定した版の予定の Projection の行が、e の親の予定の例外の回でない記録が当たる。回を移すと、記録は移した先の単発の予定を指し、
+// 移さない回の記録は、その回の Google の予定（親の予定の例外の回）を指すためである。カレンダーでは比べない。別の職員へ移した回を
+// 元の職員へ戻すと、記録は元のカレンダーの単発の予定を指すためである。Google の回の予定の ID の形にも頼らない。
+// 保留の版だけを持つ記録（訪問の情報を初めて変える書き込みや、移す書き込みの結果が分からない記録）と、指す予定の Projection の行が無い記録は、
+// recs に入らないので当たらない。回は元の ID のままで、保留の版か記録で書き込みを拒む。
+func movedAway(e projectedEvent, recs map[string]RecordedEvent) bool {
+	rec, ok := recs[occurrenceIDOf(e)]
+	return ok && (rec.ExternalCalendarID != e.row.ExternalCalendarID || rec.RecurringEventID != e.row.EventID)
+}
+
+// OccurrenceScheduleID は、結び付けたカレンダー externalCalendarID の繰り返しの予定 parentEventID の、元の規則で d に始まる回の、
+// 一覧での予定の ID を返す。展開した回と、回を変えた例外の回の記録の無い行に使い、回を変えても ID が変わらない（ADR-0026）。
+// ProjectedScheduleID と同じ形で作り、DB の関数 occurrence_schedule_id も同じ値を返す。
+func OccurrenceScheduleID(externalCalendarID, parentEventID string, d civil.Date) string {
+	return hashID(externalCalendarID + "\x00" + parentEventID + "\x00" + d.String())
+}
+
+// DetachedOccurrenceScheduleID は、記録の無い例外の回の行の OccurrenceScheduleID が、ほかの予定を指す記録の主キーと同じときの、
+// 一覧での予定の ID を返す。回を別の職員のカレンダーに移すと、回の記録の主キーは移した単発の予定を指す。元の回を消せなかったとき、
+// 元のカレンダーに残った例外の回の行は記録を持たず、同じ OccurrenceScheduleID になるので、この ID で見分ける。
+// DetachedScheduleID と同じく、Google の予定の ID に使われない文字（0x01）と固定の語を親の予定の ID に足して作り、
+// DB の関数 detached_occurrence_schedule_id も同じ値を返す。
+func DetachedOccurrenceScheduleID(externalCalendarID, parentEventID string, d civil.Date) string {
+	return OccurrenceScheduleID(externalCalendarID, parentEventID+"\x01detached", d)
+}
+
+// OriginalDate は、例外の回 p が元の規則で始まるはずだった Asia/Tokyo の日付を返す。元の開始が無ければ false を返す。
+func (p Projection) OriginalDate() (civil.Date, bool) { return p.OriginalStart.day() }
+
+// Occurrence は、繰り返しの予定の親の行 Parent を展開した、元の規則で Date に始まる 1 回である。
+// ID は回の一覧での ID で、Left は、回を別の職員のカレンダーに移した後に元のカレンダーに残った回（ID が DetachedOccurrenceScheduleID）かである。
+type Occurrence struct {
+	Parent ProjectionDetail
+	Date   civil.Date
+	ID     string
+	Left   bool
+}
+
+// FindOccurrence は、事業所 facilityID の Projection の行 rows の繰り返しの親を from から to までの回に展開し、一覧での ID が id の回を返す。
+// 変えた回と取り消した回は、展開した回に含めない。残った回かは、一覧と同じく recorded の記録で決める。見つからなければ false を返す。
+func FindOccurrence(ctx context.Context, recorded RecordedEvents, facilityID string, rows []ProjectionDetail, rules EventRules, id string,
+	from, to civil.Date) (Occurrence, bool, error) {
+	e, ok, err := findOccurrence(ctx, recorded, facilityID, rows, rules, id, from, to)
+	return Occurrence{Parent: e.row, Date: e.occurrence, ID: id, Left: e.left}, ok, err
+}
+
+// findOccurrence は、OccurrenceScheduleID か DetachedOccurrenceScheduleID が id の展開した回を候補にし、候補の回の記録を 1 回で引いて、
+// 一覧と同じ ID になる回を返す。
+func findOccurrence(ctx context.Context, recorded RecordedEvents, facilityID string, rows []ProjectionDetail, rules EventRules, id string,
+	from, to civil.Date) (projectedEvent, bool, error) {
+	var candidates []projectedEvent
+	var ids []string
+	for _, e := range expandProjections(rows, rules, from, to) {
+		if e.occurrence.IsZero() {
+			continue
+		}
+		e.left = true
+		if projectedID(e) == id || occurrenceIDOf(e) == id {
+			candidates = append(candidates, e)
+			ids = append(ids, occurrenceIDOf(e))
+		}
+	}
+	if len(candidates) == 0 {
+		return projectedEvent{}, false, nil
+	}
+	recs, err := recorded.ListRecordedEvents(ctx, facilityID, ids)
+	if err != nil {
+		return projectedEvent{}, false, err
+	}
+	for _, e := range candidates {
+		e.left = movedAway(e, recs)
+		if projectedID(e) == id {
+			return e, true, nil
+		}
+	}
+	return projectedEvent{}, false, nil
+}
+
+// RetainedRange は、今の時刻 now の、Projection を保持する期間（前々月の初日から 3 か月後の月末）の最初の日と最後の日を返す（ADR-0026）。
+// 一覧での ID から繰り返しの回を引くときに、親を展開する期間にする。
+func RetainedRange(now time.Time) (civil.Date, civil.Date) {
+	return projectionRange(ListQuery{}, now)
 }
 
 // ProjectedScheduleID は、記録の無い Projection の予定の、一覧を読むたびに同じになる予定の ID を返す。

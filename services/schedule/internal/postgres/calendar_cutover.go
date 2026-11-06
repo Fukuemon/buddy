@@ -138,8 +138,7 @@ func (r *CalendarCutoverRepository) CountPendingRecords(ctx context.Context, fac
 	return int(n), nil
 }
 
-// ListRecordVisits は、カレンダー externalCalendarID の記録のうち、Google が受けたと分かった版の訪問の情報を持つ記録の
-// 訪問の情報を、Google の予定の ID ごとに返す。
+// ListRecordVisits は、calendarimport.CutoverRepository の ListRecordVisits を実装する。
 func (r *CalendarCutoverRepository) ListRecordVisits(ctx context.Context, externalCalendarID string) (map[string]visit.Info, error) {
 	rows, err := r.q(ctx).ListCalendarEventRecordVisits(ctx, externalCalendarID)
 	if err != nil {
@@ -147,9 +146,13 @@ func (r *CalendarCutoverRepository) ListRecordVisits(ctx context.Context, extern
 	}
 	out := make(map[string]visit.Info, len(rows))
 	for _, row := range rows {
+		if row.ID == nil {
+			out[row.ExternalEventID] = visit.Info{}
+			continue
+		}
 		out[row.ExternalEventID] = visit.Info{
-			ID: row.ID, PatientID: row.PatientID, AssignedStaffID: row.AssignedStaffID, CompanionID: row.CompanionID,
-			ServiceCodeID: row.ServiceCodeID, CategoryIDs: row.CategoryIds,
+			ID: *row.ID, PatientID: deref(row.PatientID), AssignedStaffID: deref(row.AssignedStaffID), CompanionID: row.CompanionID,
+			ServiceCodeID: deref(row.ServiceCodeID), CategoryIDs: row.CategoryIds,
 		}
 	}
 	return out, nil

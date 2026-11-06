@@ -341,23 +341,24 @@ SELECT r.external_event_id, vi.id, vi.patient_id, vi.assigned_staff_id, vi.compa
            SELECT c.visit_category_id FROM visit_info_visit_categories c WHERE c.visit_info_id = vi.id ORDER BY c.visit_category_id
        )::text[] AS category_ids
 FROM calendar_event_records r
-JOIN visit_infos vi ON vi.id = r.visit_info_id
-WHERE r.external_calendar_id = $1
+LEFT JOIN visit_infos vi ON vi.id = r.visit_info_id
+WHERE r.external_calendar_id = $1 AND r.version > 0
 ORDER BY r.external_event_id
 `
 
 type ListCalendarEventRecordVisitsRow struct {
 	ExternalEventID string
-	ID              string
-	PatientID       string
-	AssignedStaffID string
+	ID              *string
+	PatientID       *string
+	AssignedStaffID *string
 	CompanionID     *string
-	ServiceCodeID   string
+	ServiceCodeID   *string
 	CategoryIds     []string
 }
 
 // 切り替えの取り込みが、予定の API が Google に書いた予定の訪問の情報を、タイトルの読み替えより優先して使う（ADR-0028）。
 // Google が受けたと分かった版の訪問の情報だけを返し、保留の版の訪問の情報は返さない。
+// 訪問の情報を持たない確定した記録（通常の予定）も、訪問の情報を空にして返す。繰り返しの予定の例外の回が、自分の記録を持つかを見分けるためである。
 func (q *Queries) ListCalendarEventRecordVisits(ctx context.Context, externalCalendarID string) ([]ListCalendarEventRecordVisitsRow, error) {
 	rows, err := q.db.Query(ctx, listCalendarEventRecordVisits, externalCalendarID)
 	if err != nil {

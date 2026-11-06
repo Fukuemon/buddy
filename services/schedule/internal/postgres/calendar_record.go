@@ -2,8 +2,10 @@ package postgres
 
 import (
 	"context"
+	"errors"
 	"time"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendar"
@@ -34,6 +36,21 @@ func (r *CalendarEventRecordRepository) GetForUpdate(ctx context.Context, schedu
 	}
 	return recordOf(row.ScheduleID, row.FacilityID, row.ExternalCalendarID, row.ExternalEventID, row.VisitInfoID, row.Version,
 		row.PendingVersion, row.PendingState, row.PendingVisitInfoID, row.PendingDeadline, row.PendingExternalCalendarID, row.PendingExternalEventID), nil
+}
+
+// FindAtForUpdate は、calendarwrite.RecordRepository の FindAtForUpdate を実装する。行を FOR UPDATE で取る。
+func (r *CalendarEventRecordRepository) FindAtForUpdate(ctx context.Context, at calendar.EventLocation) (calendar.EventRecord, bool, error) {
+	row, err := r.q(ctx).FindCalendarEventRecordAtForUpdate(ctx, sqlcgen.FindCalendarEventRecordAtForUpdateParams{
+		ExternalCalendarID: at.ExternalCalendarID, ExternalEventID: at.ExternalEventID,
+	})
+	if errors.Is(err, pgx.ErrNoRows) {
+		return calendar.EventRecord{}, false, nil
+	}
+	if err != nil {
+		return calendar.EventRecord{}, false, translate("find calendar event record", err)
+	}
+	return recordOf(row.ScheduleID, row.FacilityID, row.ExternalCalendarID, row.ExternalEventID, row.VisitInfoID, row.Version,
+		row.PendingVersion, row.PendingState, row.PendingVisitInfoID, row.PendingDeadline, row.PendingExternalCalendarID, row.PendingExternalEventID), true, nil
 }
 
 // ClaimExpired は、calendarsync.PendingRecords の ClaimExpired を実装する。行を FOR UPDATE SKIP LOCKED で取る。

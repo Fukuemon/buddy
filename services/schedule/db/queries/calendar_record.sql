@@ -1,6 +1,19 @@
 -- name: GetCalendarEventRecordForUpdate :one
 SELECT * FROM calendar_event_records WHERE schedule_id = $1 FOR UPDATE;
 
+-- name: ListConfirmedCalendarEventRecords :many
+-- 一覧（scheduleview）が、展開した繰り返しの回の ID を主キーに持ち、確定した版を持つ記録の、確定した版の予定の場所と、その予定の
+-- Projection の行の繰り返しの親の Google の予定の ID（例外の回でなければ空）を 1 回で引く。記録が回を移した先の予定を指せば、
+-- 元のカレンダーに残った回に別の一覧の ID を付けるためである。保留の版だけを持つ記録と、指す予定の Projection の行が無い記録は返さない。
+SELECT r.schedule_id, r.external_calendar_id, r.external_event_id, COALESCE(p.recurring_event_id, '')::text AS recurring_event_id
+FROM calendar_event_records r
+JOIN calendar_event_projections p ON p.external_calendar_id = r.external_calendar_id AND p.external_event_id = r.external_event_id
+WHERE r.facility_id = sqlc.arg(facility_id) AND r.schedule_id = ANY(sqlc.arg(schedule_ids)::text[]) AND r.version > 0;
+
+-- name: FindCalendarEventRecordAtForUpdate :one
+-- 繰り返しの予定の例外の回を変える書き込みが、親の予定の記録を、親の予定の場所で引く。
+SELECT * FROM calendar_event_records WHERE external_calendar_id = sqlc.arg(external_calendar_id) AND external_event_id = sqlc.arg(external_event_id) FOR UPDATE;
+
 -- name: CreateCalendarEventRecord :exec
 INSERT INTO calendar_event_records (
     schedule_id, facility_id, external_calendar_id, external_event_id, visit_info_id, version,

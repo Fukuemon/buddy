@@ -156,6 +156,39 @@ func (q *Queries) DeleteCalendarEventRecord(ctx context.Context, scheduleID stri
 	return err
 }
 
+const findCalendarEventRecordAtForUpdate = `-- name: FindCalendarEventRecordAtForUpdate :one
+SELECT schedule_id, facility_id, external_calendar_id, external_event_id, visit_info_id, version, pending_version, pending_state, pending_visit_info_id, pending_deadline, created_at, updated_at, pending_locked_until, pending_external_calendar_id, pending_external_event_id FROM calendar_event_records WHERE external_calendar_id = $1 AND external_event_id = $2 FOR UPDATE
+`
+
+type FindCalendarEventRecordAtForUpdateParams struct {
+	ExternalCalendarID string
+	ExternalEventID    string
+}
+
+// 繰り返しの予定の例外の回を変える書き込みが、親の予定の記録を、親の予定の場所で引く。
+func (q *Queries) FindCalendarEventRecordAtForUpdate(ctx context.Context, arg FindCalendarEventRecordAtForUpdateParams) (CalendarEventRecord, error) {
+	row := q.db.QueryRow(ctx, findCalendarEventRecordAtForUpdate, arg.ExternalCalendarID, arg.ExternalEventID)
+	var i CalendarEventRecord
+	err := row.Scan(
+		&i.ScheduleID,
+		&i.FacilityID,
+		&i.ExternalCalendarID,
+		&i.ExternalEventID,
+		&i.VisitInfoID,
+		&i.Version,
+		&i.PendingVersion,
+		&i.PendingState,
+		&i.PendingVisitInfoID,
+		&i.PendingDeadline,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.PendingLockedUntil,
+		&i.PendingExternalCalendarID,
+		&i.PendingExternalEventID,
+	)
+	return i, err
+}
+
 const getCalendarEventRecordForUpdate = `-- name: GetCalendarEventRecordForUpdate :one
 SELECT schedule_id, facility_id, external_calendar_id, external_event_id, visit_info_id, version, pending_version, pending_state, pending_visit_info_id, pending_deadline, created_at, updated_at, pending_locked_until, pending_external_calendar_id, pending_external_event_id FROM calendar_event_records WHERE schedule_id = $1 FOR UPDATE
 `
@@ -181,6 +214,53 @@ func (q *Queries) GetCalendarEventRecordForUpdate(ctx context.Context, scheduleI
 		&i.PendingExternalEventID,
 	)
 	return i, err
+}
+
+const listConfirmedCalendarEventRecords = `-- name: ListConfirmedCalendarEventRecords :many
+SELECT r.schedule_id, r.external_calendar_id, r.external_event_id, COALESCE(p.recurring_event_id, '')::text AS recurring_event_id
+FROM calendar_event_records r
+JOIN calendar_event_projections p ON p.external_calendar_id = r.external_calendar_id AND p.external_event_id = r.external_event_id
+WHERE r.facility_id = $1 AND r.schedule_id = ANY($2::text[]) AND r.version > 0
+`
+
+type ListConfirmedCalendarEventRecordsParams struct {
+	FacilityID  string
+	ScheduleIds []string
+}
+
+type ListConfirmedCalendarEventRecordsRow struct {
+	ScheduleID         string
+	ExternalCalendarID string
+	ExternalEventID    string
+	RecurringEventID   string
+}
+
+// 一覧（scheduleview）が、展開した繰り返しの回の ID を主キーに持ち、確定した版を持つ記録の、確定した版の予定の場所と、その予定の
+// Projection の行の繰り返しの親の Google の予定の ID（例外の回でなければ空）を 1 回で引く。記録が回を移した先の予定を指せば、
+// 元のカレンダーに残った回に別の一覧の ID を付けるためである。保留の版だけを持つ記録と、指す予定の Projection の行が無い記録は返さない。
+func (q *Queries) ListConfirmedCalendarEventRecords(ctx context.Context, arg ListConfirmedCalendarEventRecordsParams) ([]ListConfirmedCalendarEventRecordsRow, error) {
+	rows, err := q.db.Query(ctx, listConfirmedCalendarEventRecords, arg.FacilityID, arg.ScheduleIds)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListConfirmedCalendarEventRecordsRow{}
+	for rows.Next() {
+		var i ListConfirmedCalendarEventRecordsRow
+		if err := rows.Scan(
+			&i.ScheduleID,
+			&i.ExternalCalendarID,
+			&i.ExternalEventID,
+			&i.RecurringEventID,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const releaseCalendarEventRecord = `-- name: ReleaseCalendarEventRecord :exec

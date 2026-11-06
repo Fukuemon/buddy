@@ -51,6 +51,16 @@ func (s CalendarEventRecords) GetForUpdate(_ context.Context, scheduleID string)
 	return copyRecord(r), err
 }
 
+// FindAtForUpdate は、calendarwrite.RecordRepository の FindAtForUpdate を実装する。
+func (s CalendarEventRecords) FindAtForUpdate(_ context.Context, at calendar.EventLocation) (calendar.EventRecord, bool, error) {
+	for _, r := range s.Records {
+		if r.Location() == at {
+			return copyRecord(r), true, nil
+		}
+	}
+	return calendar.EventRecord{}, false, nil
+}
+
 // Create は、calendarwrite.RecordRepository の Create を実装する。
 func (s CalendarEventRecords) Create(_ context.Context, r calendar.EventRecord) error {
 	for _, cur := range s.Records {

@@ -115,6 +115,10 @@ func flowRouterOn(mode organization.SourceMode, accounts calendar.Accounts) (htt
 		Update: calendarwrite.NewUpdate(facilities, projections, types, refs, inmem.Staff{Store: s},
 			visits, inmem.VisitInfos{Store: s}, calendars, records, projections, accounts, ids, slog.New(slog.DiscardHandler), nil, tx).Do,
 		Cancel: calendarwrite.NewCancel(facilities, projections, refs, visits, calendars, records, projections, accounts, nil, tx).Do,
+		CreateRecurring: calendarwrite.NewCreateRecurring(facilities, projections, types, refs, inmem.Staff{Store: s},
+			visits, inmem.VisitInfos{Store: s}, calendars, records, projections, accounts, nil, tx).Do,
+		ChangeOccurrence: calendarwrite.NewChangeOccurrence(facilities, projections, types, refs, inmem.Staff{Store: s},
+			visits, inmem.VisitInfos{Store: s}, calendars, records, projections, accounts, ids, slog.New(slog.DiscardHandler), nil, tx).Do,
 	}
 	org := httpapi.OrganizationApp{GetFacility: organization.NewGetFacility(facilities).Do}
 	return httpapi.NewRouter(httpapi.Apps{Organization: org, Schedules: app, CalendarWrites: writes, Auth: auth}, httpapi.RouterConfig{
@@ -234,18 +238,6 @@ func TestScheduleWritesRespondWithStoredSchedule(t *testing.T) {
 	parent := request(t, h, http.MethodGet, "/v1/schedules/recurring/"+rsID, "", http.StatusOK)
 	if got := parent["exclusion_dates"]; !reflect.DeepEqual(got, []any{"2099-01-12"}) {
 		t.Errorf("置き換えた後の繰り返しの予定の exclusion_dates = %v", got)
-	}
-}
-
-// TestScheduleWritesRejectGooglePrimary は、Google カレンダーを予定の正本にする事業所で、繰り返しの予定の作成が
-// 409 と code の google_primary を返すことを確認する（ADR-0023）。単発の予定の作成は Google カレンダーに書く。
-func TestScheduleWritesRejectGooglePrimary(t *testing.T) {
-	h := flowRouterWith(organization.SourceGooglePrimary)
-	body := `{"schedule_type_id":"` + typeID + `","date":"2099-01-05","start_time":"09:00","end_time":"10:00","staff_id":"` + staffID +
-		`","title":"カンファレンス","recurring_rule":{"frequency":"weekly"}}`
-	got := request(t, h, http.MethodPost, "/v1/facilities/"+facilityID+"/schedules/recurring", body, http.StatusConflict)
-	if got["code"] != schedule.CodeGooglePrimary {
-		t.Errorf("code = %v, want %s", got["code"], schedule.CodeGooglePrimary)
 	}
 }
 

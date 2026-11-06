@@ -3,6 +3,7 @@ package calendarwrite
 import (
 	"context"
 
+	"github.com/Fukuemon/buddy/services/schedule/internal/civil"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendar"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/scheduleview"
 )
@@ -28,4 +29,8 @@ type Projections interface {
 	Put(ctx context.Context, p scheduleview.Projection) error
 	// GetBySchedule は、事業所 facilityID の外していないカレンダーの、一覧での予定の ID が id の行を返す。無いときは apperr.ErrNotFound を返す。
 	GetBySchedule(ctx context.Context, facilityID, id string) (scheduleview.ProjectionDetail, error)
+	// ListByFacility は、事業所の外していないカレンダーの行のうち、終わる日が from より前でない行（終わる日の無い行を含む）を返す。
+	// 一覧での ID から繰り返しの予定の展開した回を引くのに使う。
+	ListByFacility(ctx context.Context, facilityID string, from civil.Date) ([]scheduleview.ProjectionDetail, error)
+	scheduleview.RecordedEvents
 }

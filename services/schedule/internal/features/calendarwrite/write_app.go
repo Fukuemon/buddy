@@ -42,7 +42,7 @@ func requireGooglePrimary(ctx context.Context, locks FacilityLock, cutovers Cuto
 // lockStoredEvent は、変えるか取り消す予定 id の記録を排他のロックで読み、予定の Projection の行を返す。
 // 記録が無ければ（Google で作って buddy で変えていない予定）、rec は nil である。トランザクションの中で呼ぶ。
 // 予定が無いか、記録がほかの事業所のものなら apperr.ErrNotFound を、保留の版がある記録には errWritePending を、
-// 繰り返しの予定の親と例外の回には errRecurring を、Google で取り消した予定には errEventNotFound を返す。
+// 繰り返しの予定の親には errRecurring を、Google で取り消した予定には errEventNotFound を返す。例外の回の行は返す。
 func lockStoredEvent(ctx context.Context, records RecordRepository, projections Projections, facilityID, id string) (*calendar.EventRecord, scheduleview.ProjectionDetail, error) {
 	var rec *calendar.EventRecord
 	r, err := records.GetForUpdate(ctx, id)
@@ -63,7 +63,7 @@ func lockStoredEvent(ctx context.Context, records RecordRepository, projections 
 		return nil, scheduleview.ProjectionDetail{}, err
 	}
 	switch {
-	case row.IsParent(), row.IsException():
+	case row.IsParent():
 		return nil, scheduleview.ProjectionDetail{}, errRecurring
 	case row.Status != scheduleview.ProjectionConfirmed:
 		return nil, scheduleview.ProjectionDetail{}, errEventNotFound
@@ -118,8 +118,9 @@ func bodyOf(d scheduleview.Detail, version int) calendar.EventBody {
 }
 
 // resultOf は、Google に書いた予定 ev から応答の予定を作る。作成と更新の時刻は、Google で最後に変えた時刻にする。読めなければ now にする。
+// 版は version で、記録を持たない回の書き込み（version が 0）では 1 にする。
 func resultOf(d scheduleview.Detail, version int, ev calendar.Event, now time.Time) scheduleview.Detail {
-	d.Version, d.ETag = version, ev.ETag
+	d.Version, d.ETag = max(version, 1), ev.ETag
 	at := now
 	if t, err := time.Parse(time.RFC3339, ev.Updated); err == nil {
 		at = t
@@ -159,9 +160,10 @@ func markUnknown(ctx context.Context, records RecordRepository, scheduleID strin
 	return records.Update(ctx, rec)
 }
 
-// project は、カレンダー cal の Google の予定 ev を Projection の行に写す。取り消した予定は、取り消しの状態の行にする。
+// project は、カレンダー cal の Google の予定 ev を Projection の行に写す。取り消した単発の予定と親の予定は、取り消しの状態の行にする。
+// 取り消した例外の回は、同期（calendarsync）と同じく ProjectionOf で、親の予定の ID と元の開始を持つ行にする。
 func project(ctx context.Context, projections Projections, today civil.Date, cal calendar.ExternalCalendar, ev calendar.Event) error {
-	if ev.Status == calendar.StatusCancelled {
+	if ev.Status == calendar.StatusCancelled && ev.RecurringEventID == "" {
 		return projections.Put(ctx, calendar.CancelledProjectionOf(cal, ev, today))
 	}
 	p, err := calendar.ProjectionOf(cal, ev)

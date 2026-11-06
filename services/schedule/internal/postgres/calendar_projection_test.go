@@ -5,6 +5,7 @@ import (
 	"errors"
 	"io"
 	"log/slog"
+	"reflect"
 	"slices"
 	"testing"
 	"time"
@@ -485,6 +486,118 @@ func TestProjectedScheduleIDMatchesGo(t *testing.T) {
 	}
 }
 
+// TestOccurrenceScheduleIDMatchesGo は、DB の関数 occurrence_schedule_id が、元の開始の時刻（Asia/Tokyo の日付）と終日の元の日付のどちらでも、
+// scheduleview.OccurrenceScheduleID と同じ値を返し、元の開始が無ければ NULL を返すことを確認する。
+func TestOccurrenceScheduleIDMatchesGo(t *testing.T) {
+	ctx := context.Background()
+	day := civil.Date{Year: 2026, Month: 10, Day: 29}
+	at := time.Date(2026, 10, 29, 0, 30, 0, 0, calendar.Tokyo)
+	want := scheduleview.OccurrenceScheduleID(seedOkadaCalendar, "series", day)
+	var byTime, byDate string
+	var none *string
+	if err := testDB.QueryRow(ctx, "SELECT occurrence_schedule_id($1, $2, $3, NULL), occurrence_schedule_id($1, $2, NULL, $4), occurrence_schedule_id($1, $2, NULL, NULL)",
+		seedOkadaCalendar, "series", at, day.Time()).Scan(&byTime, &byDate, &none); err != nil {
+		t.Fatal(err)
+	}
+	if byTime != want || byDate != want || none != nil {
+		t.Errorf("occurrence_schedule_id = %s, %s, %v, want %s, %s, NULL", byTime, byDate, none, want, want)
+	}
+	var detached string
+	if err := testDB.QueryRow(ctx, "SELECT detached_occurrence_schedule_id($1, $2, $3, NULL)", seedOkadaCalendar, "series", at).Scan(&detached); err != nil {
+		t.Fatal(err)
+	}
+	if want := scheduleview.DetachedOccurrenceScheduleID(seedOkadaCalendar, "series", day); detached != want || detached == byTime {
+		t.Errorf("detached_occurrence_schedule_id = %s, want %s", detached, want)
+	}
+}
+
+// TestCalendarProjectionRepositoryDetachedOccurrenceID は、回を移した後に元のカレンダーに残った例外の回の行（記録を持たず、
+// occurrence_schedule_id が移した予定の記録の主キーと重なる行）に、一覧と 1 件の読み出しが detached_occurrence_schedule_id を使い、
+// access がその ID の事業所を引けることを確認する。記録の主キーの ID は、移した予定を指す。
+func TestCalendarProjectionRepositoryDetachedOccurrenceID(t *testing.T) {
+	ctx := txContext(t)
+	r := NewCalendarProjectionRepository(testDB)
+	original := timeAt(t, "2099-11-04T10:00:00+09:00")
+	left := scheduleview.Projection{
+		ExternalCalendarID: seedOkadaCalendar, EventID: "series_20991104T010000Z", FacilityID: seedGoogleFacility, StaffID: seedOkada,
+		RecurringEventID: "series", OriginalStart: scheduleview.ProjectionTime{At: original}, Status: scheduleview.ProjectionConfirmed,
+		Title: "担当者会議", ETag: `"1"`, Start: scheduleview.ProjectionTime{At: original},
+		End: scheduleview.ProjectionTime{At: timeAt(t, "2099-11-04T10:30:00+09:00")}, LastEndDate: civilDate(2099, 11, 4),
+	}
+	moved := left
+	moved.EventID, moved.RecurringEventID, moved.OriginalStart = "moved_single", "", scheduleview.ProjectionTime{}
+	for _, p := range []scheduleview.Projection{left, moved} {
+		if err := r.Put(ctx, p); err != nil {
+			t.Fatal(err)
+		}
+	}
+	day := civil.Date{Year: 2099, Month: 11, Day: 4}
+	occID := scheduleview.OccurrenceScheduleID(seedOkadaCalendar, "series", day)
+	if err := NewCalendarEventRecordRepository(testDB).Create(ctx, calendar.EventRecord{
+		ScheduleID: occID, FacilityID: seedGoogleFacility, ExternalCalendarID: seedOkadaCalendar, ExternalEventID: moved.EventID, Version: 1,
+	}); err != nil {
+		t.Fatal(err)
+	}
+	detachedID := scheduleview.DetachedOccurrenceScheduleID(seedOkadaCalendar, "series", day)
+
+	rows, err := r.ListByFacility(ctx, seedGoogleFacility, civil.Date{Year: 2099, Month: 1, Day: 1})
+	if err != nil {
+		t.Fatal(err)
+	}
+	ids := map[string]string{}
+	for _, p := range rows {
+		ids[p.EventID] = p.ScheduleID
+	}
+	if ids[left.EventID] != detachedID || ids[moved.EventID] != occID {
+		t.Errorf("一覧の予定の ID = %v, want 残った回 %s、移した予定 %s", ids, detachedID, occID)
+	}
+	if got, err := r.GetBySchedule(ctx, seedGoogleFacility, detachedID); err != nil || got.EventID != left.EventID || got.ScheduleID != detachedID {
+		t.Errorf("残った回の 1 件 = %+v, err = %v", got, err)
+	}
+	if got, err := r.GetBySchedule(ctx, seedGoogleFacility, occID); err != nil || got.EventID != moved.EventID {
+		t.Errorf("移した予定の 1 件 = %+v, err = %v", got, err)
+	}
+	if f, err := NewScheduleRepository(testDB).GetFacilityID(ctx, detachedID); err != nil || f != seedGoogleFacility {
+		t.Errorf("GetFacilityID(%s) = %s, %v, want %s", detachedID, f, err, seedGoogleFacility)
+	}
+	if got, err := r.ListRecordedEvents(ctx, seedGoogleFacility, []string{occID, detachedID}); err != nil ||
+		!reflect.DeepEqual(got, map[string]scheduleview.RecordedEvent{occID: {ExternalCalendarID: seedOkadaCalendar, ExternalEventID: moved.EventID}}) {
+		t.Errorf("ListRecordedEvents = %v, %v, want 記録の主キーの %s だけ", got, err, occID)
+	}
+	if got, err := r.ListRecordedEvents(ctx, seedFacility, []string{occID}); err != nil || len(got) != 0 {
+		t.Errorf("ほかの事業所の ListRecordedEvents = %v, %v, want 空", got, err)
+	}
+	pendingID := scheduleview.OccurrenceScheduleID(seedOkadaCalendar, "series", civil.Date{Year: 2099, Month: 11, Day: 11})
+	if err := NewCalendarEventRecordRepository(testDB).Create(ctx, calendar.EventRecord{
+		ScheduleID: pendingID, FacilityID: seedGoogleFacility, ExternalCalendarID: seedOkadaCalendar, ExternalEventID: "series_20991111T010000Z",
+		Pending: &calendar.PendingWrite{Version: 1, State: calendar.PendingUnknown, Deadline: time.Date(2099, 1, 1, 0, 0, 0, 0, time.UTC)},
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if got, err := r.ListRecordedEvents(ctx, seedGoogleFacility, []string{pendingID}); err != nil || len(got) != 0 {
+		t.Errorf("保留の版だけの記録の ListRecordedEvents = %v, %v, want 空", got, err)
+	}
+	own := left
+	own.EventID, own.OriginalStart.At = "series_20991118T010000Z", timeAt(t, "2099-11-18T10:00:00+09:00")
+	if err := r.Put(ctx, own); err != nil {
+		t.Fatal(err)
+	}
+	ownID := scheduleview.OccurrenceScheduleID(seedOkadaCalendar, "series", civil.Date{Year: 2099, Month: 11, Day: 18})
+	noRowID := scheduleview.OccurrenceScheduleID(seedOkadaCalendar, "series", civil.Date{Year: 2099, Month: 11, Day: 25})
+	for _, rec := range []calendar.EventRecord{
+		{ScheduleID: ownID, FacilityID: seedGoogleFacility, ExternalCalendarID: seedOkadaCalendar, ExternalEventID: own.EventID, Version: 1},
+		{ScheduleID: noRowID, FacilityID: seedGoogleFacility, ExternalCalendarID: seedOkadaCalendar, ExternalEventID: "series_20991125T010000Z", Version: 1},
+	} {
+		if err := NewCalendarEventRecordRepository(testDB).Create(ctx, rec); err != nil {
+			t.Fatal(err)
+		}
+	}
+	got, err := r.ListRecordedEvents(ctx, seedGoogleFacility, []string{ownID, noRowID})
+	if want := map[string]scheduleview.RecordedEvent{ownID: {ExternalCalendarID: seedOkadaCalendar, ExternalEventID: own.EventID, RecurringEventID: "series"}}; err != nil || !reflect.DeepEqual(got, want) {
+		t.Errorf("例外の回を指す記録と行の無い記録の ListRecordedEvents = %v, %v, want %v", got, err, want)
+	}
+}
+
 // TestCalendarProjectionRepositoryGetBySchedule は、記録のある予定を記録の予定の ID で、記録の無い予定を一覧での ID で引けることと、
 // 一覧が記録の予定の ID を返すこと、access が両方の ID の事業所を引けることを確認する。
 func TestCalendarProjectionRepositoryGetBySchedule(t *testing.T) {
@@ -667,5 +780,88 @@ func TestCalendarProjectionRepositoryRecordVisit(t *testing.T) {
 	}
 	if got, err := r.GetBySchedule(ctx, seedFacility, pendingID); err != nil || got.Visit != nil {
 		t.Errorf("保留の版だけの記録の 1 件の読み出し = %+v, %v, want 訪問の情報の無い行", got.Visit, err)
+	}
+}
+
+// TestCalendarProjectionRepositoryExceptionVisit は、繰り返しの予定の例外の回の行が、回の記録が無いか確定した版を持たなければ
+// 親の予定の記録の訪問の情報を返し、回の記録の確定した版があればその訪問の情報を返すことを確認する。
+// 繰り返しの予定の記録の ID で、GetFacilityID が事業所を引けることも確認する。
+func TestCalendarProjectionRepositoryExceptionVisit(t *testing.T) {
+	ctx := txContext(t)
+	const exCalID = "01M3TD000000000000000000CD"
+	if err := NewCalendarRepository(testDB).Create(ctx, calendar.ExternalCalendar{
+		ID: exCalID, FacilityID: seedFacility, StaffID: seedMori, Provider: calendar.ProviderGoogle, CalendarID: "mori@example.com",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	infos := NewVisitInfoRepository(testDB)
+	const parentInfo, ownInfo, pendingInfo = "01M3TD000000000000000000V5", "01M3TD000000000000000000V6", "01M3TD000000000000000000V7"
+	for _, id := range []string{parentInfo, ownInfo, pendingInfo} {
+		if err := infos.Create(ctx, visit.Info{ID: id, FacilityID: seedFacility, PatientID: seedPatient, AssignedStaffID: seedMori, ServiceCodeID: seedServiceCode}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	r := NewCalendarProjectionRepository(testDB)
+	base := scheduleview.Projection{
+		ExternalCalendarID: exCalID, FacilityID: seedFacility, StaffID: seedMori, Status: scheduleview.ProjectionConfirmed,
+		Title: "【訪看I2】見本 一郎", ETag: `"1"`, Start: scheduleview.ProjectionTime{At: timeAt(t, "2099-11-04T10:00:00+09:00")},
+		End: scheduleview.ProjectionTime{At: timeAt(t, "2099-11-04T10:30:00+09:00")},
+	}
+	parent := base
+	parent.EventID, parent.Recurrence = "series", []string{"RRULE:FREQ=WEEKLY"}
+	rows := []scheduleview.Projection{parent}
+	for _, id := range []string{"series_inherited", "series_own", "series_pending"} {
+		ex := base
+		ex.EventID, ex.RecurringEventID, ex.OriginalStart, ex.LastEndDate = id, parent.EventID, base.Start, civilDate(2099, 11, 4)
+		rows = append(rows, ex)
+	}
+	for _, p := range rows {
+		if err := r.Put(ctx, p); err != nil {
+			t.Fatal(err)
+		}
+	}
+	records := NewCalendarEventRecordRepository(testDB)
+	const parentID, ownID, pendingID = "01M3TD000000000000000000SA", "01M3TD000000000000000000SB", "01M3TD000000000000000000SC"
+	for _, rec := range []calendar.EventRecord{
+		{ScheduleID: parentID, FacilityID: seedFacility, ExternalCalendarID: exCalID, ExternalEventID: "series", Version: 1, VisitInfoID: ptr(parentInfo)},
+		{ScheduleID: ownID, FacilityID: seedFacility, ExternalCalendarID: exCalID, ExternalEventID: "series_own", Version: 1, VisitInfoID: ptr(ownInfo)},
+		{ScheduleID: pendingID, FacilityID: seedFacility, ExternalCalendarID: exCalID, ExternalEventID: "series_pending",
+			Pending: &calendar.PendingWrite{Version: 1, State: calendar.PendingUnknown, VisitInfoID: ptr(pendingInfo), Deadline: time.Date(2099, 1, 1, 0, 0, 0, 0, time.UTC)}},
+	} {
+		if err := records.Create(ctx, rec); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	got, err := r.ListByFacility(ctx, seedFacility, civil.Date{Year: 2099, Month: 1, Day: 1})
+	if err != nil {
+		t.Fatal(err)
+	}
+	visits := map[string]string{}
+	for _, p := range got {
+		if p.Visit != nil {
+			visits[p.EventID] = p.Visit.ID
+		}
+	}
+	want := map[string]string{"series": parentInfo, "series_inherited": parentInfo, "series_own": ownInfo, "series_pending": parentInfo}
+	for id, info := range want {
+		if visits[id] != info {
+			t.Errorf("行 %s の訪問の情報 = %q, want %q", id, visits[id], info)
+		}
+	}
+	inheritedID := scheduleview.OccurrenceScheduleID(exCalID, "series", civil.Date{Year: 2099, Month: 11, Day: 4})
+	inherited, err := r.GetBySchedule(ctx, seedFacility, inheritedID)
+	if err != nil || inherited.EventID != "series_inherited" || inherited.ScheduleID != inheritedID || inherited.Visit == nil || inherited.Visit.ID != parentInfo {
+		t.Errorf("記録の無い例外の回の 1 件 = %+v, %v", inherited.Visit, err)
+	}
+	own, err := r.GetBySchedule(ctx, seedFacility, ownID)
+	if err != nil || own.Visit == nil || own.Visit.ID != ownInfo {
+		t.Errorf("記録のある例外の回の 1 件 = %+v, %v", own.Visit, err)
+	}
+	if f, err := NewScheduleRepository(testDB).GetFacilityID(ctx, inheritedID); err != nil || f != seedFacility {
+		t.Errorf("例外の回の一覧での ID の GetFacilityID = %s, %v, want %s", f, err, seedFacility)
+	}
+	if f, err := NewRecurringScheduleRepository(testDB).GetFacilityID(ctx, parentID); err != nil || f != seedFacility {
+		t.Errorf("繰り返しの予定の記録の GetFacilityID = %s, %v, want %s", f, err, seedFacility)
 	}
 }

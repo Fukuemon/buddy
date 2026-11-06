@@ -107,6 +107,9 @@ func (s List) listProjected(ctx context.Context, f organization.Facility, q List
 	}
 	rows = filter(rows, func(r ProjectionDetail) bool { return r.FacilityID == f.ID && readable(r.StaffID) })
 	events := expandProjections(rows, s.projected.Rules, from, to)
+	if err := markLeft(ctx, s.projected.Projections, f.ID, events); err != nil {
+		return Listing{}, err
+	}
 	b, err := newProjectionBuilder(ctx, s.projected, f.ID, events)
 	if err != nil {
 		return Listing{}, err
@@ -224,9 +227,7 @@ func (b projectionBuilder) detail(e projectedEvent) Detail {
 		TypeName: b.normal.Name, StaffName: e.row.StaffName, Version: 1, CreatedAt: at, UpdatedAt: at,
 		Source: SourceGoogleCalendar,
 	}
-	if e.occurrence.IsZero() {
-		d.ETag = e.row.ETag
-	}
+	d.ETag = e.row.ETag
 	if strings.TrimSpace(rd.Title) != "" {
 		title := rd.Title
 		d.Title = &title

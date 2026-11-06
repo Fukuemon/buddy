@@ -74,12 +74,15 @@ func (c change) moving() bool { return c.to.ID != c.from.ID }
 // If-Match に付けて Google に書く。書き込みは ADR-0026 の手順と保留の版に従い、Create と同じである。
 // 記録の無い予定（Google で作った予定）を変えると、id を予定の ID にした記録を作る。訪問の情報を足せば、記録が訪問の情報を持つ。
 // 予定の職員（主訪問者）を替えると、新しい職員のカレンダーに予定を作り、前のカレンダーの予定を消す（move）。
+// 繰り返しの予定の例外の回（Google で変えた回）は、回の予定を書き換える。回の記録が無ければ、訪問の情報を変えたときだけ id の記録を作る。
+// id が繰り返しの予定の展開した回の一覧での ID なら、回を Google の例外の回にして変える（ChangeOccurrence.Do と同じ）。etag は親の予定の etag で、
+// 親の予定を Google から読み直して比べる。
 //
 // 入力と参照のエラー、apperr.ErrForbidden は schedule.Update と同じである。予定が無いときは apperr.ErrNotFound を返す。
 // 次のときは apperr.ErrConflict を返す: 事業所が google_primary でない、open の切り替えがある（CodeCutoverOpen）、新しい予定の職員に
 // 外していないカレンダーが無い（CodeCalendarNotLinked）、予定に保留の版がある（CodeWritePending）、読んだ後に Google で予定が変わった
 // （CodeEventChanged）、Google で予定が消されたか見つからない（CodeEventNotFound）、カレンダーに書けない（CodeCalendarUnwritable）、
-// Google が内容を受け付けない（CodeEventRejected）、繰り返しの予定か回である。
+// Google が内容を受け付けない（CodeEventRejected）、繰り返しの予定の親である、例外の回の親の記録に保留の版がある（CodeWritePending）。
 // CodeEventChanged と、Google で消されていたときは、Google の今の予定を Projection に写す。
 // Google が受けたかが分からないときは保留の版を残して ErrWriteUnknown を、Google が一時的に拒んだときは ErrGoogleUnavailable を包んだエラーを返す。
 // 保留の版を書いた後は、リクエストが取り消されても、Google の結果を記録に残すまで続ける。
@@ -89,6 +92,13 @@ func (u Update) Do(ctx context.Context, facilityID, id, etag string, in schedule
 	}
 	if u.accounts == nil {
 		return scheduleview.Detail{}, calendar.ErrNotConfigured
+	}
+	occ, ok, err := findListedOccurrence(ctx, u.projections, u.now, facilityID, id)
+	if err != nil {
+		return scheduleview.Detail{}, err
+	}
+	if ok {
+		return u.changeOccurrence(ctx, facilityID, occ.Parent.ScheduleID, occ.Date, occ.ID, etag, in)
 	}
 	writer, err := u.accounts.Writer(ctx, facilityID)
 	if err != nil {
@@ -107,7 +117,11 @@ func (u Update) Do(ctx context.Context, facilityID, id, etag string, in schedule
 	if err != nil {
 		return scheduleview.Detail{}, err
 	}
-	ctx = context.WithoutCancel(ctx)
+	return u.write(context.WithoutCancel(ctx), source, writer, c)
+}
+
+// write は、手順 2 から 5 を行う。c の予定を Google で部分更新し、予定を移す変更では move で移す。
+func (u Update) write(ctx context.Context, source calendar.EventSource, writer calendar.EventWriter, c change) (scheduleview.Detail, error) {
 	if c.moving() {
 		return u.move(ctx, source, writer, c)
 	}
@@ -131,6 +145,16 @@ func (u Update) begin(ctx context.Context, facilityID, id, etag string, in sched
 	}
 	if err := schedule.RequireScheduleAccess(ctx, u.staffRefs, row.StaffID, true); err != nil {
 		return change{}, err
+	}
+	if row.IsException() {
+		cal, err := u.calendars.Get(ctx, row.ExternalCalendarID)
+		if err != nil {
+			return change{}, err
+		}
+		if err := requireParentSettled(ctx, u.records, cal, row.RecurringEventID); err != nil {
+			return change{}, err
+		}
+		return u.beginOccurrence(ctx, facilityID, id, rec, cal, row.EventID, etag, row.StaffID, row.Visit, in)
 	}
 	var storedVisit *string
 	if rec != nil {

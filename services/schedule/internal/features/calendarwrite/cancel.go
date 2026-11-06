@@ -43,6 +43,8 @@ func NewCancel(locks FacilityLock, cutovers Cutovers, staffRefs kernel.Finder[st
 }
 
 // Do は、事業所 facilityID の、一覧での ID が id の単発の予定の Google の予定を、etag を If-Match に付けて消し、取り消しを返す。
+// id が繰り返しの予定の展開した回の一覧での ID なら、その回を取り消す（CancelOccurrence.Do と同じ）。etag は親の予定の etag で、
+// 親の予定を Google から読み直して比べる。
 // 取り消しの ID は予定の ID と同じで、理由 reason は Google に書けないので保存しない。消せたら、Projection の行を取り消しの状態にし、
 // 予定の記録と訪問の情報を消す（ADR-0026 の、Google で取り消した予定の訪問の情報の行は消す規則）。
 // Google の予定に保留の版は置かない。消す書き込みは、Google が受けたかが分からなくても、残す訪問の情報を持たないためである。
@@ -50,7 +52,7 @@ func NewCancel(locks FacilityLock, cutovers Cutovers, staffRefs kernel.Finder[st
 // 理由の入力のエラーと apperr.ErrForbidden は schedule.Cancel と同じである。予定が無いときは apperr.ErrNotFound を返す。
 // 次のときは apperr.ErrConflict を返す: 事業所が google_primary でない、open の切り替えがある（CodeCutoverOpen）、予定に保留の版が
 // ある（CodeWritePending）、読んだ後に Google で予定が変わった（CodeEventChanged）、Google で予定が消されたか見つからない
-// （CodeEventNotFound）、カレンダーに書けない（CodeCalendarUnwritable）、繰り返しの予定か回である。
+// （CodeEventNotFound）、カレンダーに書けない（CodeCalendarUnwritable）、繰り返しの予定の親である、例外の回か展開した回の親の記録に保留の版がある（CodeWritePending）。
 // CodeEventChanged と、Google で消されていたときは、Google の今の予定を Projection に写す。
 // Google が受けたかが分からないときは ErrWriteUnknown を、Google が一時的に拒んだときは ErrGoogleUnavailable を包んだエラーを返す。
 func (c Cancel) Do(ctx context.Context, facilityID, id, etag, reason string) (schedule.Cancellation, error) {
@@ -63,6 +65,13 @@ func (c Cancel) Do(ctx context.Context, facilityID, id, etag, reason string) (sc
 	}
 	if c.accounts == nil {
 		return schedule.Cancellation{}, calendar.ErrNotConfigured
+	}
+	occ, ok, err := findListedOccurrence(ctx, c.projections, c.now, facilityID, id)
+	if err != nil {
+		return schedule.Cancellation{}, err
+	}
+	if ok {
+		return c.cancelOccurrence(ctx, facilityID, occ.Parent.ScheduleID, occ.Date, occ.ID, etag, reason)
 	}
 	writer, err := c.accounts.Writer(ctx, facilityID)
 	if err != nil {
@@ -88,30 +97,44 @@ func (c Cancel) Do(ctx context.Context, facilityID, id, etag, reason string) (sc
 			return err
 		}
 		eventID = row.EventID
-		cal, err = c.calendars.Get(ctx, row.ExternalCalendarID)
-		return err
+		if cal, err = c.calendars.Get(ctx, row.ExternalCalendarID); err != nil {
+			return err
+		}
+		if row.IsException() {
+			return requireParentSettled(ctx, c.records, cal, row.RecurringEventID)
+		}
+		return nil
 	})
 	if err != nil {
 		return schedule.Cancellation{}, err
 	}
-	ctx = context.WithoutCancel(ctx)
+	if err := c.remove(context.WithoutCancel(ctx), source, writer, id, cal, eventID, etag); err != nil {
+		return schedule.Cancellation{}, err
+	}
+	return cn, nil
+}
+
+// remove は、カレンダー cal の Google の予定 eventID を、etag を If-Match に付けて消す。消せたら、予定を読み直して Projection の行を
+// 取り消しの状態にし、予定 id の記録と訪問の情報を消す（forget）。エラーは Do と同じである。
+func (c Cancel) remove(ctx context.Context, source calendar.EventSource, writer calendar.EventWriter, id string, cal calendar.ExternalCalendar,
+	eventID, etag string) error {
 	callCtx, cancel := context.WithTimeout(ctx, CallTimeout)
-	err = writer.Delete(callCtx, cal.CalendarID, eventID, etag)
+	err := writer.Delete(callCtx, cal.CalendarID, eventID, etag)
 	cancel()
 	switch {
 	case err == nil:
 	case errors.Is(err, calendar.ErrOutcomeUnknown):
-		return schedule.Cancellation{}, fmt.Errorf("%w: %w", ErrWriteUnknown, err)
+		return fmt.Errorf("%w: %w", ErrWriteUnknown, err)
 	case errors.Is(err, calendar.ErrEventChanged), errors.Is(err, calendar.ErrEventGone):
 		if perr := reproject(ctx, source, c.projections, c.now, c.tx, cal, eventID); perr != nil {
-			return schedule.Cancellation{}, perr
+			return perr
 		}
-		return schedule.Cancellation{}, writeError(err)
+		return writeError(err)
 	default:
-		return schedule.Cancellation{}, writeError(err)
+		return writeError(err)
 	}
 	ev, readErr := readEvent(ctx, source, cal.CalendarID, eventID)
-	err = c.tx.WithinTx(ctx, func(ctx context.Context) error {
+	return c.tx.WithinTx(ctx, func(ctx context.Context) error {
 		if err := c.forget(ctx, id, calendar.EventLocation{ExternalCalendarID: cal.ID, ExternalEventID: eventID}); err != nil {
 			return err
 		}
@@ -121,10 +144,6 @@ func (c Cancel) Do(ctx context.Context, facilityID, id, etag, reason string) (sc
 		}
 		return project(ctx, c.projections, civil.Today(c.now()), cal, ev)
 	})
-	if err != nil {
-		return schedule.Cancellation{}, err
-	}
-	return cn, nil
 }
 
 // forget は、消した予定 at を指す予定 id の記録と、その訪問の情報を消す。記録が無いか、ほかの予定を指すか、

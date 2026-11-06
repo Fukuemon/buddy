@@ -86,6 +86,21 @@ func (r *CalendarProjectionRepository) ListByFacility(ctx context.Context, facil
 	return r.projectionDetails(ctx, rows)
 }
 
+// ListRecordedEvents は、scheduleview.RecordedEvents の ListRecordedEvents を実装する。
+func (r *CalendarProjectionRepository) ListRecordedEvents(ctx context.Context, facilityID string, ids []string) (map[string]scheduleview.RecordedEvent, error) {
+	rows, err := r.q(ctx).ListConfirmedCalendarEventRecords(ctx, sqlcgen.ListConfirmedCalendarEventRecordsParams{FacilityID: facilityID, ScheduleIds: ids})
+	if err != nil {
+		return nil, translate("list confirmed calendar event records", err)
+	}
+	out := make(map[string]scheduleview.RecordedEvent, len(rows))
+	for _, row := range rows {
+		out[row.ScheduleID] = scheduleview.RecordedEvent{
+			ExternalCalendarID: row.ExternalCalendarID, ExternalEventID: row.ExternalEventID, RecurringEventID: row.RecurringEventID,
+		}
+	}
+	return out, nil
+}
+
 // GetBySchedule は、scheduleview.Projections の GetBySchedule を実装する。記録の予定の ID で引き、無ければ記録の無い行を一覧での ID で引く。
 func (r *CalendarProjectionRepository) GetBySchedule(ctx context.Context, facilityID, id string) (scheduleview.ProjectionDetail, error) {
 	var row sqlcgen.ListCalendarEventProjectionsByFacilityRow

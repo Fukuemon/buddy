@@ -16,4 +16,22 @@ type Projections interface {
 	// 記録の予定の ID が id なら、記録が指すカレンダーと Google の予定の ID の行を返す。記録の無い行は ListScheduleID の値で引く。
 	// 無いときは apperr.ErrNotFound を返す。
 	GetBySchedule(ctx context.Context, facilityID, id string) (ProjectionDetail, error)
+	RecordedEvents
+}
+
+// RecordedEvents は、予定の API が Google カレンダーに書いた予定の記録（calendar.EventRecord）を、主キーで引く。
+// 実装は postgres.CalendarProjectionRepository である。
+type RecordedEvents interface {
+	// ListRecordedEvents は、ids のうち、事業所 facilityID の記録の主キーで、確定した版（Google が受けたと分かった版）を持つ記録の、
+	// 確定した版の予定の場所を、主キーごとに返す。保留の版だけを持つ記録と、指す予定の Projection の行が無い記録は返さない。
+	// 1 回の問い合わせで引く。
+	ListRecordedEvents(ctx context.Context, facilityID string, ids []string) (map[string]RecordedEvent, error)
+}
+
+// RecordedEvent は、記録が指す、Google が受けたと分かった版の予定の場所である。
+// RecurringEventID は、その予定の Projection の行が例外の回なら、繰り返しの親の Google の予定の ID で、ほかの行では空である。
+type RecordedEvent struct {
+	ExternalCalendarID string
+	ExternalEventID    string
+	RecurringEventID   string
 }

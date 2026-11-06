@@ -84,6 +84,10 @@ func newApps(r Repositories, accounts *gcal.Accounts, cfg config.API, log *slog.
 				r.calendars, r.records, r.projections, calendarAccounts(accounts), r.ids, log, nil, r.tx).Do,
 			Cancel: calendarwrite.NewCancel(r.facilities, r.projections, r.staffRefs, visitInfos, r.calendars, r.records, r.projections,
 				calendarAccounts(accounts), nil, r.tx).Do,
+			CreateRecurring: calendarwrite.NewCreateRecurring(r.facilities, r.projections, r.scheduleTypes, r.staffRefs, r.staff, visitInfos, r.visitInfos,
+				r.calendars, r.records, r.projections, calendarAccounts(accounts), nil, r.tx).Do,
+			ChangeOccurrence: calendarwrite.NewChangeOccurrence(r.facilities, r.projections, r.scheduleTypes, r.staffRefs, r.staff, visitInfos, r.visitInfos,
+				r.calendars, r.records, r.projections, calendarAccounts(accounts), r.ids, log, nil, r.tx).Do,
 		},
 		Auth: access.NewService(access.Deps{Facilities: r.facilities, Staff: r.staff, Resources: accessResources(r)}),
 	}

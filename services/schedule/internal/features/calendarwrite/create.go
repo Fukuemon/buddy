@@ -66,8 +66,14 @@ type write struct {
 	// candidate は、resend のときに入力から作った訪問の情報である。最初の書き込みが届かないと分かったときだけ、新しい保留の版に使う。
 	candidate *string
 	body      calendar.EventBody
+	// detail は単発の予定の応答で、recurring は繰り返しの予定の応答である。作る予定の種類に合わせて、どちらか一方だけを持つ。
 	detail    scheduleview.Detail
+	recurring *scheduleview.RecurringDetail
 }
+
+// draft は、作る予定を入力から組み立てる。予定の職員と、応答（detail か recurring）と本文を持つ write と、
+// 保存した訪問の情報（無ければ nil）を返す。1 つ目のトランザクションの中で、事業所の行を共有のロックで読んだ後に呼ぶ。
+type draft func(ctx context.Context) (w write, staffID string, visitID *string, err error)
 
 // Do は、事業所 facilityID に、画面が決めた ID が id の単発の予定を、予定の職員のカレンダーに書いて作り、書いた予定を返す。
 // 書き込みは ADR-0026 の手順に従う。1 つ目のトランザクションで、事業所の行を共有のロックで読んでモードと切り替えを確認し、
@@ -87,32 +93,52 @@ type write struct {
 // Google を読み、最初の書き込みが届いたかで分ける（resend）。保留の版の訪問の情報は、Google が受けた版なら失わない。
 // 保留の版を書いた後は、リクエストが取り消されても、Google の結果を記録に残すまで続ける。
 func (c Create) Do(ctx context.Context, facilityID, id string, in schedule.SlotInput) (scheduleview.Detail, error) {
+	w, ev, err := c.run(ctx, facilityID, id, func(ctx context.Context) (write, string, *string, error) {
+		sc, typ, err := schedule.PrepareSchedule(ctx, c.types, c.staffRefs, c.visits, c.now, facilityID, id, in)
+		if err != nil {
+			return write{}, "", nil, err
+		}
+		detail, err := describe(ctx, c.staffNames, c.details, sc, typ)
+		if err != nil {
+			return write{}, "", nil, err
+		}
+		return write{detail: detail, body: calendar.ScheduleBody(detail)}, sc.StaffID, sc.VisitInfoID, nil
+	})
+	if err != nil {
+		return scheduleview.Detail{}, err
+	}
+	return resultOf(w.detail, w.version, ev, c.now()), nil
+}
+
+// run は、id の予定を、draft で組み立てて Google に作る。Do と CreateRecurring.Do の手順とエラーは同じである。
+// 返す write の応答の訪問の情報は、Google が受けた版の訪問の情報である。
+func (c Create) run(ctx context.Context, facilityID, id string, prepare draft) (write, calendar.Event, error) {
 	if id == "" {
-		return scheduleview.Detail{}, apperr.Invalid("Google カレンダーを予定の正本にする事業所では、予定の ID（id）が必須です")
+		return write{}, calendar.Event{}, apperr.Invalid("Google カレンダーを予定の正本にする事業所では、予定の ID（id）が必須です")
 	}
 	eventID, err := calendar.EventIDOf(id)
 	if err != nil {
-		return scheduleview.Detail{}, apperr.Invalid("予定の ID %s は ULID ではありません", id)
+		return write{}, calendar.Event{}, apperr.Invalid("予定の ID %s は ULID ではありません", id)
 	}
 	if c.accounts == nil {
-		return scheduleview.Detail{}, calendar.ErrNotConfigured
+		return write{}, calendar.Event{}, calendar.ErrNotConfigured
 	}
 	writer, err := c.accounts.Writer(ctx, facilityID)
 	if err != nil {
-		return scheduleview.Detail{}, err
+		return write{}, calendar.Event{}, err
 	}
 	source, err := c.accounts.Source(ctx, facilityID)
 	if err != nil {
-		return scheduleview.Detail{}, err
+		return write{}, calendar.Event{}, err
 	}
 	var w write
 	err = c.tx.WithinTx(ctx, func(ctx context.Context) error {
 		var err error
-		w, err = c.begin(ctx, facilityID, id, eventID, in)
+		w, err = c.begin(ctx, facilityID, id, eventID, prepare)
 		return err
 	})
 	if err != nil {
-		return scheduleview.Detail{}, err
+		return write{}, calendar.Event{}, err
 	}
 	ctx = context.WithoutCancel(ctx)
 	switch {
@@ -125,7 +151,7 @@ func (c Create) Do(ctx context.Context, facilityID, id string, in schedule.SlotI
 }
 
 // insert は、手順 2 から 5 を行う。Google に予定を作り、結果で保留の版を確定するか、消すか、残す。
-func (c Create) insert(ctx context.Context, source calendar.EventSource, writer calendar.EventWriter, w write) (scheduleview.Detail, error) {
+func (c Create) insert(ctx context.Context, source calendar.EventSource, writer calendar.EventWriter, w write) (write, calendar.Event, error) {
 	callCtx, cancel := context.WithTimeout(ctx, CallTimeout)
 	ev, err := writer.Insert(callCtx, w.cal.CalendarID, w.eventID, w.body)
 	cancel()
@@ -136,38 +162,35 @@ func (c Create) insert(ctx context.Context, source calendar.EventSource, writer 
 		return c.reconcile(ctx, source, w)
 	case errors.Is(err, calendar.ErrOutcomeUnknown):
 		if serr := c.settle(ctx, w, false); serr != nil {
-			return scheduleview.Detail{}, serr
+			return write{}, calendar.Event{}, serr
 		}
-		return scheduleview.Detail{}, fmt.Errorf("%w: %w", ErrWriteUnknown, err)
+		return write{}, calendar.Event{}, fmt.Errorf("%w: %w", ErrWriteUnknown, err)
 	default:
 		if serr := c.settle(ctx, w, true); serr != nil {
-			return scheduleview.Detail{}, serr
+			return write{}, calendar.Event{}, serr
 		}
-		return scheduleview.Detail{}, writeError(err)
+		return write{}, calendar.Event{}, writeError(err)
 	}
 }
 
 // begin は、手順 1 を 1 つ目のトランザクションの中で行い、Google に書くものを返す。
-func (c Create) begin(ctx context.Context, facilityID, id, eventID string, in schedule.SlotInput) (write, error) {
+func (c Create) begin(ctx context.Context, facilityID, id, eventID string, prepare draft) (write, error) {
 	if err := requireGooglePrimary(ctx, c.locks, c.cutovers, facilityID); err != nil {
 		return write{}, err
 	}
-	sc, typ, err := schedule.PrepareSchedule(ctx, c.types, c.staffRefs, c.visits, c.now, facilityID, id, in)
+	w, staffID, visitID, err := prepare(ctx)
 	if err != nil {
 		return write{}, err
 	}
-	cal, err := c.calendars.ActiveByStaff(ctx, sc.StaffID)
+	cal, err := c.calendars.ActiveByStaff(ctx, staffID)
 	if errors.Is(err, apperr.ErrNotFound) {
 		return write{}, errCalendarNotLinked
 	}
 	if err != nil {
 		return write{}, err
 	}
-	detail, err := describe(ctx, c.staffNames, c.details, sc, typ)
-	if err != nil {
-		return write{}, err
-	}
-	w := write{scheduleID: id, cal: cal, eventID: eventID, detail: detail}
+	w.scheduleID, w.cal, w.eventID = id, cal, eventID
+	w.body.Private = map[string]string{calendar.PropScheduleID: id}
 	now := c.now()
 	rec, err := c.records.GetForUpdate(ctx, id)
 	switch {
@@ -175,7 +198,7 @@ func (c Create) begin(ctx context.Context, facilityID, id, eventID string, in sc
 		w.version = 1
 		rec = calendar.EventRecord{
 			ScheduleID: id, FacilityID: facilityID, ExternalCalendarID: cal.ID, ExternalEventID: eventID,
-			Pending: &calendar.PendingWrite{Version: w.version, State: calendar.PendingWriting, VisitInfoID: sc.VisitInfoID, Deadline: now.Add(WriteDeadline)},
+			Pending: &calendar.PendingWrite{Version: w.version, State: calendar.PendingWriting, VisitInfoID: visitID, Deadline: now.Add(WriteDeadline)},
 		}
 		if err := c.records.Create(ctx, rec); errors.Is(err, apperr.ErrConflict) {
 			return write{}, errWritePending
@@ -187,22 +210,34 @@ func (c Create) begin(ctx context.Context, facilityID, id, eventID string, in sc
 	case rec.FacilityID != facilityID || rec.ExternalCalendarID != cal.ID:
 		return write{}, errIDTaken
 	case rec.Pending == nil:
-		if err := deleteVisit(ctx, c.visits, sc.VisitInfoID); err != nil {
+		if err := deleteVisit(ctx, c.visits, visitID); err != nil {
 			return write{}, err
 		}
 		w.version, w.written = rec.Version, true
-		if err := useStoredVisit(ctx, c.details, &w.detail, rec.VisitInfoID); err != nil {
+		if err := w.useVisit(ctx, c.details, rec.VisitInfoID); err != nil {
 			return write{}, err
 		}
 	case rec.Pending.IsWriting(now):
 		return write{}, errWritePending
 	default:
 		w.version, w.resend = rec.Pending.Version, true
-		w.pendingVisit, w.deadline, w.candidate = rec.Pending.VisitInfoID, rec.Pending.Deadline, sc.VisitInfoID
+		w.pendingVisit, w.deadline, w.candidate = rec.Pending.VisitInfoID, rec.Pending.Deadline, visitID
 	}
-	w.body = calendar.ScheduleBody(detail)
 	w.setVersion(w.version)
 	return w, nil
+}
+
+// useVisit は、応答の訪問の情報を、保存した訪問の情報 id にする。id が nil なら訪問の情報を外す。
+func (w *write) useVisit(ctx context.Context, details VisitDetails, id *string) error {
+	if w.recurring == nil {
+		return useStoredVisit(ctx, details, &w.detail, id)
+	}
+	d := scheduleview.Detail{}
+	if err := useStoredVisit(ctx, details, &d, id); err != nil {
+		return err
+	}
+	w.recurring.VisitInfoID, w.recurring.Visit = d.VisitInfoID, d.Visit
+	return nil
 }
 
 // setVersion は、Google に書く版を v にし、予定の本文の版も v にする。
@@ -212,7 +247,7 @@ func (w *write) setVersion(v int) {
 }
 
 // confirm は、手順 3 を行う。2 つ目のトランザクションで、Google が返した予定 ev を Projection に写し、保留の版を確定する。
-func (c Create) confirm(ctx context.Context, w write, ev calendar.Event) (scheduleview.Detail, error) {
+func (c Create) confirm(ctx context.Context, w write, ev calendar.Event) (write, calendar.Event, error) {
 	err := c.tx.WithinTx(ctx, func(ctx context.Context) error {
 		if err := c.confirmRecord(ctx, w); err != nil {
 			return err
@@ -220,30 +255,30 @@ func (c Create) confirm(ctx context.Context, w write, ev calendar.Event) (schedu
 		return c.project(ctx, w.cal, ev)
 	})
 	if err != nil {
-		return scheduleview.Detail{}, err
+		return write{}, calendar.Event{}, err
 	}
-	return c.result(w, ev), nil
+	return w, ev, nil
 }
 
 // reconcile は、作成が 409（calendar.ErrEventExists）だったときと、確定した記録への送り直しで、Google の予定を読んで比べる。
 // 読んだ etag で上書きしない。Google の予定の buddy の予定の ID と版が送った版と同じなら保留の版を確定し、違えば保留の版を消す。
 // どちらでも、読んだ予定を Projection に写す。予定の内容も同じなら成功を返し、違えば errEventChanged を返す。
 // 読めなかったときは、保留の版を「結果が分からない」にして残し、ErrWriteUnknown を包んだエラーを返す。
-func (c Create) reconcile(ctx context.Context, source calendar.EventSource, w write) (scheduleview.Detail, error) {
+func (c Create) reconcile(ctx context.Context, source calendar.EventSource, w write) (write, calendar.Event, error) {
 	callCtx, cancel := context.WithTimeout(ctx, CallTimeout)
 	ev, err := source.Event(callCtx, w.cal.CalendarID, w.eventID)
 	cancel()
 	if err != nil {
 		if w.written {
 			if errors.Is(err, calendar.ErrEventNotFound) {
-				return scheduleview.Detail{}, errEventNotFound
+				return write{}, calendar.Event{}, errEventNotFound
 			}
-			return scheduleview.Detail{}, fmt.Errorf("%w: %w", ErrGoogleUnavailable, err)
+			return write{}, calendar.Event{}, fmt.Errorf("%w: %w", ErrGoogleUnavailable, err)
 		}
 		if serr := c.settle(ctx, w, false); serr != nil {
-			return scheduleview.Detail{}, serr
+			return write{}, calendar.Event{}, serr
 		}
-		return scheduleview.Detail{}, fmt.Errorf("%w: %w", ErrWriteUnknown, err)
+		return write{}, calendar.Event{}, fmt.Errorf("%w: %w", ErrWriteUnknown, err)
 	}
 	ours := ev.Private[calendar.PropScheduleID] == w.scheduleID
 	accepted := ours && ev.Private[calendar.PropVersion] == strconv.Itoa(w.version)
@@ -262,17 +297,17 @@ func (c Create) reconcile(ctx context.Context, source calendar.EventSource, w wr
 		return c.project(ctx, w.cal, ev)
 	})
 	if err != nil {
-		return scheduleview.Detail{}, err
+		return write{}, calendar.Event{}, err
 	}
 	switch {
 	case !ours:
-		return scheduleview.Detail{}, errIDTaken
+		return write{}, calendar.Event{}, errIDTaken
 	case ev.Status == calendar.StatusCancelled:
-		return scheduleview.Detail{}, errEventNotFound
+		return write{}, calendar.Event{}, errEventNotFound
 	case !accepted || !sameContent(ev, w.body):
-		return scheduleview.Detail{}, errEventChanged
+		return write{}, calendar.Event{}, errEventChanged
 	}
-	return c.result(w, ev), nil
+	return w, ev, nil
 }
 
 // resend は、保留の版がある記録への送り直しで、Google に作る前に予定を読み、最初の書き込みが届いたかで分ける（ADR-0026 の読み戻しの規則）。
@@ -284,14 +319,14 @@ func (c Create) reconcile(ctx context.Context, source calendar.EventSource, w wr
 //   - 読めない: 保留の版を変えずに ErrWriteUnknown を包んだエラーを返す。
 //
 // 読んでいる間に、ほかの送り直しが保留の版を解いていれば、保留の版を変えずに errWritePending を返す。
-func (c Create) resend(ctx context.Context, source calendar.EventSource, writer calendar.EventWriter, w write) (scheduleview.Detail, error) {
+func (c Create) resend(ctx context.Context, source calendar.EventSource, writer calendar.EventWriter, w write) (write, calendar.Event, error) {
 	callCtx, cancel := context.WithTimeout(ctx, CallTimeout)
 	ev, err := source.Event(callCtx, w.cal.CalendarID, w.eventID)
 	cancel()
 	expired := !c.now().Before(w.deadline)
 	if errors.Is(err, calendar.ErrEventNotFound) {
 		if !expired {
-			return scheduleview.Detail{}, c.discardCandidate(ctx, w, errWritePending)
+			return write{}, calendar.Event{}, c.discardCandidate(ctx, w, errWritePending)
 		}
 		recreated := false
 		err := c.tx.WithinTx(ctx, func(ctx context.Context) error {
@@ -308,23 +343,23 @@ func (c Create) resend(ctx context.Context, source calendar.EventSource, writer 
 			return deleteVisit(ctx, c.visits, prev)
 		})
 		if err != nil {
-			return scheduleview.Detail{}, err
+			return write{}, calendar.Event{}, err
 		}
 		if !recreated {
-			return scheduleview.Detail{}, c.discardCandidate(ctx, w, errWritePending)
+			return write{}, calendar.Event{}, c.discardCandidate(ctx, w, errWritePending)
 		}
 		w.setVersion(w.version + 1)
 		w.resend, w.pendingVisit, w.candidate = false, nil, nil
 		return c.insert(ctx, source, writer, w)
 	}
 	if err != nil {
-		return scheduleview.Detail{}, c.discardCandidate(ctx, w, fmt.Errorf("%w: %w", ErrWriteUnknown, err))
+		return write{}, calendar.Event{}, c.discardCandidate(ctx, w, fmt.Errorf("%w: %w", ErrWriteUnknown, err))
 	}
 	ours := ev.Private[calendar.PropScheduleID] == w.scheduleID
 	cancelled := ev.Status == calendar.StatusCancelled
 	accepted := ours && !cancelled && ev.Private[calendar.PropVersion] == strconv.Itoa(w.version)
 	if !ours {
-		return scheduleview.Detail{}, c.discardCandidate(ctx, w, errIDTaken)
+		return write{}, calendar.Event{}, c.discardCandidate(ctx, w, errIDTaken)
 	}
 	resolved := false
 	err = c.tx.WithinTx(ctx, func(ctx context.Context) error {
@@ -351,18 +386,18 @@ func (c Create) resend(ctx context.Context, source calendar.EventSource, writer 
 	})
 	switch {
 	case err != nil:
-		return scheduleview.Detail{}, err
+		return write{}, calendar.Event{}, err
 	case !resolved:
-		return scheduleview.Detail{}, errWritePending
+		return write{}, calendar.Event{}, errWritePending
 	case cancelled:
-		return scheduleview.Detail{}, errEventNotFound
+		return write{}, calendar.Event{}, errEventNotFound
 	case !accepted || !sameContent(ev, w.body):
-		return scheduleview.Detail{}, errEventChanged
+		return write{}, calendar.Event{}, errEventChanged
 	}
-	if err := useStoredVisit(ctx, c.details, &w.detail, w.pendingVisit); err != nil {
-		return scheduleview.Detail{}, err
+	if err := w.useVisit(ctx, c.details, w.pendingVisit); err != nil {
+		return write{}, calendar.Event{}, err
 	}
-	return c.result(w, ev), nil
+	return w, ev, nil
 }
 
 // discardCandidate は、送り直しの入力から作った訪問の情報を消し、cause を返す。消せなければ、そのエラーを返す。
@@ -405,11 +440,6 @@ func (c Create) rejectRecord(ctx context.Context, w write) error {
 // project は、カレンダー cal の Google の予定 ev を Projection の行に写す。
 func (c Create) project(ctx context.Context, cal calendar.ExternalCalendar, ev calendar.Event) error {
 	return project(ctx, c.projections, civil.Today(c.now()), cal, ev)
-}
-
-// result は、Google に書いた予定 ev から応答の予定を作る。
-func (c Create) result(w write, ev calendar.Event) scheduleview.Detail {
-	return resultOf(w.detail, w.version, ev, c.now())
 }
 
 // sameContent は、Google の予定 ev の内容（タイトル、日時、繰り返しの規則、説明）が、書こうとした内容 b と同じかを返す。
