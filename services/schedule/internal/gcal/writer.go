@@ -36,19 +36,19 @@ func (w *Writer) Insert(ctx context.Context, calendarID, eventID string, b calen
 	return toEvent(got), nil
 }
 
-// Update は、予定 eventID を b の内容で部分更新し、新しい etag を返す。etag が空でなければ If-Match に付ける。
+// Update は、予定 eventID を b の内容で部分更新し、Google が返した予定を返す。etag が空でなければ If-Match に付ける。
 // 消された予定は、状態を confirmed にして戻す。
 // 出典: https://developers.google.com/workspace/calendar/api/guides/version-resources
-func (w *Writer) Update(ctx context.Context, calendarID, eventID, etag string, b calendar.EventBody) (string, error) {
+func (w *Writer) Update(ctx context.Context, calendarID, eventID, etag string, b calendar.EventBody) (calendar.Event, error) {
 	call := w.svc.Events.Patch(calendarID, eventID, toEventBody(b)).SendUpdates("none").Context(ctx)
 	if etag != "" {
 		call.Header().Set("If-Match", etag)
 	}
 	got, err := call.Do()
 	if err != nil {
-		return "", w.conditionalWriteError(ctx, calendarID, eventID, "予定を変えられない", err)
+		return calendar.Event{}, w.conditionalWriteError(ctx, calendarID, eventID, "予定を変えられない", err)
 	}
-	return got.Etag, nil
+	return toEvent(got), nil
 }
 
 // Delete は、予定 eventID を消す。etag が空でなければ If-Match に付ける。

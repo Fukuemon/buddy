@@ -14,9 +14,9 @@ const claimExpiredCalendarEventRecords = `-- name: ClaimExpiredCalendarEventReco
 UPDATE calendar_event_records r
 SET pending_locked_until = $1
 FROM external_calendars c
-WHERE c.id = r.external_calendar_id AND r.schedule_id IN (
+WHERE c.id = COALESCE(r.pending_external_calendar_id, r.external_calendar_id) AND r.schedule_id IN (
     SELECT r2.schedule_id FROM calendar_event_records r2
-    JOIN external_calendars c2 ON c2.id = r2.external_calendar_id
+    JOIN external_calendars c2 ON c2.id = COALESCE(r2.pending_external_calendar_id, r2.external_calendar_id)
     JOIN facilities f ON f.id = r2.facility_id
     WHERE r2.pending_version IS NOT NULL AND r2.pending_deadline <= $2
       AND (r2.pending_locked_until IS NULL OR r2.pending_locked_until <= $2)
@@ -27,6 +27,7 @@ WHERE c.id = r.external_calendar_id AND r.schedule_id IN (
 )
 RETURNING r.schedule_id, r.facility_id, r.external_calendar_id, r.external_event_id, r.visit_info_id, r.version,
           r.pending_version, r.pending_state, r.pending_visit_info_id, r.pending_deadline, r.pending_locked_until,
+          r.pending_external_calendar_id, r.pending_external_event_id,
           c.staff_id, c.provider, c.external_calendar_id AS calendar_id
 `
 
@@ -38,25 +39,28 @@ type ClaimExpiredCalendarEventRecordsParams struct {
 }
 
 type ClaimExpiredCalendarEventRecordsRow struct {
-	ScheduleID         string
-	FacilityID         string
-	ExternalCalendarID string
-	ExternalEventID    string
-	VisitInfoID        *string
-	Version            int32
-	PendingVersion     *int32
-	PendingState       *string
-	PendingVisitInfoID *string
-	PendingDeadline    *time.Time
-	PendingLockedUntil *time.Time
-	StaffID            string
-	Provider           string
-	CalendarID         string
+	ScheduleID                string
+	FacilityID                string
+	ExternalCalendarID        string
+	ExternalEventID           string
+	VisitInfoID               *string
+	Version                   int32
+	PendingVersion            *int32
+	PendingState              *string
+	PendingVisitInfoID        *string
+	PendingDeadline           *time.Time
+	PendingLockedUntil        *time.Time
+	PendingExternalCalendarID *string
+	PendingExternalEventID    *string
+	StaffID                   string
+	Provider                  string
+	CalendarID                string
 }
 
 // 書く期限を過ぎた保留の版を持つ記録を、同期が読み戻すために取る（ADR-0026）。保留の版の状態（writing、unknown）では絞らない。
 // 複数の処理が同時に取っても同じ記録を渡さないよう、行をロックできたものだけを取り、locked_until までほかの処理に渡さない。
-// 外したカレンダーの記録と、事業所の正本のモードが modes に無い記録は取らない。
+// 保留の版を書く予定のカレンダー（移す書き込みでは移す先）を外した記録と、事業所の正本のモードが modes に無い記録は取らない。
+// 返すカレンダーも、保留の版を書く予定のカレンダーである。
 func (q *Queries) ClaimExpiredCalendarEventRecords(ctx context.Context, arg ClaimExpiredCalendarEventRecordsParams) ([]ClaimExpiredCalendarEventRecordsRow, error) {
 	rows, err := q.db.Query(ctx, claimExpiredCalendarEventRecords,
 		arg.LockedUntil,
@@ -83,6 +87,8 @@ func (q *Queries) ClaimExpiredCalendarEventRecords(ctx context.Context, arg Clai
 			&i.PendingVisitInfoID,
 			&i.PendingDeadline,
 			&i.PendingLockedUntil,
+			&i.PendingExternalCalendarID,
+			&i.PendingExternalEventID,
 			&i.StaffID,
 			&i.Provider,
 			&i.CalendarID,
@@ -100,25 +106,27 @@ func (q *Queries) ClaimExpiredCalendarEventRecords(ctx context.Context, arg Clai
 const createCalendarEventRecord = `-- name: CreateCalendarEventRecord :exec
 INSERT INTO calendar_event_records (
     schedule_id, facility_id, external_calendar_id, external_event_id, visit_info_id, version,
-    pending_version, pending_state, pending_visit_info_id, pending_deadline
+    pending_version, pending_state, pending_visit_info_id, pending_deadline, pending_external_calendar_id, pending_external_event_id
 ) VALUES (
     $1, $2, $3, $4,
     $5, $6, $7, $8,
-    $9, $10
+    $9, $10, $11, $12
 )
 `
 
 type CreateCalendarEventRecordParams struct {
-	ScheduleID         string
-	FacilityID         string
-	ExternalCalendarID string
-	ExternalEventID    string
-	VisitInfoID        *string
-	Version            int32
-	PendingVersion     *int32
-	PendingState       *string
-	PendingVisitInfoID *string
-	PendingDeadline    *time.Time
+	ScheduleID                string
+	FacilityID                string
+	ExternalCalendarID        string
+	ExternalEventID           string
+	VisitInfoID               *string
+	Version                   int32
+	PendingVersion            *int32
+	PendingState              *string
+	PendingVisitInfoID        *string
+	PendingDeadline           *time.Time
+	PendingExternalCalendarID *string
+	PendingExternalEventID    *string
 }
 
 func (q *Queries) CreateCalendarEventRecord(ctx context.Context, arg CreateCalendarEventRecordParams) error {
@@ -133,6 +141,8 @@ func (q *Queries) CreateCalendarEventRecord(ctx context.Context, arg CreateCalen
 		arg.PendingState,
 		arg.PendingVisitInfoID,
 		arg.PendingDeadline,
+		arg.PendingExternalCalendarID,
+		arg.PendingExternalEventID,
 	)
 	return err
 }
@@ -147,7 +157,7 @@ func (q *Queries) DeleteCalendarEventRecord(ctx context.Context, scheduleID stri
 }
 
 const getCalendarEventRecordForUpdate = `-- name: GetCalendarEventRecordForUpdate :one
-SELECT schedule_id, facility_id, external_calendar_id, external_event_id, visit_info_id, version, pending_version, pending_state, pending_visit_info_id, pending_deadline, created_at, updated_at, pending_locked_until FROM calendar_event_records WHERE schedule_id = $1 FOR UPDATE
+SELECT schedule_id, facility_id, external_calendar_id, external_event_id, visit_info_id, version, pending_version, pending_state, pending_visit_info_id, pending_deadline, created_at, updated_at, pending_locked_until, pending_external_calendar_id, pending_external_event_id FROM calendar_event_records WHERE schedule_id = $1 FOR UPDATE
 `
 
 func (q *Queries) GetCalendarEventRecordForUpdate(ctx context.Context, scheduleID string) (CalendarEventRecord, error) {
@@ -167,6 +177,8 @@ func (q *Queries) GetCalendarEventRecordForUpdate(ctx context.Context, scheduleI
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.PendingLockedUntil,
+		&i.PendingExternalCalendarID,
+		&i.PendingExternalEventID,
 	)
 	return i, err
 }
@@ -189,30 +201,40 @@ func (q *Queries) ReleaseCalendarEventRecord(ctx context.Context, arg ReleaseCal
 
 const updateCalendarEventRecord = `-- name: UpdateCalendarEventRecord :exec
 UPDATE calendar_event_records
-SET visit_info_id = $1, version = $2,
-    pending_version = $3, pending_state = $4,
-    pending_visit_info_id = $5, pending_deadline = $6
-WHERE schedule_id = $7
+SET external_calendar_id = $1, external_event_id = $2,
+    visit_info_id = $3, version = $4,
+    pending_version = $5, pending_state = $6,
+    pending_visit_info_id = $7, pending_deadline = $8,
+    pending_external_calendar_id = $9, pending_external_event_id = $10
+WHERE schedule_id = $11
 `
 
 type UpdateCalendarEventRecordParams struct {
-	VisitInfoID        *string
-	Version            int32
-	PendingVersion     *int32
-	PendingState       *string
-	PendingVisitInfoID *string
-	PendingDeadline    *time.Time
-	ScheduleID         string
+	ExternalCalendarID        string
+	ExternalEventID           string
+	VisitInfoID               *string
+	Version                   int32
+	PendingVersion            *int32
+	PendingState              *string
+	PendingVisitInfoID        *string
+	PendingDeadline           *time.Time
+	PendingExternalCalendarID *string
+	PendingExternalEventID    *string
+	ScheduleID                string
 }
 
 func (q *Queries) UpdateCalendarEventRecord(ctx context.Context, arg UpdateCalendarEventRecordParams) error {
 	_, err := q.db.Exec(ctx, updateCalendarEventRecord,
+		arg.ExternalCalendarID,
+		arg.ExternalEventID,
 		arg.VisitInfoID,
 		arg.Version,
 		arg.PendingVersion,
 		arg.PendingState,
 		arg.PendingVisitInfoID,
 		arg.PendingDeadline,
+		arg.PendingExternalCalendarID,
+		arg.PendingExternalEventID,
 		arg.ScheduleID,
 	)
 	return err

@@ -48,16 +48,45 @@ WHERE external_calendar_id = sqlc.arg(external_calendar_id) AND last_end_date < 
 
 -- name: ListCalendarEventProjectionsByFacility :many
 -- 予定の表示の読み出し（scheduleview）が、事業所の外していないカレンダーの行のうち、終わる日が from_date より前でない行（終わる日の無い行を含む）を、
--- 職員の名前を付けて読む。外したカレンダー（退職した職員のカレンダーを含む）の行は返さない。
+-- 職員の名前と、記録のある予定の buddy の予定の ID を付けて読む。外したカレンダー（退職した職員のカレンダーを含む）の行は返さない。
 SELECT p.external_calendar_id, p.external_event_id, p.facility_id, p.staff_id, p.recurring_event_id, p.original_start_at, p.original_start_date,
        p.status, p.title, p.start_at, p.start_date, p.end_at, p.end_date, p.time_zone, p.recurrence, p.etag, p.google_updated_at,
-       p.last_end_date, p.projected_at, u.username AS staff_name
+       p.last_end_date, p.projected_at, u.username AS staff_name, r.schedule_id AS record_schedule_id
 FROM calendar_event_projections p
 JOIN external_calendars c ON c.id = p.external_calendar_id AND c.facility_id = p.facility_id
 JOIN users u ON u.id = p.staff_id AND u.facility_id = p.facility_id
+LEFT JOIN calendar_event_records r ON r.external_calendar_id = p.external_calendar_id AND r.external_event_id = p.external_event_id
 WHERE p.facility_id = sqlc.arg(facility_id) AND c.disabled_at IS NULL
   AND (p.last_end_date IS NULL OR p.last_end_date >= sqlc.arg(from_date)::date)
 ORDER BY p.external_calendar_id, p.external_event_id;
+
+-- name: GetCalendarEventProjectionByRecord :one
+-- 予定の ID が記録の予定の ID の予定を、記録が指すカレンダーと Google の予定の ID の行で読む。列は ListCalendarEventProjectionsByFacility と同じである。
+SELECT p.external_calendar_id, p.external_event_id, p.facility_id, p.staff_id, p.recurring_event_id, p.original_start_at, p.original_start_date,
+       p.status, p.title, p.start_at, p.start_date, p.end_at, p.end_date, p.time_zone, p.recurrence, p.etag, p.google_updated_at,
+       p.last_end_date, p.projected_at, u.username AS staff_name, r.schedule_id AS record_schedule_id
+FROM calendar_event_projections p
+JOIN external_calendars c ON c.id = p.external_calendar_id AND c.facility_id = p.facility_id
+JOIN users u ON u.id = p.staff_id AND u.facility_id = p.facility_id
+LEFT JOIN calendar_event_records r ON r.external_calendar_id = p.external_calendar_id AND r.external_event_id = p.external_event_id
+WHERE r.schedule_id = sqlc.arg(schedule_id) AND p.facility_id = sqlc.arg(facility_id) AND c.disabled_at IS NULL;
+
+-- name: GetCalendarEventProjectionByProjectedID :one
+-- 記録の無い予定を、一覧での予定の ID（projected_schedule_id）で読む。列は ListCalendarEventProjectionsByFacility と同じである。
+SELECT p.external_calendar_id, p.external_event_id, p.facility_id, p.staff_id, p.recurring_event_id, p.original_start_at, p.original_start_date,
+       p.status, p.title, p.start_at, p.start_date, p.end_at, p.end_date, p.time_zone, p.recurrence, p.etag, p.google_updated_at,
+       p.last_end_date, p.projected_at, u.username AS staff_name, NULL::text AS record_schedule_id
+FROM calendar_event_projections p
+JOIN external_calendars c ON c.id = p.external_calendar_id AND c.facility_id = p.facility_id
+JOIN users u ON u.id = p.staff_id AND u.facility_id = p.facility_id
+WHERE projected_schedule_id(p.external_calendar_id, p.external_event_id) = sqlc.arg(schedule_id)
+  AND p.facility_id = sqlc.arg(facility_id) AND c.disabled_at IS NULL
+  AND NOT EXISTS (
+      SELECT 1 FROM calendar_event_records r
+      WHERE r.external_calendar_id = p.external_calendar_id AND r.external_event_id = p.external_event_id
+  )
+ORDER BY p.external_calendar_id, p.external_event_id
+LIMIT 1;
 
 -- name: ListCalendarSyncStatusesByFacility :many
 -- 事業所の外していないカレンダーの同期の状況を、職員の名前を付けて返す。同期の状態の行が無いカレンダーは never にする。

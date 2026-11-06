@@ -13,15 +13,16 @@ import (
 // ClaimExpired と Release のほかは、トランザクションの中で呼ぶ。
 type PendingRecords interface {
 	calendar.EventRecords
-	// ClaimExpired は、書く期限が now 以前の保留の版を持つ記録のうち、事業所の正本のモードが modes にあり、カレンダーを外していない
-	// 記録を、書く期限の古い順に max 件まで取り、now に lease を足した時刻まで、ほかの処理に渡さないようにして返す。
+	// ClaimExpired は、書く期限が now 以前の保留の版を持つ記録のうち、事業所の正本のモードが modes にあり、保留の版を書く予定の
+	// カレンダー（calendar.EventRecord.PendingLocation）を外していない記録を、書く期限の古い順に max 件まで取り、now に lease を足した時刻まで、ほかの処理に渡さないようにして返す。
 	// 保留の版の状態（writing か unknown）では絞らない。
 	ClaimExpired(ctx context.Context, now time.Time, max int, lease time.Duration, modes []organization.SourceMode) ([]PendingCheck, error)
 	// Release は、ClaimExpired で取った p を、すぐにほかの処理が取れるように戻す。p を取った後にほかの処理が取り直していれば、何もしない。
 	Release(ctx context.Context, p PendingCheck) error
 }
 
-// PendingCheck は、読み戻しが取った、書く期限を過ぎた保留の版を持つ記録と、記録のカレンダーである。
+// PendingCheck は、読み戻しが取った、書く期限を過ぎた保留の版を持つ記録と、保留の版を書く予定のカレンダーである。
+// 予定を別のカレンダーに移す保留の版では、Calendar は移す先のカレンダーである。
 type PendingCheck struct {
 	Record   calendar.EventRecord
 	Calendar calendar.ExternalCalendar

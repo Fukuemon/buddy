@@ -11,7 +11,6 @@ import (
 	"github.com/Fukuemon/buddy/services/schedule/internal/apperr"
 	"github.com/Fukuemon/buddy/services/schedule/internal/civil"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendar"
-	"github.com/Fukuemon/buddy/services/schedule/internal/features/organization"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/schedule"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/scheduleview"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/staff"
@@ -150,19 +149,8 @@ func (c Create) insert(ctx context.Context, source calendar.EventSource, writer 
 
 // begin は、手順 1 を 1 つ目のトランザクションの中で行い、Google に書くものを返す。
 func (c Create) begin(ctx context.Context, facilityID, id, eventID string, in schedule.SlotInput) (write, error) {
-	f, err := c.locks.GetForShare(ctx, facilityID)
-	if err != nil {
+	if err := requireGooglePrimary(ctx, c.locks, c.cutovers, facilityID); err != nil {
 		return write{}, err
-	}
-	if f.SourceMode != organization.SourceGooglePrimary {
-		return write{}, errNotGooglePrimary
-	}
-	open, err := c.cutovers.FindOpenCutover(ctx, facilityID)
-	if err != nil {
-		return write{}, err
-	}
-	if open != nil {
-		return write{}, errCutoverOpen
 	}
 	sc, typ, err := schedule.PrepareSchedule(ctx, c.types, c.staffRefs, c.visits, c.now, facilityID, id, in)
 	if err != nil {
@@ -175,7 +163,7 @@ func (c Create) begin(ctx context.Context, facilityID, id, eventID string, in sc
 	if err != nil {
 		return write{}, err
 	}
-	detail, err := c.detailOf(ctx, sc, typ)
+	detail, err := describe(ctx, c.staffNames, c.details, sc, typ)
 	if err != nil {
 		return write{}, err
 	}
@@ -203,7 +191,7 @@ func (c Create) begin(ctx context.Context, facilityID, id, eventID string, in sc
 			return write{}, err
 		}
 		w.version, w.written = rec.Version, true
-		if err := c.useStoredVisit(ctx, &w.detail, rec.VisitInfoID); err != nil {
+		if err := useStoredVisit(ctx, c.details, &w.detail, rec.VisitInfoID); err != nil {
 			return write{}, err
 		}
 	case rec.Pending.IsWriting(now):
@@ -221,33 +209,6 @@ func (c Create) begin(ctx context.Context, facilityID, id, eventID string, in sc
 func (w *write) setVersion(v int) {
 	w.version = v
 	w.body.Private[calendar.PropVersion] = strconv.Itoa(v)
-}
-
-// detailOf は、組み立てた予定 sc を、応答と予定の本文に使う名前付きの予定にする。
-func (c Create) detailOf(ctx context.Context, sc schedule.Schedule, typ schedule.Type) (scheduleview.Detail, error) {
-	st, err := c.staffNames.Get(ctx, sc.StaffID)
-	if err != nil {
-		return scheduleview.Detail{}, err
-	}
-	d := scheduleview.Detail{Schedule: sc, TypeName: typ.Name, StaffName: st.Username, Source: scheduleview.SourceGoogleCalendar}
-	if err := c.useStoredVisit(ctx, &d, sc.VisitInfoID); err != nil {
-		return scheduleview.Detail{}, err
-	}
-	return d, nil
-}
-
-// useStoredVisit は、予定 d の訪問の情報を、保存した訪問の情報 id にする。id が nil なら訪問の情報を外す。
-func (c Create) useStoredVisit(ctx context.Context, d *scheduleview.Detail, id *string) error {
-	d.VisitInfoID, d.Visit = id, nil
-	if id == nil {
-		return nil
-	}
-	v, err := c.details.GetDetail(ctx, *id)
-	if err != nil {
-		return err
-	}
-	d.Visit = &v
-	return nil
 }
 
 // confirm は、手順 3 を行う。2 つ目のトランザクションで、Google が返した予定 ev を Projection に写し、保留の版を確定する。
@@ -398,7 +359,7 @@ func (c Create) resend(ctx context.Context, source calendar.EventSource, writer 
 	case !accepted || !sameContent(ev, w.body):
 		return scheduleview.Detail{}, errEventChanged
 	}
-	if err := c.useStoredVisit(ctx, &w.detail, w.pendingVisit); err != nil {
+	if err := useStoredVisit(ctx, c.details, &w.detail, w.pendingVisit); err != nil {
 		return scheduleview.Detail{}, err
 	}
 	return c.result(w, ev), nil
@@ -422,12 +383,7 @@ func (c Create) settle(ctx context.Context, w write, rejected bool) error {
 		if rejected {
 			return c.rejectRecord(ctx, w)
 		}
-		rec, ok, err := c.pendingRecord(ctx, w)
-		if err != nil || !ok {
-			return err
-		}
-		rec.Pending.State = calendar.PendingUnknown
-		return c.records.Update(ctx, rec)
+		return markUnknown(ctx, c.records, w.scheduleID, w.version)
 	})
 }
 
@@ -436,64 +392,24 @@ func (c Create) pendingRecord(ctx context.Context, w write) (calendar.EventRecor
 	return calendar.LockPending(ctx, c.records, w.scheduleID, w.version)
 }
 
-// confirmRecord は、w の版の保留の版がまだあれば、calendar.ConfirmPending で確定する。
+// confirmRecord は、w の版の保留の版がまだあれば確定する。
 func (c Create) confirmRecord(ctx context.Context, w write) error {
-	rec, ok, err := c.pendingRecord(ctx, w)
-	if err != nil || !ok {
-		return err
-	}
-	return calendar.ConfirmPending(ctx, c.records, c.visits, rec)
+	return confirmPending(ctx, c.records, c.visits, w.scheduleID, w.version)
 }
 
-// rejectRecord は、w の版の保留の版がまだあれば、calendar.RejectPending で消す。
+// rejectRecord は、w の版の保留の版がまだあれば消す。
 func (c Create) rejectRecord(ctx context.Context, w write) error {
-	rec, ok, err := c.pendingRecord(ctx, w)
-	if err != nil || !ok {
-		return err
-	}
-	return calendar.RejectPending(ctx, c.records, c.visits, rec)
+	return rejectPending(ctx, c.records, c.visits, w.scheduleID, w.version)
 }
 
 // project は、カレンダー cal の Google の予定 ev を Projection の行に写す。
 func (c Create) project(ctx context.Context, cal calendar.ExternalCalendar, ev calendar.Event) error {
-	if ev.Status == calendar.StatusCancelled {
-		return c.projections.Put(ctx, calendar.CancelledProjectionOf(cal, ev, civil.Today(c.now())))
-	}
-	p, err := calendar.ProjectionOf(cal, ev)
-	if err != nil {
-		// shortcut: 日時を読めない予定は写さず、同期（calendarsync）が写すか消すのに任せる。Google が日時の無い予定を返したら直す
-		return nil
-	}
-	return c.projections.Put(ctx, p)
+	return project(ctx, c.projections, civil.Today(c.now()), cal, ev)
 }
 
-// result は、Google に書いた予定 ev から応答の予定を作る。作成と更新の時刻は、Google で最後に変えた時刻にする。
+// result は、Google に書いた予定 ev から応答の予定を作る。
 func (c Create) result(w write, ev calendar.Event) scheduleview.Detail {
-	d := w.detail
-	d.Version = w.version
-	at := c.now()
-	if t, err := time.Parse(time.RFC3339, ev.Updated); err == nil {
-		at = t
-	}
-	d.CreatedAt, d.UpdatedAt = at, at
-	return d
-}
-
-// writeError は、Google が作成を拒んだときの EventWriter のエラーを、ADR-0026 の表の応答のエラーにする。
-func writeError(err error) error {
-	switch {
-	case errors.Is(err, calendar.ErrEventChanged):
-		return errEventChanged
-	case errors.Is(err, calendar.ErrEventGone), errors.Is(err, calendar.ErrEventNotFound):
-		return errEventNotFound
-	case errors.Is(err, calendar.ErrUnwritable):
-		return errUnwritable
-	case errors.Is(err, calendar.ErrEventRejected):
-		return errEventRejected
-	case errors.Is(err, calendar.ErrUnavailable):
-		return fmt.Errorf("%w: %w", ErrGoogleUnavailable, err)
-	}
-	return err
+	return resultOf(w.detail, w.version, ev, c.now())
 }
 
 // sameContent は、Google の予定 ev の内容（タイトル、日時、繰り返しの規則、説明）が、書こうとした内容 b と同じかを返す。
@@ -516,12 +432,4 @@ func sameInstant(a, b calendar.When) bool {
 	}
 	tb, err := b.Instant()
 	return err == nil && ta.Equal(tb)
-}
-
-// deleteVisit は、訪問の情報 id がどの予定と記録にも指されていなければ消す。id が nil なら何もしない。
-func deleteVisit(ctx context.Context, visits VisitInfos, id *string) error {
-	if id == nil {
-		return nil
-	}
-	return visits.DeleteIfUnused(ctx, *id)
 }

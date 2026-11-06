@@ -1,4 +1,4 @@
-// Package calendarwrite は、Google カレンダーを予定の正本にする事業所（google_primary）で、職員が buddy から作る予定を、
+// Package calendarwrite は、Google カレンダーを予定の正本にする事業所（google_primary）で、職員が buddy から作り、変え、取り消す予定を、
 // リクエストの中で Google カレンダーに書く（ADR-0026）。書いた予定の訪問の情報と書き込みの保留の版は、記録（calendar.EventRecord）に持つ。
 // 予定の閲覧と編集の判定、訪問の情報の規則は schedule の規則を使い、予定の本文と Projection の行は calendar の規則で作る。
 package calendarwrite
@@ -13,10 +13,11 @@ import (
 
 // Google を呼ぶ時間の上限と、書く期限（ADR-0026）。
 const (
-	// CallTimeout は、1 回の Google の呼び出し（作成か読み出し）を待つ時間の上限である。過ぎたら結果が分からないとみなす。
+	// CallTimeout は、1 回の Google の呼び出し（作成、変更、削除か読み出し）を待つ時間の上限である。過ぎたら結果が分からないとみなす。
 	CallTimeout = 20 * time.Second
-	// WriteDeadline は、保留の版を書いてから書く期限までの長さである。手順 1 の後に Google の作成と読み出しを 1 回ずつ呼び、
-	// 2 つ目のトランザクションを終えるまでを、CallTimeout の 2 回分に余裕を足して収める。期限を過ぎた「書いている途中」の保留の版は、
+	// WriteDeadline は、保留の版を書いてから書く期限までの長さである。手順 1 の後に Google を呼び、2 つ目のトランザクションを終えるまでを収める。
+	// 呼ぶ回数は、作成で 2 回（作成と読み出し）、予定を別のカレンダーに移す変更で 4 回（読み出し、作成、削除、読み出し）までで、
+	// CallTimeout の 4 回分に余裕を足して収める。期限を過ぎた「書いている途中」の保留の版は、
 	// 予定の API が止まったものとみなす。
 	WriteDeadline = 2 * time.Minute
 )
@@ -49,7 +50,7 @@ var (
 
 var (
 	errNotGooglePrimary  = apperr.Conflict("この事業所の予定の正本が変わりました。画面を開き直してください")
-	errCutoverOpen       = apperr.ConflictCode(CodeCutoverOpen, "この事業所では予定の正本を切り替えています。切り替えの間は予定を作れません")
+	errCutoverOpen       = apperr.ConflictCode(CodeCutoverOpen, "この事業所では予定の正本を切り替えています。切り替えの間は予定を作成、変更、取り消しできません")
 	errCalendarNotLinked = apperr.ConflictCode(CodeCalendarNotLinked, "予定の職員が Google カレンダーを結び付けていません。カレンダーを結び付けてから予定を作ってください")
 	errWritePending      = apperr.ConflictCode(CodeWritePending, "この予定は Google カレンダーに書いている途中です。時間をおいて予定を開き直してください")
 	errIDTaken           = apperr.Conflict("この予定の ID は、ほかの予定に使われています")
@@ -57,4 +58,5 @@ var (
 	errEventNotFound     = apperr.ConflictCode(CodeEventNotFound, "Google カレンダーで予定が見つかりません")
 	errUnwritable        = apperr.ConflictCode(CodeCalendarUnwritable, "%s", calendar.ErrUnwritable)
 	errEventRejected     = apperr.ConflictCode(CodeEventRejected, "Google カレンダーが予定を受け付けませんでした。入力を確認してください")
+	errRecurring         = apperr.Conflict("繰り返しの予定とその回は、まだ buddy から変えられません。Google カレンダーで変更してください")
 )

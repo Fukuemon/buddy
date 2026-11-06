@@ -11,4 +11,8 @@ type Projections interface {
 	// ListByFacility は、事業所の外していないカレンダーの行のうち、終わる日が from より前でない行（終わる日の無い行を含む）を返す。
 	// 外したカレンダー（退職した職員のカレンダーを含む）の行は返さない。
 	ListByFacility(ctx context.Context, facilityID string, from civil.Date) ([]ProjectionDetail, error)
+	// GetBySchedule は、事業所 facilityID の外していないカレンダーの行のうち、一覧での予定の ID が id の行を返す。
+	// 記録の予定の ID が id なら、記録が指すカレンダーと Google の予定の ID の行を返す。記録の無い行は ProjectedScheduleID で引く。
+	// 無いときは apperr.ErrNotFound を返す。
+	GetBySchedule(ctx context.Context, facilityID, id string) (ProjectionDetail, error)
 }

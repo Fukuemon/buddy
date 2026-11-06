@@ -275,9 +275,9 @@ func (x *Exporter) sync(ctx context.Context, e calendar.Export, it item) error {
 			if err != nil {
 				return err
 			}
-			etag, err := w.Update(ctx, lc.CalendarID, it.link.ExternalEventID, ifMatch(e, *it.link), *it.body)
+			updated, err := w.Update(ctx, lc.CalendarID, it.link.ExternalEventID, ifMatch(e, *it.link), *it.body)
 			if err == nil {
-				return x.deps.Calendars.UpdateLink(ctx, it.link.ID, etag, it.version)
+				return x.deps.Calendars.UpdateLink(ctx, it.link.ID, updated.ETag, it.version)
 			}
 			// 書き直すと選んだ予定が外部で消されていたら、対応を消して作り直す。
 			if !e.Overwrite || !errors.Is(err, calendar.ErrEventGone) {
@@ -311,7 +311,8 @@ func (x *Exporter) sync(ctx context.Context, e calendar.Export, it item) error {
 	etag := created.ETag
 	if errors.Is(err, calendar.ErrEventExists) {
 		// 前に作った後で対応を書けなかったか、消した予定である。ID が buddy の予定から決まるので、buddy の内容で書き直す。
-		etag, err = w.Update(ctx, cal.CalendarID, eventID, "", *it.body)
+		created, err = w.Update(ctx, cal.CalendarID, eventID, "", *it.body)
+		etag = created.ETag
 	}
 	if err != nil {
 		return err

@@ -26,7 +26,7 @@ const retainedMonths = 2
 //   - 日時を読めない予定は、写さずに行を消し、事業所、カレンダー、Google の予定の ID だけをログに書く。ほかの予定は写し続ける。
 //
 // 写す前に、予定の API が書いた予定の保留の版を確定する（ADR-0026）。予定の extendedProperties.private の buddy の予定の ID の記録が、
-// このカレンダーのこの予定で、版が保留の版と同じなら、calendar.ConfirmPending で確定する。版が違っても、取り消した予定でも、
+// 保留の版を書く予定（calendar.EventRecord.PendingLocation）がこのカレンダーのこの予定で、版が保留の版と同じなら、calendar.ConfirmPending で確定する。版が違っても、取り消した予定でも、
 // 保留の版を消さない。読んだ予定が、予定の API が Google に書く前のものであることがあるためで、消すのは読み戻し（Syncer.ReadBackDue）である。
 type projectionApplier struct {
 	projections Projections
@@ -75,7 +75,7 @@ func (a projectionApplier) confirm(ctx context.Context, c calendar.ExternalCalen
 		return nil
 	}
 	rec, ok, err := calendar.LockPending(ctx, a.records, id, version)
-	if err != nil || !ok || rec.ExternalCalendarID != c.ID || rec.ExternalEventID != ev.ID {
+	if err != nil || !ok || rec.PendingLocation() != (calendar.EventLocation{ExternalCalendarID: c.ID, ExternalEventID: ev.ID}) {
 		return err
 	}
 	return calendar.ConfirmPending(ctx, a.records, a.visits, rec)

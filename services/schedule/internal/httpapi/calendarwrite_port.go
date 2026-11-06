@@ -12,4 +12,8 @@ import (
 type CalendarWriteApp struct {
 	// Create は、画面が決めた ID が id の単発の予定を Google カレンダーに書き、書いた予定を返す。
 	Create func(ctx context.Context, facilityID, id string, in schedule.SlotInput) (scheduleview.Detail, error)
+	// Update は、一覧での ID が id の単発の予定を、画面が読んだ etag を If-Match に付けて Google カレンダーに書き、書いた予定を返す。
+	Update func(ctx context.Context, facilityID, id, etag string, in schedule.SlotInput) (scheduleview.Detail, error)
+	// Cancel は、一覧での ID が id の単発の予定を、画面が読んだ etag を If-Match に付けて Google カレンダーから消す。
+	Cancel func(ctx context.Context, facilityID, id, etag, reason string) (schedule.Cancellation, error)
 }

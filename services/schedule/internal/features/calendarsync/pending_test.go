@@ -247,6 +247,32 @@ func TestReadBackResolvesExpiredPending(t *testing.T) {
 	}
 }
 
+// TestReadBackConfirmsMove は、予定を別の予定に移す保留の版を、移す先の予定で読み戻し、版が同じなら確定して、記録の Google の予定の ID を
+// 移す先にすることと、同期の増分も移す先の予定で確定することを確認する。
+func TestReadBackConfirmsMove(t *testing.T) {
+	for _, tc := range []struct {
+		name string
+		run  func(t *testing.T, e pendingEnv)
+	}{
+		{name: "読み戻し", run: func(t *testing.T, e pendingEnv) { e.readBack(t) }},
+		{name: "同期の増分", run: func(t *testing.T, e pendingEnv) { e.sync(t) }},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			e := newPendingEnv(t)
+			e.putRecord(1, calendar.PendingUnknown, pendingNow)
+			r := e.store.Records[e.scheduleID]
+			r.ExternalEventID = "before_move"
+			r.Pending.MoveTo = &calendar.EventLocation{ExternalCalendarID: calID, ExternalEventID: e.eventID}
+			e.store.Records[e.scheduleID] = r
+			e.putEvent(2)
+			tc.run(t, e)
+			if got, _ := e.record(); !e.isConfirmed(2) || got.ExternalEventID != e.eventID {
+				t.Errorf("記録 = %+v, want 移す先の予定で版 2 に確定", got)
+			}
+		})
+	}
+}
+
 // TestReadBackSkipsPendingBeforeDeadline は、書く期限の前の保留の版を、状態によらず読み戻さないことを確認する。
 func TestReadBackSkipsPendingBeforeDeadline(t *testing.T) {
 	for _, state := range []calendar.PendingState{calendar.PendingWriting, calendar.PendingUnknown} {

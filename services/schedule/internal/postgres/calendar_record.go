@@ -33,7 +33,7 @@ func (r *CalendarEventRecordRepository) GetForUpdate(ctx context.Context, schedu
 		return calendar.EventRecord{}, translate("get calendar event record", err)
 	}
 	return recordOf(row.ScheduleID, row.FacilityID, row.ExternalCalendarID, row.ExternalEventID, row.VisitInfoID, row.Version,
-		row.PendingVersion, row.PendingState, row.PendingVisitInfoID, row.PendingDeadline), nil
+		row.PendingVersion, row.PendingState, row.PendingVisitInfoID, row.PendingDeadline, row.PendingExternalCalendarID, row.PendingExternalEventID), nil
 }
 
 // ClaimExpired は、calendarsync.PendingRecords の ClaimExpired を実装する。行を FOR UPDATE SKIP LOCKED で取る。
@@ -52,11 +52,12 @@ func (r *CalendarEventRecordRepository) ClaimExpired(ctx context.Context, now ti
 	}
 	out := make([]calendarsync.PendingCheck, len(rows))
 	for i, row := range rows {
+		rec := recordOf(row.ScheduleID, row.FacilityID, row.ExternalCalendarID, row.ExternalEventID, row.VisitInfoID, row.Version,
+			row.PendingVersion, row.PendingState, row.PendingVisitInfoID, row.PendingDeadline, row.PendingExternalCalendarID, row.PendingExternalEventID)
 		out[i] = calendarsync.PendingCheck{
-			Record: recordOf(row.ScheduleID, row.FacilityID, row.ExternalCalendarID, row.ExternalEventID, row.VisitInfoID, row.Version,
-				row.PendingVersion, row.PendingState, row.PendingVisitInfoID, row.PendingDeadline),
+			Record: rec,
 			Calendar: calendar.ExternalCalendar{
-				ID: row.ExternalCalendarID, FacilityID: row.FacilityID, StaffID: row.StaffID, Provider: row.Provider, CalendarID: row.CalendarID,
+				ID: rec.PendingLocation().ExternalCalendarID, FacilityID: row.FacilityID, StaffID: row.StaffID, Provider: row.Provider, CalendarID: row.CalendarID,
 			},
 			LockedUntil: until,
 		}
@@ -74,8 +75,9 @@ func (r *CalendarEventRecordRepository) Release(ctx context.Context, p calendars
 }
 
 // recordOf は、記録の行のカラムから記録を作る。保留のカラムが揃っていなければ、保留の版を持たない。
+// 移す先のカラムがあれば、保留の版は予定を移す書き込みである。
 func recordOf(scheduleID, facilityID, calendarID, eventID string, visitInfoID *string, version int32,
-	pendingVersion *int32, pendingState, pendingVisitInfoID *string, pendingDeadline *time.Time) calendar.EventRecord {
+	pendingVersion *int32, pendingState, pendingVisitInfoID *string, pendingDeadline *time.Time, pendingCalendarID, pendingEventID *string) calendar.EventRecord {
 	rec := calendar.EventRecord{
 		ScheduleID: scheduleID, FacilityID: facilityID, ExternalCalendarID: calendarID, ExternalEventID: eventID,
 		VisitInfoID: visitInfoID, Version: int(version),
@@ -83,6 +85,9 @@ func recordOf(scheduleID, facilityID, calendarID, eventID string, visitInfoID *s
 	if pendingVersion != nil && pendingState != nil && pendingDeadline != nil {
 		rec.Pending = &calendar.PendingWrite{
 			Version: int(*pendingVersion), State: calendar.PendingState(*pendingState), VisitInfoID: pendingVisitInfoID, Deadline: *pendingDeadline,
+		}
+		if pendingCalendarID != nil && pendingEventID != nil {
+			rec.Pending.MoveTo = &calendar.EventLocation{ExternalCalendarID: *pendingCalendarID, ExternalEventID: *pendingEventID}
 		}
 	}
 	return rec
@@ -98,6 +103,7 @@ func (r *CalendarEventRecordRepository) Create(ctx context.Context, rec calendar
 		ScheduleID: rec.ScheduleID, FacilityID: rec.FacilityID, ExternalCalendarID: rec.ExternalCalendarID, ExternalEventID: rec.ExternalEventID,
 		VisitInfoID: rec.VisitInfoID, Version: cols.version, PendingVersion: cols.pendingVersion, PendingState: cols.pendingState,
 		PendingVisitInfoID: cols.pendingVisitInfoID, PendingDeadline: cols.pendingDeadline,
+		PendingExternalCalendarID: cols.pendingCalendarID, PendingExternalEventID: cols.pendingEventID,
 	})
 	return translate("create calendar event record", err)
 }
@@ -109,8 +115,10 @@ func (r *CalendarEventRecordRepository) Update(ctx context.Context, rec calendar
 		return err
 	}
 	err = r.q(ctx).UpdateCalendarEventRecord(ctx, sqlcgen.UpdateCalendarEventRecordParams{
-		ScheduleID: rec.ScheduleID, VisitInfoID: rec.VisitInfoID, Version: cols.version, PendingVersion: cols.pendingVersion,
+		ScheduleID: rec.ScheduleID, ExternalCalendarID: rec.ExternalCalendarID, ExternalEventID: rec.ExternalEventID,
+		VisitInfoID: rec.VisitInfoID, Version: cols.version, PendingVersion: cols.pendingVersion,
 		PendingState: cols.pendingState, PendingVisitInfoID: cols.pendingVisitInfoID, PendingDeadline: cols.pendingDeadline,
+		PendingExternalCalendarID: cols.pendingCalendarID, PendingExternalEventID: cols.pendingEventID,
 	})
 	return translate("update calendar event record", err)
 }
@@ -127,6 +135,8 @@ type recordColumns struct {
 	pendingState       *string
 	pendingVisitInfoID *string
 	pendingDeadline    *time.Time
+	pendingCalendarID  *string
+	pendingEventID     *string
 }
 
 func recordColumnsOf(rec calendar.EventRecord) (recordColumns, error) {
@@ -142,6 +152,9 @@ func recordColumnsOf(rec calendar.EventRecord) (recordColumns, error) {
 		}
 		state, deadline := string(p.State), p.Deadline
 		cols.pendingVersion, cols.pendingState, cols.pendingVisitInfoID, cols.pendingDeadline = &pv, &state, p.VisitInfoID, &deadline
+		if to := p.MoveTo; to != nil {
+			cols.pendingCalendarID, cols.pendingEventID = &to.ExternalCalendarID, &to.ExternalEventID
+		}
 	}
 	return cols, nil
 }

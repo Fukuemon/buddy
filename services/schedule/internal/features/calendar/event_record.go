@@ -12,6 +12,8 @@ import (
 // （ADR-0026）。予定の API の書き込み（calendarwrite）が作り、同期（calendarsync）が保留の版を確定するか消す。
 // ScheduleID は buddy の予定の ID で、Google の予定の ID（ExternalEventID）はこの ID から EventIDOf で決める。
 // 通常の予定も、保留の版を持つために記録を作り、VisitInfoID は nil である。
+// Google で作った予定を buddy で変えたときは、ScheduleID はその予定の一覧での ID（scheduleview.ProjectedScheduleID）で、
+// ExternalEventID は Google が決めた ID である。主訪問者を替えて予定を別のカレンダーに移すと、ExternalCalendarID と ExternalEventID が変わる。
 type EventRecord struct {
 	ScheduleID         string
 	FacilityID         string
@@ -34,6 +36,29 @@ type PendingWrite struct {
 	VisitInfoID *string
 	// Deadline は、書く期限である。
 	Deadline time.Time
+	// MoveTo は、予定を別のカレンダーに移す書き込みの、移す先である。移さない書き込みでは nil である。
+	// 版を確定すると、記録のカレンダーと Google の予定の ID を移す先にする。
+	MoveTo *EventLocation
+}
+
+// EventLocation は、Google の予定の場所で、結び付けたカレンダーの ID と Google の予定の ID の組である。
+type EventLocation struct {
+	ExternalCalendarID string
+	ExternalEventID    string
+}
+
+// Location は、記録が指す、Google が受けたと分かった版の予定の場所を返す。
+func (r EventRecord) Location() EventLocation {
+	return EventLocation{ExternalCalendarID: r.ExternalCalendarID, ExternalEventID: r.ExternalEventID}
+}
+
+// PendingLocation は、保留の版を書く予定の場所を返す。移す書き込みでは移す先で、ほかは Location と同じである。
+// 保留の版が無ければ Location を返す。
+func (r EventRecord) PendingLocation() EventLocation {
+	if r.Pending != nil && r.Pending.MoveTo != nil {
+		return *r.Pending.MoveTo
+	}
+	return r.Location()
 }
 
 // PendingState は、保留の版の状態である。
@@ -85,9 +110,12 @@ func LockPending(ctx context.Context, records EventRecords, scheduleID string, v
 }
 
 // ConfirmPending は、LockPending で読んだ記録 rec の保留の版を確定する。保留の訪問の情報を確定した訪問の情報に移し、
-// 前の訪問の情報を、使われていなければ消す。トランザクションの中で呼ぶ。
+// 前の訪問の情報を、使われていなければ消す。予定を移す書き込みでは、記録のカレンダーと Google の予定の ID を移す先にする。
+// トランザクションの中で呼ぶ。
 func ConfirmPending(ctx context.Context, records EventRecords, visits UnusedVisits, rec EventRecord) error {
 	prev := rec.VisitInfoID
+	to := rec.PendingLocation()
+	rec.ExternalCalendarID, rec.ExternalEventID = to.ExternalCalendarID, to.ExternalEventID
 	rec.Version, rec.VisitInfoID, rec.Pending = rec.Pending.Version, rec.Pending.VisitInfoID, nil
 	if err := records.Update(ctx, rec); err != nil {
 		return err

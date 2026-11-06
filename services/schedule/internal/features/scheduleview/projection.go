@@ -65,6 +65,9 @@ type Projection struct {
 type ProjectionDetail struct {
 	Projection
 	StaffName string
+	// ScheduleID は、予定の API が Google に書いた予定の記録（calendar.EventRecord）が行の予定を指すときの、記録の予定の ID である。
+	// 記録が無ければ空である。
+	ScheduleID string
 }
 
 // IsParent は、行が繰り返しの親の予定かを返す。
@@ -172,13 +175,27 @@ func startsIn(rd EventReading, from, to civil.Date) bool {
 
 func dayBefore(d civil.Date) civil.Date { return civil.DateOf(d.Time().AddDate(0, 0, -1)) }
 
-// projectedID は、Projection の予定 e の、一覧を読むたびに同じになる ID を、ULID と同じ 26 文字の Crockford の Base32 で返す。
-// Google の予定の ID は ULID の形でなく、繰り返しの回は行を持たないので、カレンダー、Google の予定の ID、回の日付から作る。
+// projectedID は、Projection の予定 e の、一覧を読むたびに同じになる ID を返す。記録のある予定は、記録の予定の ID にする。
+// 記録の無い予定は ProjectedScheduleID で、繰り返しの回はカレンダー、Google の予定の ID、回の日付から同じ形で作る。
 func projectedID(e projectedEvent) string {
-	key := e.row.ExternalCalendarID + "\x00" + e.row.EventID
-	if !e.occurrence.IsZero() {
-		key += "\x00" + e.occurrence.String()
+	if e.occurrence.IsZero() {
+		if e.row.ScheduleID != "" {
+			return e.row.ScheduleID
+		}
+		return ProjectedScheduleID(e.row.ExternalCalendarID, e.row.EventID)
 	}
+	return hashID(e.row.ExternalCalendarID + "\x00" + e.row.EventID + "\x00" + e.occurrence.String())
+}
+
+// ProjectedScheduleID は、記録の無い Projection の予定の、一覧を読むたびに同じになる予定の ID を返す。
+// Google の予定の ID は ULID の形でないので、結び付けたカレンダーの ID externalCalendarID と Google の予定の ID eventID から、
+// ULID と同じ 26 文字の Crockford の Base32 で作る。DB の関数 projected_schedule_id も同じ値を返す。
+func ProjectedScheduleID(externalCalendarID, eventID string) string {
+	return hashID(externalCalendarID + "\x00" + eventID)
+}
+
+// hashID は、key の SHA-256 の先頭の 128 ビットを、ULID と同じ 26 文字の Crockford の Base32 にする。
+func hashID(key string) string {
 	sum := sha256.Sum256([]byte(key))
 	const alphabet = "0123456789ABCDEFGHJKMNPQRSTVWXYZ"
 	// 128 ビットを 5 ビットずつ 26 文字にする。先頭の文字は上位の 3 ビットだけなので、ULID と同じく 0〜7 になる。

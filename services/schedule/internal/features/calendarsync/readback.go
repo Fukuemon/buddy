@@ -61,7 +61,7 @@ func (s *Syncer) ReadBackDue(ctx context.Context) (int, error) {
 func (s *Syncer) readBack(ctx context.Context, p PendingCheck) outcome {
 	attrs := []any{
 		slog.String("facility_id", p.Calendar.FacilityID), slog.String("external_calendar_id", p.Calendar.ID),
-		slog.String("event_id", p.Record.ExternalEventID),
+		slog.String("event_id", p.Record.PendingLocation().ExternalEventID),
 	}
 	readAt := time.Now()
 	ev, found, err := s.readEvent(ctx, p)
@@ -79,7 +79,7 @@ func (s *Syncer) readBack(ctx context.Context, p PendingCheck) outcome {
 			return err
 		}
 		rec, ok, err := calendar.LockPending(ctx, s.deps.Records, p.Record.ScheduleID, version)
-		if err != nil || !ok || rec.ExternalCalendarID != p.Calendar.ID || rec.ExternalEventID != p.Record.ExternalEventID ||
+		if err != nil || !ok || rec.PendingLocation() != p.Record.PendingLocation() ||
 			!sameAttempt(*rec.Pending, *p.Record.Pending) {
 			return err
 		}
@@ -121,7 +121,7 @@ func (s *Syncer) readEvent(ctx context.Context, p PendingCheck) (calendar.Event,
 	if err != nil {
 		return calendar.Event{}, false, err
 	}
-	ev, err := src.Event(ctx, p.Calendar.CalendarID, p.Record.ExternalEventID)
+	ev, err := src.Event(ctx, p.Calendar.CalendarID, p.Record.PendingLocation().ExternalEventID)
 	if errors.Is(err, calendar.ErrEventNotFound) {
 		if err := src.Check(ctx, p.Calendar.CalendarID); err != nil {
 			return calendar.Event{}, false, err

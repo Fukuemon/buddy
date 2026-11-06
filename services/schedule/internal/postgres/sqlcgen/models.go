@@ -101,6 +101,10 @@ type CalendarEventRecord struct {
 	UpdatedAt       time.Time
 	// 同期が保留の版を読み戻す間、ほかの Worker に記録を渡さない期限。読み戻せなかった記録は、この時刻の後に取り直す。保留の版を解いても NULL に戻さない
 	PendingLockedUntil *time.Time
+	// 保留の版が予定を別のカレンダーに移す書き込みのときの、移す先のカレンダー。移さない書き込みと、保留が無い行は NULL。版を確定すると external_calendar_id に移す
+	PendingExternalCalendarID *string
+	// 移す先のカレンダーに作る Google の予定の ID。pending_external_calendar_id と一緒に NULL になる
+	PendingExternalEventID *string
 }
 
 // 予定を外部のカレンダーに書き出す待ち。予定の変更と同じトランザクションで積む

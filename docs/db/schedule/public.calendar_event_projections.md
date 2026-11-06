@@ -57,10 +57,11 @@ Google カレンダーを予定の正本にする事業所の、Google カレン
 
 ## Indexes
 
-| Name                                        | Definition                                                                                                                                     |
-| ------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-| calendar_event_projections_pkey             | CREATE UNIQUE INDEX calendar_event_projections_pkey ON public.calendar_event_projections USING btree (external_calendar_id, external_event_id) |
-| calendar_event_projections_facility_end_idx | CREATE INDEX calendar_event_projections_facility_end_idx ON public.calendar_event_projections USING btree (facility_id, last_end_date)         |
+| Name                                        | Definition                                                                                                                                                                        |
+| ------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| calendar_event_projections_pkey             | CREATE UNIQUE INDEX calendar_event_projections_pkey ON public.calendar_event_projections USING btree (external_calendar_id, external_event_id)                                    |
+| calendar_event_projections_facility_end_idx | CREATE INDEX calendar_event_projections_facility_end_idx ON public.calendar_event_projections USING btree (facility_id, last_end_date)                                            |
+| calendar_event_projections_schedule_id_idx  | CREATE INDEX calendar_event_projections_schedule_id_idx ON public.calendar_event_projections USING btree (projected_schedule_id(external_calendar_id, (external_event_id)::text)) |
 
 ## Relations
 

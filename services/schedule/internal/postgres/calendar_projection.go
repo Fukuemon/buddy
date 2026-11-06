@@ -84,21 +84,43 @@ func (r *CalendarProjectionRepository) ListByFacility(ctx context.Context, facil
 	}
 	out := make([]scheduleview.ProjectionDetail, len(rows))
 	for i, row := range rows {
-		out[i] = scheduleview.ProjectionDetail{
-			Projection: scheduleview.Projection{
-				ExternalCalendarID: row.ExternalCalendarID, EventID: row.ExternalEventID, FacilityID: row.FacilityID, StaffID: row.StaffID,
-				RecurringEventID: deref(row.RecurringEventID),
-				OriginalStart:    scheduleview.ProjectionTime{At: row.OriginalStartAt, Date: datePtr(row.OriginalStartDate)},
-				Status:           scheduleview.ProjectionStatus(row.Status), Title: row.Title,
-				Start:    scheduleview.ProjectionTime{At: row.StartAt, Date: datePtr(row.StartDate)},
-				End:      scheduleview.ProjectionTime{At: row.EndAt, Date: datePtr(row.EndDate)},
-				TimeZone: deref(row.TimeZone), Recurrence: row.Recurrence, ETag: row.Etag, GoogleUpdatedAt: row.GoogleUpdatedAt,
-				LastEndDate: datePtr(row.LastEndDate), ProjectedAt: row.ProjectedAt,
-			},
-			StaffName: row.StaffName,
-		}
+		out[i] = projectionDetailOf(row)
 	}
 	return out, nil
+}
+
+// GetBySchedule は、scheduleview.Projections の GetBySchedule を実装する。記録の予定の ID で引き、無ければ一覧での ID で引く。
+func (r *CalendarProjectionRepository) GetBySchedule(ctx context.Context, facilityID, id string) (scheduleview.ProjectionDetail, error) {
+	row, err := r.q(ctx).GetCalendarEventProjectionByRecord(ctx, sqlcgen.GetCalendarEventProjectionByRecordParams{ScheduleID: id, FacilityID: facilityID})
+	if err == nil {
+		return projectionDetailOf(sqlcgen.ListCalendarEventProjectionsByFacilityRow(row)), nil
+	}
+	if !errors.Is(err, pgx.ErrNoRows) {
+		return scheduleview.ProjectionDetail{}, translate("get calendar event projection by record", err)
+	}
+	byID, err := r.q(ctx).GetCalendarEventProjectionByProjectedID(ctx, sqlcgen.GetCalendarEventProjectionByProjectedIDParams{ScheduleID: id, FacilityID: facilityID})
+	if err != nil {
+		return scheduleview.ProjectionDetail{}, translate("get calendar event projection by projected id", err)
+	}
+	return projectionDetailOf(sqlcgen.ListCalendarEventProjectionsByFacilityRow(byID)), nil
+}
+
+// projectionDetailOf は、Projection の行を、職員の名前と記録の予定の ID を付けた行にする。
+func projectionDetailOf(row sqlcgen.ListCalendarEventProjectionsByFacilityRow) scheduleview.ProjectionDetail {
+	return scheduleview.ProjectionDetail{
+		Projection: scheduleview.Projection{
+			ExternalCalendarID: row.ExternalCalendarID, EventID: row.ExternalEventID, FacilityID: row.FacilityID, StaffID: row.StaffID,
+			RecurringEventID: deref(row.RecurringEventID),
+			OriginalStart:    scheduleview.ProjectionTime{At: row.OriginalStartAt, Date: datePtr(row.OriginalStartDate)},
+			Status:           scheduleview.ProjectionStatus(row.Status), Title: row.Title,
+			Start:    scheduleview.ProjectionTime{At: row.StartAt, Date: datePtr(row.StartDate)},
+			End:      scheduleview.ProjectionTime{At: row.EndAt, Date: datePtr(row.EndDate)},
+			TimeZone: deref(row.TimeZone), Recurrence: row.Recurrence, ETag: row.Etag, GoogleUpdatedAt: row.GoogleUpdatedAt,
+			LastEndDate: datePtr(row.LastEndDate), ProjectedAt: row.ProjectedAt,
+		},
+		StaffName:  row.StaffName,
+		ScheduleID: deref(row.RecordScheduleID),
+	}
 }
 
 // ListSyncsByFacility は、scheduleview.CalendarSyncs の ListSyncsByFacility を実装する。

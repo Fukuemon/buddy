@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Fukuemon/buddy/services/schedule/internal/apperr"
 	"github.com/Fukuemon/buddy/services/schedule/internal/civil"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/scheduleview"
 )
@@ -74,12 +75,38 @@ func (s Projections) ListByFacility(_ context.Context, facilityID string, from c
 		if p.FacilityID != facilityID || !ok || c.FacilityID != facilityID || c.DisabledAt != nil || (p.LastEndDate != nil && p.LastEndDate.Before(from)) {
 			continue
 		}
-		out = append(out, scheduleview.ProjectionDetail{Projection: p, StaffName: s.Staff[p.StaffID].Username})
+		out = append(out, s.detail(p))
 	}
 	slices.SortFunc(out, func(a, b scheduleview.ProjectionDetail) int {
 		return cmp.Or(strings.Compare(a.ExternalCalendarID, b.ExternalCalendarID), strings.Compare(a.EventID, b.EventID))
 	})
 	return out, nil
+}
+
+// GetBySchedule は、scheduleview.Projections の GetBySchedule を実装する。
+func (s Projections) GetBySchedule(_ context.Context, facilityID, id string) (scheduleview.ProjectionDetail, error) {
+	for _, p := range s.Projections {
+		c, ok := s.Calendars[p.ExternalCalendarID]
+		if p.FacilityID != facilityID || !ok || c.FacilityID != facilityID || c.DisabledAt != nil {
+			continue
+		}
+		d := s.detail(p)
+		if d.ScheduleID == id || (d.ScheduleID == "" && scheduleview.ProjectedScheduleID(p.ExternalCalendarID, p.EventID) == id) {
+			return d, nil
+		}
+	}
+	return scheduleview.ProjectionDetail{}, apperr.ErrNotFound
+}
+
+// detail は、行 p に、職員の名前と、行の予定を指す記録の予定の ID を付ける。
+func (s Projections) detail(p scheduleview.Projection) scheduleview.ProjectionDetail {
+	d := scheduleview.ProjectionDetail{Projection: p, StaffName: s.Staff[p.StaffID].Username}
+	for _, r := range s.Records {
+		if r.ExternalCalendarID == p.ExternalCalendarID && r.ExternalEventID == p.EventID {
+			d.ScheduleID = r.ScheduleID
+		}
+	}
+	return d
 }
 
 // ListSyncsByFacility は、scheduleview.CalendarSyncs の ListSyncsByFacility を実装する。SyncResults と SyncedAt から作る。

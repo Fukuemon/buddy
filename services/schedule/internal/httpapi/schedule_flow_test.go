@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"net/http"
 	"reflect"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -88,8 +89,12 @@ func flowRouterOn(mode organization.SourceMode, accounts calendar.Accounts) (htt
 		Staff: refs, Patients: inmem.Patients{Store: s}, Infos: inmem.VisitInfos{Store: s}, ServiceCodes: inmem.ServiceCodes{Store: s}, Categories: inmem.VisitCategories{Store: s},
 	}, ids)
 	app := httpapi.ScheduleApp{
-		ListTypes:        schedule.NewListTypes(types).Do,
-		Get:              scheduleview.NewGet(schedules, refs).Do,
+		ListTypes: schedule.NewListTypes(types).Do,
+		Get:       scheduleview.NewGet(schedules, refs).Do,
+		GetProjected: scheduleview.NewGetProjected(scheduleview.ProjectionDeps{
+			Projections: inmem.Projections{Store: s}, Rules: calendar.ProjectionRules{}, Patients: inmem.Patients{Store: s},
+			ServiceCodes: inmem.ServiceCodes{Store: s}, Types: types,
+		}, refs).Do,
 		GetRecurring:     scheduleview.NewGetRecurring(recurring, refs).Do,
 		List:             scheduleview.NewList(facilities, schedules, recurring, refs, scheduleview.ProjectionDeps{}).Do,
 		Create:           schedule.NewCreate(facilities, schedules, types, refs, facilities, visits, nil, nil, tx, ids).Do,
@@ -101,8 +106,14 @@ func flowRouterOn(mode organization.SourceMode, accounts calendar.Accounts) (htt
 	auth := flowAuth{svc: access.NewService(access.Deps{Resources: map[access.Resource]access.FacilityReader{
 		access.ResourceSchedule: schedules, access.ResourceRecurringSchedule: recurring,
 	}})}
-	writes := httpapi.CalendarWriteApp{Create: calendarwrite.NewCreate(facilities, inmem.Projections{Store: s}, types, refs, inmem.Staff{Store: s},
-		visits, inmem.VisitInfos{Store: s}, inmem.Calendars{Store: s}, inmem.CalendarEventRecords{Store: s}, inmem.Projections{Store: s}, accounts, nil, tx).Do}
+	projections, records, calendars := inmem.Projections{Store: s}, inmem.CalendarEventRecords{Store: s}, inmem.Calendars{Store: s}
+	writes := httpapi.CalendarWriteApp{
+		Create: calendarwrite.NewCreate(facilities, projections, types, refs, inmem.Staff{Store: s},
+			visits, inmem.VisitInfos{Store: s}, calendars, records, projections, accounts, nil, tx).Do,
+		Update: calendarwrite.NewUpdate(facilities, projections, types, refs, inmem.Staff{Store: s},
+			visits, inmem.VisitInfos{Store: s}, calendars, records, projections, accounts, ids, slog.New(slog.DiscardHandler), nil, tx).Do,
+		Cancel: calendarwrite.NewCancel(facilities, projections, refs, visits, calendars, records, projections, accounts, nil, tx).Do,
+	}
 	org := httpapi.OrganizationApp{GetFacility: organization.NewGetFacility(facilities).Do}
 	return httpapi.NewRouter(httpapi.Apps{Organization: org, Schedules: app, CalendarWrites: writes, Auth: auth}, httpapi.RouterConfig{
 		Logger:   slog.New(slog.NewTextHandler(io.Discard, nil)),
@@ -309,4 +320,48 @@ func TestCreateScheduleGooglePrimary(t *testing.T) {
 	if got["code"] != "invalid_input" {
 		t.Errorf("id が無い: code = %v", got["code"])
 	}
+}
+
+// TestUpdateAndCancelScheduleGooglePrimary は、google_primary の事業所で、作った予定を作成の応答の ID と etag で読み、変え、職員を替えて移し、
+// 取り消せることを確認する。読んだ後に Google で変えた予定への変更は 409 の google_event_changed になり、etag の無い変更は 400 になる。
+func TestUpdateAndCancelScheduleGooglePrimary(t *testing.T) {
+	const (
+		calendarAddr, companionAddr = "staff@example.com", "companion@example.com"
+		newID                       = "01M3TC6CX4Y3D0KCGJ5A9N0WQZ"
+	)
+	google := &gcaltest.Server{Calendars: map[string][][]*calendarv3.Event{calendarAddr: {nil}, companionAddr: {nil}}}
+	h, s := flowRouterOn(organization.SourceGooglePrimary, googleAccounts{gcaltest.Start(t, google)})
+	s.Calendars["CAL"] = calendar.ExternalCalendar{ID: "CAL", FacilityID: facilityID, StaffID: staffID, Provider: calendar.ProviderGoogle, CalendarID: calendarAddr}
+	s.Calendars["CAL2"] = calendar.ExternalCalendar{ID: "CAL2", FacilityID: facilityID, StaffID: flowCompanionID, Provider: calendar.ProviderGoogle, CalendarID: companionAddr}
+	slot := func(staff, start string) string {
+		return `"schedule_type_id":"` + typeID + `","date":"2099-01-05","start_time":"` + start + `","end_time":"11:00","staff_id":"` + staff + `","title":"カンファレンス"`
+	}
+	created := request(t, h, http.MethodPost, "/v1/facilities/"+facilityID+"/schedules", `{"id":"`+newID+`",`+slot(staffID, "09:00")+`}`, http.StatusCreated)
+	target := "/v1/schedules/" + newID
+	read := request(t, h, http.MethodGet, target, "", http.StatusOK)
+	etag, _ := read["etag"].(string)
+	if read["id"] != newID || etag == "" || etag != created["etag"] {
+		t.Fatalf("読んだ予定 = %v, 作成の応答の etag = %v", read, created["etag"])
+	}
+
+	request(t, h, http.MethodPut, target, `{`+slot(staffID, "10:00")+`}`, http.StatusBadRequest)
+	updated := request(t, h, http.MethodPut, target, `{"etag":`+strconv.Quote(etag)+`,`+slot(staffID, "10:00")+`}`, http.StatusOK)
+	if updated["start_time"] != "10:00" || updated["etag"] == etag {
+		t.Errorf("変えた予定 = %v", updated)
+	}
+	got := request(t, h, http.MethodPut, target, `{"etag":`+strconv.Quote(etag)+`,`+slot(staffID, "09:30")+`}`, http.StatusConflict)
+	if got["code"] != calendarwrite.CodeEventChanged {
+		t.Errorf("古い etag での変更: code = %v", got["code"])
+	}
+
+	moved := request(t, h, http.MethodPut, target, `{"etag":`+strconv.Quote(updated["etag"].(string))+`,`+slot(flowCompanionID, "10:00")+`}`, http.StatusOK)
+	if moved["id"] != newID || moved["staff_id"] != flowCompanionID || len(google.Events(calendarAddr)) != 0 || len(google.Events(companionAddr)) != 1 {
+		t.Fatalf("移した予定 = %v, 前のカレンダー = %d 件, 新しいカレンダー = %d 件", moved, len(google.Events(calendarAddr)), len(google.Events(companionAddr)))
+	}
+
+	cancelled := request(t, h, http.MethodPost, target+"/cancel", `{"reason":"中止","etag":`+strconv.Quote(moved["etag"].(string))+`}`, http.StatusCreated)
+	if cancelled["id"] != newID || cancelled["schedule_id"] != newID || len(google.Events(companionAddr)) != 0 {
+		t.Errorf("取り消し = %v, 新しいカレンダー = %d 件", cancelled, len(google.Events(companionAddr)))
+	}
+	request(t, h, http.MethodGet, target, "", http.StatusNotFound)
 }

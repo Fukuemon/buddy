@@ -2,6 +2,7 @@ package postgres
 
 import (
 	"context"
+	"errors"
 	"io"
 	"log/slog"
 	"slices"
@@ -11,6 +12,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	calendarv3 "google.golang.org/api/calendar/v3"
 
+	"github.com/Fukuemon/buddy/services/schedule/internal/apperr"
 	"github.com/Fukuemon/buddy/services/schedule/internal/civil"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendar"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendarsync"
@@ -456,5 +458,84 @@ func TestCalendarProjectionRepositoryListByFacility(t *testing.T) {
 	}
 	if syncs, err := r.ListSyncsByFacility(ctx, seedGoogleFacility); err != nil || len(syncs) != 0 {
 		t.Errorf("外したカレンダーの同期の状況 = %+v, err = %v", syncs, err)
+	}
+}
+
+// TestProjectedScheduleIDMatchesGo は、DB の関数 projected_schedule_id が、scheduleview.ProjectedScheduleID と同じ値を返すことを確認する。
+func TestProjectedScheduleIDMatchesGo(t *testing.T) {
+	ctx := context.Background()
+	for _, in := range [][2]string{
+		{seedOkadaCalendar, "single"},
+		{seedOkadaCalendar, "4bq1t2f8gqv0k7rjtusk3jp8f0"},
+		{"01M3TD000000000000000000CA", "予定_1"},
+		{"", ""},
+	} {
+		var got string
+		if err := testDB.QueryRow(ctx, "SELECT projected_schedule_id($1, $2)", in[0], in[1]).Scan(&got); err != nil {
+			t.Fatal(err)
+		}
+		if want := scheduleview.ProjectedScheduleID(in[0], in[1]); got != want {
+			t.Errorf("projected_schedule_id(%q, %q) = %s, want %s", in[0], in[1], got, want)
+		}
+	}
+}
+
+// TestCalendarProjectionRepositoryGetBySchedule は、記録のある予定を記録の予定の ID で、記録の無い予定を一覧での ID で引けることと、
+// 一覧が記録の予定の ID を返すこと、access が両方の ID の事業所を引けることを確認する。
+func TestCalendarProjectionRepositoryGetBySchedule(t *testing.T) {
+	ctx := txContext(t)
+	r := NewCalendarProjectionRepository(testDB)
+	base := scheduleview.Projection{
+		ExternalCalendarID: seedOkadaCalendar, FacilityID: seedGoogleFacility, StaffID: seedOkada, Status: scheduleview.ProjectionConfirmed,
+		Title: "担当者会議", ETag: `"1"`, Start: scheduleview.ProjectionTime{At: timeAt(t, "2099-11-04T10:00:00+09:00")},
+		End: scheduleview.ProjectionTime{At: timeAt(t, "2099-11-04T10:30:00+09:00")}, LastEndDate: civilDate(2099, 11, 4),
+	}
+	google, written := base, base
+	google.EventID, written.EventID = "made_in_google", "written_by_buddy"
+	for _, p := range []scheduleview.Projection{google, written} {
+		if err := r.Put(ctx, p); err != nil {
+			t.Fatal(err)
+		}
+	}
+	const recordID = "01M3TD000000000000000000S7"
+	if err := NewCalendarEventRecordRepository(testDB).Create(ctx, calendar.EventRecord{
+		ScheduleID: recordID, FacilityID: seedGoogleFacility, ExternalCalendarID: seedOkadaCalendar, ExternalEventID: written.EventID, Version: 1,
+	}); err != nil {
+		t.Fatal(err)
+	}
+	googleID := scheduleview.ProjectedScheduleID(seedOkadaCalendar, google.EventID)
+
+	got, err := r.GetBySchedule(ctx, seedGoogleFacility, googleID)
+	if err != nil || got.EventID != google.EventID || got.ScheduleID != "" || got.StaffName != "岡田 葵" {
+		t.Errorf("記録の無い予定 = %+v, err = %v", got, err)
+	}
+	got, err = r.GetBySchedule(ctx, seedGoogleFacility, recordID)
+	if err != nil || got.EventID != written.EventID || got.ScheduleID != recordID {
+		t.Errorf("記録のある予定 = %+v, err = %v", got, err)
+	}
+	if _, err := r.GetBySchedule(ctx, seedGoogleFacility, scheduleview.ProjectedScheduleID(seedOkadaCalendar, written.EventID)); !errors.Is(err, apperr.ErrNotFound) {
+		t.Errorf("記録のある予定を一覧での ID で引いた: err = %v, want ErrNotFound", err)
+	}
+	if _, err := r.GetBySchedule(ctx, seedFacility, recordID); !errors.Is(err, apperr.ErrNotFound) {
+		t.Errorf("ほかの事業所で引いた: err = %v, want ErrNotFound", err)
+	}
+
+	rows, err := r.ListByFacility(ctx, seedGoogleFacility, civil.Date{Year: 2099, Month: 1, Day: 1})
+	if err != nil {
+		t.Fatal(err)
+	}
+	ids := map[string]string{}
+	for _, p := range rows {
+		ids[p.EventID] = p.ScheduleID
+	}
+	if ids[google.EventID] != "" || ids[written.EventID] != recordID {
+		t.Errorf("一覧の記録の予定の ID = %v", ids)
+	}
+
+	schedules := NewScheduleRepository(testDB)
+	for _, id := range []string{recordID, googleID} {
+		if f, err := schedules.GetFacilityID(ctx, id); err != nil || f != seedGoogleFacility {
+			t.Errorf("GetFacilityID(%s) = %s, %v, want %s", id, f, err, seedGoogleFacility)
+		}
 	}
 }
