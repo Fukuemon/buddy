@@ -24,7 +24,7 @@ func NewCalendarProjectionRepository(pool *pgxpool.Pool) *CalendarProjectionRepo
 
 var _ calendarsync.Projections = (*CalendarProjectionRepository)(nil)
 
-// Put は、p の行を足すか、同じカレンダーと Google の予定の ID の行を p にする。写した時刻は DB の今の時刻にする。
+// Put は、calendarsync.Projections の Put を実装する。写した時刻は DB の今の時刻にする。
 func (r *CalendarProjectionRepository) Put(ctx context.Context, p scheduleview.Projection) error {
 	err := r.q(ctx).PutCalendarEventProjection(ctx, sqlcgen.PutCalendarEventProjectionParams{
 		ExternalCalendarID: p.ExternalCalendarID, ExternalEventID: p.EventID, FacilityID: p.FacilityID, StaffID: p.StaffID,

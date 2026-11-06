@@ -160,17 +160,21 @@ func TestSyncProjectsGooglePrimaryEvents(t *testing.T) {
 		t.Errorf("2 回目の同期の後の行の数 = %d, want 5", n)
 	}
 
-	// 職員が Google カレンダーで、単発の予定と繰り返しの予定を消した
+	// 職員が Google カレンダーで、単発の予定と繰り返しの予定を消した。行は消さず、取り消しの状態にする
+	before := e.mustRow(t, "single")
 	e.srv.Delete(googleCalID, "single")
 	e.srv.Delete(googleCalID, "weekly")
 	e.sync(t)
-	if _, ok := e.row("single"); ok {
-		t.Error("消した予定の行が残っている")
-	}
-	for _, id := range []string{"weekly", "weekly_20991109T000000Z", "weekly_20991116T000000Z"} {
-		if _, ok := e.row(id); ok {
-			t.Errorf("消した繰り返しの予定の行 %s が残っている", id)
+	today := civil.Today(time.Now())
+	for _, id := range []string{"single", "weekly"} {
+		got := e.mustRow(t, id)
+		if got.Status != scheduleview.ProjectionCancelled || got.Title != "" || got.Start.At != nil || len(got.Recurrence) != 0 ||
+			!sameDate(got.LastEndDate, &today) || got.ETag != e.srv.Event(googleCalID, id).Etag {
+			t.Errorf("消した予定の行 %s = %+v, want 取り消しの状態で、終わる日は今日", id, got)
 		}
+	}
+	if got := e.mustRow(t, "single"); got.GoogleUpdatedAt == nil || !got.GoogleUpdatedAt.After(*before.GoogleUpdatedAt) {
+		t.Errorf("消した予定の更新の時刻 = %v, want 消す前の %v より後", got.GoogleUpdatedAt, before.GoogleUpdatedAt)
 	}
 	if _, ok := e.row("allday"); !ok {
 		t.Error("消していない予定の行を消した")

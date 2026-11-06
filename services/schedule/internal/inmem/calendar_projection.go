@@ -20,8 +20,12 @@ type Projections struct{ *Store }
 
 // Put は、calendarsync.Projections の Put を実装する。写した時刻は今の時刻にする。
 func (s Projections) Put(_ context.Context, p scheduleview.Projection) error {
+	k := ProjectionKey{p.ExternalCalendarID, p.EventID}
+	if old, ok := s.Projections[k]; ok && old.GoogleUpdatedAt != nil && (p.GoogleUpdatedAt == nil || !p.GoogleUpdatedAt.After(*old.GoogleUpdatedAt)) {
+		return nil
+	}
 	p.ProjectedAt = time.Now()
-	s.Projections[ProjectionKey{p.ExternalCalendarID, p.EventID}] = p
+	s.Projections[k] = p
 	return nil
 }
 

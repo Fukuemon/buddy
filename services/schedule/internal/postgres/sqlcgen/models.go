@@ -53,7 +53,7 @@ type CalendarEventProjection struct {
 	// 例外の回が元の規則で始まるはずだった日時。終日の予定は original_start_date に持つ
 	OriginalStartAt   *time.Time
 	OriginalStartDate *time.Time
-	// confirmed、cancelled。cancelled は繰り返しの予定の取り消した回で、取り消した単発の予定と親の予定は行を消す
+	// confirmed、cancelled。cancelled は Google で取り消した予定で、単発の予定と親の予定も行に残す。予定の表示の読み出しは返さない
 	Status string
 	// Google の予定のタイトル。利用者名を含むが、表示と照合に要るので持つ。取り消した回は空
 	Title string
@@ -68,9 +68,9 @@ type CalendarEventProjection struct {
 	// 繰り返しの親の予定の RRULE、EXDATE、RDATE の行
 	Recurrence []string
 	Etag       string
-	// Google で予定を最後に変えた時刻
+	// Google で予定を最後に変えた時刻。行を書き直すのは、書く予定の時刻がこの時刻より新しいときだけにする
 	GoogleUpdatedAt *time.Time
-	// Asia/Tokyo で予定が終わる日。繰り返しは最後の回、取り消した回は元の開始の日。終わりの無い繰り返しと、最後の回を決められない繰り返しは NULL。保持する期間より前に終わった行を消すのに使う
+	// Asia/Tokyo で予定が終わる日。繰り返しは最後の回、取り消した回は元の開始の日、取り消した単発の予定と親の予定は取り消しを写した日。終わりの無い繰り返しと、最後の回を決められない繰り返しは NULL。保持する期間より前に終わった行を消すのに使う
 	LastEndDate *time.Time
 	// 同期が行を書いた時刻
 	ProjectedAt time.Time

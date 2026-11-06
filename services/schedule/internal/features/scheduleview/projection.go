@@ -16,7 +16,8 @@ type ProjectionStatus string
 // ProjectionStatus の値。
 const (
 	ProjectionConfirmed ProjectionStatus = "confirmed"
-	// ProjectionCancelled は、繰り返しの予定の取り消した回である。取り消した単発の予定と繰り返しの親は、行を消すので持たない。
+	// ProjectionCancelled は、Google で取り消した予定である。繰り返しの予定の取り消した回のほか、取り消した単発の予定と繰り返しの親も
+	// この状態の行に残す。一覧には出さない。
 	ProjectionCancelled ProjectionStatus = "cancelled"
 )
 
@@ -97,9 +98,14 @@ type projectedEvent struct {
 // 繰り返しの親は、規則（rules.Recurrence）で from から to までの回に展開し、除外する日（EXDATE）と、例外の回が置き換えた元の日を除く。
 // 規則に写せない繰り返しの親は、回に展開せず、最初の回を、回が期間に重なりうるときに 1 件で返す。
 // 例外の回は、変えた回を単発の予定と同じく読み替え、取り消した回は返さない。rules.Read が読み替えない予定（終日の予定など）は返さない。
+// 取り消した単発の予定と繰り返しの親は返さず、取り消した親の例外の回も返さない。
 func expandProjections(rows []ProjectionDetail, rules EventRules, from, to civil.Date) []projectedEvent {
 	replaced := map[string]map[civil.Date]bool{}
+	cancelled := map[string]bool{}
 	for _, r := range rows {
+		if r.Status == ProjectionCancelled && !r.IsException() {
+			cancelled[r.ExternalCalendarID+"\x00"+r.EventID] = true
+		}
 		if !r.IsException() {
 			continue
 		}
@@ -116,7 +122,7 @@ func expandProjections(rows []ProjectionDetail, rules EventRules, from, to civil
 	var out []projectedEvent
 	for _, r := range rows {
 		switch {
-		case r.Status != ProjectionConfirmed:
+		case r.Status != ProjectionConfirmed, r.IsException() && cancelled[r.ExternalCalendarID+"\x00"+r.RecurringEventID]:
 		case r.IsParent():
 			out = append(out, expandParent(r, rules, replaced[r.ExternalCalendarID+"\x00"+r.EventID], from, to)...)
 		default:

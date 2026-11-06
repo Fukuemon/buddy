@@ -1,5 +1,7 @@
 -- name: PutCalendarEventProjection :exec
 -- 同じカレンダーと Google の予定の ID の行があれば書き直す。同期を何度流しても、1 つの予定は 1 行になる。
+-- 書き直すのは、行の Google の更新の時刻が無いか、書く予定の時刻の方が新しいときだけにする。同期と予定の API の書き込みの、
+-- 後から届いた古い内容で、新しい内容を上書きしないためである（ADR-0026）。
 INSERT INTO calendar_event_projections (
     external_calendar_id, external_event_id, facility_id, staff_id, recurring_event_id, original_start_at, original_start_date,
     status, title, start_at, start_date, end_at, end_date, time_zone, recurrence, etag, google_updated_at, last_end_date
@@ -15,7 +17,9 @@ ON CONFLICT (external_calendar_id, external_event_id) DO UPDATE SET
     status = EXCLUDED.status, title = EXCLUDED.title, start_at = EXCLUDED.start_at, start_date = EXCLUDED.start_date,
     end_at = EXCLUDED.end_at, end_date = EXCLUDED.end_date, time_zone = EXCLUDED.time_zone, recurrence = EXCLUDED.recurrence,
     etag = EXCLUDED.etag, google_updated_at = EXCLUDED.google_updated_at, last_end_date = EXCLUDED.last_end_date,
-    projected_at = now();
+    projected_at = now()
+WHERE calendar_event_projections.google_updated_at IS NULL
+   OR EXCLUDED.google_updated_at > calendar_event_projections.google_updated_at;
 
 -- name: DeleteCalendarEventProjection :exec
 -- 予定の行と、その予定を親にする例外の回の行を消す。

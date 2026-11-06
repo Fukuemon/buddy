@@ -6067,7 +6067,7 @@
           "name": "status",
           "type": "text",
           "nullable": false,
-          "comment": "confirmed、cancelled。cancelled は繰り返しの予定の取り消した回で、取り消した単発の予定と親の予定は行を消す"
+          "comment": "confirmed、cancelled。cancelled は Google で取り消した予定で、単発の予定と親の予定も行に残す。予定の表示の読み出しは返さない"
         },
         {
           "name": "title",
@@ -6119,13 +6119,13 @@
           "name": "google_updated_at",
           "type": "timestamp with time zone",
           "nullable": true,
-          "comment": "Google で予定を最後に変えた時刻"
+          "comment": "Google で予定を最後に変えた時刻。行を書き直すのは、書く予定の時刻がこの時刻より新しいときだけにする"
         },
         {
           "name": "last_end_date",
           "type": "date",
           "nullable": true,
-          "comment": "Asia/Tokyo で予定が終わる日。繰り返しは最後の回、取り消した回は元の開始の日。終わりの無い繰り返しと、最後の回を決められない繰り返しは NULL。保持する期間より前に終わった行を消すのに使う"
+          "comment": "Asia/Tokyo で予定が終わる日。繰り返しは最後の回、取り消した回は元の開始の日、取り消した単発の予定と親の予定は取り消しを写した日。終わりの無い繰り返しと、最後の回を決められない繰り返しは NULL。保持する期間より前に終わった行を消すのに使う"
         },
         {
           "name": "projected_at",
@@ -6156,17 +6156,6 @@
         }
       ],
       "constraints": [
-        {
-          "name": "calendar_event_projections_cancelled_check",
-          "type": "CHECK",
-          "def": "CHECK (((status = 'confirmed'::text) OR (recurring_event_id IS NOT NULL)))",
-          "table": "public.calendar_event_projections",
-          "referenced_table": "",
-          "columns": [
-            "status",
-            "recurring_event_id"
-          ]
-        },
         {
           "name": "calendar_event_projections_end_check",
           "type": "CHECK",

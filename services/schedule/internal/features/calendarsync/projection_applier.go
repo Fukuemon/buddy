@@ -21,7 +21,9 @@ var errNoTime = errors.New("予定の日時が無い")
 // projectionApplier は、Google カレンダーを予定の正本にする事業所（google_primary）で、Google カレンダーの予定の変更を
 // 予定の写し（Projection）に写す（ADR-0026）。予定の対応（EventLink）の有無によらず、Google で新しく作った予定も写す。
 //   - 新しい予定と変わった予定は、カレンダーと Google の予定の ID の組の行に書く。同じ予定を何度読んでも、行は 1 つになる。
-//   - 取り消した単発の予定と繰り返しの親の予定は、行を消す。親の予定の行を消すときは、その例外の回の行も消す。
+//     行を書き直すのは、Google の更新の時刻が行より新しいときだけである（Projections.Put）。
+//   - 取り消した単発の予定と繰り返しの親の予定は、行を消さず、取り消しの状態にした行に写す。行を消すと、予定の API の書き込みが
+//     古い応答で予定を戻すためである。終わる日は取り消しを写した日にし、保持する期間で消す。
 //   - 繰り返しの予定は展開せず、親の予定と例外の回を別の行に写す。取り消した回は、状態を取り消しにした行に写す。
 //   - 保持する期間（前々月の初日から）より前に終わった予定は、写さずに行を消す。期間の終わり（3 か月後の月末）より後の予定も写す。
 //     増分の取得は、変わっていない予定を返さないので、期間に入ったときに写せないためである。
@@ -41,7 +43,7 @@ func NewProjectionApplier(projections Projections, log *slog.Logger) Applier {
 // Apply は、Applier の Apply を実装する。
 func (a projectionApplier) Apply(ctx context.Context, c calendar.ExternalCalendar, ev calendar.Event) error {
 	if ev.Status == calendar.StatusCancelled && ev.RecurringEventID == "" {
-		return a.projections.Delete(ctx, c.ID, ev.ID)
+		return a.projections.Put(ctx, cancelledProjectionOf(c, ev, civil.Today(a.now())))
 	}
 	p, err := projectionOf(c, ev)
 	if err != nil {
@@ -74,15 +76,31 @@ func retainedFrom(now time.Time) civil.Date {
 	return civil.DateOf(time.Date(today.Year, today.Month-retainedMonths, 1, 0, 0, 0, 0, time.UTC))
 }
 
+// cancelledProjectionOf は、カレンダー c の、Google で取り消した単発の予定か繰り返しの親の予定 ev の行を作る。
+// Google は取り消した予定の日時を返さないことがあるので、終わる日は取り消しを写した日 today にする。
+func cancelledProjectionOf(c calendar.ExternalCalendar, ev calendar.Event, today civil.Date) scheduleview.Projection {
+	return scheduleview.Projection{
+		ExternalCalendarID: c.ID, EventID: ev.ID, FacilityID: c.FacilityID, StaffID: c.StaffID,
+		Status: scheduleview.ProjectionCancelled, ETag: ev.ETag, GoogleUpdatedAt: updatedOf(ev), LastEndDate: &today,
+	}
+}
+
+// updatedOf は、Google の予定 ev の更新の時刻を返す。無いか読めないときは nil を返す。
+func updatedOf(ev calendar.Event) *time.Time {
+	t, err := time.Parse(time.RFC3339, ev.Updated)
+	if err != nil {
+		return nil
+	}
+	return &t
+}
+
 // projectionOf は、カレンダー c の Google の予定 ev の行を作る。取り消した単発の予定と親の予定には呼ばない。
 // 開始、終了、例外の回の元の開始を読めないときは、エラーを返す。エラーの文に、予定のタイトルを含めない。
 func projectionOf(c calendar.ExternalCalendar, ev calendar.Event) (scheduleview.Projection, error) {
 	p := scheduleview.Projection{
 		ExternalCalendarID: c.ID, EventID: ev.ID, FacilityID: c.FacilityID, StaffID: c.StaffID, RecurringEventID: ev.RecurringEventID,
 		Status: scheduleview.ProjectionConfirmed, Title: ev.Summary, TimeZone: ev.Start.TimeZone, Recurrence: ev.Recurrence, ETag: ev.ETag,
-	}
-	if t, err := time.Parse(time.RFC3339, ev.Updated); err == nil {
-		p.GoogleUpdatedAt = &t
+		GoogleUpdatedAt: updatedOf(ev),
 	}
 	if ev.RecurringEventID != "" {
 		orig, err := timeOf(ev.OriginalStart)

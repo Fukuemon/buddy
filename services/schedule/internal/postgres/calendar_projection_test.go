@@ -111,9 +111,17 @@ func TestCalendarProjectionRepository(t *testing.T) {
 		}
 	}
 	// 同じ予定を変えて書き直すと、行は増えない
-	single.Title, single.ETag = "【訪看I2】見本 二葉", `"6"`
+	single.Title, single.ETag, single.GoogleUpdatedAt = "【訪看I2】見本 二葉", `"6"`, timeAt(t, "2099-10-31T08:00:00Z")
 	if err := r.Put(ctx, single); err != nil {
 		t.Fatal(err)
+	}
+	// Google の更新の時刻が行と同じか古い内容は、書き直さない
+	for _, at := range []string{"2099-10-31T08:00:00Z", "2099-10-30T08:00:00Z"} {
+		stale := single
+		stale.Title, stale.ETag, stale.GoogleUpdatedAt = "古い内容", `"7"`, timeAt(t, at)
+		if err := r.Put(ctx, stale); err != nil {
+			t.Fatal(err)
+		}
 	}
 
 	rows := projectionRows(t, ctx, seedOkadaCalendar)
@@ -169,6 +177,21 @@ func TestCalendarProjectionRepository(t *testing.T) {
 	}
 	if rows := projectionRows(t, ctx, otherCal); len(rows) != 1 {
 		t.Errorf("ほかのカレンダーの行 = %+v, want 消さない", rows)
+	}
+
+	// 取り消した単発の予定は、取り消しの状態の行に残し、後から届いた取り消す前の内容で戻さない
+	gone := single
+	gone.EventID, gone.GoogleUpdatedAt = "gone", timeAt(t, "2099-10-30T08:00:00Z")
+	cancelledSingle := base
+	cancelledSingle.EventID, cancelledSingle.Status, cancelledSingle.ETag = "gone", scheduleview.ProjectionCancelled, `"8"`
+	cancelledSingle.GoogleUpdatedAt, cancelledSingle.LastEndDate = timeAt(t, "2099-10-31T08:00:00Z"), civilDate(2026, 11, 6)
+	for _, p := range []scheduleview.Projection{gone, cancelledSingle, gone} {
+		if err := r.Put(ctx, p); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if got := projectionRows(t, ctx, seedOkadaCalendar)["gone"]; got.Status != "cancelled" || got.Title != "" || got.StartAt != nil || got.RecurringEventID != nil {
+		t.Errorf("取り消した単発の予定の行 = %+v, want 取り消しのまま", got)
 	}
 }
 
