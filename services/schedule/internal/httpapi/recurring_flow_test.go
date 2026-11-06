@@ -12,6 +12,7 @@ import (
 
 	"github.com/Fukuemon/buddy/services/schedule/internal/civil"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendar"
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendarwrite"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/organization"
 	"github.com/Fukuemon/buddy/services/schedule/internal/gcal/gcaltest"
 )
@@ -344,5 +345,79 @@ func TestRecurringOccurrenceMovedEarlierLeftGooglePrimary(t *testing.T) {
 	}
 	if got := request(t, h, http.MethodGet, "/v1/schedules/"+id, "", http.StatusOK); got["staff_id"] != flowCompanionID {
 		t.Errorf("移した予定の 1 件 = %v", got)
+	}
+}
+
+// TestRecurringOccurrenceVisitWriteUnknownGooglePrimary は、変えていない回の訪問の情報を初めて変える書き込みの結果が分からず（Google の 5xx）、
+// 回の記録に保留の版が残ったとき、一覧の回の id が変わらず、その id の cancelSchedule と updateSchedule が 409（google_write_pending）で、
+// Google に書かないことを確認する。
+func TestRecurringOccurrenceVisitWriteUnknownGooglePrimary(t *testing.T) {
+	const (
+		calendarAddr = "staff@example.com"
+		newID        = "01M3TC6CX4Y3D0KCGJ5A9N0WQZ"
+	)
+	google := &gcaltest.Server{Calendars: map[string][][]*calendarv3.Event{calendarAddr: {nil}}}
+	h, s := flowRouterOn(organization.SourceGooglePrimary, googleAccounts{gcaltest.Start(t, google)})
+	s.Calendars["CAL"] = calendar.ExternalCalendar{ID: "CAL", FacilityID: facilityID, StaffID: staffID, Provider: calendar.ProviderGoogle, CalendarID: calendarAddr}
+	today := civil.Today(time.Now())
+	first := civil.DateOf(today.Time().AddDate(0, 0, 7+(8-int(today.Weekday()))%7))
+	day := civil.DateOf(first.Time().AddDate(0, 0, 7))
+	slot := func(d civil.Date, companion string) string {
+		v := `"patient_id":"` + flowPatientID + `","assigned_staff_id":"` + staffID + `","service_code_id":"` + flowCodeID + `"`
+		if companion != "" {
+			v += `,"companion_id":"` + companion + `"`
+		}
+		return `"schedule_type_id":"` + flowVisitTypeID + `","date":"` + d.String() + `","start_time":"09:00","end_time":"10:00","staff_id":"` + staffID +
+			`","visit_info":{` + v + `}`
+	}
+	request(t, h, http.MethodPost, "/v1/facilities/"+facilityID+"/schedules/recurring",
+		`{"id":"`+newID+`",`+slot(first, "")+`,"recurring_rule":{"frequency":"weekly"}}`, http.StatusCreated)
+	parentID, err := calendar.EventIDOf(newID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	start := time.Date(day.Year, day.Month, day.Day, 9, 0, 0, 0, calendar.Tokyo)
+	instance := &calendarv3.Event{
+		Id: parentID + "_" + start.UTC().Format("20060102T150405Z"), Status: "confirmed", Summary: google.Event(calendarAddr, parentID).Summary,
+		RecurringEventId: parentID, Etag: `"i1"`,
+		OriginalStartTime: &calendarv3.EventDateTime{DateTime: start.Format(time.RFC3339), TimeZone: calendar.TimeZone},
+		Start:             &calendarv3.EventDateTime{DateTime: start.Format(time.RFC3339), TimeZone: calendar.TimeZone},
+		End:               &calendarv3.EventDateTime{DateTime: start.Add(time.Hour).Format(time.RFC3339), TimeZone: calendar.TimeZone},
+	}
+	google.Instances = map[string][]*calendarv3.Event{parentID: {instance}}
+	onDay := func() []map[string]any {
+		got := request(t, h, http.MethodGet, "/v1/facilities/"+facilityID+"/schedules?date_from="+day.String()+"&date_to="+day.String(), "", http.StatusOK)
+		var out []map[string]any
+		for _, v := range got["schedules"].([]any) {
+			out = append(out, v.(map[string]any))
+		}
+		return out
+	}
+	listed := onDay()
+	if len(listed) != 1 {
+		t.Fatalf("回 = %v, want 1 件", listed)
+	}
+	id, etag := listed[0]["id"].(string), strconv.Quote(listed[0]["etag"].(string))
+
+	google.Failures = []int{http.StatusServiceUnavailable}
+	got := request(t, h, http.MethodPut, "/v1/schedules/"+id, `{"etag":`+etag+`,`+slot(day, flowCompanionID)+`}`, http.StatusServiceUnavailable)
+	if got["code"] != "google_write_unknown" {
+		t.Fatalf("訪問の情報を変える書き込み: code = %v", got["code"])
+	}
+	if r, ok := s.Records[id]; !ok || r.Pending == nil || r.Pending.State != calendar.PendingUnknown {
+		t.Fatalf("回の記録 = %+v, ok = %v, want 結果が分からない保留の版", r, ok)
+	}
+	if listed = onDay(); len(listed) != 1 || listed[0]["id"] != id {
+		t.Errorf("保留の版がある回の一覧 = %v, want id %s のまま", listed, id)
+	}
+	writes := google.Writes()
+	if got := request(t, h, http.MethodPost, "/v1/schedules/"+id+"/cancel", `{"reason":"中止","etag":`+etag+`}`, http.StatusConflict); got["code"] != calendarwrite.CodeWritePending {
+		t.Errorf("保留の版がある回の取り消し: code = %v", got["code"])
+	}
+	if got := request(t, h, http.MethodPut, "/v1/schedules/"+id, `{"etag":`+etag+`,`+slot(day, "")+`}`, http.StatusConflict); got["code"] != calendarwrite.CodeWritePending {
+		t.Errorf("保留の版がある回の変更: code = %v", got["code"])
+	}
+	if google.Writes() != writes || google.Event(calendarAddr, instance.Id).Status != "confirmed" {
+		t.Errorf("Google への書き込み = %d, want %d", google.Writes(), writes)
 	}
 }

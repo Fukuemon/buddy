@@ -32,5 +32,5 @@ type Projections interface {
 	// ListByFacility は、事業所の外していないカレンダーの行のうち、終わる日が from より前でない行（終わる日の無い行を含む）を返す。
 	// 一覧での ID から繰り返しの予定の展開した回を引くのに使う。
 	ListByFacility(ctx context.Context, facilityID string, from civil.Date) ([]scheduleview.ProjectionDetail, error)
-	scheduleview.RecordedIDs
+	scheduleview.RecordedEvents
 }

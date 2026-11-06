@@ -216,30 +216,37 @@ func (q *Queries) GetCalendarEventRecordForUpdate(ctx context.Context, scheduleI
 	return i, err
 }
 
-const listCalendarEventRecordIDs = `-- name: ListCalendarEventRecordIDs :many
-SELECT schedule_id FROM calendar_event_records WHERE facility_id = $1 AND schedule_id = ANY($2::text[])
+const listConfirmedCalendarEventRecords = `-- name: ListConfirmedCalendarEventRecords :many
+SELECT schedule_id, external_calendar_id, external_event_id FROM calendar_event_records
+WHERE facility_id = $1 AND schedule_id = ANY($2::text[]) AND version > 0
 `
 
-type ListCalendarEventRecordIDsParams struct {
+type ListConfirmedCalendarEventRecordsParams struct {
 	FacilityID  string
 	ScheduleIds []string
 }
 
-// 一覧（scheduleview）が、展開した繰り返しの回の ID のうち、記録の主キーである ID を 1 回で引く。回を別の職員のカレンダーに移した後に
-// 元のカレンダーに残った回に、別の一覧の ID を付けるためである。
-func (q *Queries) ListCalendarEventRecordIDs(ctx context.Context, arg ListCalendarEventRecordIDsParams) ([]string, error) {
-	rows, err := q.db.Query(ctx, listCalendarEventRecordIDs, arg.FacilityID, arg.ScheduleIds)
+type ListConfirmedCalendarEventRecordsRow struct {
+	ScheduleID         string
+	ExternalCalendarID string
+	ExternalEventID    string
+}
+
+// 一覧（scheduleview）が、展開した繰り返しの回の ID を主キーに持ち、確定した版を持つ記録の、確定した版の予定の場所を 1 回で引く。
+// 記録が回を移した先の予定を指せば、元のカレンダーに残った回に別の一覧の ID を付けるためである。保留の版だけを持つ記録は返さない。
+func (q *Queries) ListConfirmedCalendarEventRecords(ctx context.Context, arg ListConfirmedCalendarEventRecordsParams) ([]ListConfirmedCalendarEventRecordsRow, error) {
+	rows, err := q.db.Query(ctx, listConfirmedCalendarEventRecords, arg.FacilityID, arg.ScheduleIds)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	items := []string{}
+	items := []ListConfirmedCalendarEventRecordsRow{}
 	for rows.Next() {
-		var schedule_id string
-		if err := rows.Scan(&schedule_id); err != nil {
+		var i ListConfirmedCalendarEventRecordsRow
+		if err := rows.Scan(&i.ScheduleID, &i.ExternalCalendarID, &i.ExternalEventID); err != nil {
 			return nil, err
 		}
-		items = append(items, schedule_id)
+		items = append(items, i)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err

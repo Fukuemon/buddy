@@ -560,11 +560,22 @@ func TestCalendarProjectionRepositoryDetachedOccurrenceID(t *testing.T) {
 	if f, err := NewScheduleRepository(testDB).GetFacilityID(ctx, detachedID); err != nil || f != seedGoogleFacility {
 		t.Errorf("GetFacilityID(%s) = %s, %v, want %s", detachedID, f, err, seedGoogleFacility)
 	}
-	if got, err := r.ListRecordedIDs(ctx, seedGoogleFacility, []string{occID, detachedID}); err != nil || !reflect.DeepEqual(got, map[string]bool{occID: true}) {
-		t.Errorf("ListRecordedIDs = %v, %v, want 記録の主キーの %s だけ", got, err, occID)
+	if got, err := r.ListRecordedEvents(ctx, seedGoogleFacility, []string{occID, detachedID}); err != nil ||
+		!reflect.DeepEqual(got, map[string]scheduleview.RecordedEvent{occID: {ExternalCalendarID: seedOkadaCalendar, ExternalEventID: moved.EventID}}) {
+		t.Errorf("ListRecordedEvents = %v, %v, want 記録の主キーの %s だけ", got, err, occID)
 	}
-	if got, err := r.ListRecordedIDs(ctx, seedFacility, []string{occID}); err != nil || len(got) != 0 {
-		t.Errorf("ほかの事業所の ListRecordedIDs = %v, %v, want 空", got, err)
+	if got, err := r.ListRecordedEvents(ctx, seedFacility, []string{occID}); err != nil || len(got) != 0 {
+		t.Errorf("ほかの事業所の ListRecordedEvents = %v, %v, want 空", got, err)
+	}
+	pendingID := scheduleview.OccurrenceScheduleID(seedOkadaCalendar, "series", civil.Date{Year: 2099, Month: 11, Day: 11})
+	if err := NewCalendarEventRecordRepository(testDB).Create(ctx, calendar.EventRecord{
+		ScheduleID: pendingID, FacilityID: seedGoogleFacility, ExternalCalendarID: seedOkadaCalendar, ExternalEventID: "series_20991111T010000Z",
+		Pending: &calendar.PendingWrite{Version: 1, State: calendar.PendingUnknown, Deadline: time.Date(2099, 1, 1, 0, 0, 0, 0, time.UTC)},
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if got, err := r.ListRecordedEvents(ctx, seedGoogleFacility, []string{pendingID}); err != nil || len(got) != 0 {
+		t.Errorf("保留の版だけの記録の ListRecordedEvents = %v, %v, want 空", got, err)
 	}
 }
 

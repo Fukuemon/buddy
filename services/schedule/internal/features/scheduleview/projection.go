@@ -201,9 +201,9 @@ func occurrenceIDOf(e projectedEvent) string {
 	return OccurrenceScheduleID(e.row.ExternalCalendarID, e.row.EventID, e.occurrence)
 }
 
-// markLeft は、展開した回 events のうち、回の OccurrenceScheduleID を主キーに持つ記録がある回を、残った回（left）にする。
+// markLeft は、展開した回 events のうち、回の OccurrenceScheduleID を主キーに持つ記録が、回を移した先の予定を指す回を、残った回（left）にする。
 // 記録は recorded で 1 回にまとめて引く。移した先の単発の予定が読む日付の範囲の外にあっても、残った回の ID を変えないためである。
-func markLeft(ctx context.Context, recorded RecordedIDs, facilityID string, events []projectedEvent) error {
+func markLeft(ctx context.Context, recorded RecordedEvents, facilityID string, events []projectedEvent) error {
 	var ids []string
 	for _, e := range events {
 		if !e.occurrence.IsZero() {
@@ -213,16 +213,25 @@ func markLeft(ctx context.Context, recorded RecordedIDs, facilityID string, even
 	if len(ids) == 0 {
 		return nil
 	}
-	taken, err := recorded.ListRecordedIDs(ctx, facilityID, ids)
+	recs, err := recorded.ListRecordedEvents(ctx, facilityID, ids)
 	if err != nil {
 		return err
 	}
 	for i, e := range events {
-		if !e.occurrence.IsZero() && taken[occurrenceIDOf(e)] {
-			events[i].left = true
+		if !e.occurrence.IsZero() {
+			events[i].left = movedAway(e, recs)
 		}
 	}
 	return nil
+}
+
+// movedAway は、展開した回 e の OccurrenceScheduleID を主キーに持つ記録が、回を別の職員のカレンダーに移した先の予定を指すかを返す。
+// 確定した版の予定のカレンダーが、親の予定のカレンダーと違う記録だけが当たる。回を移すと、記録は新しい職員のカレンダーの単発の予定を指し、
+// 移さない回の記録は、親の予定と同じカレンダーの回の予定を指すためである。保留の版だけを持つ記録（訪問の情報を初めて変える書き込みや、
+// 移す書き込みの結果が分からない記録）は、recs に入らないので当たらない。回は元の ID のままで、保留の版で書き込みを拒む。
+func movedAway(e projectedEvent, recs map[string]RecordedEvent) bool {
+	rec, ok := recs[occurrenceIDOf(e)]
+	return ok && rec.ExternalCalendarID != e.row.ExternalCalendarID
 }
 
 // OccurrenceScheduleID は、結び付けたカレンダー externalCalendarID の繰り返しの予定 parentEventID の、元の規則で d に始まる回の、
@@ -255,7 +264,7 @@ type Occurrence struct {
 
 // FindOccurrence は、事業所 facilityID の Projection の行 rows の繰り返しの親を from から to までの回に展開し、一覧での ID が id の回を返す。
 // 変えた回と取り消した回は、展開した回に含めない。残った回かは、一覧と同じく recorded の記録で決める。見つからなければ false を返す。
-func FindOccurrence(ctx context.Context, recorded RecordedIDs, facilityID string, rows []ProjectionDetail, rules EventRules, id string,
+func FindOccurrence(ctx context.Context, recorded RecordedEvents, facilityID string, rows []ProjectionDetail, rules EventRules, id string,
 	from, to civil.Date) (Occurrence, bool, error) {
 	e, ok, err := findOccurrence(ctx, recorded, facilityID, rows, rules, id, from, to)
 	return Occurrence{Parent: e.row, Date: e.occurrence, ID: id, Left: e.left}, ok, err
@@ -263,7 +272,7 @@ func FindOccurrence(ctx context.Context, recorded RecordedIDs, facilityID string
 
 // findOccurrence は、OccurrenceScheduleID か DetachedOccurrenceScheduleID が id の展開した回を候補にし、候補の回の記録を 1 回で引いて、
 // 一覧と同じ ID になる回を返す。
-func findOccurrence(ctx context.Context, recorded RecordedIDs, facilityID string, rows []ProjectionDetail, rules EventRules, id string,
+func findOccurrence(ctx context.Context, recorded RecordedEvents, facilityID string, rows []ProjectionDetail, rules EventRules, id string,
 	from, to civil.Date) (projectedEvent, bool, error) {
 	var candidates []projectedEvent
 	var ids []string
@@ -280,12 +289,12 @@ func findOccurrence(ctx context.Context, recorded RecordedIDs, facilityID string
 	if len(candidates) == 0 {
 		return projectedEvent{}, false, nil
 	}
-	taken, err := recorded.ListRecordedIDs(ctx, facilityID, ids)
+	recs, err := recorded.ListRecordedEvents(ctx, facilityID, ids)
 	if err != nil {
 		return projectedEvent{}, false, err
 	}
 	for _, e := range candidates {
-		e.left = taken[occurrenceIDOf(e)]
+		e.left = movedAway(e, recs)
 		if projectedID(e) == id {
 			return e, true, nil
 		}

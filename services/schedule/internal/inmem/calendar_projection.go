@@ -85,12 +85,12 @@ func (s Projections) ListByFacility(_ context.Context, facilityID string, from c
 	return out, nil
 }
 
-// ListRecordedIDs は、scheduleview.RecordedIDs の ListRecordedIDs を実装する。
-func (s Projections) ListRecordedIDs(_ context.Context, facilityID string, ids []string) (map[string]bool, error) {
-	out := map[string]bool{}
+// ListRecordedEvents は、scheduleview.RecordedEvents の ListRecordedEvents を実装する。
+func (s Projections) ListRecordedEvents(_ context.Context, facilityID string, ids []string) (map[string]scheduleview.RecordedEvent, error) {
+	out := map[string]scheduleview.RecordedEvent{}
 	for _, id := range ids {
-		if r, ok := s.Records[id]; ok && r.FacilityID == facilityID {
-			out[id] = true
+		if r, ok := s.Records[id]; ok && r.FacilityID == facilityID && r.Version > 0 {
+			out[id] = scheduleview.RecordedEvent{ExternalCalendarID: r.ExternalCalendarID, ExternalEventID: r.ExternalEventID}
 		}
 	}
 	return out, nil

@@ -86,15 +86,15 @@ func (r *CalendarProjectionRepository) ListByFacility(ctx context.Context, facil
 	return r.projectionDetails(ctx, rows)
 }
 
-// ListRecordedIDs は、scheduleview.RecordedIDs の ListRecordedIDs を実装する。
-func (r *CalendarProjectionRepository) ListRecordedIDs(ctx context.Context, facilityID string, ids []string) (map[string]bool, error) {
-	found, err := r.q(ctx).ListCalendarEventRecordIDs(ctx, sqlcgen.ListCalendarEventRecordIDsParams{FacilityID: facilityID, ScheduleIds: ids})
+// ListRecordedEvents は、scheduleview.RecordedEvents の ListRecordedEvents を実装する。
+func (r *CalendarProjectionRepository) ListRecordedEvents(ctx context.Context, facilityID string, ids []string) (map[string]scheduleview.RecordedEvent, error) {
+	rows, err := r.q(ctx).ListConfirmedCalendarEventRecords(ctx, sqlcgen.ListConfirmedCalendarEventRecordsParams{FacilityID: facilityID, ScheduleIds: ids})
 	if err != nil {
-		return nil, translate("list calendar event record ids", err)
+		return nil, translate("list confirmed calendar event records", err)
 	}
-	out := make(map[string]bool, len(found))
-	for _, id := range found {
-		out[id] = true
+	out := make(map[string]scheduleview.RecordedEvent, len(rows))
+	for _, row := range rows {
+		out[row.ScheduleID] = scheduleview.RecordedEvent{ExternalCalendarID: row.ExternalCalendarID, ExternalEventID: row.ExternalEventID}
 	}
 	return out, nil
 }
