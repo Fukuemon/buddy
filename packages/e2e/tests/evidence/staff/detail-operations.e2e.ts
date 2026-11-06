@@ -39,8 +39,10 @@ test.describe('職員の詳細', () => {
           const option = dialog.getByTestId('staff-policies-option-schedule.user.read')
           await step('権限を変えるを開き、「指定した職員の予定の閲覧」にチェックを入れる')
           await option.check()
-          // 対象を指定する権限は、予定の閲覧の職員、チームの順に並ぶので、先頭の対象を足すがチェックを入れた権限のものである
-          const add = dialog.getByTestId('staff-policies-target-add').first()
+          // 役職のまとまりにはチームの閲覧の対象を足すがあるので、ほかの権限のまとまりの中だけを見る
+          const add = dialog
+            .getByTestId('staff-policies-group-other')
+            .getByTestId('staff-policies-target-add')
           await expect(add).toBeDisabled()
           await expect(dialog.getByTestId('staff-policies-target-remove-team-a')).toBeEnabled()
           await check('選択肢を読んでいる間は「＋ 職員を選ぶ」を押せない。チップの × は押せる')
