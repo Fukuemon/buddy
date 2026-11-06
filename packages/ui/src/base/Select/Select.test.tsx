@@ -57,6 +57,6 @@ describe('Select', () => {
     render(<WithError />)
     const select = screen.getByLabelText('担当の職員')
     expect(select).toHaveAttribute('aria-invalid', 'true')
-    expect(screen.getByRole('alert')).toHaveTextContent('担当の職員を選んでください')
+    expect(select).toHaveAccessibleDescription(/担当の職員を選んでください/)
   })
 })

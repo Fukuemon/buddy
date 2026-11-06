@@ -415,8 +415,13 @@ DADS から外れる規則は、外れることと理由を、その規則に書
 - 見出しは欄の上に左寄せで置く。
 - 誤りの文には、何が誤りかと、どう直すかを書く。
 - 補足の文と誤りの文は、`aria-describedby` で欄に結び付ける。
+- 誤りの文に `role="alert"` と `aria-live` を付けない。送ったときに誤りが複数あると、全ての文が割り込みで読み上げられ、どの欄の誤りかを聞き分けにくい。
+- 送った後に誤りがあれば、`useFocusFirstInvalid` で最初の誤りの欄へフォーカスを移す。欄にフォーカスが移ると、結び付けた誤りの文が欄の説明として読み上げられる。
+  - 予定のフォームのように、誤りの欄が閉じた編集の欄にあるときは、誤りを出す項目のボタンに `data-invalid` を付け、そのボタンへフォーカスを移す。
+  - 入力するたびに誤りを出す欄は、フォーカスが欄にあるので移さない。
+- 送れなかったときの文と、画面の読み込みの失敗の文は、欄の誤りの文ではないので `role="alert"` で読み上げる。
 - `TextareaField` に文字数の上限があるときは、見出しか補足の文に上限を書く。
-- 出典: [DADS のインプットテキストの使い方](https://design.digital.go.jp/dads/components/input-text/usage/)、[DADS のテキストエリアの使い方](https://design.digital.go.jp/dads/components/textarea/usage/)
+- 出典: [DADS のインプットテキストの使い方](https://design.digital.go.jp/dads/components/input-text/usage/)、[DADS のインプットテキストのアクセシビリティ](https://design.digital.go.jp/dads/components/input-text/accessibility/)、[DADS のテキストエリアの使い方](https://design.digital.go.jp/dads/components/textarea/usage/)
 
 #### `FileField`
 

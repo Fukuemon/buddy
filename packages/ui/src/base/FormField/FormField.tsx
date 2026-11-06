@@ -30,7 +30,7 @@ export type FormFieldProps = {
 
 /**
  * 入力の欄の見出し、欄、補足の文、誤りの文を縦に並べる。見出しを欄に結び付け、補足と誤りの文を aria-describedby で欄に結び付ける。
- * 誤りの文は role="alert" で読み上げる。
+ * 誤りの文は割り込みで読み上げない。送った後に最初の誤りの欄へフォーカスを移すと、欄の説明として読み上げられる（useFocusFirstInvalid）。
  */
 export const FormField = ({
   label,
@@ -70,12 +70,7 @@ export const FormField = ({
         </span>
       )}
       {error !== undefined && (
-        <span
-          className="text-caption text-danger"
-          data-testid={errorTestId}
-          id={errorId}
-          role="alert"
-        >
+        <span className="text-caption text-danger" data-testid={errorTestId} id={errorId}>
           {error}
         </span>
       )}
