@@ -73,6 +73,10 @@ packages/ui のトークンとコンポーネントの使い方と、アクセ�
   - 表のように横に長い中身は、その領域の中で横に送り、ページの全体を広げない。
   - 確認: 主な画面のページの全体の幅は、E2E の `packages/e2e/tests/specs/site/layout-overflow.e2e.ts`（`pnpm e2e`）が、幅 390、767、768、1280px で確認する。
   - 確認: 内側の領域で切れた文字とボタンと、見た目の崩れは、チェックが見ない。テストが撮った画像か描画した画面を、レビューで見る。
+- `MOTION-TOKEN`: アニメーションと緩急は、Tailwind のデフォルトのユーティリティ（`animate-spin`、`ease-in`）だけで書く。
+  - 任意値（`animate-[ping_1s_infinite]`、`ease-[cubic-bezier(...)]`）を書かない。任意値はトークンを通らない値で、どの画面で何が動くかを、ユーティリティの名前で追えなくなる。
+  - 確認: `animate-` と `ease-` の任意値は、`pnpm check:design` の `scripts/check-utilities.mjs` が止める。
+  - 確認: 時間と遅れの任意値（`duration-[...]`、`delay-[...]`）と、`[animation:...]` のような任意のプロパティは、チェックが見ない。レビューで見る。
 
 ### 原則と確認の方法の対応
 
@@ -89,6 +93,7 @@ packages/ui のトークンとコンポーネントの使い方と、アクセ�
 | `TARGET-SIZE` | `packages/ui` のコンポーネントのテスト（`pnpm --filter @buddy/ui test`） | 画面で作る押せる要素 |
 | `SPACING-SCALE` | `scripts/check-utilities.mjs`（`pnpm check:design`） | 半分の段と、ブロックの間が 8px の倍数か。`FormField` を使わない欄の間 |
 | `LAYOUT-OVERFLOW` | `packages/e2e/tests/specs/site/layout-overflow.e2e.ts`（`pnpm e2e`） | テストに入れていない画面と、シードに無い長い文字とデータの多い状態。内側の領域で切れた文字とボタン。見た目の崩れ |
+| `MOTION-TOKEN` | `scripts/check-utilities.mjs`（`pnpm check:design`） | 時間と遅れの任意値。任意のプロパティ（`[animation:...]`）と、スタイルに直に書いた `animation`。クラスの名前を文字列の連結で組み立てた書き方 |
 
 ## 画面を作るときの手順
 
@@ -114,7 +119,7 @@ packages/ui のトークンとコンポーネントの使い方と、アクセ�
 | --- | --- | --- |
 | `pnpm check:generated` | `docs/screens/_common/tokens.css` を含む生成物が、元のファイルと合っているか | |
 | `pnpm check:contrast` | セマンティックトークンの組のコントラスト比 | |
-| `pnpm check:design` | 画面のコードの色の値、プリミティブトークンの名前、原則に反するユーティリティ。`check-utilities.mjs` の規則の ID が、この文書にコードスパンで残っているか（`--doc`） | `COLOR-TOKEN`、`TEXT-MIN-SIZE`、`FOCUS-ONE`、`SPACING-SCALE` |
+| `pnpm check:design` | 画面のコードの色の値、プリミティブトークンの名前、原則に反するユーティリティ。`check-utilities.mjs` の規則の ID が、この文書にコードスパンで残っているか（`--doc`） | `COLOR-TOKEN`、`TEXT-MIN-SIZE`、`FOCUS-ONE`、`SPACING-SCALE`、`MOTION-TOKEN` |
 | `pnpm --filter @buddy/ui test` | コンポーネントの状態、押せる領域の大きさ、story のアクセシビリティ（axe） | `TARGET-SIZE` |
 | `pnpm e2e`（compose を起動してから） | 主な画面の、幅ごとのページの横方向のオーバーフロー。撮った画像はローカルでは `packages/e2e/test-results/` に出て、CI では成果物の `e2e-layout-screens` に残る | `LAYOUT-OVERFLOW` |
 
