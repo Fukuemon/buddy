@@ -420,20 +420,22 @@ func TestSyncProjectionKeepsRetainedOccurrences(t *testing.T) {
 	}
 }
 
-// changesSource は、読むたびに changes の先頭を 1 つずつ返す EventSource である。
+// changesSource は、読むたびに changes の先頭を 1 つずつ返す EventSource である。読まれた時刻を calledAt に足す。
 type changesSource struct {
 	calendar.EventSource
-	changes []calendar.Changes
+	changes  []calendar.Changes
+	calledAt []time.Time
 }
 
 func (s *changesSource) Changes(context.Context, string, string) (calendar.Changes, error) {
+	s.calledAt = append(s.calledAt, time.Now())
 	c := s.changes[0]
 	s.changes = s.changes[1:]
 	return c, nil
 }
 
-// TestSyncProjectsCancellationWithoutUpdated は、Google が更新の時刻を返さなかった取り消しも、更新の時刻のある行に写すことを確認する。
-// Google は、取り消した予定に ID のほかを返さないことがある。
+// TestSyncProjectsCancellationWithoutUpdated は、Google が更新の時刻を返さなかった取り消しも、更新の時刻のある行に写し、
+// 行の更新の時刻を、当てた時刻でなく、読み始めた時刻より前にすることを確認する。Google は、取り消した予定に ID のほかを返さないことがある。
 func TestSyncProjectsCancellationWithoutUpdated(t *testing.T) {
 	e := newProjectionEnv(t)
 	confirmed := calendar.Event{
@@ -451,7 +453,8 @@ func TestSyncProjectsCancellationWithoutUpdated(t *testing.T) {
 		}
 	}
 	got := e.mustRow(t, "single")
-	if got.Status != scheduleview.ProjectionCancelled || got.GoogleUpdatedAt == nil || !got.GoogleUpdatedAt.After(instant(t, confirmed.Updated)) {
-		t.Errorf("更新の時刻の無い取り消しの行 = %+v, want 取り消しで、更新の時刻は同期が読んだ時刻", got)
+	if got.Status != scheduleview.ProjectionCancelled || got.GoogleUpdatedAt == nil || !got.GoogleUpdatedAt.After(instant(t, confirmed.Updated)) ||
+		got.GoogleUpdatedAt.After(src.calledAt[1]) {
+		t.Errorf("更新の時刻の無い取り消しの行 = %+v, want 取り消しで、更新の時刻は読み始めた時刻（%v より前）", got, src.calledAt[1])
 	}
 }

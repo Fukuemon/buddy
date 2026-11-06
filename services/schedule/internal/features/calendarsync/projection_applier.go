@@ -44,7 +44,7 @@ func NewProjectionApplier(projections Projections, log *slog.Logger) Applier {
 // Apply は、Applier の Apply を実装する。
 func (a projectionApplier) Apply(ctx context.Context, c calendar.ExternalCalendar, ev calendar.Event) error {
 	if ev.Status == calendar.StatusCancelled && ev.RecurringEventID == "" {
-		if err := a.projections.Put(ctx, a.stamped(cancelledProjectionOf(c, ev, civil.Today(a.now())))); err != nil {
+		if err := a.projections.Put(ctx, cancelledProjectionOf(c, ev, civil.Today(a.now()))); err != nil {
 			return err
 		}
 		return a.projections.CancelOccurrences(ctx, c.ID, ev.ID)
@@ -59,18 +59,7 @@ func (a projectionApplier) Apply(ctx context.Context, c calendar.ExternalCalenda
 	if p.LastEndDate != nil && p.LastEndDate.Before(retainedFrom(a.now())) {
 		return a.projections.Delete(ctx, c.ID, ev.ID)
 	}
-	return a.projections.Put(ctx, a.stamped(p))
-}
-
-// stamped は、Google が更新の時刻を返さなかった取り消しの行 p に、同期が読んだ今の時刻を入れて返す。Google は、取り消した予定に
-// ID のほかを返さないことがある。時刻の無い取り消しは、時刻のある行を書き直せず（Projections.Put）、予定が一覧に残るためである。
-// 取り消しは読む前に起きているので、今の時刻より後の Google の変更は、取り消しの後の変更である。取り消しでない行は、そのまま返す。
-func (a projectionApplier) stamped(p scheduleview.Projection) scheduleview.Projection {
-	if p.Status == scheduleview.ProjectionCancelled && p.GoogleUpdatedAt == nil {
-		now := a.now()
-		p.GoogleUpdatedAt = &now
-	}
-	return p
+	return a.projections.Put(ctx, p)
 }
 
 // Settle は、Applier の Settle を実装する。全ての予定を読み直したときは、読み直しに無かったカレンダーの行を消す。
