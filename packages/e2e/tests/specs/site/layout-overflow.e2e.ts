@@ -3,7 +3,7 @@ import { expect, test } from '@playwright/test'
 import { pageRoot } from '../../selectors/page'
 
 /**
- * 描画した画面の横方向のオーバーフローを、DESIGN.md の原則 LAYOUT-OVERFLOW で確かめる。
+ * 描画した画面の横方向のオーバーフローを、DESIGN.md の原則 LAYOUT-OVERFLOW で確認する。
  * 幅は、スマートフォンの幅（390px）と、ブレークポイントの `desktop:`（768px）の前後と、パソコンの幅（1280px）にする。
  * ページの全体の幅だけを見る。内側の領域で切れた文字とボタンは、撮った画像をレビューで見る。
  */
