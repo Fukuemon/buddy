@@ -222,26 +222,79 @@ func findListedOccurrence(ctx context.Context, projections Projections, now func
 // 展開した回の一覧の etag は親の予定の etag なので、回に書く前に親で比べる。Google の回の予定は親と別の etag を持ちうるので、
 // 回の If-Match には付けない。違えば、読んだ親を Projection に写して errEventChanged を、取り消されていれば errEventNotFound を返す。
 // 読めなければ、予定が無いときは errEventNotFound を、ほかは ErrGoogleUnavailable を包んだエラーを返す。
+// 同じときは、読んだ親の予定を返す。
 func requireParentETag(ctx context.Context, source calendar.EventSource, projections Projections, now func() time.Time, t tx.Transactor,
-	parent parentEvent, etag string) error {
+	parent parentEvent, etag string) (calendar.Event, error) {
 	ev, err := readEvent(ctx, source, parent.cal.CalendarID, parent.row.EventID)
 	switch {
 	case errors.Is(err, calendar.ErrEventNotFound):
-		return errEventNotFound
+		return calendar.Event{}, errEventNotFound
 	case err != nil:
-		return fmt.Errorf("%w: %w", ErrGoogleUnavailable, err)
+		return calendar.Event{}, fmt.Errorf("%w: %w", ErrGoogleUnavailable, err)
 	case ev.Status != calendar.StatusCancelled && ev.ETag == etag:
-		return nil
+		return ev, nil
 	}
 	if err := t.WithinTx(ctx, func(ctx context.Context) error {
 		return project(ctx, projections, civil.Today(now()), parent.cal, ev)
 	}); err != nil {
-		return err
+		return calendar.Event{}, err
 	}
 	if ev.Status == calendar.StatusCancelled {
-		return errEventNotFound
+		return calendar.Event{}, errEventNotFound
 	}
-	return errEventChanged
+	return calendar.Event{}, errEventChanged
+}
+
+// listedInstance は、繰り返しの予定の親 parent の、元の規則で d に始まる回を Google から読む（findInstance）。
+// etag が空でなければ、画面は展開した回を一覧で読んでいる。親の予定の etag を比べ（requireParentETag）、読んだ回が、親の予定を
+// 展開した回のまま（followsParent）かも確認する。同期が Projection に例外の回を写す前に Google で回が変わっていると、親の予定の
+// etag は変わらず、回の etag を If-Match に付けても新しい回を古い入力で上書きするか消すためである。
+// 回が変わっていれば、読んだ回を Projection に写して errEventChanged を返す。エラーは requireParentETag と findInstance と同じである。
+func listedInstance(ctx context.Context, source calendar.EventSource, projections Projections, now func() time.Time, t tx.Transactor,
+	parent parentEvent, d civil.Date, etag string) (calendar.Event, error) {
+	if etag == "" {
+		return findInstance(ctx, source, parent.cal, parent.row.EventID, d)
+	}
+	parentNow, err := requireParentETag(ctx, source, projections, now, t, parent, etag)
+	if err != nil {
+		return calendar.Event{}, err
+	}
+	inst, err := findInstance(ctx, source, parent.cal, parent.row.EventID, d)
+	if err != nil || followsParent(inst, parentNow, d) {
+		return inst, err
+	}
+	if err := t.WithinTx(ctx, func(ctx context.Context) error {
+		return project(ctx, projections, civil.Today(now()), parent.cal, inst)
+	}); err != nil {
+		return calendar.Event{}, err
+	}
+	return calendar.Event{}, errEventChanged
+}
+
+// followsParent は、Google の回 inst が、親の予定 parent を元の規則で d に展開した回と、タイトル、開始、長さが同じかを返す。
+// 公式の文書は、events.instances の回が変えた回かを示す項目を書いていないので、親の予定から求めた回と比べる。
+// タイトル、開始、終了のほかの項目（説明など）だけを変えた回は、変えていない回とみなす。日時を読めなければ false を返す。
+// 出典: https://developers.google.com/workspace/calendar/api/v3/reference/events/instances
+func followsParent(inst, parent calendar.Event, d civil.Date) bool {
+	ps, err := parent.Start.Instant()
+	if err != nil {
+		return false
+	}
+	pe, err := parent.End.Instant()
+	if err != nil {
+		return false
+	}
+	is, err := inst.Start.Instant()
+	if err != nil {
+		return false
+	}
+	ie, err := inst.End.Instant()
+	if err != nil {
+		return false
+	}
+	ps = ps.In(calendar.Tokyo)
+	start := time.Date(d.Year, d.Month, d.Day, ps.Hour(), ps.Minute(), ps.Second(), 0, calendar.Tokyo)
+	return inst.Summary == parent.Summary && is.Equal(start) && ie.Sub(is) == pe.Sub(ps)
 }
 
 // findInstance は、カレンダー cal の繰り返しの予定 parentEventID の、元の規則で d に始まる回を、events.instances で Google から読む。

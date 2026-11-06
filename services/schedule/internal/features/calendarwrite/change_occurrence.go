@@ -42,7 +42,7 @@ func (o ChangeOccurrence) Do(ctx context.Context, facilityID, recurringScheduleI
 }
 
 // changeOccurrence は、ChangeOccurrence.Do と、展開した回への Update.Do の書き込みを行う。etag が空でなければ、親の予定を読み直して
-// etag と比べ、違えば回に書かない（requireParentETag）。
+// etag と比べ、違うか、回が親の予定を展開した回から変わっていれば、回に書かない（listedInstance）。
 // listID は、変える回の一覧での ID で、空なら回の OccurrenceScheduleID にする。回を移した後に元のカレンダーに残った回では、
 // 一覧での ID（DetachedOccurrenceScheduleID）を渡す。回の記録が移した予定を指すので、残った回をすでに変えた回とみなさないためである。
 func (u Update) changeOccurrence(ctx context.Context, facilityID, recurringScheduleID string, originalDate civil.Date, listID, etag string,
@@ -69,12 +69,7 @@ func (u Update) changeOccurrence(ctx context.Context, facilityID, recurringSched
 	if err != nil {
 		return scheduleview.Detail{}, err
 	}
-	if etag != "" {
-		if err := requireParentETag(ctx, source, u.projections, u.now, u.tx, parent, etag); err != nil {
-			return scheduleview.Detail{}, err
-		}
-	}
-	inst, err := findInstance(ctx, source, parent.cal, parent.row.EventID, originalDate)
+	inst, err := listedInstance(ctx, source, u.projections, u.now, u.tx, parent, originalDate, etag)
 	if err != nil {
 		return scheduleview.Detail{}, err
 	}

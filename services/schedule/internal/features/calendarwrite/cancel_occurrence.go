@@ -40,7 +40,7 @@ func (o CancelOccurrence) Do(ctx context.Context, facilityID, recurringScheduleI
 }
 
 // cancelOccurrence は、CancelOccurrence.Do と、展開した回への Cancel.Do の取り消しを行う。etag が空でなければ、親の予定を読み直して
-// etag と比べ、違えば回を消さない（requireParentETag）。
+// etag と比べ、違うか、回が親の予定を展開した回から変わっていれば、回を消さない（listedInstance）。
 // listID は、取り消す回の一覧での ID で、空なら回の OccurrenceScheduleID にする。回を移した後に元のカレンダーに残った回では、
 // 一覧での ID（DetachedOccurrenceScheduleID）を渡す。回の記録が移した予定を指すので、残った回をすでに変えた回とみなさないためである。
 func (c Cancel) cancelOccurrence(ctx context.Context, facilityID, recurringScheduleID string, originalDate civil.Date, listID, etag, reason string) (schedule.Cancellation, error) {
@@ -66,12 +66,7 @@ func (c Cancel) cancelOccurrence(ctx context.Context, facilityID, recurringSched
 	if err != nil {
 		return schedule.Cancellation{}, err
 	}
-	if etag != "" {
-		if err := requireParentETag(ctx, source, c.projections, c.now, c.tx, parent, etag); err != nil {
-			return schedule.Cancellation{}, err
-		}
-	}
-	inst, err := findInstance(ctx, source, parent.cal, parent.row.EventID, originalDate)
+	inst, err := listedInstance(ctx, source, c.projections, c.now, c.tx, parent, originalDate, etag)
 	if err != nil {
 		return schedule.Cancellation{}, err
 	}

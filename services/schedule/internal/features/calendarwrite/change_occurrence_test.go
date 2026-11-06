@@ -5,6 +5,8 @@ import (
 	"slices"
 	"testing"
 
+	calendarv3 "google.golang.org/api/calendar/v3"
+
 	"github.com/Fukuemon/buddy/services/schedule/internal/apperr"
 	"github.com/Fukuemon/buddy/services/schedule/internal/civil"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendar"
@@ -267,6 +269,41 @@ func TestCancelOccurrenceRejectsParentPending(t *testing.T) {
 	thirdID := scheduleview.OccurrenceScheduleID(externalID, eventID(t), occurrenceDates[2])
 	if _, err := fx.cancel.Do(editorCtx(), inmem.FacilityID, thirdID, parentETag, "利用者の都合"); !isConflict(err, calendarwrite.CodeWritePending) {
 		t.Errorf("親に保留の版がある変えていない回の取り消し: err = %v", err)
+	}
+	if fx.google.Writes() != writes {
+		t.Errorf("Google への書き込み = %d, want %d", fx.google.Writes(), writes)
+	}
+}
+
+// TestListedOccurrenceChangedInGoogle は、変えていない回を一覧で読んだ後、同期が例外の回を Projection に写す前に Google でその回が
+// 変わっていれば、一覧の ID と親の予定の etag での Update と Cancel が CodeEventChanged を返し、Google の回を変えないことを確認する。
+// 読んだ回は、例外の回として Projection に写す。
+func TestListedOccurrenceChangedInGoogle(t *testing.T) {
+	fx := newFixture(t)
+	fx.seedRecurring(t)
+	parentETag := fx.google.Event(calendarID, eventID(t)).Etag
+	third := occurrenceDates[2]
+	fx.google.Edit(calendarID, instanceID(t, secondDate), func(ev *calendarv3.Event) {
+		ev.Start.DateTime, ev.End.DateTime = "2026-10-29T11:00:00+09:00", "2026-10-29T12:00:00+09:00"
+	})
+	fx.google.Edit(calendarID, instanceID(t, third), func(ev *calendarv3.Event) { ev.Summary = "Google で変えた回" })
+	writes := fx.google.Writes()
+
+	if _, err := fx.update.Do(editorCtx(), inmem.FacilityID, exceptionID(t), parentETag, movedSlot()); !isConflict(err, calendarwrite.CodeEventChanged) {
+		t.Errorf("Google で変わった回の変更: err = %v", err)
+	}
+	if ev := fx.google.Event(calendarID, instanceID(t, secondDate)); ev.Start.DateTime != "2026-10-29T11:00:00+09:00" {
+		t.Errorf("Google の回 = %+v, want Google で変えたまま", ev.Start)
+	}
+	if p, ok := fx.store.Projections[inmem.ProjectionKey{ExternalCalendarID: externalID, EventID: instanceID(t, secondDate)}]; !ok || !p.IsException() {
+		t.Errorf("Google で変わった回の Projection = %+v, ok = %v, want 例外の回の行", p, ok)
+	}
+	thirdID := scheduleview.OccurrenceScheduleID(externalID, eventID(t), third)
+	if _, err := fx.cancel.Do(editorCtx(), inmem.FacilityID, thirdID, parentETag, "利用者の都合"); !isConflict(err, calendarwrite.CodeEventChanged) {
+		t.Errorf("Google で変わった回の取り消し: err = %v", err)
+	}
+	if ev := fx.google.Event(calendarID, instanceID(t, third)); ev.Status != "confirmed" || ev.Summary != "Google で変えた回" {
+		t.Errorf("Google の回 = %+v, want Google で変えたまま", ev)
 	}
 	if fx.google.Writes() != writes {
 		t.Errorf("Google への書き込み = %d, want %d", fx.google.Writes(), writes)
