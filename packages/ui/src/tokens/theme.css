@@ -21,6 +21,7 @@
   --color-text-disabled: var(--buddy-color-text-disabled);
   --color-text-inverse: var(--buddy-color-text-inverse);
   --color-border: var(--buddy-color-border);
+  --color-border-strong: var(--buddy-color-border-strong);
   --color-border-field: var(--buddy-color-border-field);
   --color-border-field-hover: var(--buddy-color-border-field-hover);
   --color-primary: var(--buddy-color-primary);
