@@ -70,10 +70,16 @@ export const ScheduleFormModal = ({
               {submitError}
             </p>
           )}
-          <Button data-testid={cancelTestId} onClick={requestClose} variant="secondary">
+          <Button
+            className="shrink-0"
+            data-testid={cancelTestId}
+            onClick={requestClose}
+            variant="secondary"
+          >
             キャンセル
           </Button>
           <Button
+            className="shrink-0"
             data-testid={submitTestId}
             form={FORM_ID}
             isLoading={form.formState.isSubmitting}
