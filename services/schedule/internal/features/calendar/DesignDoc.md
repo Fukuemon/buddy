@@ -910,6 +910,8 @@ sequenceDiagram
 
 - `buddyScheduleId` と `buddyVersion` が保留の版と同じなら確定し、読んだ予定を Projection に写す。
 - 版か `buddyScheduleId` が違うか、予定が取り消されていれば、保留の版を消し、読んだ予定を Projection に写す。
+  - 取り消された予定は、Google が受けた版とみなさない。保留の版の内容は、Google の予定に残っていないためである。
+  - `buddyScheduleId` が違う予定は、この記録の書き込みが届いていない。保留の版を残すと、解く手順が無くなる。
 - 予定が無ければ、保留の版を消す。
   - Google は、カレンダーを読めないときも 404 を返す。そのため、予定が無いと答えたときは、カレンダーを読めることを確認してから消す。
 - 保留の版を消すと、保留の訪問の情報も、使われていなければ消す。
@@ -977,7 +979,10 @@ sequenceDiagram
 | `ErrEventRejected` | 409（`google_event_rejected`） | 消す |
 
 `ErrEventExists` の後の読み出しが失敗したときは、保留の版を「結果が分からない」にして残し、503（`google_write_unknown`）を返す。  
-サービスアカウントの設定が無い事業所では、保留の版を書かずに 503（`calendar_not_configured`）を返す。
+サービスアカウントの設定が無い事業所では、保留の版を書かずに 503（`calendar_not_configured`）を返す。  
+書き出しのフラグ（`GOOGLE_CALENDAR_EXPORT_ENABLED`）を無効にした環境では、サービスアカウントのスコープが読むだけの `calendar.readonly` になる。  
+そのため、Google は書き込みを 403 で拒み、予定の API は 409（`google_calendar_unwritable`）を返して保留の版を消す。  
+`google_primary` の事業所から予定を書く環境では、書き出しのフラグを有効にする。
 
 ### ローカル環境と E2E の Google カレンダー
 
