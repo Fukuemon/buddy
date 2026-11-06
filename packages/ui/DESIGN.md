@@ -69,6 +69,10 @@ packages/ui のトークンとコンポーネントの使い方と、アクセ�
     - 確認: `FormField` を使わない欄は、レビューで、欄と近くの文字の間が `gap-3`（12px）以上かを見る。
       - 良い例: 照合の月の欄の見出しと欄を `flex flex-col gap-3` で並べる。
       - 悪い例: 見出しと欄を `gap-1`（4px）で並べ、フォーカスの表示が見出しの文字に重なる。
+- `LAYOUT-OVERFLOW`: 幅 768px 以上と未満のどちらでも、ページを横にはみ出させない。長い文字とデータの多い状態でも出さない。
+  - 表のように横に長い中身は、その領域の中で横に送り、ページの全体を広げない。
+  - 確認: 主な画面のページの全体の幅は、E2E の `packages/e2e/tests/specs/site/layout-overflow.e2e.ts`（`pnpm e2e`）が、幅 390、767、768、1280px で確認する。
+  - 確認: 内側の領域で切れた文字とボタンと、見た目の崩れは、チェックが見ない。テストが撮った画像か描画した画面を、レビューで見る。
 
 ### 原則と確認の方法の対応
 
@@ -84,6 +88,7 @@ packages/ui のトークンとコンポーネントの使い方と、アクセ�
 | `FOCUS-ONE` | `scripts/check-utilities.mjs`（`pnpm check:design`） | `focus-ring` の付け忘れ。クラスの名前を文字列の連結で組み立てた書き方 |
 | `TARGET-SIZE` | `packages/ui` のコンポーネントのテスト（`pnpm --filter @buddy/ui test`） | 画面で作る押せる要素 |
 | `SPACING-SCALE` | `scripts/check-utilities.mjs`（`pnpm check:design`） | 半分の段と、ブロックの間が 8px の倍数か。`FormField` を使わない欄の間 |
+| `LAYOUT-OVERFLOW` | `packages/e2e/tests/specs/site/layout-overflow.e2e.ts`（`pnpm e2e`） | テストに入れていない画面と、シードに無い長い文字とデータの多い状態。内側の領域で切れた文字とボタン。見た目の崩れ |
 
 ## 画面を作るときの手順
 
@@ -95,7 +100,7 @@ packages/ui のトークンとコンポーネントの使い方と、アクセ�
 2. `theme.css` のユーティリティと、packages/ui のコンポーネントだけで書く。
 3. 使ったコンポーネントの状態のうち、画面で起きるもの（読み込み中、空、エラー、無効）を作る。
 4. 下の「流すコマンド」を、表の順に流す。
-5. 描画した画面を、幅 768px 以上と未満で開き、横方向のオーバーフローと見た目の崩れがないかを見る。
+5. 描画した画面を、幅 768px 以上と未満で開き、横方向のオーバーフローと見た目の崩れがないかを見る。新しい画面は、`layout-overflow.e2e.ts` の画面の一覧に足す。
 6. 下の「報告の形」で報告する。
 
 ### 流すコマンド
@@ -108,6 +113,7 @@ packages/ui のトークンとコンポーネントの使い方と、アクセ�
 | `pnpm check:contrast` | セマンティックトークンの組のコントラスト比 | |
 | `pnpm check:design` | 画面のコードの色の値、プリミティブトークンの名前、原則に反するユーティリティ | `COLOR-TOKEN`、`TEXT-MIN-SIZE`、`FOCUS-ONE`、`SPACING-SCALE` |
 | `pnpm --filter @buddy/ui test` | コンポーネントの状態、押せる領域の大きさ、story のアクセシビリティ（axe） | `TARGET-SIZE` |
+| `pnpm e2e`（compose を起動してから） | 主な画面の、幅ごとのページの横方向のオーバーフロー。撮った画像はローカルでは `packages/e2e/test-results/` に出て、CI では成果物の `e2e-layout-screens` に残る | `LAYOUT-OVERFLOW` |
 
 ### 受け入れ条件
 

@@ -22,6 +22,7 @@ status: stable
 | トークンのコントラスト | セマンティックトークンの組が WCAG 2.2 のコントラスト比の基準に届く | `scripts/check-contrast.mjs` | `pnpm check:contrast` |
 | 画面のコードの書き方 | 画面とコンポーネントのコードに、色の値、プリミティブトークンの名前、14px より小さい文字、`focus-ring` 以外のフォーカスの表示、余白の任意値がない | `scripts/check-raw-values.mjs`、`scripts/check-utilities.mjs` | `pnpm check:design` |
 | E2E | ログインから画面の操作までの流れが、compose の全体で動く | `packages/e2e/tests/` | `pnpm e2e`（[E2E のテスト](testing/e2e.md)） |
+| 描画した画面の横方向のオーバーフロー | 主な画面を幅 390、767、768、1280px で開いたとき、ページの全体が横にはみ出さない（DESIGN.md の `LAYOUT-OVERFLOW`）。撮った画像はレビューで見る | `packages/e2e/tests/specs/site/layout-overflow.e2e.ts` | `pnpm e2e`。CI の `e2e` のジョブで流れる |
 | 生成物のそろい | `openapi.yaml` と SQL から生成したコードが最新である | `scripts/check-generated.sh` | `pnpm check:generated` |
 | テーブル定義書のそろい | マイグレーションを適用した PostgreSQL から作ったテーブル定義書と ER 図の元が、コミットした `docs/db/` と同じである。全てのテーブルがどれかの viewpoint に入る | `scripts/build-db-docs.sh` | `pnpm generate:db-docs`（Docker が要る）。CI の `db-docs` は、生成した後に `docs/db/` の差分を確認する |
 | OpenAPI の定義の lint | 各 API の `openapi.yaml` が Redocly CLI の `recommended-strict` の規則に合う | `redocly.yaml`、`.redocly.lint-ignore.yaml` | `pnpm lint:openapi` |
