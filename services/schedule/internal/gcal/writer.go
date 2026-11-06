@@ -65,7 +65,8 @@ func (w *Writer) Delete(ctx context.Context, calendarID, eventID, etag string) e
 
 // conditionalWriteError は、予定の更新と削除のエラーを writeError と同じく包む。412 を受けたときは予定を読み、
 // cancelled なら ErrEventGone で包む。Google は、消された予定に消す前の etag を付けた書き込みを、410 でなく 412 で返すためである。
-// 読むのが一時的なエラーで失敗したら ErrUnavailable で包み、書き直させる。それ以外は、412 のまま ErrEventChanged で包む。
+// 読むのが一時的なエラーか結果の分からないエラーで失敗したら、ErrUnavailable で包み、書き直させる。書き込みは 412 で拒まれているので、
+// 結果は分かっている。それ以外は、412 のまま ErrEventChanged で包む。
 func (w *Writer) conditionalWriteError(ctx context.Context, calendarID, eventID, msg string, err error) error {
 	var gerr *googleapi.Error
 	if !errors.As(err, &gerr) || gerr.Code != http.StatusPreconditionFailed {
@@ -76,8 +77,8 @@ func (w *Writer) conditionalWriteError(ctx context.Context, calendarID, eventID,
 	case getErr == nil && ev.Status == "cancelled":
 		return fmt.Errorf("%s: %w: %w", msg, calendar.ErrEventGone, err)
 	case getErr != nil:
-		if rerr := writeError(msg, getErr); errors.Is(rerr, calendar.ErrUnavailable) {
-			return rerr
+		if rerr := writeError(msg, getErr); errors.Is(rerr, calendar.ErrUnavailable) || errors.Is(rerr, calendar.ErrOutcomeUnknown) {
+			return fmt.Errorf("%s: %w: %w", msg, calendar.ErrUnavailable, withoutURL(getErr))
 		}
 	}
 	return writeError(msg, err)
@@ -105,11 +106,17 @@ func toEventBody(b calendar.EventBody) *calendarv3.Event {
 var rateLimitReasons = map[string]bool{"rateLimitExceeded": true, "userRateLimitExceeded": true, "quotaExceeded": true}
 
 // writeError は、Calendar API の書き込みのエラーを calendar のエラーで包む。エラーの文は、カレンダー ID と予定のタイトルを含まない。
+// 5xx、通信のエラー、時間切れは、Google が書いた後に応答だけが失われたことがあるので ErrOutcomeUnknown で包む。
+// 429 と、ほかの 4xx は、Google が拒んだことが確かなので ErrUnavailable で包む（ADR-0026）。
 func writeError(msg string, err error) error {
 	err = withoutURL(err)
-	kind := calendar.ErrUnavailable
+	kind := calendar.ErrOutcomeUnknown
 	var gerr *googleapi.Error
 	if errors.As(err, &gerr) {
+		kind = calendar.ErrUnavailable
+		if gerr.Code >= http.StatusInternalServerError {
+			kind = calendar.ErrOutcomeUnknown
+		}
 		switch gerr.Code {
 		case http.StatusPreconditionFailed:
 			kind = calendar.ErrEventChanged

@@ -119,7 +119,8 @@ func (x *Exporter) logBacklog(ctx context.Context) {
 		slog.Int("pending_count", bl.PendingCount), slog.Int64("oldest_pending_age_seconds", int64(bl.OldestAge.Seconds())))
 }
 
-// resultOf は、待ち e を書いたエラー err を、待ちの次の状態にする。
+// resultOf は、待ち e を書いたエラー err を、待ちの次の状態にする。書いたかが分からないエラー（calendar.ErrOutcomeUnknown）も、
+// 一時的なエラー（calendar.ErrUnavailable）と同じく書き直す。予定の ID が buddy の予定から決まるので、書き直しても予定は 2 つにならない。
 func resultOf(e calendar.Export, err error) calendar.ExportResult {
 	code := func(c calendar.ExportErrorCode) *calendar.ExportErrorCode { return &c }
 	switch {
