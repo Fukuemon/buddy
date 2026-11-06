@@ -2,7 +2,10 @@
 // 画面とコンポーネントのコードに、デザインシステムの文書の「画面を作るときの原則」に反するユーティリティのクラスが書かれていないかを確認する。
 // 色の値とプリミティブトークンの名前は check-raw-values.mjs が見る。
 // コピーした後に、TARGETS、EXCLUDES、RULES を、自分のリポジトリとデザインシステムの文書に合わせて書き換える。
-// 使い方: node check-utilities.mjs [ファイルかディレクトリ]...
+// 使い方: node check-utilities.mjs [--doc <デザインシステムの文書>] [ファイルかディレクトリ]...
+//   --doc を渡すと、コードを読む前に、RULES の各 id が文書の中にコードスパン（`TEXT-MIN-SIZE`）で出るかを見る。出ない id があれば、id を出して終了コード 2 で止める。
+//     原則を消すか改名して文書のどこからも ID が消えたのに、RULES が古い ID のまま残るのを見つけるためである。ID が文書の 1 か所（表など）に残っていれば通る。
+//     文書の表の形は読まない。逆向き（文書がこのチェックで見ると書いた原則が RULES に無い）は見ない。
 //   引数のパスを省くと TARGETS を読む。ディレクトリは、EXTENSIONS の拡張子のファイルを再帰で読む。node_modules と、. で始まるディレクトリは読まない。
 // クラスの名前は、変種を : でつなぎ（focus-visible:ring-2）、任意値を [ ] か ( ) で書く（p-[13px]、gap-(--gap)）形として読む。
 //   空白と引用符で区切り、[ ] と ( ) の外では波括弧、カンマ、セミコロン、=、<、> でも区切った語を、クラスの名前として読む。コメントの中の語も読む。
@@ -11,7 +14,7 @@
 //   引用符は、配列（["text-xs"]）と関数の引数（cn("text-xs")）の区切りと見分けられないので、いつでも区切りにする。
 //   ALLOW_MARK を含む行は見ず、外した行の数を出す。外す理由は、同じ行のコメントに書く。
 // 違反の行には、RULES の id（デザインシステムの文書の原則の ID）を出す。
-// 終了コード: 0 は見つからなかった、1 は見つかった、2 はパスが読めない
+// 終了コード: 0 は見つからなかった、1 は見つかった、2 はパスが読めないか、引数が正しくないか、RULES の id が文書に無い
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { extname, join, relative, resolve, sep } from "node:path";
 
@@ -72,7 +75,35 @@ const collect = (p) => {
     }
   } else files.push(abs);
 };
-const paths = process.argv.slice(2);
+let doc;
+const paths = [];
+for (let i = 2; i < process.argv.length; i++) {
+  const arg = process.argv[i];
+  if (arg === "--doc") {
+    doc = process.argv[++i];
+    if (doc === undefined || doc === "") {
+      console.error(`${arg} の次に値が要る`);
+      process.exit(2);
+    }
+  } else paths.push(arg);
+}
+
+if (doc !== undefined) {
+  let text;
+  try {
+    text = readFileSync(resolve(doc), "utf8");
+  } catch (e) {
+    console.error(`読めない: ${doc}\n${e.message}`);
+    process.exit(2);
+  }
+  const missing = RULES.map((r) => r.id).filter((id) => !text.includes(`\`${id}\``));
+  if (missing.length) {
+    for (const id of missing) console.error(`文書に無い原則の ID: ${id}（${doc}）`);
+    console.error("RULES の id を、デザインシステムの文書の原則の ID に合わせる。原則を消したなら、RULES の規則も消す");
+    process.exit(2);
+  }
+}
+
 for (const p of paths.length ? paths : TARGETS) collect(p);
 
 // 任意値は空白を含まないので、空白と引用符はいつでも区切りにする。関数の呼び出し（cn("text-xs", x)）の ( の後ろを 1 語にまとめないためである。
