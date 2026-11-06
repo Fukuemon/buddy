@@ -148,7 +148,7 @@ func TestSyncKeepsPendingOfOtherVersion(t *testing.T) {
 		name string
 		edit func(e pendingEnv)
 	}{
-		{name: "前の版", edit: func(e pendingEnv) { e.putEvent(1) }},
+		{name: "古い版", edit: func(e pendingEnv) { e.putEvent(1) }},
 		{name: "版が無い", edit: func(e pendingEnv) {
 			ev := e.putEvent(2)
 			e.srv.Edit(googleCalID, ev.Id, func(ev *calendarv3.Event) { delete(ev.ExtendedProperties.Private, calendar.PropVersion) })
