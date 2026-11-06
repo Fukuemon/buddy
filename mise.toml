@@ -14,7 +14,7 @@ uv = "0.13"
 "aqua:k1LoW/tbls" = "1.96.1"
 # gh はエビデンスの動画を pull request と issue に添付する（--attach は 2.99 以降）
 "aqua:cli/cli" = "2.102.1"
-# portless は worktree ごとの compose の環境を、ホスト名の URL で出す（ADR-0032）
+# portless は worktree ごとの compose の環境を、ホスト名の URL で出す（ADR-0034）
 "npm:portless" = "0.16.0"
 
 # worktree ごとのポートの組（.config/wt.toml が書く）を、compose 以外のコマンドにも渡す
