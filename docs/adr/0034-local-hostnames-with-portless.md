@@ -35,10 +35,12 @@ flowchart LR
   - portless は、compose の HTTP のサービスのポートを選び直す。worktree では、ポートで URL を組み立てられない。
 - web は、`PUBLIC_URL` があれば、ログインとログアウトの戻り先の URL のオリジンをそれにする。portless は TLS を終端して web へ http で渡すためである。本番で TLS を終端するロードバランサーの後ろに置くときも、同じ値を渡せる。
 - worktree の環境では、web のセッションの cookie に `Secure` を付ける。
-- 開発者は、最初に 1 回だけ、`portless trust` と `sudo portless service install` を流す。プロキシは OS の起動時に 443 番で動き、CA をシステムが信頼し、ホスト名を `/etc/hosts` に書く。Node.js の E2E のテストのコードも名前を引ける。
-  - 管理者の権限が無い端末は、`portless proxy start --unprivileged --https` で起動する。ブラウザで画面は開けるが、証明書の警告が出て、E2E は流せない。
+- 管理者の権限を使わない。開発者の端末とコーディングエージェントの環境では、`sudo` を使えないことがあるためである。
+  - プロキシは、最初に 1 回だけ `portless proxy start --unprivileged --https` で起動する。macOS では、443 番を管理者の権限なしで待ち受け、loopback からの接続だけを受ける。portless はこのモードを覚え、次からは `portless compose up` が同じモードでプロキシを起動する。
+  - portless の CA はシステムに信頼させない。ブラウザで開くと証明書の警告が出るので、開発者は警告を受け入れて開く。
+  - ホスト名は `/etc/hosts` に書かない。ブラウザは `*.localhost` を自分で loopback に引く。E2E のテストのコード（Node.js）は、Playwright の設定で `*.localhost` を loopback に引くように名前の解決を差し替え、https の URL では証明書のエラーを無視する。
 - portless のバージョンは、`mise.toml` で固定する。1.0 より前で、バージョンの間で状態のファイルの形が変わることがあるためである（[portless の README](https://github.com/vercel-labs/portless#install)）。
-- CI は portless を使わない。CI の機械に CA と常駐のサービスを入れる手間に見合う利点が無い。
+- CI は portless を使わない。CI はブラウザで並べて開かないので、ホスト名で分ける利点が無い。
 
 ## Verification
 
@@ -51,13 +53,13 @@ flowchart LR
 | cookie | `buddy_session` に `Secure` が付き、ドメインは web のホスト名だけだった |
 | 2 つの環境を並べたログイン | 1 つのブラウザで A、B の順にログインした後、A を開き直してもログインしたままだった |
 | worktree を消したとき | portless に登録したホスト名、コンテナ、ボリューム、イメージが全て消えた |
-| Node.js の名前の解決 | `/etc/hosts` に書かない unprivileged モードでは、`ENOTFOUND` で引けなかった |
+| Node.js の名前の解決 | 差し替えないと、`/etc/hosts` に書かない unprivileged モードでは、`ENOTFOUND` で引けなかった |
 
 ## Considered Options
 
 | 選択肢 | 強み | 弱み |
 | --- | --- | --- |
-| **採用:** portless の `portless compose up` | 設定が少ない。ポートの入らない URL になる。HTTPS で本番と同じ cookie の設定にできる。後から dev server にも同じ名前を付けられる | 1.0 より前である。最初の 1 回に管理者の権限が要る。同時に起動したアプリに同じポートが割り当たる不具合（[vercel-labs/portless#533](https://github.com/vercel-labs/portless/issues/533)）が未解決である |
+| **採用:** portless の `portless compose up` | 設定が少ない。ポートの入らない URL になる。HTTPS で本番と同じ cookie の設定にできる。後から dev server にも同じ名前を付けられる | 1.0 より前である。管理者の権限を使わないので、ブラウザに証明書の警告が出る。同時に起動したアプリに同じポートが割り当たる不具合（[vercel-labs/portless#533](https://github.com/vercel-labs/portless/issues/533)）が未解決である |
 | `.env` に `http://<ラベル>.localhost:<ポート>` を書く | ツールを足さない。管理者の権限が要らない | URL にポートが残る。HTTPS にならない |
 | Traefik と mkcert | 実績が多い。Docker のラベルで振り分ける | プロキシの compose、証明書、サービスごとのラベルが要り、設定が多い |
 | OrbStack のコンテナのドメイン | コンテナに名前と HTTPS が自動で付く | 今の Docker の実行環境（colima）から乗り換えが要る。ホストで動かす dev server には名前が付かない |
@@ -72,6 +74,8 @@ flowchart LR
 
 ### Negative
 
-- 開発者の端末に、portless の常駐のサービスと CA が入る。
+- ブラウザで worktree の環境を開くと、証明書の警告が出る。
+- E2E は、`*.localhost` の名前の解決の差し替えと、証明書のエラーの無視に頼る。portless の証明書の誤りは、E2E では見つからない。
+- Linux では、443 番を管理者の権限なしで待ち受けるのに `sysctl` の設定が要る。今の開発者の端末は macOS なので、扱っていない。
 - worktree では `docker compose up` で起動できない。ブラウザが開く URL が portless のホスト名を指すので、`portless compose up` で起動する。
 - CI とメインの checkout は `http://localhost:<ポート>` で動くので、HTTPS と `Secure` の cookie は worktree の環境でだけ確認できる。
