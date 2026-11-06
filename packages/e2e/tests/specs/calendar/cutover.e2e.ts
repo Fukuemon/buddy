@@ -105,8 +105,11 @@ test.describe('予定の正本の切り替え', () => {
     await startCutover(page)
     await expect(page.getByTestId('calendar-cutover-no-edit')).toBeVisible()
     await page.goto('/schedule')
-    await expect(page.getByTestId('schedule-calendar-cutover')).toContainText(
-      '予定の正本を buddy に切り替えています',
+    const notice = page.getByTestId('schedule-calendar-cutover')
+    await expect(notice).toContainText('予定の正本を buddy に切り替えています')
+    await expect(notice).toContainText('buddy でも予定を作成、変更できません')
+    await expect(notice.getByTestId('schedule-calendar-cutover-started')).toContainText(
+      `開始: ${ISHIDA.staff.name}、`,
     )
     await page.goto(CUTOVER_URL)
     await expect(await previewIshida(page)).toBeVisible()
