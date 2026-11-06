@@ -1,6 +1,6 @@
 # @buddy/ui
 
-buddy のデザインシステム。DADS のトークンを元にした意味のトークンと、Base と Case のコンポーネントを持つ。  
+buddy のデザインシステム。DADS の値を元にしたプリミティブトークンと意味のトークンと、Base と Case のコンポーネントを持つ。  
 apps/web は `@buddy/ui` を `workspace:*` で読み、ビルドせずに TypeScript のまま使う。
 
 ## Running

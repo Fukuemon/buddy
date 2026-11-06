@@ -16,9 +16,8 @@ import { createRequire } from "node:module";
 import { isAbsolute, join, resolve } from "node:path";
 
 // 基本の段の CSS を先に、意味の段の CSS を後に並べる。同じ名前は後の値が勝つ
-// DADS の基本の段は packages/ui の依存なので、ルートの package.json からは解決できない。pnpm が packages/ui の下に置くリンクを読む
 const SOURCES = [
-  "./packages/ui/node_modules/@digital-go-jp/design-tokens/dist/tokens.css",
+  "./packages/ui/src/tokens/primitive.css",
   "./packages/ui/src/tokens/semantic.css",
 ];
 // 意味の段のトークンの接頭辞。組の名前に付けて CSS の変数の名前にする

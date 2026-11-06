@@ -219,7 +219,8 @@ node scripts/check-links.mjs
 
 使い方の規則は [packages/ui/DESIGN.md](packages/ui/DESIGN.md) にある。  
 トークンを直すときは、スキル write-design-system に従う。  
-意味のトークン（`packages/ui/src/tokens/semantic.css`）か DADS のバージョンを変えたら、次を流し、生成した `docs/screens/_common/tokens.css` を同じコミットに入れる。
+プリミティブトークン（`packages/ui/src/tokens/primitive.css`）か意味のトークン（`packages/ui/src/tokens/semantic.css`）を変えたら、次を流す。  
+生成した `docs/screens/_common/tokens.css` は、同じコミットに入れる。
 
 ```sh
 pnpm check:contrast   # 意味のトークンの組が WCAG 2.2 のコントラスト比の基準に届くか
@@ -239,7 +240,7 @@ pnpm --filter @buddy/broker generate   # ID ブローカーの画面のテンプ
 pre-commit のフックと CI も同じチェックを流す。
 
 ```sh
-pnpm check:design   # 色の値、DADS の変数の名前、14px より小さい文字、focus-ring 以外のフォーカスの表示、余白の任意値
+pnpm check:design   # 色の値、プリミティブトークンの名前、14px より小さい文字、focus-ring 以外のフォーカスの表示、余白の任意値
 ```
 
 - ロゴのように値が外で決まる行だけは、同じ行のコメントに `design-system-allow` と理由を書いて外す。
@@ -262,7 +263,7 @@ ADR-0009: [モノレポを git flow でマージし、アプリごとのバー�
 | `services/schedule/db/` の SQL | `services/schedule` で `sqlc generate` | `services/schedule/internal/postgres/sqlcgen/` |
 | どちらかの openapi.yaml | `pnpm --filter @buddy/web generate:api` | `apps/web/src/api/generated/` |
 | `services/schedule/db/migrations/`、`services/schedule/.tbls.yml` | `pnpm generate:db-docs`（Docker が要る） | `docs/db/schedule/`（テーブル定義書と ER 図） |
-| `packages/ui/src/tokens/semantic.css`、`@digital-go-jp/design-tokens` | `pnpm build:tokens` | `docs/screens/_common/tokens.css` |
+| `packages/ui/src/tokens/primitive.css`、`packages/ui/src/tokens/semantic.css` | `pnpm build:tokens` | `docs/screens/_common/tokens.css` |
 
 テーブルを足したときは、`.tbls.yml` の `viewpoints` のどれかに入れる。  
 viewpoint を足したときは、生成した文書を `zensical.toml` の nav の「DB の設計」にも足す。  

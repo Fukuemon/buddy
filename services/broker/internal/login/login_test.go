@@ -252,7 +252,7 @@ func TestShowLogin(t *testing.T) {
 		t.Errorf("code = %d, body = %s", rec.Code, body)
 	}
 	// 画面の CSS は、apps/broker が packages/ui のトークンと focus-ring から生成したものである
-	for _, want := range []string{"--buddy-color-primary:", "--color-primitive-blue-900:#", "focus-ring:focus-visible{outline:4px solid"} {
+	for _, want := range []string{"--buddy-color-primary:", "--buddy-primitive-color-light-blue-800:#", "focus-ring:focus-visible{outline:4px solid"} {
 		if !strings.Contains(body, want) {
 			t.Errorf("画面の CSS に %q が無い", want)
 		}

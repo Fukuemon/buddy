@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // 画面とコンポーネントのコードに、packages/ui/DESIGN.md の「画面を作るときの原則」に反する Tailwind のユーティリティが書かれていないかを確認する。
-// 色の値と DADS の変数の名前は scripts/check-raw-values.mjs が見る。
+// 色の値とプリミティブトークンの名前は scripts/check-raw-values.mjs が見る。
 // 使い方: node scripts/check-utilities.mjs [ファイルかディレクトリ]...
 //   引数のパスを省くと TARGETS を読む。ディレクトリは、EXTENSIONS の拡張子のファイルを再帰で読む。node_modules と、. で始まるディレクトリは読まない。
 // 見つけるもの:
