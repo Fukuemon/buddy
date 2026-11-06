@@ -35,7 +35,7 @@ type Story = StoryObj<typeof meta>
 
 export const Default: Story = {}
 
-/** 入力が足りない間は、確定のボタンを押せない。ボタンの左に、押せるようにする条件の文を出す。 */
+/** 入力が足りない間は、確定のボタンを押せない。ボタンの上に、押せるようにする条件の文を出す。 */
 export const CannotSubmit: Story = {
   args: { canSubmit: false, submitHint: '理由を入れてください。' },
 }

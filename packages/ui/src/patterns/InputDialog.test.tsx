@@ -98,7 +98,7 @@ describe('InputDialog', () => {
     expect(onSubmit).not.toHaveBeenCalled()
   })
 
-  it('canSubmit が false の間は、submitHint の文をボタンの左に出し、ボタンの説明にする', () => {
+  it('canSubmit が false の間は、submitHint の文をボタンの上に出し、ボタンの説明にする', () => {
     render(<CannotSubmit />)
     expect(screen.getByTestId('reason-submit-hint')).toHaveTextContent('理由を入れてください。')
     expect(screen.getByRole('button', { name: '保存' })).toHaveAccessibleDescription(

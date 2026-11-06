@@ -81,7 +81,7 @@ test.describe('押せないボタンの条件の文', () => {
             '「読めるか確認する」で読めることを確認すると、結び付けられます。',
           )
           await check(
-            '「読めるか確認する」の横に ID を入れる条件が、フッターの「結び付ける」の左に読めることを確認する条件が出る',
+            '「読めるか確認する」の横に ID を入れる条件が、フッターの「結び付ける」の上に読めることを確認する条件が出る',
           )
         },
       )
@@ -120,7 +120,7 @@ test.describe('押せないボタンの条件の文', () => {
       )
     })
 
-    test(`${prefix}職員の役職を変えるで今の役職のままの場合、「変える」の左に条件が出ること`, async ({
+    test(`${prefix}職員の役職を変えるで今の役職のままの場合、「変える」の上に条件が出ること`, async ({
       browser,
     }) => {
       await recordPrEvidence(
@@ -128,7 +128,7 @@ test.describe('押せないボタンの条件の文', () => {
         {
           name: 'submit-hint-staff-position',
           title:
-            '職員の役職を変えるで今の役職のままのとき、確定のボタンの左に押せるようにする条件が出る',
+            '職員の役職を変えるで今の役職のままのとき、確定のボタンの上に押せるようにする条件が出る',
           actor: ACTOR,
           variant,
         },
@@ -143,7 +143,7 @@ test.describe('押せないボタンの条件の文', () => {
           await expect(dialog.getByTestId('staff-position-submit-hint')).toHaveText(
             '今の役職と違う役職を選んでください。',
           )
-          await check('確定のボタンは押せず、左に「今の役職と違う役職を選んでください。」が出る')
+          await check('確定のボタンは押せず、上に「今の役職と違う役職を選んでください。」が出る')
 
           await step('今と違う役職を選ぶ')
           await otherPositionOption(dialog).check()
@@ -153,7 +153,7 @@ test.describe('押せないボタンの条件の文', () => {
       )
     })
 
-    test(`${prefix}職員の権限を変えるで何も変えていない場合、「保存」の左に条件が出ること`, async ({
+    test(`${prefix}職員の権限を変えるで何も変えていない場合、「保存」の上に条件が出ること`, async ({
       browser,
     }) => {
       await recordPrEvidence(
@@ -161,7 +161,7 @@ test.describe('押せないボタンの条件の文', () => {
         {
           name: 'submit-hint-staff-policies',
           title:
-            '職員の権限を変えるで何も変えていないとき、「保存」の左に押せるようにする条件が出る',
+            '職員の権限を変えるで何も変えていないとき、「保存」の上に押せるようにする条件が出る',
           actor: ACTOR,
           variant,
         },
@@ -174,10 +174,11 @@ test.describe('押せないボタンの条件の文', () => {
           await page.getByTestId('staff-detail-tab-policies').click()
           await page.getByTestId('staff-detail-policies-change').click()
           const dialog = page.getByTestId('staff-policies-dialog')
+          await dialog.getByTestId('staff-policies-submit-hint').scrollIntoViewIfNeeded()
           await expect(dialog.getByTestId('staff-policies-submit-hint')).toHaveText(
             '付ける権限か外す権限を選んでください。',
           )
-          await check('「保存」は押せず、左に「付ける権限か外す権限を選んでください。」が出る')
+          await check('「保存」は押せず、上に「付ける権限か外す権限を選んでください。」が出る')
         },
       )
     })

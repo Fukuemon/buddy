@@ -17,7 +17,7 @@ export type DialogSubmitProps = {
   /** false の間は、確定のボタンを押せない。 */
   canSubmit: boolean
   /**
-   * canSubmit が false の間に、確定のボタンを押せるようにする条件の文。ボタンの左に出し、ボタンの説明として結び付ける。
+   * canSubmit が false の間に、確定のボタンを押せるようにする条件の文。ボタンの上に右寄せで出し、ボタンの説明として結び付ける。
    * 選択肢を読み込む間のように、待てば押せるようになるときは渡さない。
    */
   submitHint?: ReactNode
@@ -51,7 +51,7 @@ export const SubmitButtons = ({
     <>
       {showsHint && (
         <p
-          className="mr-auto text-caption text-text-secondary"
+          className="basis-full text-right text-caption text-text-secondary"
           data-testid={`${testIdPrefix}-submit-hint`}
           id={hintId}
         >
