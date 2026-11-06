@@ -419,3 +419,39 @@ func TestSyncProjectionKeepsRetainedOccurrences(t *testing.T) {
 		e.mustRow(t, id)
 	}
 }
+
+// changesSource は、読むたびに changes の先頭を 1 つずつ返す EventSource である。
+type changesSource struct {
+	calendar.EventSource
+	changes []calendar.Changes
+}
+
+func (s *changesSource) Changes(context.Context, string, string) (calendar.Changes, error) {
+	c := s.changes[0]
+	s.changes = s.changes[1:]
+	return c, nil
+}
+
+// TestSyncProjectsCancellationWithoutUpdated は、Google が更新の時刻を返さなかった取り消しも、更新の時刻のある行に写すことを確認する。
+// Google は、取り消した予定に ID のほかを返さないことがある。
+func TestSyncProjectsCancellationWithoutUpdated(t *testing.T) {
+	e := newProjectionEnv(t)
+	confirmed := calendar.Event{
+		ID: "single", Status: "confirmed", Summary: "担当者会議", ETag: `"1"`, Updated: "2026-11-01T08:00:00Z",
+		Start: calendar.When{DateTime: "2099-11-04T13:00:00+09:00"}, End: calendar.When{DateTime: "2099-11-04T14:00:00+09:00"},
+	}
+	src := &changesSource{changes: []calendar.Changes{
+		{Events: []calendar.Event{confirmed}, NextSyncToken: "t1"},
+		{Events: []calendar.Event{{ID: "single", Status: calendar.StatusCancelled}}, NextSyncToken: "t2"},
+	}}
+	syncer := newSyncer(e.store, src, &[]string{}, inmem.Facilities{Store: e.store})
+	for range 2 {
+		if _, err := syncer.SyncDue(t.Context()); err != nil {
+			t.Fatal(err)
+		}
+	}
+	got := e.mustRow(t, "single")
+	if got.Status != scheduleview.ProjectionCancelled || got.GoogleUpdatedAt == nil || !got.GoogleUpdatedAt.After(instant(t, confirmed.Updated)) {
+		t.Errorf("更新の時刻の無い取り消しの行 = %+v, want 取り消しで、更新の時刻は同期が読んだ時刻", got)
+	}
+}
