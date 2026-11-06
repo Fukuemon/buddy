@@ -104,7 +104,7 @@ func (s Projections) detail(p scheduleview.Projection) scheduleview.ProjectionDe
 		if r.ExternalCalendarID == p.ExternalCalendarID && r.ExternalEventID == p.EventID {
 			d.ScheduleID = r.ScheduleID
 			if r.VisitInfoID != nil {
-				if v, err := (VisitInfos{s.Store}).GetDetail(context.Background(), *r.VisitInfoID); err == nil {
+				if v, err := VisitInfos(s).GetDetail(context.Background(), *r.VisitInfoID); err == nil {
 					d.Visit = &v
 				}
 			}
