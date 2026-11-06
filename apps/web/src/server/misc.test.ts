@@ -101,6 +101,16 @@ describe('usesSecureCookie', () => {
   })
 })
 
+describe('publicUrl', () => {
+  it('PUBLIC_URL を読み、空か未設定なら undefined にする', () => {
+    expect(
+      loadServerConfig({ ...env, PUBLIC_URL: 'https://web.example.localhost' }).publicUrl,
+    ).toBe('https://web.example.localhost')
+    expect(loadServerConfig({ ...env, PUBLIC_URL: '' }).publicUrl).toBeUndefined()
+    expect(loadServerConfig(env).publicUrl).toBeUndefined()
+  })
+})
+
 describe('createMemorySessionStore の鍵', () => {
   it('自分の値の鍵だけを放す', async () => {
     const store = createMemorySessionStore()

@@ -120,6 +120,37 @@ describe('ログイン', () => {
     expect(await promptOf('')).toBeNull()
   })
 
+  it('publicUrl があれば、戻り先の URL とコールバックの URL のオリジンを publicUrl にする', async () => {
+    const exchangeCode = vi.fn<OidcClient['exchangeCode']>(async () => ({
+      accessToken: 'access-1',
+      refreshToken: 'refresh-1',
+      expiresIn: 3600,
+      idToken: 'id-1',
+    }))
+    const { deps } = setup({
+      publicUrl: 'https://web.example.localhost',
+      oidc: fakeOidc({ exchangeCode }),
+    })
+    const start = await startLogin(new Request('http://web.test/auth/login'), deps)
+    const location = new URL(start.headers.get('Location') ?? '')
+    expect(location.searchParams.get('redirect_uri')).toBe(
+      'https://web.example.localhost/auth/callback',
+    )
+
+    await finishLogin(
+      new Request(
+        `http://web.test/auth/callback?code=c&state=${location.searchParams.get('state')}`,
+        {
+          headers: { Cookie: cookiesOf(start) },
+        },
+      ),
+      deps,
+    )
+    expect(exchangeCode.mock.calls[0]?.[0].href).toBe(
+      `https://web.example.localhost/auth/callback?code=c&state=${location.searchParams.get('state')}`,
+    )
+  })
+
   it('usesSecureCookie なら cookie に Secure を付ける', async () => {
     const { deps } = setup({ usesSecureCookie: true })
     const start = await startLogin(new Request('http://web.test/auth/login'), deps)
@@ -233,6 +264,15 @@ describe('ログアウト', () => {
     expect(location.searchParams.get('post_logout_redirect_uri')).toBe('http://web.test/')
     expect(res.headers.getSetCookie()[0]).toContain('Max-Age=0')
     expect(await deps.store.get('session:id-1')).toBeUndefined()
+  })
+
+  it('publicUrl があれば、ログアウトの後の戻り先を publicUrl の / にする', async () => {
+    const { deps } = setup({ publicUrl: 'https://web.example.localhost' })
+    const req = await withSession({ ...VIEWER, accessToken: 'a', idToken: 'id-1' }, deps)
+    const location = new URL((await logout(req, deps)).headers.get('Location') ?? '')
+    expect(location.searchParams.get('post_logout_redirect_uri')).toBe(
+      'https://web.example.localhost/',
+    )
   })
 
   it('ID token の無い古いセッションのログアウトは、セッションを消して / へリダイレクトする', async () => {
