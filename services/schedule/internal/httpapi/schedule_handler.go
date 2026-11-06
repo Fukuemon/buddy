@@ -2,6 +2,7 @@ package httpapi
 
 import (
 	"context"
+	"errors"
 
 	"github.com/Fukuemon/buddy/services/schedule/internal/civil"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/organization"
@@ -9,6 +10,7 @@ import (
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/scheduleview"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/visit"
 	"github.com/Fukuemon/buddy/services/schedule/internal/httpapi/openapi"
+	"github.com/Fukuemon/buddy/services/schedule/internal/principal"
 )
 
 // slotInput は、検証した本文の予定の枠を schedule.SlotInput に変える。日付と時刻の形が誤っていれば 400 になるエラーを返す。
@@ -90,7 +92,19 @@ func (s server) ListSchedules(ctx context.Context, req openapi.ListSchedulesRequ
 	}, nil
 }
 
+// GetSchedule は、職員の事業所の正本のモードで、buddy_primary なら buddy の予定を、google_primary なら Projection の予定を返す。
 func (s server) GetSchedule(ctx context.Context, req openapi.GetScheduleRequestObject) (openapi.GetScheduleResponseObject, error) {
+	f, err := s.staffFacility(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if f.SourceMode == organization.SourceGooglePrimary {
+		d, err := s.u.Schedules.GetProjected(ctx, f.ID, req.ScheduleId)
+		if err != nil {
+			return nil, err
+		}
+		return openapi.GetSchedule200JSONResponse(toSchedule(d)), nil
+	}
 	d, err := s.u.Schedules.Get(ctx, req.ScheduleId)
 	if err != nil {
 		return nil, err
@@ -198,10 +212,26 @@ func (s server) ChangeOccurrence(ctx context.Context, req openapi.ChangeOccurren
 	return openapi.ChangeOccurrence201JSONResponse(toSchedule(d)), nil
 }
 
+// UpdateSchedule は、職員の事業所の正本のモードで、buddy_primary なら schedule の変更を、google_primary なら calendarwrite の変更を呼ぶ。
 func (s server) UpdateSchedule(ctx context.Context, req openapi.UpdateScheduleRequestObject) (openapi.UpdateScheduleResponseObject, error) {
-	in, err := slotInput(*req.Body)
+	b := req.Body
+	in, err := slotInput(openapi.SlotRequest{
+		ScheduleTypeId: b.ScheduleTypeId, Date: b.Date, StartTime: b.StartTime, EndTime: b.EndTime, EndsNextDay: b.EndsNextDay, StaffId: b.StaffId,
+		Title: b.Title, Description: b.Description, VisitInfo: b.VisitInfo,
+	})
 	if err != nil {
 		return nil, err
+	}
+	f, err := s.staffFacility(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if f.SourceMode == organization.SourceGooglePrimary {
+		d, err := s.u.CalendarWrites.Update(ctx, f.ID, req.ScheduleId, value(b.Etag), in)
+		if err != nil {
+			return nil, err
+		}
+		return openapi.UpdateSchedule200JSONResponse(toSchedule(d)), nil
 	}
 	sc, err := s.u.Schedules.Update(ctx, req.ScheduleId, in)
 	if err != nil {
@@ -214,10 +244,32 @@ func (s server) UpdateSchedule(ctx context.Context, req openapi.UpdateScheduleRe
 	return openapi.UpdateSchedule200JSONResponse(toSchedule(d)), nil
 }
 
+// CancelSchedule は、職員の事業所の正本のモードで、buddy_primary なら schedule のキャンセルを、google_primary なら calendarwrite の取り消しを呼ぶ。
 func (s server) CancelSchedule(ctx context.Context, req openapi.CancelScheduleRequestObject) (openapi.CancelScheduleResponseObject, error) {
+	f, err := s.staffFacility(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if f.SourceMode == organization.SourceGooglePrimary {
+		c, err := s.u.CalendarWrites.Cancel(ctx, f.ID, req.ScheduleId, value(req.Body.Etag), req.Body.Reason)
+		if err != nil {
+			return nil, err
+		}
+		return openapi.CancelSchedule201JSONResponse(toCancel(c)), nil
+	}
 	c, err := s.u.Schedules.Cancel(ctx, req.ScheduleId, req.Body.Reason)
 	if err != nil {
 		return nil, err
 	}
 	return openapi.CancelSchedule201JSONResponse(toCancel(c)), nil
+}
+
+// staffFacility は、認証のミドルウェアが特定した職員の事業所を返す。パスに事業所の無い予定の操作が、正本のモードを読むのに使う。
+// パスの予定が見つかれば、ミドルウェアが予定の事業所と職員の事業所が同じことを確認している。見つからない予定は、職員の事業所の中で探す。
+func (s server) staffFacility(ctx context.Context) (organization.Facility, error) {
+	p, ok := principal.From(ctx)
+	if !ok {
+		return organization.Facility{}, errors.New("認証のミドルウェアを通らずに予定の操作を呼びました")
+	}
+	return s.u.Organization.GetFacility(ctx, p.Staff.FacilityID)
 }

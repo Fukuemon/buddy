@@ -135,9 +135,9 @@ type Accounts interface {
 type EventWriter interface {
 	// Insert は、ID が eventID の予定を作り、外部が返した予定を返す。
 	Insert(ctx context.Context, calendarID, eventID string, b EventBody) (Event, error)
-	// Update は、予定 eventID を b の内容にし、消されていれば戻して、新しい etag を返す。
+	// Update は、予定 eventID を b の内容にし、消されていれば戻して、外部が返した予定を返す。
 	// etag が空でなければ If-Match に付け、外部で予定が変わっていれば ErrEventChanged を、消されていれば ErrEventGone を返す。
-	Update(ctx context.Context, calendarID, eventID, etag string, b EventBody) (string, error)
+	Update(ctx context.Context, calendarID, eventID, etag string, b EventBody) (Event, error)
 	// Delete は、予定 eventID を消す。etag は Update と同じである。
 	Delete(ctx context.Context, calendarID, eventID, etag string) error
 }

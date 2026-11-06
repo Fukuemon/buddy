@@ -68,6 +68,7 @@ erDiagram
 "public.calendar_event_projections" }o--|| "public.external_calendars" : "FOREIGN KEY (facility_id, external_calendar_id) REFERENCES external_calendars(facility_id, id) ON DELETE CASCADE"
 "public.calendar_cutover_skips" }o--|| "public.external_calendars" : "FOREIGN KEY (facility_id, external_calendar_id) REFERENCES external_calendars(facility_id, id) ON DELETE CASCADE"
 "public.calendar_event_records" }o--|| "public.external_calendars" : "FOREIGN KEY (facility_id, external_calendar_id) REFERENCES external_calendars(facility_id, id) ON DELETE CASCADE"
+"public.calendar_event_records" }o--|| "public.external_calendars" : "FOREIGN KEY (facility_id, pending_external_calendar_id) REFERENCES external_calendars(facility_id, id) ON DELETE CASCADE"
 "public.external_calendars" }o--|| "public.users" : "FOREIGN KEY (facility_id, staff_id) REFERENCES users(facility_id, id) ON DELETE CASCADE"
 
 "public.external_calendars" {
@@ -166,6 +167,8 @@ erDiagram
   timestamp_with_time_zone created_at
   timestamp_with_time_zone updated_at
   timestamp_with_time_zone pending_locked_until
+  text pending_external_calendar_id FK
+  varchar_1024_ pending_external_event_id
 }
 "public.users" {
   text id

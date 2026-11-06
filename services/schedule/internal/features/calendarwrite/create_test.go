@@ -3,6 +3,7 @@ package calendarwrite_test
 import (
 	"context"
 	"errors"
+	"log/slog"
 	"net/http"
 	"testing"
 	"time"
@@ -25,12 +26,16 @@ import (
 	"github.com/Fukuemon/buddy/services/schedule/internal/gcal/gcaltest"
 	"github.com/Fukuemon/buddy/services/schedule/internal/inmem"
 	"github.com/Fukuemon/buddy/services/schedule/internal/principal"
+	"github.com/Fukuemon/buddy/services/schedule/internal/ulid"
 )
 
 const (
-	scheduleID  = "01M3TC5H00QV17BC0J9V3393ZP"
-	calendarID  = "staff@example.com"
-	externalID  = "CAL"
+	scheduleID = "01M3TC5H00QV17BC0J9V3393ZP"
+	calendarID = "staff@example.com"
+	externalID = "CAL"
+	// calendarID2 と externalID2 は、同行者 inmem.CompanionID のカレンダーである。
+	calendarID2 = "companion@example.com"
+	externalID2 = "CAL2"
 	patientName = "山田 花子"
 	serviceCode = "訪看I3"
 )
@@ -56,6 +61,8 @@ type fixture struct {
 	store  *inmem.Store
 	google *gcaltest.Server
 	create calendarwrite.Create
+	update calendarwrite.Update
+	cancel calendarwrite.Cancel
 	// now は、Create が読む今の時刻である。
 	now time.Time
 }
@@ -80,7 +87,10 @@ func newFixture(t *testing.T) *fixture {
 	s.Calendars[externalID] = calendar.ExternalCalendar{
 		ID: externalID, FacilityID: inmem.FacilityID, StaffID: inmem.StaffID, Provider: calendar.ProviderGoogle, CalendarID: calendarID,
 	}
-	google := &gcaltest.Server{Calendars: map[string][][]*calendarv3.Event{calendarID: {nil}}}
+	s.Calendars[externalID2] = calendar.ExternalCalendar{
+		ID: externalID2, FacilityID: inmem.FacilityID, StaffID: inmem.CompanionID, Provider: calendar.ProviderGoogle, CalendarID: calendarID2,
+	}
+	google := &gcaltest.Server{Calendars: map[string][][]*calendarv3.Event{calendarID: {nil}, calendarID2: {nil}}}
 	svc := gcaltest.Start(t, google)
 	fx := &fixture{store: s, google: google, now: today.Time().Add(9 * time.Hour)}
 	ids := &inmem.SeqIDs{}
@@ -91,6 +101,12 @@ func newFixture(t *testing.T) *fixture {
 	fx.create = calendarwrite.NewCreate(inmem.Facilities{Store: s}, inmem.Projections{Store: s}, inmem.ScheduleTypes{Store: s},
 		inmem.StaffRefs{Store: s}, inmem.Staff{Store: s}, visits, inmem.VisitInfos{Store: s}, inmem.Calendars{Store: s},
 		inmem.CalendarEventRecords{Store: s}, inmem.Projections{Store: s}, accounts{svc}, func() time.Time { return fx.now }, &inmem.Tx{})
+	fx.update = calendarwrite.NewUpdate(inmem.Facilities{Store: s}, inmem.Projections{Store: s}, inmem.ScheduleTypes{Store: s},
+		inmem.StaffRefs{Store: s}, inmem.Staff{Store: s}, visits, inmem.VisitInfos{Store: s}, inmem.Calendars{Store: s},
+		inmem.CalendarEventRecords{Store: s}, inmem.Projections{Store: s}, accounts{svc}, ulid.Generator{}, slog.New(slog.DiscardHandler),
+		func() time.Time { return fx.now }, &inmem.Tx{})
+	fx.cancel = calendarwrite.NewCancel(inmem.Facilities{Store: s}, inmem.Projections{Store: s}, inmem.StaffRefs{Store: s}, visits,
+		inmem.Calendars{Store: s}, inmem.CalendarEventRecords{Store: s}, inmem.Projections{Store: s}, accounts{svc}, func() time.Time { return fx.now }, &inmem.Tx{})
 	return fx
 }
 

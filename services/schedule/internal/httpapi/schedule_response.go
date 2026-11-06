@@ -66,6 +66,10 @@ func toSchedule(d scheduleview.Detail) openapi.Schedule {
 		reason := openapi.ScheduleReviewReason(d.ReviewReason)
 		r.ReviewReason = &reason
 	}
+	if d.ETag != "" {
+		etag := d.ETag
+		r.Etag = &etag
+	}
 	return r
 }
 

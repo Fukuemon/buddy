@@ -111,6 +111,45 @@ func TestCalendarEventRecordRepository(t *testing.T) {
 	}
 }
 
+// TestCalendarEventRecordMove は、予定を別のカレンダーに移す保留の版の移す先を書いて読めることと、ClaimExpired が移す先のカレンダーを返し、
+// calendar.ConfirmPending が記録のカレンダーと Google の予定の ID を移す先にすることを確認する。
+func TestCalendarEventRecordMove(t *testing.T) {
+	ctx := txContext(t)
+	const moriCal, hayashiCal, scheduleID = "01M3TD000000000000000000CB", "01M3TD000000000000000000CE", "01M3TD000000000000000000S8"
+	calendars := NewCalendarRepository(testDB)
+	for id, staffID := range map[string]string{moriCal: seedMori, hayashiCal: seedHayashi} {
+		if err := calendars.Create(ctx, calendar.ExternalCalendar{
+			ID: id, FacilityID: seedFacility, StaffID: staffID, Provider: calendar.ProviderGoogle, CalendarID: staffID + "@example.com",
+		}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	r := NewCalendarEventRecordRepository(testDB)
+	now := time.Date(2099, 1, 1, 9, 0, 0, 0, time.UTC)
+	to := calendar.EventLocation{ExternalCalendarID: hayashiCal, ExternalEventID: "moved"}
+	if err := r.Create(ctx, calendar.EventRecord{
+		ScheduleID: scheduleID, FacilityID: seedFacility, ExternalCalendarID: moriCal, ExternalEventID: "ev1",
+		Pending: &calendar.PendingWrite{Version: 1, State: calendar.PendingUnknown, Deadline: now.Add(-time.Minute), MoveTo: &to},
+	}); err != nil {
+		t.Fatal(err)
+	}
+	got, err := r.GetForUpdate(ctx, scheduleID)
+	if err != nil || got.ExternalCalendarID != moriCal || got.Pending == nil || got.Pending.MoveTo == nil || *got.Pending.MoveTo != to {
+		t.Fatalf("記録 = %+v, err = %v", got, err)
+	}
+	checks, err := r.ClaimExpired(ctx, now, 10, time.Minute, []organization.SourceMode{organization.SourceBuddyPrimary})
+	if err != nil || len(checks) != 1 || checks[0].Calendar.ID != hayashiCal || checks[0].Record.PendingLocation() != to {
+		t.Fatalf("取った記録 = %+v, err = %v", checks, err)
+	}
+	if err := calendar.ConfirmPending(ctx, r, NewVisitInfoRepository(testDB), got); err != nil {
+		t.Fatal(err)
+	}
+	got, err = r.GetForUpdate(ctx, scheduleID)
+	if err != nil || got.Location() != to || got.Version != 1 || got.Pending != nil {
+		t.Errorf("確定した記録 = %+v, err = %v", got, err)
+	}
+}
+
 // TestCalendarEventRecordClaimExpired は、ClaimExpired が、書く期限を過ぎた保留の版を持つ記録を、状態によらず書く期限の古い順に取り、
 // 期限の前の保留の版、保留の版の無い記録、モードが違う事業所の記録、外したカレンダーの記録を取らないことと、取った記録を lease の間は
 // 取り直さず、Release か lease の後に取り直せることを確認する。

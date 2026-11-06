@@ -27,7 +27,7 @@ func (s CalendarEventRecords) ClaimExpired(_ context.Context, now time.Time, max
 	modes []organization.SourceMode) ([]calendarsync.PendingCheck, error) {
 	var out []calendarsync.PendingCheck
 	for _, r := range s.Records {
-		c, ok := s.Calendars[r.ExternalCalendarID]
+		c, ok := s.Calendars[r.PendingLocation().ExternalCalendarID]
 		if r.Pending == nil || now.Before(r.Pending.Deadline) || !ok || !Syncs(s).synced(c, modes) {
 			continue
 		}
@@ -68,6 +68,7 @@ func (s CalendarEventRecords) Update(_ context.Context, r calendar.EventRecord) 
 	if err != nil {
 		return err
 	}
+	cur.ExternalCalendarID, cur.ExternalEventID = r.ExternalCalendarID, r.ExternalEventID
 	cur.VisitInfoID, cur.Version, cur.Pending = r.VisitInfoID, r.Version, r.Pending
 	s.Records[r.ScheduleID] = copyRecord(cur)
 	return nil
@@ -83,6 +84,10 @@ func (s CalendarEventRecords) Delete(_ context.Context, scheduleID string) error
 func copyRecord(r calendar.EventRecord) calendar.EventRecord {
 	if r.Pending != nil {
 		p := *r.Pending
+		if p.MoveTo != nil {
+			to := *p.MoveTo
+			p.MoveTo = &to
+		}
 		r.Pending = &p
 	}
 	return r

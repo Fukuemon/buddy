@@ -212,6 +212,8 @@ erDiagram
   timestamp_with_time_zone created_at
   timestamp_with_time_zone updated_at
   timestamp_with_time_zone pending_locked_until
+  text pending_external_calendar_id FK
+  varchar_1024_ pending_external_event_id
 }
 ```
 

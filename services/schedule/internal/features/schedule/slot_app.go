@@ -94,6 +94,23 @@ func PrepareSchedule(ctx context.Context, types kernel.Finder[Type], staffRefs k
 	return sc, typ, nil
 }
 
+// PrepareChange は、事業所 facilityID の単発の予定 id を in の内容に置き換えた予定を、Update と同じ規則で組み立てて返す。
+// keptStaffID と keptVisit は、置き換える前の予定の職員と訪問の情報で、休職か退職でも同じ役割のまま保存できる。keptVisit は無ければ nil にする。
+// 置き換える前の予定の職員の予定を編集する権限は確認しない。呼び出し側が RequireScheduleAccess で確認する。
+// ほかの確認、エラー、呼び出しの前提は PrepareSchedule と同じである。google_primary の事業所で、Google カレンダーの予定を変える calendarwrite が使う。
+func PrepareChange(ctx context.Context, types kernel.Finder[Type], staffRefs kernel.Finder[staff.Ref], visits VisitInfos, now func() time.Time,
+	facilityID, id string, in SlotInput, keptStaffID string, keptVisit *visit.Info) (Schedule, Type, error) {
+	slot, typ, err := prepareSlot(ctx, types, staffRefs, visits, now, facilityID, in, assignedOf(keptStaffID, keptVisit))
+	if err != nil {
+		return Schedule{}, Type{}, err
+	}
+	sc, err := New(id, slot, typ)
+	if err != nil {
+		return Schedule{}, Type{}, err
+	}
+	return sc, typ, nil
+}
+
 // scheduleChanged は、単発の予定 id の変更を書き出しの待ちに積む。トランザクションの中で呼ぶ。
 func scheduleChanged(ctx context.Context, exports Exports, slot Slot, id string) error {
 	if exports == nil {

@@ -44,12 +44,12 @@ type HandlerConfig struct {
 
 // NewHandler は、r と cfg から全ての機能の操作の型を作り、予定の API の全てのパスを受ける http.Handler を返す。
 func NewHandler(r Repositories, cfg HandlerConfig) http.Handler {
-	return httpapi.NewRouter(newApps(r, cfg.Accounts, cfg.API), httpapi.RouterConfig{
+	return httpapi.NewRouter(newApps(r, cfg.Accounts, cfg.API, cfg.Logger), httpapi.RouterConfig{
 		Logger: cfg.Logger, AllowOrigins: cfg.API.AllowOrigins, Verifier: tokenVerifier{cfg.Verifier}, Ready: cfg.Ready,
 	})
 }
 
-func newApps(r Repositories, accounts *gcal.Accounts, cfg config.API) httpapi.Apps {
+func newApps(r Repositories, accounts *gcal.Accounts, cfg config.API, log *slog.Logger) httpapi.Apps {
 	var outbox schedule.Exports
 	if cfg.Calendar.ExportEnabled {
 		outbox = calendarexport.NewOutbox(r.facilities, r.exports, r.calendars, r.ids)
@@ -80,6 +80,10 @@ func newApps(r Repositories, accounts *gcal.Accounts, cfg config.API) httpapi.Ap
 		CalendarWrites: httpapi.CalendarWriteApp{
 			Create: calendarwrite.NewCreate(r.facilities, r.projections, r.scheduleTypes, r.staffRefs, r.staff, visitInfos, r.visitInfos,
 				r.calendars, r.records, r.projections, calendarAccounts(accounts), nil, r.tx).Do,
+			Update: calendarwrite.NewUpdate(r.facilities, r.projections, r.scheduleTypes, r.staffRefs, r.staff, visitInfos, r.visitInfos,
+				r.calendars, r.records, r.projections, calendarAccounts(accounts), r.ids, log, nil, r.tx).Do,
+			Cancel: calendarwrite.NewCancel(r.facilities, r.projections, r.staffRefs, visitInfos, r.calendars, r.records, r.projections,
+				calendarAccounts(accounts), nil, r.tx).Do,
 		},
 		Auth: access.NewService(access.Deps{Facilities: r.facilities, Staff: r.staff, Resources: accessResources(r)}),
 	}
@@ -219,6 +223,7 @@ func scheduleApp(
 	return httpapi.ScheduleApp{
 		ListTypes:        schedule.NewListTypes(types).Do,
 		Get:              scheduleview.NewGet(schedules, staffRefs).Do,
+		GetProjected:     scheduleview.NewGetProjected(projected, staffRefs).Do,
 		GetRecurring:     scheduleview.NewGetRecurring(recurring, staffRefs).Do,
 		List:             scheduleview.NewList(facilities, schedules, recurring, staffRefs, projected).Do,
 		Create:           schedule.NewCreate(facilities, schedules, types, staffRefs, locks, visits, nil, exports, tx, ids).Do,

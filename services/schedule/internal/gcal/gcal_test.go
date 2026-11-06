@@ -283,7 +283,8 @@ func TestWriterSendsIfMatch(t *testing.T) {
 	if _, err := w.Update(t.Context(), "staff@example.com", "ev1", `"old"`, schedcal.EventBody{Summary: "後"}); !errors.Is(err, schedcal.ErrEventChanged) {
 		t.Fatalf("古い etag: err = %v", err)
 	}
-	etag, err := w.Update(t.Context(), "staff@example.com", "ev1", `"1"`, schedcal.EventBody{Summary: "後"})
+	updated, err := w.Update(t.Context(), "staff@example.com", "ev1", `"1"`, schedcal.EventBody{Summary: "後"})
+	etag := updated.ETag
 	if err != nil || etag == `"1"` || f.Event("staff@example.com", "ev1").Summary != "後" {
 		t.Fatalf("今の etag: etag = %q, err = %v", etag, err)
 	}

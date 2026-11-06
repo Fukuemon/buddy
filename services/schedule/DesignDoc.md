@@ -458,7 +458,7 @@ sequenceDiagram
 `google_primary` の事業所では、何も書かずに 409（`google_primary`）を返す。  
 Google カレンダーの手動の取り込みの確定も、同じ規則で拒む（[Google カレンダーとの連携の Design Doc](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/internal/features/calendar/DesignDoc.md#google-カレンダーの取り込み)）。  
 例外として、`open` の予定の正本の切り替えがある `google_primary` の事業所では、切り替えの取り込みだけを書ける（`calendarimport` の `requireImportable`）。  
-`google_primary` の事業所の単発の予定の作成は、`httpapi` が `schedule` でなく `calendarwrite` を呼び、Google カレンダーに書く。  
+`google_primary` の事業所の単発の予定の作成、変更、キャンセルは、`httpapi` が `schedule` でなく `calendarwrite` を呼び、Google カレンダーに書く。  
 手順は [Google カレンダーとの連携の Design Doc の Google カレンダーへの書き込み](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/internal/features/calendar/DesignDoc.md#google-カレンダーへの書き込み) にある。  
 切り替えの手順は [Google カレンダーとの連携の Design Doc の予定の正本の切り替え](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/internal/features/calendar/DesignDoc.md#予定の正本の切り替え) にある。
 
@@ -501,10 +501,10 @@ Google カレンダーの手動の取り込みの確定も、同じ規則で拒�
 7. 期間で絞った予定を `sort_field` と `sort_order` の順に並べ、カレンダーごとの同期の状況（`calendar_syncs`）を付けて返す。
    - 同期の状況も、閲覧の判定で見てよい職員のカレンダーに絞る。
 
-Projection の予定の `id` は、カレンダー、Google の予定の ID、回の日付から作る ULID の形の値で、一覧を読むたびに同じになる。  
-Google の予定の ID は ULID の形でなく、展開した回は行を持たないためである。  
-Projection の予定の 1 件の読み出し（`getSchedule`）は持たない。  
-予定の詳細の画面は、一覧の同じ予定を出す。
+Projection の予定の `id` は、ULID の形の値で、一覧を読むたびに同じになる。  
+buddy から書いた予定と buddy で変えた予定は、予定の API が書いた記録の予定の ID にし、ほかの予定はカレンダー、Google の予定の ID、回の日付から作る。  
+単発の予定は、`getSchedule`（`scheduleview.GetProjected`）でこの `id` の 1 件を読める。  
+決め方は [Google カレンダーとの連携の Design Doc の Projection の予定の ID](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/internal/features/calendar/DesignDoc.md#projection-の予定の-id) にある。
 
 一覧の応答は、事業所の正本のモード（`source_mode`）と、カレンダーごとの同期の状況（`calendar_syncs`）を持つ。  
 同期の状況は、最後の結果、変わった予定を最後まで読んで写した最後の同期の時刻、最後の失敗の理由を持つ。  
@@ -591,7 +591,7 @@ Google カレンダーの取り込みの確定、同期の予定ごとのトラ�
 | 409 | `import_running`、`import_preview_changed` | 取り込みを確定できない原因 | [Google カレンダーとの連携の Design Doc](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/internal/features/calendar/DesignDoc.md) |
 | 409 | `export_not_in_review` | 確認が必要な書き出しを解けない原因 | [Google カレンダーとの連携の Design Doc](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/internal/features/calendar/DesignDoc.md) |
 | 409 | `cutover_open`、`cutover_not_google_primary`、`cutover_sync_not_ready`、`cutover_not_open`、`cutover_incomplete` | 予定の正本の切り替えを始められないか、完了できないか、やめられない原因。`cutover_incomplete` は本文の `items` に満たさない一覧を持つ | [Google カレンダーとの連携の Design Doc の予定の正本の切り替え](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/internal/features/calendar/DesignDoc.md#予定の正本の切り替え) |
-| 409 | `google_primary` | Google カレンダーを予定の正本にする事業所で、単発の予定の作成のほかの予定を書くか、切り替えの無いときに取り込もうとした | [事業所の正本のモードと予定の書き込み](#事業所の正本のモードと予定の書き込み) |
+| 409 | `google_primary` | Google カレンダーを予定の正本にする事業所で、単発の予定の作成、変更、キャンセルのほかの予定を書くか、切り替えの無いときに取り込もうとした | [事業所の正本のモードと予定の書き込み](#事業所の正本のモードと予定の書き込み) |
 | 422 | `calendar_unreadable` | Google カレンダーが無いか、事業所のサービスアカウントに共有されていない | [Google カレンダーとの連携の Design Doc](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/internal/features/calendar/DesignDoc.md) |
 | 500 | `internal` | サーバーのエラー。ブローカーに届かないときも含む | - |
 | 502 | `calendar_unavailable` | Google に届かないか、Google がエラーを返した | [Google カレンダーとの連携の Design Doc](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/internal/features/calendar/DesignDoc.md) |

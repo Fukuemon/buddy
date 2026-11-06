@@ -107,7 +107,7 @@ func (s List) listProjected(ctx context.Context, f organization.Facility, q List
 	}
 	rows = filter(rows, func(r ProjectionDetail) bool { return r.FacilityID == f.ID && readable(r.StaffID) })
 	events := expandProjections(rows, s.projected.Rules, from, to)
-	b, err := s.newProjectionBuilder(ctx, f.ID, events)
+	b, err := newProjectionBuilder(ctx, s.projected, f.ID, events)
 	if err != nil {
 		return Listing{}, err
 	}
@@ -169,9 +169,9 @@ type projectionBuilder struct {
 
 type servicecodeRef struct{ id, code string }
 
-func (s List) newProjectionBuilder(ctx context.Context, facilityID string, events []projectedEvent) (projectionBuilder, error) {
-	b := projectionBuilder{rules: s.projected.Rules, serviceIDs: map[string]servicecodeRef{}, patients: map[string][]patient.Detail{}}
-	types, err := s.projected.Types.List(ctx)
+func newProjectionBuilder(ctx context.Context, deps ProjectionDeps, facilityID string, events []projectedEvent) (projectionBuilder, error) {
+	b := projectionBuilder{rules: deps.Rules, serviceIDs: map[string]servicecodeRef{}, patients: map[string][]patient.Detail{}}
+	types, err := deps.Types.List(ctx)
 	if err != nil {
 		return projectionBuilder{}, err
 	}
@@ -186,14 +186,14 @@ func (s List) newProjectionBuilder(ctx context.Context, facilityID string, event
 	if !slices.ContainsFunc(events, func(e projectedEvent) bool { return e.reading.Kind == EventVisit }) {
 		return b, nil
 	}
-	codes, err := s.projected.ServiceCodes.List(ctx)
+	codes, err := deps.ServiceCodes.List(ctx)
 	if err != nil {
 		return projectionBuilder{}, err
 	}
 	for _, c := range codes {
 		b.serviceIDs[b.rules.ServiceKey(c.Code)] = servicecodeRef{id: c.ID, code: c.Code}
 	}
-	pats, err := s.projected.Patients.ListByFacility(ctx, facilityID, patient.ListQuery{Sort: kernel.Sort{Field: "name"}})
+	pats, err := deps.Patients.ListByFacility(ctx, facilityID, patient.ListQuery{Sort: kernel.Sort{Field: "name"}})
 	if err != nil {
 		return projectionBuilder{}, err
 	}
@@ -221,6 +221,9 @@ func (b projectionBuilder) detail(e projectedEvent) Detail {
 		}},
 		TypeName: b.normal.Name, StaffName: e.row.StaffName, Version: 1, CreatedAt: at, UpdatedAt: at,
 		Source: SourceGoogleCalendar,
+	}
+	if e.occurrence.IsZero() {
+		d.ETag = e.row.ETag
 	}
 	if strings.TrimSpace(rd.Title) != "" {
 		title := rd.Title

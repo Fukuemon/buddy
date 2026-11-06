@@ -33,7 +33,7 @@ type Server struct {
 	AccessRoles map[string]string
 	// Status が 0 でなければ、全てのリクエストにその状態のエラーのレスポンスを返す。
 	Status int
-	// Failures は、次からの書き込みのリクエストに順に返すエラーの状態である。返した値は消す。
+	// Failures は、次からの書き込みのリクエストに順に返すエラーの状態である。返した値は消す。0 の値は、そのリクエストを失敗させずに書く。
 	Failures []int
 	// LostResponses は、次からの書き込みのリクエストを書いた後に、成功の代わりに順に返すエラーの状態である。返した値は消す。
 	// Google が書いた後に応答だけが失われたときを再現する。
@@ -380,8 +380,10 @@ func (s *Server) beginWrite(w http.ResponseWriter, r *http.Request) bool {
 	if len(s.Failures) > 0 {
 		status := s.Failures[0]
 		s.Failures = s.Failures[1:]
-		writeError(w, status, http.StatusText(status))
-		return false
+		if status != 0 {
+			writeError(w, status, http.StatusText(status))
+			return false
+		}
 	}
 	if _, ok := s.Calendars[r.PathValue("id")]; !ok {
 		writeError(w, http.StatusNotFound, "Not Found")

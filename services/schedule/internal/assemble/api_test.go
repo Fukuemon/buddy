@@ -1,6 +1,7 @@
 package assemble
 
 import (
+	"log/slog"
 	"reflect"
 	"testing"
 
@@ -22,7 +23,7 @@ func TestAccessResourcesCoverAllResources(t *testing.T) {
 
 func TestAppsFillAllOperations(t *testing.T) {
 	for _, cfg := range []config.API{{}, {Calendar: config.Calendar{ExportEnabled: true}}} {
-		apps := reflect.ValueOf(newApps(NewRepositories(nil), nil, cfg))
+		apps := reflect.ValueOf(newApps(NewRepositories(nil), nil, cfg, slog.New(slog.DiscardHandler)))
 		for i := range apps.NumField() {
 			app, name := apps.Field(i), apps.Type().Field(i).Name
 			if app.Kind() != reflect.Struct {

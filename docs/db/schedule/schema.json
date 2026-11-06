@@ -6153,6 +6153,22 @@
             "facility_id",
             "last_end_date"
           ]
+        },
+        {
+          "name": "calendar_event_projections_schedule_id_idx",
+          "def": "CREATE INDEX calendar_event_projections_schedule_id_idx ON public.calendar_event_projections USING btree (projected_schedule_id(external_calendar_id, (external_event_id)::text))",
+          "table": "public.calendar_event_projections",
+          "columns": [
+            "projected_schedule_id"
+          ]
+        },
+        {
+          "name": "calendar_event_projections_detached_id_idx",
+          "def": "CREATE INDEX calendar_event_projections_detached_id_idx ON public.calendar_event_projections USING btree (detached_schedule_id(external_calendar_id, (external_event_id)::text))",
+          "table": "public.calendar_event_projections",
+          "columns": [
+            "detached_schedule_id"
+          ]
         }
       ],
       "constraints": [
@@ -6854,6 +6870,18 @@
           "type": "timestamp with time zone",
           "nullable": true,
           "comment": "同期が保留の版を読み戻す間、ほかの Worker に記録を渡さない期限。読み戻せなかった記録は、この時刻の後に取り直す。保留の版を解いても NULL に戻さない"
+        },
+        {
+          "name": "pending_external_calendar_id",
+          "type": "text",
+          "nullable": true,
+          "comment": "保留の版が予定を別のカレンダーに移す書き込みのときの、移す先のカレンダー。移さない書き込みと、保留が無い行は NULL。版を確定すると external_calendar_id に移す"
+        },
+        {
+          "name": "pending_external_event_id",
+          "type": "varchar(1024)",
+          "nullable": true,
+          "comment": "移す先のカレンダーに作る Google の予定の ID。pending_external_calendar_id と一緒に NULL になる"
         }
       ],
       "indexes": [
@@ -6960,6 +6988,18 @@
             "pending_state",
             "pending_visit_info_id",
             "pending_deadline"
+          ]
+        },
+        {
+          "name": "calendar_event_records_pending_move_check",
+          "type": "CHECK",
+          "def": "CHECK ((((pending_external_calendar_id IS NULL) AND (pending_external_event_id IS NULL)) OR ((pending_external_calendar_id IS NOT NULL) AND (pending_external_event_id IS NOT NULL) AND (pending_version IS NOT NULL))))",
+          "table": "public.calendar_event_records",
+          "referenced_table": "",
+          "columns": [
+            "pending_external_calendar_id",
+            "pending_external_event_id",
+            "pending_version"
           ]
         },
         {
@@ -7097,6 +7137,21 @@
           "columns": [
             "facility_id",
             "external_calendar_id"
+          ],
+          "referenced_columns": [
+            "facility_id",
+            "id"
+          ]
+        },
+        {
+          "name": "calendar_event_records_pending_calendar_fkey",
+          "type": "FOREIGN KEY",
+          "def": "FOREIGN KEY (facility_id, pending_external_calendar_id) REFERENCES external_calendars(facility_id, id) ON DELETE CASCADE",
+          "table": "public.calendar_event_records",
+          "referenced_table": "public.external_calendars",
+          "columns": [
+            "facility_id",
+            "pending_external_calendar_id"
           ],
           "referenced_columns": [
             "facility_id",
@@ -7931,6 +7986,21 @@
       ],
       "parent_cardinality": "exactly_one",
       "def": "FOREIGN KEY (facility_id, external_calendar_id) REFERENCES external_calendars(facility_id, id) ON DELETE CASCADE"
+    },
+    {
+      "table": "public.calendar_event_records",
+      "columns": [
+        "facility_id",
+        "pending_external_calendar_id"
+      ],
+      "cardinality": "zero_or_more",
+      "parent_table": "public.external_calendars",
+      "parent_columns": [
+        "facility_id",
+        "id"
+      ],
+      "parent_cardinality": "exactly_one",
+      "def": "FOREIGN KEY (facility_id, pending_external_calendar_id) REFERENCES external_calendars(facility_id, id) ON DELETE CASCADE"
     }
   ],
   "functions": [
@@ -7938,6 +8008,18 @@
       "name": "public.set_updated_at",
       "return_type": "trigger",
       "arguments": "",
+      "type": "FUNCTION"
+    },
+    {
+      "name": "public.projected_schedule_id",
+      "return_type": "text",
+      "arguments": "external_calendar_id text, external_event_id text",
+      "type": "FUNCTION"
+    },
+    {
+      "name": "public.detached_schedule_id",
+      "return_type": "text",
+      "arguments": "external_calendar_id text, external_event_id text",
       "type": "FUNCTION"
     }
   ],
