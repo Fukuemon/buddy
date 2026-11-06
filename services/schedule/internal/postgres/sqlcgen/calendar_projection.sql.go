@@ -88,29 +88,33 @@ func (q *Queries) DeleteCalendarEventProjectionsExcept(ctx context.Context, arg 
 	return err
 }
 
-const getCalendarEventProjectionByProjectedID = `-- name: GetCalendarEventProjectionByProjectedID :one
+const getCalendarEventProjectionByListID = `-- name: GetCalendarEventProjectionByListID :one
 SELECT p.external_calendar_id, p.external_event_id, p.facility_id, p.staff_id, p.recurring_event_id, p.original_start_at, p.original_start_date,
        p.status, p.title, p.start_at, p.start_date, p.end_at, p.end_date, p.time_zone, p.recurrence, p.etag, p.google_updated_at,
-       p.last_end_date, p.projected_at, u.username AS staff_name, NULL::text AS record_schedule_id
+       p.last_end_date, p.projected_at, u.username AS staff_name,
+       COALESCE(r.schedule_id, CASE WHEN t.schedule_id IS NULL THEN projected_schedule_id(p.external_calendar_id, p.external_event_id)
+                                    ELSE detached_schedule_id(p.external_calendar_id, p.external_event_id) END)::text AS schedule_id
 FROM calendar_event_projections p
 JOIN external_calendars c ON c.id = p.external_calendar_id AND c.facility_id = p.facility_id
 JOIN users u ON u.id = p.staff_id AND u.facility_id = p.facility_id
-WHERE projected_schedule_id(p.external_calendar_id, p.external_event_id) = $1
+LEFT JOIN calendar_event_records r ON r.external_calendar_id = p.external_calendar_id AND r.external_event_id = p.external_event_id
+LEFT JOIN calendar_event_records t ON r.schedule_id IS NULL AND t.schedule_id = projected_schedule_id(p.external_calendar_id, p.external_event_id)
+WHERE (projected_schedule_id(p.external_calendar_id, p.external_event_id) = $1
+       OR detached_schedule_id(p.external_calendar_id, p.external_event_id) = $1)
+  AND r.schedule_id IS NULL
+  AND CASE WHEN t.schedule_id IS NULL THEN projected_schedule_id(p.external_calendar_id, p.external_event_id)
+           ELSE detached_schedule_id(p.external_calendar_id, p.external_event_id) END = $1
   AND p.facility_id = $2 AND c.disabled_at IS NULL
-  AND NOT EXISTS (
-      SELECT 1 FROM calendar_event_records r
-      WHERE r.external_calendar_id = p.external_calendar_id AND r.external_event_id = p.external_event_id
-  )
 ORDER BY p.external_calendar_id, p.external_event_id
 LIMIT 1
 `
 
-type GetCalendarEventProjectionByProjectedIDParams struct {
+type GetCalendarEventProjectionByListIDParams struct {
 	ScheduleID string
 	FacilityID string
 }
 
-type GetCalendarEventProjectionByProjectedIDRow struct {
+type GetCalendarEventProjectionByListIDRow struct {
 	ExternalCalendarID string
 	ExternalEventID    string
 	FacilityID         string
@@ -131,13 +135,13 @@ type GetCalendarEventProjectionByProjectedIDRow struct {
 	LastEndDate        *time.Time
 	ProjectedAt        time.Time
 	StaffName          string
-	RecordScheduleID   *string
+	ScheduleID         string
 }
 
-// 記録の無い予定を、一覧での予定の ID（projected_schedule_id）で読む。列は ListCalendarEventProjectionsByFacility と同じである。
-func (q *Queries) GetCalendarEventProjectionByProjectedID(ctx context.Context, arg GetCalendarEventProjectionByProjectedIDParams) (GetCalendarEventProjectionByProjectedIDRow, error) {
-	row := q.db.QueryRow(ctx, getCalendarEventProjectionByProjectedID, arg.ScheduleID, arg.FacilityID)
-	var i GetCalendarEventProjectionByProjectedIDRow
+// 記録の無い予定を、一覧での予定の ID（projected_schedule_id か detached_schedule_id）で読む。列は ListCalendarEventProjectionsByFacility と同じである。
+func (q *Queries) GetCalendarEventProjectionByListID(ctx context.Context, arg GetCalendarEventProjectionByListIDParams) (GetCalendarEventProjectionByListIDRow, error) {
+	row := q.db.QueryRow(ctx, getCalendarEventProjectionByListID, arg.ScheduleID, arg.FacilityID)
+	var i GetCalendarEventProjectionByListIDRow
 	err := row.Scan(
 		&i.ExternalCalendarID,
 		&i.ExternalEventID,
@@ -159,7 +163,7 @@ func (q *Queries) GetCalendarEventProjectionByProjectedID(ctx context.Context, a
 		&i.LastEndDate,
 		&i.ProjectedAt,
 		&i.StaffName,
-		&i.RecordScheduleID,
+		&i.ScheduleID,
 	)
 	return i, err
 }
@@ -167,11 +171,14 @@ func (q *Queries) GetCalendarEventProjectionByProjectedID(ctx context.Context, a
 const getCalendarEventProjectionByRecord = `-- name: GetCalendarEventProjectionByRecord :one
 SELECT p.external_calendar_id, p.external_event_id, p.facility_id, p.staff_id, p.recurring_event_id, p.original_start_at, p.original_start_date,
        p.status, p.title, p.start_at, p.start_date, p.end_at, p.end_date, p.time_zone, p.recurrence, p.etag, p.google_updated_at,
-       p.last_end_date, p.projected_at, u.username AS staff_name, r.schedule_id AS record_schedule_id
+       p.last_end_date, p.projected_at, u.username AS staff_name,
+       COALESCE(r.schedule_id, CASE WHEN t.schedule_id IS NULL THEN projected_schedule_id(p.external_calendar_id, p.external_event_id)
+                                    ELSE detached_schedule_id(p.external_calendar_id, p.external_event_id) END)::text AS schedule_id
 FROM calendar_event_projections p
 JOIN external_calendars c ON c.id = p.external_calendar_id AND c.facility_id = p.facility_id
 JOIN users u ON u.id = p.staff_id AND u.facility_id = p.facility_id
 LEFT JOIN calendar_event_records r ON r.external_calendar_id = p.external_calendar_id AND r.external_event_id = p.external_event_id
+LEFT JOIN calendar_event_records t ON r.schedule_id IS NULL AND t.schedule_id = projected_schedule_id(p.external_calendar_id, p.external_event_id)
 WHERE r.schedule_id = $1 AND p.facility_id = $2 AND c.disabled_at IS NULL
 `
 
@@ -201,7 +208,7 @@ type GetCalendarEventProjectionByRecordRow struct {
 	LastEndDate        *time.Time
 	ProjectedAt        time.Time
 	StaffName          string
-	RecordScheduleID   *string
+	ScheduleID         string
 }
 
 // 予定の ID が記録の予定の ID の予定を、記録が指すカレンダーと Google の予定の ID の行で読む。列は ListCalendarEventProjectionsByFacility と同じである。
@@ -229,7 +236,7 @@ func (q *Queries) GetCalendarEventProjectionByRecord(ctx context.Context, arg Ge
 		&i.LastEndDate,
 		&i.ProjectedAt,
 		&i.StaffName,
-		&i.RecordScheduleID,
+		&i.ScheduleID,
 	)
 	return i, err
 }
@@ -237,11 +244,14 @@ func (q *Queries) GetCalendarEventProjectionByRecord(ctx context.Context, arg Ge
 const listCalendarEventProjectionsByFacility = `-- name: ListCalendarEventProjectionsByFacility :many
 SELECT p.external_calendar_id, p.external_event_id, p.facility_id, p.staff_id, p.recurring_event_id, p.original_start_at, p.original_start_date,
        p.status, p.title, p.start_at, p.start_date, p.end_at, p.end_date, p.time_zone, p.recurrence, p.etag, p.google_updated_at,
-       p.last_end_date, p.projected_at, u.username AS staff_name, r.schedule_id AS record_schedule_id
+       p.last_end_date, p.projected_at, u.username AS staff_name,
+       COALESCE(r.schedule_id, CASE WHEN t.schedule_id IS NULL THEN projected_schedule_id(p.external_calendar_id, p.external_event_id)
+                                    ELSE detached_schedule_id(p.external_calendar_id, p.external_event_id) END)::text AS schedule_id
 FROM calendar_event_projections p
 JOIN external_calendars c ON c.id = p.external_calendar_id AND c.facility_id = p.facility_id
 JOIN users u ON u.id = p.staff_id AND u.facility_id = p.facility_id
 LEFT JOIN calendar_event_records r ON r.external_calendar_id = p.external_calendar_id AND r.external_event_id = p.external_event_id
+LEFT JOIN calendar_event_records t ON r.schedule_id IS NULL AND t.schedule_id = projected_schedule_id(p.external_calendar_id, p.external_event_id)
 WHERE p.facility_id = $1 AND c.disabled_at IS NULL
   AND (p.last_end_date IS NULL OR p.last_end_date >= $2::date)
 ORDER BY p.external_calendar_id, p.external_event_id
@@ -273,11 +283,13 @@ type ListCalendarEventProjectionsByFacilityRow struct {
 	LastEndDate        *time.Time
 	ProjectedAt        time.Time
 	StaffName          string
-	RecordScheduleID   *string
+	ScheduleID         string
 }
 
 // 予定の表示の読み出し（scheduleview）が、事業所の外していないカレンダーの行のうち、終わる日が from_date より前でない行（終わる日の無い行を含む）を、
-// 職員の名前と、記録のある予定の buddy の予定の ID を付けて読む。外したカレンダー（退職した職員のカレンダーを含む）の行は返さない。
+// 職員の名前と、一覧での予定の ID（schedule_id）を付けて読む。外したカレンダー（退職した職員のカレンダーを含む）の行は返さない。
+// 一覧での予定の ID は、記録のある予定では記録の主キーである。記録の無い予定では projected_schedule_id で、その値がほかの予定を指す
+// 記録の主キーと同じなら（予定を移した後に前のカレンダーに残った予定）、detached_schedule_id である。
 func (q *Queries) ListCalendarEventProjectionsByFacility(ctx context.Context, arg ListCalendarEventProjectionsByFacilityParams) ([]ListCalendarEventProjectionsByFacilityRow, error) {
 	rows, err := q.db.Query(ctx, listCalendarEventProjectionsByFacility, arg.FacilityID, arg.FromDate)
 	if err != nil {
@@ -308,7 +320,7 @@ func (q *Queries) ListCalendarEventProjectionsByFacility(ctx context.Context, ar
 			&i.LastEndDate,
 			&i.ProjectedAt,
 			&i.StaffName,
-			&i.RecordScheduleID,
+			&i.ScheduleID,
 		); err != nil {
 			return nil, err
 		}

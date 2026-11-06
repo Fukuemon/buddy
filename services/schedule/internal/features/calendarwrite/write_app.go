@@ -173,10 +173,17 @@ func project(ctx context.Context, projections Projections, today civil.Date, cal
 }
 
 // readEvent は、カレンダー calendarID の予定 eventID を、CallTimeout で打ち切って Google から読む。
+// 更新の時刻の無い取り消しの予定には、読み始めた時刻を入れる（calendar.StampCancellation）。時刻は、Google の更新の時刻と比べるので、
+// 予定の API の now ではなく時計の時刻にする。
 func readEvent(ctx context.Context, source calendar.EventSource, calendarID, eventID string) (calendar.Event, error) {
+	readAt := time.Now()
 	callCtx, cancel := context.WithTimeout(ctx, CallTimeout)
 	defer cancel()
-	return source.Event(callCtx, calendarID, eventID)
+	ev, err := source.Event(callCtx, calendarID, eventID)
+	if err != nil {
+		return calendar.Event{}, err
+	}
+	return calendar.StampCancellation(ev, readAt), nil
 }
 
 // reproject は、Google で変わっていた予定を読み直し、Projection の行に写す（ADR-0026 の表の ErrEventChanged と ErrEventGone）。

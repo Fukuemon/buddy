@@ -72,7 +72,7 @@ func (s *Syncer) readBack(ctx context.Context, p PendingCheck) outcome {
 	version := p.Record.Pending.Version
 	accepted := found && ev.Status != calendar.StatusCancelled &&
 		ev.Private[calendar.PropScheduleID] == p.Record.ScheduleID && ev.Private[calendar.PropVersion] == strconv.Itoa(version)
-	ev = stampCancellation(ev, readAt)
+	ev = calendar.StampCancellation(ev, readAt)
 	err = s.tx.WithinTx(ctx, func(ctx context.Context) error {
 		a, err := s.applierFor(ctx, p.Calendar)
 		if err != nil {

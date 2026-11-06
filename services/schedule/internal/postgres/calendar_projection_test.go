@@ -461,7 +461,8 @@ func TestCalendarProjectionRepositoryListByFacility(t *testing.T) {
 	}
 }
 
-// TestProjectedScheduleIDMatchesGo は、DB の関数 projected_schedule_id が、scheduleview.ProjectedScheduleID と同じ値を返すことを確認する。
+// TestProjectedScheduleIDMatchesGo は、DB の関数 projected_schedule_id と detached_schedule_id が、scheduleview.ProjectedScheduleID と
+// scheduleview.DetachedScheduleID と同じ値を返すことを確認する。
 func TestProjectedScheduleIDMatchesGo(t *testing.T) {
 	ctx := context.Background()
 	for _, in := range [][2]string{
@@ -470,12 +471,15 @@ func TestProjectedScheduleIDMatchesGo(t *testing.T) {
 		{"01M3TD000000000000000000CA", "予定_1"},
 		{"", ""},
 	} {
-		var got string
-		if err := testDB.QueryRow(ctx, "SELECT projected_schedule_id($1, $2)", in[0], in[1]).Scan(&got); err != nil {
+		var projected, detached string
+		if err := testDB.QueryRow(ctx, "SELECT projected_schedule_id($1, $2), detached_schedule_id($1, $2)", in[0], in[1]).Scan(&projected, &detached); err != nil {
 			t.Fatal(err)
 		}
-		if want := scheduleview.ProjectedScheduleID(in[0], in[1]); got != want {
-			t.Errorf("projected_schedule_id(%q, %q) = %s, want %s", in[0], in[1], got, want)
+		if want := scheduleview.ProjectedScheduleID(in[0], in[1]); projected != want {
+			t.Errorf("projected_schedule_id(%q, %q) = %s, want %s", in[0], in[1], projected, want)
+		}
+		if want := scheduleview.DetachedScheduleID(in[0], in[1]); detached != want || detached == projected {
+			t.Errorf("detached_schedule_id(%q, %q) = %s, want %s", in[0], in[1], detached, want)
 		}
 	}
 }
@@ -506,7 +510,7 @@ func TestCalendarProjectionRepositoryGetBySchedule(t *testing.T) {
 	googleID := scheduleview.ProjectedScheduleID(seedOkadaCalendar, google.EventID)
 
 	got, err := r.GetBySchedule(ctx, seedGoogleFacility, googleID)
-	if err != nil || got.EventID != google.EventID || got.ScheduleID != "" || got.StaffName != "岡田 葵" {
+	if err != nil || got.EventID != google.EventID || got.ScheduleID != googleID || got.StaffName != "岡田 葵" {
 		t.Errorf("記録の無い予定 = %+v, err = %v", got, err)
 	}
 	got, err = r.GetBySchedule(ctx, seedGoogleFacility, recordID)
@@ -528,7 +532,7 @@ func TestCalendarProjectionRepositoryGetBySchedule(t *testing.T) {
 	for _, p := range rows {
 		ids[p.EventID] = p.ScheduleID
 	}
-	if ids[google.EventID] != "" || ids[written.EventID] != recordID {
+	if ids[google.EventID] != googleID || ids[written.EventID] != recordID {
 		t.Errorf("一覧の記録の予定の ID = %v", ids)
 	}
 
@@ -537,5 +541,51 @@ func TestCalendarProjectionRepositoryGetBySchedule(t *testing.T) {
 		if f, err := schedules.GetFacilityID(ctx, id); err != nil || f != seedGoogleFacility {
 			t.Errorf("GetFacilityID(%s) = %s, %v, want %s", id, f, err, seedGoogleFacility)
 		}
+	}
+}
+
+// TestCalendarProjectionRepositoryDetachedID は、Google で作った予定を移した後に前のカレンダーに残った予定（記録を持たず、
+// 一覧での ID が移した予定の記録の主キーと重なる予定）に、一覧と 1 件の読み出しが detached_schedule_id を使うことを確認する。
+func TestCalendarProjectionRepositoryDetachedID(t *testing.T) {
+	ctx := txContext(t)
+	r := NewCalendarProjectionRepository(testDB)
+	base := scheduleview.Projection{
+		ExternalCalendarID: seedOkadaCalendar, FacilityID: seedGoogleFacility, StaffID: seedOkada, Status: scheduleview.ProjectionConfirmed,
+		Title: "担当者会議", ETag: `"1"`, Start: scheduleview.ProjectionTime{At: timeAt(t, "2099-11-04T10:00:00+09:00")},
+		End: scheduleview.ProjectionTime{At: timeAt(t, "2099-11-04T10:30:00+09:00")}, LastEndDate: civilDate(2099, 11, 4),
+	}
+	left, moved := base, base
+	left.EventID, moved.EventID = "left_in_google", "moved_by_buddy"
+	for _, p := range []scheduleview.Projection{left, moved} {
+		if err := r.Put(ctx, p); err != nil {
+			t.Fatal(err)
+		}
+	}
+	movedID := scheduleview.ProjectedScheduleID(seedOkadaCalendar, left.EventID)
+	if err := NewCalendarEventRecordRepository(testDB).Create(ctx, calendar.EventRecord{
+		ScheduleID: movedID, FacilityID: seedGoogleFacility, ExternalCalendarID: seedOkadaCalendar, ExternalEventID: moved.EventID, Version: 2,
+	}); err != nil {
+		t.Fatal(err)
+	}
+	leftID := scheduleview.DetachedScheduleID(seedOkadaCalendar, left.EventID)
+
+	rows, err := r.ListByFacility(ctx, seedGoogleFacility, civil.Date{Year: 2099, Month: 1, Day: 1})
+	if err != nil {
+		t.Fatal(err)
+	}
+	ids := map[string]string{}
+	for _, p := range rows {
+		ids[p.EventID] = p.ScheduleID
+	}
+	if ids[left.EventID] != leftID || ids[moved.EventID] != movedID {
+		t.Errorf("一覧での ID = %v, want 残った予定 %s、移した予定 %s", ids, leftID, movedID)
+	}
+	for id, want := range map[string]string{movedID: moved.EventID, leftID: left.EventID} {
+		if got, err := r.GetBySchedule(ctx, seedGoogleFacility, id); err != nil || got.EventID != want || got.ScheduleID != id {
+			t.Errorf("GetBySchedule(%s) = %+v, %v, want %s", id, got, err, want)
+		}
+	}
+	if f, err := NewScheduleRepository(testDB).GetFacilityID(ctx, leftID); err != nil || f != seedGoogleFacility {
+		t.Errorf("GetFacilityID(%s) = %s, %v", leftID, f, err)
 	}
 }

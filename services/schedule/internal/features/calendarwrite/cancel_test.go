@@ -71,6 +71,21 @@ func TestCancelChangedInGoogle(t *testing.T) {
 	}
 }
 
+// TestCancelGoneWithoutUpdated は、Google で消されていた予定が更新の時刻を返さなくても、読み始めた時刻を更新の時刻にして、
+// 確定の状態の Projection の行を取り消しの状態に書き直すことを確認する。
+func TestCancelGoneWithoutUpdated(t *testing.T) {
+	fx := newFixture(t)
+	d := fx.created(t)
+	fx.google.Delete(calendarID, eventID(t))
+	fx.google.Event(calendarID, eventID(t)).Updated = ""
+	if _, err := fx.cancel.Do(editorCtx(), inmem.FacilityID, scheduleID, d.ETag, "中止"); !isConflict(err, calendarwrite.CodeEventNotFound) {
+		t.Fatalf("err = %v", err)
+	}
+	if p, _ := fx.projection(t); p.Status != scheduleview.ProjectionCancelled || p.GoogleUpdatedAt == nil {
+		t.Errorf("Projection = %+v", p)
+	}
+}
+
 // TestCancelRejects は、空の理由、etag の無い入力、保留の版がある予定を、Google に書かずに拒むことを確認する。
 func TestCancelRejects(t *testing.T) {
 	fx := newFixture(t)

@@ -65,8 +65,8 @@ type Projection struct {
 type ProjectionDetail struct {
 	Projection
 	StaffName string
-	// ScheduleID は、予定の API が Google に書いた予定の記録（calendar.EventRecord）が行の予定を指すときの、記録の予定の ID である。
-	// 記録が無ければ空である。
+	// ScheduleID は、行の予定の一覧での ID である。予定の API が Google に書いた予定の記録（calendar.EventRecord）が行の予定を指せば
+	// 記録の予定の ID で、記録が無ければ ListScheduleID の値である。
 	ScheduleID string
 }
 
@@ -175,14 +175,11 @@ func startsIn(rd EventReading, from, to civil.Date) bool {
 
 func dayBefore(d civil.Date) civil.Date { return civil.DateOf(d.Time().AddDate(0, 0, -1)) }
 
-// projectedID は、Projection の予定 e の、一覧を読むたびに同じになる ID を返す。記録のある予定は、記録の予定の ID にする。
-// 記録の無い予定は ProjectedScheduleID で、繰り返しの回はカレンダー、Google の予定の ID、回の日付から同じ形で作る。
+// projectedID は、Projection の予定 e の、一覧を読むたびに同じになる ID を返す。展開した回でなければ、行の一覧での ID（ScheduleID）にする。
+// 繰り返しの回は、カレンダー、Google の予定の ID、回の日付から、ProjectedScheduleID と同じ形で作る。
 func projectedID(e projectedEvent) string {
 	if e.occurrence.IsZero() {
-		if e.row.ScheduleID != "" {
-			return e.row.ScheduleID
-		}
-		return ProjectedScheduleID(e.row.ExternalCalendarID, e.row.EventID)
+		return e.row.ScheduleID
 	}
 	return hashID(e.row.ExternalCalendarID + "\x00" + e.row.EventID + "\x00" + e.occurrence.String())
 }
@@ -192,6 +189,23 @@ func projectedID(e projectedEvent) string {
 // ULID と同じ 26 文字の Crockford の Base32 で作る。DB の関数 projected_schedule_id も同じ値を返す。
 func ProjectedScheduleID(externalCalendarID, eventID string) string {
 	return hashID(externalCalendarID + "\x00" + eventID)
+}
+
+// DetachedScheduleID は、記録の無い Projection の予定の ProjectedScheduleID が、ほかの予定を指す記録の主キーと同じときの、一覧での予定の ID を返す。
+// Google で作った予定を buddy で変えると、記録の主キーはその予定の ProjectedScheduleID になる。予定を別のカレンダーに移した後に
+// 前のカレンダーに残った予定は、記録を持たず同じ ProjectedScheduleID になるので、この ID で見分ける。
+// Google の予定の ID に使われない文字（0x01）と固定の語を足して作り、DB の関数 detached_schedule_id も同じ値を返す。
+func DetachedScheduleID(externalCalendarID, eventID string) string {
+	return ProjectedScheduleID(externalCalendarID, eventID+"\x01detached")
+}
+
+// ListScheduleID は、記録の無い Projection の予定の、一覧での予定の ID を返す。hashTaken は、予定の ProjectedScheduleID が、
+// ほかの予定を指す記録の主キーと同じかである。同じなら DetachedScheduleID を、違えば ProjectedScheduleID を返す。
+func ListScheduleID(externalCalendarID, eventID string, hashTaken bool) string {
+	if hashTaken {
+		return DetachedScheduleID(externalCalendarID, eventID)
+	}
+	return ProjectedScheduleID(externalCalendarID, eventID)
 }
 
 // hashID は、key の SHA-256 の先頭の 128 ビットを、ULID と同じ 26 文字の Crockford の Base32 にする。

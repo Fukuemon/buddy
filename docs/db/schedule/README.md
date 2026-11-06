@@ -53,6 +53,7 @@
 | ---------------------------- | ---------- | ------------------------------------------------- | -------- |
 | public.set_updated_at        | trigger    |                                                   | FUNCTION |
 | public.projected_schedule_id | text       | external_calendar_id text, external_event_id text | FUNCTION |
+| public.detached_schedule_id  | text       | external_calendar_id text, external_event_id text | FUNCTION |
 
 ## Relations
 

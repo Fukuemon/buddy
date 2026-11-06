@@ -191,7 +191,7 @@ func (s *Syncer) sync(ctx context.Context, st SyncState) (SyncResult, outcome) {
 	eventIDs := make([]string, len(ch.Events))
 	for i, ev := range ch.Events {
 		eventIDs[i] = ev.ID
-		ev = stampCancellation(ev, readAt)
+		ev = calendar.StampCancellation(ev, readAt)
 		err := s.tx.WithinTx(ctx, func(ctx context.Context) error {
 			a, err := s.applierFor(ctx, st.Calendar)
 			if err != nil {
@@ -229,17 +229,6 @@ func (s *Syncer) stopped(ctx context.Context, st SyncState, token string, err er
 	s.log.ErrorContext(ctx, "calendar sync failed", append(attrs, slog.Any("error", err))...)
 	code := SyncApplyFailed
 	return SyncResult{SyncToken: token, Status: SyncFailed, ErrorCode: &code, After: s.interval}, outcomeFailed, true
-}
-
-// stampCancellation は、Google が更新の時刻を返さなかった取り消しの予定 ev に、読み始めた時刻 readAt を更新の時刻として入れて返す。
-// Google は、取り消した予定に ID のほかを返さないことがある。時刻の無い取り消しは、時刻のある Projection の行を書き直せず、
-// 予定が一覧に残るためである。取り消しは読み始める前に起きているので、readAt より後の Google の変更は、取り消しの後の変更である。
-// 読み終えてから当てるまでの時刻を使うと、その間に Google で戻した予定を、次の同期で古い変更とみなすので使わない。
-func stampCancellation(ev calendar.Event, readAt time.Time) calendar.Event {
-	if ev.Status == calendar.StatusCancelled && ev.Updated == "" {
-		ev.Updated = readAt.UTC().Format(time.RFC3339Nano)
-	}
-	return ev
 }
 
 // errCalendarUnlinked は、同期の途中でカレンダーが外れたので、残りの予定を当てないことを表す。

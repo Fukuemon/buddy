@@ -738,12 +738,17 @@ buddy で作った予定を作った後に一覧から開いて変えられ、�
   - SHA-256 の先頭の 128 ビットを、ULID と同じ 26 文字の Crockford の Base32 にする。パスの ID の形の確認（ULID）を通る。
   - Google の予定の ID は ULID の形でなく、同じ予定を招待した職員のカレンダーに同じ ID の予定ができるので、カレンダーの ID も含める。
   - DB の関数 `projected_schedule_id` が同じ値を返し、式の索引で 1 件を引く。2 つが同じ値を返すことは、リポジトリのテストで確認する。
+- 記録の無い予定の `ProjectedScheduleID` が、ほかの予定を指す記録の主キーと同じときは、`scheduleview.DetachedScheduleID` を ID にする。
+  - Google で作った予定を buddy で変えると、記録の主キーはその予定の `ProjectedScheduleID` になる。予定を移した後に前の予定を消せなかったとき、前のカレンダーに残った予定は記録を持たず、移した予定と同じ ID になるためである。
+  - Google の予定の ID に使われない文字（0x01）と固定の語を Google の予定の ID に足して作る。DB の関数 `detached_schedule_id` が同じ値を返し、式の索引で引く。
+  - 移した予定の記録が残る間、残った予定の ID は変わらない。
 - 繰り返しの回の ID は、回の日付も含めて作る。回の変更と取り消しは、繰り返しの予定の書き込みで扱う。
 
-1 件の読み出し（`scheduleview.GetProjected`）は、ID が記録の主キーなら記録が指す行を、記録の無い行は `projected_schedule_id` で行を引き、一覧と同じ規則で予定にする。  
+1 件の読み出し（`scheduleview.GetProjected`）は、ID が記録の主キーなら記録が指す行を引く。  
+記録の主キーでなければ、記録の無い行を、一覧と同じ規則で決めた ID（`projected_schedule_id` か `detached_schedule_id`）で引く。  
 閲覧の判定と事業所の分離は一覧と同じで、カレンダーの職員を予定の職員とみなす。  
 取り消した予定と繰り返しの予定の親は返さない。  
-認証のミドルウェアは、予定の ID の事業所を、buddy の予定、記録の主キー、`projected_schedule_id` の順に引き、職員の事業所と違えば 403 を返す。
+認証のミドルウェアは、予定の ID の事業所を、buddy の予定、記録の主キー、`projected_schedule_id`、`detached_schedule_id` の順に引き、職員の事業所と違えば 403 を返す。
 
 #### 書き込みの手順
 
@@ -823,6 +828,7 @@ sequenceDiagram
 `calendarwrite.Cancel` は、`etag` を `If-Match` に付けて Google の予定を消す（`events.delete`）。
 
 - 消せたら、Google の予定を読み、Projection の行を取り消しの状態にする。読めなければ、取り消しの行は同期が写す。
+  - Google が取り消した予定の更新の時刻を返さなければ、同期と同じく、読み始めた時刻を更新の時刻にする（`calendar.StampCancellation`）。時刻の無い取り消しでは、Projection の行を書き直せないためである。
 - 消した予定の記録と、その訪問の情報を消す。ADR-0026 の、Google で取り消した予定の訪問の情報の行は消す規則に従う。
 - 取り消しの理由は、Google の予定に書く項目が無く、記録も消すので保存しない。応答のキャンセルの ID は、予定の ID と同じにする。
 - 保留の版は書かない。Google の予定の `extendedProperties.private` に版を置けないためである。結果が分からないときは 503（`google_write_unknown`）を返し、同期が取り消しを写す。

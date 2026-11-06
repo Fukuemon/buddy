@@ -28,3 +28,16 @@ $$;
 COMMENT ON FUNCTION projected_schedule_id(text, text) IS '記録の無い Projection の予定の、一覧での予定の ID。scheduleview.ProjectedScheduleID と同じ値を返す';
 
 CREATE INDEX calendar_event_projections_schedule_id_idx ON calendar_event_projections (projected_schedule_id(external_calendar_id, external_event_id));
+
+-- Google で作った予定を buddy で変えると、記録の主キーはその予定の projected_schedule_id になる。予定を別のカレンダーに移した後に
+-- 前のカレンダーに残った予定は、記録を持たず、同じ projected_schedule_id になる。その予定には、重ならない別の ID を返す。
+-- 値は scheduleview.DetachedScheduleID と同じで、Google の予定の ID に使われない文字（0x01）と固定の語を足して作る。
+CREATE FUNCTION detached_schedule_id(external_calendar_id text, external_event_id text) RETURNS text
+LANGUAGE sql IMMUTABLE STRICT PARALLEL SAFE
+AS $$
+    SELECT public.projected_schedule_id($1, $2 || E'\x01detached')
+$$;
+
+COMMENT ON FUNCTION detached_schedule_id(text, text) IS '記録の無い Projection の予定の projected_schedule_id が、ほかの予定を指す記録の主キーと同じときの、一覧での予定の ID。scheduleview.DetachedScheduleID と同じ値を返す';
+
+CREATE INDEX calendar_event_projections_detached_id_idx ON calendar_event_projections (detached_schedule_id(external_calendar_id, external_event_id));

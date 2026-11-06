@@ -22,6 +22,18 @@ func CancelledProjectionOf(c ExternalCalendar, ev Event, today civil.Date) sched
 	}
 }
 
+// StampCancellation は、Google が更新の時刻を返さなかった取り消しの予定 ev に、読み始めた時刻 readAt を更新の時刻として入れて返す。
+// ほかの予定は ev のまま返す。同期と予定の API の書き込みが、Google から読んだ予定を Projection に写す前に使う。
+// Google は、取り消した予定に ID のほかを返さないことがある。時刻の無い取り消しは、時刻のある Projection の行を書き直せず、
+// 予定が一覧に残るためである。取り消しは読み始める前に起きているので、readAt より後の Google の変更は、取り消しの後の変更である。
+// 読み終えてから当てるまでの時刻を使うと、その間に Google で戻した予定を、次の同期で古い変更とみなすので使わない。
+func StampCancellation(ev Event, readAt time.Time) Event {
+	if ev.Status == StatusCancelled && ev.Updated == "" {
+		ev.Updated = readAt.UTC().Format(time.RFC3339Nano)
+	}
+	return ev
+}
+
 // updatedOf は、Google の予定 ev の更新の時刻を返す。無いか読めないときは nil を返す。
 func updatedOf(ev Event) *time.Time {
 	t, err := time.Parse(time.RFC3339, ev.Updated)

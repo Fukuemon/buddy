@@ -89,7 +89,7 @@ func (r *CalendarProjectionRepository) ListByFacility(ctx context.Context, facil
 	return out, nil
 }
 
-// GetBySchedule は、scheduleview.Projections の GetBySchedule を実装する。記録の予定の ID で引き、無ければ一覧での ID で引く。
+// GetBySchedule は、scheduleview.Projections の GetBySchedule を実装する。記録の予定の ID で引き、無ければ記録の無い行を一覧での ID で引く。
 func (r *CalendarProjectionRepository) GetBySchedule(ctx context.Context, facilityID, id string) (scheduleview.ProjectionDetail, error) {
 	row, err := r.q(ctx).GetCalendarEventProjectionByRecord(ctx, sqlcgen.GetCalendarEventProjectionByRecordParams{ScheduleID: id, FacilityID: facilityID})
 	if err == nil {
@@ -98,14 +98,14 @@ func (r *CalendarProjectionRepository) GetBySchedule(ctx context.Context, facili
 	if !errors.Is(err, pgx.ErrNoRows) {
 		return scheduleview.ProjectionDetail{}, translate("get calendar event projection by record", err)
 	}
-	byID, err := r.q(ctx).GetCalendarEventProjectionByProjectedID(ctx, sqlcgen.GetCalendarEventProjectionByProjectedIDParams{ScheduleID: id, FacilityID: facilityID})
+	byID, err := r.q(ctx).GetCalendarEventProjectionByListID(ctx, sqlcgen.GetCalendarEventProjectionByListIDParams{ScheduleID: id, FacilityID: facilityID})
 	if err != nil {
-		return scheduleview.ProjectionDetail{}, translate("get calendar event projection by projected id", err)
+		return scheduleview.ProjectionDetail{}, translate("get calendar event projection by list id", err)
 	}
 	return projectionDetailOf(sqlcgen.ListCalendarEventProjectionsByFacilityRow(byID)), nil
 }
 
-// projectionDetailOf は、Projection の行を、職員の名前と記録の予定の ID を付けた行にする。
+// projectionDetailOf は、Projection の行を、職員の名前と一覧での予定の ID を付けた行にする。
 func projectionDetailOf(row sqlcgen.ListCalendarEventProjectionsByFacilityRow) scheduleview.ProjectionDetail {
 	return scheduleview.ProjectionDetail{
 		Projection: scheduleview.Projection{
@@ -119,7 +119,7 @@ func projectionDetailOf(row sqlcgen.ListCalendarEventProjectionsByFacilityRow) s
 			LastEndDate: datePtr(row.LastEndDate), ProjectedAt: row.ProjectedAt,
 		},
 		StaffName:  row.StaffName,
-		ScheduleID: deref(row.RecordScheduleID),
+		ScheduleID: row.ScheduleID,
 	}
 }
 

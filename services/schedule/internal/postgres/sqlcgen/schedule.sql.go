@@ -271,11 +271,13 @@ UNION ALL
 SELECT r.facility_id FROM calendar_event_records r WHERE r.schedule_id = $1
 UNION ALL
 SELECT p.facility_id FROM calendar_event_projections p WHERE projected_schedule_id(p.external_calendar_id, p.external_event_id) = $1
+UNION ALL
+SELECT p.facility_id FROM calendar_event_projections p WHERE detached_schedule_id(p.external_calendar_id, p.external_event_id) = $1
 LIMIT 1
 `
 
 // access がパスの ID のリソースの事業所を確認するときに、事業所だけを読む。
-// google_primary の事業所の予定は、記録の予定の ID か、記録の無い Projection の予定の一覧での ID（projected_schedule_id）でも引く。
+// google_primary の事業所の予定は、記録の予定の ID か、記録の無い Projection の予定の一覧での ID（projected_schedule_id、detached_schedule_id）でも引く。
 func (q *Queries) GetScheduleFacilityID(ctx context.Context, id string) (string, error) {
 	row := q.db.QueryRow(ctx, getScheduleFacilityID, id)
 	var facility_id string

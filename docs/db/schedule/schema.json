@@ -6161,6 +6161,14 @@
           "columns": [
             "projected_schedule_id"
           ]
+        },
+        {
+          "name": "calendar_event_projections_detached_id_idx",
+          "def": "CREATE INDEX calendar_event_projections_detached_id_idx ON public.calendar_event_projections USING btree (detached_schedule_id(external_calendar_id, (external_event_id)::text))",
+          "table": "public.calendar_event_projections",
+          "columns": [
+            "detached_schedule_id"
+          ]
         }
       ],
       "constraints": [
@@ -8004,6 +8012,12 @@
     },
     {
       "name": "public.projected_schedule_id",
+      "return_type": "text",
+      "arguments": "external_calendar_id text, external_event_id text",
+      "type": "FUNCTION"
+    },
+    {
+      "name": "public.detached_schedule_id",
       "return_type": "text",
       "arguments": "external_calendar_id text, external_event_id text",
       "type": "FUNCTION"

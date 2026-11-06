@@ -178,6 +178,50 @@ func TestUpdateMovesEvent(t *testing.T) {
 	}
 }
 
+// TestUpdateMoveLeavesPreviousEvent は、Google で作った予定を別の職員に移した後に前の予定を消せなかったとき、
+// 移した予定と残った前の予定が一覧に違う ID で出て、残った前の予定をその ID で開いて取り消せることを確認する。
+func TestUpdateMoveLeavesPreviousEvent(t *testing.T) {
+	fx := newFixture(t)
+	id, etag := fx.madeInGoogle(t)
+	fx.google.Failures = []int{0, http.StatusInternalServerError}
+	in := normalSlot()
+	in.StaffID = inmem.CompanionID
+	got, err := fx.update.Do(editorCtx(), inmem.FacilityID, id, etag, in)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.ID != id || len(fx.google.Events(calendarID)) != 1 || len(fx.google.Events(calendarID2)) != 1 {
+		t.Fatalf("応答 = %+v, 前のカレンダー = %d 件, 新しいカレンダー = %d 件", got, len(fx.google.Events(calendarID)), len(fx.google.Events(calendarID2)))
+	}
+
+	projections := inmem.Projections{Store: fx.store}
+	rows, err := projections.ListByFacility(editorCtx(), inmem.FacilityID, civil.Date{Year: 2026, Month: 1, Day: 1})
+	if err != nil {
+		t.Fatal(err)
+	}
+	ids := map[string]string{}
+	for _, r := range rows {
+		ids[r.ExternalCalendarID] = r.ScheduleID
+	}
+	leftID := scheduleview.DetachedScheduleID(externalID, googleEventID)
+	if len(rows) != 2 || ids[externalID2] != id || ids[externalID] != leftID {
+		t.Fatalf("一覧での ID = %v, want 移した予定 %s、残った予定 %s", ids, id, leftID)
+	}
+	left, err := projections.GetBySchedule(editorCtx(), inmem.FacilityID, leftID)
+	if err != nil || left.EventID != googleEventID {
+		t.Fatalf("残った予定 = %+v, err = %v", left, err)
+	}
+	if _, err := fx.cancel.Do(editorCtx(), inmem.FacilityID, leftID, left.ETag, "重複"); err != nil {
+		t.Fatal(err)
+	}
+	if ev := fx.google.Event(calendarID, googleEventID); ev.Status != "cancelled" {
+		t.Errorf("残った予定の状態 = %s", ev.Status)
+	}
+	if r, ok := fx.store.Records[id]; !ok || r.ExternalCalendarID != externalID2 || len(fx.google.Events(calendarID2)) != 1 {
+		t.Errorf("移した予定の記録 = %+v, ok = %v", r, ok)
+	}
+}
+
 // TestUpdateMoveChangedInGoogle は、予定を移す前に Google で予定が変わっていれば、どちらのカレンダーにも書かずに google_event_changed を返すことを確認する。
 func TestUpdateMoveChangedInGoogle(t *testing.T) {
 	fx := newFixture(t)
