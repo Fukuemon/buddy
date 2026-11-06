@@ -173,6 +173,11 @@ func TestSyncProjectsGooglePrimaryEvents(t *testing.T) {
 			t.Errorf("消した予定の行 %s = %+v, want 取り消しの状態で、終わる日は今日", id, got)
 		}
 	}
+	// 取り消した親の例外の回は、取り消した回の行にし、元の開始と終わる日は残す
+	if got := e.mustRow(t, "weekly_20991109T000000Z"); got.Status != scheduleview.ProjectionCancelled || got.Title != "" || got.Start.At != nil ||
+		!sameInstant(got.OriginalStart.At, instant(t, "2099-11-09T09:00:00+09:00")) || !sameDate(got.LastEndDate, dateOf(2099, 11, 9)) {
+		t.Errorf("取り消した親の動かした回の行 = %+v, want 取り消した回", got)
+	}
 	if got := e.mustRow(t, "single"); got.GoogleUpdatedAt == nil || !got.GoogleUpdatedAt.After(*before.GoogleUpdatedAt) {
 		t.Errorf("消した予定の更新の時刻 = %v, want 消す前の %v より後", got.GoogleUpdatedAt, before.GoogleUpdatedAt)
 	}

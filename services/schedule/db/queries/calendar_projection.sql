@@ -21,6 +21,14 @@ ON CONFLICT (external_calendar_id, external_event_id) DO UPDATE SET
 WHERE calendar_event_projections.google_updated_at IS NULL
    OR EXCLUDED.google_updated_at > calendar_event_projections.google_updated_at;
 
+-- name: CancelCalendarEventProjectionOccurrences :exec
+-- 親の予定 parent_event_id の例外の回の行を、取り消した回の行にする。親を取り消したときに、親の行が読む期間の外になっても、
+-- 例外の回を予定の表示に出さないためである。元の開始と終わる日は残す。
+UPDATE calendar_event_projections
+SET status = 'cancelled', title = '', start_at = NULL, start_date = NULL, end_at = NULL, end_date = NULL, time_zone = NULL,
+    projected_at = now()
+WHERE external_calendar_id = sqlc.arg(external_calendar_id) AND recurring_event_id = sqlc.arg(parent_event_id) AND status <> 'cancelled';
+
 -- name: DeleteCalendarEventProjection :exec
 -- 予定の行と、その予定を親にする例外の回の行を消す。
 DELETE FROM calendar_event_projections

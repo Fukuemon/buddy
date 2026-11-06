@@ -37,6 +37,14 @@ func (r *CalendarProjectionRepository) Put(ctx context.Context, p scheduleview.P
 	return translate("put calendar event projection", err)
 }
 
+// CancelOccurrences は、calendarsync.Projections の CancelOccurrences を実装する。
+func (r *CalendarProjectionRepository) CancelOccurrences(ctx context.Context, externalCalendarID, parentEventID string) error {
+	err := r.q(ctx).CancelCalendarEventProjectionOccurrences(ctx, sqlcgen.CancelCalendarEventProjectionOccurrencesParams{
+		ExternalCalendarID: externalCalendarID, ParentEventID: &parentEventID,
+	})
+	return translate("cancel calendar event projection occurrences", err)
+}
+
 // Delete は、カレンダー externalCalendarID の予定 eventID の行と、その予定を親にする例外の回の行を消す。行が無くてもエラーにしない。
 func (r *CalendarProjectionRepository) Delete(ctx context.Context, externalCalendarID, eventID string) error {
 	err := r.q(ctx).DeleteCalendarEventProjection(ctx, sqlcgen.DeleteCalendarEventProjectionParams{

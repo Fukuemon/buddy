@@ -10,6 +10,25 @@ import (
 	"time"
 )
 
+const cancelCalendarEventProjectionOccurrences = `-- name: CancelCalendarEventProjectionOccurrences :exec
+UPDATE calendar_event_projections
+SET status = 'cancelled', title = '', start_at = NULL, start_date = NULL, end_at = NULL, end_date = NULL, time_zone = NULL,
+    projected_at = now()
+WHERE external_calendar_id = $1 AND recurring_event_id = $2 AND status <> 'cancelled'
+`
+
+type CancelCalendarEventProjectionOccurrencesParams struct {
+	ExternalCalendarID string
+	ParentEventID      *string
+}
+
+// 親の予定 parent_event_id の例外の回の行を、取り消した回の行にする。親を取り消したときに、親の行が読む期間の外になっても、
+// 例外の回を予定の表示に出さないためである。元の開始と終わる日は残す。
+func (q *Queries) CancelCalendarEventProjectionOccurrences(ctx context.Context, arg CancelCalendarEventProjectionOccurrencesParams) error {
+	_, err := q.db.Exec(ctx, cancelCalendarEventProjectionOccurrences, arg.ExternalCalendarID, arg.ParentEventID)
+	return err
+}
+
 const deleteCalendarEventProjection = `-- name: DeleteCalendarEventProjection :exec
 DELETE FROM calendar_event_projections
 WHERE external_calendar_id = $1

@@ -24,6 +24,7 @@ var errNoTime = errors.New("予定の日時が無い")
 //     行を書き直すのは、Google の更新の時刻が行より新しいときだけである（Projections.Put）。
 //   - 取り消した単発の予定と繰り返しの親の予定は、行を消さず、取り消しの状態にした行に写す。行を消すと、予定の API の書き込みが
 //     古い応答で予定を戻すためである。終わる日は取り消しを写した日にし、保持する期間で消す。
+//     親の予定の例外の回の行は、取り消した回の行にする。親の行が読む期間の外になっても、例外の回を一覧に出さないためである。
 //   - 繰り返しの予定は展開せず、親の予定と例外の回を別の行に写す。取り消した回は、状態を取り消しにした行に写す。
 //   - 保持する期間（前々月の初日から）より前に終わった予定は、写さずに行を消す。期間の終わり（3 か月後の月末）より後の予定も写す。
 //     増分の取得は、変わっていない予定を返さないので、期間に入ったときに写せないためである。
@@ -43,7 +44,10 @@ func NewProjectionApplier(projections Projections, log *slog.Logger) Applier {
 // Apply は、Applier の Apply を実装する。
 func (a projectionApplier) Apply(ctx context.Context, c calendar.ExternalCalendar, ev calendar.Event) error {
 	if ev.Status == calendar.StatusCancelled && ev.RecurringEventID == "" {
-		return a.projections.Put(ctx, cancelledProjectionOf(c, ev, civil.Today(a.now())))
+		if err := a.projections.Put(ctx, cancelledProjectionOf(c, ev, civil.Today(a.now()))); err != nil {
+			return err
+		}
+		return a.projections.CancelOccurrences(ctx, c.ID, ev.ID)
 	}
 	p, err := projectionOf(c, ev)
 	if err != nil {
