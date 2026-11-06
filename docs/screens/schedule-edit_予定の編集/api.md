@@ -23,12 +23,28 @@
 | 訪問の区分 | 夜勤、緊急、入院 | `VisitDetail.categories` | `getSchedule` の `visit_info.visit_categories[].name`。保存では `visit_info.visit_category_ids` |
 | メモ | メモ | `Schedule.description` | `description` |
 | タイトル | 通常の予定のタイトル | `Schedule.title` | `title` |
-| Google カレンダーで管理していることの文 | 事業所が予定を Google カレンダーで管理しているか | `Facility.sourceMode` | `getFacility` の `Facility.source_mode` |
+| 繰り返しの規則を変えられないことの文 | 繰り返しの規則を buddy で表せない予定か | `Schedule.reviewReason` が `recurrence_unsupported` | `getSchedule` の `review_reason` |
+| Google カレンダーの最新の予定 | 保存が Google カレンダーでの変更で拒まれた後に読み直した予定 | `getSchedule` で読み直した `Schedule` | `getSchedule` |
+| 最新の予定の日時 | 年月日、曜日、開始と終了の時刻 | `Schedule.startsAt`、`Schedule.endsAt` | `getSchedule` の `date`、`start_time`、`end_time` |
+| 最新の予定のタイトル | 利用者の名前とサービスコード、通常の予定のタイトル | `Schedule.visit.patientId` を利用者の一覧（`Patient.name`）で引いた名前と `Schedule.visit.serviceCode`、`Schedule.title` | `getSchedule` の `visit_info.patient_id`、`visit_info.service_code`、`title` |
+| 最新の予定の職員 | 職員の名前 | `Schedule.staffId` を、職員の一覧（`Staff.name`）で引く | `getSchedule` の `staff_id` |
+| （画面に出さない） | 保存で送る予定の etag | `Schedule.etag` | `getSchedule` の `etag`。送るのは `updateSchedule` の本文の `etag` |
 
-- 事業所は `getFacility`（`GET /v1/facilities/{facility_id}`）で読み、web の `BuddyApi.facilities.get` が `Facility` にする。
-  - `source_mode` が `buddy_primary` と分かるか、`getFacility` が失敗したときだけ、`getSchedule` を呼ぶ。Google カレンダーの予定（Projection）には `getSchedule` が無く、404 になるためである。
-  - `source_mode` が `google_primary` なら、フォームの代わりに `SCHEDULE_GOOGLE_PRIMARY_MESSAGE` を出す。文は `apps/web/src/features/schedule/lib/errorMessage.ts` にある。
+- 画面は事業所を読まず、`buddy_primary` と `google_primary` のどちらの事業所でも `getSchedule` で予定を読み、同じフォームを出す。
   - 処理は `apps/web/src/features/schedule/components/ScheduleEditModalContainer.tsx` にある。
+- `review_reason` が `recurrence_unsupported` の予定は、フォームを出さずに、変えられないことの文を出す。
+  - 判定は、権限の判定の後、キャンセルした予定の判定の前に行う。
+- `updateSchedule` の本文の `etag` には、編集を開いたときに読んだ予定の `Schedule.etag` を送る。
+  - `buddy_primary` の事業所の予定は `etag` を持たないので、`null` を渡して送らない。
+  - web のサーバーは、保存の前に読み直した今の予定の `etag` を送らない。読んだ後に Google カレンダーで変わったことに気づけなくなるためである。
+  - 処理は `apps/web/src/api/http/httpBuddyApi.ts` の `schedules.update` にある。
+- `updateSchedule` が 409 `google_event_changed` を返すと、画面は `getSchedule` で予定を読み直し、フォームの上に最新の予定を出す。
+  - 次の保存で送る `etag` は、読み直した予定の `etag` に置き換える。
+  - 入力は消さない。
+  - 読み直しが失敗したときは、最新の予定を出さず、`etag` も置き換えない。
+  - 最新の予定は `apps/web/src/features/schedule/components/ScheduleLatestNotice.tsx` が描く。
+- `google_primary` の事業所では、`updateSchedule` が Google カレンダーの予定を書き換え、書けたときだけ成功を返す。
+  - 扱いは [ADR-0026](../../adr/0026-google-calendar-sync.md) にある。
 - 保存の本文は、画面の値に、画面が持たない今の予定の値を足して作る。
   - 処理は `apps/web/src/api/http/scheduleMapper.ts` の `keepCurrentVisit` にある。
   - 訪問の予定どうしの保存では、同行者の `visit_info.companion_id` とタイトルの `title` を今の予定の値のまま送る。
@@ -76,17 +92,28 @@
 | 読み込みの失敗 | 「予定が見つかりません。」 | `getSchedule` か `getRecurringSchedule` が 404 |
 | 読み込みの失敗 | 「この予定を見る権限がありません。」 | `getSchedule` か `getRecurringSchedule` が 403。予定の `facility_id` がログインした職員の事業所と違う（web のサーバーが 403 にする） |
 | 読み込みの失敗 | 「予定を取得できませんでした。」 | `getSchedule` か `getRecurringSchedule` が 401、403、404 以外で失敗。`listUsers`、`listPatients`、`listServiceCodes` のどれかが 401 以外で失敗。API に届かない |
-| Google カレンダーで管理している | 「この事業所の予定は Google カレンダーで管理しています。予定は Google カレンダーで作成、変更してください。」 | API の失敗ではない。`getFacility` の `source_mode` が `google_primary` |
+| 繰り返しの規則を buddy で表せない | 「この予定の繰り返しの規則は buddy で表せないため、buddy では変更できません。Google カレンダーで変更してください。」 | API の失敗ではない。`getSchedule` の `review_reason` が `recurrence_unsupported` |
 | 権限が無い | 「この予定を編集する権限がありません。」 | API の失敗ではない。`getMe` の `policies` で、予定の職員の予定を編集できない |
 | 保存の失敗 | 「この操作をする権限がありません。」 | `updateSchedule` か `changeOccurrence` が 403 |
 | 保存の失敗 | 「入力の内容では予定を更新できません。内容を直してください。」 | `updateSchedule` か `changeOccurrence` が 400 |
 | 保存の失敗 | 「この事業所の予定は Google カレンダーで管理しています。予定は Google カレンダーで作成、変更してください。」 | `updateSchedule` か `changeOccurrence` が 409 `google_primary`。事業所が Google カレンダーを予定の正本にしている |
-| 保存の失敗 | 「予定を更新できませんでした。」 | `updateSchedule` か `changeOccurrence` が 400、401、403、409 `google_primary` 以外で失敗（404、ほかの 409、500）。保存の前の `getSchedule` の読み直しか、マスタ（`listScheduleTypes`、`listServiceCodes`、`listVisitCategories`）の取得が失敗。選んだ値に当たるマスタが無い。API に届かない |
+| Google カレンダーで変更されていた | 「Google カレンダーで予定が変更されていました。最新の予定を確認してから、もう一度保存してください。」 | `updateSchedule` が 409 `google_event_changed` |
+| 保存の失敗 | 「Google カレンダーで予定が消されたか、見つかりません。」 | `updateSchedule` が 409 `google_event_not_found` |
+| 保存の失敗 | 「前の保存の結果を確認しています。時間をおいて、予定を開き直してください。」 | `updateSchedule` が 409 `google_write_pending` |
+| 保存の失敗 | 「Google カレンダーに書けませんでした。時間をおいて、やり直してください。」 | `updateSchedule` が 503 `google_unavailable` |
+| 保存の失敗 | 「Google カレンダーに書けたかを確認できませんでした。時間をおいて、予定を開き直してください。」 | `updateSchedule` が 503 `google_write_unknown` |
+| 保存の失敗 | 「Google カレンダーに予定を書く権限がありません。カレンダーの共有の設定を、マネージャーに確認してください。」 | `updateSchedule` が 409 `google_calendar_unwritable` |
+| 保存の失敗 | 「Google カレンダーが予定を受け付けませんでした。入力を確認してください。」 | `updateSchedule` が 409 `google_event_rejected` |
+| 保存の失敗 | 「予定の職員が Google カレンダーを結び付けていません。カレンダーの結び付けを、マネージャーに頼んでください。」 | `updateSchedule` が 409 `calendar_not_linked` |
+| 保存の失敗 | 「この事業所には、Google カレンダーと連携する設定がありません。マネージャーに確認してください。」 | `updateSchedule` が 503 `calendar_not_configured` |
+| 保存の失敗 | 「予定の正本を buddy に切り替えています。切り替えが終わるまで、予定を作成、変更、キャンセルできません。」 | `updateSchedule` が 409 `cutover_open` |
+| 保存の失敗 | 「予定を更新できませんでした。」 | `updateSchedule` か `changeOccurrence` が、ここまでのほかの失敗（404、409 `conflict`、500 など）。保存の前の `getSchedule` の読み直しか、マスタ（`listScheduleTypes`、`listServiceCodes`、`listVisitCategories`）の取得が失敗。選んだ値に当たるマスタが無い。API に届かない |
 | 送信中 | なし（ログインの画面へ移るまで続く） | 保存の操作が 401 |
 
 - 読み込みの失敗の文は、`apps/web/src/features/schedule/lib/errorMessage.ts` の `scheduleLoadErrorMessage` が、予定の取得の status で選ぶ。
   - 一覧の取得の失敗は `SCHEDULE_LOAD_ERROR_MESSAGE` にする。
-- 保存の失敗の文は、同じ `errorMessage.ts` の `scheduleSubmitErrorMessage` が status で選ぶ。
+- 保存の失敗の文は、同じ `errorMessage.ts` の `scheduleSubmitErrorMessage` が status と `ApiError.code` で選ぶ。
+  - 409 `google_event_changed` かは、同じ `errorMessage.ts` の `isGoogleEventChanged` が決める。
 - 権限が無いことの文は、同じ `errorMessage.ts` の `SCHEDULE_EDIT_FORBIDDEN_MESSAGE` にある。
 - 400 の `invalid_input` には、休職か退職の職員か、訪問しない職員を新しく割り振ったときと、利用の終了の利用者を新しく指したときを含む。
   - ADR-0004: [職員の停止を、戻せる休職と、戻せない退職に分ける](../../adr/0004-staff-leave-and-retirement.md)

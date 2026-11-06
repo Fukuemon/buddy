@@ -66,3 +66,8 @@
   background: var(--wf-warning-surface);
   color: var(--wf-warning);
 }
+
+/* キャンセルの理由の欄の placeholder。apps/web の TextareaField と同じ薄い色にする */
+.sd-placeholder {
+  color: var(--wf-muted);
+}

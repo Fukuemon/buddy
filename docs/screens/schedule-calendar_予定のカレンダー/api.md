@@ -29,7 +29,7 @@ web の型（`apps/web/src/api/types.ts`）はフェイクの API に合わせ�
 | 通知の予定 | 職員の名前 | `Schedule.staffId` を、職員の一覧（`Staff.name`）で引く | `Schedule.staff_id` を、`listUsers` の `Staff.username` で引く |
 | 通知の予定、要確認の印 | 理由 | `Schedule.reviewReason` | `listSchedules` の `Schedule.review_reason` |
 | 予定 | Google カレンダーの予定か | `Schedule.fromGoogleCalendar` | `listSchedules` の `Schedule.source` が `google_calendar` |
-| 切り替え中の案内 | 切り替え中か | `ScheduleList.cutover` が `null` でない | `listSchedules` の `cutover` |
+| 切り替え中の案内、予定を作成、空いた時間、時間の枠 | 切り替え中か | `ScheduleList.cutover` が `null` でない | `listSchedules` の `cutover` |
 | 切り替えの開始 | 始めた職員の名前と時刻 | `OpenCalendarCutover.started_by_name`、`OpenCalendarCutover.started_at` | `listSchedules` の `cutover.started_by_name`、`cutover.started_at` |
 
 - 予定の一覧の取得は、`listSchedules`（`GET /v1/facilities/{facility_id}/schedules`）に当たる。
@@ -75,9 +75,13 @@ web の型（`apps/web/src/api/types.ts`）はフェイクの API に合わせ�
   - 状態は `calendarSyncProblemsOf` が、`last_status` が `failed`、`last_succeeded_at` が `null`、`last_succeeded_at` が 10 分より前の順に当てる。
 - 理由の文は、`apps/web/src/features/schedule/constants/scheduleLabels.ts` の `SCHEDULE_REVIEW_REASON_LABEL` で決める。
 - 事業所は `getFacility`（`GET /v1/facilities/{facility_id}`）で読み、web の `BuddyApi.facilities.get` が `Facility` にする。
-  - 画面は、`ScheduleList.sourceMode` があればそれを、無ければ `Facility.sourceMode` を使う。日付を移って一覧を読み直す間に、「予定を作成」が出たり消えたりしないためである。
+  - 画面は、`ScheduleList.sourceMode` があればそれを、無ければ `Facility.sourceMode` を使う。日付を移って一覧を読み直す間に、`buddy_primary` の事業所で「予定を作成」が出たり消えたりしないためである。
   - どちらも無い間は、予定を作る操作を出さない。
-- `createSchedule` は、`google_primary` の事業所では 409 の `google_primary` で拒む。
+- 予定を作る操作は、`buddy_primary` の事業所か、`google_primary` の事業所で `ScheduleList` を読み終えて `ScheduleList.cutover` が `null` のときに出す。
+  - `google_primary` の事業所で一覧を読み直している間は、`cutover` が分からないので出さない。
+  - 処理は `apps/web/src/features/schedule/components/ScheduleCalendarContainer.tsx` にある。
+- `google_primary` の事業所でも、`createSchedule` は予定を作り、Google カレンダーに書く。
+  - 書き込みの扱いは、[予定の作成の API との対応](../schedule-new_予定の作成/api.md) と [ADR-0026](../../adr/0026-google-calendar-sync.md) にある。
 
 ## 権限の出し分け
 
