@@ -363,7 +363,7 @@ func TestUpdateAndCancelScheduleGooglePrimary(t *testing.T) {
 
 // TestScheduleWritesRejectOpenCutover は、google_primary の事業所に open の切り替えがあると、createSchedule、updateSchedule、
 // cancelSchedule、createRecurringSchedule、changeOccurrence が 409 の cutover_open を返し、Google カレンダーに書かないことと、
-// listSchedules が切り替えを始めた職員の ID と名前と時刻を返すことを確認する（ADR-0028）。
+// listSchedules が切り替えを始めた職員の ID と名前と時刻を返すことを確認する（ADR-0030）。
 func TestScheduleWritesRejectOpenCutover(t *testing.T) {
 	const (
 		calendarAddr = "staff@example.com"

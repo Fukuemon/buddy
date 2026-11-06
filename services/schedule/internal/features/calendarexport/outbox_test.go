@@ -10,7 +10,7 @@ import (
 	"github.com/Fukuemon/buddy/services/schedule/internal/ulid"
 )
 
-// Google カレンダーを予定の正本にする事業所の予定の変更は、職員がカレンダーを結び付けていても積まない（ADR-0026）。
+// Google カレンダーを予定の正本にする事業所の予定の変更は、職員がカレンダーを結び付けていても積まない（ADR-0028）。
 func TestOutboxSkipsGooglePrimary(t *testing.T) {
 	s := inmem.Seeded()
 	s.Calendars[calID] = calendar.ExternalCalendar{ID: calID, FacilityID: inmem.FacilityID, StaffID: inmem.StaffID, Provider: calendar.ProviderGoogle, CalendarID: googleCalID}

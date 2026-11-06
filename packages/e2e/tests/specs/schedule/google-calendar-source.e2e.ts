@@ -14,7 +14,7 @@ const openDay = async (page: Page, date: string) => {
 }
 
 // シードの 3 つ目の事業所は Google カレンダーを予定の正本にする（google_primary）。同期の Worker が岡田のカレンダーの予定を
-// Projection に写し、予定のカレンダーは Projection を読む（ADR-0026）。
+// Projection に写し、予定のカレンダーは Projection を読む（ADR-0028）。
 test.describe('予定のカレンダー', () => {
   test.describe('Google カレンダーを正本にする事業所', () => {
     test.use({ storageState: OKADA_STATE })

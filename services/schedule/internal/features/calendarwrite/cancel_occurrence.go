@@ -13,7 +13,7 @@ import (
 	"github.com/Fukuemon/buddy/services/schedule/internal/tx"
 )
 
-// CancelOccurrence は、google_primary の事業所の繰り返しの予定の 1 回を、Google カレンダーの回の予定を消して取り消す（ADR-0026）。
+// CancelOccurrence は、google_primary の事業所の繰り返しの予定の 1 回を、Google カレンダーの回の予定を消して取り消す（ADR-0028）。
 // Google は取り消した回を例外の回にし、親の予定の EXDATE は変えない。ほかの回は残る。
 type CancelOccurrence struct {
 	cancel Cancel

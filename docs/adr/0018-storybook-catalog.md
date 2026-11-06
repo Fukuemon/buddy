@@ -1,4 +1,4 @@
-# ADR-0016: apps/web の Storybook を 1 つのカタログにする
+# ADR-0018: apps/web の Storybook を 1 つのカタログにする
 
 ## Status
 
@@ -9,9 +9,9 @@
 デザインシステムと画面のカタログの組み方を決める必要がある。
 
 - packages/ui には、ドメインを持たない Base と Case のコンポーネントを置く。Domain のコンポーネントは apps/web に置く。
-  - ADR-0013: [packages/ui に、ドメインを持たない Base と Case のコンポーネントを置き、DADS の指針から外れる 3 点は理由を DESIGN.md に書く](0013-ui-components.md)
+  - ADR-0014: [packages/ui に、ドメインを持たない Base と Case のコンポーネントを置き、DADS の指針から外れる 3 点は理由を DESIGN.md に書く](0014-ui-components.md)
 - アクセシビリティは、Storybook の a11y のアドオンと story の play 関数で確認する。
-  - ADR-0014: [アクセシビリティは WCAG 2.2 の AA を基準にし、自動で確認する](0014-accessibility.md)
+  - ADR-0015: [アクセシビリティは WCAG 2.2 の AA を基準にし、自動で確認する](0015-accessibility.md)
 
 ## Decision
 

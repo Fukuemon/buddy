@@ -11,7 +11,7 @@ import (
 )
 
 // ProjectionRules は、scheduleview.EventRules を実装する。Projection の予定を、取り込みと同じ規則（Classify と RuleFromRecurrence）で
-// buddy の予定に読み替える。scheduleview は calendar を import できないので、組み立ての場所がこの値を渡す（ADR-0026、ADR-0023）。
+// buddy の予定に読み替える。scheduleview は calendar を import できないので、組み立ての場所がこの値を渡す（ADR-0028、ADR-0025）。
 type ProjectionRules struct{}
 
 var _ scheduleview.EventRules = ProjectionRules{}

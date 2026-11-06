@@ -33,7 +33,7 @@ const (
 	// SkipAllDay は、時刻の無い終日の予定である。
 	SkipAllDay SkipReason = "all_day"
 	// SkipMultiDay は、Asia/Tokyo で、終了が開始の翌日より後の予定と、終了が翌日で長さが 24 時間以上の予定である。
-	// 終了が翌日で 24 時間未満の予定は、終了が翌日の予定に読み替えるので当たらない（ADR-0030）。
+	// 終了が翌日で 24 時間未満の予定は、終了が翌日の予定に読み替えるので当たらない（ADR-0032）。
 	SkipMultiDay SkipReason = "multi_day"
 	// SkipUnreadableTime は、開始か終了の日時が無いか、RFC 3339 で読めない予定である。
 	SkipUnreadableTime SkipReason = "unreadable_time"
@@ -75,7 +75,7 @@ func NormalTitle(summary string) string {
 
 // Classify は、ev を、訪問の予定、通常の予定、取り込まない予定のどれかに分ける。
 // タイトルに `【` と `】` の両方を含む予定を訪問の予定とし、照合の API と同じ規則（gcaltitle）で読む。
-// Asia/Tokyo で終了が開始の翌日で、長さが 24 時間未満の予定は、終了が翌日の予定（EndsNextDay）に読み替える（ADR-0030）。
+// Asia/Tokyo で終了が開始の翌日で、長さが 24 時間未満の予定は、終了が翌日の予定（EndsNextDay）に読み替える（ADR-0032）。
 // 取り消した予定、終日の予定、それ以外の日をまたぐ予定、開始か終了の日時を読めない予定、分に丸めて長さが 0 以下の予定、
 // タイトルが空白だけの予定、訪問のタイトルを読めない予定は取り込まない。通常の予定のタイトルは 255 文字までに切る。
 func Classify(ev Event) Candidate {

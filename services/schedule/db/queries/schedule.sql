@@ -94,7 +94,7 @@ SELECT id FROM recurring_schedules WHERE id = $1 FOR UPDATE;
 SELECT id FROM schedules WHERE recurring_schedule_id = $1 AND original_date = $2;
 
 -- name: GetStoredSchedule :one
--- 予定を書く前の確認に使う予定を読む。種類、職員、訪問の情報の名前は結合しない（ADR-0023）。
+-- 予定を書く前の確認に使う予定を読む。種類、職員、訪問の情報の名前は結合しない（ADR-0025）。
 SELECT s.id, s.facility_id, s.staff_id, s.schedule_type_id, s.date, s.start_time, s.end_time, s.ends_next_day,
        s.is_over_time_work, s.recurring_schedule_id, s.original_date, s.visit_info_id, s.title, s.description, s.version,
        vi.patient_id, vi.assigned_staff_id, vi.companion_id, vi.service_code_id,
@@ -104,7 +104,7 @@ LEFT JOIN visit_infos vi ON vi.id = s.visit_info_id
 WHERE s.id = $1;
 
 -- name: GetStoredRecurringSchedule :one
--- 予定を書く前の確認に使う繰り返しの予定を読む。種類、職員、訪問の情報の名前は結合しない（ADR-0023）。
+-- 予定を書く前の確認に使う繰り返しの予定を読む。種類、職員、訪問の情報の名前は結合しない（ADR-0025）。
 SELECT rs.id, rs.facility_id, rs.staff_id, rs.schedule_type_id, rs.date, rs.start_time, rs.end_time, rs.ends_next_day,
        rs.is_over_time_work, rs.visit_info_id, rs.title, rs.description,
        rs.frequency, rs.day_of_week, rs.day_of_month, rs.week_of_month, rs.end_date, rs.version,

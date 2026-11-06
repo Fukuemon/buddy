@@ -286,7 +286,7 @@ services:
       calendarpit-authorize: { condition: service_completed_successfully }
       gcalhold: { condition: service_healthy }
 
-  # 予定の API と同じイメージの calendar-worker が、書き出しと同期を役割ごとのプロセスで常駐して動かす（ADR-0029）
+  # 予定の API と同じイメージの calendar-worker が、書き出しと同期を役割ごとのプロセスで常駐して動かす（ADR-0031）
   schedule-calendar-export:
     image: ${COMPOSE_PROJECT_NAME}-schedule
     # イメージは schedule-migrate がビルドする

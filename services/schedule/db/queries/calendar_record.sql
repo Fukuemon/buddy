@@ -37,7 +37,7 @@ WHERE schedule_id = sqlc.arg(schedule_id);
 DELETE FROM calendar_event_records WHERE schedule_id = $1;
 
 -- name: ClaimExpiredCalendarEventRecords :many
--- 書く期限を過ぎた保留の版を持つ記録を、同期が読み戻すために取る（ADR-0026）。保留の版の状態（writing、unknown）では絞らない。
+-- 書く期限を過ぎた保留の版を持つ記録を、同期が読み戻すために取る（ADR-0028）。保留の版の状態（writing、unknown）では絞らない。
 -- 複数の処理が同時に取っても同じ記録を渡さないよう、行をロックできたものだけを取り、locked_until までほかの処理に渡さない。
 -- 保留の版を書く予定のカレンダー（移す書き込みでは移す先）を外した記録と、事業所の正本のモードが modes に無い記録は取らない。
 -- 返すカレンダーも、保留の版を書く予定のカレンダーである。

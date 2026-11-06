@@ -188,7 +188,7 @@ func readEvent(ctx context.Context, source calendar.EventSource, calendarID, eve
 	return calendar.StampCancellation(ev, readAt), nil
 }
 
-// reproject は、Google で変わっていた予定を読み直し、Projection の行に写す（ADR-0026 の表の ErrEventChanged と ErrEventGone）。
+// reproject は、Google で変わっていた予定を読み直し、Projection の行に写す（ADR-0028 の表の ErrEventChanged と ErrEventGone）。
 // 読めなければ写さず、同期に任せる。Google で取り消されていれば、取り消しの状態の行にする。
 func reproject(ctx context.Context, source calendar.EventSource, projections Projections, now func() time.Time, t tx.Transactor,
 	cal calendar.ExternalCalendar, eventID string) error {
@@ -201,7 +201,7 @@ func reproject(ctx context.Context, source calendar.EventSource, projections Pro
 	})
 }
 
-// writeError は、Google が書き込みを拒んだときの EventWriter のエラーを、ADR-0026 の表の応答のエラーにする。
+// writeError は、Google が書き込みを拒んだときの EventWriter のエラーを、ADR-0028 の表の応答のエラーにする。
 func writeError(err error) error {
 	switch {
 	case errors.Is(err, calendar.ErrEventChanged):
