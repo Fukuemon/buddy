@@ -60,12 +60,13 @@ const ScheduleEditForm = ({
     shouldFocusError: false,
   })
 
-  // 繰り返しの回を保存すると、回は新しい単発の予定に置き換わるので、保存した予定の ID の詳細へ戻る
-  const backToDetail = (scheduleId: Schedule['id'] = schedule.id) =>
+  // 繰り返しの回を保存すると、回は新しい単発の予定に置き換わるので、保存した予定の ID の詳細へ戻る。
+  // Google カレンダーの予定の詳細はカレンダーの期間の一覧から引くので、保存した日をカレンダーの日にする
+  const backToDetail = (scheduleId: Schedule['id'] = schedule.id, date = calendarSearch.date) =>
     navigate({
       to: '/schedule/$scheduleId',
       params: { scheduleId },
-      search: calendarSearch,
+      search: { ...calendarSearch, date },
     })
 
   return (
@@ -80,7 +81,7 @@ const ScheduleEditForm = ({
       onSubmit={async (values) => {
         try {
           const saved = await updateSchedule.mutateAsync({ input: toScheduleInput(values), etag })
-          await backToDetail(saved.id)
+          await backToDetail(saved.id, values.scheduleDate)
         } catch (error) {
           if (!isGoogleEventChanged(error)) return
           const current = await api.schedules.get(facilityId, schedule.id).catch(() => undefined)

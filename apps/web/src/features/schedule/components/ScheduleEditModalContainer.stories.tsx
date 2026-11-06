@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
+import { createMemoryHistory } from '@tanstack/react-router'
 
 import { ApiError, type BuddyApi } from '#/api/BuddyApi'
 import { createFakeBuddyApi } from '#/api/fake/fakeBuddyApi'
@@ -106,6 +107,17 @@ export const GooglePrimary: Story = {
   parameters: route({
     url: '/schedule/gcal-schedule-1/edit',
     api: createFakeBuddyApi({ sourceMode: 'google_primary' }),
+  }),
+}
+
+/** カレンダーで予定と別の日を開いた後の、Google カレンダーの予定の編集。保存すると、予定の日のカレンダーで詳細を開く。 */
+export const GooglePrimaryFromOtherDay: Story = {
+  parameters: route({
+    url: '/schedule/gcal-schedule-1/edit?view=day&date=2020-01-06',
+    api: createFakeBuddyApi({ sourceMode: 'google_primary' }),
+    history: createMemoryHistory({
+      initialEntries: ['/schedule/gcal-schedule-1/edit?view=day&date=2020-01-06'],
+    }),
   }),
 }
 

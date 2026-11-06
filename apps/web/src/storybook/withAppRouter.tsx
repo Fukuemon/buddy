@@ -8,6 +8,7 @@ import {
   createRouter,
   stripSearchParams,
   useParams,
+  type RouterHistory,
 } from '@tanstack/react-router'
 import type { Decorator, StoryContext } from '@storybook/react-vite'
 import { useState } from 'react'
@@ -62,6 +63,8 @@ export type AppRouterParameters = {
   receiptApi?: ReceiptApi
   /** 描く前に query の cache に置く値。 */
   seed?: (queryClient: QueryClient) => void
+  /** テストが移った先の URL を読むための履歴。デフォルトは url から作る。 */
+  history?: RouterHistory
 }
 
 /** decorator が受ける story。route の params を args に足して描けるよう、args を受ける形にする。 */
@@ -211,7 +214,7 @@ const createStoryRouter = (Story: StoryFn, params: AppRouterParameters) => {
       patients.addChildren([patientsNew]),
       patientDetail,
     ]),
-    history: createMemoryHistory({ initialEntries: [params.url] }),
+    history: params.history ?? createMemoryHistory({ initialEntries: [params.url] }),
     context,
   })
   return { router, queryClient }

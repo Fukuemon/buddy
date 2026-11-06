@@ -12,6 +12,7 @@ const {
   Forbidden,
   GooglePrimary,
   GooglePrimaryChangedInGoogle,
+  GooglePrimaryFromOtherDay,
   GooglePrimaryRecurrenceUnsupported,
   NotFound,
   SuspendedStaff,
@@ -74,6 +75,21 @@ describe('ScheduleEditModalContainer', () => {
 
     await waitFor(() => expect(update).toHaveBeenCalledOnce())
     expect(update.mock.calls[0]?.[3]).toBe('"etag-schedule-1"')
+  })
+
+  it('カレンダーで別の日を開いていても、Google カレンダーの予定を保存したら、予定の日のカレンダーで詳細を開く', async () => {
+    const { api, history } = GooglePrimaryFromOtherDay.parameters.appRouter as AppRouterParameters
+    if (api === undefined || history === undefined)
+      throw new Error('story にフェイクの API と履歴が無い')
+    const update = vi.spyOn(api.schedules, 'update')
+    render(<GooglePrimaryFromOtherDay />)
+
+    await userEvent.click(await screen.findByTestId('schedule-edit-submit'))
+
+    await waitFor(() => expect(history.location.pathname).toBe('/schedule/gcal-schedule-1'))
+    const savedDate = update.mock.calls[0]?.[2].startsAt.slice(0, 10)
+    expect(savedDate).toBeDefined()
+    expect(new URLSearchParams(history.location.search).get('date')).toBe(savedDate)
   })
 
   it('編集を開いた後に Google カレンダーで予定が変わっていたら、入力を残して最新の予定を出し、最新の etag で保存し直す', async () => {
