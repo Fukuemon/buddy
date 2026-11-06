@@ -1,8 +1,8 @@
 /* Scalar の色と字を、ドキュメントサイトと同じ buddy のトークン（tokens.css）に当てる */
 :root {
   --scalar-custom-header-height: 48px;
-  --scalar-font: var(--font-family-sans);
-  --scalar-font-code: var(--font-family-mono);
+  --scalar-font: var(--buddy-primitive-font-family-sans);
+  --scalar-font-code: var(--buddy-primitive-font-family-mono);
 }
 .light-mode {
   --scalar-color-accent: var(--buddy-color-primary);
@@ -29,7 +29,7 @@ body {
   padding: 0 16px;
   background: var(--buddy-color-primary);
   color: #fff;
-  font-family: var(--font-family-sans);
+  font-family: var(--buddy-primitive-font-family-sans);
   font-size: 14px;
 }
 .api-header a {

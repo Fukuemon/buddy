@@ -12,7 +12,7 @@ export type ScheduleLatestNoticeProps = {
 
 /**
  * 予定を開いた後に Google カレンダーで予定が変わっていたとき（409 の google_event_changed）に、編集のフォームの上に出す最新の予定。
- * 日時、タイトル（訪問の予定では利用者とサービス内容）、予定の職員を出す。入力は消さず、職員が見比べて保存し直す（ADR-0026）。
+ * 日時、タイトル（訪問の予定では利用者とサービス内容）、予定の職員を出す。入力は消さず、職員が見比べて保存し直す（ADR-0028）。
  */
 export const ScheduleLatestNotice = ({
   latest,

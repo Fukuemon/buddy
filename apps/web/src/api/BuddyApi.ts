@@ -101,7 +101,7 @@ export interface BuddyApi {
   }
   /**
    * 予定。google_primary の事業所では、list と get は同期が写した Google カレンダーの予定（fromGoogleCalendar が true、etag を持つ）を返し、
-   * create、update、cancel は Google カレンダーに書き、書けたときだけ成功する（ADR-0026）。
+   * create、update、cancel は Google カレンダーに書き、書けたときだけ成功する（ADR-0028）。
    * 書けないときは、予定の API の code（google_event_changed、google_write_pending、cutover_open など）を持つ ApiError を投げる。
    */
   schedules: {

@@ -17,7 +17,7 @@ ID ブローカーは、ログインの画面、ログインの失敗の画面�
   - ログインの失敗の画面の文言は、web の `AuthErrorMessage` の `failed` から手で写している。登録されていないメールとブローカーの中の失敗を区別させないため、2 つの文言は同じでなければならない。
 - 画面を web に移すと、Hydra の admin API でログインを確定させる資格を、web の BFF が持つことになる。
 - `packages/ui` には、業務と buddy に固有の名前を持たない Base と Case のコンポーネントだけを置く。buddy の画面の帯（`SiteHeader`）も Domain として `apps/web` に残した。
-  - ADR-0013: [packages/ui に、ドメインを持たない Base と Case のコンポーネントを置き、DADS の指針から外れる 3 点は理由を DESIGN.md に書く](0013-ui-components.md)
+  - ADR-0014: [packages/ui に、ドメインを持たない Base と Case のコンポーネントを置き、DADS の指針から外れる 3 点は理由を DESIGN.md に書く](0014-ui-components.md)
 
 ## Decision
 
@@ -32,7 +32,7 @@ ID ブローカーは、ログインの画面、ログインの失敗の画面�
 - `apps/broker` はコンテナを持たないので、ADR-0011 のコンテナとサービスの名前の規則の対象の外にする。
   - ADR-0011: [画面を apps/ に、API を services/ に置き、ディレクトリの名前でサービスの名前をそろえる](0011-directories-and-service-names.md)
 - ロゴと理由を出すカードのコンポーネントと、ログインの失敗（web の `failed`）の文言は `apps/broker` に置き、web は `@buddy/broker` から読む。web だけが出す理由（事業所に登録されていない、試行の回数の上限を超えた）の文言は web に残し、カードに渡す。
-  - 理由: 文言とカードは buddy に固有なので、ADR-0013 の規則で `packages/ui` の Case にできない。web とブローカーのどちらかに置くなら、ID ブローカーが出す画面のソースの側に置き、web が読む向きにする。web の側に置くと、`apps/broker` のビルドが web のコードを読むことになる。
+  - 理由: 文言とカードは buddy に固有なので、ADR-0014 の規則で `packages/ui` の Case にできない。web とブローカーのどちらかに置くなら、ID ブローカーが出す画面のソースの側に置き、web が読む向きにする。web の側に置くと、`apps/broker` のビルドが web のコードを読むことになる。
 
 ## Verification
 
@@ -51,7 +51,7 @@ ID ブローカーは、ログインの画面、ログインの失敗の画面�
 | HTML と CSS を `services/broker` の中でファイルに分ける | 生成の手順が無い | 画面のソースが `services/` に残り、web からの手の写しも残る |
 | 画面を別のコンテナにする | 画面を React で動かせる | 画面は 3 つだが、コンテナと、認証を確定させる ID ブローカーの新しい API と、その認可が増える |
 | 画面を web に移す | 画面のアプリが 1 つで済む | web の BFF が Hydra の admin API の資格を持つ |
-| ログインの失敗の案内を `packages/ui` の Case にする | web が `apps/` の別のパッケージに依存しない | buddy に固有の文言とロゴを `packages/ui` に持ち込み、ADR-0013 の規則に反する |
+| ログインの失敗の案内を `packages/ui` の Case にする | web が `apps/` の別のパッケージに依存しない | buddy に固有の文言とロゴを `packages/ui` に持ち込み、ADR-0014 の規則に反する |
 
 ## Consequences
 

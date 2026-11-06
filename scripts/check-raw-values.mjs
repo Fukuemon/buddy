@@ -1,7 +1,7 @@
 #!/usr/bin/env node
-// 画面とコンポーネントのコードに、色の値と基本の段の変数の名前が直に書かれていないかを確認する。
+// 画面とコンポーネントのコードに、色の値とプリミティブトークンの変数の名前が直に書かれていないかを確認する。
 // 写した後に、TARGETS、EXCLUDES、BASE_PREFIXES を、自分のリポジトリに合わせて書き換える。
-// 使い方: node check-raw-values.mjs [--prefix <基本の段の接頭辞>]... [--exclude <パス>]... [ファイルかディレクトリ]...
+// 使い方: node check-raw-values.mjs [--prefix <プリミティブトークンの接頭辞>]... [--exclude <パス>]... [ファイルかディレクトリ]...
 //   引数のパスを省くと TARGETS を読む。--prefix と --exclude を渡すと、BASE_PREFIXES と EXCLUDES の代わりに使う。
 //   ディレクトリは、EXTENSIONS の拡張子のファイルを再帰で読む。node_modules と、. で始まるディレクトリは読まない。
 // 見つけるもの: 16 進の色（#fff、#ffffff、#ffffff80）、色の関数（rgb()、hsl()、oklch()、color() など）、BASE_PREFIXES で始まる変数の名前。
@@ -12,30 +12,21 @@
 //   言語の構文は読まず、文字列とコメントの区切りを近似で見分ける。見つからない書き方と、誤って色と判定する書き方がありうる。
 //     mdx と HTML の本文の「PR #165」のように、16 進に見える番号は色と判定する。その行は ALLOW_MARK で外す。
 //     JSX の本文の ' （Don't）の後と、正規表現のリテラルの中の ` の後は、文字列の中として読むので、同じ行のコメントの中の色を判定する。
+// 違反の行には、PRINCIPLE_ID（デザインシステムの文書の原則の ID）を出す。
 // 終了コード: 0 は見つからなかった、1 は見つかった、2 はパスが読めないか、引数が正しくない
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { extname, join, relative, resolve, sep } from "node:path";
 
 // 画面とコンポーネントのコードの置き場
 const TARGETS = ["./apps/web/src", "./apps/broker/src", "./packages/ui/src"];
-// トークンの段のファイルのように、値と基本の段の名前を持ってよい置き場
+// トークンの層のファイルのように、値とプリミティブトークンの名前を持ってよい置き場
 const EXCLUDES = ["./packages/ui/src/tokens", "./apps/web/src/api/generated"];
-// 基本の段の変数の名前の接頭辞
-// DADS の基本の段とテーマの段は、どちらも --color- で始まるので、DADS の色の接頭辞を細かく分けて並べる
-const BASE_PREFIXES = [
-  "--color-primitive-",
-  "--color-neutral-",
-  "--color-key-",
-  "--color-semantic-",
-  "--font-family-",
-  "--font-size-",
-  "--font-weight-",
-  "--line-height-",
-  "--border-radius-",
-  "--elevation-",
-];
+// プリミティブトークンの変数の名前の接頭辞
+const BASE_PREFIXES = ["--buddy-primitive-"];
 const EXTENSIONS = [".css", ".scss", ".js", ".jsx", ".ts", ".tsx", ".vue", ".svelte", ".astro", ".html", ".mdx"];
 const ALLOW_MARK = "design-system-allow";
+// 違反の行に出す、デザインシステムの文書の原則の ID
+const PRINCIPLE_ID = "COLOR-TOKEN";
 
 const prefixes = [];
 const excludes = [];
@@ -60,7 +51,7 @@ const patterns = [
   { label: "色の値", re: /(?<![A-Za-z0-9&.#-])#(?:[0-9a-fA-F]{8}|[0-9a-fA-F]{6}|[0-9a-fA-F]{3,4})(?![A-Za-z0-9-])/g },
   // CSS の関数の名前は、大文字と小文字を区別しない。色の値と同じく、_ の直後も色にする
   { label: "色の関数", re: /(?<![A-Za-z0-9.-])(?:rgba?|hsla?|hwb|lab|lch|oklab|oklch|color)\(/gi },
-  ...basePrefixes.map((p) => ({ label: "基本の段の名前", re: new RegExp(`${escape(p)}[\\w-]+`, "g") })),
+  ...basePrefixes.map((p) => ({ label: "プリミティブトークンの名前", re: new RegExp(`${escape(p)}[\\w-]+`, "g") })),
 ];
 
 const isExcluded = (abs) => excluded.some((e) => abs === e || abs.startsWith(e + sep));
@@ -186,7 +177,7 @@ for (const file of files) {
     for (const { label, re } of patterns) {
       for (const m of line.matchAll(re)) {
         found++;
-        console.log(`${relative(".", file)}:${i + 1}: ${label} ${m[0]}`);
+        console.log(`${relative(".", file)}:${i + 1}: ${PRINCIPLE_ID} ${label} ${m[0]}`);
       }
     }
   });
@@ -194,7 +185,7 @@ for (const file of files) {
 
 if (allowed) console.log(`${ALLOW_MARK} で外した行: ${allowed}`);
 if (found) {
-  console.log(`${found} か所に、色の値か基本の段の名前がある。意味の段かテーマの段の名前に替える`);
+  console.log(`${found} か所に、色の値かプリミティブトークンの名前がある。セマンティックトークンかテーマ変数の名前に替える`);
   process.exit(1);
 }
-console.log(`${files.length} 個のファイルに、色の値と基本の段の名前はなかった`);
+console.log(`${files.length} 個のファイルに、色の値とプリミティブトークンの名前はなかった`);

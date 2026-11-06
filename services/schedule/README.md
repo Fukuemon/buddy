@@ -153,7 +153,7 @@ Google カレンダーの Worker は、`--entrypoint /usr/local/bin/calendar-wor
 
 API は、Google カレンダーの書き出しと同期を動かさない。  
 書き出しと同期は、`cmd/calendar-worker` が役割ごとのプロセスで動かす。  
-ADR-0029: [Google カレンダーの書き出しと同期を、予定の API と同じイメージの Worker のコマンドで役割ごとに動かし、繰り返しを Worker のコマンドに集める](../../docs/adr/0029-calendar-worker.md)
+ADR-0031: [Google カレンダーの書き出しと同期を、予定の API と同じイメージの Worker のコマンドで役割ごとに動かし、繰り返しを Worker のコマンドに集める](../../docs/adr/0031-calendar-worker.md)
 
 API と同じ `DB_` と `GOOGLE_CALENDAR_` の変数を入れた別のターミナルで、役割を引数に渡して起動する。
 

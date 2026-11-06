@@ -43,10 +43,12 @@ describe('StaffCreateDialogContainer', () => {
     expect(screen.getByTestId('staff-new-visits-non-visiting')).toBeChecked()
   })
 
-  it('名前が空でメールアドレスの形でなければ、送らずに欄ごとの誤りを出し、直すと消す', async () => {
+  it('名前が空でメールアドレスの形でなければ、送らずに欄ごとの誤りを出し、最初の誤りの欄へフォーカスを移し、直すと消す', async () => {
     render(<Default />)
     await fill(' ', 'aoki', '090-1234')
     await userEvent.click(screen.getByTestId('staff-new-submit'))
+    expect(screen.getByTestId('staff-new-name')).toHaveFocus()
+    expect(screen.getByTestId('staff-new-name')).toHaveAccessibleDescription('名前を入れてください')
     expect(screen.getByTestId('staff-new-error-name')).toHaveTextContent('名前を入れてください')
     expect(screen.getByTestId('staff-new-error-email')).toHaveTextContent(
       'メールアドレスの形で入れてください',

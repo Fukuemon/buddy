@@ -25,7 +25,7 @@ type Cutovers interface {
 // Projections は、Google が返した予定を Projection の行に写し、変えるか取り消す予定の行を読む。実装は postgres.CalendarProjectionRepository である。
 type Projections interface {
 	// Put は、p の行を足すか、同じカレンダーと Google の予定の ID の行を p にする。行を書き直すのは、行の GoogleUpdatedAt が nil か、
-	// p の GoogleUpdatedAt の方が新しいときだけである（ADR-0026）。
+	// p の GoogleUpdatedAt の方が新しいときだけである（ADR-0028）。
 	Put(ctx context.Context, p scheduleview.Projection) error
 	// GetBySchedule は、事業所 facilityID の外していないカレンダーの、一覧での予定の ID が id の行を返す。無いときは apperr.ErrNotFound を返す。
 	GetBySchedule(ctx context.Context, facilityID, id string) (scheduleview.ProjectionDetail, error)

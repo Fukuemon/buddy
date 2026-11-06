@@ -52,7 +52,7 @@ const submitAndBack = async (page: Page) => {
 }
 
 // シードの 4 つ目の事業所は Google カレンダーを予定の正本にし（google_primary）、石田のカレンダーを結び付けてある。
-// 切り替えを完了すると事業所は buddy を正本にして戻せないので、やめる確認を先に、完了を最後に、順に流す（ADR-0028）。
+// 切り替えを完了すると事業所は buddy を正本にして戻せないので、やめる確認を先に、完了を最後に、順に流す（ADR-0030）。
 test.describe('予定の正本の切り替え', () => {
   test.use({ storageState: ISHIDA_STATE })
   test.describe.configure({ mode: 'serial' })

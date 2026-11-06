@@ -8,7 +8,7 @@ import (
 	"github.com/Fukuemon/buddy/services/schedule/internal/tx"
 )
 
-// CancelCutover は、切り替えをやめる（ADR-0028）。
+// CancelCutover は、切り替えをやめる（ADR-0030）。
 type CancelCutover struct {
 	facilities FacilityModes
 	cutovers   CutoverRepository

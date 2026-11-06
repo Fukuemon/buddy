@@ -65,6 +65,8 @@ const ScheduleCreateForm = ({
   const form = useForm<ScheduleFormValues>({
     defaultValues: createScheduleFormValues({ kind: search.kind, ...initial }),
     resolver: zodResolver(schema),
+    // 誤りの欄へのフォーカスは ScheduleForm が移す。react-hook-form は閉じた編集の欄の誤りにフォーカスを移せない
+    shouldFocusError: false,
   })
 
   const changeKind = (kind: ScheduleKind) => {
@@ -125,7 +127,7 @@ const ScheduleCreateForm = ({
  * 職員、利用者、サービスコードの一覧を読み終えるまでは読み込み中の表示を出し、読めなければフォームの代わりに失敗の文を出す。
  * 一度読めた後の読み直しが失敗しても、読めた一覧でフォームを出したままにし、入力を消さない。
  * 職員の候補は、ログインした職員が予定を作れる職員に限る。URL の staffId が候補の外の職員を指すときは、未選択で開く。
- * Google カレンダーを予定の正本にする事業所（google_primary）でも同じフォームを出し、予定の API が Google カレンダーに書く（ADR-0026）。
+ * Google カレンダーを予定の正本にする事業所（google_primary）でも同じフォームを出し、予定の API が Google カレンダーに書く（ADR-0028）。
  * 予定の ID は、フォームを開いたときに決め、Google カレンダーに書けたかを確認できずに送り直すときも同じ ID を送る。
  */
 export const ScheduleCreateModalContainer = () => {

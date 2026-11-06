@@ -42,11 +42,11 @@ verified_commit: 4e53ca5
 
 ### コードの構成
 
-パッケージの分け方は ADR-0018 と ADR-0023 で決めた。  
+パッケージの分け方は ADR-0020 と ADR-0025 で決めた。  
 依存してよい向きは [コードベースの構造](https://github.com/Fukuemon/buddy/blob/develop/context/codebase.md) にある。
 
-- ADR-0018: [予定の API を機能ごとのパッケージに分ける](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0018-schedule-api-packages.md)
-- ADR-0023: [予定の書き込みのモデルを schedule に、読み取りのモデルを scheduleview に置く](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0023-schedule-write-read-models.md)
+- ADR-0020: [予定の API を機能ごとのパッケージに分ける](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0020-schedule-api-packages.md)
+- ADR-0025: [予定の書き込みのモデルを schedule に、読み取りのモデルを scheduleview に置く](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0025-schedule-write-read-models.md)
 
 - `internal/features/` には、次の機能のパッケージを置く。
   - `organization`、`staff`、`servicecode`、`patient`、`visit`、`schedule`、`scheduleview`
@@ -55,11 +55,11 @@ verified_commit: 4e53ca5
   - `access`、`principal`、`config`、`assemble`、テストの `inmem` も、`internal/` の直下に置く。
 - `assemble` は、リポジトリ、HTTP のハンドラ、書き出しの `Exporter`、同期の `Syncer` を組み立てる。
   - `cmd/api` は、`assemble` が作った値で、HTTP のサーバーを起動する。
-  - ADR-0018: [予定の API を機能ごとのパッケージに分ける](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0018-schedule-api-packages.md)
+  - ADR-0020: [予定の API を機能ごとのパッケージに分ける](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0020-schedule-api-packages.md)
   - `cmd/calendar-worker` は、`assemble` が作った `Exporter` の `ExportDue` か `Syncer` の `SyncDue` を、役割（`export`、`sync`）ごとのプロセスで、常駐か 1 回の形で繰り返し呼ぶ。
     - 常駐も 1 回の形も、取れるものが無くなるまで呼ぶ。常駐は、その後に間隔を待つ。
     - `cmd/api` と同じイメージに入れ、HTTP のポートを持たない。
-    - ADR-0029: [Google カレンダーの書き出しと同期を、予定の API と同じイメージの Worker のコマンドで役割ごとに動かし、繰り返しを Worker のコマンドに集める](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0029-calendar-worker.md)
+    - ADR-0031: [Google カレンダーの書き出しと同期を、予定の API と同じイメージの Worker のコマンドで役割ごとに動かし、繰り返しを Worker のコマンドに集める](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0031-calendar-worker.md)
 
 次の図は、2 つのコマンドが `assemble` を通して機能のパッケージとアダプタを使う構成を示す。  
 矢印は、呼ぶ向きか、組み立てる向きである。  
@@ -91,7 +91,7 @@ flowchart TB
   adapters -- "インターフェースを実装する" --> features
 ```
 
-`kernel` は、ADR-0018 の「`apperr` と同じ段の小さなパッケージ」に当たる。  
+`kernel` は、ADR-0020 の「`apperr` と同じ段の小さなパッケージ」に当たる。  
 `kernel.Finder[T]` は、ID で 1 件を読むメソッドを 1 つだけ持つインターフェースである。  
 機能のパッケージは、ほかの機能のエンティティをこの形で受ける。  
 同じ形のインターフェースを機能ごとに書かずに済ませるためである。
@@ -101,10 +101,10 @@ flowchart TB
 ### テーブルの構成
 
 カラム、制約、インデックスは、マイグレーションから生成した[テーブル定義書](https://github.com/Fukuemon/buddy/blob/develop/docs/db/schedule/README.md)にある。  
-DB は PostgreSQL 18 で、マイグレーションの作り方は ADR-0019 で決めた。  
+DB は PostgreSQL 18 で、マイグレーションの作り方は ADR-0021 で決めた。  
 テーブルとカラムの説明は、マイグレーションの `COMMENT ON` に書く。
 
-- ADR-0019: [予定の API の DB を PostgreSQL にし、見直したテーブルでマイグレーションを作り直す](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0019-schedule-api-postgresql.md)
+- ADR-0021: [予定の API の DB を PostgreSQL にし、見直したテーブルでマイグレーションを作り直す](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0021-schedule-api-postgresql.md)
 
 次の図は、予定の API の全てのテーブルと、その間の関係を示す。
 
@@ -178,7 +178,7 @@ erDiagram
 予定と繰り返しの予定の `date` は開始の日で、翌日に終わる予定は `ends_next_day` を true にする。  
 日付で絞る一覧、インデックス（`facility_id`、`date`、`start_time`）、繰り返しの規則は、開始の日のまま使う。
 
-- ADR-0030: [日をまたぐ予定を、開始の日の予定に「終了が翌日か」の印を付けて持つ](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0030-overnight-schedule.md)
+- ADR-0032: [日をまたぐ予定を、開始の日の予定に「終了が翌日か」の印を付けて持つ](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0032-overnight-schedule.md)
 
 時刻の CHECK は、`ends_next_day` が false なら `start_time < end_time` を、true なら `end_time < start_time` を求める。  
 開始と終了の時刻が同じ予定は、どちらでも拒む。
@@ -202,7 +202,7 @@ NULL を許し、値があれば一意にする。
 マイグレーションで足したときに今ある事業所を `buddy_primary` にし、後から足す事業所のデフォルトを `google_primary` にする。  
 値による書き込みの制限は [事業所の正本のモードと予定の書き込み](#事業所の正本のモードと予定の書き込み) にある。
 
-- ADR-0026: [Google カレンダーとの連携を、事業所ごとの正本のモードで分ける](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0026-google-calendar-sync.md)
+- ADR-0028: [Google カレンダーとの連携を、事業所ごとの正本のモードで分ける](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0028-google-calendar-sync.md)
 
 `teams.color` は、チームの色を持つ。  
 値と選び方は [チームの色](#チームの色) にある。
@@ -444,7 +444,7 @@ sequenceDiagram
 書き込みのモデルは、予定の枠、訪問の情報の ID、キャンセルの有無、更新の番号を持ち、種類、職員、訪問の情報の名前を結合しない。  
 名前を結合した予定（`scheduleview.Detail`、`scheduleview.RecurringDetail`）は、`scheduleview` だけが読み取りのモデルとして返す。
 
-- ADR-0023: [予定の書き込みのモデルを schedule に、読み取りのモデルを scheduleview に置く](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0023-schedule-write-read-models.md)
+- ADR-0025: [予定の書き込みのモデルを schedule に、読み取りのモデルを scheduleview に置く](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0025-schedule-write-read-models.md)
 
 予定の作成、変更、繰り返しの予定の作成、回の置き換えの操作は、書いた予定を名前を結合しない形（`schedule.Schedule`、`schedule.RecurringSchedule`）で返す。  
 `httpapi` は、書いたトランザクションを終えた後に、`scheduleview` の `Get` か `GetRecurring` で予定を読み直し、レスポンスを作る。  
@@ -466,9 +466,9 @@ Google カレンダーの手動の取り込みの確定も、同じ規則で拒�
 予定の作成と繰り返しの予定の作成は、パスの事業所の行のロックから始める。  
 予定の変更、キャンセル、回の置き換えは、予定か繰り返しの予定の行を排他のロックで読んでから、その事業所の行を共有のロックで読む。  
 予定の行から事業所が決まるので、予定の行、事業所の行の順にする。  
-モードを切り替える切り替えの完了は、ADR-0023 のとおり事業所の行に排他のロックを取るので、確認した後に書き終えるまでモードは変わらない。
+モードを切り替える切り替えの完了は、ADR-0025 のとおり事業所の行に排他のロックを取るので、確認した後に書き終えるまでモードは変わらない。
 
-- ADR-0023: [予定の書き込みのモデルを schedule に、読み取りのモデルを scheduleview に置く](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0023-schedule-write-read-models.md)
+- ADR-0025: [予定の書き込みのモデルを schedule に、読み取りのモデルを scheduleview に置く](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0025-schedule-write-read-models.md)
 
 ### 予定の一覧の読み元
 
@@ -478,7 +478,7 @@ Google カレンダーの手動の取り込みの確定も、同じ規則で拒�
 どちらの読み元でも `scheduleview.Detail` の同じ型で返すので、画面と照合は読み元を知らずに予定を出せる。  
 予定には読み元（`source`）を付け、画面は `google_calendar` の予定に変更の操作を出さない。
 
-- ADR-0023: [予定の書き込みのモデルを schedule に、読み取りのモデルを scheduleview に置く](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0023-schedule-write-read-models.md)
+- ADR-0025: [予定の書き込みのモデルを schedule に、読み取りのモデルを scheduleview に置く](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0025-schedule-write-read-models.md)
 
 `google_primary` の事業所の一覧は、次の順で Projection を読む。
 
@@ -501,7 +501,7 @@ Google カレンダーの手動の取り込みの確定も、同じ規則で拒�
    - 保留の版の訪問の情報（`pending_visit_info_id`）は使わない。確定した版の無い記録と、訪問の情報を持たない記録（通常の予定）の予定は、記録の無い予定と同じくタイトルを読み替える。
    - タイトルの利用者名とサービス内容が、記録の訪問の情報の利用者とサービスコードと違うときは、理由（`title_mismatch`）を付ける。Google でタイトルを変えた予定が当たり、訪問のタイトルを読めない予定も含む。
    - 比べる前に、取り込みと同じ規則（`gcaltitle.NormalizeClient`、`ServiceKey`）で表記をそろえる。
-   - ADR-0026: [Google カレンダーとの連携を、事業所ごとの正本のモードで分ける](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0026-google-calendar-sync.md)
+   - ADR-0028: [Google カレンダーとの連携を、事業所ごとの正本のモードで分ける](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0028-google-calendar-sync.md)
 7. 記録の訪問の情報が無い訪問のタイトルの予定は、タイトルのサービス内容と利用者名で、サービスコードのマスタと事業所の利用者（利用の終了を除く）を引く。
    - 引けた予定は、利用者とサービスコードの訪問の情報を付けた訪問の予定にする。主訪問者は予定の職員にし、同行者と訪問の区分は付けない。
    - 引けない予定は、訪問の情報を付けず、Google のタイトルの通常の予定にして、理由（`service_code_not_found`、`patient_not_found`、`patient_ambiguous`）を付ける。タイトルを読めない予定には `title_unreadable` を付ける。

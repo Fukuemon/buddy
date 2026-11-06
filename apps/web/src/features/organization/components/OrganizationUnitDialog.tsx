@@ -1,4 +1,10 @@
-import { DotLabel, FormField, formFieldControlClassName, InputDialog } from '@buddy/ui'
+import {
+  DotLabel,
+  FormField,
+  formFieldControlClassName,
+  InputDialog,
+  useFocusFirstInvalid,
+} from '@buddy/ui'
 import { useId, useRef, useState } from 'react'
 
 import { TEAM_COLORS, type TeamColor } from '#/api/types'
@@ -46,6 +52,7 @@ export const OrganizationUnitDialog = ({
 }: OrganizationUnitDialogProps) => {
   const prefix = `organization-list-${kind}`
   const formId = useId()
+  const { ref: formRef, focusFirstInvalid } = useFocusFirstInvalid<HTMLFormElement>()
   const nameRef = useRef<HTMLInputElement>(null)
   const [name, setName] = useState(initial.name)
   const [color, setColor] = useState(initial.color)
@@ -55,6 +62,7 @@ export const OrganizationUnitDialog = ({
     const trimmed = name.trim()
     if (trimmed === '') {
       setNameMissing(true)
+      focusFirstInvalid()
       return
     }
     onSubmit(color === undefined ? { name: trimmed } : { name: trimmed, color })
@@ -85,6 +93,7 @@ export const OrganizationUnitDialog = ({
           event.preventDefault()
           submit()
         }}
+        ref={formRef}
       >
         <FormField
           error={isNameMissing ? NAME_REQUIRED_MESSAGE : undefined}

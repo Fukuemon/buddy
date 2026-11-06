@@ -1,6 +1,6 @@
 /*
  * モックの中の画面の共通の見た目。mock.css と tokens.css の後に読む。
- * 色は tokens.css の buddy の意味のトークン（packages/ui と同じ値）を、角丸と書体は DADS の基本のトークンを --wf-* に当てて使う。
+ * 色は tokens.css の buddy のセマンティックトークン（packages/ui と同じ値）を、角丸と書体はプリミティブトークンを --wf-* に当てて使う。
  * 部品の形は実装の形をまねず、箱と線で配置と状態だけを示す。
  * 画面の幅による切り替えは、.screen の幅を測る @container screen で書く。
  */
@@ -32,11 +32,11 @@
   --wf-team-purple: var(--buddy-color-team-purple);
   --wf-team-green: var(--buddy-color-team-green);
   --wf-team-lime: var(--buddy-color-team-lime);
-  --wf-radius: var(--border-radius-8);
+  --wf-radius: var(--buddy-primitive-border-radius-8);
 
   color: var(--wf-ink);
   /* Web フォントは読み込まないので、DADS の書体（Noto Sans JP）がデバイスに無ければ sans-serif で描く */
-  font-family: var(--font-family-sans);
+  font-family: var(--buddy-primitive-font-family-sans);
 }
 
 /* 文字の大きさは body に置き、rem の基準（16px）をトークンの角丸と同じにする */

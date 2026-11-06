@@ -3,6 +3,8 @@
 [予定の詳細](index.md) の項目と、web の型と OpenAPI の項目の対応。  
 OpenAPI の項目は、`getSchedule`（`GET /v1/schedules/{schedule_id}`）のレスポンスの `Schedule` で書く。
 
+## 値の対応
+
 | 要素名 | 表示する値 | web の型の項目 | OpenAPI の項目 |
 | --- | --- | --- | --- |
 | 種類 | 「通常」か「訪問」 | `Schedule.kind` | `schedule_type` |
@@ -16,9 +18,6 @@ OpenAPI の項目は、`getSchedule`（`GET /v1/schedules/{schedule_id}`）の�
 | キャンセルの理由 | 理由 | `Schedule.cancel.reason` | `cancel.reason` |
 | Google カレンダーの案内、キャンセルの説明 | Google カレンダーの予定か | `Schedule.fromGoogleCalendar` | `listSchedules` の `Schedule.source` が `google_calendar` |
 | 確認が必要な理由 | 理由と直し方 | `Schedule.reviewReason` | `listSchedules` の `Schedule.review_reason` |
-| 予定をキャンセル、編集 | 繰り返しの規則を buddy で表せない予定か | `Schedule.reviewReason` が `recurrence_unsupported` | `listSchedules` の `Schedule.review_reason` |
-| 予定をキャンセル、編集 | 予定の正本を切り替えている間か | `ScheduleList.cutover` が `null` でない | `listSchedules` の `cutover` |
-| 予定をキャンセル | 繰り返しの予定の 1 回か | `Schedule.recurringOccurrence` | なし。web のサーバーが、回の ID（`occurrenceId`）の予定に付ける |
 | キャンセルする予定の日時 | 年月日、曜日、開始と終了の時刻 | `Schedule.startsAt`、`Schedule.endsAt` | `date`、`start_time`、`end_time` |
 | キャンセルの理由の欄 | 理由 | `BuddyApi.schedules.cancel` の `reason` | `cancelSchedule` の本文の `reason` |
 | （画面に出さない） | 事業所が予定を Google カレンダーで管理しているか | `Facility.sourceMode` | `getFacility` の `Facility.source_mode` |
@@ -38,13 +37,8 @@ OpenAPI の項目は、`getSchedule`（`GET /v1/schedules/{schedule_id}`）の�
   - web の `BuddyApi.schedules.cancel` が呼び、本文に `reason` と、`etag` が `null` でなければ `etag` を送る。処理は `apps/web/src/api/http/httpBuddyApi.ts` にある。
   - `reason` は、理由の前後の空白を除いた値である。
   - `etag` は、キャンセルのダイアログを開いたときに読んでいた予定の `Schedule.etag` である。`buddy_primary` の事業所の予定は `etag` を持たないので、`null` を渡して送らない。
-  - `google_primary` の事業所では、予定の API が Google カレンダーの予定を消し、消せたときだけ成功を返す。理由は Google カレンダーに書けないので保存しない。扱いは [ADR-0026](../../adr/0026-google-calendar-sync.md) にある。
+  - `google_primary` の事業所では、予定の API が Google カレンダーの予定を消し、消せたときだけ成功を返す。理由は Google カレンダーに書けないので保存しない。扱いは [ADR-0028](../../adr/0028-google-calendar-sync.md) にある。
   - 成功すると、予定の 1 件の取得の結果を捨て、事業所の予定の取得の結果を捨てて取り直す。処理は `apps/web/src/features/schedule/queries.ts` の `useCancelSchedule` にある。
-- キャンセルのボタンは `canCancelSchedule` が、編集のボタンは `canChangeSchedule` が出し分ける。
-  - どちらも `apps/web/src/features/schedule/lib/scheduleWritable.ts` にある。
-  - `canChangeSchedule` は、キャンセルした予定、`cutover` が `null` でない間、`reviewReason` が `recurrence_unsupported` の予定で false を返す。
-  - `canCancelSchedule` は、`canChangeSchedule` の条件に加えて、`Schedule.recurringOccurrence` の予定で false を返す。予定の API に、buddy の繰り返しの予定の回をキャンセルする操作が無いためである。
-  - どちらも、職員の権限の `canEditScheduleOf` と合わせて判定する。
 - 確認が必要な理由の直し方の文は、`apps/web/src/features/schedule/lib/reviewFix.ts` の `reviewFixMessage` が `reviewReason` で決める。
 - 画面に出していない同行者、時間外の勤務の印は、`Schedule` の `visit_info.companion_name`、`is_over_time_work` に当たる。
 - 繰り返しの予定の回は、回の ID（`occurrenceId`）で開く。
@@ -70,14 +64,35 @@ OpenAPI の項目は、`getSchedule`（`GET /v1/schedules/{schedule_id}`）の�
   - 理由の文は `apps/web/src/features/schedule/constants/scheduleLabels.ts` の `SCHEDULE_REVIEW_REASON_LABEL` で決める。
   - `recurrence_unsupported` のほかの予定は、`visit_info` が `null` の通常の予定で、`title` に Google カレンダーのタイトルが入る。
 
-## キャンセルと編集のボタンの出し分け
+## 条件の対応
 
-| 判定 | web の型の項目 | OpenAPI の項目 |
-| --- | --- | --- |
-| ログインした職員の予定の権限と対象 | `Viewer.schedulePolicies` の `code`、`targetStaffIds`、`targetTeamIds` | `getMe` の `policies` の `code`、`target_user_ids`、`target_team_ids` |
-| 予定の職員 | `Schedule.staffId` | `staff_id` |
-| 予定の職員のチーム | `Schedule.staffId` を、職員の一覧（`Staff.teamId`）で引く | `staff_id` を、`listUsers` の `Staff.team.id` で引く |
+| 条件 | 判定に使う値 |
+| --- | --- |
+| 開いた予定が、キャンセルした予定である | `Schedule.cancel` がある |
+| 事業所が、予定の正本を buddy に切り替えている途中である | `google_primary` の事業所で、`ScheduleList.cutover` が `null` でない（`listSchedules` の `cutover`）。`buddy_primary` の事業所では読まず、`null` として扱う |
+| 開いた予定が、繰り返しの規則を buddy で表せない予定である | `Schedule.reviewReason` が `recurrence_unsupported`（`listSchedules` の `Schedule.review_reason`） |
+| 開いた予定が、予定を buddy で管理する事業所の繰り返しの予定の 1 回である | `Schedule.recurringOccurrence` が `true`。OpenAPI の項目は無く、web のサーバーが回の ID（`occurrenceId`）で読んだ予定に付ける |
+| ログインした職員が、開いた予定の職員の予定を編集できる | `Viewer.schedulePolicies` の `code`、`targetStaffIds`、`targetTeamIds` と、予定の職員の `Schedule.staffId` と、`Schedule.staffId` を職員の一覧で引いた `Staff.teamId` |
+| 開いた予定が、通常の予定である | `Schedule.kind` が `normal` |
+| 開いた予定が、訪問の予定である | `Schedule.kind` が `visit` |
+| 開いた予定に、訪問の情報がある | `Schedule.visit` がある |
+| 開いた予定に、メモがある | `Schedule.description` が空の文字列でない |
+| 職員が、キャンセルを送っている途中である | `cancelSchedule` を呼ぶ mutation（`useCancelSchedule`）の `isPending` が `true`（`ScheduleCancelDialog` の `isSubmitting`） |
+| 職員が、キャンセルの理由の欄に、前後の空白を除いて 1 文字以上 255 文字以下を入れている | キャンセルの理由の欄の値の前後の空白を除いた長さが 1 以上 255 以下（`ScheduleCancelDialog` が `ConfirmDialog` に渡す `canSubmit`） |
 
+- 判定の処理は、`apps/web/src/features/schedule/components/ScheduleDetailModal.tsx` と `ScheduleDetailModalContainer.tsx` にある。
+  - キャンセルした予定では、`ScheduleDetailModal` が下端（下端の閉じる、予定をキャンセル、編集）を描かない。
+  - 予定をキャンセルできない予定では `onCancelSchedule` を、編集できない予定では `onEdit` を、`ScheduleDetailModalContainer` が渡さない。
+  - Google カレンダーの予定でも、ほかの条件に当てはまれば、どちらも渡す。
+- 予定と事業所の状態は、`apps/web/src/features/schedule/lib/scheduleWritable.ts` の 2 つの関数が判定する。
+  - `canChangeSchedule` は、キャンセルした予定、`cutover` が `null` でない間、`reviewReason` が `recurrence_unsupported` の予定で false を返す。編集のボタンに使う。
+  - `canCancelSchedule` は、`canChangeSchedule` の条件に加えて、`Schedule.recurringOccurrence` の予定で false を返す。予定の API に、buddy の繰り返しの予定の回をキャンセルする操作が無いためである。予定をキャンセルのボタンに使う。
+  - どちらも、職員の権限の `canEditScheduleOf` と合わせて判定する。
+- 理由の欄の長さの判定は、`apps/web/src/features/schedule/components/ScheduleCancelDialog.tsx` にある。
+- 編集の権限の項目と、OpenAPI の項目の対応は次のとおり。
+  - `Viewer.schedulePolicies` の `code`、`targetStaffIds`、`targetTeamIds` は、`getMe` の `policies` の項目に当たる。
+    - 順に `code`、`target_user_ids`、`target_team_ids` である。
+  - `Schedule.staffId` は `staff_id` に、`Staff.teamId` は `listUsers` の `Staff.team.id` に当たる。
 - 判定は、予定の API の判定（`schedule.CanEdit`）と同じ規則で行う。
   - 判定の処理は `apps/web/src/features/schedule/lib/schedulePermission.ts` の `canEditScheduleOf` にある。
   - `schedule.self.edit`: 予定の職員がログインした職員のときに編集できる。
@@ -90,6 +105,47 @@ OpenAPI の項目は、`getSchedule`（`GET /v1/schedules/{schedule_id}`）の�
 - 出し分けは表示だけに使う。
   - 編集を拒むのは、予定の API の `updateSchedule` である。
   - キャンセルを拒むのは、予定の API の `cancelSchedule` である。
+
+## 要素の testid
+
+| 番号 | 要素名 | testid |
+| --- | --- | --- |
+| 2 | 予定の詳細のダイアログ | `schedule-detail-modal` |
+| 4 | 閉じる | `modal-close` |
+| 5 | キャンセルの理由 | `schedule-detail-cancel` |
+| 5 | Google カレンダーの案内 | `schedule-detail-google-calendar` |
+| 6 | 確認が必要な理由 | `schedule-detail-review-reason` |
+| 5 | 日時 | `schedule-detail-datetime` |
+| 6 | 日時 | `schedule-detail-datetime` |
+| 7 | 日時 | `schedule-detail-datetime` |
+| 8 | 訪問の情報 | `schedule-detail-visit` |
+| 9 | 訪問の情報 | `schedule-detail-visit` |
+| 12 | メモ | `schedule-detail-memo` |
+| 13 | メモ | `schedule-detail-memo` |
+| 9 | 下端の閉じる | `schedule-detail-close` |
+| 11 | 下端の閉じる | `schedule-detail-close` |
+| 13 | 下端の閉じる | `schedule-detail-close` |
+| 10 | 編集 | `schedule-detail-edit` |
+| 13 | 編集 | `schedule-detail-edit` |
+| 14 | 編集 | `schedule-detail-edit` |
+| 15 | 編集 | `schedule-detail-edit` |
+| 11 | 予定をキャンセル | `schedule-detail-cancel-schedule` |
+| 12 | 予定をキャンセル | `schedule-detail-cancel-schedule` |
+| 14 | 予定をキャンセル | `schedule-detail-cancel-schedule` |
+| 15 | 予定をキャンセル | `schedule-detail-cancel-schedule` |
+| 2 | キャンセルのダイアログ | `schedule-cancel-dialog` |
+| 4 | キャンセルする予定の日時 | `schedule-cancel-datetime` |
+| 5 | キャンセルの説明 | `schedule-cancel-description` |
+| 6 | キャンセルの理由の欄 | `schedule-cancel-reason` |
+| 7 | キャンセルの失敗の文 | `schedule-cancel-error` |
+| 7 | キャンセル | `schedule-cancel-cancel` |
+| 8 | キャンセル | `schedule-cancel-cancel` |
+| 8 | 予定をキャンセルする | `schedule-cancel-submit` |
+| 9 | 予定をキャンセルする | `schedule-cancel-submit` |
+
+- 番号は、状態ごとの構成要素の表の番号である。同じ要素が状態ごとに違う番号を持つときは、番号ごとに行を分ける。
+- 閉じるの `modal-close` は、packages/ui の `Modal` が付ける。
+- 訪問の情報の項目の並び（`schedule-detail-visit-fields`）は、構成要素の表に載せないので、この表に載せない。
 
 ## 状態と失敗の要因
 

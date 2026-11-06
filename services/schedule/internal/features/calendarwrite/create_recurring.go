@@ -13,7 +13,7 @@ import (
 	"github.com/Fukuemon/buddy/services/schedule/internal/tx"
 )
 
-// CreateRecurring は、google_primary の事業所に、繰り返しの予定を Google カレンダーの 1 つの繰り返しの予定として書いて作る（ADR-0026）。
+// CreateRecurring は、google_primary の事業所に、繰り返しの予定を Google カレンダーの 1 つの繰り返しの予定として書いて作る（ADR-0028）。
 type CreateRecurring struct {
 	create Create
 }

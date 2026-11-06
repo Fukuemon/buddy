@@ -1,13 +1,15 @@
 # buddy のデザインシステム
 
 buddy の画面を作る人とコーディングエージェントが、画面を作る前に読む文書。  
-デジタル庁デザインシステム（DADS）のトークンとコンポーネントの指針に基づき、packages/ui のトークンとコンポーネントの使い方を決める。  
-トークンの段の分け方を決めた理由は ADR-0012 に、コンポーネントの配置先は ADR-0013 に、カタログの組み方は ADR-0016 にある。
+packages/ui のトークンとコンポーネントの使い方と、アクセシビリティと UI/UX の規則を決める。  
+値と規則はデジタル庁デザインシステム（DADS）を元にしたが、規則の正本はこの文書である。DADS の指針のうち buddy が使うものを、buddy の規則として書き、DADS は出典として示す。  
+トークンの層の分け方を決めた理由は ADR-0013 に、コンポーネントの配置先は ADR-0014 に、規則の書き方は ADR-0017 に、カタログの組み方は ADR-0018 にある。
 
 - 出典: [デジタル庁デザインシステム](https://design.digital.go.jp/dads/)
-- ADR-0012: [デザインシステムのトークンを DADS の基本、buddy の意味、Tailwind のテーマの 3 段にする](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0012-design-system.md)
-- ADR-0013: [packages/ui に、ドメインを持たない Base と Case のコンポーネントを置き、DADS の指針から外れる 3 点は理由を DESIGN.md に書く](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0013-ui-components.md)
-- ADR-0016: [apps/web の Storybook を 1 つのカタログにする](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0016-storybook-catalog.md)
+- ADR-0013: [デザインシステムのトークンを、buddy に持つプリミティブトークン、セマンティックトークン、テーマ変数の 3 つの層にする](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0013-design-system-primitive-tokens.md)
+- ADR-0014: [packages/ui に、ドメインを持たない Base と Case のコンポーネントを置き、DADS の指針から外れる 3 点は理由を DESIGN.md に書く](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0014-ui-components.md)
+- ADR-0017: [アクセシビリティと UI/UX の規則は、DADS の指針を元にし、DESIGN.md に buddy の規則として書く](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0017-design-system-guidelines.md)
+- ADR-0018: [apps/web の Storybook を 1 つのカタログにする](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0018-storybook-catalog.md)
 
 トークンとコンポーネントの見た目と使い方は、[カタログ（Storybook）](https://buddy-docs.emon-apps.workers.dev/storybook/)で見る。  
 ローカルでは `pnpm --filter @buddy/web storybook` で開く。
@@ -16,8 +18,8 @@ buddy の画面を作る人とコーディングエージェントが、画面�
 
 | 知りたいこと | 参照先 |
 | --- | --- |
-| 色、文字、角丸、影の値 | DADS の `@digital-go-jp/design-tokens` の `dist/tokens.css` |
-| 意味のトークンの名前と、DADS のどの値を指すか | [`src/tokens/semantic.css`](https://github.com/Fukuemon/buddy/blob/develop/packages/ui/src/tokens/semantic.css) |
+| 色、文字、角丸、影の値 | [`src/tokens/primitive.css`](https://github.com/Fukuemon/buddy/blob/develop/packages/ui/src/tokens/primitive.css) |
+| セマンティックトークンの名前と、どのプリミティブトークンを指すか | [`src/tokens/semantic.css`](https://github.com/Fukuemon/buddy/blob/develop/packages/ui/src/tokens/semantic.css) |
 | Tailwind のユーティリティの名前 | [`src/tokens/theme.css`](https://github.com/Fukuemon/buddy/blob/develop/packages/ui/src/tokens/theme.css) |
 | トークンに置き換える前の apps/web の値が、どのトークンになったか | [置き換える前のテーマとトークンの対応表](https://github.com/Fukuemon/buddy/blob/develop/packages/ui/src/tokens/current-theme-map.md) |
 | コンポーネントの props と振る舞い | `src/base/` と `src/case/` のコンポーネントのコードと story |
@@ -25,39 +27,40 @@ buddy の画面を作る人とコーディングエージェントが、画面�
 
 ## 画面を作るときの原則
 
+原則には ID を付ける。ID は一度付けたら変えない。  
 各原則の「確認」は、守られているかを確認する方法である。  
 `pnpm check:design` は、`apps/web/src` と `packages/ui/src` のコードを読み、pre-commit のフックと CI でも流れる。  
-トークンの段のファイル（`packages/ui/src/tokens/`）と生成物は、チェックの対象から外している。
+トークンの層のファイル（`packages/ui/src/tokens/`）と生成物は、チェックの対象から外している。
 
-- 色、文字、角丸、影は、`theme.css` のユーティリティだけで書く。
-  - 色の値と、DADS の変数の名前を、画面のコードに直に書かない。
-  - 確認: 色の値（`#hex`、`rgb()` などの色の関数、`text-[#...]` のような任意値の中の色）と DADS の変数の名前は、`pnpm check:design` の `scripts/check-raw-values.mjs` が止める。文字の大きさの任意値は、`scripts/check-utilities.mjs` が止める。
+- `COLOR-TOKEN`: 色、文字、角丸、影は、`theme.css` のユーティリティだけで書く。
+  - 色の値と、プリミティブトークンの名前を、画面のコードに直に書かない。
+  - 確認: 色の値（`#hex`、`rgb()` などの色の関数、`text-[#...]` のような任意値の中の色）は、`pnpm check:design` の `scripts/check-raw-values.mjs` が止める。プリミティブトークンの名前も、同じスクリプトが止める。文字の大きさの任意値は、`scripts/check-utilities.mjs` が止める。
   - 確認: 色の名前（`red`、`white`）と、角丸と影の任意値は、チェックが見ない。レビューで、`theme.css` にない値を書いていないかを見る。
-- 状態を色だけで伝えない。
+- `STATE-NOT-COLOR-ONLY`: 状態を色だけで伝えない。
   - エラー、不一致、注意には、文と印を色と一緒に出す。
   - 確認: レビューで、色を見分けられない人が、エラー、不一致、注意の場所と内容を読み取れるかを見る。
     - 良い例: 入力の誤りの欄に、赤い枠と一緒に誤りの文を出す。
     - 悪い例: 照合の不整合の行を、区分の名前を出さずに赤い文字にするだけにする。
-- 14px より小さい文字を使わない。
+- `TEXT-MIN-SIZE`: 14px より小さい文字を使わない。
   - 本文と操作の文字は 16px にし、14px は補足だけに使う。
   - 確認: `text-xs`、`text-sm` と、文字の大きさの任意値（`text-[10px]`）は、`pnpm check:design` の `scripts/check-utilities.mjs` が止める。
   - 確認: 16px と 14px の使い分けは、レビューで、`text-caption` が補足、エラーの文、時刻の目盛りのような補足の文字にだけ付いているかを見る。
     - 良い例: 入力欄の下の補足の文を `text-caption` にする。
     - 悪い例: ボタンの文字や表のセルを `text-caption` にする。
-- 主のボタン（`variant="primary"`）は、1 つの画面かダイアログに 1 つまでにする。
+- `PRIMARY-ACTION-ONE`: 主のボタン（`variant="primary"`）は、1 つの画面かダイアログに 1 つまでにする。
   - 確認: レビューで、画面とダイアログごとに、主の操作が 1 つに決まるかを見る。
     - 良い例: 入力のダイアログで、確定のボタンだけを主にし、閉じるボタンを副にする。
     - 悪い例: 一覧の行ごとに主のボタンを置く。
-- フォーカスの表示は `focus-ring` だけを使い、コンポーネントごとに色や太さを変えない。
+- `FOCUS-ONE`: フォーカスの表示は `focus-ring` だけを使い、コンポーネントごとに色や太さを変えない。
   - DADS の指針が、フォーカスの表示の変更を禁じている。
   - 確認: `focus-visible:` などの変種の後ろの `ring`、`outline`、`border`、`shadow` は、`pnpm check:design` の `scripts/check-utilities.mjs` が止める。
   - 確認: `focus-ring` の付け忘れは、チェックが見ない。カタログの story で Tab を押し、全ての操作できる要素に `focus-ring` が出るかを見る。
-- 押せる領域は 44×44 CSS px 以上にする。
+- `TARGET-SIZE`: 押せる領域は 44×44 CSS px 以上にする。
   - 見た目を小さくするときは、見た目の外に押せる領域を広げる。
   - 確認: `packages/ui` のコンポーネントは、コンポーネントのテスト（`pnpm --filter @buddy/ui test`）が、ブラウザで描画した大きさを確認する。
   - 確認: 画面で作る押せる要素は、レビューで、見た目が 44px より小さいときに押せる領域を広げているかを見る。
     - Storybook の a11y のアドオンは、押せる領域を確認しない。axe-core の `target-size` の規則はデフォルトで無効になっていて、基準も 24px である。
-- 余白は Tailwind の段（1 段 4px）で書く。
+- `SPACING-SCALE`: 余白は Tailwind の段（1 段 4px）で書く。
   - ブロックの間は 8px の倍数（`gap-2`、`gap-4`、`gap-6`）にする。
   - 確認: padding、margin、gap、space の任意値（`p-[13px]`）は、`pnpm check:design` の `scripts/check-utilities.mjs` が止める。
   - 確認: 半分の段（`gap-0.5`、`py-1.5`）と、ブロックの間が 8px の倍数かは、チェックが見ない。レビューで見る。
@@ -66,8 +69,87 @@ buddy の画面を作る人とコーディングエージェントが、画面�
     - 確認: `FormField` を使わない欄は、レビューで、欄と近くの文字の間が `gap-3`（12px）以上かを見る。
       - 良い例: 照合の月の欄の見出しと欄を `flex flex-col gap-3` で並べる。
       - 悪い例: 見出しと欄を `gap-1`（4px）で並べ、フォーカスの表示が見出しの文字に重なる。
+- `LAYOUT-OVERFLOW`: 幅 768px 以上と未満のどちらでも、ページを横にはみ出させない。長い文字とデータの多い状態でも出さない。
+  - 表のように横に長い中身は、その領域の中で横に送り、ページの全体を広げない。
+  - 確認: 主な画面のページの全体の幅は、E2E の `packages/e2e/tests/specs/site/layout-overflow.e2e.ts`（`pnpm e2e`）が、幅 390、767、768、1280px で確認する。
+  - 確認: 内側の領域で切れた文字とボタンと、見た目の崩れは、チェックが見ない。テストが撮った画像か描画した画面を、レビューで見る。
+
+### 原則と確認の方法の対応
+
+`pnpm check:design` の 2 つのスクリプトは、違反の行に原則の ID を出す（例: `src/a.tsx:3: COLOR-TOKEN 色の値 #fff`）。  
+レビューの指摘も、この ID で原則を引く。
+
+| ID | 確認の方法 | チェックが見ないもの |
+| --- | --- | --- |
+| `COLOR-TOKEN` | `scripts/check-raw-values.mjs`（`pnpm check:design`） | 色の名前（`red`、`white`）、角丸と影の任意値 |
+| `STATE-NOT-COLOR-ONLY` | レビュー | |
+| `TEXT-MIN-SIZE` | `scripts/check-utilities.mjs`（`pnpm check:design`） | 16px と 14px の使い分け。クラスの名前を文字列の連結で組み立てた書き方 |
+| `PRIMARY-ACTION-ONE` | レビュー | |
+| `FOCUS-ONE` | `scripts/check-utilities.mjs`（`pnpm check:design`） | `focus-ring` の付け忘れ。クラスの名前を文字列の連結で組み立てた書き方 |
+| `TARGET-SIZE` | `packages/ui` のコンポーネントのテスト（`pnpm --filter @buddy/ui test`） | 画面で作る押せる要素 |
+| `SPACING-SCALE` | `scripts/check-utilities.mjs`（`pnpm check:design`） | 半分の段と、ブロックの間が 8px の倍数か。`FormField` を使わない欄の間 |
+| `LAYOUT-OVERFLOW` | `packages/e2e/tests/specs/site/layout-overflow.e2e.ts`（`pnpm e2e`） | テストに入れていない画面と、シードに無い長い文字とデータの多い状態。内側の領域で切れた文字とボタン。見た目の崩れ |
+
+## 画面を作るときの手順
+
+画面とコンポーネントのコードを書く人は、この順に進め、受け入れ条件を満たしたら終える。
+
+### 順
+
+1. 参照先の表とカタログから、使うコンポーネントとトークンを探す。合うものがなければ、画面のコードで作らず、packages/ui に足すかを尋ねる。
+2. `theme.css` のユーティリティと、packages/ui のコンポーネントだけで書く。
+3. 使ったコンポーネントの状態のうち、画面で起きるもの（読み込み中、空、エラー、無効）を作る。
+4. 下の「流すコマンド」を、表の順に流す。
+5. 描画した画面を、幅 768px 以上と未満で開き、横方向のオーバーフローと見た目の崩れがないかを見る。新しい画面は、`layout-overflow.e2e.ts` の画面の一覧に足す。
+6. 下の「報告の形」で報告する。
+
+### 流すコマンド
+
+前のコマンドが失敗したら、後のコマンドは流さずに「見ていない」と報告する。
+
+| コマンド | 見るもの | 原則の ID |
+| --- | --- | --- |
+| `pnpm check:generated` | `docs/screens/_common/tokens.css` を含む生成物が、元のファイルと合っているか | |
+| `pnpm check:contrast` | セマンティックトークンの組のコントラスト比 | |
+| `pnpm check:design` | 画面のコードの色の値、プリミティブトークンの名前、原則に反するユーティリティ | `COLOR-TOKEN`、`TEXT-MIN-SIZE`、`FOCUS-ONE`、`SPACING-SCALE` |
+| `pnpm --filter @buddy/ui test` | コンポーネントの状態、押せる領域の大きさ、story のアクセシビリティ（axe） | `TARGET-SIZE` |
+| `pnpm e2e`（compose を起動してから） | 主な画面の、幅ごとのページの横方向のオーバーフロー。撮った画像はローカルでは `packages/e2e/test-results/` に出て、CI では成果物の `e2e-layout-screens` に残る | `LAYOUT-OVERFLOW` |
+
+### 受け入れ条件
+
+- [ ] 「流すコマンド」が全て終了コード 0 で終わった
+- [ ] 確認の方法がレビューの原則を、描画した画面で見た
+- [ ] 幅 768px 以上と未満の画面を見た
+- [ ] 使ったコンポーネントの状態が、「コンポーネントの選び方」と「コンポーネントごとの規則」と合っている
+- [ ] 報告に、下の 5 つの状態のどれでもない原則がない
+
+### 報告の形
+
+原則の ID ごとに、次の 5 つの状態のどれかで報告する。  
+チェックの終了コードが 0 でも、レビューの原則が守られたことにはならない。
+
+| 状態 | 意味 |
+| --- | --- |
+| 通った | チェックが流れ、基準を満たした |
+| 通らない | 違反の証拠がある。場所と、出たチェックの出力を添える |
+| レビューで見る | 描画した画面かコードはあるが、判断はレビューの人がする |
+| 見ていない | 確認の規則、チェック、証拠のどれかが無い。前のコマンドの失敗で流していないものも含む |
+| 対象外 | 作業の範囲から外れる。理由を添える |
 
 ## トークン
+
+トークンは 3 つの層に分かれる。画面とコンポーネントは、テーマ変数のユーティリティだけを書く。
+
+| 層 | ファイル | 持つもの |
+| --- | --- | --- |
+| プリミティブトークン | `src/tokens/primitive.css` | DADS からコピーした色の階調、文字の大きさと行高、角丸、影の値。名前は `--buddy-primitive-` で始まる |
+| セマンティックトークン | `src/tokens/semantic.css` | 面、文字、枠、操作、フォーカス、状態、区別の役割の名前。名前は `--buddy-color-` で始まり、プリミティブトークンを参照する |
+| テーマ変数 | `src/tokens/theme.css` | Tailwind の `@theme` に渡す名前。色はセマンティックトークンを、文字、角丸、影はプリミティブトークンを参照する |
+
+- セマンティックトークンは、DADS のセマンティックカラー（成功、エラー、警告の色）より広い。面、文字、枠、操作の役割を表す変数も含む。
+- 層の呼び名は、DADS の変数の名前（`--color-primitive-*`、`--color-semantic-*`）と、Tailwind CSS の theme variables に合わせている。
+  - 出典: [DADS のカラー](https://design.digital.go.jp/dads/foundations/color/)
+  - 出典: [Tailwind CSS の Theme variables](https://tailwindcss.com/docs/theme)
 
 ### 色
 
@@ -99,7 +181,7 @@ buddy の画面を作る人とコーディングエージェントが、画面�
 
 背景を指定しない要素は `surface-canvas` の色になるので、カード、表、入力欄には `bg-surface` を付ける。
 
-- ADR-0012: [デザインシステムのトークンを DADS の基本、buddy の意味、Tailwind のテーマの 3 段にする](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0012-design-system.md)
+- ADR-0013: [デザインシステムのトークンを、buddy に持つプリミティブトークン、セマンティックトークン、テーマ変数の 3 つの層にする](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0013-design-system-primitive-tokens.md)
 
 `*-surface` の面の上の文字は、同じ系統の文字の色（`danger-surface` の上なら `danger`）か `text` にする。  
 どちらも 4.5:1 以上になる。
@@ -272,19 +354,97 @@ apps/web の画面だけが使うアイコンは、`apps/web/src/assets/icons/` 
 - select は `Select` を使う。input と textarea には `fieldControlClassName`（`FormField` の中では `formFieldControlClassName`）を付ける。
 - 中に input を置く枠（`SearchBox` の枠、`DatePicker` の label）には `fieldBoxClassName` を付け、中の input の状態を `:has` で読む。
 - 確認: 全ての入力のコンポーネントの hover、無効、エラーの枠は、コンポーネントのテスト（`pnpm --filter @buddy/ui test` の `fieldStates.test.tsx`）が確認する。
+- エラーの枠は 2px にする。DADS のインプットテキストは 1px の赤だが、1px にすると、デフォルトの枠との違いが色だけになる。太さが違えば、色を見分けにくい人も誤りの欄を見つけられる。
 - 出典: [DADS のインプットテキストの CSS](https://github.com/digital-go-jp/design-system-example-components-html/blob/caa50d731cf515cfa5eae0093121f11ac5299235/src/components/input-text/input-text.css)
 
-### DADS の指針との違い
+### コンポーネントごとの規則
 
-| 対象 | DADS の指針 | buddy の使い方 | 理由 |
-| --- | --- | --- | --- |
-| `Modal` | モーダルのダイアログをフォームに使わない | 予定の作成と編集をダイアログで行う | カレンダーの上で予定を作り、閉じてカレンダーに戻る流れを画面仕様が決めている |
-| `DatePicker`、`TimePicker` | 年、月、日を 3 つの入力欄に分ける。`input type="date"` を避ける | ブラウザの `type="date"` と `type="time"` を使う | 予定の日付は近い日を選ぶことが多く、ブラウザのカレンダーから選ぶ方が手数が少ない |
-| 入力の欄のエラー | 誤りの枠を 1px の赤にする | 誤りの枠を 2px にする | 1px にすると、デフォルトの枠との違いが色だけになる。太さの違いがあれば、色を見分けにくい人も誤りの欄を見つけられる |
-| `ChipPicker` | 複数の選択には、チェックボックスの組を使う。チップで選ぶコンポーネントは無い | 名前で絞った候補から足し、選んだものだけをチップで並べる | 職員の権限の対象のように候補が数十人になり、チェックボックスで全てを並べると、選んだものを読み取れなくなる |
-| `Loading` | 回転する表示は画面全体の待ちだけに使う | ダイアログの中身の待ちにも使う | ダイアログを開いている間はほかを操作できず、画面全体の待ちと同じになる |
+上の表に加えて、コンポーネントごとに次の規則に従う。
+DADS から外れる規則は、外れることと理由を、その規則に書く。
 
-- 出典: [DADS のチェックボックス](https://design.digital.go.jp/dads/components/checkbox/)
+#### `Button`
+
+- 押せる領域は 44×44 CSS px 以上にする。S のボタンとアイコンのボタンは、見た目の外に押せる領域を広げる。
+- ラベルは文字にする。アイコンだけのボタンには、`aria-label` で名前を付ける。
+- 操作の重要度の違いを、色だけで示さない。塗りと枠線の違いでも示す。
+- 押せない間は `aria-disabled` を付け、押しても実行しない。`Button` は、`disabled` を渡すと `aria-disabled` を付け、クリックと送信を止める。
+- 出典: [DADS のボタンの使い方](https://design.digital.go.jp/dads/components/button/usage/)、[DADS のボタンのアクセシビリティ](https://design.digital.go.jp/dads/components/button/accessibility/)
+
+#### `Modal`、`Dialog`
+
+- ボタンを押したときだけ開く。押していないのに開くと、閉じたときにフォーカスを戻す先が無くなる。
+- 処理の完了と状態の変化の通知、ナビゲーションには使わない。
+- データを失う操作の確認と、ダイアログの中で完結する短い入力に `Dialog` を使う。
+- 予定の作成と編集は、URL を持つ `Modal` に入力のコンポーネントを置いて行う。DADS はモーダルのダイアログにフォームを入れないとしているが、カレンダーの上で予定を作り、閉じてカレンダーに戻る流れを画面仕様が決めている。
+- 出典: [DADS のモーダルダイアログ](https://design.digital.go.jp/dads/components/modal-dialog/)
+
+#### `Drawer`
+
+- モーダルとして扱い、開いている間は後ろを覆い、ドロワーの外を操作できなくする。
+- 画面の枠のメニューのボタンか、左の欄を開くボタンから開く。
+- 閉じるボタンを置く。
+- 出典: [DADS のドロワーの使い方](https://design.digital.go.jp/dads/components/drawer/usage/)
+
+#### `SegmentedControl`、`Select`
+
+- 選択肢から 1 つだけを選ぶ。複数を選ぶ入力には使わない。
+- 選択肢が少ないときは、`Select` を使わない。2 から 4 個ですぐ表示を切り替えるなら `SegmentedControl` にする。
+- `Select` の開いた一覧は、ブラウザと OS の標準の表示のままにする。
+- 出典: [DADS のラジオボタンの使い方](https://design.digital.go.jp/dads/components/radio/usage/)、[DADS のセレクトボックスの使い方](https://design.digital.go.jp/dads/components/select/usage/)
+
+#### `Table`、`RowTable`
+
+- 表は、同じ項目を持つ行の比較に使う。名前と値の組は `dl` にし、画面の配置に表を使わない。
+- 1 つの対象を 1 行にし、セルを結合しない。
+- 出典: [DADS のテーブルの使い方](https://design.digital.go.jp/dads/components/table/usage/)
+
+#### `Loading`
+
+- 回転する表示は、画面全体の待ちと、ダイアログの中身の待ちに使う。画面の一部の待ちには使わない。一部が動き続けると、ほかの部分が読みにくくなる。
+- DADS は回転する表示を画面全体の待ちに限るが、ダイアログを開いている間はほかを操作できず、画面全体の待ちと同じになるので、ダイアログの中身の待ちにも使う。
+- 出典: [DADS のプログレスインジケーター](https://design.digital.go.jp/dads/components/progress-indicator/)
+
+#### `DatePicker`、`TimePicker`、`MonthPicker`
+
+- カレンダーから選ぶ入力は、近い日付に使う。生年月日のように分かっている遠い日付には使わない。
+- ブラウザの `type="date"`、`type="time"`、`type="month"` を使う。DADS は年、月、日を分けた入力欄を勧め、`input type="date"` の使う場面を限るとしているが、予定の日付は近い日を選ぶことが多く、ブラウザのカレンダーから選ぶ方が手数が少ない。
+- 出典: [DADS の日付ピッカーの使い方](https://design.digital.go.jp/dads/components/date-picker/usage/)、[DADS の日付ピッカーのアクセシビリティ](https://design.digital.go.jp/dads/components/date-picker/accessibility/)
+
+#### `FormField`、`NumberPicker`、`TextareaField`
+
+- 見出しは欄の上に左寄せで置く。
+- 誤りの文には、何が誤りかと、どう直すかを書く。
+- 補足の文と誤りの文は、`aria-describedby` で欄に結び付ける。
+- 誤りの文に `role="alert"` と `aria-live` を付けない。送ったときに誤りが複数あると、全ての文が割り込みで読み上げられ、どの欄の誤りかを聞き分けにくい。
+- 送った後に誤りがあれば、`useFocusFirstInvalid` で最初の誤りの欄へフォーカスを移す。欄にフォーカスが移ると、結び付けた誤りの文が欄の説明として読み上げられる。
+  - 予定のフォームのように、誤りの欄が閉じた編集の欄にあるときは、誤りを出す項目のボタンに `data-invalid` を付け、そのボタンへフォーカスを移す。
+  - ラジオボタンの組は、組の要素へフォーカスを移し、組に結び付けた誤りの文を読み上げさせる。`FormField` の `isGroup` は、誤りがあれば組の要素に `tabIndex={-1}` を渡す。
+  - 入力するたびに誤りを出す欄は、フォーカスが欄にあるので移さない。
+- 送れなかったときの文と、画面の読み込みの失敗の文は、欄の誤りの文ではないので `role="alert"` で読み上げる。
+- `TextareaField` に文字数の上限があるときは、見出しか補足の文に上限を書く。
+- 出典: [DADS のインプットテキストの使い方](https://design.digital.go.jp/dads/components/input-text/usage/)、[DADS のインプットテキストのアクセシビリティ](https://design.digital.go.jp/dads/components/input-text/accessibility/)、[DADS のテキストエリアの使い方](https://design.digital.go.jp/dads/components/textarea/usage/)
+
+#### `FileField`
+
+- ファイルを選ぶボタンを置く。ドラッグとドロップだけで選ばせない。
+- 出典: [DADS のファイルアップロードの使い方](https://design.digital.go.jp/dads/components/file-upload/usage/)
+
+#### `ChipPicker`
+
+- 選んだものだけをチップで並べ、チップの × で 1 つずつ外す。
+- 多い候補から少しを選ぶ入力に使う。DADS は複数の選択にチェックボックスの組を使うとしているが、職員の権限の対象のように候補が数十人になると、チェックボックスで全てを並べたときに選んだものを読み取れなくなる。
+- 出典: [DADS のチェックボックスの使い方](https://design.digital.go.jp/dads/components/checkbox/usage/)、[DADS のチップタグ](https://design.digital.go.jp/dads/components/chip-tag/)
+
+#### `StatusBadge`
+
+- 状態を、色だけでなく文字で示す。
+- 出典: [DADS のチップラベル](https://design.digital.go.jp/dads/components/chip-label/)
+
+#### `HelpToggle`、`MoreText`
+
+- 開かないと操作できない情報を入れない。閉じたままでも、画面の本文だけで操作できるようにする。
+- キーボードだけで開閉でき、`aria-expanded` で開閉を伝える。
+- 出典: [DADS のディスクロージャーの使い方](https://design.digital.go.jp/dads/components/disclosure/usage/)
 
 ## Storybook のカタログ
 
@@ -293,7 +453,7 @@ apps/web の画面だけが使うアイコンは、`apps/web/src/assets/icons/` 
 | ページ | 書くこと | 配置先 |
 | --- | --- | --- |
 | はじめに | 原則、アクセシビリティの基準 | `packages/ui/src/docs/*.mdx` |
-| トークン | 色の階調と意味のトークン（`ColorPalette`）、文字（`Typeset`）、余白、角丸、影 | `packages/ui/src/tokens/*.mdx` |
+| トークン | 色の階調とセマンティックトークン（`ColorPalette`）、文字（`Typeset`）、余白、角丸、影 | `packages/ui/src/tokens/*.mdx` |
 | コンポーネント | コンポーネントごとの MDX。使う場面、使わない場面、Do と Don't、状態、キーボードの操作 | `packages/ui/src/base/<コンポーネント>/`、`packages/ui/src/case/<コンポーネント>/` |
 | パターン | コンポーネントを組み合わせた形（入力のダイアログの `InputDialog`、確認のダイアログの `ConfirmDialog`） | `packages/ui/src/patterns/` |
 | 画面 | apps/web のコンポーネントと画面の story | `apps/web/src/features/<機能>/components/`、`apps/web/src/components/` |

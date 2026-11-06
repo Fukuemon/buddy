@@ -1,4 +1,4 @@
-# ADR-0028: 事業所の予定の正本を、期間のある切り替えの記録で Google カレンダーから buddy へ移す
+# ADR-0030: 事業所の予定の正本を、期間のある切り替えの記録で Google カレンダーから buddy へ移す
 
 ## Status
 
@@ -12,7 +12,7 @@
 - buddy は公開する前で、運用している事業所の予定は無い。
 - 事業所の行のロックは `organization` にあり、職員の状態の変更と予定と担当の割り振りが同じロックを使う。
 - 事業所の正本のモードは `google_primary` と `buddy_primary` の 2 つで、切り替えの途中はモードではなく切り替えの記録で表す。
-  - ADR-0026: [Google カレンダーとの連携を、事業所ごとの正本のモードで分ける](0026-google-calendar-sync.md)
+  - ADR-0028: [Google カレンダーとの連携を、事業所ごとの正本のモードで分ける](0028-google-calendar-sync.md)
 
 ## Decision
 

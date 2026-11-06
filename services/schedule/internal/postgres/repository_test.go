@@ -720,7 +720,7 @@ func TestScheduleList(t *testing.T) {
 }
 
 // TestScheduleEndsNextDay は、翌日に終わる予定の印を保存して読み、期間の一覧が前の日に始まる印の付いた予定も返し、
-// 時刻の制約が印に合わない予定を拒むことを確認する（ADR-0030）。
+// 時刻の制約が印に合わない予定を拒むことを確認する（ADR-0032）。
 func TestScheduleEndsNextDay(t *testing.T) {
 	ctx := txContext(t)
 	r := NewScheduleRepository(testDB)

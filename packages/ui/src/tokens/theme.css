@@ -1,5 +1,5 @@
 /*
- * 意味のトークンを Tailwind v4 のユーティリティにする。
+ * セマンティックトークンを Tailwind v4 のユーティリティにする。
  * Tailwind のデフォルトの色、文字の大きさ、角丸、影、ブレークポイントを消し、ここに書いた名前だけを使えるようにする。
  * 使う側の CSS は `@import 'tailwindcss';` の後にこのファイルを読み込む。
  */
@@ -51,45 +51,45 @@
   --color-team-green: var(--buddy-color-team-green);
   --color-team-lime: var(--buddy-color-team-lime);
 
-  --font-sans: var(--font-family-sans);
+  --font-sans: var(--buddy-primitive-font-family-sans);
 
   /* DADS のテキストスタイルのうち、使う 6 つ。名前の後ろの括弧は DADS のスタイル名 */
   --text-*: initial;
   /* caption (Dns-14N-130): 補足、エラーの文、時刻の目盛り */
-  --text-caption: var(--font-size-14);
-  --text-caption--line-height: var(--line-height-130);
+  --text-caption: var(--buddy-primitive-font-size-14);
+  --text-caption--line-height: var(--buddy-primitive-line-height-130);
   /* body-dense (Dns-16N-130): 表のセル、入力欄の値、選択肢 */
-  --text-body-dense: var(--font-size-16);
-  --text-body-dense--line-height: var(--line-height-130);
+  --text-body-dense: var(--buddy-primitive-font-size-16);
+  --text-body-dense--line-height: var(--buddy-primitive-line-height-130);
   /* body (Std-16N-170): 本文 */
-  --text-body: var(--font-size-16);
-  --text-body--line-height: var(--line-height-170);
+  --text-body: var(--buddy-primitive-font-size-16);
+  --text-body--line-height: var(--buddy-primitive-line-height-170);
   --text-body--letter-spacing: 0.02em;
   /* label (Oln-16B-100): ボタン、切り替えの選択肢 */
-  --text-label: var(--font-size-16);
-  --text-label--line-height: var(--line-height-100);
+  --text-label: var(--buddy-primitive-font-size-16);
+  --text-label--line-height: var(--buddy-primitive-line-height-100);
   --text-label--letter-spacing: 0.02em;
-  --text-label--font-weight: var(--font-weight-700);
+  --text-label--font-weight: var(--buddy-primitive-font-weight-700);
   /* heading-sm (Std-18B-160): セクションの見出し、ダイアログのタイトル */
-  --text-heading-sm: var(--font-size-18);
-  --text-heading-sm--line-height: var(--line-height-160);
+  --text-heading-sm: var(--buddy-primitive-font-size-18);
+  --text-heading-sm--line-height: var(--buddy-primitive-line-height-160);
   --text-heading-sm--letter-spacing: 0.02em;
-  --text-heading-sm--font-weight: var(--font-weight-700);
+  --text-heading-sm--font-weight: var(--buddy-primitive-font-weight-700);
   /* heading-md (Std-20B-150): 画面の見出し、画面全体の待ちの文 */
-  --text-heading-md: var(--font-size-20);
-  --text-heading-md--line-height: var(--line-height-150);
+  --text-heading-md: var(--buddy-primitive-font-size-20);
+  --text-heading-md--line-height: var(--buddy-primitive-line-height-150);
   --text-heading-md--letter-spacing: 0.02em;
-  --text-heading-md--font-weight: var(--font-weight-700);
+  --text-heading-md--font-weight: var(--buddy-primitive-font-weight-700);
 
   --radius-*: initial;
-  --radius-4: var(--border-radius-4);
-  --radius-6: var(--border-radius-6);
-  --radius-8: var(--border-radius-8);
-  --radius-full: var(--border-radius-full);
+  --radius-4: var(--buddy-primitive-border-radius-4);
+  --radius-6: var(--buddy-primitive-border-radius-6);
+  --radius-8: var(--buddy-primitive-border-radius-8);
+  --radius-full: var(--buddy-primitive-border-radius-full);
 
   --shadow-*: initial;
-  --shadow-1: var(--elevation-1);
-  --shadow-3: var(--elevation-3);
+  --shadow-1: var(--buddy-primitive-elevation-1);
+  --shadow-3: var(--buddy-primitive-elevation-3);
 
   /* DADS の設定例の 1 つだけを置く。未満はモバイルとタブレット */
   --breakpoint-*: initial;

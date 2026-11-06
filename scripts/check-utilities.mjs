@@ -1,38 +1,46 @@
 #!/usr/bin/env node
-// 画面とコンポーネントのコードに、packages/ui/DESIGN.md の「画面を作るときの原則」に反する Tailwind のユーティリティが書かれていないかを確認する。
-// 色の値と DADS の変数の名前は scripts/check-raw-values.mjs が見る。
-// 使い方: node scripts/check-utilities.mjs [ファイルかディレクトリ]...
+// 画面とコンポーネントのコードに、デザインシステムの文書の「画面を作るときの原則」に反するユーティリティのクラスが書かれていないかを確認する。
+// 色の値とプリミティブトークンの名前は check-raw-values.mjs が見る。
+// コピーした後に、TARGETS、EXCLUDES、RULES を、自分のリポジトリとデザインシステムの文書に合わせて書き換える。
+// 使い方: node check-utilities.mjs [ファイルかディレクトリ]...
 //   引数のパスを省くと TARGETS を読む。ディレクトリは、EXTENSIONS の拡張子のファイルを再帰で読む。node_modules と、. で始まるディレクトリは読まない。
-// 見つけるもの:
-//   14px より小さい文字: text-xs、text-sm と、文字の大きさの任意値（text-[10px]、text-[0.75rem]）
-//   focus-ring 以外のフォーカスの表示: focus を含む変種（focus:、focus-visible:、focus-within:、has-[:focus-visible]:）の後ろの ring、outline、border、shadow
-//   4px の段から外れた余白: padding、margin、gap、space の任意値（p-[13px]、gap-(--gap)）
-// 見つけないもの: 0.5 のような半分の段と、クラスの名前を文字列の連結で組み立てた書き方。それらはレビューで見る。
-//   空白、引用符、波括弧、カンマ、セミコロンで区切った語を、クラスの名前として読む。コメントの中の語も読む。
+// クラスの名前は、変種を : でつなぎ（focus-visible:ring-2）、任意値を [ ] か ( ) で書く（p-[13px]、gap-(--gap)）形として読む。
+//   空白と引用符で区切り、[ ] と ( ) の外では波括弧、カンマ、セミコロン、=、<、> でも区切った語を、クラスの名前として読む。コメントの中の語も読む。
+//   言語の構文は読まず、語の区切りを近似で見分ける。
+// 見つけないもの: クラスの名前を文字列の連結で組み立てた書き方と、任意の変種の中に引用符を書いた書き方（[&[data-state='open']]:text-xs）。それらはレビューで見る。
+//   引用符は、配列（["text-xs"]）と関数の引数（cn("text-xs")）の区切りと見分けられないので、いつでも区切りにする。
 //   ALLOW_MARK を含む行は見ず、外した行の数を出す。外す理由は、同じ行のコメントに書く。
+// 違反の行には、RULES の id（デザインシステムの文書の原則の ID）を出す。
 // 終了コード: 0 は見つからなかった、1 は見つかった、2 はパスが読めない
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { extname, join, relative, resolve, sep } from "node:path";
 
 // 画面とコンポーネントのコードの置き場
 const TARGETS = ["./apps/web/src", "./apps/broker/src", "./packages/ui/src"];
-// トークンの段のファイルと生成物
+// トークンの層のファイルと生成物のように、原則の外にある置き場
 const EXCLUDES = ["./packages/ui/src/tokens", "./apps/web/src/api/generated"];
 const EXTENSIONS = [".css", ".ts", ".tsx", ".mdx"];
 const ALLOW_MARK = "design-system-allow";
 
+// 見つけるユーティリティ。id はデザインシステムの文書の原則の ID、label は違反の行に出す説明。
+// test は、変種の配列（focus-visible:ring-2 なら ["focus-visible"]）と、変種を除いたユーティリティ（ring-2）を受け取る。
 const SPACING = "-?(?:p[xytrblse]?|m[xytrblse]?|gap(?:-[xy])?|space-[xy])";
-const rules = [
+const RULES = [
   {
+    id: "TEXT-MIN-SIZE",
     label: "14px より小さい文字か、文字の大きさの任意値",
-    test: (variants, utility) => /^text-(?:xs|sm|\[(?:length:)?[\d.])/.test(utility),
+    // text-sm/6 のように / の後に行高を付けた書き方も見る。text-smoke のような色の名前は見ない
+    // 任意値は、数字で始まる値と、length: で文字の大きさと示した値（calc() と var() を含む）を見る。text-[var(--x)] は色の任意値にもなるので見ない
+    test: (variants, utility) => /^text-(?:(?:xs|sm)(?:\/|$)|\[(?:length:|[\d.])|\(length:)/.test(utility),
   },
   {
-    label: "focus-ring 以外のフォーカスの表示",
+    id: "FOCUS-ONE",
+    label: "フォーカスのユーティリティ以外のフォーカスの表示",
     test: (variants, utility) =>
       variants.some((v) => v.includes("focus")) && /^(?:ring|outline|border|shadow)(?:-|$)/.test(utility),
   },
   {
+    id: "SPACING-SCALE",
     label: "余白の任意値",
     test: (variants, utility) => new RegExp(`^${SPACING}-[[(]`).test(utility),
   },
@@ -41,6 +49,7 @@ const rules = [
 const excluded = EXCLUDES.map((p) => resolve(p));
 const isExcluded = (abs) => excluded.some((e) => abs === e || abs.startsWith(e + sep));
 
+// 読めないパス（壊れたシンボリックリンクを含む）は、読めなかったファイルを通ったことにしないよう、終了コード 2 で止める
 const statOrExit = (p) => {
   try {
     return statSync(p);
@@ -66,13 +75,39 @@ const collect = (p) => {
 const paths = process.argv.slice(2);
 for (const p of paths.length ? paths : TARGETS) collect(p);
 
+// 任意値は空白を含まないので、空白と引用符はいつでも区切りにする。関数の呼び出し（cn("text-xs", x)）の ( の後ろを 1 語にまとめないためである。
+// [ ] と ( ) の中のカンマと =（has-[:is(:focus,:focus-visible)]:、[&[data-state=open]]:）は区切りにしない。
+// = と < と > は、属性の値の前と後（class:text-xs={small}、<p class=text-xs>）で区切るために足す。
+const tokenize = (line) => {
+  const tokens = [];
+  let depth = 0;
+  let current = "";
+  const flush = () => {
+    if (current) tokens.push(current);
+    current = "";
+    depth = 0;
+  };
+  for (const c of line) {
+    if (/[\s"'`]/.test(c) || (depth === 0 && /[{},;=<>]/.test(c))) {
+      flush();
+      continue;
+    }
+    if (c === "[" || c === "(") depth++;
+    else if ((c === "]" || c === ")") && depth > 0) depth--;
+    current += c;
+  }
+  flush();
+  return tokens;
+};
+
+// 任意値の [ ] と ( ) の中の :（has-[:focus-visible]:、text-[length:12px]、text-(length:--x)）では分けない
 const splitVariants = (token) => {
   const parts = [];
   let depth = 0;
   let start = 0;
   for (let i = 0; i < token.length; i++) {
-    if (token[i] === "[") depth++;
-    else if (token[i] === "]") depth--;
+    if (token[i] === "[" || token[i] === "(") depth++;
+    else if (token[i] === "]" || token[i] === ")") depth--;
     else if (token[i] === ":" && depth === 0) {
       parts.push(token.slice(start, i));
       start = i + 1;
@@ -97,14 +132,14 @@ for (const file of files) {
       allowed++;
       return;
     }
-    for (const token of line.split(/[\s"'`{},;]+/)) {
-      if (!token) continue;
+    for (const token of tokenize(line)) {
       const parts = splitVariants(token);
-      const utility = parts.pop().replace(/^!/, "");
-      for (const { label, test } of rules) {
+      // 末尾の ! は重要度の印（text-xs!）、先頭の ! は古い書き方（!text-xs）
+      const utility = parts.pop().replace(/^!|!$/g, "");
+      for (const { id, label, test } of RULES) {
         if (!test(parts, utility)) continue;
         found++;
-        console.log(`${relative(".", file)}:${i + 1}: ${label} ${token}`);
+        console.log(`${relative(".", file)}:${i + 1}: ${id} ${label} ${token}`);
       }
     }
   });
@@ -112,7 +147,7 @@ for (const file of files) {
 
 if (allowed) console.log(`${ALLOW_MARK} で外した行: ${allowed}`);
 if (found) {
-  console.log(`${found} か所に、画面を作るときの原則に反するユーティリティがある。packages/ui/DESIGN.md の原則に沿って直す`);
+  console.log(`${found} か所に、画面を作るときの原則に反するユーティリティがある。デザインシステムの文書の、行の ID の原則に沿って直す`);
   process.exit(1);
 }
 console.log(`${files.length} 個のファイルに、画面を作るときの原則に反するユーティリティはなかった`);

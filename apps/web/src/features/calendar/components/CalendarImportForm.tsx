@@ -117,7 +117,7 @@ export const CalendarImportForm = ({
                   value={start}
                 />
                 {rangeErrors.start !== undefined && (
-                  <span className="text-caption text-danger" id={startErrorId} role="alert">
+                  <span className="text-caption text-danger" id={startErrorId}>
                     {rangeErrors.start}
                   </span>
                 )}
@@ -138,7 +138,7 @@ export const CalendarImportForm = ({
                   value={end}
                 />
                 {rangeErrors.end !== undefined && (
-                  <span className="text-caption text-danger" id={endErrorId} role="alert">
+                  <span className="text-caption text-danger" id={endErrorId}>
                     {rangeErrors.end}
                   </span>
                 )}

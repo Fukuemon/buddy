@@ -1,4 +1,4 @@
-# ADR-0021: Go の API の操作を、使う依存だけを持つ操作ごとの型にする
+# ADR-0023: Go の API の操作を、使う依存だけを持つ操作ごとの型にする
 
 ## Status
 
@@ -17,7 +17,7 @@ Go の API は 3 つある。予定の API（`services/schedule`）、照合の 
 - DB の操作は sqlc、HTTP は oapi-codegen の strict server が、それぞれ 1 つのパッケージに生成する。
   - 予定の API と照合の API の `httpapi` は、生成した `StrictServerInterface` を 1 つの型で実装するので、ハンドラを操作ごとの型に分けられない。
 - 予定の API の規則と手順は、機能ごとのパッケージに置き、全ての依存は組み立ての場所（`internal/assemble`）で組み立てる。
-  - ADR-0018: [予定の API を機能ごとのパッケージに分ける](0018-schedule-api-packages.md)
+  - ADR-0020: [予定の API を機能ごとのパッケージに分ける](0020-schedule-api-packages.md)
 
 ## Decision
 
@@ -60,8 +60,8 @@ func (o Leave) Do(ctx context.Context, id string, in LeaveInput) (StatusChange, 
 常駐の処理と、操作の型以外で操作を持つ型（`calendarexport` の `Exporter`、`Outbox`、`calendarsync` の `Syncer`、`visit` の `Writer`）は、1 つの型が 1 つの役割を持つ型にする。
 
 - これらの型は、同じ集約のリポジトリと規則を使うので、同じ機能のパッケージに置く。
-- 常駐と 1 回の繰り返しの配置先は ADR-0029 にある。
-  - ADR-0029: [Google カレンダーの書き出しと同期を、予定の API と同じイメージの Worker のコマンドで役割ごとに動かし、繰り返しを Worker のコマンドに集める](0029-calendar-worker.md)
+- 常駐と 1 回の繰り返しの配置先は ADR-0031 にある。
+  - ADR-0031: [Google カレンダーの書き出しと同期を、予定の API と同じイメージの Worker のコマンドで役割ごとに動かし、繰り返しを Worker のコマンドに集める](0031-calendar-worker.md)
 
 照合の API と ID ブローカーには、次のとおり当てる。
 

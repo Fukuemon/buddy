@@ -36,6 +36,7 @@ export const ScheduleFieldSummaryList = <Id extends string>({
               : 'ring-border-field hover:bg-surface-subtle',
             item.error !== undefined && 'ring-2 ring-danger',
           )}
+          data-invalid={item.error !== undefined || undefined}
           data-testid={`schedule-field-${item.id}`}
           onClick={() => onSelect(item.id)}
           type="button"
@@ -54,9 +55,7 @@ export const ScheduleFieldSummaryList = <Id extends string>({
             )}
           </span>
           {item.error !== undefined && (
-            <span className="text-caption text-danger" role="alert">
-              {item.error}
-            </span>
+            <span className="text-caption text-danger">{item.error}</span>
           )}
         </button>
       </li>

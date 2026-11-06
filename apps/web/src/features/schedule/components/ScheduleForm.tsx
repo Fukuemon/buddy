@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Controller, useWatch, type UseFormReturn } from 'react-hook-form'
 
 import type { Patient, ServiceCodeRecord, Staff } from '#/api/types'
-import { TextareaField } from '@buddy/ui'
+import { TextareaField, useFocusFirstInvalid } from '@buddy/ui'
 
 import { SCHEDULE_CATEGORY_LABEL } from '../constants/scheduleLabels'
 import { activePatients } from '#/api/activePatients'
@@ -48,6 +48,9 @@ export const ScheduleForm = ({
   onSubmit,
 }: ScheduleFormProps) => {
   const [activeField, setActiveField] = useState<FieldId>('date-time')
+  // 誤りの欄は閉じた編集の欄にあることがあるので、左の一覧の最初の誤りの項目へフォーカスを移す
+  const { ref: formRef, focusFirstInvalid } =
+    useFocusFirstInvalid<HTMLFormElement>('[data-invalid]')
   const { control, formState, handleSubmit } = form
   const values = useWatch({ control }) as Partial<ScheduleFormValues>
   const errors = formState.errors as Partial<Record<string, { message?: string }>>
@@ -138,7 +141,8 @@ export const ScheduleForm = ({
       data-testid="schedule-form"
       id={id}
       noValidate
-      onSubmit={handleSubmit(onSubmit)}
+      onSubmit={handleSubmit(onSubmit, focusFirstInvalid)}
+      ref={formRef}
     >
       <ScheduleFieldSummaryList activeId={visibleField} items={items} onSelect={setActiveField} />
       <div>

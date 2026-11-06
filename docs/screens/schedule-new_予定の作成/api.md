@@ -31,7 +31,7 @@ OpenAPI の項目のうち、送る値は `createSchedule`（`POST /v1/facilitie
   - 処理は `apps/web/src/features/schedule/components/ScheduleCreateModalContainer.tsx` にある。
   - 送るのは `apps/web/src/features/schedule/queries.ts` の `useCreateSchedule` である。
 - `google_primary` の事業所では、`createSchedule` が予定の職員の Google カレンダーに予定を書き、書けたときだけ成功を返す。
-  - 扱いは [ADR-0026](../../adr/0026-google-calendar-sync.md) にある。
+  - 扱いは [ADR-0028](../../adr/0028-google-calendar-sync.md) にある。
 - 訪問の予定の `title` は、画面で入れず「訪問」を送る。
 - 職員、利用者、サービスコードの一覧は、`listUsers`、`listPatients`、`listServiceCodes` から取る。
   - 3 つを取り終えるまでフォームを出さない。

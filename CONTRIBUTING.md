@@ -160,7 +160,7 @@ pnpm e2e
 
 pull request では、ドキュメントサイトのプレビューを出さない。  
 変更が develop に入ると、本番のドキュメントサイトに出る。  
-ADR-0017: [カタログをドキュメントサイトと同じ Worker で、develop に入ったときだけ出す](docs/adr/0017-docs-site-publish.md)
+ADR-0019: [カタログをドキュメントサイトと同じ Worker で、develop に入ったときだけ出す](docs/adr/0019-docs-site-publish.md)
 
 - マージする前に公開した形で見るときは、ルートでサイトを組み立て、静的なファイルとして配信して開く。
 
@@ -219,10 +219,11 @@ node scripts/check-links.mjs
 
 使い方の規則は [packages/ui/DESIGN.md](packages/ui/DESIGN.md) にある。  
 トークンを直すときは、スキル write-design-system に従う。  
-意味のトークン（`packages/ui/src/tokens/semantic.css`）か DADS のバージョンを変えたら、次を流し、生成した `docs/screens/_common/tokens.css` を同じコミットに入れる。
+プリミティブトークン（`packages/ui/src/tokens/primitive.css`）かセマンティックトークン（`packages/ui/src/tokens/semantic.css`）を変えたら、次を流す。  
+生成した `docs/screens/_common/tokens.css` は、同じコミットに入れる。
 
 ```sh
-pnpm check:contrast   # 意味のトークンの組が WCAG 2.2 のコントラスト比の基準に届くか
+pnpm check:contrast   # セマンティックトークンの組が WCAG 2.2 のコントラスト比の基準に届くか
 pnpm build:tokens     # 画面のモックとドキュメントサイトが読む tokens.css を作り直す
 ```
 
@@ -235,17 +236,26 @@ ID ブローカーの画面（`apps/broker/src`）か、`packages/ui` のトー�
 pnpm --filter @buddy/broker generate   # ID ブローカーの画面のテンプレートと CSS を作り直す
 ```
 
-画面（`apps/web/src`）と `packages/ui/src` のコンポーネントのコードを変えたら、DESIGN.md の「画面を作るときの原則」に反する書き方がないかを確認する。  
+画面（`apps/web/src`）と `packages/ui/src` のコンポーネントのコードを変えたら、DESIGN.md の「画面を作るときの手順」に沿って確認し、原則の ID ごとに報告する。  
 pre-commit のフックと CI も同じチェックを流す。
 
 ```sh
-pnpm check:design   # 色の値、DADS の変数の名前、14px より小さい文字、focus-ring 以外のフォーカスの表示、余白の任意値
+pnpm check:design   # 色の値、プリミティブトークンの名前、14px より小さい文字、focus-ring 以外のフォーカスの表示、余白の任意値
 ```
 
+- 違反の行には、DESIGN.md の原則の ID が出る。
 - ロゴのように値が外で決まる行だけは、同じ行のコメントに `design-system-allow` と理由を書いて外す。
-- 次の 3 つは、agent-harness のパッケージ design-system のテンプレートを写したものである。
-  - `scripts/check-contrast.mjs`、`scripts/build-static-tokens.mjs`、`scripts/check-raw-values.mjs`
+- 次の 4 つは、agent-harness のパッケージ design-system のテンプレートを写したものである。
+  - `scripts/check-contrast.mjs`、`scripts/build-static-tokens.mjs`、`scripts/check-raw-values.mjs`、`scripts/check-utilities.mjs`
+  - `scripts/check-raw-values.mjs` には、違反の行に原則の ID を出す変更を足してある。
   - パッケージを上げたら、スキル setup-design-system の手順で差分を見て取り込む。
+
+デザインシステムへのレビューの指摘は、スキル write-design-system の「指摘を扱う」の手順で、提案として扱う。  
+採用するかは利用者が決める。
+
+- 却下した指摘は、指摘を受けた pull request のレビューのスレッドに、却下した理由を返信して残す。
+- 1 つの pull request に収まらない、デザインシステムの全体に関わる指摘は、issue に起票し、却下するときは理由を書いて閉じる。
+- DESIGN.md とスキルには、却下した指摘を書かない。画面を作るモデルが、却下した提案を規則として読まないためである。
 
 ## Changing the API Definition
 
@@ -262,7 +272,7 @@ ADR-0009: [モノレポを git flow でマージし、アプリごとのバー�
 | `services/schedule/db/` の SQL | `services/schedule` で `sqlc generate` | `services/schedule/internal/postgres/sqlcgen/` |
 | どちらかの openapi.yaml | `pnpm --filter @buddy/web generate:api` | `apps/web/src/api/generated/` |
 | `services/schedule/db/migrations/`、`services/schedule/.tbls.yml` | `pnpm generate:db-docs`（Docker が要る） | `docs/db/schedule/`（テーブル定義書と ER 図） |
-| `packages/ui/src/tokens/semantic.css`、`@digital-go-jp/design-tokens` | `pnpm build:tokens` | `docs/screens/_common/tokens.css` |
+| `packages/ui/src/tokens/primitive.css`、`packages/ui/src/tokens/semantic.css` | `pnpm build:tokens` | `docs/screens/_common/tokens.css` |
 
 テーブルを足したときは、`.tbls.yml` の `viewpoints` のどれかに入れる。  
 viewpoint を足したときは、生成した文書を `zensical.toml` の nav の「DB の設計」にも足す。  

@@ -56,6 +56,8 @@ const ScheduleEditForm = ({
   const form = useForm<ScheduleFormValues>({
     defaultValues: toScheduleFormValues(schedule),
     resolver: zodResolver(schema),
+    // 誤りの欄へのフォーカスは ScheduleForm が移す。react-hook-form は閉じた編集の欄の誤りにフォーカスを移せない
+    shouldFocusError: false,
   })
 
   // 繰り返しの回を保存すると、回は新しい単発の予定に置き換わるので、保存した予定の ID の詳細へ戻る
@@ -109,7 +111,7 @@ const ScheduleEditForm = ({
  * ログインした職員が予定の職員の予定を編集できないときは、フォームを出さずに権限が無いことを出す。
  * 職員の候補は、ログインした職員が予定を編集できる職員に限る。
  * 一度読めた後の読み直しが失敗しても、読めた値でフォームを出したままにし、入力を消さない。
- * Google カレンダーを予定の正本にする事業所（google_primary）でも同じフォームを出し、編集を開いたときに読んだ予定の etag で保存する（ADR-0026）。
+ * Google カレンダーを予定の正本にする事業所（google_primary）でも同じフォームを出し、編集を開いたときに読んだ予定の etag で保存する（ADR-0028）。
  * 開いた後に Google カレンダーで予定が変わっていたら（409 の google_event_changed）、入力を残したまま、フォームの上に最新の予定を出し、
  * etag を最新の予定の etag に置き換える。もう一度保存すると、最新の予定を入力の内容にする。
  * buddy の繰り返しの規則に写せない Google カレンダーの予定（recurrence_unsupported）は、フォームを出さずに変えられないことを出す。

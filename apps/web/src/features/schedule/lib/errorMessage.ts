@@ -33,7 +33,7 @@ export const SCHEDULE_GOOGLE_EVENT_CHANGED_MESSAGE =
   'Google カレンダーで予定が変更されていました。最新の予定を確認してから、もう一度保存してください。'
 
 /**
- * google_primary の事業所で、予定の API が Google カレンダーに書けなかったときの code ごとの文（ADR-0026）。
+ * google_primary の事業所で、予定の API が Google カレンダーに書けなかったときの code ごとの文（ADR-0028）。
  * google_write_unknown は、作成とほかの操作で案内が違うので、scheduleSubmitErrorMessage が決める。
  */
 const GOOGLE_WRITE_MESSAGES: Record<string, string> = {

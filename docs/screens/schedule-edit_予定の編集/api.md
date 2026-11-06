@@ -44,7 +44,7 @@
   - 読み直しが失敗したときは、最新の予定を出さず、`etag` も置き換えない。
   - 最新の予定は `apps/web/src/features/schedule/components/ScheduleLatestNotice.tsx` が描く。
 - `google_primary` の事業所では、`updateSchedule` が Google カレンダーの予定を書き換え、書けたときだけ成功を返す。
-  - 扱いは [ADR-0026](../../adr/0026-google-calendar-sync.md) にある。
+  - 扱いは [ADR-0028](../../adr/0028-google-calendar-sync.md) にある。
 - 保存の本文は、画面の値に、画面が持たない今の予定の値を足して作る。
   - 処理は `apps/web/src/api/http/scheduleMapper.ts` の `keepCurrentVisit` にある。
   - 訪問の予定どうしの保存では、同行者の `visit_info.companion_id` とタイトルの `title` を今の予定の値のまま送る。

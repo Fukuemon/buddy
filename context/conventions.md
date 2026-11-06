@@ -62,7 +62,7 @@ API の操作を呼ぶ関数とリポジトリのメソッドは、operationId �
 | 画面のイベントを受ける | props は `on<イベント>`、コンポーネントの中の関数は `handle<イベント>` | `onSubmit`、`handleSubmit` | 状態を読み書きしない |
 
 - 書き込みと読み取りは、動詞だけで区別する。読み取りの DB と、その同期は持たない。
-  - ADR-0022: [Go の API のパッケージをフラットに保ち、ファイルの名前の末尾の語で役割を表す](../docs/adr/0022-go-file-names.md)
+  - ADR-0024: [Go の API のパッケージをフラットに保ち、ファイルの名前の末尾の語で役割を表す](../docs/adr/0024-go-file-names.md)
 
 - `fetch`、`build`、`make`、`convert` は使わない。HTTP で取るときも `get` と `list` にする。
   - Fetch API の `fetch` を包む関数（`fetchWithAccessToken`）は、包む関数の名前を残す。
@@ -170,7 +170,7 @@ buddy だけの規則は次のとおり。
 | --- | --- | --- |
 | `routeTree.gen.ts`、`src/api/generated/**` | 整形、lint | 生成物である。生成のし直しで差分を確認する（`pnpm check:generated`） |
 | `**/*.md` | 整形（`vp fmt`） | 文書は textlint で確認する |
-| `packages/ui/src/tokens/`、`apps/web/src/api/generated/` | `pnpm check:design` | トークンの段のファイルとトークンのカタログのページは、色の値と DADS の変数の名前を持つ。生成物は画面のコードではない |
+| `packages/ui/src/tokens/`、`apps/web/src/api/generated/` | `pnpm check:design` | トークンの層のファイルとトークンのカタログのページは、色の値とプリミティブトークンの名前を持つ。生成物は画面のコードではない |
 | `dist`、`storybook-static` | lint | ビルドの出力である |
 | Go の生成物 | golangci-lint（`exclusions.generated: lax`） | 生成物である |
 | `services/schedule` の `_test.go` の gosec G101 | golangci-lint | テストの接続の設定は、使い捨てのコンテナの値である |
