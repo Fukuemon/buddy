@@ -32,4 +32,4 @@
 - [予定の管理](../services/schedule/DesignDoc.md) — 予定の API のコードの構成、テーブルの構成（ER）、認証から事業所の確認までの流れ、繰り返しの予定、予定の変更とキャンセル
 - [職員の管理](../services/schedule/internal/features/staff/DesignDoc.md) — 予定の API での職員の登録、休職、復職、退職の手順と、休職と退職の前の残る一覧、職員の管理で返す 409 のエラー
 - [権限](../services/schedule/internal/access/DesignDoc.md) — 権限のレコードとマイグレーション、職員ごとの権限の足し外しとチームの対象の移し替え、予定の認可、照合の API の権限の確認
-- [Google カレンダーとの連携](../services/schedule/internal/features/calendar/DesignDoc.md) — 事業所のサービスアカウントでの Calendar API の呼び出し、Google カレンダーの取り込み、書き出し、同期、ローカル環境と E2E の Google カレンダー
+- [Google カレンダーとの連携](../services/schedule/internal/features/calendar/DesignDoc.md) — 事業所のサービスアカウントでの Calendar API の呼び出し、Google カレンダーの取り込み、書き出し、同期、書き込み、ローカル環境と E2E の Google カレンダー
