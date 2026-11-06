@@ -28,7 +28,7 @@ func (s CalendarEventRecords) ClaimExpired(_ context.Context, now time.Time, max
 	var out []calendarsync.PendingCheck
 	for _, r := range s.Records {
 		c, ok := s.Calendars[r.ExternalCalendarID]
-		if r.Pending == nil || now.Before(r.Pending.Deadline) || !ok || !(Syncs{s.Store}).synced(c, modes) {
+		if r.Pending == nil || now.Before(r.Pending.Deadline) || !ok || !Syncs(s).synced(c, modes) {
 			continue
 		}
 		out = append(out, calendarsync.PendingCheck{Record: copyRecord(r), Calendar: c})
