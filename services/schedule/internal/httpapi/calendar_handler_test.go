@@ -87,15 +87,11 @@ func (f *fakeCalendars) RetryExport(_ context.Context, id string) (calendar.Expo
 	return calendar.Export{ID: id, Target: calendar.Target{ScheduleID: scheduleID}, Status: calendar.ExportPending, Overwrite: true}, f.err
 }
 
-func (f *fakeCalendars) AcceptExport(_ context.Context, id string) (calendar.Export, error) {
-	return calendar.Export{ID: id, Target: calendar.Target{ScheduleID: scheduleID}, Status: calendar.ExportSucceeded}, f.err
-}
-
 // app は、f のメソッド値を CalendarApp に入れる。
 func (f *fakeCalendars) app() httpapi.CalendarApp {
 	return httpapi.CalendarApp{
 		ServiceAccount: f.ServiceAccount, List: f.List, Mine: f.Mine, Check: f.Check, Link: f.Link, Unlink: f.Unlink, Preview: f.Preview,
-		Import: f.Import, ListExportIssues: f.ListExportIssues, RetryExport: f.RetryExport, AcceptExport: f.AcceptExport,
+		Import: f.Import, ListExportIssues: f.ListExportIssues, RetryExport: f.RetryExport,
 		GetCutover: f.GetCutover, StartCutover: f.StartCutover, CompleteCutover: f.CompleteCutover, CancelCutover: f.CancelCutover,
 	}
 }
@@ -134,13 +130,6 @@ func TestCalendarErrorStatus(t *testing.T) {
 			wantCode: http.StatusConflict, wantBody: "import_running"},
 		{name: "確認が必要な書き出しでない", err: apperr.ConflictCode(calendar.CodeExportNotInReview, "確認が必要な書き出しではありません"), method: http.MethodPost,
 			target: "/v1/calendar_exports/" + calendarID + "/retries", wantCode: http.StatusConflict, wantBody: "export_not_in_review"},
-		{name: "Google カレンダーの内容で解けない", err: apperr.ConflictCode(calendar.CodeExportNotAcceptable, "解けません"), method: http.MethodPost,
-			target: "/v1/calendar_exports/" + calendarID + "/acceptances", wantCode: http.StatusConflict, wantBody: "export_not_acceptable"},
-		{name: "Google カレンダーの予定を読み替えられない", err: apperr.ConflictCode(calendar.CodeExternalChangeUnappliable, "読み替えられません"),
-			method: http.MethodPost, target: "/v1/calendar_exports/" + calendarID + "/acceptances",
-			wantCode: http.StatusConflict, wantBody: "external_change_unappliable"},
-		{name: "解くときにカレンダーを読めない", err: fmt.Errorf("x: %w", calendar.ErrUnreadable), method: http.MethodPost,
-			target: "/v1/calendar_exports/" + calendarID + "/acceptances", wantCode: http.StatusUnprocessableEntity, wantBody: "calendar_unreadable"},
 		{name: "期間が逆", method: http.MethodPost, target: previewTarget, body: `{"range_start":"2026-11-30","range_end":"2026-11-01"}`,
 			wantCode: http.StatusBadRequest, wantBody: "invalid_input"},
 		{name: "取り込み方の値が定義に無い", method: http.MethodPost, target: "/v1/external_calendars/" + calendarID + "/imports",
@@ -266,9 +255,10 @@ func TestCalendarExportIssues(t *testing.T) {
 		t.Errorf("書き直し: status = %d, body = %v", rec.Code, body)
 	}
 
-	rec, body = do(t, newCalendarRouter(&fakeCalendars{}), http.MethodPost, "/v1/calendar_exports/"+calendarID+"/acceptances", "")
-	if rec.Code != http.StatusOK || body["status"] != "succeeded" {
-		t.Errorf("Google の内容で解く: status = %d, body = %v", rec.Code, body)
+	// Google の内容で解く操作は消した（ADR-0026）
+	rec, _ = do(t, newCalendarRouter(&fakeCalendars{}), http.MethodPost, "/v1/calendar_exports/"+calendarID+"/acceptances", "")
+	if rec.Code != http.StatusNotFound {
+		t.Errorf("Google の内容で解く: status = %d, want 404", rec.Code)
 	}
 }
 

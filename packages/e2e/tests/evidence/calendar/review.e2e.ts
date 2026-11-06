@@ -226,7 +226,7 @@ test.describe('確認が必要な予定', () => {
     for (const variant of EVIDENCE_VARIANTS) {
       const prefix = variant.label ? `${variant.label}: ` : ''
 
-      test(`${prefix}キャンセルした単発の予定が Google カレンダーで変わっていた場合、キャンセルした予定の理由が出て、Google の内容に合わせるボタンが出ないこと`, async ({
+      test(`${prefix}キャンセルした単発の予定が Google カレンダーで変わっていた場合、キャンセルした予定の理由が出て、buddy の内容で書き直すだけが出ること`, async ({
         browser,
       }) => {
         const url = storyUrl('画面-calendar-calendarreviewcontainer--default')
@@ -237,7 +237,7 @@ test.describe('確認が必要な予定', () => {
           {
             name: 'calendar-review-cancelled',
             title:
-              'buddy でキャンセルした単発の予定が Google カレンダーで変わっていたとき、確認が必要な予定にキャンセルした予定の理由が出て、予定の確認のダイアログに「Google の内容に合わせる」が出ない',
+              'buddy でキャンセルした単発の予定が Google カレンダーで変わっていたとき、確認が必要な予定にキャンセルした予定の理由が出て、予定の確認のダイアログに「buddy の内容で書き直す」だけが出る',
             actor: 'ログインなし（Storybook の story）',
             variant,
           },
@@ -266,7 +266,7 @@ test.describe('確認が必要な予定', () => {
             )
             await expect(dialog(page).getByTestId('calendar-review-rewrite-export-5')).toBeVisible()
             await expect(dialog(page).getByTestId('calendar-review-open-export-5')).toBeVisible()
-            await expect(dialog(page).getByTestId(/^calendar-review-accept-/)).toHaveCount(0)
+            await expect(dialog(page)).not.toContainText('Google の内容に合わせる')
             await check(
               '予定の確認のダイアログに「…書き直すと Google カレンダーの予定を消すので、消してよいかを職員に確認してください。」の理由が出て、「Google の内容に合わせる」が出ず、「予定を開く」と「buddy の内容で書き直す」が出る',
             )

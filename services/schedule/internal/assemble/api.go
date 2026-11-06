@@ -13,7 +13,6 @@ import (
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendar"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendarexport"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendarimport"
-	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendarsync"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/organization"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/patient"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/schedule"
@@ -225,19 +224,17 @@ func scheduleApp(
 	}
 }
 
-// calendarApp は、calendar、calendarimport、calendarsync、calendarexport の操作の型を作り、CalendarApp に入れる。accounts が nil なら、外部のカレンダーを読む操作は ErrNotConfigured を返す。
+// calendarApp は、calendar、calendarimport、calendarexport の操作の型を作り、CalendarApp に入れる。accounts が nil なら、外部のカレンダーを読む操作は ErrNotConfigured を返す。
 func calendarApp(
 	calendars interface {
 		calendar.Repository
 		calendarimport.Calendars
-		calendarsync.Calendars
 	},
 	accounts calendar.Accounts,
 	staffRefs calendar.StaffRefs,
 	locks interface {
 		calendar.FacilityLock
 		calendarimport.FacilityLock
-		calendarsync.FacilityLock
 	},
 	patients calendar.Patients,
 	serviceCodes calendar.ServiceCodes,
@@ -246,10 +243,7 @@ func calendarApp(
 	recurring calendarimport.Recurring,
 	recurringSchedules kernel.Finder[scheduleview.RecurringDetail],
 	visits calendar.VisitStore,
-	exports interface {
-		calendarsync.ExportRepository
-		calendarexport.ExportRepository
-	},
+	exports calendarexport.ExportRepository,
 	cut cutoverDeps,
 	tx tx.Transactor,
 	ids kernel.IDGenerator,
@@ -271,7 +265,6 @@ func calendarApp(
 		CancelCutover:    calendarimport.NewCancelCutover(cut.facilities, cut.cutovers, tx, guard).Do,
 		ListExportIssues: calendarexport.NewListExportIssues(exports, guard).Do,
 		RetryExport:      calendarexport.NewRetryExport(exports, guard).Do,
-		AcceptExport:     calendarsync.NewAcceptExport(exports, schedules, calendars, accounts, staffRefs, locks, types, patients, serviceCodes, visits, tx, ids, guard).Do,
 	}
 }
 

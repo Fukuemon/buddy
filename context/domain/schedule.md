@@ -16,9 +16,8 @@ status: stable
 | 状態 | 意味 | 移る操作 |
 | --- | --- | --- |
 | 有効 | キャンセルされていない | 作る（`createSchedule`）、回の置き換え（`changeOccurrence`） |
-| キャンセル済み | 理由を付けて取り消した。レコードは消さずに残す | 有効な予定のキャンセル（`cancelSchedule`）、同期、「Google の内容に合わせる」（`createCalendarExportAcceptance`） |
+| キャンセル済み | 理由を付けて取り消した。レコードは消さずに残す | 有効な予定のキャンセル（`cancelSchedule`） |
 
-同期と「Google の内容に合わせる」は、Google カレンダーで消された予定を、理由を「Google カレンダーで消されました」にしてキャンセル済みに移す。  
 キャンセル済みから有効に戻す操作は無い。
 
 有効な予定は、変更（`updateSchedule`）で枠を丸ごと置き換える。  
@@ -59,7 +58,6 @@ status: stable
       - 切り替えの月の初日より後に終わる Google の予定が、全て取り込んだ予定か、取り込まないと決めた予定である。
       - 取り込んだ後に、Google で予定が変わっていない。
   - `buddy_primary` の事業所は buddy が正本で、Google カレンダーでの変更を予定に取り込まない。
-    - 確認が必要な書き出しを Google の内容に合わせる操作（`createCalendarExportAcceptance`）は、409（code は `export_not_acceptable`）で拒む。
   - ADR-0026: [Google カレンダーとの連携を、事業所ごとの正本のモードで分ける](../../docs/adr/0026-google-calendar-sync.md)
   - ADR-0028: [事業所の予定の正本を、期間のある切り替えの記録で Google カレンダーから buddy へ移す](../../docs/adr/0028-calendar-cutover.md)
 

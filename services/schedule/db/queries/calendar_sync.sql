@@ -31,9 +31,6 @@ SET sync_token = sqlc.narg(sync_token), last_status = sqlc.arg(last_status), las
     next_sync_at = now() + make_interval(secs => sqlc.arg(after_seconds)::float8), locked_until = NULL
 WHERE external_calendar_id = sqlc.arg(external_calendar_id) AND locked_until = sqlc.arg(locked_until);
 
--- name: GetExternalEventLinkByEvent :one
-SELECT * FROM external_event_links WHERE external_calendar_id = $1 AND external_event_id = $2;
-
 -- name: CalendarSyncBacklog :one
 -- 外していないカレンダーのうち、事業所の正本のモードが modes にあるカレンダーの、読む時刻を過ぎたものの数と、
 -- 最も古い最後の成功からの秒数を返す。

@@ -930,29 +930,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/calendar_exports/{calendar_export_id}/acceptances": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * 確認が必要な書き出しを Google カレンダーの内容で解く
-         * @description 確認が必要な書き出しの予定を、Google カレンダーの今の内容にそろえ、書き出しを終える。buddy で変えた日時とタイトルは消える。
-         *     Google カレンダーで消された予定（予定が cancelled で返るときと、予定が 404 か 410 で、カレンダーは読めるとき）は、buddy でキャンセルする。
-         *     buddy を予定の正本にする事業所（buddy_primary）では、Google カレンダーの内容を当てず、export_not_acceptable で拒む（ADR-0026）。
-         *     acceptable が true の書き出しだけを解ける。職員の管理の権限（staff.manage）を持つ職員だけが呼べる。
-         */
-        post: operations["createCalendarExportAcceptance"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/v1/facilities/{facility_id}/calendar_cutover_status": {
         parameters: {
             query?: never;
@@ -1062,7 +1039,7 @@ export interface components {
         Time: string;
         Error: {
             /** @enum {string} */
-            code: "invalid_input" | "unauthenticated" | "forbidden" | "not_found" | "conflict" | "internal" | "calendar_unreadable" | "calendar_unavailable" | "calendar_not_configured" | "calendar_taken" | "calendar_already_linked" | "staff_has_calendar" | "import_running" | "import_preview_changed" | "export_not_in_review" | "export_not_acceptable" | "external_change_unappliable" | "google_primary" | "staff_has_assignments" | "patient_has_schedules" | "cutover_open" | "cutover_not_google_primary" | "cutover_sync_not_ready" | "cutover_not_open" | "cutover_incomplete";
+            code: "invalid_input" | "unauthenticated" | "forbidden" | "not_found" | "conflict" | "internal" | "calendar_unreadable" | "calendar_unavailable" | "calendar_not_configured" | "calendar_taken" | "calendar_already_linked" | "staff_has_calendar" | "import_running" | "import_preview_changed" | "export_not_in_review" | "google_primary" | "staff_has_assignments" | "patient_has_schedules" | "cutover_open" | "cutover_not_google_primary" | "cutover_sync_not_ready" | "cutover_not_open" | "cutover_incomplete";
             /** @description 人が読む日本語の説明。文言は変わることがあるので、利用者の分岐は `code` で行う */
             message: string;
         };
@@ -1511,8 +1488,8 @@ export interface components {
             /** @description date の翌日の end_time に終わる予定のとき true */
             ends_next_day: boolean;
             /**
-             * @description Google カレンダーの内容で解けるか（POST /v1/calendar_exports/{calendar_export_id}/acceptances）。
-             *     単発の予定で、buddy でキャンセルしておらず、error_code が precondition_failed か not_found のときに true
+             * @description Google カレンダーで予定が変わったか消えたので書けなかった、buddy でキャンセルしていない単発の予定か。
+             *     error_code が precondition_failed か not_found のときに true
              */
             acceptable: boolean;
         };
@@ -3903,48 +3880,6 @@ export interface operations {
                 };
             };
             500: components["responses"]["InternalError"];
-        };
-    };
-    createCalendarExportAcceptance: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                calendar_export_id: components["parameters"]["CalendarExportID"];
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Google カレンダーの内容にそろえ、書き出しを終えた */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CalendarExport"];
-                };
-            };
-            400: components["responses"]["BadRequest"];
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            404: components["responses"]["NotFound"];
-            /**
-             * @description 確認が必要な書き出しでない（export_not_in_review）か、Google カレンダーの内容で解けない書き出しである（export_not_acceptable）か、
-             *     Google カレンダーの予定を buddy の予定に読み替えられない（external_change_unappliable。終日にした予定、タイトルの利用者を引けない予定など）
-             */
-            409: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Error"];
-                };
-            };
-            422: components["responses"]["CalendarUnreadable"];
-            500: components["responses"]["InternalError"];
-            502: components["responses"]["CalendarUnavailable"];
-            503: components["responses"]["CalendarNotConfigured"];
         };
     };
     getCalendarCutoverStatus: {

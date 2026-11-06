@@ -10,7 +10,7 @@ import (
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendar"
 )
 
-// Calendars は、calendar.Repository、calendarimport.Calendars、calendarsync.Calendars、calendarexport.ExportCalendars と calendarexport.ExporterCalendars のメモリ上の実装である。ロックは取らない。
+// Calendars は、calendar.Repository、calendarimport.Calendars、calendarexport.ExportCalendars と calendarexport.ExporterCalendars のメモリ上の実装である。ロックは取らない。
 type Calendars struct{ *Store }
 
 // Get は、外したものも含めてカレンダーを返す。
@@ -166,7 +166,7 @@ func (s Calendars) ActiveByStaff(_ context.Context, staffID string) (calendar.Ex
 	return calendar.ExternalCalendar{}, apperr.ErrNotFound
 }
 
-// LinkBySchedule は、calendarsync.Calendars と calendarexport.ExportCalendars の LinkBySchedule を実装する。
+// LinkBySchedule は、calendarexport.ExportCalendars の LinkBySchedule を実装する。
 func (s Calendars) LinkBySchedule(_ context.Context, scheduleID string) (calendar.EventLink, error) {
 	return s.linkBy(func(l calendar.EventLink) *string { return l.ScheduleID }, scheduleID)
 }
@@ -174,16 +174,6 @@ func (s Calendars) LinkBySchedule(_ context.Context, scheduleID string) (calenda
 // LinkByRecurringSchedule は、calendarexport.ExportCalendars の LinkByRecurringSchedule を実装する。
 func (s Calendars) LinkByRecurringSchedule(_ context.Context, recurringScheduleID string) (calendar.EventLink, error) {
 	return s.linkBy(func(l calendar.EventLink) *string { return l.RecurringScheduleID }, recurringScheduleID)
-}
-
-// LinkByEvent は、calendarsync.Calendars の LinkByEvent を実装する。
-func (s Calendars) LinkByEvent(_ context.Context, externalCalendarID, eventID string) (calendar.EventLink, error) {
-	for _, l := range s.Links {
-		if l.ExternalCalendarID == externalCalendarID && l.ExternalEventID == eventID {
-			return l, nil
-		}
-	}
-	return calendar.EventLink{}, apperr.ErrNotFound
 }
 
 func (s Calendars) linkBy(target func(calendar.EventLink) *string, id string) (calendar.EventLink, error) {
@@ -195,7 +185,7 @@ func (s Calendars) linkBy(target func(calendar.EventLink) *string, id string) (c
 	return calendar.EventLink{}, apperr.ErrNotFound
 }
 
-// UpdateLink は、calendarsync.Calendars と calendarexport.ExporterCalendars の UpdateLink を実装する。
+// UpdateLink は、calendarexport.ExporterCalendars の UpdateLink を実装する。
 func (s Calendars) UpdateLink(_ context.Context, id, etag string, version int) error {
 	l, err := get(s.Links, id)
 	if err != nil {

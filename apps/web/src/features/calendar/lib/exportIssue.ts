@@ -55,7 +55,7 @@ export const exportIssueReason = (issue: ExportIssueState) => {
 
 /**
  * 予定の確認のダイアログで理由の文に続ける、ボタンで足りないときに職員が次にすることの文。無い理由は undefined を返す。
- * ボタンが示す操作（合わせる、書き直す、予定を開く）は繰り返さない。
+ * ボタンが示す操作（書き直す、予定を開く）は繰り返さない。
  */
 export const exportIssueReasonDetail = (issue: ExportIssueState) => {
   switch (issue.error_code) {

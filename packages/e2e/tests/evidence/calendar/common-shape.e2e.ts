@@ -112,14 +112,15 @@ test.describe('画面の共通の形', () => {
       )
     })
 
-    test(`${prefix}確認が必要な予定の行を押した場合、予定と、選べる操作を入れたダイアログが出ること`, async ({
+    test(`${prefix}buddy を正本にする事業所で確認が必要な予定の行を押した場合、予定と、buddy の内容で書き直すだけを入れたダイアログが出ること`, async ({
       browser,
     }) => {
       await recordPrEvidence(
         browser,
         {
           name: 'review-detail-dialog',
-          title: '確認が必要な予定の行を押し、予定と選べる操作を入れたダイアログを見て、× で閉じる',
+          title:
+            'buddy を正本にする事業所で確認が必要な予定の行を押し、予定と書き直すだけを入れたダイアログを見て、× で閉じる',
           actor: ACTOR,
           variant,
         },
@@ -139,9 +140,9 @@ test.describe('画面の共通の形', () => {
           await expect(dialog.getByTestId('calendar-review-dialog-reason')).toBeVisible()
           const rewrite = dialog.getByTestId(/^calendar-review-rewrite-/)
           await expect(rewrite).not.toHaveClass(/bg-primary/)
-          await expect(dialog.getByTestId(/^calendar-review-accept-/)).not.toHaveClass(/bg-primary/)
+          await expect(dialog).not.toContainText('Google の内容に合わせる')
           await check(
-            '「食い違った予定」のダイアログに、予定の日時、職員、最後に変わった日時、理由、予定を開くが出て、フッターに「Google の内容に合わせる」「buddy の内容で書き直す」が主ボタンの色でなく並ぶ',
+            '「食い違った予定」のダイアログに、予定の日時、職員、最後に変わった日時、理由、予定を開くが出て、フッターに「buddy の内容で書き直す」だけが主ボタンの色でなく出る',
           )
 
           await step('右上の × を押す')

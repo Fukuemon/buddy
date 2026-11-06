@@ -86,15 +86,10 @@ const (
 	CodeStaffHasCalendar = "staff_has_calendar"
 	// CodeExportNotInReview は、書き直そうとした書き出しが、確認が必要な状態でないことを表す。
 	CodeExportNotInReview = "export_not_in_review"
-	// CodeExportNotAcceptable は、外部のカレンダーの内容を buddy に当てられない書き出しであることを表す。
-	// 繰り返しの予定と、書けなかった（failed）書き出しが当たる。
-	CodeExportNotAcceptable = "export_not_acceptable"
-	// CodeExternalChangeUnappliable は、外部のカレンダーの予定を buddy の予定に読み替えられないことを表す。
-	CodeExternalChangeUnappliable = "external_change_unappliable"
 )
 
 var (
-	// ErrExportNotInReview は、書き直すか外部の内容を当てようとした書き出しの待ちが、確認が必要な状態（conflict か failed）でないことを表す。
+	// ErrExportNotInReview は、書き直そうとした書き出しの待ちが、確認が必要な状態（conflict か failed）でないことを表す。
 	// コードは CodeExportNotInReview である。
 	ErrExportNotInReview = apperr.ConflictCode(CodeExportNotInReview, "この予定は、確認が必要な書き出しではありません")
 )

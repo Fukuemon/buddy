@@ -23,8 +23,6 @@ const (
 	syncCallTimeout = time.Minute
 	// syncLease は、取ったカレンダーをほかの処理に渡さない時間である。syncBatch 件を syncCallTimeout で終えても超えない長さにする。
 	syncLease = 6 * time.Minute
-	// syncRetryAfter は、予定を書いている書き出しの処理を待って、カレンダーを読み直すまでの時間である。
-	syncRetryAfter = 5 * time.Second
 )
 
 // CalendarReader は、Syncer が、予定を当てる前に結び付けたカレンダーを読み直す。見つからないときは apperr.ErrNotFound を返す。
@@ -48,7 +46,6 @@ type SyncerDeps struct {
 // Applier は、外部のカレンダーの予定の変更を当てる規則である。
 type Applier interface {
 	// Apply は、カレンダー c の外部の予定 ev の変更を当てる。Syncer が 1 つの予定ごとに開くトランザクションの中で呼ぶ。
-	// 予定を書いている書き出しの処理があれば、当てずに errExportWriting を返し、Syncer はカレンダーを後で読み直す。
 	Apply(ctx context.Context, c calendar.ExternalCalendar, ev calendar.Event) error
 	// Settle は、カレンダー c の読んだ予定を全て当てた後に、Syncer が開くトランザクションの中で呼ぶ。full は、トークンを付けずに
 	// 全ての予定を読んだか（最初の同期と、トークンが切れた 410 の後）で、eventIDs は、読んだ予定の ID である。
@@ -119,7 +116,7 @@ type outcome int
 const (
 	outcomeSynced outcome = iota
 	outcomeFailed
-	// outcomeHeld は、当てずに置いたことを表す。書き出しを待って読み直すときと、途中でカレンダーが外れたかモードが変わったときである。
+	// outcomeHeld は、当てずに置いたことを表す。途中でカレンダーが外れたかモードが変わったときである。
 	outcomeHeld
 	// outcomeRequeued は、止める合図で、前の状態のまま返したことを表す。
 	outcomeRequeued
@@ -217,8 +214,6 @@ func (s *Syncer) stopped(ctx context.Context, st SyncState, token string, err er
 	case errors.Is(err, errCalendarUnlinked), errors.Is(err, errModeChanged):
 		// 外したカレンダーと、Applier の無いモードの事業所のカレンダーは次から取らないので、トークンと状態は前のまま返す
 		return SyncResult{SyncToken: st.SyncToken, Status: st.LastStatus, ErrorCode: st.LastError, After: s.interval}, outcomeHeld, true
-	case errors.Is(err, errExportWriting):
-		return SyncResult{SyncToken: token, Status: st.LastStatus, ErrorCode: st.LastError, After: syncRetryAfter}, outcomeHeld, true
 	}
 	s.log.ErrorContext(ctx, "calendar sync failed", append(attrs, slog.Any("error", err))...)
 	code := SyncApplyFailed

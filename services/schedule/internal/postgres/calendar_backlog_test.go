@@ -32,7 +32,10 @@ func TestCalendarExportBacklog(t *testing.T) {
 		t.Fatal(err)
 	}
 	// 確認が必要な待ちは、職員が選ぶまで書かないので数えない
-	if err := r.Hold(ctx, conflictID, calendar.Target{FacilityID: seedFacility, ScheduleID: seedVisitSchedule}, calendar.ErrorPreconditionFailed); err != nil {
+	if err := r.Enqueue(ctx, conflictID, calendar.Target{FacilityID: seedFacility, ScheduleID: seedVisitSchedule}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := tx.Exec(ctx, "UPDATE calendar_exports SET status = 'conflict', error_code = 'precondition_failed' WHERE id = $1", conflictID); err != nil {
 		t.Fatal(err)
 	}
 	for id, age := range map[string]string{pendingID: "10 minutes", retryID: "1 hour", conflictID: "1 day"} {

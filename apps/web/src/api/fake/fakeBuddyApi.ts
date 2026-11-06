@@ -421,18 +421,6 @@ export const createFakeBuddyApi = ({
         exportIssues.delete(exportId)
         return { ...exportOfIssue(issue), status: 'pending', error_code: null, attempts: 0 }
       },
-      acceptExport: async (facilityId, exportId) => {
-        assertFacility(facilityId)
-        const issue = exportIssues.get(exportId)
-        if (issue === undefined) throw notFound()
-        if (!issue.acceptable)
-          throw conflict(
-            'export_not_acceptable',
-            'この予定は、Google カレンダーの内容を buddy に当てられません。buddy の内容で書き直してください',
-          )
-        exportIssues.delete(exportId)
-        return { ...exportOfIssue(issue), status: 'succeeded', error_code: null }
-      },
       cutoverStatus: async (facilityId) => {
         assertFacility(facilityId)
         return { cutover, calendars: cutoverCalendars() }

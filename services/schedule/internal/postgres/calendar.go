@@ -10,11 +10,10 @@ import (
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendar"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendarexport"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendarimport"
-	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendarsync"
 	"github.com/Fukuemon/buddy/services/schedule/internal/postgres/sqlcgen"
 )
 
-// CalendarRepository は、calendar.Repository、calendarimport.Calendars、calendarsync.Calendars、calendarexport.ExportCalendars と calendarexport.ExporterCalendars を実装する。
+// CalendarRepository は、calendar.Repository、calendarimport.Calendars、calendarexport.ExportCalendars と calendarexport.ExporterCalendars を実装する。
 type CalendarRepository struct{ conn }
 
 // NewCalendarRepository は CalendarRepository を作る。
@@ -25,7 +24,6 @@ func NewCalendarRepository(pool *pgxpool.Pool) *CalendarRepository {
 var (
 	_ calendar.Repository              = (*CalendarRepository)(nil)
 	_ calendarimport.Calendars         = (*CalendarRepository)(nil)
-	_ calendarsync.Calendars           = (*CalendarRepository)(nil)
 	_ calendarexport.ExportCalendars   = (*CalendarRepository)(nil)
 	_ calendarexport.ExporterCalendars = (*CalendarRepository)(nil)
 )
@@ -231,17 +229,6 @@ func (r *CalendarRepository) ActiveByStaff(ctx context.Context, staffID string) 
 // LinkBySchedule は、単発の予定 scheduleID の予定の対応を返す。無いときは apperr.ErrNotFound を返す。
 func (r *CalendarRepository) LinkBySchedule(ctx context.Context, scheduleID string) (calendar.EventLink, error) {
 	l, err := r.q(ctx).GetExternalEventLinkBySchedule(ctx, &scheduleID)
-	if err != nil {
-		return calendar.EventLink{}, translate("get external event link", err)
-	}
-	return toLink(l), nil
-}
-
-// LinkByEvent は、カレンダー externalCalendarID の外部の予定 eventID の予定の対応を返す。無いときは apperr.ErrNotFound を返す。
-func (r *CalendarRepository) LinkByEvent(ctx context.Context, externalCalendarID, eventID string) (calendar.EventLink, error) {
-	l, err := r.q(ctx).GetExternalEventLinkByEvent(ctx, sqlcgen.GetExternalEventLinkByEventParams{
-		ExternalCalendarID: externalCalendarID, ExternalEventID: eventID,
-	})
 	if err != nil {
 		return calendar.EventLink{}, translate("get external event link", err)
 	}

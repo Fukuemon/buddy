@@ -112,7 +112,7 @@ test.describe('確認が必要な予定', () => {
         const dialog = page.getByTestId('calendar-review-dialog')
         // 書き直す操作が出たことで、ダイアログを描き終えたとみなしてから、合わせる操作が無いことを確認する
         await expect(dialog.getByTestId(/^calendar-review-rewrite-/)).toBeVisible()
-        await expect(dialog.getByTestId(/^calendar-review-accept-/)).toHaveCount(0)
+        await expect(dialog).not.toContainText('Google の内容に合わせる')
 
         await openSchedule(page, changed)
         await expect(page.getByTestId('schedule-detail-modal')).toContainText(changed)

@@ -10,6 +10,7 @@ import (
 
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendar"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendarsync"
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/organization"
 	"github.com/Fukuemon/buddy/services/schedule/internal/gcal"
 	"github.com/Fukuemon/buddy/services/schedule/internal/gcal/gcaltest"
 	"github.com/Fukuemon/buddy/services/schedule/internal/inmem"
@@ -58,6 +59,7 @@ func wantCounts(t *testing.T, line map[string]any, want map[string]float64) {
 
 func TestSyncLogsBatchAndBacklog(t *testing.T) {
 	e := newSyncEnv(t)
+	setSourceMode(e.store, organization.SourceGooglePrimary)
 	// 2 つ目のカレンダーは、サービスアカウントに共有されておらず読めない
 	e.store.Calendars["CAL2"] = calendar.ExternalCalendar{
 		ID: "CAL2", FacilityID: inmem.FacilityID, StaffID: inmem.StaffID, Provider: calendar.ProviderGoogle, CalendarID: "unshared@example.com",
@@ -81,6 +83,7 @@ func TestSyncLogsBatchAndBacklog(t *testing.T) {
 
 func TestSyncLogsRequeuedOnShutdown(t *testing.T) {
 	e := newSyncEnv(t)
+	setSourceMode(e.store, organization.SourceGooglePrimary)
 	logs := &bytes.Buffer{}
 	ctx, cancel := context.WithCancel(t.Context())
 	cancel()
