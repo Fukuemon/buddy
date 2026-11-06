@@ -24,7 +24,7 @@ func NewCalendarProjectionRepository(pool *pgxpool.Pool) *CalendarProjectionRepo
 
 var _ calendarsync.Projections = (*CalendarProjectionRepository)(nil)
 
-// Put は、p の行を足すか、同じカレンダーと Google の予定の ID の行を p にする。写した時刻は DB の今の時刻にする。
+// Put は、calendarsync.Projections の Put を実装する。写した時刻は DB の今の時刻にする。
 func (r *CalendarProjectionRepository) Put(ctx context.Context, p scheduleview.Projection) error {
 	err := r.q(ctx).PutCalendarEventProjection(ctx, sqlcgen.PutCalendarEventProjectionParams{
 		ExternalCalendarID: p.ExternalCalendarID, ExternalEventID: p.EventID, FacilityID: p.FacilityID, StaffID: p.StaffID,
@@ -35,6 +35,14 @@ func (r *CalendarProjectionRepository) Put(ctx context.Context, p scheduleview.P
 		LastEndDate: nullDate(p.LastEndDate),
 	})
 	return translate("put calendar event projection", err)
+}
+
+// CancelOccurrences は、calendarsync.Projections の CancelOccurrences を実装する。
+func (r *CalendarProjectionRepository) CancelOccurrences(ctx context.Context, externalCalendarID, parentEventID string) error {
+	err := r.q(ctx).CancelCalendarEventProjectionOccurrences(ctx, sqlcgen.CancelCalendarEventProjectionOccurrencesParams{
+		ExternalCalendarID: externalCalendarID, ParentEventID: &parentEventID,
+	})
+	return translate("cancel calendar event projection occurrences", err)
 }
 
 // Delete は、カレンダー externalCalendarID の予定 eventID の行と、その予定を親にする例外の回の行を消す。行が無くてもエラーにしない。

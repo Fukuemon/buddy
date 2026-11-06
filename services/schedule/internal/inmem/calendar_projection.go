@@ -20,8 +20,25 @@ type Projections struct{ *Store }
 
 // Put は、calendarsync.Projections の Put を実装する。写した時刻は今の時刻にする。
 func (s Projections) Put(_ context.Context, p scheduleview.Projection) error {
+	k := ProjectionKey{p.ExternalCalendarID, p.EventID}
+	if old, ok := s.Projections[k]; ok && old.GoogleUpdatedAt != nil && (p.GoogleUpdatedAt == nil || !p.GoogleUpdatedAt.After(*old.GoogleUpdatedAt)) {
+		return nil
+	}
 	p.ProjectedAt = time.Now()
-	s.Projections[ProjectionKey{p.ExternalCalendarID, p.EventID}] = p
+	s.Projections[k] = p
+	return nil
+}
+
+// CancelOccurrences は、calendarsync.Projections の CancelOccurrences を実装する。
+func (s Projections) CancelOccurrences(_ context.Context, externalCalendarID, parentEventID string) error {
+	for k, p := range s.Projections {
+		if k.ExternalCalendarID != externalCalendarID || p.RecurringEventID != parentEventID || p.Status == scheduleview.ProjectionCancelled {
+			continue
+		}
+		p.Status, p.Title, p.Start, p.End, p.TimeZone = scheduleview.ProjectionCancelled, "", scheduleview.ProjectionTime{}, scheduleview.ProjectionTime{}, ""
+		p.ProjectedAt = time.Now()
+		s.Projections[k] = p
+	}
 	return nil
 }
 

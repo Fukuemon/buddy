@@ -301,6 +301,43 @@ func TestSchedulesListGooglePrimaryExpandsRecurrence(t *testing.T) {
 	}
 }
 
+// TestSchedulesListGooglePrimaryHidesCancelled は、Google で取り消した単発の予定と繰り返しの親を一覧に出さず、取り消した親の例外の回も
+// 出さないことと、取り消しを写した後に、Google の更新の時刻が古い取り消す前の内容を写しても、予定が一覧に戻らないことを確認する。
+func TestSchedulesListGooglePrimaryHidesCancelled(t *testing.T) {
+	s := googleStore()
+	before, after := tokyo(10, 1, 8), tokyo(10, 2, 8)
+	single := func(status scheduleview.ProjectionStatus, updated time.Time) func(*scheduleview.Projection) {
+		return func(p *scheduleview.Projection) { p.Status, p.GoogleUpdatedAt = status, &updated }
+	}
+	putEvent(s, targetCalendarID, "kept", "カンファレンス", tokyo(10, 20, 9), 60, nil)
+	putEvent(s, targetCalendarID, "weekly", "", tokyo(10, 5, 9), 60, func(p *scheduleview.Projection) {
+		p.Status, p.Start, p.End = scheduleview.ProjectionCancelled, scheduleview.ProjectionTime{}, scheduleview.ProjectionTime{}
+	})
+	putEvent(s, targetCalendarID, "weekly_20261019", "定例（変更）", tokyo(10, 20, 11), 60, func(p *scheduleview.Projection) {
+		orig := tokyo(10, 19, 9)
+		p.RecurringEventID, p.OriginalStart = "weekly", scheduleview.ProjectionTime{At: &orig}
+	})
+	putEvent(s, targetCalendarID, "gone", "担当者会議", tokyo(10, 21, 9), 60, single(scheduleview.ProjectionCancelled, after))
+	// 予定の API の書き込みが、取り消しの前に Google から受けた内容を、後から写す
+	stale := s.Projections[inmem.ProjectionKey{ExternalCalendarID: targetCalendarID, EventID: "gone"}]
+	single(scheduleview.ProjectionConfirmed, before)(&stale)
+	if err := (inmem.Projections{Store: s}).Put(t.Context(), stale); err != nil {
+		t.Fatal(err)
+	}
+
+	list, err := newSchedules(s).List(editorCtx(), facilityID, october())
+	if err != nil {
+		t.Fatal(err)
+	}
+	var got []string
+	for _, d := range list.Schedules {
+		got = append(got, *d.Title)
+	}
+	if !slices.Equal(got, []string{"カンファレンス"}) {
+		t.Errorf("予定 = %v, want 取り消していない予定だけ", got)
+	}
+}
+
 var ulidPattern = regexp.MustCompile(`^[0-7][0-9A-HJKMNP-TV-Z]{25}$`)
 
 // TestSchedulesListGooglePrimaryReviewReasons は、buddy の繰り返しの規則に写せない繰り返しの予定を、期間の外の最初の回でも 1 件で返し、

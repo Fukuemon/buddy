@@ -13,6 +13,7 @@ import (
 	"strconv"
 	"sync"
 	"testing"
+	"time"
 
 	"google.golang.org/api/calendar/v3"
 	"google.golang.org/api/option"
@@ -81,8 +82,9 @@ func (s *Server) Edit(calendarID, eventID string, fn func(*calendar.Event)) bool
 	if ev == nil {
 		return false
 	}
+	prev := ev.Updated
 	fn(ev)
-	ev.Etag = s.nextETag()
+	s.stamp(ev, prev)
 	s.touch(calendarID, eventID)
 	return true
 }
@@ -92,7 +94,11 @@ func (s *Server) Edit(calendarID, eventID string, fn func(*calendar.Event)) bool
 func (s *Server) Put(calendarID string, ev *calendar.Event) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	ev.Etag = s.nextETag()
+	prev := ""
+	if cur := s.find(calendarID, ev.Id); cur != nil {
+		prev = cur.Updated
+	}
+	s.stamp(ev, prev)
 	for i, page := range s.Calendars[calendarID] {
 		for j, cur := range page {
 			if cur.Id == ev.Id {
@@ -162,7 +168,7 @@ func (s *Server) remove(calendarID string, ev *calendar.Event) {
 		}
 	}
 	ev.Status = "cancelled"
-	ev.Etag = s.nextETag()
+	s.stamp(ev, ev.Updated)
 	if s.deleted == nil {
 		s.deleted = map[string]map[string]*calendar.Event{}
 	}
@@ -190,6 +196,25 @@ func (s *Server) find(calendarID, eventID string) *calendar.Event {
 		}
 	}
 	return nil
+}
+
+// stamp は、Google と同じく、変えた予定 ev の etag を新しくし、更新の時刻を前の時刻 prev より後にする。
+// ev の更新の時刻を、呼ぶ人が prev から変えていれば、その時刻を使う。
+func (s *Server) stamp(ev *calendar.Event, prev string) {
+	ev.Etag = s.nextETag()
+	if ev.Updated != "" && ev.Updated != prev {
+		return
+	}
+	ev.Updated = s.later(prev)
+}
+
+// later は、今の時刻と、時刻 prev の 1 ミリ秒後の、遅い方を RFC 3339 で返す。prev が読めなければ今の時刻を返す。
+func (s *Server) later(prev string) string {
+	t := time.Now().UTC()
+	if p, err := time.Parse(time.RFC3339Nano, prev); err == nil && !t.After(p) {
+		t = p.Add(time.Millisecond)
+	}
+	return t.Format(time.RFC3339Nano)
 }
 
 // nextETag は、新しい etag を返す。最初から持たせた予定の etag と重ならないよう、w を前に付ける。
@@ -382,7 +407,7 @@ func (s *Server) serveInsert(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusConflict, "The requested identifier already exists.")
 		return
 	}
-	ev.Etag = s.nextETag()
+	s.stamp(&ev, "")
 	if ev.Status == "" {
 		ev.Status = "confirmed"
 	}
@@ -440,7 +465,7 @@ func (s *Server) servePatch(w http.ResponseWriter, r *http.Request) {
 	if _, ok := raw["status"]; ok {
 		ev.Status = patch.Status
 	}
-	ev.Etag = s.nextETag()
+	s.stamp(ev, ev.Updated)
 	if wasDeleted && ev.Status != "cancelled" {
 		delete(s.deleted[cal], id)
 		s.appendEvent(cal, ev)
