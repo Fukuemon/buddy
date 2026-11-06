@@ -47,6 +47,15 @@ const RULES = [
     label: "余白の任意値",
     test: (variants, utility) => new RegExp(`^${SPACING}-[[(]`).test(utility),
   },
+  {
+    id: "MOTION-TOKEN",
+    label: "アニメーションか緩急の任意値",
+    // アニメーションの任意値はテーマ変数を通らないので、動きを減らす設定でテーマ変数を置き換える止め方では止まらない。
+    // 緩急の任意値は止め方に関わらないが、色の値と同じく、トークンを通らない値として見る。
+    // duration-* と delay-* は、テーマ変数の名前空間が無く、トークンを任意値の var() で指すほかないので見ない。
+    // transition-[...] は、遷移の対象を選ぶ書き方で、止め方が transition-property を透明度に絞るので見ない。
+    test: (variants, utility) => /^(?:animate|ease)-[[(]/.test(utility),
+  },
 ];
 
 const excluded = EXCLUDES.map((p) => resolve(p));
