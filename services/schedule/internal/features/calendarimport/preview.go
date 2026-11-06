@@ -52,7 +52,7 @@ func (u Preview) Do(ctx context.Context, id string, rng Range) (ImportPreview, e
 	if err != nil {
 		return ImportPreview{}, err
 	}
-	d := planDeps{calendars: u.calendars, patients: u.patients, recurringSchedules: u.recurringSchedules, serviceCodes: u.serviceCodes}
+	d := planDeps{calendars: u.calendars, patients: u.patients, recurringSchedules: u.recurringSchedules, serviceCodes: u.serviceCodes, records: u.cutovers}
 	p, _, err := planEvents(ctx, d, src, c, rng, blocked, planMode{cutover: open != nil, overwrite: true})
 	if err != nil {
 		return ImportPreview{}, err

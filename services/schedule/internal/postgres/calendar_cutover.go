@@ -8,6 +8,7 @@ import (
 	"github.com/Fukuemon/buddy/services/schedule/internal/civil"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendar"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendarimport"
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/visit"
 	"github.com/Fukuemon/buddy/services/schedule/internal/postgres/sqlcgen"
 )
 
@@ -126,6 +127,53 @@ func (r *CalendarCutoverRepository) ListLinks(ctx context.Context, cutoverID str
 		out[i] = toLink(l)
 	}
 	return out, nil
+}
+
+// CountPendingRecords は、事業所 facilityID の、Google カレンダーに書いた予定の記録のうち、保留の版を持つ記録の数を返す。
+func (r *CalendarCutoverRepository) CountPendingRecords(ctx context.Context, facilityID string) (int, error) {
+	n, err := r.q(ctx).CountPendingCalendarEventRecords(ctx, facilityID)
+	if err != nil {
+		return 0, translate("count pending calendar event records", err)
+	}
+	return int(n), nil
+}
+
+// ListRecordVisits は、カレンダー externalCalendarID の記録のうち、Google が受けたと分かった版の訪問の情報を持つ記録の
+// 訪問の情報を、Google の予定の ID ごとに返す。
+func (r *CalendarCutoverRepository) ListRecordVisits(ctx context.Context, externalCalendarID string) (map[string]visit.Info, error) {
+	rows, err := r.q(ctx).ListCalendarEventRecordVisits(ctx, externalCalendarID)
+	if err != nil {
+		return nil, translate("list calendar event record visits", err)
+	}
+	out := make(map[string]visit.Info, len(rows))
+	for _, row := range rows {
+		out[row.ExternalEventID] = visit.Info{
+			ID: row.ID, PatientID: row.PatientID, AssignedStaffID: row.AssignedStaffID, CompanionID: row.CompanionID,
+			ServiceCodeID: row.ServiceCodeID, CategoryIDs: row.CategoryIds,
+		}
+	}
+	return out, nil
+}
+
+// DeleteRecords は、事業所 facilityID の記録を全て消し、記録が指していた訪問の情報のうち、どの予定、繰り返しの予定、記録も
+// 指さなくなったものを消す。トランザクションの中で呼ぶ。
+func (r *CalendarCutoverRepository) DeleteRecords(ctx context.Context, facilityID string) error {
+	q := r.q(ctx)
+	rows, err := q.DeleteCalendarEventRecordsByFacility(ctx, facilityID)
+	if err != nil {
+		return translate("delete calendar event records", err)
+	}
+	for _, row := range rows {
+		for _, id := range []*string{row.VisitInfoID, row.PendingVisitInfoID} {
+			if id == nil {
+				continue
+			}
+			if err := q.DeleteUnusedVisitInfo(ctx, *id); err != nil {
+				return translate("delete unused visit info", err)
+			}
+		}
+	}
+	return nil
 }
 
 // DeleteImported は、予定の対応 links と、対応する単発の予定と繰り返しの予定と、それらの訪問の情報を消す。

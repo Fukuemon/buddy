@@ -39,13 +39,15 @@ func NewCompleteCutover(calendars Calendars, accounts calendar.Accounts, staff c
 	}
 }
 
-// Do は、切り替え id の完了の確認をし、満たせば事業所を buddy_primary にし、事業所の Projection の行を消し、切り替えを completed にして返す。
+// Do は、切り替え id の完了の確認をし、満たせば事業所を buddy_primary にし、事業所の Projection の行と、予定の API の記録と、
+// 記録だけが指していた訪問の情報を消し、切り替えを completed にして返す。
 // Google カレンダーを、切り替えの月の初日から先の全てで、トランザクションの前に読み直す。事業所の行を排他のロックで取った
 // トランザクションの中で、外していないカレンダーごとに、次の 3 つを確認する。
 //   - この切り替えで取り込み、最後の取り込みの後に同期が成功している。
 //   - 読み直した予定が全て、予定の対応を持つか、取り込みで取り込まないと決めた予定で、規則に写せない繰り返しの予定が残っていない。
 //   - 予定の対応の etag と、Google の etag が同じである。
 //
+// 確認の前に、事業所に予定の API の保留の版がある記録があれば、code が CodeWritePending の apperr.ErrConflict を返し、何も書かない。
 // 満たさないカレンダーか予定があれば、一覧を持つ *IncompleteError を返し、何も書かない。切り替えは open のままである。
 // 切り替えが無いときは apperr.ErrNotFound を、open でないときは code が CodeCutoverNotOpen の apperr.ErrConflict を返す。
 // Google カレンダーを読めないときは calendar.ErrUnreadable か calendar.ErrUnavailable か calendar.ErrNotConfigured を返す。
@@ -70,6 +72,9 @@ func (u CompleteCutover) Do(ctx context.Context, id string) (Cutover, error) {
 		if err != nil {
 			return err
 		}
+		if err := requireNoPendingWrites(ctx, u.cutovers, c.FacilityID, "完了し"); err != nil {
+			return err
+		}
 		unmet, err := u.unmet(ctx, c, read)
 		if err != nil {
 			return err
@@ -88,6 +93,9 @@ func (u CompleteCutover) Do(ctx context.Context, id string) (Cutover, error) {
 			return err
 		}
 		if err := u.projections.DeleteByFacility(ctx, f.ID); err != nil {
+			return err
+		}
+		if err := u.cutovers.DeleteRecords(ctx, f.ID); err != nil {
 			return err
 		}
 		out, err = u.cutovers.Finish(ctx, c.ID, CutoverCompleted)
@@ -140,7 +148,7 @@ func (u CompleteCutover) unmet(ctx context.Context, c Cutover, read map[string][
 	for _, r := range latest {
 		runs[r.ExternalCalendarID] = r
 	}
-	d := planDeps{calendars: u.calendars, patients: u.patients, recurringSchedules: u.recurringSchedules, serviceCodes: u.serviceCodes}
+	d := planDeps{calendars: u.calendars, patients: u.patients, recurringSchedules: u.recurringSchedules, serviceCodes: u.serviceCodes, records: u.cutovers}
 	var out []Unmet
 	for _, cal := range cals {
 		s := syncs[cal.ID]

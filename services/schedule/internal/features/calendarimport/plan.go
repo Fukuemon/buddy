@@ -15,6 +15,7 @@ import (
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/schedule"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/scheduleview"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/servicecode"
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/visit"
 )
 
 // SkipServiceNotFound は、タイトルから読んだサービス内容が、サービスコードのマスタに無い予定である。
@@ -202,6 +203,9 @@ type entry struct {
 	reviewKey string
 	// unsupported は、切り替えの取り込みで、buddy の繰り返しの規則に写せない繰り返しの親の予定である。取り込まない以外を選べない。
 	unsupported bool
+	// recordVisit は、切り替えの取り込みで、予定の API の記録が持つ訪問の情報で、ほかの予定では nil である。
+	// 持つ予定は、タイトルの読み替えの代わりに、この訪問の情報を写した訪問の予定にする。
+	recordVisit *visit.Info
 }
 
 // replacement は、繰り返しの予定の回である。parentEventID はこの取り込みで作る繰り返しの予定の親を、
@@ -245,6 +249,9 @@ type planInput struct {
 	// cutover は、切り替えの取り込みかである。切り替えの取り込みは、繰り返しの予定を回に展開せず、写せない繰り返しの予定を
 	// 確認が必要な予定にし、規則のまま取り込まない親の予定の回を取り込まない（ADR-0028）。
 	cutover bool
+	// recordVisits は、切り替えの取り込みで、予定の API の記録が持つ、Google が受けたと分かった版の訪問の情報を、
+	// Google の予定の ID で引く。ほかの取り込みでは空である。
+	recordVisits map[string]visit.Info
 }
 
 // parentMode は、繰り返しの親の予定の取り込み方である。
@@ -549,7 +556,9 @@ func (b *planner) isExcludedBefore(ev calendar.Event) bool {
 }
 
 // add は、予定を取り込む予定か確認が必要な予定に足し、取り込まない予定なら取り込まない予定に足す。取り込む予定に足したときは true を返す。
+// 切り替えの取り込みで、予定の API の記録が訪問の情報を持つ予定は、タイトルの読み替えより記録の訪問の情報を使う（ADR-0028）。
 func (b *planner) add(e entry) bool {
+	e = b.withRecordVisit(e)
 	if e.cand.Kind == calendar.KindSkipped {
 		b.skip(e.cand)
 		return false
@@ -558,7 +567,7 @@ func (b *planner) add(e entry) bool {
 		b.skipAs(e.cand, b.in.staffBlocked)
 		return false
 	}
-	if e.cand.Kind == calendar.KindVisit {
+	if e.cand.Kind == calendar.KindVisit && e.recordVisit == nil {
 		id, ok := b.serviceIDs[calendar.ServiceKey(e.cand.Service)]
 		if !ok {
 			b.skipAs(e.cand, SkipServiceNotFound)
@@ -569,6 +578,8 @@ func (b *planner) add(e entry) bool {
 	switch {
 	case e.unsupported:
 		e.reviewKey = b.review(e, nil)
+	case e.recordVisit != nil:
+		e.patientID, e.serviceCodeID = e.recordVisit.PatientID, e.recordVisit.ServiceCodeID
 	case e.cand.Kind == calendar.KindVisit:
 		matches := b.matchPatients(e.cand.Client)
 		if len(matches) == 1 {
@@ -596,6 +607,18 @@ func (b *planner) add(e entry) bool {
 		c.RecurringAsRule++
 	}
 	return true
+}
+
+// withRecordVisit は、予定の API の記録が e の予定の訪問の情報を持てば、e を記録の訪問の情報の訪問の予定にする。
+// タイトルを読めない予定も訪問の予定にし、日時を読めない予定と取り消した予定は変えない。
+func (b *planner) withRecordVisit(e entry) entry {
+	v, ok := b.in.recordVisits[e.event.ID]
+	if !ok || e.unsupported || (e.cand.Kind == calendar.KindSkipped && e.cand.SkipReason != calendar.SkipUnreadableTitle) {
+		return e
+	}
+	e.cand.Kind, e.cand.SkipReason, e.cand.Title = calendar.KindVisit, "", ""
+	e.recordVisit = &v
+	return e
 }
 
 // isAssignmentKept は、e が、前の取り込みで繰り返しのまま取り込み、今もカレンダーの職員に割り振った予定の回の置き換えかを返す。

@@ -137,7 +137,7 @@ func (u Import) importPlan(ctx context.Context, src calendar.EventSource, c cale
 	if err != nil {
 		return ImportResult{}, err
 	}
-	d := planDeps{calendars: u.calendars, patients: u.patients, recurringSchedules: u.recurringSchedules, serviceCodes: u.serviceCodes}
+	d := planDeps{calendars: u.calendars, patients: u.patients, recurringSchedules: u.recurringSchedules, serviceCodes: u.serviceCodes, records: u.cutovers}
 	p, patients, err := planEvents(ctx, d, src, c, rng, blocked, planMode{cutover: open != nil, overwrite: true})
 	if err != nil {
 		return ImportResult{}, err
@@ -302,6 +302,8 @@ func (x excluder) exclude(ctx context.Context, recurringScheduleID string, d civ
 }
 
 // slot は、取り込む予定 e の枠と種類を組み立てる。訪問の予定なら訪問の情報を書く。
+// 予定の API の記録の訪問の情報を使う予定は、記録の訪問の情報を写した新しい訪問の情報を書く。記録が指す訪問の情報を予定に指させると、
+// 切り替えをやめるときに予定と一緒に消せないためである。
 func (u Import) slot(ctx context.Context, c calendar.ExternalCalendar, e entry, types map[schedule.TypeCode]schedule.Type) (schedule.Slot, schedule.Type, error) {
 	slot := schedule.Slot{
 		FacilityID:  c.FacilityID,
@@ -314,9 +316,13 @@ func (u Import) slot(ctx context.Context, c calendar.ExternalCalendar, e entry, 
 	code := schedule.CodeNormal
 	if e.cand.Kind == calendar.KindVisit {
 		code = schedule.CodeVisit
-		id, err := u.visits.Create(ctx, c.FacilityID, visit.Input{
-			PatientID: e.patientID, AssignedStaffID: c.StaffID, ServiceCodeID: e.serviceCodeID,
-		})
+		in := visit.Input{PatientID: e.patientID, AssignedStaffID: c.StaffID, ServiceCodeID: e.serviceCodeID}
+		if v := e.recordVisit; v != nil {
+			in = visit.Input{
+				PatientID: v.PatientID, AssignedStaffID: v.AssignedStaffID, CompanionID: v.CompanionID, ServiceCodeID: v.ServiceCodeID, CategoryIDs: v.CategoryIDs,
+			}
+		}
+		id, err := u.visits.Create(ctx, c.FacilityID, in)
 		if err != nil {
 			return schedule.Slot{}, schedule.Type{}, err
 		}

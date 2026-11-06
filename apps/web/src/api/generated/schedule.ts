@@ -987,7 +987,9 @@ export interface paths {
          *     取り込みの期間は、今の Asia/Tokyo の月の初日から先の全てで、終わりを持たない。
          *     始めると、カレンダーごとに、取り込みのプレビューと確定（期間は range_start が切り替えの range_start、range_end が null）で取り込む。
          *     画面と照合は、切り替えの間も Google カレンダーの予定の写し（Projection）を読む。
-         *     外していない全てのカレンダーの最後の同期が成功していることを条件にする。職員の管理の権限（staff.manage）を持つ職員だけが呼べる。
+         *     外していない全てのカレンダーの最後の同期が成功していて、buddy から Google カレンダーに書いた結果がまだ分からない予定（保留の版）が無いことを条件にする。
+         *     切り替えの間は、buddy から予定を作成、変更、取り消しできない（createSchedule などが 409 の cutover_open を返す）。
+         *     職員の管理の権限（staff.manage）を持つ職員だけが呼べる。
          */
         post: operations["startCalendarCutover"];
         delete?: never;
@@ -1008,6 +1010,7 @@ export interface paths {
         /**
          * 予定の正本の切り替えを完了する
          * @description Google カレンダーを切り替えの月の初日から先の全てで読み直し、事業所の行を排他のロックで取って、カレンダーごとに次の 3 つを確認する（ADR-0028）。
+         *     確認の前に、buddy から Google カレンダーに書いた結果がまだ分からない予定（保留の版）があれば、何も書かずに 409（google_write_pending）を返す。
          *     最後の取り込みの後に同期が成功している。読み直した予定が全て、予定の対応を持つか取り込まないと決めた予定で、規則に写せない繰り返しの予定が残っていない。
          *     予定の対応の etag と Google の etag が同じである。
          *     満たせば、事業所を buddy_primary にし、事業所の Projection の行を消し、切り替えを completed にする。同期をやめ、書き出しを始める。
@@ -4027,6 +4030,7 @@ export interface operations {
             404: components["responses"]["NotFound"];
             /**
              * @description 事業所が buddy を予定の正本にしている（cutover_not_google_primary）か、open の切り替えがある（cutover_open）か、
+             *     保留の版がある（google_write_pending。buddy から Google カレンダーに書いた結果がまだ分からない予定がある）か、
              *     最後の同期が成功していないカレンダーがある（cutover_sync_not_ready）
              */
             409: {
@@ -4064,7 +4068,10 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
-            /** @description 完了の確認を満たさない（cutover_incomplete。items に一覧がある）か、切り替えが open でない（cutover_not_open） */
+            /**
+             * @description 完了の確認を満たさない（cutover_incomplete。items に一覧がある）か、切り替えが open でない（cutover_not_open）か、
+             *     保留の版がある（google_write_pending。buddy から Google カレンダーに書いた結果がまだ分からない予定がある。items を持たない）
+             */
             409: {
                 headers: {
                     [name: string]: unknown;
