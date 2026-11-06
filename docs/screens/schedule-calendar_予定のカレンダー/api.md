@@ -29,6 +29,8 @@ web の型（`apps/web/src/api/types.ts`）はフェイクの API に合わせ�
 | 通知の予定 | 職員の名前 | `Schedule.staffId` を、職員の一覧（`Staff.name`）で引く | `Schedule.staff_id` を、`listUsers` の `Staff.username` で引く |
 | 通知の予定、要確認の印 | 理由 | `Schedule.reviewReason` | `listSchedules` の `Schedule.review_reason` |
 | 予定 | Google カレンダーの予定か | `Schedule.fromGoogleCalendar` | `listSchedules` の `Schedule.source` が `google_calendar` |
+| 切り替え中の案内 | 切り替え中か | `ScheduleList.cutover` が `null` でない | `listSchedules` の `cutover` |
+| 切り替えの開始 | 始めた職員の名前と時刻 | `OpenCalendarCutover.started_by_name`、`OpenCalendarCutover.started_at` | `listSchedules` の `cutover.started_by_name`、`cutover.started_at` |
 
 - 予定の一覧の取得は、`listSchedules`（`GET /v1/facilities/{facility_id}/schedules`）に当たる。
   - web の画面は、期間を `ScheduleListParams` の `from`、`to` の日時で、職員を `staffIds` で渡す。
