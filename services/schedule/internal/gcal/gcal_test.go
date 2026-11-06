@@ -241,7 +241,7 @@ func TestWriterErrorKinds(t *testing.T) {
 				t.Fatal(err)
 			}
 			_, err = gcal.NewWriter(svc).Update(t.Context(), "staff@example.com", "ev1", `"1"`, schedcal.EventBody{})
-			if !errors.Is(err, tt.want) || (tt.want != schedcal.ErrOutcomeUnknown && errors.Is(err, schedcal.ErrOutcomeUnknown)) {
+			if !errors.Is(err, tt.want) || (!errors.Is(tt.want, schedcal.ErrOutcomeUnknown) && errors.Is(err, schedcal.ErrOutcomeUnknown)) {
 				t.Errorf("err = %v, want %v", err, tt.want)
 			}
 			if strings.Contains(err.Error(), "staff@example.com") {
