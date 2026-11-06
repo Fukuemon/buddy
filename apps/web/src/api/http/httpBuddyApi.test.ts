@@ -128,7 +128,12 @@ describe('createHttpBuddyApi', () => {
           recurring_schedules: [],
           source_mode: 'google_primary',
           calendar_syncs: [sync('staff-1'), sync('staff-2')],
-          cutover: { started_at: '2026-10-05T00:00:00Z', range_start: '2026-10-01' },
+          cutover: {
+            started_at: '2026-10-05T00:00:00Z',
+            started_by: 'manager-1',
+            started_by_name: '管理 花子',
+            range_start: '2026-10-01',
+          },
         }),
       ),
     )
@@ -147,7 +152,12 @@ describe('createHttpBuddyApi', () => {
       ['recurrence', 'recurrence_unsupported'],
     ])
     expect(list.calendarSyncs.map((s) => s.staff_id)).toEqual(['staff-1'])
-    expect(list.cutover).toEqual({ started_at: '2026-10-05T00:00:00Z', range_start: '2026-10-01' })
+    expect(list.cutover).toEqual({
+      started_at: '2026-10-05T00:00:00Z',
+      started_by: 'manager-1',
+      started_by_name: '管理 花子',
+      range_start: '2026-10-01',
+    })
   })
 
   it('事業所を読み、予定の正本を返す', async () => {

@@ -121,6 +121,14 @@ WHERE (projected_schedule_id(p.external_calendar_id, p.external_event_id) = sqlc
 ORDER BY p.external_calendar_id, p.external_event_id
 LIMIT 1;
 
+-- name: FindOpenCalendarCutoverWithStarter :one
+-- 予定の表示の読み出し（scheduleview）が、事業所の open の切り替えを、始めた職員の名前を付けて読む（ADR-0028）。
+-- 職員の状態（休職、退職）によらず名前を返す。退職しても名前は残るためである。
+SELECT c.started_at, c.range_start, c.started_by, u.username AS started_by_name
+FROM calendar_cutovers c
+JOIN users u ON u.id = c.started_by AND u.facility_id = c.facility_id
+WHERE c.facility_id = sqlc.arg(facility_id) AND c.status = 'open';
+
 -- name: ListCalendarSyncStatusesByFacility :many
 -- 事業所の外していないカレンダーの同期の状況を、職員の名前を付けて返す。同期の状態の行が無いカレンダーは never にする。
 -- last_synced_at は、変わった予定を最後まで読んで当てた最後の同期の時刻である。

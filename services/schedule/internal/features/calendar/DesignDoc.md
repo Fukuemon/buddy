@@ -332,6 +332,7 @@ Google カレンダーを正本にする事業所（`google_primary`）の予定
 2 つの操作は、事業所の行のロックで次のとおり並べる。
 
 - `calendarwrite` の作成、変更、取り消しは、手順 1 で事業所の行を共有のロックで読み、`open` の切り替えがあれば、Google に書かずに 409（`cutover_open`）を返す。
+  - 繰り返しの予定の作成、回の置き換え（`changeOccurrence`）、一覧の回の ID での変更と取り消しも同じである。
 - `StartCutover` と `CompleteCutover` は、事業所の行を排他のロックで取った後に、事業所の記録（`calendar_event_records`）のうち保留の版を持つものを数える。
   - 1 件でもあれば、何も書かずに 409（`google_write_pending`）を返す。
   - 排他のロックを取った後は、新しい書き込みが `open` の切り替えを見て拒まれる。ロックより前の書き込みは、保留の版を残している。
@@ -339,6 +340,16 @@ Google カレンダーを正本にする事業所（`google_primary`）の予定
 - マネージャーは、保留の版が確定するか消えるまで待ってから、もう一度始めるか完了する。結果が分からない保留の版は、同期の読み戻しが解く。
 
 - ADR-0028: [事業所の予定の正本を、期間のある切り替えの記録で Google カレンダーから buddy へ移す](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0028-calendar-cutover.md)
+
+予定の一覧（`listSchedules`）は、`google_primary` の事業所で、`open` の切り替えを `cutover` に返す。  
+画面は、「切り替え中」と、始めた職員と始めた時刻を出し、buddy から予定を変えられないことを示す。
+
+- `cutover` は、始めた時刻（`started_at`）、始めた職員の ID（`started_by`）と名前（`started_by_name`）、取り込みの期間の最初の日を持つ。
+  - 職員の ID と名前は、同期の状況（`calendar_syncs`）の `staff_id` と `staff_name` と同じ形にする。
+- 始めた職員が休職か退職していても、名前をそのまま返す。職員を退職にしても、名前は残るためである。
+- 予定の一覧を読める全ての職員に、始めた職員の名前を返す。予定の閲覧の権限では絞らない。
+- `buddy_primary` の事業所では、`open` の切り替えが無いので、`cutover` は常に `null` である。
+- 切り替えの間に画面の作成と編集の操作を閉じる条件は、`google_primary` の事業所で予定の作成と編集を開く画面の変更（#745）で入れる。
 
 #### 切り替えの取り込み
 

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vite-plus/test'
 
 import { ApiError } from '../BuddyApi'
 import { createFakeBuddyApi } from './fakeBuddyApi'
+import { FAKE_VIEWER } from './fixtures'
 import { MOCK_FACILITY_ID } from '#/mocks/scheduleData'
 
 const baseDate = new Date(2026, 9, 20)
@@ -107,6 +108,8 @@ describe('createFakeBuddyApi', () => {
     expect(cutover).toMatchObject({ status: 'open', range_start: '2026-10-01' })
     expect((await api.schedules.list(MOCK_FACILITY_ID, range)).cutover).toMatchObject({
       range_start: '2026-10-01',
+      started_by: FAKE_VIEWER.staffId,
+      started_by_name: FAKE_VIEWER.staffName,
     })
     await expect(
       api.calendars.preview(MOCK_FACILITY_ID, 'calendar-1', {

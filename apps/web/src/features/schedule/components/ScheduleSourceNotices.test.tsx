@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event'
 import { fn } from 'storybook/test'
 import { describe, expect, it } from 'vite-plus/test'
 
+import { formatDateTime } from '../lib/dateTime'
 import * as stories from './ScheduleSourceNotices.stories'
 
 const { BuddyPrimary, Cutover, Default, GuideOnly } = composeStories(stories)
@@ -54,11 +55,15 @@ describe('ScheduleSourceNotices', () => {
     expect(container).toBeEmptyDOMElement()
   })
 
-  it('予定の正本を buddy に切り替えている間は、切り替え中であることと、Google カレンダーで予定を変えないよう頼む文を出す', () => {
+  it('予定の正本を buddy に切り替えている間は、切り替え中であることと、予定を変えられないことを伝える文と、始めた職員と時刻を出す', () => {
     render(<Cutover />)
     const notice = screen.getByTestId('schedule-calendar-cutover')
     expect(notice).toHaveTextContent('予定の正本を buddy に切り替えています')
     expect(notice).toHaveTextContent('Google カレンダーで予定を作成、変更しないでください')
+    expect(notice).toHaveTextContent('buddy でも予定を作成、変更できません')
+    expect(within(notice).getByTestId('schedule-calendar-cutover-started')).toHaveTextContent(
+      `開始: 佐藤 一郎、${formatDateTime(new Date('2026-10-05T00:00:00Z'))}`,
+    )
   })
 
   it('切り替えていないときは、切り替え中を出さない', () => {

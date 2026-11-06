@@ -122,6 +122,10 @@ func TestCalendarCutoverInDB(t *testing.T) {
 	if cut.RangeStart != (civil.Date{Year: 2026, Month: 11, Day: 1}) || cut.Status != calendarimport.CutoverOpen || cut.StartedBy != seedOkada {
 		t.Fatalf("始めた切り替え = %+v", cut)
 	}
+	open, err := NewCalendarProjectionRepository(testDB).FindOpenCutover(ctx, seedGoogleFacility)
+	if err != nil || open == nil || open.StartedBy != seedOkada || open.StartedByName != "岡田 葵" || !open.StartedAt.Equal(cut.StartedAt) || open.RangeStart != cut.RangeStart {
+		t.Fatalf("予定の一覧の open の切り替え = %+v, err = %v", open, err)
+	}
 	// 操作の確認を通らずに書いても、DB の一意の索引が 2 つ目の open を拒む
 	err = NewCalendarCutoverRepository(testDB).Create(ctx, calendarimport.Cutover{
 		ID: ulid.Generator{}.NewID(), FacilityID: seedGoogleFacility, RangeStart: cut.RangeStart, StartedBy: seedOkada,

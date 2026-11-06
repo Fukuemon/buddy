@@ -384,7 +384,7 @@ func TestSchedulesListGooglePrimaryReviewReasons(t *testing.T) {
 }
 
 // TestSchedulesListGooglePrimaryCutover は、google_primary の事業所の一覧が、open の切り替えの間だけ切り替えを返し、
-// 切り替えの間も Projection を読むことを確認する（ADR-0028）。
+// 切り替えを始めた職員の ID と名前を、職員が退職していても返すことと、切り替えの間も Projection を読むことを確認する（ADR-0028）。
 func TestSchedulesListGooglePrimaryCutover(t *testing.T) {
 	s := googleStore()
 	putEvent(s, ownCalendarID, "own", "研修", tokyo(10, 20, 13), 60, nil)
@@ -396,15 +396,19 @@ func TestSchedulesListGooglePrimaryCutover(t *testing.T) {
 		t.Errorf("切り替えの前 = %+v, want nil", list.Cutover)
 	}
 	started := tokyo(10, 5, 9)
+	retired := tokyo(10, 6, 9)
+	s.Staff["MANAGER"] = staff.Detail{Summary: staff.Summary{Staff: staff.Staff{ID: "MANAGER", FacilityID: facilityID, Username: "退職した 管理者", RetiredAt: &retired}}}
 	s.Cutovers["CUT"] = calendarimport.Cutover{
 		ID: "CUT", FacilityID: facilityID, Status: calendarimport.CutoverOpen, RangeStart: civil.Date{Year: 2026, Month: 10, Day: 1}, StartedAt: started,
+		StartedBy: "MANAGER",
 	}
 	s.Cutovers["OLD"] = calendarimport.Cutover{ID: "OLD", FacilityID: facilityID, Status: calendarimport.CutoverCanceled}
 	list, err = newSchedules(s).List(viewerCtx(), facilityID, october())
 	if err != nil {
 		t.Fatal(err)
 	}
-	if list.Cutover == nil || !list.Cutover.StartedAt.Equal(started) || list.Cutover.RangeStart != (civil.Date{Year: 2026, Month: 10, Day: 1}) {
+	if list.Cutover == nil || !list.Cutover.StartedAt.Equal(started) || list.Cutover.RangeStart != (civil.Date{Year: 2026, Month: 10, Day: 1}) ||
+		list.Cutover.StartedBy != "MANAGER" || list.Cutover.StartedByName != "退職した 管理者" {
 		t.Errorf("切り替え = %+v", list.Cutover)
 	}
 	if len(list.Schedules) != 1 || list.Schedules[0].Source != scheduleview.SourceGoogleCalendar {

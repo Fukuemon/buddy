@@ -33,11 +33,16 @@ export const BuddyPrimary: Story = {
   args: { sourceMode: 'buddy_primary', calendarSyncs: [], needsReview: [] },
 }
 
-/** 予定の正本を buddy に切り替えている。切り替え中であることと、Google カレンダーで予定を変えないよう頼む文を出す。 */
+/** 予定の正本を buddy に切り替えている。切り替え中であることと、予定を変えられないことを伝える文と、始めた職員と時刻を出す。 */
 export const Cutover: Story = {
   args: {
     calendarSyncs: storyCalendarSyncs.slice(0, 1),
     needsReview: [],
-    cutover: { started_at: '2026-10-05T00:00:00Z', range_start: '2026-10-01' },
+    cutover: {
+      started_at: '2026-10-05T00:00:00Z',
+      started_by: 'staff-manager',
+      started_by_name: '佐藤 一郎',
+      range_start: '2026-10-01',
+    },
   },
 }

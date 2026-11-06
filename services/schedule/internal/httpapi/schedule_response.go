@@ -126,5 +126,7 @@ func toOpenCalendarCutover(c *scheduleview.OpenCutover) *openapi.OpenCalendarCut
 	if c == nil {
 		return nil
 	}
-	return &openapi.OpenCalendarCutover{StartedAt: c.StartedAt, RangeStart: c.RangeStart.String()}
+	return &openapi.OpenCalendarCutover{
+		StartedAt: c.StartedAt, StartedBy: c.StartedBy, StartedByName: c.StartedByName, RangeStart: c.RangeStart.String(),
+	}
 }

@@ -3172,9 +3172,16 @@ components:
     OpenCalendarCutover:
       type: object
       description: 予定の正本を buddy に切り替えている間の、open の切り替え
-      required: [started_at, range_start]
+      required: [started_at, started_by, started_by_name, range_start]
       properties:
         started_at: { type: string, format: date-time }
+        started_by:
+          description: 切り替えを始めた職員
+          allOf:
+            - $ref: "#/components/schemas/ID"
+        started_by_name:
+          type: string
+          description: 切り替えを始めた職員の名前。職員の状態（休職、退職）によらず返し、予定の一覧を読める全ての職員に返す
         range_start:
           description: 取り込みの期間の最初の日
           allOf:
