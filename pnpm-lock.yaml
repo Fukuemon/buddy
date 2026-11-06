@@ -277,9 +277,6 @@ importers:
 
   packages/ui:
     dependencies:
-      '@digital-go-jp/design-tokens':
-        specifier: 2.1.0
-        version: 2.1.0
       '@fontsource/noto-sans-jp':
         specifier: 5.3.1
         version: 5.3.1
@@ -709,9 +706,6 @@ packages:
   '@csstools/css-tokenizer@4.0.2':
     resolution: {integrity: sha512-OoKoR0f76dCY666JlcbhmVTs2drYj1GUXZTYTcbUgJjh9Nv41aFfZ21bPQTERm5+L5cBDo466NltB2lplS5GBw==}
     engines: {node: '>=20.19.0'}
-
-  '@digital-go-jp/design-tokens@2.1.0':
-    resolution: {integrity: sha512-cf3Ir+DwxXgkRhFwq4cbDzktdvIsvkxo6ryJ1LMj6xUOT1ldLi6r1QvYHrXLVK54Y/IWVaOeqdsZiNlzijm94g==}
 
   '@emnapi/core@1.11.0':
     resolution: {integrity: sha512-l9Oo58x0HOP5znGzVhYW9U3e5wVuA4LAZU2AGezTmkhO1CgQRFDhDg4nneHsu/t3WniXg9QrG2nIXL/ZS8ln8Q==}
@@ -6586,8 +6580,6 @@ snapshots:
       css-tree: 3.2.1
 
   '@csstools/css-tokenizer@4.0.2': {}
-
-  '@digital-go-jp/design-tokens@2.1.0': {}
 
   '@emnapi/core@1.11.0':
     dependencies:

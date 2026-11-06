@@ -170,7 +170,7 @@ buddy だけの規則は次のとおり。
 | --- | --- | --- |
 | `routeTree.gen.ts`、`src/api/generated/**` | 整形、lint | 生成物である。生成のし直しで差分を確認する（`pnpm check:generated`） |
 | `**/*.md` | 整形（`vp fmt`） | 文書は textlint で確認する |
-| `packages/ui/src/tokens/`、`apps/web/src/api/generated/` | `pnpm check:design` | トークンの段のファイルとトークンのカタログのページは、色の値と DADS の変数の名前を持つ。生成物は画面のコードではない |
+| `packages/ui/src/tokens/`、`apps/web/src/api/generated/` | `pnpm check:design` | トークンの段のファイルとトークンのカタログのページは、色の値とプリミティブトークンの名前を持つ。生成物は画面のコードではない |
 | `dist`、`storybook-static` | lint | ビルドの出力である |
 | Go の生成物 | golangci-lint（`exclusions.generated: lax`） | 生成物である |
 | `services/schedule` の `_test.go` の gosec G101 | golangci-lint | テストの接続の設定は、使い捨てのコンテナの値である |

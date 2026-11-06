@@ -21,19 +21,7 @@ const TARGETS = ["./apps/web/src", "./apps/broker/src", "./packages/ui/src"];
 // トークンの段のファイルのように、値と基本の段の名前を持ってよい置き場
 const EXCLUDES = ["./packages/ui/src/tokens", "./apps/web/src/api/generated"];
 // 基本の段の変数の名前の接頭辞
-// DADS の基本の段とテーマの段は、どちらも --color- で始まるので、DADS の色の接頭辞を細かく分けて並べる
-const BASE_PREFIXES = [
-  "--color-primitive-",
-  "--color-neutral-",
-  "--color-key-",
-  "--color-semantic-",
-  "--font-family-",
-  "--font-size-",
-  "--font-weight-",
-  "--line-height-",
-  "--border-radius-",
-  "--elevation-",
-];
+const BASE_PREFIXES = ["--buddy-primitive-"];
 const EXTENSIONS = [".css", ".scss", ".js", ".jsx", ".ts", ".tsx", ".vue", ".svelte", ".astro", ".html", ".mdx"];
 const ALLOW_MARK = "design-system-allow";
 

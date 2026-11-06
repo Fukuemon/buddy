@@ -16,8 +16,8 @@ buddy の画面を作る人とコーディングエージェントが、画面�
 
 | 知りたいこと | 参照先 |
 | --- | --- |
-| 色、文字、角丸、影の値 | DADS の `@digital-go-jp/design-tokens` の `dist/tokens.css` |
-| 意味のトークンの名前と、DADS のどの値を指すか | [`src/tokens/semantic.css`](https://github.com/Fukuemon/buddy/blob/develop/packages/ui/src/tokens/semantic.css) |
+| 色、文字、角丸、影の値 | [`src/tokens/primitive.css`](https://github.com/Fukuemon/buddy/blob/develop/packages/ui/src/tokens/primitive.css) |
+| 意味のトークンの名前と、どのプリミティブトークンを指すか | [`src/tokens/semantic.css`](https://github.com/Fukuemon/buddy/blob/develop/packages/ui/src/tokens/semantic.css) |
 | Tailwind のユーティリティの名前 | [`src/tokens/theme.css`](https://github.com/Fukuemon/buddy/blob/develop/packages/ui/src/tokens/theme.css) |
 | トークンに置き換える前の apps/web の値が、どのトークンになったか | [置き換える前のテーマとトークンの対応表](https://github.com/Fukuemon/buddy/blob/develop/packages/ui/src/tokens/current-theme-map.md) |
 | コンポーネントの props と振る舞い | `src/base/` と `src/case/` のコンポーネントのコードと story |
@@ -30,8 +30,8 @@ buddy の画面を作る人とコーディングエージェントが、画面�
 トークンの段のファイル（`packages/ui/src/tokens/`）と生成物は、チェックの対象から外している。
 
 - 色、文字、角丸、影は、`theme.css` のユーティリティだけで書く。
-  - 色の値と、DADS の変数の名前を、画面のコードに直に書かない。
-  - 確認: 色の値（`#hex`、`rgb()` などの色の関数、`text-[#...]` のような任意値の中の色）と DADS の変数の名前は、`pnpm check:design` の `scripts/check-raw-values.mjs` が止める。文字の大きさの任意値は、`scripts/check-utilities.mjs` が止める。
+  - 色の値と、プリミティブトークンの名前を、画面のコードに直に書かない。
+  - 確認: 色の値（`#hex`、`rgb()` などの色の関数、`text-[#...]` のような任意値の中の色）は、`pnpm check:design` の `scripts/check-raw-values.mjs` が止める。プリミティブトークンの名前も、同じスクリプトが止める。文字の大きさの任意値は、`scripts/check-utilities.mjs` が止める。
   - 確認: 色の名前（`red`、`white`）と、角丸と影の任意値は、チェックが見ない。レビューで、`theme.css` にない値を書いていないかを見る。
 - 状態を色だけで伝えない。
   - エラー、不一致、注意には、文と印を色と一緒に出す。

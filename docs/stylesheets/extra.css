@@ -2,9 +2,9 @@
 :root {
   --md-primary-fg-color: var(--buddy-color-primary);
   --md-primary-fg-color--light: var(--buddy-color-primary);
-  /* ホバーで色を変えるため、主の色より 1 段濃い DADS のキーの色にする */
-  --md-primary-fg-color--dark: var(--color-key-900);
-  --md-accent-fg-color: var(--color-key-900);
+  /* ホバーで色を変えるため、主の色（light-blue の 800）より 1 段濃い light-blue の 900 にする */
+  --md-primary-fg-color--dark: var(--buddy-primitive-color-light-blue-900);
+  --md-accent-fg-color: var(--buddy-primitive-color-light-blue-900);
   --md-accent-fg-color--transparent: var(--buddy-color-primary-surface);
   --md-typeset-a-color: var(--buddy-color-primary);
   --md-default-fg-color: var(--buddy-color-text);

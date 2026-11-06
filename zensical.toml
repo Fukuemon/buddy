@@ -124,7 +124,7 @@ nav = [
   ] },
 ]
 
-# 書体を画面と同じデザインシステムの書体（tokens.css の --font-family-sans と --font-family-mono）にする。Zensical が Google Fonts から読み込む
+# 書体を画面と同じデザインシステムの書体（tokens.css の --buddy-primitive-font-family-sans と --buddy-primitive-font-family-mono）にする。Zensical が Google Fonts から読み込む
 [project.theme.font]
 text = "Noto Sans JP"
 code = "Noto Sans Mono"
