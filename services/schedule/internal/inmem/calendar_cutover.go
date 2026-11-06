@@ -11,6 +11,7 @@ import (
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendarimport"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/organization"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/scheduleview"
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/visit"
 )
 
 // GetForUpdate は、calendarimport.FacilityModes の GetForUpdate を実装する。メモリ上の実装はロックを取らない。
@@ -132,6 +133,31 @@ func (s Cutovers) ListLinks(_ context.Context, cutoverID string) ([]calendar.Eve
 	for _, l := range s.Links {
 		if l.CutoverID != nil && *l.CutoverID == cutoverID {
 			out = append(out, l)
+		}
+	}
+	return out, nil
+}
+
+// CountPendingRecords は、calendarimport.CutoverRepository の CountPendingRecords を実装する。
+func (s Cutovers) CountPendingRecords(_ context.Context, facilityID string) (int, error) {
+	n := 0
+	for _, r := range s.Records {
+		if r.FacilityID == facilityID && r.Pending != nil {
+			n++
+		}
+	}
+	return n, nil
+}
+
+// ListRecordVisits は、calendarimport.CutoverRepository の ListRecordVisits を実装する。
+func (s Cutovers) ListRecordVisits(_ context.Context, externalCalendarID string) (map[string]visit.Info, error) {
+	out := map[string]visit.Info{}
+	for _, r := range s.Records {
+		if r.ExternalCalendarID != externalCalendarID || r.VisitInfoID == nil {
+			continue
+		}
+		if i, ok := s.Infos[*r.VisitInfoID]; ok {
+			out[r.ExternalEventID] = i
 		}
 	}
 	return out, nil

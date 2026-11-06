@@ -21,6 +21,9 @@ const (
 	CodeCutoverNotOpen = "cutover_not_open"
 	// CodeCutoverIncomplete は、完了の確認を満たさない予定かカレンダーがあるので、完了できないことを表す。IncompleteError が持つ。
 	CodeCutoverIncomplete = "cutover_incomplete"
+	// CodeWritePending は、予定の API が Google カレンダーに書いている途中か、結果が分からない書き込み（保留の版）が事業所にあるので、
+	// 切り替えを始められないか完了できないことを表す。calendarwrite の同じ名前の code と同じ値である。
+	CodeWritePending = "google_write_pending"
 )
 
 // CutoverStatus は、切り替えの状態である。open から completed か canceled に移る。

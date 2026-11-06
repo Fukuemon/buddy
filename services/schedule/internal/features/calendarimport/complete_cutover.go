@@ -46,6 +46,7 @@ func NewCompleteCutover(calendars Calendars, accounts calendar.Accounts, staff c
 //   - 読み直した予定が全て、予定の対応を持つか、取り込みで取り込まないと決めた予定で、規則に写せない繰り返しの予定が残っていない。
 //   - 予定の対応の etag と、Google の etag が同じである。
 //
+// 確認の前に、事業所に予定の API の保留の版がある記録があれば、code が CodeWritePending の apperr.ErrConflict を返し、何も書かない。
 // 満たさないカレンダーか予定があれば、一覧を持つ *IncompleteError を返し、何も書かない。切り替えは open のままである。
 // 切り替えが無いときは apperr.ErrNotFound を、open でないときは code が CodeCutoverNotOpen の apperr.ErrConflict を返す。
 // Google カレンダーを読めないときは calendar.ErrUnreadable か calendar.ErrUnavailable か calendar.ErrNotConfigured を返す。
@@ -68,6 +69,9 @@ func (u CompleteCutover) Do(ctx context.Context, id string) (Cutover, error) {
 	err = u.tx.WithinTx(ctx, func(ctx context.Context) error {
 		c, err := lockOpen(ctx, u.facilities, u.cutovers, id)
 		if err != nil {
+			return err
+		}
+		if err := requireNoPendingWrites(ctx, u.cutovers, c.FacilityID, "完了し"); err != nil {
 			return err
 		}
 		unmet, err := u.unmet(ctx, c, read)
@@ -140,7 +144,7 @@ func (u CompleteCutover) unmet(ctx context.Context, c Cutover, read map[string][
 	for _, r := range latest {
 		runs[r.ExternalCalendarID] = r
 	}
-	d := planDeps{calendars: u.calendars, patients: u.patients, recurringSchedules: u.recurringSchedules, serviceCodes: u.serviceCodes}
+	d := planDeps{calendars: u.calendars, patients: u.patients, recurringSchedules: u.recurringSchedules, serviceCodes: u.serviceCodes, records: u.cutovers}
 	var out []Unmet
 	for _, cal := range cals {
 		s := syncs[cal.ID]

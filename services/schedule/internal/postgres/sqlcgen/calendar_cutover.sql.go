@@ -10,6 +10,18 @@ import (
 	"time"
 )
 
+const countPendingCalendarEventRecords = `-- name: CountPendingCalendarEventRecords :one
+SELECT count(*) FROM calendar_event_records WHERE facility_id = $1 AND pending_version IS NOT NULL
+`
+
+// 切り替えを始める操作と完了する操作が、予定の API が Google に書いている途中か、結果が分からない書き込みを数える（ADR-0028）。
+func (q *Queries) CountPendingCalendarEventRecords(ctx context.Context, facilityID string) (int64, error) {
+	row := q.db.QueryRow(ctx, countPendingCalendarEventRecords, facilityID)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const createCalendarCutover = `-- name: CreateCalendarCutover :exec
 INSERT INTO calendar_cutovers (id, facility_id, status, range_start, started_by)
 VALUES ($1, $2, 'open', $3, $4)
@@ -280,6 +292,57 @@ func (q *Queries) ListCalendarCutoverSkips(ctx context.Context, arg ListCalendar
 			&i.ExternalEventID,
 			&i.Revision,
 			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listCalendarEventRecordVisits = `-- name: ListCalendarEventRecordVisits :many
+SELECT r.external_event_id, vi.id, vi.patient_id, vi.assigned_staff_id, vi.companion_id, vi.service_code_id,
+       ARRAY(
+           SELECT c.visit_category_id FROM visit_info_visit_categories c WHERE c.visit_info_id = vi.id ORDER BY c.visit_category_id
+       )::text[] AS category_ids
+FROM calendar_event_records r
+JOIN visit_infos vi ON vi.id = r.visit_info_id
+WHERE r.external_calendar_id = $1
+ORDER BY r.external_event_id
+`
+
+type ListCalendarEventRecordVisitsRow struct {
+	ExternalEventID string
+	ID              string
+	PatientID       string
+	AssignedStaffID string
+	CompanionID     *string
+	ServiceCodeID   string
+	CategoryIds     []string
+}
+
+// 切り替えの取り込みが、予定の API が Google に書いた予定の訪問の情報を、タイトルの読み替えより優先して使う（ADR-0028）。
+// Google が受けたと分かった版の訪問の情報だけを返し、保留の版の訪問の情報は返さない。
+func (q *Queries) ListCalendarEventRecordVisits(ctx context.Context, externalCalendarID string) ([]ListCalendarEventRecordVisitsRow, error) {
+	rows, err := q.db.Query(ctx, listCalendarEventRecordVisits, externalCalendarID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListCalendarEventRecordVisitsRow{}
+	for rows.Next() {
+		var i ListCalendarEventRecordVisitsRow
+		if err := rows.Scan(
+			&i.ExternalEventID,
+			&i.ID,
+			&i.PatientID,
+			&i.AssignedStaffID,
+			&i.CompanionID,
+			&i.ServiceCodeID,
+			&i.CategoryIds,
 		); err != nil {
 			return nil, err
 		}

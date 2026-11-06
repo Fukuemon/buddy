@@ -353,7 +353,9 @@ func TestCalendarCutover(t *testing.T) {
 		want         string
 	}{
 		{"始める: open の切り替えがある", "/v1/facilities/" + facilityID + "/calendar_cutovers", apperr.ConflictCode(calendarimport.CodeCutoverOpen, "始めています"), "cutover_open"},
+		{"始める: 保留の版がある", "/v1/facilities/" + facilityID + "/calendar_cutovers", apperr.ConflictCode(calendarimport.CodeWritePending, "分かりません"), "google_write_pending"},
 		{"完了: open でない", "/v1/calendar_cutovers/" + cutoverID + "/completions", apperr.ConflictCode(calendarimport.CodeCutoverNotOpen, "終えています"), "cutover_not_open"},
+		{"完了: 保留の版がある", "/v1/calendar_cutovers/" + cutoverID + "/completions", apperr.ConflictCode(calendarimport.CodeWritePending, "分かりません"), "google_write_pending"},
 		{"やめる: open でない", "/v1/calendar_cutovers/" + cutoverID + "/cancel", apperr.ConflictCode(calendarimport.CodeCutoverNotOpen, "終えています"), "cutover_not_open"},
 	} {
 		rec, body := do(t, newCalendarRouter(&fakeCalendars{err: tt.err}), http.MethodPost, tt.target, "")

@@ -3,6 +3,7 @@ package calendarwrite_test
 import (
 	"errors"
 	"net/http"
+	"reflect"
 	"testing"
 
 	calendarv3 "google.golang.org/api/calendar/v3"
@@ -12,6 +13,7 @@ import (
 	"github.com/Fukuemon/buddy/services/schedule/internal/apperr"
 	"github.com/Fukuemon/buddy/services/schedule/internal/civil"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendar"
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendarimport"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendarwrite"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/schedule"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/scheduleview"
@@ -283,6 +285,28 @@ func TestUpdateFailures(t *testing.T) {
 }
 
 // TestUpdateRejects は、保留の版がある予定、etag が無い入力、繰り返しの予定、無い予定を、Google に書かずに拒むことを確認する。
+// TestWritesRejectOpenCutover は、open の切り替えがある事業所では、変更と取り消しが cutover_open を返し、Google に書かず、
+// 記録を変えないことを確認する。作成は TestCreateRejects にある。
+func TestWritesRejectOpenCutover(t *testing.T) {
+	fx := newFixture(t)
+	d := fx.created(t)
+	before, _ := fx.record(t)
+	fx.store.Cutovers["CUT"] = calendarimport.Cutover{ID: "CUT", FacilityID: inmem.FacilityID, Status: calendarimport.CutoverOpen}
+	writes := fx.google.Writes()
+	if _, err := fx.update.Do(editorCtx(), inmem.FacilityID, scheduleID, d.ETag, laterSlot()); !isConflict(err, calendarwrite.CodeCutoverOpen) {
+		t.Errorf("変更: err = %v, want %s", err, calendarwrite.CodeCutoverOpen)
+	}
+	if _, err := fx.cancel.Do(editorCtx(), inmem.FacilityID, scheduleID, d.ETag, "中止"); !isConflict(err, calendarwrite.CodeCutoverOpen) {
+		t.Errorf("取り消し: err = %v, want %s", err, calendarwrite.CodeCutoverOpen)
+	}
+	if fx.google.Writes() != writes {
+		t.Errorf("Google への書き込み = %d, want 0", fx.google.Writes()-writes)
+	}
+	if after, ok := fx.record(t); !ok || !reflect.DeepEqual(after, before) {
+		t.Errorf("記録 = %+v, want 変えない %+v", after, before)
+	}
+}
+
 func TestUpdateRejects(t *testing.T) {
 	fx := newFixture(t)
 	d := fx.created(t)

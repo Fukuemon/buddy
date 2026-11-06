@@ -10,12 +10,14 @@ import (
 
 	"github.com/Fukuemon/buddy/services/schedule/internal/apperr"
 	"github.com/Fukuemon/buddy/services/schedule/internal/civil"
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendar"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendarimport"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendarsync"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/organization"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/schedule"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/scheduleview"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/staff"
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/visit"
 	"github.com/Fukuemon/buddy/services/schedule/internal/gcal/gcaltest"
 	"github.com/Fukuemon/buddy/services/schedule/internal/inmem"
 )
@@ -443,6 +445,82 @@ func TestGetCutover(t *testing.T) {
 	}
 	if st.Cutover == nil || st.Cutover.ID != cut.ID || st.Calendars[0].LastImport == nil || st.Calendars[0].LastImport.ID != res.Run.ID {
 		t.Errorf("取り込んだ後の状況 = %+v", st)
+	}
+}
+
+// putPending は、事業所に、予定の API が Google に書いた結果が分からない保留の版の記録を置く。
+func (c cutoverEnv) putPending() {
+	c.store.Records["PENDING"] = calendar.EventRecord{
+		ScheduleID: "PENDING", FacilityID: inmem.FacilityID, ExternalCalendarID: calID, ExternalEventID: "pending",
+		Pending: &calendar.PendingWrite{Version: 1, State: calendar.PendingUnknown, Deadline: time.Now()},
+	}
+}
+
+// TestCutoverRejectsPendingWrites は、予定の API の保留の版の記録がある事業所では、切り替えを始める操作と完了する操作が
+// google_write_pending を返して何も書かず、保留の版が解けた後は始められて完了できることを確認する（ADR-0028）。
+func TestCutoverRejectsPendingWrites(t *testing.T) {
+	c := newCutoverEnv(t, fixture())
+	c.putPending()
+	if _, err := c.uc.StartCutover(c.ctx, inmem.FacilityID); !isConflict(err, calendarimport.CodeWritePending) {
+		t.Fatalf("始める: err = %v, want %s", err, calendarimport.CodeWritePending)
+	}
+	if len(c.store.Cutovers) != 0 {
+		t.Fatalf("切り替え = %d 件, want 0", len(c.store.Cutovers))
+	}
+	delete(c.store.Records, "PENDING")
+	cut := c.start(t)
+	c.importAll(t, cutoverDecisions())
+	c.synced(time.Now().Add(time.Minute))
+
+	c.putPending()
+	if _, err := c.uc.CompleteCutover(c.ctx, cut.ID); !isConflict(err, calendarimport.CodeWritePending) {
+		t.Fatalf("完了: err = %v, want %s", err, calendarimport.CodeWritePending)
+	}
+	c.requireStillOpen(t, cut.ID)
+	delete(c.store.Records, "PENDING")
+	if _, err := c.uc.CompleteCutover(c.ctx, cut.ID); err != nil {
+		t.Fatalf("保留の版が解けた後の完了: err = %v", err)
+	}
+}
+
+// TestCutoverImportUsesRecordVisit は、予定の API の記録が訪問の情報を持つ予定を、切り替えの取り込みが、タイトルの読み替えではなく
+// 記録の訪問の情報（同行者と訪問の区分を含む）で訪問の予定にし、記録の訪問の情報を写した別の訪問の情報を作ることを確認する。
+// タイトルの利用者名（利用者Z）が記録の利用者と食い違っても、記録の訪問の情報を使い、確認が必要な予定にしない。
+func TestCutoverImportUsesRecordVisit(t *testing.T) {
+	c := newCutoverEnv(t, fixture())
+	companion := inmem.CompanionID
+	recorded := visit.Info{
+		ID: "RECORDVISIT", FacilityID: inmem.FacilityID, PatientID: inmem.PatientID, AssignedStaffID: inmem.StaffID,
+		CompanionID: &companion, ServiceCodeID: codeI2, CategoryIDs: []string{inmem.CategoryID},
+	}
+	c.store.Infos[recorded.ID] = recorded
+	c.store.Records["RECORD"] = calendar.EventRecord{
+		ScheduleID: "RECORD", FacilityID: inmem.FacilityID, ExternalCalendarID: calID, ExternalEventID: "missing",
+		VisitInfoID: &recorded.ID, Version: 1,
+	}
+	c.start(t)
+	p, err := c.uc.Preview(c.ctx, calID, cutoverRange())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := reviewIDs(p.ReviewItems); !slices.Equal(got, []string{"ambiguous", "biweekly"}) {
+		t.Fatalf("確認が必要な予定 = %v, want 記録のある missing を含まない", got)
+	}
+	c.importAll(t, []calendarimport.Decision{
+		{ExternalEventID: "ambiguous", Action: calendarimport.ActionPatient, PatientID: "PB2"},
+		{ExternalEventID: "biweekly", Action: calendarimport.ActionSkip},
+	})
+	sc := scheduleOf(t, c.env, "missing")
+	if sc.VisitInfoID == nil || *sc.VisitInfoID == recorded.ID {
+		t.Fatalf("予定の訪問の情報 = %v, want 記録とは別の訪問の情報", sc.VisitInfoID)
+	}
+	got := c.store.Infos[*sc.VisitInfoID]
+	if got.PatientID != recorded.PatientID || got.AssignedStaffID != recorded.AssignedStaffID || got.CompanionID == nil ||
+		*got.CompanionID != companion || got.ServiceCodeID != codeI2 || !slices.Equal(got.CategoryIDs, recorded.CategoryIDs) {
+		t.Errorf("訪問の情報 = %+v, want 記録の訪問の情報 %+v を写したもの", got, recorded)
+	}
+	if _, ok := c.store.Infos[recorded.ID]; !ok {
+		t.Error("記録の訪問の情報が消えた")
 	}
 }
 

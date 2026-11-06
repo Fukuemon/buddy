@@ -14,6 +14,7 @@ import (
 
 	"github.com/Fukuemon/buddy/services/schedule/internal/access"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendar"
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendarimport"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendarwrite"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/organization"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/patient"
@@ -365,6 +366,37 @@ func TestUpdateAndCancelScheduleGooglePrimary(t *testing.T) {
 		t.Errorf("取り消し = %v, 新しいカレンダー = %d 件", cancelled, len(google.Events(companionAddr)))
 	}
 	request(t, h, http.MethodGet, target, "", http.StatusNotFound)
+}
+
+// TestScheduleWritesRejectOpenCutover は、google_primary の事業所に open の切り替えがあると、createSchedule、updateSchedule、
+// cancelSchedule が 409 の cutover_open を返し、Google カレンダーに書かないことを確認する（ADR-0028）。
+func TestScheduleWritesRejectOpenCutover(t *testing.T) {
+	const (
+		calendarAddr = "staff@example.com"
+		newID        = "01M3TC6CX4Y3D0KCGJ5A9N0WQZ"
+	)
+	google := &gcaltest.Server{Calendars: map[string][][]*calendarv3.Event{calendarAddr: {nil}}}
+	h, s := flowRouterOn(organization.SourceGooglePrimary, googleAccounts{gcaltest.Start(t, google)})
+	s.Calendars["CAL"] = calendar.ExternalCalendar{ID: "CAL", FacilityID: facilityID, StaffID: staffID, Provider: calendar.ProviderGoogle, CalendarID: calendarAddr}
+	slot := `"schedule_type_id":"` + typeID + `","date":"2099-01-05","start_time":"09:00","end_time":"10:00","staff_id":"` + staffID + `","title":"カンファレンス"`
+	created := request(t, h, http.MethodPost, "/v1/facilities/"+facilityID+"/schedules", `{"id":"`+newID+`",`+slot+`}`, http.StatusCreated)
+	etag := strconv.Quote(created["etag"].(string))
+	s.Cutovers["CUT"] = calendarimport.Cutover{ID: "CUT", FacilityID: facilityID, Status: calendarimport.CutoverOpen}
+	writes := google.Writes()
+
+	for name, got := range map[string]map[string]any{
+		"createSchedule": request(t, h, http.MethodPost, "/v1/facilities/"+facilityID+"/schedules",
+			`{"id":"01M3TC6D7K0QJ8J3V7Q5S2N4XB",`+slot+`}`, http.StatusConflict),
+		"updateSchedule": request(t, h, http.MethodPut, "/v1/schedules/"+newID, `{"etag":`+etag+`,`+slot+`}`, http.StatusConflict),
+		"cancelSchedule": request(t, h, http.MethodPost, "/v1/schedules/"+newID+"/cancel", `{"reason":"中止","etag":`+etag+`}`, http.StatusConflict),
+	} {
+		if got["code"] != calendarwrite.CodeCutoverOpen {
+			t.Errorf("%s: code = %v, want cutover_open", name, got["code"])
+		}
+	}
+	if google.Writes() != writes {
+		t.Errorf("Google への書き込み = %d, want 0", google.Writes()-writes)
+	}
 }
 
 // TestReadScheduleGooglePrimaryRecordVisit は、google_primary の事業所で同行者と訪問の区分を付けて作った予定を、getSchedule と

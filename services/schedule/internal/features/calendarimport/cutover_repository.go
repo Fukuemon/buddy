@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendar"
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/visit"
 )
 
 // CutoverRepository は、切り替えの記録と、切り替えの取り込みで選んだ取り込まない予定を読み書きし、切り替えの取り込みで作った予定を消す。
@@ -24,6 +25,12 @@ type CutoverRepository interface {
 	ListSkips(ctx context.Context, cutoverID, externalCalendarID string) ([]CutoverSkip, error)
 	// ListLinks は、切り替え cutoverID の取り込みで作った予定の対応を返す。
 	ListLinks(ctx context.Context, cutoverID string) ([]calendar.EventLink, error)
+	// CountPendingRecords は、事業所 facilityID の、予定の API が Google カレンダーに書いた予定の記録（calendar.EventRecord）のうち、
+	// 保留の版を持つ記録の数を返す。
+	CountPendingRecords(ctx context.Context, facilityID string) (int, error)
+	// ListRecordVisits は、カレンダー externalCalendarID の記録のうち、Google が受けたと分かった版の訪問の情報を持つ記録の
+	// 訪問の情報を、Google の予定の ID ごとに返す。保留の版の訪問の情報は返さない。
+	ListRecordVisits(ctx context.Context, externalCalendarID string) (map[string]visit.Info, error)
 	// DeleteImported は、予定の対応 links と、対応する単発の予定と繰り返しの予定と、それらの訪問の情報を消す。
 	// 繰り返しの予定の回を置き換えた予定も消す。予定のキャンセル、除外する日、書き出しの待ちも一緒に消える。トランザクションの中で呼ぶ。
 	DeleteImported(ctx context.Context, links []calendar.EventLink) error
