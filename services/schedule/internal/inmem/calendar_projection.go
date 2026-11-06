@@ -89,8 +89,12 @@ func (s Projections) ListByFacility(_ context.Context, facilityID string, from c
 func (s Projections) ListRecordedEvents(_ context.Context, facilityID string, ids []string) (map[string]scheduleview.RecordedEvent, error) {
 	out := map[string]scheduleview.RecordedEvent{}
 	for _, id := range ids {
-		if r, ok := s.Records[id]; ok && r.FacilityID == facilityID && r.Version > 0 {
-			out[id] = scheduleview.RecordedEvent{ExternalCalendarID: r.ExternalCalendarID, ExternalEventID: r.ExternalEventID}
+		r, ok := s.Records[id]
+		if !ok || r.FacilityID != facilityID || r.Version == 0 {
+			continue
+		}
+		if p, ok := s.Projections[ProjectionKey{ExternalCalendarID: r.ExternalCalendarID, EventID: r.ExternalEventID}]; ok {
+			out[id] = scheduleview.RecordedEvent{ExternalCalendarID: r.ExternalCalendarID, ExternalEventID: r.ExternalEventID, RecurringEventID: p.RecurringEventID}
 		}
 	}
 	return out, nil

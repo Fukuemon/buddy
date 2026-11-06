@@ -94,7 +94,9 @@ func (r *CalendarProjectionRepository) ListRecordedEvents(ctx context.Context, f
 	}
 	out := make(map[string]scheduleview.RecordedEvent, len(rows))
 	for _, row := range rows {
-		out[row.ScheduleID] = scheduleview.RecordedEvent{ExternalCalendarID: row.ExternalCalendarID, ExternalEventID: row.ExternalEventID}
+		out[row.ScheduleID] = scheduleview.RecordedEvent{
+			ExternalCalendarID: row.ExternalCalendarID, ExternalEventID: row.ExternalEventID, RecurringEventID: row.RecurringEventID,
+		}
 	}
 	return out, nil
 }

@@ -225,13 +225,15 @@ func markLeft(ctx context.Context, recorded RecordedEvents, facilityID string, e
 	return nil
 }
 
-// movedAway は、展開した回 e の OccurrenceScheduleID を主キーに持つ記録が、回を別の職員のカレンダーに移した先の予定を指すかを返す。
-// 確定した版の予定のカレンダーが、親の予定のカレンダーと違う記録だけが当たる。回を移すと、記録は新しい職員のカレンダーの単発の予定を指し、
-// 移さない回の記録は、親の予定と同じカレンダーの回の予定を指すためである。保留の版だけを持つ記録（訪問の情報を初めて変える書き込みや、
-// 移す書き込みの結果が分からない記録）は、recs に入らないので当たらない。回は元の ID のままで、保留の版で書き込みを拒む。
+// movedAway は、展開した回 e の OccurrenceScheduleID を主キーに持つ記録が、回を移した先の予定を指すかを返す。
+// 確定した版の予定の Projection の行が、e の親の予定の例外の回でない記録が当たる。回を移すと、記録は移した先の単発の予定を指し、
+// 移さない回の記録は、その回の Google の予定（親の予定の例外の回）を指すためである。カレンダーでは比べない。別の職員へ移した回を
+// 元の職員へ戻すと、記録は元のカレンダーの単発の予定を指すためである。Google の回の予定の ID の形にも頼らない。
+// 保留の版だけを持つ記録（訪問の情報を初めて変える書き込みや、移す書き込みの結果が分からない記録）と、指す予定の Projection の行が無い記録は、
+// recs に入らないので当たらない。回は元の ID のままで、保留の版か記録で書き込みを拒む。
 func movedAway(e projectedEvent, recs map[string]RecordedEvent) bool {
 	rec, ok := recs[occurrenceIDOf(e)]
-	return ok && rec.ExternalCalendarID != e.row.ExternalCalendarID
+	return ok && (rec.ExternalCalendarID != e.row.ExternalCalendarID || rec.RecurringEventID != e.row.EventID)
 }
 
 // OccurrenceScheduleID は、結び付けたカレンダー externalCalendarID の繰り返しの予定 parentEventID の、元の規則で d に始まる回の、

@@ -217,8 +217,10 @@ func (q *Queries) GetCalendarEventRecordForUpdate(ctx context.Context, scheduleI
 }
 
 const listConfirmedCalendarEventRecords = `-- name: ListConfirmedCalendarEventRecords :many
-SELECT schedule_id, external_calendar_id, external_event_id FROM calendar_event_records
-WHERE facility_id = $1 AND schedule_id = ANY($2::text[]) AND version > 0
+SELECT r.schedule_id, r.external_calendar_id, r.external_event_id, COALESCE(p.recurring_event_id, '')::text AS recurring_event_id
+FROM calendar_event_records r
+JOIN calendar_event_projections p ON p.external_calendar_id = r.external_calendar_id AND p.external_event_id = r.external_event_id
+WHERE r.facility_id = $1 AND r.schedule_id = ANY($2::text[]) AND r.version > 0
 `
 
 type ListConfirmedCalendarEventRecordsParams struct {
@@ -230,10 +232,12 @@ type ListConfirmedCalendarEventRecordsRow struct {
 	ScheduleID         string
 	ExternalCalendarID string
 	ExternalEventID    string
+	RecurringEventID   string
 }
 
-// 一覧（scheduleview）が、展開した繰り返しの回の ID を主キーに持ち、確定した版を持つ記録の、確定した版の予定の場所を 1 回で引く。
-// 記録が回を移した先の予定を指せば、元のカレンダーに残った回に別の一覧の ID を付けるためである。保留の版だけを持つ記録は返さない。
+// 一覧（scheduleview）が、展開した繰り返しの回の ID を主キーに持ち、確定した版を持つ記録の、確定した版の予定の場所と、その予定の
+// Projection の行の繰り返しの親の Google の予定の ID（例外の回でなければ空）を 1 回で引く。記録が回を移した先の予定を指せば、
+// 元のカレンダーに残った回に別の一覧の ID を付けるためである。保留の版だけを持つ記録と、指す予定の Projection の行が無い記録は返さない。
 func (q *Queries) ListConfirmedCalendarEventRecords(ctx context.Context, arg ListConfirmedCalendarEventRecordsParams) ([]ListConfirmedCalendarEventRecordsRow, error) {
 	rows, err := q.db.Query(ctx, listConfirmedCalendarEventRecords, arg.FacilityID, arg.ScheduleIds)
 	if err != nil {
@@ -243,7 +247,12 @@ func (q *Queries) ListConfirmedCalendarEventRecords(ctx context.Context, arg Lis
 	items := []ListConfirmedCalendarEventRecordsRow{}
 	for rows.Next() {
 		var i ListConfirmedCalendarEventRecordsRow
-		if err := rows.Scan(&i.ScheduleID, &i.ExternalCalendarID, &i.ExternalEventID); err != nil {
+		if err := rows.Scan(
+			&i.ScheduleID,
+			&i.ExternalCalendarID,
+			&i.ExternalEventID,
+			&i.RecurringEventID,
+		); err != nil {
 			return nil, err
 		}
 		items = append(items, i)

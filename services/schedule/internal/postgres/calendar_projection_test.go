@@ -577,6 +577,25 @@ func TestCalendarProjectionRepositoryDetachedOccurrenceID(t *testing.T) {
 	if got, err := r.ListRecordedEvents(ctx, seedGoogleFacility, []string{pendingID}); err != nil || len(got) != 0 {
 		t.Errorf("保留の版だけの記録の ListRecordedEvents = %v, %v, want 空", got, err)
 	}
+	own := left
+	own.EventID, own.OriginalStart.At = "series_20991118T010000Z", timeAt(t, "2099-11-18T10:00:00+09:00")
+	if err := r.Put(ctx, own); err != nil {
+		t.Fatal(err)
+	}
+	ownID := scheduleview.OccurrenceScheduleID(seedOkadaCalendar, "series", civil.Date{Year: 2099, Month: 11, Day: 18})
+	noRowID := scheduleview.OccurrenceScheduleID(seedOkadaCalendar, "series", civil.Date{Year: 2099, Month: 11, Day: 25})
+	for _, rec := range []calendar.EventRecord{
+		{ScheduleID: ownID, FacilityID: seedGoogleFacility, ExternalCalendarID: seedOkadaCalendar, ExternalEventID: own.EventID, Version: 1},
+		{ScheduleID: noRowID, FacilityID: seedGoogleFacility, ExternalCalendarID: seedOkadaCalendar, ExternalEventID: "series_20991125T010000Z", Version: 1},
+	} {
+		if err := NewCalendarEventRecordRepository(testDB).Create(ctx, rec); err != nil {
+			t.Fatal(err)
+		}
+	}
+	got, err := r.ListRecordedEvents(ctx, seedGoogleFacility, []string{ownID, noRowID})
+	if want := map[string]scheduleview.RecordedEvent{ownID: {ExternalCalendarID: seedOkadaCalendar, ExternalEventID: own.EventID, RecurringEventID: "series"}}; err != nil || !reflect.DeepEqual(got, want) {
+		t.Errorf("例外の回を指す記録と行の無い記録の ListRecordedEvents = %v, %v, want %v", got, err, want)
+	}
 }
 
 // TestCalendarProjectionRepositoryGetBySchedule は、記録のある予定を記録の予定の ID で、記録の無い予定を一覧での ID で引けることと、

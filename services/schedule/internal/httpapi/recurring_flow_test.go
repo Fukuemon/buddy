@@ -421,3 +421,78 @@ func TestRecurringOccurrenceVisitWriteUnknownGooglePrimary(t *testing.T) {
 		t.Errorf("Google への書き込み = %d, want %d", google.Writes(), writes)
 	}
 }
+
+// TestRecurringOccurrenceMovedBackLeftGooglePrimary は、変えていない回を職員 A から B へ移して元の回を消せず、B から A へ戻したとき、
+// listSchedules が、A のカレンダーに残った元の回と、A へ戻した単発の予定を違う id で返すことを確認する。
+// それぞれの id で getSchedule を読むとそれぞれが返り、残った元の回を cancelSchedule で取り消せる。
+func TestRecurringOccurrenceMovedBackLeftGooglePrimary(t *testing.T) {
+	const (
+		calendarAddr, companionAddr = "staff@example.com", "companion@example.com"
+		newID                       = "01M3TC6CX4Y3D0KCGJ5A9N0WQZ"
+	)
+	google := &gcaltest.Server{Calendars: map[string][][]*calendarv3.Event{calendarAddr: {nil}, companionAddr: {nil}}}
+	h, s := flowRouterOn(organization.SourceGooglePrimary, googleAccounts{gcaltest.Start(t, google)})
+	s.Calendars["CAL"] = calendar.ExternalCalendar{ID: "CAL", FacilityID: facilityID, StaffID: staffID, Provider: calendar.ProviderGoogle, CalendarID: calendarAddr}
+	s.Calendars["CAL2"] = calendar.ExternalCalendar{ID: "CAL2", FacilityID: facilityID, StaffID: flowCompanionID, Provider: calendar.ProviderGoogle, CalendarID: companionAddr}
+	today := civil.Today(time.Now())
+	first := civil.DateOf(today.Time().AddDate(0, 0, 7+(8-int(today.Weekday()))%7))
+	day := civil.DateOf(first.Time().AddDate(0, 0, 7))
+	slot := func(d civil.Date, staff, start string) string {
+		return `"schedule_type_id":"` + typeID + `","date":"` + d.String() + `","start_time":"` + start + `","end_time":"18:00","staff_id":"` + staff +
+			`","title":"カンファレンス"`
+	}
+	request(t, h, http.MethodPost, "/v1/facilities/"+facilityID+"/schedules/recurring",
+		`{"id":"`+newID+`",`+slot(first, staffID, "09:00")+`,"recurring_rule":{"frequency":"weekly"}}`, http.StatusCreated)
+	parentID, err := calendar.EventIDOf(newID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	start := time.Date(day.Year, day.Month, day.Day, 9, 0, 0, 0, calendar.Tokyo)
+	instance := &calendarv3.Event{
+		Id: parentID + "_" + start.UTC().Format("20060102T150405Z"), Status: "confirmed", Summary: "カンファレンス", RecurringEventId: parentID, Etag: `"i1"`,
+		OriginalStartTime: &calendarv3.EventDateTime{DateTime: start.Format(time.RFC3339), TimeZone: calendar.TimeZone},
+		Start:             &calendarv3.EventDateTime{DateTime: start.Format(time.RFC3339), TimeZone: calendar.TimeZone},
+		End:               &calendarv3.EventDateTime{DateTime: time.Date(day.Year, day.Month, day.Day, 18, 0, 0, 0, calendar.Tokyo).Format(time.RFC3339), TimeZone: calendar.TimeZone},
+	}
+	google.Instances = map[string][]*calendarv3.Event{parentID: {instance}}
+	onDay := func() map[string]map[string]any {
+		got := request(t, h, http.MethodGet, "/v1/facilities/"+facilityID+"/schedules?date_from="+day.String()+"&date_to="+day.String(), "", http.StatusOK)
+		out := map[string]map[string]any{}
+		for _, v := range got["schedules"].([]any) {
+			sc := v.(map[string]any)
+			out[sc["start_time"].(string)] = sc
+		}
+		return out
+	}
+	listed := onDay()["09:00"]
+	id := listed["id"].(string)
+
+	google.Failures = []int{0, http.StatusInternalServerError}
+	moved := request(t, h, http.MethodPut, "/v1/schedules/"+id, `{"etag":`+strconv.Quote(listed["etag"].(string))+`,`+slot(day, flowCompanionID, "09:00")+`}`, http.StatusOK)
+	back := request(t, h, http.MethodPut, "/v1/schedules/"+id, `{"etag":`+strconv.Quote(moved["etag"].(string))+`,`+slot(day, staffID, "10:00")+`}`, http.StatusOK)
+	if back["id"] != id || back["staff_id"] != staffID || len(google.Events(companionAddr)) != 0 {
+		t.Fatalf("戻した予定 = %v, B のカレンダー = %d 件", back, len(google.Events(companionAddr)))
+	}
+	if ev := google.Event(calendarAddr, instance.Id); ev.Status != "confirmed" {
+		t.Fatalf("元の回の状態 = %s, want 消せずに残った confirmed", ev.Status)
+	}
+	byStart := onDay()
+	left, returned := byStart["09:00"], byStart["10:00"]
+	if len(byStart) != 2 || left == nil || returned == nil || returned["id"] != id || left["id"] == id {
+		t.Fatalf("戻した後の一覧 = %v, want 戻した予定 %s と、違う id の残った元の回", byStart, id)
+	}
+	leftID := left["id"].(string)
+	if got := request(t, h, http.MethodGet, "/v1/schedules/"+leftID, "", http.StatusOK); got["start_time"] != "09:00" {
+		t.Errorf("残った元の回の 1 件 = %v", got)
+	}
+	if got := request(t, h, http.MethodGet, "/v1/schedules/"+id, "", http.StatusOK); got["start_time"] != "10:00" {
+		t.Errorf("戻した予定の 1 件 = %v", got)
+	}
+	request(t, h, http.MethodPost, "/v1/schedules/"+leftID+"/cancel", `{"reason":"重複","etag":`+strconv.Quote(left["etag"].(string))+`}`, http.StatusCreated)
+	if ev := google.Event(calendarAddr, instance.Id); ev.Status != "cancelled" {
+		t.Errorf("残った元の回の状態 = %s, want cancelled", ev.Status)
+	}
+	if byStart = onDay(); len(byStart) != 1 || byStart["10:00"]["id"] != id {
+		t.Errorf("残った元の回を取り消した後の一覧 = %v, want 戻した予定だけ", byStart)
+	}
+}
