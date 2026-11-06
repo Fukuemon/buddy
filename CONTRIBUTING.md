@@ -110,10 +110,10 @@ docker compose up --build --wait
   - worktree では、`docker compose up` で起動しない。`.env` のホスト名の URL が portless に登録されず、ログインが失敗する。
   - 初めてフックを流すときは、worktrunk が承認を求める。コーディングエージェントは `--yes` を付ける。
   - `wt remove <ブランチ>` で worktree を消すと、フックがその worktree の compose を、DB のボリューム、ビルドしたイメージ、portless に登録したホスト名ごと消す。
-  - portless は、最初に 1 回だけ、次の 2 つを管理者の権限で流す。
-    - `portless trust`: portless の CA を、システムの信頼ストアに入れる。ブラウザと Playwright が証明書を信頼する。
-    - `sudo portless service install`: portless のプロキシを、OS の起動時に 443 番で動くサービスにする。サービスが `/etc/hosts` にホスト名を書くので、E2E のテストのコード（Node.js）がホスト名を引ける。
-    - 管理者の権限が無い端末では、`portless proxy start --unprivileged --https` でプロキシを起動する。ブラウザは `*.localhost` を自分で引くので画面は開けるが、証明書の警告が出て、E2E は流せない。
+  - portless のプロキシは、最初に 1 回だけ `portless proxy start --unprivileged --https` で起動する。管理者の権限は使わない。
+    - portless はこのモードを覚え、次からは `portless compose up` が同じモードでプロキシを起動する。
+    - portless の CA はシステムに信頼させないので、ブラウザで開くと証明書の警告が出る。警告を受け入れて開く。
+    - E2E は、Playwright の設定（`packages/e2e/localhostResolver.ts`）で `*.localhost` を loopback に引き、https の URL では証明書のエラーを無視する。
 - worktrunk を使わずに並べるときは、`docker compose -p <名前> up --build --wait` でプロジェクトの名前を変え、表の環境変数でポートをずらす。
   - E2E は、ずらしたポートに URL の環境変数を合わせて流す。
     - 画面と外部のサービスは `E2E_BASE_URL`、`E2E_CALENDARPIT_URL`、`E2E_GCALHOLD_URL`、`E2E_HYDRA_URL`
