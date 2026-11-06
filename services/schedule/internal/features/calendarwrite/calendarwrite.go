@@ -42,9 +42,9 @@ const (
 // 503 になるエラー。httpapi が状態コードと code に対応させる。
 var (
 	// ErrWriteUnknown は、Google が書き込みを受けたかが分からないことを表す。保留の版を残す。code は google_write_unknown である。
-	ErrWriteUnknown = errors.New("Google カレンダーに予定を書けたかを確認できませんでした。時間をおいて予定を開き直してください")
+	ErrWriteUnknown = errors.New("予定を Google カレンダーに書けたかを確認できませんでした。時間をおいて予定を開き直してください")
 	// ErrGoogleUnavailable は、Google が一時的に書き込みを拒んだことを表す。保留の版を消す。code は google_unavailable である。
-	ErrGoogleUnavailable = errors.New("Google カレンダーに予定を書けませんでした。時間をおいてやり直してください")
+	ErrGoogleUnavailable = errors.New("予定を Google カレンダーに書けませんでした。時間をおいてやり直してください")
 )
 
 var (

@@ -1254,10 +1254,10 @@ paths:
               examples:
                 googleWriteUnknown:
                   summary: Google が受けたかが分からない
-                  value: { code: google_write_unknown, message: "Google カレンダーに予定を書けたかを確認できませんでした。時間をおいて予定を開き直してください" }
+                  value: { code: google_write_unknown, message: "予定を Google カレンダーに書けたかを確認できませんでした。時間をおいて予定を開き直してください" }
                 googleUnavailable:
                   summary: Google が一時的に拒んだ
-                  value: { code: google_unavailable, message: "Google カレンダーに予定を書けませんでした。時間をおいてやり直してください" }
+                  value: { code: google_unavailable, message: "予定を Google カレンダーに書けませんでした。時間をおいてやり直してください" }
 
   /v1/facilities/{facility_id}/schedules/recurring:
     post:
