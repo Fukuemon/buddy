@@ -88,6 +88,34 @@ func (q *Queries) DeleteCalendarEventProjectionsExcept(ctx context.Context, arg 
 	return err
 }
 
+const findOpenCalendarCutoverWithStarter = `-- name: FindOpenCalendarCutoverWithStarter :one
+SELECT c.started_at, c.range_start, c.started_by, u.username AS started_by_name
+FROM calendar_cutovers c
+JOIN users u ON u.id = c.started_by AND u.facility_id = c.facility_id
+WHERE c.facility_id = $1 AND c.status = 'open'
+`
+
+type FindOpenCalendarCutoverWithStarterRow struct {
+	StartedAt     time.Time
+	RangeStart    time.Time
+	StartedBy     string
+	StartedByName string
+}
+
+// 予定の表示の読み出し（scheduleview）が、事業所の open の切り替えを、始めた職員の名前を付けて読む（ADR-0028）。
+// 職員の状態（休職、退職）によらず名前を返す。退職しても名前は残るためである。
+func (q *Queries) FindOpenCalendarCutoverWithStarter(ctx context.Context, facilityID string) (FindOpenCalendarCutoverWithStarterRow, error) {
+	row := q.db.QueryRow(ctx, findOpenCalendarCutoverWithStarter, facilityID)
+	var i FindOpenCalendarCutoverWithStarterRow
+	err := row.Scan(
+		&i.StartedAt,
+		&i.RangeStart,
+		&i.StartedBy,
+		&i.StartedByName,
+	)
+	return i, err
+}
+
 const getCalendarEventProjectionByListID = `-- name: GetCalendarEventProjectionByListID :one
 SELECT p.external_calendar_id, p.external_event_id, p.facility_id, p.staff_id, p.recurring_event_id, p.original_start_at, p.original_start_date,
        p.status, p.title, p.start_at, p.start_date, p.end_at, p.end_date, p.time_zone, p.recurrence, p.etag, p.google_updated_at,

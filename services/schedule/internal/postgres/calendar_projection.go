@@ -187,12 +187,14 @@ var _ scheduleview.Cutovers = (*CalendarProjectionRepository)(nil)
 
 // FindOpenCutover は、scheduleview.Cutovers の FindOpenCutover を実装する。open の切り替えが無ければ nil を返す。
 func (r *CalendarProjectionRepository) FindOpenCutover(ctx context.Context, facilityID string) (*scheduleview.OpenCutover, error) {
-	c, err := r.q(ctx).FindOpenCalendarCutover(ctx, facilityID)
+	c, err := r.q(ctx).FindOpenCalendarCutoverWithStarter(ctx, facilityID)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, nil
 	}
 	if err != nil {
 		return nil, translate("find open calendar cutover", err)
 	}
-	return &scheduleview.OpenCutover{StartedAt: c.StartedAt, RangeStart: civil.DateOf(c.RangeStart)}, nil
+	return &scheduleview.OpenCutover{
+		StartedAt: c.StartedAt, StartedBy: c.StartedBy, StartedByName: c.StartedByName, RangeStart: civil.DateOf(c.RangeStart),
+	}, nil
 }

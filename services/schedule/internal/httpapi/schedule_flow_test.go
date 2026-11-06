@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+	"time"
 
 	calendarv3 "google.golang.org/api/calendar/v3"
 
@@ -90,7 +91,7 @@ func flowRouterOn(mode organization.SourceMode, accounts calendar.Accounts) (htt
 		Staff: refs, Patients: inmem.Patients{Store: s}, Infos: inmem.VisitInfos{Store: s}, ServiceCodes: inmem.ServiceCodes{Store: s}, Categories: inmem.VisitCategories{Store: s},
 	}, ids)
 	projected := scheduleview.ProjectionDeps{
-		Projections: inmem.Projections{Store: s}, Syncs: inmem.Projections{Store: s}, Rules: calendar.ProjectionRules{},
+		Projections: inmem.Projections{Store: s}, Syncs: inmem.Projections{Store: s}, Cutovers: inmem.Projections{Store: s}, Rules: calendar.ProjectionRules{},
 		Patients: inmem.Patients{Store: s}, ServiceCodes: inmem.ServiceCodes{Store: s}, Types: types,
 	}
 	app := httpapi.ScheduleApp{
@@ -361,7 +362,8 @@ func TestUpdateAndCancelScheduleGooglePrimary(t *testing.T) {
 }
 
 // TestScheduleWritesRejectOpenCutover は、google_primary の事業所に open の切り替えがあると、createSchedule、updateSchedule、
-// cancelSchedule が 409 の cutover_open を返し、Google カレンダーに書かないことを確認する（ADR-0028）。
+// cancelSchedule、createRecurringSchedule、changeOccurrence が 409 の cutover_open を返し、Google カレンダーに書かないことと、
+// listSchedules が切り替えを始めた職員の ID と名前と時刻を返すことを確認する（ADR-0028）。
 func TestScheduleWritesRejectOpenCutover(t *testing.T) {
 	const (
 		calendarAddr = "staff@example.com"
@@ -373,7 +375,14 @@ func TestScheduleWritesRejectOpenCutover(t *testing.T) {
 	slot := `"schedule_type_id":"` + typeID + `","date":"2099-01-05","start_time":"09:00","end_time":"10:00","staff_id":"` + staffID + `","title":"カンファレンス"`
 	created := request(t, h, http.MethodPost, "/v1/facilities/"+facilityID+"/schedules", `{"id":"`+newID+`",`+slot+`}`, http.StatusCreated)
 	etag := strconv.Quote(created["etag"].(string))
-	s.Cutovers["CUT"] = calendarimport.Cutover{ID: "CUT", FacilityID: facilityID, Status: calendarimport.CutoverOpen}
+	const recurringID = "01M3TC6E0000000000000000RS"
+	request(t, h, http.MethodPost, "/v1/facilities/"+facilityID+"/schedules/recurring",
+		`{"id":"`+recurringID+`",`+slot+`,"recurring_rule":{"frequency":"weekly"}}`, http.StatusCreated)
+	staffDetail := s.Staff[staffID]
+	staffDetail.Username = "職員A"
+	s.Staff[staffID] = staffDetail
+	started := time.Date(2026, 11, 5, 9, 0, 0, 0, time.UTC)
+	s.Cutovers["CUT"] = calendarimport.Cutover{ID: "CUT", FacilityID: facilityID, Status: calendarimport.CutoverOpen, StartedBy: staffID, StartedAt: started}
 	writes := google.Writes()
 
 	for name, got := range map[string]map[string]any{
@@ -381,10 +390,18 @@ func TestScheduleWritesRejectOpenCutover(t *testing.T) {
 			`{"id":"01M3TC6D7K0QJ8J3V7Q5S2N4XB",`+slot+`}`, http.StatusConflict),
 		"updateSchedule": request(t, h, http.MethodPut, "/v1/schedules/"+newID, `{"etag":`+etag+`,`+slot+`}`, http.StatusConflict),
 		"cancelSchedule": request(t, h, http.MethodPost, "/v1/schedules/"+newID+"/cancel", `{"reason":"中止","etag":`+etag+`}`, http.StatusConflict),
+		"createRecurringSchedule": request(t, h, http.MethodPost, "/v1/facilities/"+facilityID+"/schedules/recurring",
+			`{"id":"01M3TC6E0000000000000000RT",`+slot+`,"recurring_rule":{"frequency":"weekly"}}`, http.StatusConflict),
+		"changeOccurrence": request(t, h, http.MethodPost, "/v1/schedules/recurring/"+recurringID+"/occurrences",
+			`{"original_date":"2099-01-12",`+slot+`}`, http.StatusConflict),
 	} {
 		if got["code"] != calendarwrite.CodeCutoverOpen {
 			t.Errorf("%s: code = %v, want cutover_open", name, got["code"])
 		}
+	}
+	listed := request(t, h, http.MethodGet, "/v1/facilities/"+facilityID+"/schedules?date_from=2099-01-01&date_to=2099-01-31", "", http.StatusOK)
+	if c, _ := listed["cutover"].(map[string]any); c == nil || c["started_by"] != staffID || c["started_by_name"] != "職員A" || c["started_at"] != "2026-11-05T09:00:00Z" {
+		t.Errorf("一覧の cutover = %v", listed["cutover"])
 	}
 	if google.Writes() != writes {
 		t.Errorf("Google への書き込み = %d, want 0", google.Writes()-writes)

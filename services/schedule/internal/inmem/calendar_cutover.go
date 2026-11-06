@@ -233,7 +233,9 @@ func (s Cutovers) deleteSchedule(id string) {
 func (s Projections) FindOpenCutover(_ context.Context, facilityID string) (*scheduleview.OpenCutover, error) {
 	for _, c := range s.Cutovers {
 		if c.FacilityID == facilityID && c.Status == calendarimport.CutoverOpen {
-			return &scheduleview.OpenCutover{StartedAt: c.StartedAt, RangeStart: c.RangeStart}, nil
+			return &scheduleview.OpenCutover{
+				StartedAt: c.StartedAt, StartedBy: c.StartedBy, StartedByName: s.Staff[c.StartedBy].Username, RangeStart: c.RangeStart,
+			}, nil
 		}
 	}
 	return nil, nil
