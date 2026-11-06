@@ -42,7 +42,8 @@ export type FakeBuddyApiOptions = {
   baseDate?: Date
   /**
    * 事業所の予定の正本。デフォルトは buddy_primary。google_primary にすると、予定を同期が写した Google カレンダーの予定にし、
-   * 同期の状況と確認が必要な予定を返し、予定の 1 件の取得を 404 で、作成と更新を 409（google_primary）で拒む。
+   * 同期の状況と確認が必要な予定を返す。作成、更新、キャンセルは、予定の API と同じく Google カレンダーに書いたものとして扱う。
+   * 更新とキャンセルは etag を求め、予定の etag と違えば 409（google_event_changed）を、切り替え中は 409（cutover_open）を投げる。
    */
   sourceMode?: SourceMode
   /**
@@ -88,17 +89,48 @@ export const createFakeBuddyApi = ({
     ).map((schedule) => [schedule.id, schedule]),
   )
   const calendarSyncs = isGooglePrimary ? (syncs ?? createMockCalendarSyncs(baseDate)) : []
-  // 本物の API と同じく、google_primary の事業所では予定の作成と更新を 409 で拒む
-  const assertBuddyPrimary = () => {
-    if (mode === 'google_primary') {
+  let etagSequence = 0
+  const nextETag = () => {
+    etagSequence += 1
+    return `"fake-${etagSequence}"`
+  }
+  // 本物の API と同じく、google_primary の事業所では、切り替えの間の書き込みを 409 で拒み、変更とキャンセルの etag を比べる
+  const assertWritable = () => {
+    if (mode === 'google_primary' && cutover !== null) {
       throw new ApiError(
         409,
-        'この事業所の予定は Google カレンダーで管理しています。予定は Google カレンダーで作成、変更してください',
+        'この事業所では予定の正本を切り替えています。切り替えの間は予定を作成、変更、取り消しできません',
         [],
-        'google_primary',
+        'cutover_open',
       )
     }
   }
+  const assertETag = (schedule: Schedule, etag: string | null) => {
+    if (mode !== 'google_primary') return
+    if (etag === null) {
+      throw new ApiError(400, '読んだ予定の etag が必須です', [], 'invalid_input')
+    }
+    if (schedule.reviewReason === 'recurrence_unsupported') {
+      throw new ApiError(
+        409,
+        '繰り返しの予定の全体は、まだ buddy から変えられません',
+        [],
+        'conflict',
+      )
+    }
+    if (schedule.etag !== etag) {
+      throw new ApiError(
+        409,
+        'Google カレンダーで予定が変わっていました。最新の予定を確認してください',
+        [],
+        'google_event_changed',
+      )
+    }
+  }
+  const toWritten = (schedule: Schedule): Schedule =>
+    mode === 'google_primary'
+      ? { ...schedule, fromGoogleCalendar: true, etag: nextETag(), reviewReason: undefined }
+      : schedule
   let sequence = schedules.size
   const calendars = new Map<ExternalCalendar['id'], ExternalCalendar>(
     mockExternalCalendars.map((c) => [c.id, structuredClone(c)]),
@@ -278,29 +310,43 @@ export const createFakeBuddyApi = ({
       },
       get: async (facilityId, scheduleId) => {
         assertFacility(facilityId)
-        // 本物の API と同じく、Google カレンダーの予定には 1 件の取得が無い
-        if (isGooglePrimary)
-          throw new ApiError(404, `予定 ${scheduleId} が見つかりません`, [], 'not_found')
         return findSchedule(scheduleId)
       },
-      create: async (facilityId, input) => {
+      create: async (facilityId, input, id) => {
         assertFacility(facilityId)
-        assertBuddyPrimary()
+        assertWritable()
+        // 本物の API と同じく、同じ id の送り直しは、作った予定を返す
+        const sent = schedules.get(id)
+        if (sent !== undefined) return sent
         sequence += 1
-        const schedule: Schedule = { ...input, id: `schedule-${sequence}`, facilityId }
+        const schedule = toWritten({ ...input, id, facilityId })
         schedules.set(schedule.id, schedule)
         return schedule
       },
-      update: async (facilityId, scheduleId, input) => {
+      update: async (facilityId, scheduleId, input, etag) => {
         assertFacility(facilityId)
-        assertBuddyPrimary()
+        assertWritable()
+        const current = findSchedule(scheduleId)
         // 本物の API と同じく、キャンセルした予定の更新は 409 で拒む
-        if (findSchedule(scheduleId).cancel !== undefined) {
+        if (current.cancel !== undefined) {
           throw new ApiError(409, 'キャンセル済みの予定は変えられません', [], 'conflict')
         }
-        const schedule: Schedule = { ...input, id: scheduleId, facilityId }
+        assertETag(current, etag)
+        const schedule = toWritten({ ...input, id: scheduleId, facilityId })
         schedules.set(scheduleId, schedule)
         return schedule
+      },
+      cancel: async (facilityId, scheduleId, reason, etag) => {
+        assertFacility(facilityId)
+        assertWritable()
+        const current = findSchedule(scheduleId)
+        if (current.cancel !== undefined) {
+          throw new ApiError(409, 'この予定はすでにキャンセルされています', [], 'conflict')
+        }
+        assertETag(current, etag)
+        // 本物の API と同じく、google_primary の事業所では Google カレンダーの予定を消し、理由は残さない
+        if (mode === 'google_primary') schedules.delete(scheduleId)
+        else schedules.set(scheduleId, { ...current, cancel: { reason } })
       },
     },
     ...staffApi,
@@ -394,7 +440,14 @@ export const createFakeBuddyApi = ({
         assertFacility(facilityId)
         const calendar = findCalendar(externalCalendarId)
         // 本物の API と同じく、google_primary の事業所では、切り替えの間だけ取り込める
-        if (mode === 'google_primary' && cutover === null) assertBuddyPrimary()
+        if (mode === 'google_primary' && cutover === null) {
+          throw new ApiError(
+            409,
+            'この事業所の予定は Google カレンダーで管理しています。予定は Google カレンダーで作成、変更してください',
+            [],
+            'google_primary',
+          )
+        }
         assertCutoverRange(range)
         const preview: ImportPreview = previewOf(externalCalendarId, range)
         const revisions = new Map(

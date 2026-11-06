@@ -282,11 +282,16 @@ describe('createHttpBuddyApi', () => {
     ).rejects.toMatchObject({
       status: 404,
     })
-    const replaced = await api().schedules.update('facility-1', listed.schedules[1].id, {
-      ...occurrence,
-      startsAt: '2026-10-20T10:00:00+09:00',
-      endsAt: '2026-10-20T11:00:00+09:00',
-    })
+    const replaced = await api().schedules.update(
+      'facility-1',
+      listed.schedules[1].id,
+      {
+        ...occurrence,
+        startsAt: '2026-10-20T10:00:00+09:00',
+        endsAt: '2026-10-20T11:00:00+09:00',
+      },
+      null,
+    )
     expect(replaced.id).toBe('replaced')
   })
 
@@ -295,19 +300,25 @@ describe('createHttpBuddyApi', () => {
       ...masters([{ id: 'type-normal', name: '通常' }]),
       scheduleHttp.post('/v1/facilities/{facility_id}/schedules', async ({ request, response }) => {
         const sentBodies = await request.json()
-        return sentBodies.schedule_type_id === 'type-normal' && sentBodies.date === '2026-10-20'
+        return sentBodies.schedule_type_id === 'type-normal' &&
+          sentBodies.date === '2026-10-20' &&
+          sentBodies.id === '01M3TC6CX4Y3D0KCGJ5A9N0WQZ'
           ? response(201).json(schedule('created', { start_time: '15:00', end_time: '16:00' }))
           : response(400).json(invalid('種類か日付が違う'))
       }),
     )
-    const created = await api().schedules.create('facility-1', {
-      kind: 'normal',
-      title: '研修',
-      staffId: 'staff-1',
-      startsAt: '2026-10-20T15:00:00+09:00',
-      endsAt: '2026-10-20T16:00:00+09:00',
-      description: '',
-    })
+    const created = await api().schedules.create(
+      'facility-1',
+      {
+        kind: 'normal',
+        title: '研修',
+        staffId: 'staff-1',
+        startsAt: '2026-10-20T15:00:00+09:00',
+        endsAt: '2026-10-20T16:00:00+09:00',
+        description: '',
+      },
+      '01M3TC6CX4Y3D0KCGJ5A9N0WQZ',
+    )
     expect(created).toMatchObject({ id: 'created', startsAt: '2026-10-20T15:00:00+09:00' })
   })
 
@@ -434,19 +445,26 @@ describe('createHttpBuddyApi', () => {
       ),
       scheduleHttp.put('/v1/schedules/{schedule_id}', async ({ request, response }) => {
         const sentBodies = await request.json()
-        return sentBodies.schedule_type_id === 'type-normal' && sentBodies.title === '研修'
+        return sentBodies.schedule_type_id === 'type-normal' &&
+          sentBodies.title === '研修' &&
+          sentBodies.etag === '"read"'
           ? response(200).json(schedule('target', { title: '研修' }))
           : response(400).json(invalid('種類かタイトルが違う'))
       }),
     )
-    const updated = await api().schedules.update('facility-1', 'target', {
-      kind: 'normal',
-      title: '研修',
-      staffId: 'staff-1',
-      startsAt: '2026-10-20T09:00:00+09:00',
-      endsAt: '2026-10-20T10:00:00+09:00',
-      description: '',
-    })
+    const updated = await api().schedules.update(
+      'facility-1',
+      'target',
+      {
+        kind: 'normal',
+        title: '研修',
+        staffId: 'staff-1',
+        startsAt: '2026-10-20T09:00:00+09:00',
+        endsAt: '2026-10-20T10:00:00+09:00',
+        description: '',
+      },
+      '"read"',
+    )
     expect(updated).toMatchObject({ id: 'target', title: '研修' })
   })
 
@@ -495,13 +513,14 @@ describe('createHttpBuddyApi', () => {
       description: '',
       visit: { patientId: 'patient-1', serviceCode: '訪看I2' as const, categories: [] },
     }
-    await expect(api().schedules.update('facility-1', 'visit', input)).resolves.toMatchObject({
-      id: 'visit',
-    })
-    await expect(api().schedules.update('facility-1', 'cancelled', input)).rejects.toHaveProperty(
-      'status',
-      409,
+    await expect(api().schedules.update('facility-1', 'visit', input, null)).resolves.toMatchObject(
+      {
+        id: 'visit',
+      },
     )
+    await expect(
+      api().schedules.update('facility-1', 'cancelled', input, null),
+    ).rejects.toHaveProperty('status', 409)
   })
 
   it('失敗の状態と、ほかの事業所の予定で ApiError を投げる', async () => {

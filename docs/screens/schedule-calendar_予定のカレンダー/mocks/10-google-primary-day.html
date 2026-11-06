@@ -119,12 +119,13 @@
                       <span class="wf-tab is-active" data-testid="calendar-view-day">日</span>
                     </div>
                     <span class="wf-btn sc-filter-open" data-open="site-sidebar" data-m="28" data-testid="site-sidebar-open">日付と絞り込み</span>
+                    <span class="wf-btn wf-btn--primary" data-m="32" data-testid="schedule-create-open" data-go="../../schedule-new_予定の作成/mocks/01-visit.html">予定を作成</span>
                   </div>
                 </div>
                 <div class="sc-notices">
                   <section class="sc-notice" data-m="13" data-testid="schedule-calendar-google-primary">
-                    <h2 class="sc-notice__title">予定は Google カレンダーで管理しています</h2>
-                    <p class="sc-notice__text">この事業所の予定は Google カレンダーで作成、変更してください。buddy には、同期した予定を表示します。</p>
+                    <h2 class="sc-notice__title">予定は Google カレンダーと同期しています</h2>
+                    <p class="sc-notice__text">この事業所の予定は、Google カレンダーと buddy のどちらでも作成、変更できます。buddy で保存した予定は Google カレンダーにも書き、Google カレンダーで変えた予定は数分のうちに buddy に出ます。</p>
                   </section>
                 </div>
                 <div class="sc-day-wrap" data-m="14" data-testid="staff-schedule-day-grid">
@@ -135,7 +136,7 @@
                     <div class="sc-head">職員 C</div>
                     <div class="sc-head">職員 D</div>
                     <div class="sc-times"><div>00:00</div><div>01:00</div><div>02:00</div><div>03:00</div><div>04:00</div><div>05:00</div><div>06:00</div><div>07:00</div><div>08:00</div><div>09:00</div><div>10:00</div><div>11:00</div><div>12:00</div><div>13:00</div><div>14:00</div><div>15:00</div><div>16:00</div><div>17:00</div><div>18:00</div><div>19:00</div><div>20:00</div><div>21:00</div><div>22:00</div><div>23:00</div></div>
-                    <div class="sc-col" data-m="16" data-testid="day-grid-staff-{職員の id}"><span class="sc-now" data-m="20" data-testid="day-grid-now-{職員の id}" style="top: 452px"></span><span class="sc-event" data-m="18" data-testid="schedule-event-{予定の id}" style="top: 288px; height: 16px" data-go="../../schedule-detail_予定の詳細/mocks/08-google-calendar.html">09:00-09:30 利用者 A 訪問</span></div>
+                    <div class="sc-col" data-m="16" data-testid="day-grid-staff-{職員の id}"><span class="sc-now" data-m="20" data-testid="day-grid-now-{職員の id}" style="top: 452px"></span><span class="sc-event" data-m="18" data-testid="schedule-event-{予定の id}" style="top: 288px; height: 16px" data-go="../../schedule-detail_予定の詳細/mocks/08-google-calendar.html">09:00-09:30 利用者 A 訪問</span><span class="sc-slot sc-free" data-m="33" data-testid="day-grid-slot-{職員の id}-{HH:mm}" style="top: 352px; height: 16px" data-go="../../schedule-new_予定の作成/mocks/01-visit.html"></span></div>
                     <div class="sc-col" data-testid="day-grid-staff-{職員の id}"><span class="sc-now" style="top: 452px"></span><span class="sc-event" data-testid="schedule-event-{予定の id}" style="top: 336px; height: 32px" data-go="../../schedule-detail_予定の詳細/mocks/08-google-calendar.html">10:30-11:30 利用者 B 訪問</span></div>
                     <div class="sc-col" data-testid="day-grid-staff-{職員の id}"><span class="sc-now" style="top: 452px"></span><span class="sc-event" data-testid="schedule-event-{予定の id}" style="top: 416px; height: 32px" data-go="../../schedule-detail_予定の詳細/mocks/08-google-calendar.html">13:00-14:00 会議</span></div>
                     <div class="sc-col" data-testid="day-grid-staff-{職員の id}"><span class="sc-now" style="top: 452px"></span><span class="sc-event" data-testid="schedule-event-{予定の id}" style="top: 0px; height: 32px" data-go="../../schedule-detail_予定の詳細/mocks/08-google-calendar.html">22:00-翌 01:00 夜勤</span></div>

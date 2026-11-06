@@ -8,25 +8,34 @@ import { Loading, Modal } from '@buddy/ui'
 
 import { getCalendarRange } from '../lib/calendarRange'
 import { toDateKey } from '../lib/dateTime'
-import { SCHEDULE_NOT_FOUND_MESSAGE, scheduleLoadErrorMessage } from '../lib/errorMessage'
+import {
+  SCHEDULE_NOT_FOUND_MESSAGE,
+  scheduleLoadErrorMessage,
+  scheduleSubmitErrorMessage,
+} from '../lib/errorMessage'
 import { canEditScheduleOf } from '../lib/schedulePermission'
+import { canCancelSchedule, canChangeSchedule } from '../lib/scheduleWritable'
 import {
   facilityQueryOptions,
   patientListQueryOptions,
   scheduleListQueryOptions,
   scheduleQueryOptions,
   staffListQueryOptions,
+  useCancelSchedule,
 } from '../queries'
 import { pickCalendarSearch } from '../schema/scheduleSearch'
+import { ScheduleCancelDialog } from './ScheduleCancelDialog'
 import { ScheduleDetailModal } from './ScheduleDetailModal'
 
 /**
  * 予定を 1 件取り、詳細のモーダルに出す。閉じるとカレンダーに戻る。
- * ログインした職員が予定の職員の予定を編集できないときは、編集のボタンを出さない。
+ * ログインした職員が予定の職員の予定を編集できないときは、編集とキャンセルのボタンを出さない。
+ * キャンセルのボタンは、理由を入れるダイアログを開き、開いたときの予定の etag でキャンセルする。キャンセルするとカレンダーに戻る。
  * 職員の一覧を読み終えるまでは予定の職員のチームが分からないので、チームを対象にする権限では編集のボタンを出さない。
  *
  * Google カレンダーを予定の正本にする事業所（google_primary）の予定には 1 件の取得が無いので、カレンダーの search params の期間の
- * 予定を職員で絞らずに読み、確認が必要な予定と合わせた中から引く。Google カレンダーの予定には、編集のボタンを出さない。
+ * 予定を職員で絞らずに読み、確認が必要な予定と合わせた中から引く。予定の正本を切り替えている間（一覧の cutover）と、
+ * buddy の繰り返しの規則に写せない予定（recurrence_unsupported）には、編集とキャンセルのボタンを出さない（canChangeSchedule）。
  */
 export const ScheduleDetailModalContainer = ({ scheduleId }: { scheduleId: Schedule['id'] }) => {
   const navigate = useNavigate()
@@ -34,6 +43,9 @@ export const ScheduleDetailModalContainer = ({ scheduleId }: { scheduleId: Sched
   const calendarSearch = pickCalendarSearch(search)
   const { api, facilityId, viewer } = useBuddyApi()
   const [today] = useState(() => toDateKey(new Date()))
+  // キャンセルのダイアログを開いた時点の予定の etag。開いていなければ undefined である
+  const [cancelETag, setCancelETag] = useState<string | null>()
+  const cancelSchedule = useCancelSchedule(scheduleId)
 
   const facilityQuery = useQuery(facilityQueryOptions(api, facilityId))
   const sourceMode = facilityQuery.data?.sourceMode
@@ -84,25 +96,52 @@ export const ScheduleDetailModalContainer = ({ scheduleId }: { scheduleId: Sched
   }
 
   const staff = staffQuery.data?.find((s) => s.id === schedule.staffId)
-  const canEdit =
-    schedule.fromGoogleCalendar !== true &&
-    canEditScheduleOf(viewer, { id: schedule.staffId, teamId: staff?.teamId ?? '' })
+  const cutover = sourceMode === 'google_primary' ? (listed?.cutover ?? null) : null
+  const isEditor = canEditScheduleOf(viewer, { id: schedule.staffId, teamId: staff?.teamId ?? '' })
+  const canEdit = isEditor && canChangeSchedule(schedule, cutover)
+  const canCancel = isEditor && canCancelSchedule(schedule, cutover)
   return (
-    <ScheduleDetailModal
-      onClose={close}
-      onEdit={
-        canEdit
-          ? () =>
-              navigate({
-                to: '/schedule/$scheduleId/edit',
-                params: { scheduleId },
-                search: calendarSearch,
-              })
-          : undefined
-      }
-      patient={patientsQuery.data?.find((patient) => patient.id === schedule.visit?.patientId)}
-      schedule={schedule}
-      staff={staff}
-    />
+    <>
+      <ScheduleDetailModal
+        onCancelSchedule={
+          canCancel
+            ? () => {
+                cancelSchedule.reset()
+                setCancelETag(schedule.etag ?? null)
+              }
+            : undefined
+        }
+        onClose={close}
+        onEdit={
+          canEdit
+            ? () =>
+                navigate({
+                  to: '/schedule/$scheduleId/edit',
+                  params: { scheduleId },
+                  search: calendarSearch,
+                })
+            : undefined
+        }
+        patient={patientsQuery.data?.find((patient) => patient.id === schedule.visit?.patientId)}
+        schedule={schedule}
+        staff={staff}
+      />
+      {cancelETag !== undefined && (
+        <ScheduleCancelDialog
+          errorMessage={
+            cancelSchedule.isError
+              ? scheduleSubmitErrorMessage(cancelSchedule.error, 'キャンセル')
+              : undefined
+          }
+          isSubmitting={cancelSchedule.isPending}
+          onCancel={() => setCancelETag(undefined)}
+          onSubmit={async (reason) => {
+            await cancelSchedule.mutateAsync({ reason, etag: cancelETag })
+            await close()
+          }}
+          schedule={schedule}
+        />
+      )}
+    </>
   )
 }

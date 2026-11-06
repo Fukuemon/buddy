@@ -49,8 +49,9 @@ export type ScheduleCalendarContainerProps = {
  * `/schedule` の search params を読み、予定を取ってカレンダーに出す。
  * 職員の列は、ログインした職員が予定を見てよい職員に限る。「予定を作成」は誰かの予定を編集できる職員にだけ出し、
  * 時間の枠は、予定を編集できる職員の列でだけ押せる。
- * Google カレンダーを予定の正本にする事業所（google_primary）では、予定を作る操作を出さず、カレンダーの上に、
- * Google カレンダーで編集する案内、同期の警告、確認が必要な予定の通知を出す。事業所の正本は、予定の一覧か事業所から読む。
+ * Google カレンダーを予定の正本にする事業所（google_primary）でも予定を作る操作を出し、予定の API が Google カレンダーに書く（ADR-0028）。
+ * 予定の正本を buddy に切り替えている間は、予定を作る操作を出さない。カレンダーの上には、Google カレンダーと buddy のどちらでも
+ * 予定を変えられる案内、切り替え中の案内、同期の警告、確認が必要な予定の通知を出す。事業所の正本は、予定の一覧か事業所から読む。
  */
 export const ScheduleCalendarContainer = ({
   staffFilterToggle,
@@ -80,7 +81,12 @@ export const ScheduleCalendarContainer = ({
   const facilityQuery = useQuery(facilityQueryOptions(api, facilityId))
   // 日付を移ると一覧を読み直す間は一覧の値が無いので、事業所の値で予定を作る操作を出し分け、ちらつかせない
   const sourceMode = schedulesQuery.data?.sourceMode ?? facilityQuery.data?.sourceMode
-  const canWriteSchedules = sourceMode === 'buddy_primary'
+  // google_primary の事業所では、予定の正本を切り替えている間（一覧の cutover）は予定を作らせない。一覧を読み直す間は、切り替え中かが分からないので出さない
+  const canWriteSchedules =
+    sourceMode === 'buddy_primary' ||
+    (sourceMode === 'google_primary' &&
+      schedulesQuery.data !== undefined &&
+      schedulesQuery.data.cutover === null)
 
   const updateSearch = (patch: Partial<ScheduleSearch>) =>
     navigate({ search: (prev) => ({ ...prev, ...patch }) })

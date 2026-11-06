@@ -22,12 +22,16 @@ OpenAPI の項目のうち、送る値は `createSchedule`（`POST /v1/facilitie
 | 職員の一覧 | 予定を作れる職員か | `Viewer.schedulePolicies`、`Staff.teamId` | `getMe` の `policies` の `code`、`target_user_ids`、`target_team_ids` |
 | 訪問の区分 | 夜勤、緊急、入院 | `ScheduleInput.visit.categories` | `visit_info.visit_category_ids` |
 | メモ | メモ | `ScheduleInput.description` | `description` |
-| Google カレンダーで管理していることの文 | 事業所が予定を Google カレンダーで管理しているか | `Facility.sourceMode` | `getFacility` の `Facility.source_mode` |
+| （画面に出さない） | 作る予定の ID | `BuddyApi.schedules.create` の `id` | 本文の `id` |
 
-- 事業所は `getFacility`（`GET /v1/facilities/{facility_id}`）で読み、web の `BuddyApi.facilities.get` が `Facility` にする。
-  - `source_mode` が `google_primary` なら、フォームの代わりに `SCHEDULE_GOOGLE_PRIMARY_MESSAGE` を出す。文は `apps/web/src/features/schedule/lib/errorMessage.ts` にある。
-  - `getFacility` の失敗は状態にせず、フォームを出す。保存のときは、`createSchedule` が 409 の `google_primary` で拒む。
+- 画面は事業所を読まず、`buddy_primary` と `google_primary` のどちらの事業所でも同じフォームを出す。
+- 予定の ID（ULID）は、フォームを開いたときに 1 つ作り、`createSchedule` の本文の `id` に送る。
+  - 作るのは `apps/web/src/features/schedule/lib/scheduleId.ts` の `newScheduleId` である。
+  - 作成が失敗して送り直すときも、同じ `id` を送る。`google_primary` の事業所で、Google カレンダーに書けたのに応答を受けられなかったときも、Google の予定が 2 つにならないためである。
   - 処理は `apps/web/src/features/schedule/components/ScheduleCreateModalContainer.tsx` にある。
+  - 送るのは `apps/web/src/features/schedule/queries.ts` の `useCreateSchedule` である。
+- `google_primary` の事業所では、`createSchedule` が予定の職員の Google カレンダーに予定を書き、書けたときだけ成功を返す。
+  - 扱いは [ADR-0028](../../adr/0028-google-calendar-sync.md) にある。
 - 訪問の予定の `title` は、画面で入れず「訪問」を送る。
 - 職員、利用者、サービスコードの一覧は、`listUsers`、`listPatients`、`listServiceCodes` から取る。
   - 3 つを取り終えるまでフォームを出さない。
@@ -77,15 +81,25 @@ OpenAPI の項目のうち、送る値は `createSchedule`（`POST /v1/facilitie
 | 状態 | 出す文 | 要因 |
 | --- | --- | --- |
 | 読み込み中 | なし（ログインの画面へ移るまで続く） | `listUsers`、`listPatients`、`listServiceCodes` のどれかが終わっていないか、401 |
-| Google カレンダーで管理している | 「この事業所の予定は Google カレンダーで管理しています。予定は Google カレンダーで作成、変更してください。」 | API の失敗ではない。`getFacility` の `source_mode` が `google_primary` |
 | 読み込みの失敗 | 「職員と利用者を読み込めませんでした。閉じてから、開き直してください。」 | `listUsers`、`listPatients`、`listServiceCodes` のどれかが 401 以外で失敗。API に届かない |
 | 作成の失敗 | 「この操作をする権限がありません。」 | `createSchedule` が 403 |
 | 作成の失敗 | 「入力の内容では予定を作成できません。内容を直してください。」 | `createSchedule` が 400。休職か退職の職員か、訪問しない職員を主訪問者か予定者にしたときと、利用の終了の利用者を指したときを含む |
 | 作成の失敗 | 「この事業所の予定は Google カレンダーで管理しています。予定は Google カレンダーで作成、変更してください。」 | `createSchedule` が 409 `google_primary`。事業所が Google カレンダーを予定の正本にしている |
-| 作成の失敗 | 「予定を作成できませんでした。」 | `createSchedule` が 400、401、403、409 `google_primary` 以外で失敗。マスタ（`listScheduleTypes`、`listServiceCodes`、`listVisitCategories`）の取得が失敗。選んだ値に当たるマスタが無い。API に届かない |
+| Google カレンダーに書けたかを確認できなかった | 「Google カレンダーに書けたかを確認できませんでした。もう一度「作成」を押すと、同じ予定として送り直します。」 | `createSchedule` が 503 `google_write_unknown` |
+| 作成の失敗 | 「Google カレンダーで予定が変更されていました。最新の予定を確認してから、もう一度保存してください。」 | `createSchedule` が 409 `google_event_changed` |
+| 作成の失敗 | 「Google カレンダーで予定が消されたか、見つかりません。」 | `createSchedule` が 409 `google_event_not_found` |
+| 作成の失敗 | 「前の保存の結果を確認しています。時間をおいて、予定を開き直してください。」 | `createSchedule` が 409 `google_write_pending` |
+| 作成の失敗 | 「Google カレンダーに書けませんでした。時間をおいて、やり直してください。」 | `createSchedule` が 503 `google_unavailable` |
+| 作成の失敗 | 「Google カレンダーに予定を書く権限がありません。カレンダーの共有の設定を、事業所の管理者に確認してください。」 | `createSchedule` が 409 `google_calendar_unwritable` |
+| 作成の失敗 | 「Google カレンダーが予定を受け付けませんでした。入力を確認してください。」 | `createSchedule` が 409 `google_event_rejected` |
+| 作成の失敗 | 「予定の職員が Google カレンダーを結び付けていません。カレンダーの結び付けを、事業所の管理者に頼んでください。」 | `createSchedule` が 409 `calendar_not_linked` |
+| 作成の失敗 | 「この事業所には、Google カレンダーと連携する設定がありません。事業所の管理者に確認してください。」 | `createSchedule` が 503 `calendar_not_configured` |
+| 作成の失敗 | 「予定の正本を buddy に切り替えています。切り替えが終わるまで、予定を作成、変更、キャンセルできません。」 | `createSchedule` が 409 `cutover_open` |
+| 作成の失敗 | 「予定を作成できませんでした。」 | `createSchedule` が、ここまでのほかの失敗（409 `conflict`、500 など）。マスタ（`listScheduleTypes`、`listServiceCodes`、`listVisitCategories`）の取得が失敗。選んだ値に当たるマスタが無い。API に届かない |
 | 送信中 | なし（ログインの画面へ移るまで続く） | `createSchedule` か、マスタの取得が 401 |
 
-- 作成の失敗の文は、`apps/web/src/features/schedule/lib/errorMessage.ts` の `scheduleSubmitErrorMessage` が status で選ぶ。
+- 作成の失敗の文は、`apps/web/src/features/schedule/lib/errorMessage.ts` の `scheduleSubmitErrorMessage` が status と `ApiError.code` で選ぶ。
+  - `google_write_unknown` の文は、作成だけ、同じ予定として送り直せることを案内する。
 - 読み込みの失敗の文は、同じ `errorMessage.ts` の `SCHEDULE_OPTIONS_LOAD_ERROR_MESSAGE` にある。
 - 一覧の取得は、4xx なら取り直さずにすぐ失敗にし、ほかの失敗は取り直してから失敗にする。
   - 処理は `apps/web/src/appContext.ts` の `shouldRetryQuery` にある。

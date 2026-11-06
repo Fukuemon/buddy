@@ -100,20 +100,38 @@ export interface BuddyApi {
     externalCalendar(facilityId: FacilityId): Promise<ExternalCalendar | null>
   }
   /**
-   * 予定。google_primary の事業所では、list は同期が写した Google カレンダーの予定（fromGoogleCalendar が true）を返し、
-   * get は status が 404 の、create と update は status が 409 で code が google_primary の ApiError を投げる。
+   * 予定。google_primary の事業所では、list と get は同期が写した Google カレンダーの予定（fromGoogleCalendar が true、etag を持つ）を返し、
+   * create、update、cancel は Google カレンダーに書き、書けたときだけ成功する（ADR-0028）。
+   * 書けないときは、予定の API の code（google_event_changed、google_write_pending、cutover_open など）を持つ ApiError を投げる。
    */
   schedules: {
     list(facilityId: FacilityId, params: ScheduleListParams): Promise<ScheduleList>
     /** 予定がなければ status が 404 の ApiError を投げる。 */
     get(facilityId: FacilityId, scheduleId: Schedule['id']): Promise<Schedule>
-    create(facilityId: FacilityId, input: ScheduleInput): Promise<Schedule>
-    /** 予定がなければ status が 404 の ApiError を投げる。 */
+    /**
+     * 画面が決めた ID が id の予定を作る。google_primary の事業所で送り直すときは、同じ id を渡すと Google の予定は 1 つのままになる。
+     */
+    create(facilityId: FacilityId, input: ScheduleInput, id: Schedule['id']): Promise<Schedule>
+    /**
+     * 予定を input の内容にする。etag は、画面が予定を読んだときの etag で、google_primary の事業所では必須である。buddy の予定では null を渡す。
+     * 予定がなければ status が 404 の ApiError を投げる。
+     */
     update(
       facilityId: FacilityId,
       scheduleId: Schedule['id'],
       input: ScheduleInput,
+      etag: string | null,
     ): Promise<Schedule>
+    /**
+     * 予定を理由 reason でキャンセルする。etag は update と同じである。google_primary の事業所では、理由は Google カレンダーに書けないので保存しない。
+     * 予定がなければ status が 404 の、キャンセル済みなら status が 409 の ApiError を投げる。
+     */
+    cancel(
+      facilityId: FacilityId,
+      scheduleId: Schedule['id'],
+      reason: string,
+      etag: string | null,
+    ): Promise<void>
   }
   /**
    * 職員。list のほかは職員の管理の画面が使う。

@@ -29,3 +29,37 @@
 .se-message {
   margin: 0;
 }
+
+/* Google カレンダーの最新の予定。フォームの上に注意の色の面で出す（apps/web の ScheduleLatestNotice と同じ） */
+.se-latest {
+  margin: 0 0 16px;
+  padding: 12px 16px;
+  border-radius: var(--wf-radius);
+  background: var(--wf-warning-surface);
+}
+
+.se-latest__title {
+  margin: 0;
+  color: var(--wf-warning);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.se-latest__rows {
+  display: grid;
+  grid-template-columns: 6rem minmax(0, 1fr);
+  gap: 4px 16px;
+  margin: 8px 0 0;
+}
+
+.se-latest__rows dt {
+  color: var(--wf-muted);
+}
+
+.se-latest__rows dd {
+  margin: 0;
+}
+
+.se-latest__text {
+  margin: 8px 0 0;
+}

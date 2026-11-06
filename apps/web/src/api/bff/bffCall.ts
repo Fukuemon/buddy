@@ -16,6 +16,7 @@ export type BffData = string | number | boolean | null | BffData[] | { [key: str
 
 const id = z.string().min(1).max(64)
 const dateTime = z.string().min(1).max(64)
+const etag = z.string().min(1).max(256)
 const scheduleInput = z.object({
   kind: z.enum(SCHEDULE_KINDS),
   title: z.string().max(255),
@@ -76,8 +77,9 @@ const ARGS = {
     }),
   ]),
   'schedules.get': z.tuple([id, id]),
-  'schedules.create': z.tuple([id, scheduleInput]),
-  'schedules.update': z.tuple([id, id, scheduleInput]),
+  'schedules.create': z.tuple([id, scheduleInput, id]),
+  'schedules.update': z.tuple([id, id, scheduleInput, etag.nullable()]),
+  'schedules.cancel': z.tuple([id, id, z.string().min(1).max(255), etag.nullable()]),
   'staff.list': z.tuple([id, nameSearch]),
   'staff.listRecords': z.tuple([id]),
   'staff.get': z.tuple([id, id]),

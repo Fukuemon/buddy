@@ -128,9 +128,19 @@ export type Schedule = {
   cancel?: { reason: string }
   /**
    * google_primary の事業所で、同期が写した Google カレンダーの予定（Projection）のときだけ true を持つ。
-   * buddy から変えられず、予定の API の 1 件の取得（GET /v1/schedules/{id}）も無い。
+   * buddy から変えると、予定の API が Google カレンダーに書く（ADR-0028）。
    */
   fromGoogleCalendar?: true
+  /**
+   * Google カレンダーの予定の etag。変更とキャンセルのときに送り、予定の API が If-Match に付ける。
+   * 繰り返しの予定の展開した回では、親の予定の etag である。buddy の予定には無い。
+   */
+  etag?: string
+  /**
+   * buddy_primary の事業所で、画面が繰り返しの予定から展開した回のときだけ true を持つ。
+   * 予定の API に回のキャンセルが無いので、画面はこの回のキャンセルを出さない。
+   */
+  recurringOccurrence?: true
   /** Google カレンダーの予定のうち、buddy の予定に読み替えられず確認が必要な予定のときだけ、その理由を持つ。 */
   reviewReason?: ScheduleReviewReason
 }
@@ -160,7 +170,7 @@ export type ScheduleList = {
 /** 予定の作成と更新で送る値。 */
 export type ScheduleInput = Omit<
   Schedule,
-  'id' | 'facilityId' | 'fromGoogleCalendar' | 'reviewReason'
+  'id' | 'facilityId' | 'fromGoogleCalendar' | 'etag' | 'recurringOccurrence' | 'reviewReason'
 >
 
 /** 予定の一覧の条件。 */

@@ -1,5 +1,6 @@
 import { SCHEDULE_KINDS, type ScheduleKind } from '#/api/types'
 import { Button, Modal, SegmentedControl } from '@buddy/ui'
+import type { ReactNode } from 'react'
 
 import { SCHEDULE_KIND_LABEL } from '../constants/scheduleLabels'
 import { ScheduleForm, type ScheduleFormProps } from './ScheduleForm'
@@ -17,6 +18,8 @@ export type ScheduleFormModalProps = Omit<ScheduleFormProps, 'id'> & {
   onKindChange?: (kind: ScheduleKind) => void
   /** 送信に失敗したときの文。 */
   submitError?: string
+  /** フォームの上に出す知らせ（Google カレンダーの最新の予定など）。 */
+  notice?: ReactNode
   onClose: () => void
 }
 
@@ -33,6 +36,7 @@ export const ScheduleFormModal = ({
   cancelTestId,
   onKindChange,
   submitError,
+  notice,
   onClose,
   form,
   ...formProps
@@ -66,10 +70,16 @@ export const ScheduleFormModal = ({
               {submitError}
             </p>
           )}
-          <Button data-testid={cancelTestId} onClick={requestClose} variant="secondary">
+          <Button
+            className="shrink-0"
+            data-testid={cancelTestId}
+            onClick={requestClose}
+            variant="secondary"
+          >
             キャンセル
           </Button>
           <Button
+            className="shrink-0"
             data-testid={submitTestId}
             form={FORM_ID}
             isLoading={form.formState.isSubmitting}
@@ -81,6 +91,7 @@ export const ScheduleFormModal = ({
       )}
       title={title}
     >
+      {notice}
       <ScheduleForm {...formProps} form={form} id={FORM_ID} />
     </Modal>
   )
