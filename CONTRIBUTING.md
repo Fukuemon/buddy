@@ -244,6 +244,7 @@ pnpm check:design   # 色の値、プリミティブトークンの名前、14px
 ```
 
 - 違反の行には、DESIGN.md の原則の ID が出る。
+- `scripts/check-utilities.mjs` は `--doc packages/ui/DESIGN.md` 付きで流れ、規則の ID が DESIGN.md に無ければ終了コード 2 で止まる。原則を消すか改名したときは、`scripts/check-utilities.mjs` の `RULES` も直す。
 - ロゴのように値が外で決まる行だけは、同じ行のコメントに `design-system-allow` と理由を書いて外す。
 - 次の 4 つは、agent-harness のパッケージ design-system のテンプレートを写したものである。
   - `scripts/check-contrast.mjs`、`scripts/build-static-tokens.mjs`、`scripts/check-raw-values.mjs`、`scripts/check-utilities.mjs`
