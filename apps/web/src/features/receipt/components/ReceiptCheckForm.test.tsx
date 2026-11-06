@@ -26,6 +26,21 @@ describe('ReceiptCheckForm', () => {
     expect(onSubmit).not.toHaveBeenCalled()
   })
 
+  it('入力がそろうまでは、送信のボタンの横に押せるようにする条件を出し、ボタンの説明にする', () => {
+    render(<Calendar />)
+    expect(screen.getByTestId('receipt-check-submit-hint')).toHaveTextContent(
+      '対象の月と実績の CSV を選んでください。',
+    )
+    expect(screen.getByTestId('receipt-check-submit')).toHaveAccessibleDescription(
+      '対象の月と実績の CSV を選んでください。',
+    )
+  })
+
+  it('入力がそろえば、条件の文を出さない', () => {
+    render(<Ready submitHint="対象の月と実績の CSV を選んでください。" />)
+    expect(screen.queryByTestId('receipt-check-submit-hint')).toBeNull()
+  })
+
   it('入力がそろえば送る', async () => {
     const onSubmit = fn()
     render(<Ready onSubmit={onSubmit} />)

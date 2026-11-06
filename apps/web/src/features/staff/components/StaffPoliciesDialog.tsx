@@ -65,6 +65,11 @@ export const StaffPoliciesDialog = ({
     <InputDialog
       busyLabel="保存しています"
       canSubmit={changes.length > 0 && hasTargetsForAll(policies, selection)}
+      submitHint={
+        hasTargetsForAll(policies, selection)
+          ? '付ける権限か外す権限を選んでください。'
+          : '対象を選んでいない権限があります。対象のチームか職員を選んでください。'
+      }
       error={
         errorMessage === undefined
           ? undefined

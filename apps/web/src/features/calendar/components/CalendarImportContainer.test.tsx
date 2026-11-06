@@ -113,6 +113,20 @@ describe('CalendarImportContainer', () => {
       /開始日は、終了日より前の日にしてください。/,
     )
     expect(screen.getByTestId('calendar-import-preview')).toHaveAttribute('aria-disabled', 'true')
+    // 期間の誤りは欄の下に出るので、ボタンの横の条件の文は出さない
+    expect(screen.queryByTestId('calendar-import-preview-hint')).toBeNull()
+  })
+
+  it('開始日を空にすると、プレビューを押せず、ボタンの横に押せるようにする条件を出す', async () => {
+    render(<Initial />)
+    fireEvent.change(await screen.findByTestId('calendar-import-start'), {
+      target: { value: '' },
+    })
+
+    expect(screen.getByTestId('calendar-import-preview')).toHaveAttribute('aria-disabled', 'true')
+    expect(screen.getByTestId('calendar-import-preview')).toHaveAccessibleDescription(
+      '開始日と終了日を入れると、プレビューできます。',
+    )
   })
 
   it('プレビューが失敗したら、理由ごとの文を出す', async () => {

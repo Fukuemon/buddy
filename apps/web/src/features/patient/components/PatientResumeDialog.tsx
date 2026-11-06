@@ -48,6 +48,7 @@ export const PatientResumeDialog = ({
     <ConfirmDialog
       busyLabel="再開しています"
       canSubmit={staffId !== '' && staffOptions !== undefined}
+      submitHint={staffOptions === undefined ? undefined : '担当の職員を選んでください。'}
       error={
         errorMessage === undefined
           ? undefined

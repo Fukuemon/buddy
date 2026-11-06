@@ -37,6 +37,7 @@ export const StaffPositionDialog = ({
     <InputDialog
       busyLabel="変えています"
       canSubmit={positions !== undefined && selected !== staff.position.id}
+      submitHint={positions === undefined ? undefined : '今の役職と違う役職を選んでください。'}
       error={
         errorMessage === undefined
           ? undefined
