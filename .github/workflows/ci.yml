@@ -67,6 +67,7 @@ jobs:
       - run: pnpm --filter @buddy/ui exec playwright install --with-deps chromium
       - run: pnpm lint:openapi
       - run: pnpm check:screens
+      - run: node --test scripts/screen-conditions.test.mjs
       - run: pnpm check:contrast
       - run: pnpm check:design
       - run: pnpm -r check

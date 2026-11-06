@@ -137,7 +137,7 @@
     | 6 | ラベル | 日時 | [日時](#日時) |
     | 7 | ラベル | 種類 | [種類](#種類) |
     | 8 | ラベル | 主訪問者 | [主訪問者](#主訪問者) |
-    | 9 | ラベル | 訪問の情報 | [訪問の情報](#訪問の情報) |
+    | 9 | 領域 | 訪問の情報 | [訪問の情報](#訪問の情報) |
     | 10 | ラベル | 利用者 | [利用者](#利用者) |
     | 11 | ラベル | サービスコード | [サービスコード](#サービスコード) |
     | 12 | ラベル | 訪問の区分 | [訪問の区分](#訪問の区分) |
@@ -212,150 +212,107 @@
 
 ## 覆い
 
-**概要**: ダイアログの背後の予定のカレンダーを暗くぼかして覆う。  
-押すとダイアログを閉じる。
+**概要**: ダイアログの背後の予定のカレンダーを、暗くぼかして覆う覆い。
 
 **値のソース**: 文言は無い。  
 背後のカレンダーは、`/schedule` の画面として描いたまま残る。
 
-**活性条件**: 常に活性
-
-**表示条件**: 常に表示
-
 **カタログ**: [ScheduleDetailModal の Visit](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-scheduledetailmodal--visit)、[ScheduleDetailModalContainer の Loading](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-scheduledetailmodalcontainer--loading)、[ScheduleDetailModalContainer の Failed](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-scheduledetailmodalcontainer--failed)
 
-### インタラクション
+**操作**: 押すと、[閉じる](#閉じる) を押したときと同じく閉じる。
 
-#### 1. 押す
-
-1. 押し始めと押し終わりがどちらも覆いのときだけ、[閉じる](#閉じる) を押したときと同じく閉じる。
+1. 押し始めと押し終わりがどちらも覆いのときだけ閉じる。
    - ダイアログの中から覆いへ引きずって離したときは閉じない。
 
 ## 予定の詳細のダイアログ
 
-**概要**: 予定 1 件の内容を出す。  
+**概要**: 予定 1 件の内容を出すダイアログ。  
 幅 768px 未満では、画面いっぱいに出す。
 
 **値のソース**: 上端の左にダイアログのタイトル、右上に閉じるボタン、本文に項目の名前と値の行、下端の右に閉じると編集のボタンをこの順に置く。
 
-下端は、予定を読めて、キャンセルした予定でないときだけ出す。  
-編集のボタンは、予定を編集できる職員にだけ出す。
-
 本文は、日時の見出しの下に、種類、タイトル、主訪問者か予定者の段、訪問の情報の段、メモの段の順に並べる。  
 Google カレンダーの予定では、日時の見出しの上に、Google カレンダーの案内と、確認が必要な理由をこの順に置く。  
-タイトルは、通常の予定だけに出す。  
-訪問の情報の段には、利用者、サービスコード、訪問の区分を置く。
+キャンセルした予定では、日時の見出しの上にキャンセルの理由を置く。  
+予定を読めなかったときは、本文に読み込みの失敗の文だけを出す。
 
 項目の名前と値は、メモを除く全ての段で、名前を左、値を右に置く同じ 1 列の並びにし、値の列の位置をそろえる。  
 幅によらず 2 列にしない。
 
-**活性条件**: 常に活性
-
-**表示条件**: 常に表示。  
-予定を読めなかったときは、中に読み込みの失敗の文を出す
-
 **カタログ**: [ScheduleDetailModal の Visit](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-scheduledetailmodal--visit)、[ScheduleDetailModalContainer の Loading](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-scheduledetailmodalcontainer--loading)、[ScheduleDetailModalContainer の Failed](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-scheduledetailmodalcontainer--failed)
 
-### インタラクション
-
-#### 1. Escape キーを押す
-
-1. [閉じる](#閉じる) を押したときと同じく閉じる。
+**操作**: Escape キーを押すと、[閉じる](#閉じる) を押したときと同じく閉じる。
 
 ## 閉じる
 
-**概要**: ダイアログを閉じて、予定のカレンダーに戻る。
+**概要**: ダイアログを閉じて、予定のカレンダーに戻るボタン。  
+読み込み中と失敗のときも押せる。
 
 **値のソース**: 「×」の印。  
 読み上げの名前は「閉じる」。
 
-**活性条件**: 常に活性。  
-読み込み中と失敗のときも押せる。
-
-**表示条件**: 常に表示
-
 **カタログ**: [ScheduleDetailModal の Visit](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-scheduledetailmodal--visit)、[ScheduleDetailModalContainer の Loading](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-scheduledetailmodalcontainer--loading)、[ScheduleDetailModalContainer の Failed](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-scheduledetailmodalcontainer--failed)
 
-### インタラクション
+**操作**: 押すと、確認を出さずに `/schedule` に戻る。
 
-#### 1. 押す
-
-1. 確認を出さずに、`/schedule` に戻る。
-   - search params の `view`、`date`、`staff`、`cancelled` は引き継ぐ。
-   - 履歴に積む。
+1. search params の `view`、`date`、`staff`、`cancelled` は引き継ぐ。
+2. 履歴に積む。
 
 ## ダイアログのタイトル
 
-**概要**: 何のダイアログかを示す。
+**概要**: 何のダイアログかを示すラベル。
 
 **値のソース**: 「予定の詳細」
-
-**活性条件**: 常に活性
-
-**表示条件**: 常に表示
 
 **カタログ**: [ScheduleDetailModal の Visit](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-scheduledetailmodal--visit)、[ScheduleDetailModalContainer の Loading](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-scheduledetailmodalcontainer--loading)、[ScheduleDetailModalContainer の Failed](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-scheduledetailmodalcontainer--failed)
 
 ## 種類
 
-**概要**: 予定の種類を示す。
+**概要**: 予定の種類を示すラベル。
 
 **値のソース**: 「通常」か「訪問」。
-
-**活性条件**: 常に活性
-
-**表示条件**: 予定の取得が成功したとき
 
 **カタログ**: [ScheduleDetailModal の Visit](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-scheduledetailmodal--visit)
 
 ## タイトル
 
-**概要**: 通常の予定のタイトルを示す。
+**概要**: 通常の予定のタイトルを示すラベル。
 
 **値のソース**: 予定のタイトル。  
-訪問の予定では、タイトルの行を出さない。  
 確認が必要な Google カレンダーの予定では、Google カレンダーのタイトルをそのまま出す。
 
-**活性条件**: 常に活性
+**表示**: 次の全てに当てはまるとき。
 
-**表示条件**: 予定の取得が成功し、種類が通常のとき
+- 開いた予定が、通常の予定である
 
 **カタログ**: [ScheduleDetailModal の Normal](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-scheduledetailmodal--normal)
 
 ## キャンセルの理由
 
-**概要**: キャンセルした予定であることと、その理由を示す。
+**概要**: キャンセルした予定であることと、その理由を示すラベル。
 
 **値のソース**: `キャンセルした予定です。` の文と、キャンセルの理由。  
 理由が空なら「なし」。  
 注意の色の帯で出し、文で伝える。
 
-**活性条件**: 押せない
-
-**表示条件**: 予定の取得が成功し、予定がキャンセルした予定のとき
-
 **カタログ**: [ScheduleDetailModal の Cancelled](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-scheduledetailmodal--cancelled)
 
 ## Google カレンダーの案内
 
-**概要**: 職員が Google カレンダーで作った予定は、buddy で変えられず、Google カレンダーで変えることを伝える。
+**概要**: 職員が Google カレンダーで作った予定は、buddy で変えられず、Google カレンダーで変えることを伝えるラベル。
 
 **値のソース**: 「この予定は Google カレンダーで変更してください。」。  
-枠線で囲み、警告の色にしない。
-
-**活性条件**: 押せない
-
-**表示条件**: 予定を Google カレンダーで管理する事業所の予定を開いたとき。  
-本文の先頭に出す
+枠線で囲み、警告の色にしない。  
+本文の先頭に出す。
 
 **カタログ**: [ScheduleDetailModalContainer の GoogleCalendar](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-scheduledetailmodalcontainer--google-calendar)
 
 ## 確認が必要な理由
 
-**概要**: Google カレンダーの予定を buddy の予定として読めなかった理由と、直し方を示す。
+**概要**: Google カレンダーの予定を buddy の予定として読めなかった理由と、直し方を示すラベル。
 
 **値のソース**: 次の 3 つを続けた 1 つの段落。  
-警告の色の帯で出す。  
+[Google カレンダーの案内](#google-カレンダーの案内) の下に、警告の色の帯で出す。  
 理由の文は、[予定のカレンダーの通知の予定](../schedule-calendar_予定のカレンダー/index.md#通知の予定) と同じである。
 
 | 箇所 | 文言 |
@@ -364,182 +321,160 @@ Google カレンダーの予定では、日時の見出しの上に、Google カ
 | 理由 | 「<理由>。」 |
 | 直し方 | 「Google カレンダーでタイトルか繰り返しの規則を直してください。」 |
 
-**活性条件**: 押せない
-
-**表示条件**: 確認が必要な Google カレンダーの予定を開いたとき。  
-[Google カレンダーの案内](#google-カレンダーの案内) の下に出す
-
 **カタログ**: [ScheduleDetailModalContainer の GoogleCalendarNeedsReview](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-scheduledetailmodalcontainer--google-calendar-needs-review)。  
 繰り返しの規則を buddy で表せない予定は [ScheduleDetailModalContainer の GoogleCalendarRecurrenceUnsupported](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-scheduledetailmodalcontainer--google-calendar-recurrence-unsupported)
 
 ## 日時
 
-**概要**: 予定の日付と時間を、ダイアログの本文の見出しで示す。
+**概要**: 予定の日付と時間を示す、ダイアログの本文の見出しのラベル。
 
 **値のソース**: `2026年10月20日（火） 09:00〜09:29` の形。  
 年月日、曜日、開始と終了の時刻を、デバイスの時間帯で出す。  
 翌日に終わる予定は、年月日と曜日を開始の日にし、終了の時刻の前に「翌」を付けて `2026年10月20日（火） 22:00〜翌 01:00` の形にする。  
 カレンダーの開始の日と翌日のどちらの描画から開いても、同じ形で出す。
 
-**活性条件**: 常に活性
-
-**表示条件**: 予定の取得が成功したとき
-
 **カタログ**: [ScheduleDetailModal の Visit](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-scheduledetailmodal--visit)
 
 ## 訪問の情報
 
-**概要**: 訪問の相手と内容の項目を、1 つのセクションにまとめる。
+**概要**: 訪問の相手と内容の項目を 1 つにまとめる領域。
 
 **値のソース**: 見出し「訪問の情報」と、[利用者](#利用者)、[サービスコード](#サービスコード)、[訪問の区分](#訪問の区分) の 3 つの項目。  
 ほかの段と同じ 1 列の並びで、値の列の位置をほかの段にそろえる。
 
-**活性条件**: 常に活性
+**表示**: 次の全てに当てはまるとき。
 
-**表示条件**: 予定の取得が成功し、予定が訪問の情報を持つとき
+- 開いた予定に、訪問の情報がある
 
 **カタログ**: [ScheduleDetailModal の Visit](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-scheduledetailmodal--visit)
 
 ## 利用者
 
-**概要**: 訪問する利用者を示す。
+**概要**: 訪問する利用者を示すラベル。
 
 **値のソース**: 利用者の名前。  
 利用者の一覧に予定の利用者が無いときは「利用者不明」。  
 一覧に予定の利用者が無いときには、一覧の取得が終わる前と、取得が失敗したときを含む。
 
-**活性条件**: 常に活性
+**表示**: 次の全てに当てはまるとき。
 
-**表示条件**: 予定の取得が成功し、予定が訪問の情報を持つとき
+- 開いた予定に、訪問の情報がある
 
 **カタログ**: [ScheduleDetailModal の Visit](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-scheduledetailmodal--visit)
 
 ## サービスコード
 
-**概要**: 訪問のサービスコードを示す。
+**概要**: 訪問のサービスコードを示すラベル。
 
 **値のソース**: サービスコード。  
 例は「訪看I2」。
 
-**活性条件**: 常に活性
+**表示**: 次の全てに当てはまるとき。
 
-**表示条件**: 予定の取得が成功し、予定が訪問の情報を持つとき
+- 開いた予定に、訪問の情報がある
 
 **カタログ**: [ScheduleDetailModal の Visit](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-scheduledetailmodal--visit)
 
 ## 訪問の区分
 
-**概要**: 夜勤、緊急、入院の区分を示す。
+**概要**: 夜勤、緊急、入院の区分を示すラベル。
 
 **値のソース**: 「夜勤」「緊急」「入院」のうち当てはまるものを「、」でつなぐ。  
 無ければ「通常」。
 
-**活性条件**: 常に活性
+**表示**: 次の全てに当てはまるとき。
 
-**表示条件**: 予定の取得が成功し、予定が訪問の情報を持つとき
+- 開いた予定に、訪問の情報がある
 
 **カタログ**: [ScheduleDetailModal の Visit](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-scheduledetailmodal--visit)
 
 ## 主訪問者
 
-**概要**: 訪問の予定の主訪問者を示す。
+**概要**: 訪問の予定の主訪問者を示すラベル。  
+通常の予定では、同じ行を [予定者](#予定者) として出す。
 
 **値のソース**: 職員の名前。  
 職員の一覧に予定の職員が無いときは「職員不明」。  
 一覧に予定の職員が無いときには、一覧の取得が終わる前と、取得が失敗したときを含む。
 
-**活性条件**: 常に活性
+**表示**: 次の全てに当てはまるとき。
 
-**表示条件**: 予定の取得が成功し、種類が訪問のとき。  
-通常の予定では、同じ行を [予定者](#予定者) として出す。
+- 開いた予定が、訪問の予定である
 
 **カタログ**: [ScheduleDetailModal の Visit](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-scheduledetailmodal--visit)
 
 ## 予定者
 
-**概要**: 通常の予定の職員を示す。
+**概要**: 通常の予定の職員を示すラベル。
 
 **値のソース**: 職員の名前。  
 分からないときは、[主訪問者](#主訪問者) と同じく「職員不明」。
 
-**活性条件**: 常に活性
+**表示**: 次の全てに当てはまるとき。
 
-**表示条件**: 予定の取得が成功し、種類が通常のとき
+- 開いた予定が、通常の予定である
 
 **カタログ**: [ScheduleDetailModal の Normal](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-scheduledetailmodal--normal)
 
 ## メモ
 
-**概要**: 予定のメモを示す。
+**概要**: 予定のメモを示す領域。
 
-**値のソース**: 見出し「メモ」のセクションの中に、メモを出す。  
-改行はそのまま出す。
+**値のソース**: 見出し「メモ」の下に、メモを出す。  
+改行はそのまま出す。  
+「なし」とは出さない。
 
-**活性条件**: 常に活性
+**表示**: 次の全てに当てはまるとき。
 
-**表示条件**: 予定の取得が成功し、メモが空でないとき。  
-メモが空なら、見出しごと出さない。  
-「なし」とは出さない
+- 開いた予定に、メモがある
+  - メモが無い予定では、見出しごと出さない。
 
 **カタログ**: [ScheduleDetailModal の Visit](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-scheduledetailmodal--visit)
 
 ## 下端の閉じる
 
-**概要**: ダイアログを閉じて、予定のカレンダーに戻る。  
-上端の [閉じる](#閉じる) と同じく働く。
+**概要**: ダイアログを閉じて、予定のカレンダーに戻るボタン。  
+上端の [閉じる](#閉じる) と同じく働く。  
+[編集](#編集) を出さない職員にも出す。
 
 **値のソース**: 「閉じる」
 
-**活性条件**: 常に活性
+**表示**: 次の全てに当てはまるとき。
 
-**表示条件**: 予定の取得が成功し、キャンセルした予定でないとき。  
-[編集](#編集) を出さない職員にも出す。  
-読み込み中、失敗、キャンセルした予定では出さず、上端の閉じるボタンだけで閉じる。
+- 開いた予定が、キャンセルした予定でない
+  - キャンセルした予定では下端を出さず、上端の閉じるボタンだけで閉じる。
 
-### インタラクション
-
-#### 1. 押す
-
-1. [閉じる](#閉じる) を押したときと同じく、確認を出さずに `/schedule` に戻る。
+**操作**: 押すと、[閉じる](#閉じる) を押したときと同じく、確認を出さずに `/schedule` に戻る。
 
 ## 編集
 
-**概要**: 予定の編集へ進む。
+**概要**: 開いた予定の編集へ進むボタン。
 
 **値のソース**: 「編集」
 
-**活性条件**: 常に活性
+**表示**: 次の全てに当てはまるとき。
 
-**表示条件**: 予定の取得が成功し、キャンセルした予定でも Google カレンダーの予定でもなく、ログインした職員が予定の職員の予定を編集できるとき。
-
-- 編集できない職員には出さず、下端に「閉じる」だけを出す。
-- Google カレンダーの予定には、編集できる職員にも出さない。
-  - 予定は Google カレンダーで変えるためである。
-- チームを対象にする権限で編集できる職員には、職員の一覧を読み終えるまで出さない。
-  - 予定の職員のチームが分からないためである。
-  - 職員の一覧を読めなかったときも出さない。
-- 判定の規則は [権限の確認](#権限の確認) にある。
+- 開いた予定が、キャンセルした予定でない
+  - キャンセルした予定は変えられないためである。
+- 開いた予定が、Google カレンダーの予定でない
+  - Google カレンダーの予定は、Google カレンダーで変えるためである。
+- ログインした職員が、開いた予定の職員の予定を編集できる
+  - 判定は [権限の確認](#権限の確認) にある。
+  - チームを対象にする権限で判定するときは、職員の一覧を読み終えるまで出さない。予定の職員のチームが分からないためである。職員の一覧を読めなかったときも出さない。
 
 **カタログ**: [ScheduleDetailModal の Visit](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-scheduledetailmodal--visit)、[ScheduleDetailModalContainer の ReadOnly](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-scheduledetailmodalcontainer--read-only)
 
-### インタラクション
+**操作**: 押すと予定の編集を開く。
 
-#### 1. 押す
-
-1. 予定の編集を開く。
-   - URL は `/schedule/{予定の id}/edit` にし、search params の `view`、`date`、`staff`、`cancelled` を引き継ぐ。
-   - 履歴に積む。
+1. URL は `/schedule/{予定の id}/edit` にし、search params の `view`、`date`、`staff`、`cancelled` を引き継ぐ。
+2. 履歴に積む。
 
 ## 読み込み中の表示
 
-**概要**: 予定を読んでいる途中であることを示す。
+**概要**: 予定を読んでいる途中であることを示す領域。
 
 **値のソース**: 回転のインジケーターだけ。  
-文言は無い。
-
-**活性条件**: 常に活性
-
-**表示条件**: 予定を読み終えていないとき。  
+文言は無い。  
 つながらないときは、何度か読み直してから [読み込みの失敗の文](#読み込みの失敗の文) に替わるので、その間もこの表示が続く。  
 予定が見つからないときと、見る権限が無いときは、読み直さずにすぐ替わる。  
 読み直しの規則は、[予定の管理の Design Doc の予定の画面の読み込みと保存](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/DesignDoc.md#予定の画面の読み込みと保存) にある。
@@ -548,7 +483,7 @@ Google カレンダーの予定では、日時の見出しの上に、Google カ
 
 ## 読み込みの失敗の文
 
-**概要**: 予定を出せない理由を伝える。
+**概要**: 予定を出せない理由を伝えるメッセージ。
 
 **値のソース**: 理由ごとに、次の文を出す。  
 どれも読み上げの対象（alert）として出す。  
@@ -558,11 +493,6 @@ Google カレンダーの予定では、日時の見出しの上に、Google カ
   - 予定を Google カレンダーで管理する事業所では、カレンダーの表示の期間の予定と、確認が必要な予定に無いときも当たる。
 - 見る権限が無い予定と、ほかの事業所の予定を開いたとき: 「この予定を見る権限がありません。」
 - ほかの理由で読めなかったとき: 「予定を取得できませんでした。」
-
-**活性条件**: 常に活性
-
-**表示条件**: 予定を読めなかったとき。  
-予定が見つからないときと、見る権限が無いときは、読み直しても変わらないので、すぐに出す
 
 **カタログ**: [ScheduleDetailModalContainer の NotFound](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-scheduledetailmodalcontainer--not-found)、[ScheduleDetailModalContainer の Forbidden](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-scheduledetailmodalcontainer--forbidden)。  
 ほかの失敗は [ScheduleDetailModalContainer の Failed](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-scheduledetailmodalcontainer--failed)
