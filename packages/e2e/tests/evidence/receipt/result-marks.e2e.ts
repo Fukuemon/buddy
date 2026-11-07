@@ -75,6 +75,8 @@ const ITEMS: {
   patient: string
   /** 結果の表を送り、観点のセルを見せる位置。 */
   focus: keyof typeof BEFORE_COLUMN
+  /** 改修後に、確認することの列の後で見せる位置。省くと focus にする。 */
+  afterFocus?: keyof typeof BEFORE_COLUMN
   before: (cells: Cells) => Promise<void>
   beforeResult: string
   after: (cells: Cells) => Promise<void>
@@ -90,6 +92,7 @@ const ITEMS: {
     category: 'mismatch',
     patient: '利用者A',
     focus: 'scheduleStart',
+    afterFocus: 'visitStart',
     before: async (cells) => {
       await expect(cells.nth(BEFORE_COLUMN.scheduleStart)).toHaveText('09:00 ❌')
       await expect(cells.nth(BEFORE_COLUMN.visitStart)).toHaveText('09:15 ❌')
@@ -100,8 +103,9 @@ const ITEMS: {
       await expect(cells.nth(COLUMN.scheduleStart)).toHaveText('09:00（不一致）')
       await expect(cells.nth(COLUMN.visitStart)).toHaveText('09:15（不一致）')
     },
-    findingsResult: '利用者A の確認することの列に「開始時間が予定と違う」が出る',
-    afterResult: '両側の開始時間に不一致のアイコンが付く',
+    findingsResult:
+      '利用者A の確認することの列に「開始時間が予定と違う」が出て、予定の開始時間 09:00 に不一致のアイコンが付く',
+    afterResult: '実績の開始時間 09:15 に不一致のアイコンが付く',
   },
   {
     name: 'receipt-marks-duration-out-of-range',
@@ -154,6 +158,7 @@ const ITEMS: {
     category: 'match',
     patient: '利用者D',
     focus: 'scheduleEnd',
+    afterFocus: 'visitDuration',
     before: async (cells) => {
       await expect(cells.nth(BEFORE_COLUMN.scheduleEnd)).toHaveText('13:44 ※')
       await expect(cells.nth(BEFORE_COLUMN.scheduleDuration)).toHaveText('44 ※ (30~59)')
@@ -167,9 +172,9 @@ const ITEMS: {
       await expect(cells.nth(COLUMN.visitDuration)).toHaveText('50（注意）範囲 30〜59 分')
     },
     findingsResult:
-      '利用者D の確認することの列に「提供時間が予定と違う」と「終了時間が予定と違う」が出る',
+      '利用者D の確認することの列に「提供時間が予定と違う」と「終了時間が予定と違う」が出て、予定の終了時間 13:44 に注意のアイコンが付く',
     afterResult:
-      '両側の提供時間と終了時間に注意のアイコンが付き、提供時間の下に「範囲 30〜59 分」が出る',
+      '実績の終了時間 13:50 と提供時間 50 に注意のアイコンが付き、提供時間の下に「範囲 30〜59 分」が出る',
   },
   {
     name: 'receipt-marks-one-side',
@@ -234,7 +239,7 @@ test.describe('照合の結果', () => {
               await cells.nth(COLUMN.findings).scrollIntoViewIfNeeded()
               await check(item.findingsResult)
               await step(`結果の表で、${item.patient} の行の観点のセルが見えるまで送る`)
-              await cells.nth(COLUMN[item.focus]).scrollIntoViewIfNeeded()
+              await cells.nth(COLUMN[item.afterFocus ?? item.focus]).scrollIntoViewIfNeeded()
               if (item.name === 'receipt-marks-one-side') {
                 const visitOnly = receiptCategoryRowCells(
                   page,
