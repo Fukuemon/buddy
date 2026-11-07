@@ -105,7 +105,7 @@ docker compose up --build --wait
     - web のセッションの cookie に `Secure` を付けて動く。
   - worktrunk のフック（`.config/wt.toml`）が、compose のプロジェクトの名前、ブラウザが開く URL、E2E の URL を、worktree の `.env` に書く。
     - 開く URL は `.env` の `E2E_BASE_URL` にある。
-    - mise が `.env` を環境変数に入れるので、`pnpm e2e` と `compose/dev-token.sh` も、その worktree の環境に向く。mise を有効にしていないシェルでは `mise exec -- pnpm e2e` で流す。
+    - `pnpm e2e` と `compose/dev-token.sh` も `.env` を読むので、その worktree の環境に向く。コマンドの前で環境変数を渡すと、`.env` の値より優先される。
     - `.env` は、portless が変えない postgres と valkey のポートもずらす。2 つの worktree のポートがぶつかったときは、片方の `.env` のポートを手で直す。
   - worktree では、`docker compose up` で起動しない。`.env` のホスト名の URL が portless に登録されず、ログインが失敗する。
   - 初めてフックを流すときは、worktrunk が承認を求める。コーディングエージェントは `--yes` を付ける。
