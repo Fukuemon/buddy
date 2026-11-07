@@ -58,6 +58,8 @@ web は `BuddyApi.calendars`（`apps/web/src/api/BuddyApi.ts`）で API を呼�
 | 4 | 読み込み中の表示 | `calendar-cutover-loading` |
 | 4 | 読み込みの失敗の文 | `calendar-cutover-load-error` |
 | 5 | 読み直す | `calendar-cutover-retry` |
+| 8 | 最新の情報の読み込みの失敗の文 | `refetch-error` |
+| 9 | 最新の情報を読み直す | `refetch-retry` |
 
 - 番号は、状態ごとの構成要素の表の番号である。同じ要素が状態ごとに違う番号を持つときは、番号ごとに行を分ける。
 - 次の testid は、構成要素の表に載せないので、この表に載せない。
@@ -83,6 +85,7 @@ web は `BuddyApi.calendars`（`apps/web/src/api/BuddyApi.ts`）で API を呼�
 | 切り替え中 | 「この事業所では、まだ Google カレンダーを使う準備ができていません。事業所の管理者に、設定を頼んでください。」 | `createCalendarCutoverCompletion` が 503 `calendar_not_configured` |
 | 始められない、切り替え中 | 「この操作をする権限がありません。」 | `startCalendarCutover`、`createCalendarCutoverCompletion`、`cancelCalendarCutover` が 403 |
 | 始められない、切り替え中 | 「操作できませんでした。時間をおいて、もう一度試してください。」 | `startCalendarCutover`、`createCalendarCutoverCompletion`、`cancelCalendarCutover` のほかの失敗。409 `google_write_pending`、API に届かないときを含む |
+| 最新の情報の読み込みの失敗 | 「最新の情報を読み込めませんでした。」 | 読み終えた後に読み直して、`getFacility` か `getCalendarCutoverStatus`が失敗、API に届かない。403 と 404 も含む |
 
 - 文を選ぶ処理は `apps/web/src/features/calendar/lib/errorMessage.ts` の `cutoverErrorMessage` にある。
 - 完了の失敗の文は、`createCalendarCutoverCompletion` の 409 `cutover_incomplete` のほかの全ての失敗で出す。

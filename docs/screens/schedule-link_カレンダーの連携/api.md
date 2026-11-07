@@ -105,6 +105,8 @@ web は `BuddyApi.calendars`（`apps/web/src/api/BuddyApi.ts`）で API を呼�
 | 1 | 行の操作のメニュー | `calendar-link-menu-list-{職員の id}` |
 | 2 | 取り込む | `calendar-link-import-{職員の id}` |
 | 3 | 外す | `calendar-link-remove-{職員の id}` |
+| 19 | 最新の情報の読み込みの失敗の文 | `refetch-error` |
+| 20 | 最新の情報を読み直す | `refetch-retry` |
 
 - 番号は、状態ごとの構成要素の表の番号である。同じ要素が状態ごとに違う番号を持つときは、番号ごとに行を分ける。
 - 行は、「一覧」「結び付けていない」「結び付けるダイアログ」と「読めた」「読めない」「外すダイアログ」「読み込み中」「読み込みの失敗」「準備ができていない」「権限が無い」「行の操作のメニュー」の状態の順に並べた。ほかの状態と番号と testid が同じ行は、最初の状態の行だけを置く。
@@ -135,6 +137,7 @@ web は `BuddyApi.calendars`（`apps/web/src/api/BuddyApi.ts`）で API を呼�
 | 読めない | 「確認できませんでした。時間をおいて、もう一度確認してください。」 | ほかの失敗。400 `invalid_input`、503 `calendar_not_configured`、API に届かないときを含む |
 | 外すダイアログ | 「この操作をする権限がありません。」 | `removeExternalCalendar` が 403 |
 | 外すダイアログ | 「外せませんでした。時間をおいて、もう一度外してください。」 | `removeExternalCalendar` が 403 以外の失敗。404 `not_found` を含む |
+| 最新の情報の読み込みの失敗 | 「最新の情報を読み込めませんでした。」 | 読み終えた後に読み直して、`listUsers`、`listExternalCalendars`、`getCalendarServiceAccount` のどれかが失敗、API に届かない。403 と 404 も含む |
 
 - 文を選ぶ処理は、`apps/web/src/features/calendar/lib/errorMessage.ts` にある。
   - `loadErrorMessage`、`linkErrorMessage`、`unlinkErrorMessage` が文を選ぶ。
