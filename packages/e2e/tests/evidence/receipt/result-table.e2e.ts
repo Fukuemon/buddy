@@ -169,10 +169,10 @@ test.describe('照合の結果', () => {
             const rowA = receiptResultRow(page, '利用者A')
             const rowC = receiptResultRow(page, '利用者C')
             // 行の文字はセルを続けて読むので、開始時間、終了時間、提供時間の並びで確認する
-            await expect(rowA).toContainText(/09:00\s*09:29\s*0 ❌/)
-            await expect(rowC).toContainText(/10:00 ❌\s*10:00 ❌/)
+            await expect(rowA).toContainText(/09:00\s*09:29(（注意）)?\s*0（不一致）/)
+            await expect(rowC).toContainText(/10:00（不一致）\s*10:00（不一致）/)
             await shot(
-              '利用者A の提供時間_予定は 0 のまま（-1 にならない）で、範囲の外れの ❌ が付く。利用者C の終了時間_予定は開始と同じ 10:00 のまま（09:59 にならない）',
+              '利用者A の提供時間_予定は 0 のまま（-1 にならない）で、範囲の外れの不一致の印が付く。利用者C の終了時間_予定は開始と同じ 10:00 のまま（09:59 にならない）',
             )
           },
         )
