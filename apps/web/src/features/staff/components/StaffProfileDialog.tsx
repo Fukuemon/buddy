@@ -16,7 +16,7 @@ import { VisitsField } from './VisitsField'
 
 export type StaffProfileDialogProps = {
   staff: StaffDetail
-  /** 選択肢。読み終えるまでは undefined にする。 */
+  /** 選択肢。読み終えるまでと、読めなかったときは undefined にする。どちらかが undefined の間は保存を押せない。 */
   departments?: readonly Department[]
   teams?: readonly Team[]
   isSubmitting: boolean
@@ -73,7 +73,7 @@ export const StaffProfileDialog = ({
     <InputDialog
       initialFocusRef={nameRef}
       busyLabel="保存しています"
-      canSubmit
+      canSubmit={departments !== undefined && teams !== undefined}
       error={
         errorMessage === undefined
           ? undefined
