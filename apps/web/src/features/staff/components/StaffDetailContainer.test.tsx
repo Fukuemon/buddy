@@ -264,6 +264,28 @@ describe('StaffDetailContainer', () => {
       await expect.poll(() => screen.queryByTestId('staff-detail-edit-dialog')).toBeNull()
       await expectProfileTab()
     })
+
+    it('復職にできなかったときは、権限のタブのままにする', async () => {
+      const base = onLeaveApi()
+      const api: BuddyApi = {
+        ...base,
+        staff: {
+          ...base.staff,
+          reinstate: async () => {
+            throw new ApiError(500, '失敗', [], 'internal')
+          },
+        },
+      }
+      const Story = storyWith(api, 'staff-4')
+      render(<Story />)
+      await openPoliciesTab()
+      await userEvent.click(screen.getByTestId('staff-detail-menu'))
+      await userEvent.click(screen.getByTestId('staff-detail-reinstate'))
+
+      expect(await screen.findByTestId('staff-detail-reinstate-error')).toBeInTheDocument()
+      expect(screen.getByTestId('staff-detail-policies')).toBeInTheDocument()
+      expect(screen.queryByTestId('staff-detail-profile')).toBeNull()
+    })
   })
 
   it('予定が残る職員を訪問しない職員にしようとすると、ダイアログを閉じずに残る予定を示し、訪問するに戻すと保存できる', async () => {
