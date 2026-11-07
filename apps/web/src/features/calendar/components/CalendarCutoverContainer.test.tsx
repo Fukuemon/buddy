@@ -1,7 +1,9 @@
-import { composeStories } from '@storybook/react-vite'
+import { composeStories, composeStory } from '@storybook/react-vite'
 import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vite-plus/test'
+
+import { refocusWindow } from '#/test/refocusWindow'
 
 import * as stories from './CalendarCutoverContainer.stories'
 
@@ -58,5 +60,31 @@ describe('CalendarCutoverContainer', () => {
     render(<BuddyPrimary />)
     expect(await screen.findByTestId('calendar-cutover-buddy-primary')).toBeInTheDocument()
     expect(screen.queryByTestId('calendar-cutover-start')).toBeNull()
+  })
+})
+
+describe('予定の正本の切り替えの読み直し', () => {
+  it('読み終えた後に読み直して切り替えの状況を読めなければ、表示を残して失敗の文を出し、読み直すで読めたら消す', async () => {
+    const Story = composeStory(
+      {
+        ...stories.RefetchError,
+        parameters: {
+          ...stories.default.parameters,
+          appRouter: { ...stories.default.parameters.appRouter, api: stories.refetchFailingApi() },
+        },
+      },
+      stories.default,
+    )
+    render(<Story />)
+    await screen.findByTestId('calendar-cutover-calendars')
+
+    refocusWindow()
+    expect(await screen.findByTestId('refetch-error')).toHaveTextContent(
+      '最新の情報を読み込めませんでした。',
+    )
+    expect(screen.getByTestId('calendar-cutover-calendars')).toBeInTheDocument()
+
+    await userEvent.click(screen.getByTestId('refetch-retry'))
+    await expect.poll(() => screen.queryByTestId('refetch-error')).toBeNull()
   })
 })
