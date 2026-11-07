@@ -289,6 +289,19 @@ func (s server) CancelSchedule(ctx context.Context, req openapi.CancelScheduleRe
 	return openapi.CancelSchedule201JSONResponse(toCancel(c)), nil
 }
 
+// CancelOccurrence は、schedule の回のキャンセルを呼ぶ。google_primary の事業所では、schedule が 409（google_primary）で拒む。
+func (s server) CancelOccurrence(ctx context.Context, req openapi.CancelOccurrenceRequestObject) (openapi.CancelOccurrenceResponseObject, error) {
+	original, err := bodyDate(req.Body.OriginalDate)
+	if err != nil {
+		return nil, err
+	}
+	c, err := s.u.Schedules.CancelOccurrence(ctx, req.RecurringScheduleId, original, req.Body.Reason)
+	if err != nil {
+		return nil, err
+	}
+	return openapi.CancelOccurrence201JSONResponse(toCancel(c)), nil
+}
+
 // staffFacility は、認証のミドルウェアが特定した職員の事業所を返す。パスに事業所の無い予定の操作が、正本のモードを読むのに使う。
 // パスの予定が見つかれば、ミドルウェアが予定の事業所と職員の事業所が同じことを確認している。見つからない予定は、職員の事業所の中で探す。
 func (s server) staffFacility(ctx context.Context) (organization.Facility, error) {

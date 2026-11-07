@@ -789,6 +789,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/schedules/recurring/{recurring_schedule_id}/occurrences/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 繰り返しの予定の 1 回をキャンセルする
+         * @description buddy_primary の事業所で、繰り返しの予定の original_date の回を、繰り返しの予定と同じ内容の単発の予定にし、理由を付けてキャンセルする。
+         *     元の回は exclusion_dates に加わり、作った予定は recurring_schedule_id で元の繰り返しの予定を指す。
+         *     キャンセルした予定は、listSchedules の include_cancelled で返る。応答のキャンセルの schedule_id は、作った予定の id である。
+         *     置き換えた後の回は単発の予定なので、cancelSchedule でキャンセルする。
+         *     google_primary の事業所の回は、cancelSchedule で回の id を指してキャンセルする。
+         */
+        post: operations["cancelOccurrence"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/facilities/{facility_id}/calendar_service_account": {
         parameters: {
             query?: never;
@@ -3697,6 +3721,53 @@ export interface operations {
                     "application/json": components["schemas"]["Error"];
                 };
             };
+        };
+    };
+    cancelOccurrence: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                recurring_schedule_id: components["parameters"]["RecurringScheduleID"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /**
+                     * Format: date
+                     * @description キャンセルする回の日付。繰り返しの規則に当たる日に限る
+                     */
+                    original_date: string;
+                    reason: string;
+                };
+            };
+        };
+        responses: {
+            /** @description キャンセル */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Cancel"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            /** @description その回はすでに置き換えたかキャンセルした（conflict）か、事業所が google_primary である（google_primary）。 */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            500: components["responses"]["InternalError"];
         };
     };
     getCalendarServiceAccount: {

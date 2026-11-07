@@ -79,6 +79,7 @@ type scheduleOps struct {
 	CreateRecurring  func(ctx context.Context, facilityID string, in schedule.SlotInput, rule schedule.RuleInput) (schedule.RecurringSchedule, error)
 	ChangeOccurrence func(ctx context.Context, recurringScheduleID string, originalDate civil.Date, in schedule.SlotInput) (schedule.Schedule, error)
 	Cancel           func(ctx context.Context, scheduleID, reason string) (schedule.Cancellation, error)
+	CancelOccurrence func(ctx context.Context, recurringScheduleID string, originalDate civil.Date, reason string) (schedule.Cancellation, error)
 	Update           func(ctx context.Context, scheduleID string, in schedule.SlotInput) (schedule.Schedule, error)
 }
 
@@ -115,6 +116,7 @@ func newExportEnv(t *testing.T) exportEnv {
 		CreateRecurring:  schedule.NewCreateRecurring(facilities, types, refs, facilities, nil, nil, recurring, outbox, tx, ids).Do,
 		ChangeOccurrence: schedule.NewChangeOccurrence(recurring, refs, facilities, schedules, types, nil, nil, outbox, tx, ids).Do,
 		Cancel:           schedule.NewCancel(schedules, refs, facilities, outbox, tx, ids).Do,
+		CancelOccurrence: schedule.NewCancelOccurrence(recurring, refs, facilities, schedules, types, outbox, tx, ids).Do,
 		Update:           schedule.NewUpdate(schedules, refs, facilities, types, nil, nil, outbox, tx).Do,
 	}
 	writers, logs := &[]string{}, &bytes.Buffer{}
@@ -487,6 +489,36 @@ func TestExportRecurringWithReplacedOccurrence(t *testing.T) {
 	}
 	if single := e.srv.Event(googleCalID, eventID(t, occ.ID)); single == nil || single.Start.DateTime != "2026-11-09T14:00:00" {
 		t.Errorf("置き換えた回 = %+v", single)
+	}
+}
+
+// TestExportRecurringWithCancelledOccurrence は、繰り返しの予定の 1 回をキャンセルすると、書き出しがその日を親の予定の EXDATE にし、
+// キャンセルした回の単発の予定を Google カレンダーに作らないことを確認する。
+func TestExportRecurringWithCancelledOccurrence(t *testing.T) {
+	e := newExportEnv(t)
+	title := "定例"
+	rs, err := e.schedules.CreateRecurring(e.ctx, inmem.FacilityID, schedule.SlotInput{
+		TypeID: inmem.NormalTypeID, Date: civil.Date{Year: 2026, Month: 11, Day: 2},
+		StartTime: civil.Time{Hour: 9}, EndTime: civil.Time{Hour: 10}, StaffID: inmem.StaffID, Title: &title,
+	}, schedule.RuleInput{Frequency: schedule.Weekly})
+	if err != nil {
+		t.Fatal(err)
+	}
+	e.run(t)
+
+	c, err := e.schedules.CancelOccurrence(e.ctx, rs.ID, civil.Date{Year: 2026, Month: 11, Day: 9}, "休み")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if n := e.run(t); n != 1 {
+		t.Errorf("書いた待ち = %d, want 繰り返しの予定の 1 件", n)
+	}
+	ev := e.srv.Event(googleCalID, eventID(t, rs.ID))
+	if len(ev.Recurrence) != 2 || ev.Recurrence[1] != "EXDATE;TZID=Asia/Tokyo:20261109T090000" {
+		t.Errorf("回をキャンセルした後の繰り返し = %v", ev.Recurrence)
+	}
+	if single := e.srv.Event(googleCalID, eventID(t, c.ScheduleID)); single != nil {
+		t.Errorf("キャンセルした回の単発の予定 = %+v, want 作らない", single)
 	}
 }
 
