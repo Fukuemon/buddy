@@ -301,6 +301,65 @@ describe('StaffDetailContainer', () => {
     await expect.poll(() => screen.queryByTestId('staff-detail-menu-list')).toBeNull()
   })
 
+  it('復職の失敗の文は、タブを替えても残し、ほかの操作のダイアログを開くと消す', async () => {
+    const base = onLeaveApi()
+    const api: BuddyApi = {
+      ...base,
+      staff: {
+        ...base.staff,
+        reinstate: async () => {
+          throw new ApiError(500, '失敗', [], 'internal')
+        },
+      },
+    }
+    const Story = storyWith(api, 'staff-4')
+    render(<Story />)
+    await userEvent.click(await screen.findByTestId('staff-detail-menu'))
+    await userEvent.click(screen.getByTestId('staff-detail-reinstate'))
+    await screen.findByTestId('staff-detail-reinstate-error')
+
+    await userEvent.click(screen.getByTestId('staff-detail-tab-policies'))
+    await userEvent.click(screen.getByTestId('staff-detail-tab-profile'))
+    expect(screen.getByTestId('staff-detail-reinstate-error')).toBeInTheDocument()
+
+    await userEvent.click(screen.getByTestId('staff-detail-edit'))
+    expect(screen.queryByTestId('staff-detail-reinstate-error')).toBeNull()
+  })
+
+  it('復職にできなかった後にもう一度復職にするを押すと、送っている間は前の失敗の文を出さない', async () => {
+    const base = onLeaveApi()
+    let attempts = 0
+    let settle = () => {}
+    const api: BuddyApi = {
+      ...base,
+      staff: {
+        ...base.staff,
+        reinstate: async (facilityId, staffId) => {
+          attempts += 1
+          if (attempts === 1) throw new ApiError(500, '失敗', [], 'internal')
+          await new Promise<void>((resolve) => {
+            settle = resolve
+          })
+          return base.staff.reinstate(facilityId, staffId)
+        },
+      },
+    }
+    const Story = storyWith(api, 'staff-4')
+    render(<Story />)
+    await userEvent.click(await screen.findByTestId('staff-detail-menu'))
+    await userEvent.click(screen.getByTestId('staff-detail-reinstate'))
+    await screen.findByTestId('staff-detail-reinstate-error')
+
+    await userEvent.click(screen.getByTestId('staff-detail-menu'))
+    await userEvent.click(screen.getByTestId('staff-detail-reinstate'))
+    expect(await screen.findByTestId('staff-detail-reinstate')).toHaveTextContent(
+      '復職にしています',
+    )
+    expect(screen.queryByTestId('staff-detail-reinstate-error')).toBeNull()
+    settle()
+    await expect.poll(() => screen.queryByTestId('staff-detail-status')).toBeNull()
+  })
+
   it('権限を変えるで、対象の職員の選択肢を読んでいる間は、対象を足すを押せず、対象を外すは押せる', async () => {
     const base = createFakeBuddyApi()
     const api: BuddyApi = {

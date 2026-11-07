@@ -120,6 +120,110 @@ test.describe('職員の詳細', () => {
       )
     })
 
+    /** 復職を拒まれ、タブの上に理由の文が出るまで進める。 */
+    const refuseReinstate = async (page: Page, step: (text: string) => Promise<void>) => {
+      await page.getByTestId('staff-detail-menu').click()
+      await page.getByTestId('staff-detail-reinstate').click()
+      await expect(page.getByTestId('staff-detail-reinstate-error')).toHaveText(
+        '退職した職員は変えられません。',
+        SLOW_STORY_WAIT,
+      )
+      await step('「…」の「復職にする」を押し、拒まれて、タブの上に理由の文が出る')
+    }
+
+    test(`${prefix}復職にできなかった後にタブを替えた場合、復職の失敗の文を出したままにすること`, async ({
+      browser,
+    }) => {
+      const url = story('reinstate-refused')
+      await recordPrEvidence(
+        browser,
+        {
+          name: 'staff-detail-reinstate-error-keeps-on-tab',
+          title: 'タブを替えても、復職の失敗の文を出したままにする',
+          actor: ACTOR,
+          variant,
+        },
+        openStory(url),
+        async ({ page, step, check }) => {
+          await openStory(url)(page)
+          await step(
+            '休職の江藤 四郎の職員の詳細（Storybook の ReinstateRefused）を開いている。復職は 1 秒後に拒まれる（架空のデータ）',
+          )
+          await refuseReinstate(page, step)
+          await page.getByTestId('staff-detail-tab-policies').click()
+          await expect(page.getByTestId('staff-detail-policies')).toBeVisible()
+          await step('タブの「権限」を押す')
+          await page.getByTestId('staff-detail-tab-profile').click()
+          await expect(page.getByTestId('staff-detail-profile')).toBeVisible()
+          await expect(page.getByTestId('staff-detail-reinstate-error')).toBeVisible()
+          await check('タブの「プロフィール」に戻しても、復職の失敗の文が出ている')
+        },
+      )
+    })
+
+    test(`${prefix}復職にできなかった後に編集のダイアログを開いた場合、復職の失敗の文を消すこと`, async ({
+      browser,
+    }) => {
+      const url = story('reinstate-refused')
+      await recordPrEvidence(
+        browser,
+        {
+          name: 'staff-detail-reinstate-error-cleared-by-dialog',
+          title: 'ほかの操作のダイアログを開くと、復職の失敗の文を消す',
+          actor: ACTOR,
+          variant,
+        },
+        openStory(url),
+        async ({ page, step, check }) => {
+          await openStory(url)(page)
+          await step(
+            '休職の江藤 四郎の職員の詳細（Storybook の ReinstateRefused）を開いている。復職は 1 秒後に拒まれる（架空のデータ）',
+          )
+          await refuseReinstate(page, step)
+          await page.getByTestId('staff-detail-edit').click()
+          await expect(page.getByTestId('staff-detail-edit-dialog')).toBeVisible()
+          await step('見出しの「編集」を押し、プロフィールの編集を開く')
+          await page.keyboard.press('Escape')
+          await expect(page.getByTestId('staff-detail-edit-dialog')).toBeHidden()
+          await expect(page.getByTestId('staff-detail-reinstate-error')).toBeHidden()
+          await check('編集のダイアログを閉じた後も、復職の失敗の文は消えたままである')
+        },
+      )
+    })
+
+    test(`${prefix}復職にできなかった後にもう一度復職にするを押した場合、送っている間は前の失敗の文を出さないこと`, async ({
+      browser,
+    }) => {
+      const url = story('slow-reinstate-refused')
+      await recordPrEvidence(
+        browser,
+        {
+          name: 'staff-detail-reinstate-error-cleared-by-retry',
+          title: 'もう一度復職にするを押すと、送っている間は前の失敗の文を消す',
+          actor: ACTOR,
+          variant,
+        },
+        openStory(url),
+        async ({ page, step, check }) => {
+          await openStory(url)(page)
+          await step(
+            '休職の江藤 四郎の職員の詳細（Storybook の SlowReinstateRefused）を開いている。復職は 4 秒後に拒まれる（架空のデータ）',
+          )
+          await refuseReinstate(page, step)
+          await page.getByTestId('staff-detail-menu').click()
+          await page.getByTestId('staff-detail-reinstate').click()
+          await expect(page.getByTestId('staff-detail-reinstate')).toHaveText('復職にしています')
+          await expect(page.getByTestId('staff-detail-reinstate-error')).toBeHidden()
+          await check('もう一度「復職にする」を押すと、送っている間は前の失敗の文が消える')
+          await expect(page.getByTestId('staff-detail-reinstate-error')).toHaveText(
+            '退職した職員は変えられません。',
+            SLOW_STORY_WAIT,
+          )
+          await check('また拒まれると、理由の文をもう一度出す')
+        },
+      )
+    })
+
     test(`${prefix}権限を変えるを開いた場合、予定の 7 つの権限、職員の管理、照合の順に並ぶこと`, async ({
       browser,
     }) => {

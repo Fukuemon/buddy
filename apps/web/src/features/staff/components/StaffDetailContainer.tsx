@@ -82,7 +82,8 @@ const StaffDetailContent = ({ staffId, viewerId }: { staffId: Staff['id']; viewe
   const retire = useRetire(staffId)
 
   const openDialog = (next: Open) => {
-    for (const mutation of [update, changePosition, savePolicies, startLeave, retire])
+    // 復職の失敗の文はダイアログの外に出すので、ほかの操作を始めたときにここで消す
+    for (const mutation of [update, changePosition, savePolicies, startLeave, reinstate, retire])
       mutation.reset()
     setRefusedAssignments(undefined)
     setPolicyFailure(undefined)
