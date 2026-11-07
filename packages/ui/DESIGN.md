@@ -77,6 +77,25 @@ packages/ui のトークンとコンポーネントの使い方と、アクセ�
   - 任意値（`animate-[ping_1s_infinite]`、`ease-[cubic-bezier(...)]`）を書かない。任意値はトークンを通らない値で、どの画面で何が動くかを、ユーティリティの名前で追えなくなる。
   - 確認: `animate-` と `ease-` の任意値は、`pnpm check:design` の `scripts/check-utilities.mjs` が止める。
   - 確認: 時間と遅れの任意値（`duration-[...]`、`delay-[...]`）と、`[animation:...]` のような任意のプロパティは、チェックが見ない。レビューで見る。
+  - アニメーションの任意値はテーマ変数を通らないので、`MOTION-REDUCE` の止め方では止まらない。
+- `MOTION-REDUCE`: OS で動きを減らす設定（`prefers-reduced-motion: reduce`）にした職員には、位置、大きさ、回転を動かすアニメーションと遷移、滑らかなスクロールを出さない。
+  - 画面の動きで、めまいや吐き気を起こす人がいるためである。WCAG 2.2 の AA に無い、AAA の 2.3.3 を選んでいる。
+    - 出典: [WCAG 2.2 の 2.3.3 Animation from Interactions](https://www.w3.org/WAI/WCAG22/Understanding/animation-from-interactions.html)
+    - ADR-0015: [アクセシビリティは WCAG 2.2 の AA を基準にし、自動で確認する](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0015-accessibility.md)
+  - 止め方は `theme.css` の末尾の 1 か所に置く。画面とコンポーネントのコードに `motion-reduce:` と `motion-safe:` を書かない。
+    - 1 か所に無いと、書き忘れた画面だけが動き続ける。
+  - 設定のときに止める動きと残す動きは、次のとおり。
+
+    | 動き | 今使っている場所 | 設定のとき |
+    | --- | --- | --- |
+    | 色、枠、背景の遷移 | `Button`、`FieldFrame`、`SegmentedControl`、予定のカレンダーの予定の明るさ | 止める。遷移せずに変わる |
+    | 押したときに縮める遷移 | `Button` | 止める。遷移せずに縮む |
+    | 拡大と点滅のアニメーション（`animate-ping`、`animate-bounce`） | 無い | 止める |
+    | 透明度の遷移と、透明度だけのアニメーション（`animate-pulse`） | 無い | 残す。状態が変わったことを伝える短い変化で、位置と大きさを動かさない |
+    | 読み込み中の回転（`animate-spin`） | `Loading`、`BusyLabel`、`Button` の `isLoading`、予定の取り込みのプレビュー中 | 残す。止めると、処理が続いていることが伝わらない（2.3.3 の例外） |
+
+  - 確認: E2E の `packages/e2e/tests/specs/site/motion-reduce.e2e.ts`（`pnpm e2e`）が、設定のときに透明度のほかの遷移が無いことと、読み込み中の回転が動くことを確認する。
+  - 確認: 新しい動きを足したときは、レビューで、上の表のどの行に当たるかを見る。当たらない動きは、表に行を足してから使う。
 
 ### 原則と確認の方法の対応
 
@@ -94,6 +113,7 @@ packages/ui のトークンとコンポーネントの使い方と、アクセ�
 | `SPACING-SCALE` | `scripts/check-utilities.mjs`（`pnpm check:design`） | 半分の段と、ブロックの間が 8px の倍数か。`FormField` を使わない欄の間 |
 | `LAYOUT-OVERFLOW` | `packages/e2e/tests/specs/site/layout-overflow.e2e.ts`（`pnpm e2e`） | テストに入れていない画面と、シードに無い長い文字とデータの多い状態。内側の領域で切れた文字とボタン。見た目の崩れ |
 | `MOTION-TOKEN` | `scripts/check-utilities.mjs`（`pnpm check:design`） | 時間と遅れの任意値。任意のプロパティ（`[animation:...]`）と、スタイルに直に書いた `animation`。クラスの名前を文字列の連結で組み立てた書き方 |
+| `MOTION-REDUCE` | `packages/e2e/tests/specs/site/motion-reduce.e2e.ts`（`pnpm e2e`） | 照合の画面のほかの画面。新しい動きが、止める動きと残す動きの表のどれに当たるか |
 
 ## 画面を作るときの手順
 
