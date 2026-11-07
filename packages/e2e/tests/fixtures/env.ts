@@ -120,8 +120,11 @@ export const GCALHOLD_URL = process.env.E2E_GCALHOLD_URL ?? 'http://localhost:80
 /** compose の compose/google-calendar-service-accounts.json が、シードの事業所の組織に割り当てたダミーのサービスアカウント。 */
 export const FACILITY_SERVICE_ACCOUNT = 'buddy-org-sample@example.iam.gserviceaccount.com'
 
-/** シードの利用者。訪問の予定を作るときに選ぶ。 */
+/** シードの利用者。訪問の予定を作るときに選ぶ。利用者のサービスコードは訪看I2 である。 */
 export const SEED_PATIENT = { id: '01M3TC66FGZVK39Y7GRVZSGWS1', name: '見本 一郎' }
+
+/** シードの、サービスコードが訪看I3 の利用者。利用者を選んだときのサービスコードの初期値を確認するのに使う。 */
+export const SEED_PATIENT_I3 = { id: '01M3TC67EREWP3ED55WDTKD23Z', name: '見本 二葉' }
 
 /** ログインの状態を保存するディレクトリ。Git で追跡しない。 */
 const AUTH_DIR = path.join(root, 'packages/e2e/.auth')
