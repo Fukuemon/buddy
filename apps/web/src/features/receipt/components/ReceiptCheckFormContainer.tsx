@@ -36,11 +36,12 @@ export const ReceiptCheckFormContainer = () => {
   const scheduleFile = source === 'csv' ? schedules : null
   const tooLarge = (visits?.size ?? 0) + (scheduleFile?.size ?? 0) > MAX_RECEIPT_UPLOAD_BYTES
   const ready = visits !== null && (source === 'calendar' ? isMonth(month) : scheduleFile !== null)
+  // 送っている途中は戻さない。戻すと照合するを押せるようになり、先の照合の失敗の文も出なくなる。
   const changed =
     <T,>(set: (value: T) => void) =>
     (value: T) => {
       set(value)
-      check.reset()
+      if (!check.isPending) check.reset()
     }
 
   const submit = () => {

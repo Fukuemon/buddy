@@ -51,6 +51,18 @@ export const RowErrors: Story = {
   },
 }
 
+/** 照合の API が 0.5 秒待ってから 500 を返す。送っている途中に入力を変えられる。 */
+export const SlowCheckError: Story = {
+  parameters: route({
+    receiptApi: {
+      check: async () => {
+        await new Promise((resolve) => setTimeout(resolve, 500))
+        throw new ApiError(500, '照合の API が失敗した')
+      },
+    },
+  }),
+}
+
 /** 画面を開いた後に照合の権限を外された。照合するを押すと、照合の API が 403 を返す。 */
 export const ForbiddenAfterRevoke: Story = {
   parameters: route({
