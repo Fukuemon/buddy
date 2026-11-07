@@ -13,6 +13,7 @@ const {
   GooglePrimary,
   GooglePrimaryChangedInGoogle,
   GooglePrimaryFromOtherDay,
+  GooglePrimaryNeedsReview,
   GooglePrimaryRecurrenceUnsupported,
   NotFound,
   SuspendedStaff,
@@ -144,6 +145,48 @@ describe('ScheduleEditModalContainer', () => {
 
     await waitFor(() => expect(update).toHaveBeenCalledTimes(2))
     expect(update.mock.calls.map((call) => call[3])).toEqual(['"etag-schedule-1"', '"etag-latest"'])
+  })
+
+  it('確認が必要な予定のほかは、予定の種類のタブを出さない', async () => {
+    render(<GooglePrimary />)
+    expect(await screen.findByTestId('schedule-edit-submit')).toBeInTheDocument()
+    expect(screen.queryByTestId('schedule-kind-tab')).not.toBeInTheDocument()
+  })
+
+  // 次のテストの保存で、story のフェイクの API の予定が確認の必要な予定でなくなるので、保存しないこのテストを先に置く
+  it('訪問にした後に通常に戻すと、開いたときの値に戻り、閉じるときに確認を出さない', async () => {
+    const confirm = vi.spyOn(window, 'confirm')
+    render(<GooglePrimaryNeedsReview />)
+
+    await userEvent.click(await screen.findByTestId('schedule-kind-tab-visit'))
+    expect(screen.getByTestId('schedule-field-patient')).toBeInTheDocument()
+    await userEvent.click(screen.getByTestId('schedule-kind-tab-normal'))
+    await userEvent.click(screen.getByTestId('schedule-field-title'))
+    expect(screen.getByTestId('schedule-form-title')).toHaveValue('佐藤 花子 訪看I2')
+    await userEvent.click(screen.getByTestId('schedule-edit-cancel'))
+
+    expect(confirm).not.toHaveBeenCalled()
+  })
+
+  it('訪問の情報を読み取れなかった予定は、訪問にして利用者を選び、訪問の予定として保存する', async () => {
+    const { api } = GooglePrimaryNeedsReview.parameters.appRouter as AppRouterParameters
+    if (api === undefined) throw new Error('story にフェイクの API が無い')
+    const update = vi.spyOn(api.schedules, 'update')
+    render(<GooglePrimaryNeedsReview />)
+
+    expect(await screen.findByTestId('schedule-kind-tab-normal')).toBeChecked()
+    await userEvent.click(screen.getByTestId('schedule-kind-tab-visit'))
+    await userEvent.click(screen.getByTestId('schedule-field-patient'))
+    await userEvent.click(screen.getByTestId('patient-select-option-patient-2'))
+    await userEvent.click(screen.getByTestId('schedule-edit-submit'))
+
+    await waitFor(() => expect(update).toHaveBeenCalledOnce())
+    expect(update.mock.calls[0]?.[2]).toMatchObject({
+      kind: 'visit',
+      staffId: 'staff-2',
+      startsAt: expect.stringContaining('T15:00'),
+      visit: { patientId: 'patient-2' },
+    })
   })
 
   it('繰り返しの規則を buddy で表せない予定は、フォームを出さずに変えられないことを出す', async () => {
