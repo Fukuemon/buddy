@@ -61,6 +61,8 @@
 | 8 | メニュー | `site-nav-toggle` |
 | 9 | メニュー | `site-nav-toggle` |
 | 7 | メニュー | `site-nav-toggle` |
+| 17 | 最新の情報の読み込みの失敗の文 | `refetch-error` |
+| 18 | 最新の情報を読み直す | `refetch-retry` |
 
 - チームの点の `staff-list-team-dot-{職員の id}` は、チームのラベルの中の点に付く。ラベルの全体には testid が無いので、この表に載せない。
 - ヘルプの説明の `staff-list-help-text` と、権限が無いことの入れ物の `page-forbidden` は、構成要素の表に載せないので、この表に載せない。

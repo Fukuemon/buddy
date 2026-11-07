@@ -114,3 +114,23 @@
     accent-color: var(--buddy-color-primary);
   }
 }
+
+/*
+ * DESIGN.md の原則 MOTION-REDUCE。動きを減らす設定では、位置と大きさを動かすアニメーションを止め、遷移の対象を透明度に絞る。
+ * animate-* のユーティリティは Tailwind のデフォルトの --animate-* を参照するので、変数を置き換えれば、画面のコードに motion-reduce: を書かずに止まる。
+ * 全ての要素の時間を 0 にする書き方は、残す透明度の変化も止めるので使わない。
+ * 読み込み中の回転（animate-spin）は、処理が続いていることを伝える動きなので残す。
+ */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --animate-ping: none;
+    --animate-bounce: none;
+  }
+
+  *,
+  ::before,
+  ::after {
+    transition-property: opacity !important;
+    scroll-behavior: auto !important;
+  }
+}

@@ -841,6 +841,21 @@ body {
   font-size: 12px;
 }
 
+/* 押せないボタンと、その右に出す押せるようにする条件の文 */
+.wf-submit-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+
+/* ダイアログのフッターでは、条件の文を確定のボタンの上に右寄せで出す */
+.wf-dialog__footer > .wf-hint {
+  flex-basis: 100%;
+  margin: 0;
+  text-align: right;
+}
+
 /* 取り消せない操作のボタン */
 .wf-btn--danger {
   border-color: var(--wf-danger);

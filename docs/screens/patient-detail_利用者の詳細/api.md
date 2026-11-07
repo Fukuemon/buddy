@@ -40,6 +40,7 @@
 | 開いた利用者の今の担当の職員が、退職した職員である | `PatientRecord.assigned_staff_id` で引いた `StaffRecord.status` が `retired` |
 | 開いた利用者の今の担当の職員が、訪問しない職員である | `PatientRecord.assigned_staff_id` で引いた `StaffRecord.visits` が `false` |
 | 職員が、再開の担当の職員を選んでいる | `PatientResumeDialog` の選んだ職員の id が空の文字列でない |
+| 再開の担当の職員の欄が、空である | `PatientResumeDialog` の選んだ職員の id が空の文字列 |
 | 開いた利用者が、見つからなかった利用者である | `getPatient` の `ApiError.status` が 404（`PatientDetailContainer` の `canRetry` が `false`） |
 
 - 送っている間は、ダイアログの入力の欄に `disabled` を、閉じるとキャンセルに押せない印を付ける。覆いと Escape キーでも閉じない。
@@ -90,6 +91,7 @@
 | 5 | 今の担当の職員の注意 | `patient-resume-staff-note` |
 | 6 | キャンセル | `patient-resume-cancel` |
 | 7 | ダイアログの利用を再開する | `patient-resume-submit` |
+| 8 | ダイアログの利用を再開するの条件の文 | `patient-resume-submit-hint` |
 | 5 | 読み込み中の表示 | `patient-detail-loading` |
 | 5 | 読み込みの失敗の文 | `patient-detail-error` |
 | 6 | 読み直す | `patient-detail-retry` |
@@ -99,6 +101,8 @@
 | 12 | メニュー | `site-nav-toggle` |
 | 6 | メニュー | `site-nav-toggle` |
 | 7 | メニュー | `site-nav-toggle` |
+| 10 | 最新の情報の読み込みの失敗の文 | `refetch-error` |
+| 11 | 最新の情報を読み直す | `refetch-retry` |
 
 - 利用の状態の `patient-detail-status-text` は、モックでは値の欄に、実装では値の欄の中の文に付く。どちらも同じ文を指す。
 - メニューの項目の並びの `patient-detail-menu-list` と、編集のフォームの `patient-detail-profile-form` は、構成要素の表に載せないので、この表に載せない。
@@ -144,6 +148,7 @@
 | 利用の再開 | 「この操作をする権限がありません。」 | `resumePatientService` が 403 |
 | 利用の再開 | 「利用を再開できませんでした。時間をおいて、もう一度再開してください。」 | `resumePatientService` が 400、403 のほかの失敗、API に届かない |
 | 利用の再開 | 「サービスと職員を読み込めませんでした。閉じてから、開き直してください。」 | `listUsers` が失敗、API に届かない |
+| 最新の情報の読み込みの失敗 | 「最新の情報を読み込めませんでした。」 | 読み終えた後に読み直して、`getPatient` が失敗、API に届かない。403 と 404 も含む |
 
 - 文を選ぶ処理は `apps/web/src/features/patient/lib/errorMessage.ts` にある。
   - 保存は `patientSubmitErrorMessage`、利用の終了は `endServiceErrorMessage`、利用の再開は `resumeServiceErrorMessage` が選ぶ。

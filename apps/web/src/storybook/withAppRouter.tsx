@@ -328,6 +328,21 @@ const buddyApiOf = (operation: () => Promise<never>): BuddyApi => ({
   },
 })
 
+/**
+ * 2 回目の呼び出しだけ status が 500 の ApiError で失敗する操作を作る。1 回目と 3 回目からは operation の結果を返す。
+ * 読み終えた後に読み直して読めなかったときと、その後に読み直して読めたときを見るために使う。
+ */
+export const failOnSecondCall = <Args extends unknown[], Result>(
+  operation: (...args: Args) => Promise<Result>,
+): ((...args: Args) => Promise<Result>) => {
+  let calls = 0
+  return async (...args) => {
+    calls += 1
+    if (calls === 2) throw new ApiError(500, '読み直しで読めない')
+    return operation(...args)
+  }
+}
+
 /** 全ての操作が status の ApiError で失敗するフェイクの API を作る。 */
 export const failingBuddyApi = (status = 500): BuddyApi =>
   buddyApiOf(async () => {

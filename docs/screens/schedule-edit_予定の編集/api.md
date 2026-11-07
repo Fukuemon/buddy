@@ -4,6 +4,8 @@
 予定は `getSchedule`（`GET /v1/schedules/{schedule_id}`）で取り、`updateSchedule`（`PUT /v1/schedules/{schedule_id}`）で直す。  
 `updateSchedule` は、本文の `SlotRequest` で予定の全ての項目を置き換える。
 
+## 値の対応
+
 | 要素名 | 表示する値 | web の型の項目 | OpenAPI の項目 |
 | --- | --- | --- | --- |
 | 項目の一覧 | 予定の種類で項目を切り替える | `Schedule.kind` | `getSchedule` の `schedule_type`。保存では `schedule_type_id` |
@@ -16,6 +18,7 @@
 | サービスコード | 選択肢の並びと表記 | `ServiceCodeRecord.code` | `listServiceCodes` の `code` |
 | サービスコード | 選んだコード | `VisitDetail.serviceCode` | `getSchedule` の `visit_info.service_code`。保存では `visit_info.service_code_id` |
 | 利用者の一覧 | 利用者の名前と選んだ利用者 | `Patient.name`、`VisitDetail.patientId` | `listPatients` の `name`、`visit_info.patient_id` |
+| 利用者の一覧 | 利用の終了の利用者を除くか | `Patient.ended` | `listPatients`（`include_ended=true`）の `ended_at` |
 | 職員の一覧 | 職員の名前と選んだ職員 | `Staff.name`、`Schedule.staffId` | `listUsers` の `username`、`staff_id`、`visit_info.assigned_staff_id` |
 | 職員の一覧 | 休職と退職の職員と、訪問しない職員を除くか | `Staff.status`、`Staff.nonVisiting` | `listUsers` の `Staff.status`、`visits` |
 | 職員の一覧 | 予定を編集できる職員か | `Viewer.schedulePolicies`、`Staff.teamId` | `getMe` の `policies` の `code`、`target_user_ids`、`target_team_ids` |
@@ -42,6 +45,7 @@
   - 次の保存で送る `etag` は、読み直した予定の `etag` に置き換える。
   - 入力は消さない。
   - 読み直しが失敗したときは、最新の予定を出さず、`etag` も置き換えない。
+  - 一度読めた最新の予定は、モーダルを閉じるまで残す。次の保存が 409 `google_event_changed` のほかの理由で失敗しても消さない。
   - 最新の予定は `apps/web/src/features/schedule/components/ScheduleLatestNotice.tsx` が描く。
 - `google_primary` の事業所では、`updateSchedule` が Google カレンダーの予定を書き換え、書けたときだけ成功を返す。
   - 扱いは [ADR-0028](../../adr/0028-google-calendar-sync.md) にある。
@@ -54,11 +58,21 @@
 - サービスコードの選択肢は、`listServiceCodes` の順に並べ、`code` をそのまま出す。
   - 提供時間の範囲の検証は、選んだ `code` の `service_time_range_start` と `service_time_range_end` で行う。
     - 検証は `apps/web/src/features/schedule/schema/scheduleForm.ts` にある。
+  - 選んだ `code` が空か、`listServiceCodes` に無いときは、「サービスコードを選んでください」を出し、提供時間の範囲を検証しない。
+    - 日時の枠の文は、`scheduleDate`、`startTime`、`endTime`、`serviceCode`、`serviceTime` の誤りの順で最初の 1 つを選ぶ。処理は `apps/web/src/features/schedule/components/ScheduleForm.tsx` にある。
 - 予定の種類、サービスコード、訪問の区分は、マスタを引いて ID にする。
   - マスタは `listScheduleTypes`、`listServiceCodes`、`listVisitCategories` で取る。
   - サービスコードは、`listServiceCodes` の `code` と同じ表記で比べる。
 - 読み直しかマスタの取得が失敗したときと、マスタに当たる値が無いときは、`updateSchedule` を呼ばずに失敗する。
 - 予定の一覧の取得の結果は、保存に成功したときに捨てて、`listSchedules` で取り直す。
+- 保存に成功すると、予定の詳細へ戻る URL の `date` を、フォームの `scheduleDate`（保存した予定の日）に置き換える。
+  - `google_primary` の事業所の予定の詳細は、カレンダーの表示の期間の `listSchedules` の結果から探すためである。
+  - 処理は `apps/web/src/features/schedule/components/ScheduleEditModalContainer.tsx` の `backToDetail` にある。
+- `listPatients` は、web のサーバーが `include_ended=true` で利用の終了の利用者も含めて取る。
+  - この画面は、`Patient.ended` が `true` の利用者を利用者の候補から除く。処理は `apps/web/src/api/activePatients.ts` の `activePatients` にある。
+  - 項目の一覧の利用者の名前は、除く前の一覧で引く。予定の利用者が利用の終了の利用者でも、名前を出す。
+- `kind` が `visit` で `visit` を持たない予定は、通常の予定のフォームの値にする。保存すると通常の予定として送る。
+  - 処理は `apps/web/src/features/schedule/lib/scheduleFormMapper.ts` の `toScheduleFormValues` にある。扱いは未決である。
 - `listUsers` は、休職と退職の職員も返す。
   - この画面は、`status` を持つ職員と、`visits` が false の職員を主訪問者と予定者の候補から除く。
   - 予定の職員の名前は、休職と退職の職員と、訪問しない職員も含めた一覧で探す。
@@ -83,6 +97,74 @@
   - チームは、`listUsers` の予定の職員の今のチームで判定する。
   - 処理は `apps/web/src/features/schedule/components/ScheduleEditModalContainer.tsx` にある。
 - 主訪問者と予定者の候補は、`editableStaff` で、予定を編集できる職員に絞る。
+
+## 条件の対応
+
+| 条件 | 判定に使う値 |
+| --- | --- |
+| 職員が、保存を送っている途中である | react-hook-form の `formState.isSubmitting` が `true`（`ScheduleFormModal` が保存のボタンの `isLoading` に渡す）。`updateSchedule` を呼んでから、予定の詳細へ移るまでと、409 `google_event_changed` の後に `getSchedule` で読み直し終えるまでを含む |
+
+- 保存のボタンは packages/ui の `Button` で、`isLoading` の間は押しても `onClick` と送信を止める。
+- 送っている間も、`ScheduleFormModal` は `Modal` に送信中を渡さず、`ScheduleForm` の欄も `disabled` にしない。
+  - 閉じる、キャンセル、覆い、Escape キー、入力の欄は、送っている間も動く。
+- 「読み込み中」の状態の `Modal` には `onCloseRequest` を渡さないので、閉じる、覆い、Escape キーは何もしない。
+  - 処理は `apps/web/src/features/schedule/components/ScheduleEditModalContainer.tsx` にある。
+- 項目の一覧の項目と、右の入力の欄の出し分けは、フォームの値の `kind` と、`ScheduleForm` が持つ選んだ項目で決める。
+  - どちらも状態で決まるので、条件の表に載せない。
+
+## 要素の testid
+
+| 番号 | 要素名 | testid |
+| --- | --- | --- |
+| 3 | 閉じる | `modal-close` |
+| 4 | 項目の一覧 | `schedule-field-title` |
+| 4 | 項目の一覧 | `schedule-field-date-time` |
+| 4 | 項目の一覧 | `schedule-field-patient` |
+| 4 | 項目の一覧 | `schedule-field-staff` |
+| 4 | 項目の一覧 | `schedule-field-category` |
+| 4 | 項目の一覧 | `schedule-field-description` |
+| 5 | 日付 | `schedule-form-date` |
+| 6 | 開始時間 | `schedule-form-start-time` |
+| 7 | 提供時間 | `schedule-form-service-time` |
+| 8 | 終了時間 | `schedule-form-end-time` |
+| 7 | 終了時間 | `schedule-form-end-time` |
+| 8 | 終了は翌日 | `schedule-form-ends-next-day` |
+| 9 | サービスコード | `service-code-{コード}` |
+| 5 | 利用者の検索 | `patient-select-search` |
+| 6 | 利用者の一覧 | `patient-select-option-{利用者の id}` |
+| 5 | 職員の検索 | `staff-select-search` |
+| 6 | 職員の一覧 | `staff-select-option-{職員の id}` |
+| 5 | 訪問の区分 | `schedule-category-night` |
+| 5 | 訪問の区分 | `schedule-category-emergency` |
+| 5 | 訪問の区分 | `schedule-category-hospitalization` |
+| 5 | メモ | `schedule-form-description` |
+| 5 | タイトル | `schedule-form-title` |
+| 6 | キャンセル | `schedule-edit-cancel` |
+| 7 | キャンセル | `schedule-edit-cancel` |
+| 9 | キャンセル | `schedule-edit-cancel` |
+| 10 | キャンセル | `schedule-edit-cancel` |
+| 11 | キャンセル | `schedule-edit-cancel` |
+| 7 | 保存 | `schedule-edit-submit` |
+| 8 | 保存 | `schedule-edit-submit` |
+| 10 | 保存 | `schedule-edit-submit` |
+| 11 | 保存 | `schedule-edit-submit` |
+| 12 | 保存 | `schedule-edit-submit` |
+| 13 | Google カレンダーの最新の予定 | `schedule-edit-latest` |
+| 14 | 最新の予定の日時 | `schedule-edit-latest-datetime` |
+| 15 | 最新の予定のタイトル | `schedule-edit-latest-title` |
+| 16 | 最新の予定の職員 | `schedule-edit-latest-staff` |
+
+- 番号は、状態ごとの構成要素の表の番号である。同じ要素が状態ごとに違う番号を持つときは、番号ごとに行を分ける。
+- 閉じるの `modal-close` は、packages/ui の `Modal` が付ける。
+- 項目の一覧の testid の末尾は、項目の ID（`title`、`date-time`、`patient`、`staff`、`category`、`description`）である。
+- サービスコードの `{コード}` は、`listServiceCodes` の `code` の表記のままである。
+- 利用者の一覧と職員の一覧の testid は、行のラジオボタンに付く。
+- 次の testid は、モーダルの本体に付き、構成要素の表に載せないので、この表に載せない。
+  - フォームを出すモーダルの `schedule-form-modal` と、フォームの `schedule-form`
+  - 「権限が無い」の状態のモーダルの `schedule-edit-forbidden`
+  - 「繰り返しの規則を buddy で表せない」の状態のモーダルの `schedule-edit-recurrence-unsupported`
+  - キャンセルした予定のモーダルの `schedule-edit-cancelled`。この状態はモックを持たない
+- 読み込み中の表示、読み込みの失敗の文、権限が無いことの説明、繰り返しの規則を変えられないことの文、保存の失敗の文は、testid を持たない。
 
 ## 状態と失敗の要因
 

@@ -24,8 +24,12 @@ export type StaffDetailViewProps = {
   onRetry: () => void
   /** ログインした職員の詳細か。自分は休職と退職にできないので、「…」のメニューを出さない。 */
   isSelf: boolean
-  /** 全ての権限を、権限の一覧の並びで渡す。読み終えるまでは undefined にする。 */
+  /** 全ての権限を、権限の一覧の並びで渡す。全ての権限と役職を読み終えるまでは undefined にする。 */
   policies?: readonly Policy[]
+  /** 全ての権限か役職を読めなかったときの文。権限の一覧の位置に、読み直すと一緒に出す。 */
+  policiesLoadError?: string
+  /** 読めなかった全ての権限と役職を読み直す。 */
+  onRetryPolicies?: () => void
   /** 職員の今の役職。付いた理由を出すのに使う。 */
   position?: Position
   /** 権限の対象の、職員とチームの ID から名前を引く表。 */
@@ -83,6 +87,8 @@ const StaffDetailBody = ({
   staff,
   isSelf,
   policies,
+  policiesLoadError,
+  onRetryPolicies,
   position,
   targetNames,
   onEdit,
@@ -230,7 +236,25 @@ const StaffDetailBody = ({
               </Button>
             )}
           </div>
-          {policies === undefined ? (
+          {policiesLoadError !== undefined ? (
+            <div className="flex flex-col items-start gap-3">
+              <p
+                className="text-body text-danger"
+                data-testid="staff-detail-policies-error"
+                role="alert"
+              >
+                {policiesLoadError}
+              </p>
+              <Button
+                data-testid="staff-detail-policies-retry"
+                onClick={onRetryPolicies}
+                size="S"
+                variant="secondary"
+              >
+                読み直す
+              </Button>
+            </div>
+          ) : policies === undefined ? (
             <Loading description="読み込んでいます" />
           ) : (
             <PolicyList
