@@ -38,14 +38,14 @@ const cookie = (deps: AuthDeps, name: string, value: string, maxAge: number) => 
   return `${name}=${encodeURIComponent(value)}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${maxAge}${secure}`
 }
 
-/** リクエストの URL を、ブラウザが開く URL にする。publicUrl があれば、オリジンをそれに置き換える。 */
+/**
+ * リクエストの URL を、ブラウザが開く URL にする。publicUrl があれば、オリジン（スキーム、ホスト、ポート）をそれに置き換える。
+ * publicUrl にポートが無ければ、リクエストの URL のポートも外す。
+ */
 const browserUrlOf = (request: Request, deps: AuthDeps) => {
   const url = new URL(request.url)
   if (deps.publicUrl === undefined) return url
-  const origin = new URL(deps.publicUrl)
-  url.protocol = origin.protocol
-  url.host = origin.host
-  return url
+  return new URL(url.pathname + url.search, new URL(deps.publicUrl).origin)
 }
 
 const redirect = (location: string, cookies: string[] = []) => {

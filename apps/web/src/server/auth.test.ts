@@ -151,6 +151,14 @@ describe('ログイン', () => {
     )
   })
 
+  it('publicUrl にポートが無ければ、リクエストの URL のポートを戻り先に残さない', async () => {
+    const { deps } = setup({ publicUrl: 'https://web.example.localhost' })
+    const start = await startLogin(new Request('http://web:3000/auth/login'), deps)
+    expect(new URL(start.headers.get('Location') ?? '').searchParams.get('redirect_uri')).toBe(
+      'https://web.example.localhost/auth/callback',
+    )
+  })
+
   it('usesSecureCookie なら cookie に Secure を付ける', async () => {
     const { deps } = setup({ usesSecureCookie: true })
     const start = await startLogin(new Request('http://web.test/auth/login'), deps)
