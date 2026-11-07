@@ -60,6 +60,8 @@ const ScheduleEditForm = ({
   const [latest, setLatest] = useState<Schedule>()
   const [schema] = useState(() => createScheduleFormSchema(serviceCodes))
   const [initial] = useState(() => toScheduleFormValues(schedule))
+  // 開いたときの予定で決める。編集の途中で読み直した予定が確認の必要な予定でなくなっても、通常に戻せるようにする
+  const [kindChangeable] = useState(() => canAddVisitInfo(schedule))
   const form = useForm<ScheduleFormValues>({
     defaultValues: initial,
     resolver: zodResolver(schema),
@@ -105,7 +107,7 @@ const ScheduleEditForm = ({
     <ScheduleFormModal
       form={form}
       onClose={() => backToDetail()}
-      onKindChange={canAddVisitInfo(schedule) ? changeKind : undefined}
+      onKindChange={kindChangeable ? changeKind : undefined}
       notice={
         latest === undefined ? undefined : (
           <ScheduleLatestNotice latest={latest} patients={patients} staffList={staffList} />

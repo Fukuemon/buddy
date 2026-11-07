@@ -3,6 +3,7 @@ import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vite-plus/test'
 
+import type { Schedule } from '#/api/types'
 import type { AppRouterParameters } from '#/storybook/withAppRouter'
 
 import * as stories from './ScheduleEditModalContainer.stories'
@@ -153,7 +154,17 @@ describe('ScheduleEditModalContainer', () => {
     expect(screen.queryByTestId('schedule-kind-tab')).not.toBeInTheDocument()
   })
 
-  // 次のテストの保存で、story のフェイクの API の予定が確認の必要な予定でなくなるので、保存しないこのテストを先に置く
+  it('訪問にすると、閉じるときに変更を破棄するかの確認を出す', async () => {
+    const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false)
+    render(<GooglePrimaryNeedsReview />)
+
+    await userEvent.click(await screen.findByTestId('schedule-kind-tab-visit'))
+    await userEvent.click(screen.getByTestId('schedule-edit-cancel'))
+
+    expect(confirm).toHaveBeenCalledOnce()
+    expect(screen.getByTestId('schedule-field-patient')).toBeInTheDocument()
+  })
+
   it('訪問にした後に通常に戻すと、開いたときの値に戻り、閉じるときに確認を出さない', async () => {
     const confirm = vi.spyOn(window, 'confirm')
     render(<GooglePrimaryNeedsReview />)
@@ -161,6 +172,7 @@ describe('ScheduleEditModalContainer', () => {
     await userEvent.click(await screen.findByTestId('schedule-kind-tab-visit'))
     expect(screen.getByTestId('schedule-field-patient')).toBeInTheDocument()
     await userEvent.click(screen.getByTestId('schedule-kind-tab-normal'))
+    expect(screen.getByTestId('schedule-form-end-time')).toHaveValue('15:29')
     await userEvent.click(screen.getByTestId('schedule-field-title'))
     expect(screen.getByTestId('schedule-form-title')).toHaveValue('佐藤 花子 訪看I2')
     await userEvent.click(screen.getByTestId('schedule-edit-cancel'))
@@ -171,7 +183,10 @@ describe('ScheduleEditModalContainer', () => {
   it('訪問の情報を読み取れなかった予定は、訪問にして利用者を選び、訪問の予定として保存する', async () => {
     const { api } = GooglePrimaryNeedsReview.parameters.appRouter as AppRouterParameters
     if (api === undefined) throw new Error('story にフェイクの API が無い')
-    const update = vi.spyOn(api.schedules, 'update')
+    // フェイクの API の予定を書き換えると、後のテストで確認の必要な予定でなくなるので、保存は呼ばれたかだけを見る
+    const update = vi
+      .spyOn(api.schedules, 'update')
+      .mockImplementation(async (_facilityId, scheduleId) => ({ id: scheduleId }) as Schedule)
     render(<GooglePrimaryNeedsReview />)
 
     expect(await screen.findByTestId('schedule-kind-tab-normal')).toBeChecked()
