@@ -3,6 +3,7 @@ import { useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
 
 import { queryKeys } from '#/api/queryKeys'
+import { refetchFailedQueries, screenLoadStatus } from '#/api/refetch'
 import { useBuddyApi } from '#/api/useBuddyApi'
 
 import { LIST_LOAD_ERROR_MESSAGE } from '../lib/errorMessage'
@@ -24,11 +25,17 @@ const StaffListContent = () => {
   const departments = useQuery(departmentsQueryOptions(api, facilityId))
   const teams = useQuery(teamsQueryOptions(api, facilityId))
   const positions = useQuery(positionsQueryOptions(api, facilityId))
-  const state: StaffListViewState = records.isPending
-    ? { status: 'loading' }
-    : records.isError
-      ? { status: 'error', message: LIST_LOAD_ERROR_MESSAGE }
-      : { status: 'ready', staffList: filterStaff(records.data, filter, teams.data) }
+  const load = screenLoadStatus([records])
+  const state: StaffListViewState =
+    load.status === 'ready' && records.data !== undefined
+      ? {
+          status: 'ready',
+          staffList: filterStaff(records.data, filter, teams.data),
+          refetchFailed: load.refetchFailed,
+        }
+      : load.status === 'error'
+        ? { status: 'error', message: LIST_LOAD_ERROR_MESSAGE }
+        : { status: 'loading' }
   return (
     <StaffListView
       departments={departments.data}
@@ -36,6 +43,7 @@ const StaffListContent = () => {
       onCreate={() => navigate({ to: '/staff/new' })}
       onFilterChange={setFilter}
       onFilterClear={() => setFilter(DEFAULT_STAFF_LIST_FILTER)}
+      onRefetch={() => refetchFailedQueries([records])}
       onRetry={() => queryClient.resetQueries({ queryKey: queryKeys.staff.records(facilityId) })}
       positions={positions.data}
       state={state}
