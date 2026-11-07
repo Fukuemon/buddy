@@ -202,6 +202,13 @@ export const rowFindings = (row: ReceiptRow): Finding[] => {
 }
 
 /**
+ * 照合の担当が確認する行かを返す。不整合、予定のみ、実績のみの行と、注意のある整合の行が当たる。
+ * 結果の画面の「確認が要る行」の表示は、この行だけを出す。
+ */
+export const needsCheck = (row: ReceiptRow) =>
+  row.category !== 'match' || rowFindings(row).some(({ severity }) => severity !== undefined)
+
+/**
  * セルごとの印を返す。不一致と注意の両方に当たるセルは、重い不一致だけにする。
  * 許容範囲は、範囲の外の終了時間と提供時間と、注意の提供時間のセルに付ける。
  */

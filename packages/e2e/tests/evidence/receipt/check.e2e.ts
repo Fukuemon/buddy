@@ -3,6 +3,7 @@ import { expect, test, type Page } from '@playwright/test'
 import { LEADER, LOGIN_EMAIL, LOGIN_STAFF, RECEIPT_TESTDATA } from '../../fixtures/env'
 import { EVIDENCE_VARIANTS, recordPrEvidence } from '../../fixtures/evidence'
 import { signInAtBroker } from '../../screens/login'
+import { showAllReceiptRows } from '../../screens/receipt'
 import { receiptCategoryRowCells, receiptResultRow } from '../../selectors/receipt'
 
 // 照合の API は、compose/receipt-calendars.json の森のカレンダーを calendarpit から読む。
@@ -165,6 +166,12 @@ test.describe('照合の結果', () => {
               await expect(page.getByTestId('receipt-result')).toContainText(
                 '2026 年 11 月の Google カレンダー',
               )
+
+              if (item.category === 'match') {
+                await step('表示する行を「全ての行」に切り替える')
+
+                await showAllReceiptRows(page)
+              }
 
               const row = receiptCategoryRowCells(page, item.category, item.date, item.patient)
               await expect(row).toHaveText([

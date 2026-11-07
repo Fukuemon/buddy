@@ -5,6 +5,7 @@ import { expect, test, type Page } from '@playwright/test'
 import { LOGIN_EMAIL, LOGIN_STAFF } from '../../fixtures/env'
 import { EVIDENCE_VARIANTS, recordPrEvidence } from '../../fixtures/evidence'
 import { signInAtBroker } from '../../screens/login'
+import { showAllReceiptRows } from '../../screens/receipt'
 import { receiptCategoryRowCells } from '../../selectors/receipt'
 
 const ACTOR = `${LOGIN_STAFF.name}（マネージャー）`
@@ -72,6 +73,8 @@ test.describe('照合の結果', () => {
 
             await step('予定と実績のダミーの CSV を選び、照合する')
             await check(page, schedules, visits)
+            await step('表示する行を「全ての行」に切り替える')
+            await showAllReceiptRows(page)
             const cells = receiptCategoryRowCells(page, 'match', '2024-04-01', '利用者A')
             await step('結果の表を、加算の列が見えるまで右へ送る')
             await cells.nth(ADDITION_COLUMN).scrollIntoViewIfNeeded()

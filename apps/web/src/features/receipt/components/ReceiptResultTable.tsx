@@ -17,6 +17,8 @@ import { MARKS, MarkIcon } from './ReceiptMark'
 
 export type ReceiptResultTableProps = {
   rows: readonly ReceiptRow[]
+  /** true のとき、行の無い区分の見出しの行を出さない。「確認が要る行」の表示で使う。 */
+  hidesEmptyCategories?: boolean
 }
 
 /** 「確認すること」の列。行の判定の文を、重さのアイコンと並べて 1 つずつ出す。 */
@@ -120,7 +122,10 @@ const useFirstColumnWidth = () => {
  * 照合の結果の表。区分ごとに tbody を分け、先頭に区分の見出しの行を置く。印の付いたセルは、重さのアイコンを置き、面の色を変える。
  * 横に送っても、どの行かを示す訪問日と利用者名の 2 列を左端に残す。
  */
-export const ReceiptResultTable = ({ rows }: ReceiptResultTableProps) => {
+export const ReceiptResultTable = ({
+  rows,
+  hidesEmptyCategories = false,
+}: ReceiptResultTableProps) => {
   const ref = useFirstColumnWidth()
   return (
     <div
@@ -146,6 +151,7 @@ export const ReceiptResultTable = ({ rows }: ReceiptResultTableProps) => {
           const inCategory = rows
             .map((row, index) => ({ row, index }))
             .filter(({ row }) => row.category === category)
+          if (hidesEmptyCategories && inCategory.length === 0) return null
           return (
             <tbody key={category}>
               <tr className="border-b border-border" data-testid={`receipt-category-${category}`}>

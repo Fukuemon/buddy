@@ -18,6 +18,7 @@ OpenAPI の項目は、`createCheck`（`POST /v1/checks`）のレスポンスの
 | 結果の行 | 予定と実績の値 | `ReceiptRow.schedule`、`visit` | `rows[].schedule`、`rows[].visit` の `service`、`start`、`end`、`duration` |
 | 結果の行 | 加算 | `ReceiptRow.visit.additions` | `rows[].visit.additions` |
 | 結果の行、確認すること、印の意味 | 印と確認することの文 | `ReceiptRow.checks` | `rows[].checks` の `start`、`service`、`duration_equal`、`end_equal`、`schedule_elapsed`、`visit_elapsed`、`schedule_duration`、`visit_duration`、`additions` |
+| 表示する行、区分の見出しの行 | 確認が要る行と全ての行の件数 | `ReceiptReport.rows` と、`needsCheck` が真の行 | `rows`、`rows[].category`、`rows[].checks` |
 
 - 印の条件と `checks` の項目の対応は次のとおり。
   - 開始時間の一致は `checks.start.ok`、サービス内容の対応は `checks.service.ok`
@@ -37,7 +38,14 @@ OpenAPI の項目は、`createCheck`（`POST /v1/checks`）のレスポンスの
 
 ## 条件の対応
 
-なし。
+| 条件 | 判定に使う値 |
+| --- | --- |
+| 表示する行に「全ての行」を選んでいる | `ReceiptResultRows` の `view` が `all` |
+| 区分に、表示する行がある | 表示する行のうち、`ReceiptRow.category` がその区分の行が 1 つ以上ある |
+
+- 判定は `ReceiptResultTable.tsx` の `hidesEmptyCategories` にあり、`ReceiptResultRows.tsx` が「確認が要る行」のときに真を渡す。
+- 確認が要る行は `reportCells.ts` の `needsCheck` が決める。`category` が `match` でないか、`rowFindings` に重さのある判定がある行である。
+- 「確認が要る行が無い」の状態は、`view` が `needs` で、`needsCheck` が真の行が 0 のときになる（`ReceiptResultRows.tsx`）。
 
 ## 要素の testid
 
@@ -60,6 +68,11 @@ OpenAPI の項目は、`createCheck`（`POST /v1/checks`）のレスポンスの
 | 9 | 区分の見出しの行 | `receipt-category-match` |
 | 11 | 印の意味 | `receipt-mark-legend` |
 | 12 | 印の意味 | `receipt-mark-legend` |
+| 13 | 表示する行 | `receipt-row-view` |
+| 14 | 表示する行 | `receipt-row-view` |
+| 7 | 表示する行 | `receipt-row-view` |
+| 8 | 確認が要る行が無いことの知らせ | `receipt-needs-empty` |
+| 9 | 全ての行を表示 | `receipt-row-view-show-all` |
 | 10 | メニュー | `site-nav-toggle` |
 | 11 | メニュー | `site-nav-toggle` |
 | 6 | メニュー | `site-nav-toggle` |
@@ -68,6 +81,7 @@ OpenAPI の項目は、`createCheck`（`POST /v1/checks`）のレスポンスの
 
 - 区分の見出しの行の testid の末尾は、区分（`ReceiptCategory`）の `mismatch`、`schedule_only`、`visit_only`、`match` である。
   - 区分の名前と件数の文字には、`receipt-category-label-<区分>` を付ける。区分の見出しの行の一部なので、この表に載せない。
+- 表示する行の選択肢には `receipt-row-view-needs` と `receipt-row-view-all` を、読み上げだけの行の数には `receipt-row-count` を付ける。
 - 結果の行の次の要素には testid を付ける。結果の行の一部なので、この表に載せない。
   - 確認することのセルの文の一覧の `receipt-findings`
   - 印を付けたセルの値の `receipt-marked-cell`（重さを `data-severity` に持つ）

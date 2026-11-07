@@ -3,8 +3,7 @@ import { Button, buttonClassName } from '@buddy/ui'
 import type { ReceiptReport } from '#/api/types'
 
 import { warningReasonText } from '../lib/errorMessage'
-import { ReceiptMarkLegend } from './ReceiptMark'
-import { ReceiptResultTable } from './ReceiptResultTable'
+import { ReceiptResultRows } from './ReceiptResultRows'
 
 export type ReceiptResultViewProps = {
   report: ReceiptReport
@@ -15,7 +14,7 @@ export type ReceiptResultViewProps = {
   checkAgainHref: string
 }
 
-/** 照合の結果。CSV のダウンロード、照合に使わなかった予定、印の意味、結果の表を並べる。 */
+/** 照合の結果。CSV のダウンロード、照合に使わなかった予定、表示する行の切り替え、印の意味、結果の表を並べる。 */
 export const ReceiptResultView = ({
   report,
   sourceLabel,
@@ -56,9 +55,6 @@ export const ReceiptResultView = ({
         </ul>
       </div>
     )}
-    <div className="flex flex-col gap-4">
-      <ReceiptMarkLegend />
-      <ReceiptResultTable rows={report.rows} />
-    </div>
+    <ReceiptResultRows rows={report.rows} />
   </section>
 )

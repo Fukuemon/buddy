@@ -6,7 +6,7 @@ import { describe, expect, it } from 'vite-plus/test'
 
 import * as stories from './ReceiptResultView.stories'
 
-const { Default, WithoutWarnings } = composeStories(stories)
+const { Default, NothingToCheck, WithCleanMatch, WithoutWarnings } = composeStories(stories)
 
 describe('ReceiptResultView', () => {
   it('件数を区分の見出しにだけ出し、見出しの下に行を出す', () => {
@@ -75,5 +75,53 @@ describe('ReceiptResultView', () => {
     render(<Default onDownload={onDownload} />)
     await userEvent.click(screen.getByTestId('receipt-download'))
     expect(onDownload).toHaveBeenCalledOnce()
+  })
+})
+
+describe('表示する行の切り替え', () => {
+  const categoryHeads = () =>
+    screen.queryAllByTestId(/^receipt-category-(mismatch|schedule_only|visit_only|match)$/)
+
+  it('開いたときは確認が要る行だけを出し、行の無い区分の見出しを出さない', () => {
+    render(<WithCleanMatch />)
+    expect(screen.getByTestId<HTMLInputElement>('receipt-row-view-needs').checked).toBe(true)
+    expect(screen.getByTestId('receipt-row-view').textContent).toBe(
+      '確認が要る行（1 件）全ての行（2 件）',
+    )
+    expect(categoryHeads().map((el) => el.textContent)).toEqual(['不整合データ（1 件）'])
+    expect(screen.queryByText('佐藤 秋子')).toBeNull()
+    expect(screen.getByTestId('receipt-row-count').textContent).toBe('1 件の行を表示しています。')
+  })
+
+  it('全ての行に切り替えると、注意の無い整合の行と、行の無い区分の見出しも出す', async () => {
+    render(<WithCleanMatch />)
+    await userEvent.click(screen.getByTestId('receipt-row-view-all'))
+    expect(categoryHeads().map((el) => el.textContent)).toEqual([
+      '不整合データ（1 件）',
+      '予定のみ（0 件）',
+      '実績のみ（0 件）',
+      '整合データ（1 件）',
+    ])
+    expect(screen.getByText('佐藤 秋子')).toBeDefined()
+    expect(screen.getByTestId('receipt-row-count').textContent).toBe('2 件の行を表示しています。')
+  })
+
+  it('注意のある整合の行は、確認が要る行に入る', () => {
+    render(<Default />)
+    expect(screen.getByTestId('receipt-row-view').textContent).toBe(
+      '確認が要る行（4 件）全ての行（4 件）',
+    )
+    expect(screen.getByTestId('receipt-category-match').textContent).toBe('整合データ（1 件）')
+  })
+
+  it('確認が要る行が無いときは、表の代わりに知らせを出し、ボタンで全ての行を出す', async () => {
+    render(<NothingToCheck />)
+    expect(screen.queryByTestId('receipt-result-table')).toBeNull()
+    expect(screen.getByTestId('receipt-needs-empty').textContent).toContain(
+      '確認が要る行はありません。全ての行で、予定と実績が規則に合っています。',
+    )
+    await userEvent.click(screen.getByTestId('receipt-row-view-show-all'))
+    expect(screen.getByTestId<HTMLInputElement>('receipt-row-view-all').checked).toBe(true)
+    expect(screen.getByText('佐藤 秋子')).toBeDefined()
   })
 })
