@@ -147,9 +147,9 @@ test.describe('画面の共通の形', () => {
             )
 
             await step('右上の × を押す')
-            await dialog.getByTestId('calendar-review-close').click()
+            await commonShapeParts(dialog).closeButton.click()
           } else {
-            await expect(dialog.getByTestId('calendar-review-close')).toHaveCount(0)
+            await expect(commonShapeParts(dialog).closeButton).toHaveCount(0)
             await expect(dialog.getByTestId('calendar-review-cancel')).toBeVisible()
             await check(
               '「食い違った予定」のダイアログに、予定の日時、職員、最後に変わった日時、理由、予定を開くが出て、右上に × が無く、フッターに「キャンセル」と、主ボタンの色でない「buddy の内容で書き直す」が出る',

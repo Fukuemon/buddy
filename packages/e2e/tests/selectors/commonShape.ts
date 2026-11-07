@@ -11,4 +11,9 @@ export const commonShapeParts = (root: Locator) => ({
   menuItems: root.getByRole('menuitem'),
   /** ダイアログのタイトル。ヘッダーの最初の見出しで、本文の見出しより前にある */
   title: root.getByRole('heading', { level: 2 }).first(),
+  /**
+   * ダイアログの右上の閉じるボタン（×）。フッターに操作のボタンを置くダイアログには置かない。
+   * フッターに「閉じる」を置く予定の詳細では、フッターのボタンも当たるので使わない。
+   */
+  closeButton: root.getByRole('button', { name: '閉じる' }),
 })

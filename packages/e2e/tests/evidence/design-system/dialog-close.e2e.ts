@@ -5,6 +5,7 @@ import { EVIDENCE_VARIANTS, PHONE_VIEWPORT, recordPrEvidence } from '../../fixtu
 import { newUnitName } from '../../fixtures/organization'
 import { SCHEDULE_DETAIL_URL } from '../../fixtures/schedule'
 import { signInAtBroker } from '../../screens/login'
+import { commonShapeParts } from '../../selectors/commonShape'
 
 const ACTOR = `${LOGIN_STAFF.name}（マネージャー、職員の管理の権限あり）`
 
@@ -88,12 +89,12 @@ test.describe('ダイアログの閉じるボタン', () => {
           await expect(dialog.getByTestId('organization-list-department-cancel')).toBeVisible()
           await expect(dialog.getByTestId('organization-list-department-submit')).toBeVisible()
           if (isBefore) {
-            await expect(dialog.getByTestId('organization-list-department-close')).toBeVisible()
+            await expect(commonShapeParts(dialog).closeButton).toBeVisible()
             await check(
               '「部署を作る」のダイアログの右上に × があり、フッターに「キャンセル」と「作る」が並ぶ',
             )
           } else {
-            await expect(dialog.getByTestId('organization-list-department-close')).toHaveCount(0)
+            await expect(commonShapeParts(dialog).closeButton).toHaveCount(0)
             await check(
               '「部署を作る」のダイアログの右上に × が無く、フッターに「キャンセル」と「作る」が並ぶ',
             )
