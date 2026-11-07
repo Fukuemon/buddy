@@ -1,4 +1,5 @@
 import { ApiError } from '#/api/BuddyApi'
+import { FORBIDDEN_MESSAGE } from '#/api/forbiddenMessage'
 import type { ReceiptCsvError, ReceiptWarning } from '#/api/types'
 
 const RETRY = '照合できませんでした。時間をおいて、もう一度照合してください。'
@@ -13,7 +14,7 @@ export const checkErrorMessage = (error: unknown) => {
     case 400:
       return '入力を読めませんでした。ファイルを選び直して、もう一度照合してください。'
     case 403:
-      return '照合の権限がありません。権限が要るときは、職員の管理の権限を持つ職員に頼んでください。'
+      return FORBIDDEN_MESSAGE
     case 413:
       return TOO_LARGE_MESSAGE
     case 422:

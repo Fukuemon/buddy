@@ -11,7 +11,7 @@ describe('checkErrorMessage', () => {
       '選び直して',
     )
     expect(checkErrorMessage(new ApiError(403, 'x'))).toBe(
-      '照合の権限がありません。権限が要るときは、職員の管理の権限を持つ職員に頼んでください。',
+      'この操作をする権限がありません。',
     )
     expect(checkErrorMessage(new ApiError(413, 'x'))).toContain('10 MB')
     expect(checkErrorMessage(new ApiError(422, 'visits の CSV に列がない'))).toBe(

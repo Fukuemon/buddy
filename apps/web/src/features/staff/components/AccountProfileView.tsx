@@ -181,7 +181,7 @@ const Calendar = ({ calendar }: { calendar: ExternalCalendar | null }) => (
         className="text-body text-text-secondary"
         data-testid="account-profile-calendar-not-linked"
       >
-        連携していません。連携は、職員の管理の権限を持つ職員に頼んでください。
+        連携していません。連携は、事業所の管理者に頼んでください。
       </p>
     ) : (
       <Fields
