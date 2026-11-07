@@ -48,7 +48,7 @@
   - 一度読めた最新の予定は、モーダルを閉じるまで残す。次の保存が 409 `google_event_changed` のほかの理由で失敗しても消さない。
   - 最新の予定は `apps/web/src/features/schedule/components/ScheduleLatestNotice.tsx` が描く。
 - `google_primary` の事業所では、`updateSchedule` が Google カレンダーの予定を書き換え、書けたときだけ成功を返す。
-  - 扱いは [ADR-0028](../../adr/0028-google-calendar-sync.md) にある。
+  - 扱いは [ADR-0029](../../adr/0029-google-calendar-sync.md) にある。
 - 保存の本文は、画面の値に、画面が持たない今の予定の値を足して作る。
   - 処理は `apps/web/src/api/http/scheduleMapper.ts` の `keepCurrentVisit` にある。
   - 訪問の予定どうしの保存では、同行者の `visit_info.companion_id` とタイトルの `title` を今の予定の値のまま送る。

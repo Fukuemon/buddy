@@ -70,7 +70,7 @@ type ClaimCalendarSyncsRow struct {
 }
 
 // 複数の処理が同時に取っても同じカレンダーを渡さないよう、行をロックできたものだけを取る。外したカレンダーは取らない。
-// 事業所の正本のモードが modes に無いカレンダーは取らない（ADR-0028）。
+// 事業所の正本のモードが modes に無いカレンダーは取らない（ADR-0029）。
 func (q *Queries) ClaimCalendarSyncs(ctx context.Context, arg ClaimCalendarSyncsParams) ([]ClaimCalendarSyncsRow, error) {
 	rows, err := q.db.Query(ctx, claimCalendarSyncs, arg.LeaseSeconds, arg.Modes, arg.MaxCount)
 	if err != nil {

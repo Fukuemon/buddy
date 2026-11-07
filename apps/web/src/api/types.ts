@@ -7,7 +7,7 @@ import type {
 /** 事業所の ID。API の `/v1/facilities/{facility_id}` に入る。 */
 export type FacilityId = string
 
-/** 事業所の予定の正本。google_primary は Google カレンダー、buddy_primary は buddy である（ADR-0028）。 */
+/** 事業所の予定の正本。google_primary は Google カレンダー、buddy_primary は buddy である（ADR-0029）。 */
 export type SourceMode = ScheduleComponents['schemas']['SourceMode']
 
 /** 事業所。API の型の ID、名前、予定の正本だけを使う。 */
@@ -128,7 +128,7 @@ export type Schedule = {
   cancel?: { reason: string }
   /**
    * google_primary の事業所で、同期が写した Google カレンダーの予定（Projection）のときだけ true を持つ。
-   * buddy から変えると、予定の API が Google カレンダーに書く（ADR-0028）。
+   * buddy から変えると、予定の API が Google カレンダーに書く（ADR-0029）。
    */
   fromGoogleCalendar?: true
   /**

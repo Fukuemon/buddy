@@ -31,7 +31,7 @@ CREATE INDEX calendar_event_records_visit_info_idx ON calendar_event_records (vi
 CREATE INDEX calendar_event_records_pending_visit_info_idx ON calendar_event_records (pending_visit_info_id) WHERE pending_visit_info_id IS NOT NULL;
 CREATE TRIGGER calendar_event_records_set_updated_at BEFORE UPDATE ON calendar_event_records FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 
-COMMENT ON TABLE calendar_event_records IS 'google_primary の事業所で、予定の API が Google カレンダーに書いた予定の、訪問の情報と書き込みの保留の版（ADR-0028）。通常の予定も保留の版を持つために行を作る';
+COMMENT ON TABLE calendar_event_records IS 'google_primary の事業所で、予定の API が Google カレンダーに書いた予定の、訪問の情報と書き込みの保留の版（ADR-0029）。通常の予定も保留の版を持つために行を作る';
 COMMENT ON COLUMN calendar_event_records.schedule_id IS 'buddy の予定の ID。画面が作成のリクエストに付ける。Google の予定の ID はこの ID から決める';
 COMMENT ON COLUMN calendar_event_records.external_calendar_id IS '予定を書いた、結び付けたカレンダー';
 COMMENT ON COLUMN calendar_event_records.external_event_id IS 'Google の予定の ID';

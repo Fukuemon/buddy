@@ -4,6 +4,8 @@ import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vite-plus/test'
 
+import { refocusWindow } from '#/test/refocusWindow'
+
 import { ApiError, type BuddyApi } from '#/api/BuddyApi'
 import { createFakeBuddyApi } from '#/api/fake/fakeBuddyApi'
 import { FAKE_VIEWER } from '#/api/fake/fixtures'
@@ -501,5 +503,31 @@ describe('StaffDetailContainer', () => {
       '職員が見つかりません。職員の一覧から開き直してください。',
     )
     expect(screen.queryByTestId('staff-detail-retry')).toBeNull()
+  })
+
+  it('読み終えた後に読み直して職員を読めなければ、詳細を残して失敗の文を出し、読み直すで読めたら消す', async () => {
+    const Story = composeStory(
+      {
+        ...stories.RefetchError,
+        parameters: {
+          appRouter: {
+            ...stories.default.parameters.appRouter,
+            api: stories.refetchFailingApi(),
+          },
+        },
+      },
+      stories.default,
+    )
+    render(<Story />)
+    await screen.findByTestId('staff-detail-name')
+
+    refocusWindow()
+    expect(await screen.findByTestId('refetch-error')).toHaveTextContent(
+      '最新の情報を読み込めませんでした。',
+    )
+    expect(screen.getByTestId('staff-detail-name')).toBeInTheDocument()
+
+    await userEvent.click(screen.getByTestId('refetch-retry'))
+    await expect.poll(() => screen.queryByTestId('refetch-error')).toBeNull()
   })
 })

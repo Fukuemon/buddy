@@ -107,7 +107,7 @@ var rateLimitReasons = map[string]bool{"rateLimitExceeded": true, "userRateLimit
 
 // writeError は、Calendar API の書き込みのエラーを calendar のエラーで包む。エラーの文は、カレンダー ID と予定のタイトルを含まない。
 // 5xx、通信のエラー、時間切れは、Google が書いた後に応答だけが失われたことがあるので ErrOutcomeUnknown で包む。
-// 429 と、ほかの 4xx は、Google が拒んだことが確かなので ErrUnavailable で包む（ADR-0028）。
+// 429 と、ほかの 4xx は、Google が拒んだことが確かなので ErrUnavailable で包む（ADR-0029）。
 func writeError(msg string, err error) error {
 	err = withoutURL(err)
 	kind := calendar.ErrOutcomeUnknown

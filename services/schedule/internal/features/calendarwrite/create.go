@@ -18,7 +18,7 @@ import (
 	"github.com/Fukuemon/buddy/services/schedule/internal/tx"
 )
 
-// Create は、google_primary の事業所に、単発の予定を Google カレンダーに書いて作る（ADR-0028）。
+// Create は、google_primary の事業所に、単発の予定を Google カレンダーに書いて作る（ADR-0029）。
 type Create struct {
 	locks       FacilityLock
 	cutovers    Cutovers
@@ -76,7 +76,7 @@ type write struct {
 type draft func(ctx context.Context) (w write, staffID string, visitID *string, err error)
 
 // Do は、事業所 facilityID に、画面が決めた ID が id の単発の予定を、予定の職員のカレンダーに書いて作り、書いた予定を返す。
-// 書き込みは ADR-0028 の手順に従う。1 つ目のトランザクションで、事業所の行を共有のロックで読んでモードと切り替えを確認し、
+// 書き込みは ADR-0029 の手順に従う。1 つ目のトランザクションで、事業所の行を共有のロックで読んでモードと切り替えを確認し、
 // schedule の規則（schedule.PrepareSchedule）で入力と権限を確認して、記録に保留の版を書く。トランザクションの外で Google に作り、
 // 2 つ目のトランザクションで、Google が返した予定を Projection に写して保留の版を確定する。
 // 同じ id で送り直したときは、Google の予定を 1 つのままにし、Google の予定が送った内容と同じなら成功を返す。
@@ -310,7 +310,7 @@ func (c Create) reconcile(ctx context.Context, source calendar.EventSource, w wr
 	return w, ev, nil
 }
 
-// resend は、保留の版がある記録への送り直しで、Google に作る前に予定を読み、最初の書き込みが届いたかで分ける（ADR-0028 の読み戻しの規則）。
+// resend は、保留の版がある記録への送り直しで、Google に作る前に予定を読み、最初の書き込みが届いたかで分ける（ADR-0029 の読み戻しの規則）。
 // 保留の版の訪問の情報は変えず、入力から作った訪問の情報（候補）は、最初の書き込みが届かないと分かったときだけ使う。
 //   - Google の予定の buddy の予定の ID と版が保留の版と同じ: 保留の版の訪問の情報で確定し、Projection に写す。内容も同じなら成功を返し、違えば errEventChanged を返す。
 //   - buddy の予定の ID が違う: 保留の版を変えずに errIDTaken を返す。

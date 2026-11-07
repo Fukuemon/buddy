@@ -1,4 +1,4 @@
--- 予定の API は、主訪問者を替えた予定を、新しい職員のカレンダーに作り直して移す（ADR-0028）。
+-- 予定の API は、主訪問者を替えた予定を、新しい職員のカレンダーに作り直して移す（ADR-0029）。
 -- 移す書き込みの結果が分からないときも同期が読み戻せるよう、移す先のカレンダーと Google の予定の ID を保留の版に持つ。
 ALTER TABLE calendar_event_records
     ADD COLUMN pending_external_calendar_id text COLLATE "C" NULL,

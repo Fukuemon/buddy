@@ -17,7 +17,7 @@ import (
 	"github.com/Fukuemon/buddy/services/schedule/internal/tx"
 )
 
-// Update は、google_primary の事業所の単発の予定を、Google カレンダーの予定を書き換えて変える（ADR-0028）。
+// Update は、google_primary の事業所の単発の予定を、Google カレンダーの予定を書き換えて変える（ADR-0029）。
 type Update struct {
 	locks       FacilityLock
 	cutovers    Cutovers
@@ -71,7 +71,7 @@ type change struct {
 func (c change) moving() bool { return c.to.ID != c.from.ID }
 
 // Do は、事業所 facilityID の、一覧での ID が id の単発の予定を in の内容に変え、書いた予定を返す。etag は画面が読んだ予定の etag で、
-// If-Match に付けて Google に書く。書き込みは ADR-0028 の手順と保留の版に従い、Create と同じである。
+// If-Match に付けて Google に書く。書き込みは ADR-0029 の手順と保留の版に従い、Create と同じである。
 // 記録の無い予定（Google で作った予定）を変えると、id を予定の ID にした記録を作る。訪問の情報を足せば、記録が訪問の情報を持つ。
 // 予定の職員（主訪問者）を替えると、新しい職員のカレンダーに予定を作り、前のカレンダーの予定を消す（move）。
 // 繰り返しの予定の例外の回（Google で変えた回）は、回の予定を書き換える。回の記録が無ければ、訪問の情報を変えたときだけ id の記録を作る。

@@ -31,7 +31,7 @@ export default defineConfig({
     actionTimeout: TIMEOUT_MS.action,
     navigationTimeout: TIMEOUT_MS.navigation,
     trace: 'retain-on-failure',
-    // worktree の環境の portless の証明書は、管理者の権限が無いとシステムに信頼させられない（ADR-0034）。
+    // worktree の環境の portless の証明書は、管理者の権限が無いとシステムに信頼させられない（ADR-0035）。
     // ローカルの環境だけに向けて流すので、https の URL のときは証明書のエラーを無視する
     ignoreHTTPSErrors: BASE_URL.startsWith('https://'),
   },
