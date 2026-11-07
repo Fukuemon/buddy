@@ -1,4 +1,11 @@
-import type { Schedule, ScheduleInput, ScheduleKind, ServiceCodeRecord, Staff } from '#/api/types'
+import type {
+  Patient,
+  Schedule,
+  ScheduleInput,
+  ScheduleKind,
+  ServiceCodeRecord,
+  Staff,
+} from '#/api/types'
 
 import type { ScheduleFormValues } from '../schema/scheduleForm'
 import {
@@ -23,6 +30,13 @@ const DEFAULT_SERVICE_CODE = '訪看I2'
 export const defaultServiceCode = (serviceCodes: readonly ServiceCodeRecord[]) =>
   serviceCodes.find((code) => code.code.normalize('NFKC') === DEFAULT_SERVICE_CODE) ??
   serviceCodes[0]
+
+/**
+ * 利用者を選んだときに選ぶサービスコードを返す。
+ * serviceCodes から利用者のサービスコードと同じ表記のものを探し、無ければ defaultServiceCode の値を返す。一覧が空なら undefined を返す。
+ */
+export const patientServiceCode = (patient: Patient, serviceCodes: readonly ServiceCodeRecord[]) =>
+  serviceCodes.find((code) => code.code === patient.serviceCode) ?? defaultServiceCode(serviceCodes)
 
 /** createScheduleFormValues の引数。time を省くと 9 時、staffId を省くと未選択にする。serviceCode を省くとサービスコードを未選択にする。 */
 type ScheduleFormDefaults = {

@@ -16,6 +16,7 @@ const {
   GooglePrimaryRecurrenceUnsupported,
   NotFound,
   SuspendedStaff,
+  VisitWithOtherServiceCode,
 } = composeStories(stories)
 
 describe('ScheduleEditModalContainer', () => {
@@ -29,6 +30,36 @@ describe('ScheduleEditModalContainer', () => {
       'この予定を編集する権限がありません。',
     )
     expect(screen.queryByTestId('schedule-edit-submit')).not.toBeInTheDocument()
+  })
+
+  it('開いたときは、利用者のサービスコードによらず、予定のサービスコードと提供時間のままにする', async () => {
+    render(<VisitWithOtherServiceCode />)
+
+    expect(await screen.findByTestId('service-code-訪看I4')).toBeChecked()
+    expect(screen.getByTestId('schedule-form-service-time')).toHaveValue(89)
+  })
+
+  it('利用者を替えると、替えた後の利用者のサービスコードを選び、提供時間をそのコードの上限にする', async () => {
+    render(<VisitWithOtherServiceCode />)
+
+    await userEvent.click(await screen.findByTestId('schedule-field-patient'))
+    await userEvent.click(screen.getByTestId('patient-select-option-patient-2'))
+    await userEvent.click(screen.getByTestId('schedule-field-date-time'))
+
+    expect(screen.getByTestId('service-code-訪看I3')).toBeChecked()
+    expect(screen.getByTestId('schedule-form-service-time')).toHaveValue(59)
+  })
+
+  it('サービスコードを手で選んだ後に利用者を替えても、サービスコードと提供時間を変えない', async () => {
+    render(<VisitWithOtherServiceCode />)
+
+    await userEvent.click(await screen.findByTestId('service-code-医'))
+    await userEvent.click(screen.getByTestId('schedule-field-patient'))
+    await userEvent.click(screen.getByTestId('patient-select-option-patient-2'))
+    await userEvent.click(screen.getByTestId('schedule-field-date-time'))
+
+    expect(screen.getByTestId('service-code-医')).toBeChecked()
+    expect(screen.getByTestId('schedule-form-service-time')).toHaveValue(90)
   })
 
   it('予定が見つからないときは、予定が見つからないことを出す', async () => {

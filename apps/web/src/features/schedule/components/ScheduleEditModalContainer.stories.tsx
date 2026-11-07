@@ -76,6 +76,11 @@ type Story = StoryObj<typeof meta>
 
 export const Visit: Story = {}
 
+/** 予定のサービスコード（訪看I4）が、予定の利用者の久保 秋代のサービスコード（訪看I2）と違う訪問の予定。開くと訪看I4 を選んでいる。 */
+export const VisitWithOtherServiceCode: Story = {
+  parameters: route({ url: '/schedule/schedule-4/edit' }),
+}
+
 export const Normal: Story = {
   parameters: route({ url: '/schedule/schedule-3/edit' }),
 }

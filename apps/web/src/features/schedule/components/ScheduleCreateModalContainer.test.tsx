@@ -13,6 +13,7 @@ const {
   FromSlot,
   GooglePrimary,
   GooglePrimaryWriteUnknown,
+  PatientServiceCodeUnlisted,
   SelfEditOnly,
   Visit,
   WithSuspendedStaff,
@@ -87,6 +88,54 @@ describe('ScheduleCreateModalContainer', () => {
       (radio) => radio.getAttribute('value'),
     )
     expect(codes).toEqual(mockServiceCodes.map((code) => code.code))
+  })
+
+  it('利用者を選ぶと、その利用者のサービスコードを選び、提供時間をそのコードの上限にする', async () => {
+    render(<Visit />)
+
+    await userEvent.click(await screen.findByTestId('schedule-field-patient'))
+    await userEvent.click(await screen.findByTestId('patient-select-option-patient-2'))
+    await userEvent.click(screen.getByTestId('schedule-field-date-time'))
+
+    expect(screen.getByTestId('service-code-訪看I3')).toBeChecked()
+    expect(screen.getByTestId('schedule-form-service-time')).toHaveValue(59)
+  })
+
+  it('サービスコードを手で選んだ後に利用者を選んでも、サービスコードと提供時間を変えない', async () => {
+    render(<Visit />)
+
+    await userEvent.click(await screen.findByTestId('service-code-訪看I4'))
+    await userEvent.click(screen.getByTestId('schedule-field-patient'))
+    await userEvent.click(await screen.findByTestId('patient-select-option-patient-2'))
+    await userEvent.click(screen.getByTestId('schedule-field-date-time'))
+
+    expect(screen.getByTestId('service-code-訪看I4')).toBeChecked()
+    expect(screen.getByTestId('schedule-form-service-time')).toHaveValue(89)
+  })
+
+  it('サービスコードを手で選んでから種類を切り替えて戻ると、利用者を選んだときにその利用者のサービスコードを選ぶ', async () => {
+    render(<Visit />)
+
+    await userEvent.click(await screen.findByTestId('service-code-訪看I4'))
+    await userEvent.click(screen.getByTestId('schedule-kind-tab-normal'))
+    await userEvent.click(screen.getByTestId('schedule-kind-tab-visit'))
+    await userEvent.click(screen.getByTestId('schedule-field-patient'))
+    await userEvent.click(await screen.findByTestId('patient-select-option-patient-2'))
+    await userEvent.click(screen.getByTestId('schedule-field-date-time'))
+
+    expect(screen.getByTestId('service-code-訪看I3')).toBeChecked()
+  })
+
+  it('サービスコードが事業所の一覧に無い利用者に替えると、サービスコードを訪看I2 にする', async () => {
+    render(<PatientServiceCodeUnlisted />)
+
+    await userEvent.click(await screen.findByTestId('schedule-field-patient'))
+    await userEvent.click(await screen.findByTestId('patient-select-option-patient-2'))
+    await userEvent.click(screen.getByTestId('patient-select-option-patient-3'))
+    await userEvent.click(screen.getByTestId('schedule-field-date-time'))
+
+    expect(screen.getByTestId('service-code-訪看I2')).toBeChecked()
+    expect(screen.getByTestId('schedule-form-service-time')).toHaveValue(29)
   })
 
   it('止めた職員がいる事業所では、主訪問者の候補に止めた職員を出さない', async () => {
