@@ -65,8 +65,8 @@ test.describe('予定のカレンダー', () => {
             await expect(page.getByTestId('schedule-form-modal')).toBeVisible()
             await step('予定の作成のダイアログを、何も入れずに開いている')
 
-            await step('右上の ×（閉じる）を押す')
-            await page.getByTestId('modal-close').click()
+            await step('フッターの「キャンセル」を押す')
+            await page.getByTestId('schedule-new-cancel').click()
             await expect(page.getByTestId('schedule-form-modal')).toBeHidden()
             await expect(page).toHaveURL(/\/schedule\?(.+&)?view=day/)
             await expect(page.getByTestId(`day-grid-staff-${LOGIN_STAFF.id}`)).toBeVisible()

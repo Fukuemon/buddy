@@ -36,7 +36,7 @@ type Story = StoryObj<typeof meta>
 export const Default: Story = {
   render: (args) => (
     <Dialog {...args}>
-      <DialogHeader onClose={args.onClose} title="予定の理由を直す" titleId={TITLE_ID} />
+      <DialogHeader title="予定の理由を直す" titleId={TITLE_ID} />
       <DialogBody>
         <ReasonField />
       </DialogBody>
@@ -54,7 +54,7 @@ export const Default: Story = {
 export const WithError: Story = {
   render: (args) => (
     <Dialog {...args}>
-      <DialogHeader onClose={args.onClose} title="予定の理由を直す" titleId={TITLE_ID} />
+      <DialogHeader title="予定の理由を直す" titleId={TITLE_ID} />
       <DialogBody>
         <ReasonField />
       </DialogBody>
@@ -78,12 +78,7 @@ export const Submitting: Story = {
   args: { canClose: false },
   render: (args) => (
     <Dialog {...args}>
-      <DialogHeader
-        isCloseDisabled
-        onClose={args.onClose}
-        title="予定の理由を直す"
-        titleId={TITLE_ID}
-      />
+      <DialogHeader title="予定の理由を直す" titleId={TITLE_ID} />
       <DialogBody>
         <ReasonField />
       </DialogBody>
@@ -99,15 +94,11 @@ export const Submitting: Story = {
   ),
 }
 
-/** 選ぶ操作だけを並べるダイアログ。どちらも主の操作ではないので、副のボタンにし、閉じるのは × に任せる。 */
+/** 選ぶ操作を並べるダイアログ。どちらも主の操作ではないので、副のボタンにする。閉じるのは、左端の「キャンセル」にする。 */
 export const OperationsOnly: Story = {
   render: (args) => (
     <Dialog {...args}>
-      <DialogHeader
-        onClose={args.onClose}
-        title="Google カレンダーと内容が違います"
-        titleId={TITLE_ID}
-      />
+      <DialogHeader title="Google カレンダーと内容が違います" titleId={TITLE_ID} />
       <DialogBody>
         <p>
           青木 一郎の 11 月 4 日の予定は、Google カレンダーでは 10:00〜11:00、buddy では
@@ -115,6 +106,9 @@ export const OperationsOnly: Story = {
         </p>
       </DialogBody>
       <DialogFooter>
+        <Button onClick={args.onClose} size="S" variant="secondary">
+          キャンセル
+        </Button>
         <Button size="S" variant="secondary">
           Google の内容に合わせる
         </Button>
@@ -122,6 +116,18 @@ export const OperationsOnly: Story = {
           buddy の内容で書き直す
         </Button>
       </DialogFooter>
+    </Dialog>
+  ),
+}
+
+/** フッターを置かないダイアログだけは、右上に閉じるボタン（×）を置き、× で閉じる。 */
+export const WithCloseButton: Story = {
+  render: (args) => (
+    <Dialog {...args}>
+      <DialogHeader onClose={args.onClose} title="予定の理由" titleId={TITLE_ID} />
+      <DialogBody>
+        <p>利用者の都合で時間を変えました。</p>
+      </DialogBody>
     </Dialog>
   ),
 }
