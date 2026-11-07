@@ -3,7 +3,7 @@
 buddy の画面を作る人とコーディングエージェントが、画面を作る前に読む文書。  
 packages/ui のトークンとコンポーネントの使い方と、アクセシビリティと UI/UX の規則を決める。  
 値と規則はデジタル庁デザインシステム（DADS）を元にしたが、規則の正本はこの文書と、下の「話題ごとの文書」の 3 つの文書である。DADS の指針のうち buddy が使うものを、buddy の規則として書き、DADS は出典として示す。  
-デザインシステムの構成を決めた理由は、次の ADR にある。
+出典と、構成を決めた理由の ADR は次のとおり。
 
 - 出典: [デジタル庁デザインシステム](https://design.digital.go.jp/dads/)
 - ADR-0013: [デザインシステムのトークンを、buddy に持つプリミティブトークン、セマンティックトークン、テーマ変数の 3 つの層にする](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0013-design-system-primitive-tokens.md)
@@ -38,6 +38,7 @@ packages/ui のトークンとコンポーネントの使い方と、アクセ�
 | トークンに置き換える前の apps/web の値が、どのトークンになったか | [置き換える前のテーマとトークンの対応表](https://github.com/Fukuemon/buddy/blob/develop/packages/ui/src/tokens/current-theme-map.md) |
 | コンポーネントの props と振る舞い | `src/base/` と `src/case/` のコンポーネントのコードと story |
 | 構成の判断と、却下した案 | [ADR の索引のデザインシステムとドキュメントサイト](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/index.md#デザインシステムとドキュメントサイト) |
+
 ## 画面を作るときの原則
 
 原則には ID を付ける。ID は一度付けたら変えない。  
