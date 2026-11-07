@@ -10,9 +10,12 @@ import {
   ASSIGNMENTS_LOAD_ERROR_MESSAGE,
   DETAIL_LOAD_ERROR_MESSAGE,
   DETAIL_NOT_FOUND_MESSAGE,
+  POLICIES_LOAD_ERROR_MESSAGE,
   POLICY_ALL_REFUSED_LEAD,
   POLICY_PARTIAL_ERROR_LEAD,
   POLICY_SAVE_ERROR_MESSAGE,
+  POSITION_OPTIONS_LOAD_ERROR_MESSAGE,
+  PROFILE_OPTIONS_LOAD_ERROR_MESSAGE,
   leaveErrorMessage,
   positionErrorMessage,
   reinstateErrorMessage,
@@ -81,7 +84,13 @@ const StaffDetailContent = ({ staffId, viewerId }: { staffId: Staff['id']; viewe
   const reinstate = useReinstate(staffId)
   const retire = useRetire(staffId)
 
+  /** 読めなかった選択肢を読み直す。ページで読む query は、ダイアログを開き直しても読み直さないためである。 */
+  const refetchFailedOptions = () => {
+    for (const query of [teams, positions]) if (query.isError) void query.refetch()
+  }
+
   const openDialog = (next: Open) => {
+    if (next !== null) refetchFailedOptions()
     // 復職の失敗の文はダイアログの外に出すので、ほかの操作を始めたときにここで消す
     for (const mutation of [update, changePosition, savePolicies, startLeave, reinstate, retire])
       mutation.reset()
@@ -105,7 +114,17 @@ const StaffDetailContent = ({ staffId, viewerId }: { staffId: Staff['id']; viewe
       : { status: 'ready', staff: detail.data }
   const staff = detail.data
   const position = positions.data?.find((p) => p.id === staff?.position.id)
-  const orderedPolicies = policies.data === undefined ? undefined : orderPolicies(policies.data)
+  // 役職を読み終えるまでは、役職で付いた権限を見分けられないので、権限の一覧を出さない
+  const orderedPolicies =
+    policies.data === undefined || positions.data === undefined
+      ? undefined
+      : orderPolicies(policies.data)
+  const policiesLoadError =
+    (policies.data === undefined && policies.isError) ||
+    (positions.data === undefined && positions.isError)
+      ? POLICIES_LOAD_ERROR_MESSAGE
+      : undefined
+  const profileOptionsFailed = departments.isError || teams.isError
   const assignmentsError = assignments.isError ? ASSIGNMENTS_LOAD_ERROR_MESSAGE : undefined
   const policiesError = savePolicies.isError
     ? POLICY_SAVE_ERROR_MESSAGE
@@ -127,7 +146,11 @@ const StaffDetailContent = ({ staffId, viewerId }: { staffId: Staff['id']; viewe
         onRetry={() =>
           queryClient.resetQueries({ queryKey: queryKeys.staff.detail(facilityId, staffId) })
         }
+        onRetryPolicies={() => {
+          for (const query of [policies, positions]) if (query.isError) void query.refetch()
+        }}
         policies={orderedPolicies}
+        policiesLoadError={policiesLoadError}
         position={position}
         reinstateErrorMessage={
           reinstate.isError ? reinstateErrorMessage(reinstate.error) : undefined
@@ -137,8 +160,14 @@ const StaffDetailContent = ({ staffId, viewerId }: { staffId: Staff['id']; viewe
       />
       {staff !== undefined && open === 'profile' && (
         <StaffProfileDialog
-          departments={departments.data}
-          errorMessage={update.isError ? staffSubmitErrorMessage(update.error, '保存') : undefined}
+          departments={profileOptionsFailed ? undefined : departments.data}
+          errorMessage={
+            profileOptionsFailed
+              ? PROFILE_OPTIONS_LOAD_ERROR_MESSAGE
+              : update.isError
+                ? staffSubmitErrorMessage(update.error, '保存')
+                : undefined
+          }
           isSubmitting={update.isPending}
           onClose={close}
           onSubmit={(input) =>
@@ -149,18 +178,22 @@ const StaffDetailContent = ({ staffId, viewerId }: { staffId: Staff['id']; viewe
           }
           refusedAssignments={refusedAssignments}
           staff={staff}
-          teams={teams.data}
+          teams={profileOptionsFailed ? undefined : teams.data}
         />
       )}
       {staff !== undefined && open === 'position' && (
         <StaffPositionDialog
           errorMessage={
-            changePosition.isError ? positionErrorMessage(changePosition.error) : undefined
+            positions.isError
+              ? POSITION_OPTIONS_LOAD_ERROR_MESSAGE
+              : changePosition.isError
+                ? positionErrorMessage(changePosition.error)
+                : undefined
           }
           isSubmitting={changePosition.isPending}
           onClose={close}
           onSubmit={(positionId) => changePosition.mutate(positionId, { onSuccess: close })}
-          positions={positions.data}
+          positions={positions.isError ? undefined : positions.data}
           staff={staff}
         />
       )}

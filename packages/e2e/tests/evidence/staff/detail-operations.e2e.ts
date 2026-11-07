@@ -293,7 +293,7 @@ test.describe('職員の詳細', () => {
       )
     })
 
-    test(`${prefix}プロフィールの編集で部署の選択肢を読んでいる場合も、保存できること`, async ({
+    test(`${prefix}プロフィールの編集で部署の選択肢を読んでいる場合、保存を押せず、読み終えると保存できること`, async ({
       browser,
     }) => {
       const url = story('slow-departments')
@@ -301,7 +301,7 @@ test.describe('職員の詳細', () => {
         browser,
         {
           name: 'staff-detail-profile-save-loading',
-          title: '部署の選択肢を読んでいる間も、プロフィールの編集を保存できる',
+          title: '部署の選択肢を読んでいる間は、プロフィールの編集を保存できない',
           actor: ACTOR,
           variant,
         },
@@ -316,13 +316,126 @@ test.describe('職員の詳細', () => {
           await step('編集を開き、名前を「石川 双葉」に変える')
           await dialog.getByTestId('staff-detail-name-input').fill('石川 双葉')
           await expect(dialog.getByTestId('staff-detail-department-input')).toBeDisabled()
-          await expect(dialog.getByTestId('staff-detail-save')).toBeEnabled()
-          await check('部署の選択は読んでいる間押せないが、保存は押せる')
+          await expect(dialog.getByTestId('staff-detail-save')).toHaveAttribute(
+            'aria-disabled',
+            'true',
+          )
+          await check('部署を読んでいる間は、部署の選択も保存も押せない')
 
-          await step('保存を押す')
+          await expect(dialog.getByTestId('staff-detail-department-input')).toBeEnabled(
+            SLOW_STORY_WAIT,
+          )
+          await step('部署を読み終えたら、保存を押す')
           await dialog.getByTestId('staff-detail-save').click()
           await expect(page.getByTestId('staff-detail-name')).toHaveText('石川 双葉')
           await check('ダイアログを閉じ、名前が「石川 双葉」になる')
+        },
+      )
+    })
+
+    test(`${prefix}プロフィールの編集で部署を読めなかった場合、失敗の文を出し、保存を押せないこと`, async ({
+      browser,
+    }) => {
+      const url = story('departments-load-error')
+      await recordPrEvidence(
+        browser,
+        {
+          name: 'staff-detail-profile-options-error',
+          title: '部署を読めなかったら、プロフィールの編集に失敗の文を出し、保存を押せない',
+          actor: ACTOR,
+          variant,
+        },
+        openStory(url),
+        async ({ page, step, check }) => {
+          await openStory(url)(page)
+          await step(
+            '石川 二葉の職員の詳細（Storybook の DepartmentsLoadError）を開いている。部署を読めない（架空のデータ）',
+          )
+          await page.getByTestId('staff-detail-edit').click()
+          const dialog = page.getByTestId('staff-detail-edit-dialog')
+          await step('編集を押す')
+          await expect(dialog.getByTestId('staff-detail-save-error')).toHaveText(
+            '部署とチームを読み込めませんでした。閉じてから、開き直してください。',
+          )
+          await expect(dialog.getByTestId('staff-detail-save')).toHaveAttribute(
+            'aria-disabled',
+            'true',
+          )
+          await check(
+            '「部署とチームを読み込めませんでした。閉じてから、開き直してください。」が出て、保存を押せない',
+          )
+        },
+      )
+    })
+
+    test(`${prefix}権限のタブで全ての権限を読めなかった場合、失敗の文と読み直すが出て、読み直すと一覧が出ること`, async ({
+      browser,
+    }) => {
+      const url = story('policies-load-error')
+      await recordPrEvidence(
+        browser,
+        {
+          name: 'staff-detail-policies-load-error',
+          title: '全ての権限を読めなかったら、権限のタブに失敗の文と読み直すを出す',
+          actor: ACTOR,
+          variant,
+        },
+        openStory(url),
+        async ({ page, step, check }) => {
+          await openStory(url)(page)
+          await step(
+            '石川 二葉の職員の詳細（Storybook の PoliciesLoadError）を開いている。全ての権限は、1 回目は読めず、2 回目からは読める（架空のデータ）',
+          )
+          await page.getByTestId('staff-detail-tab-policies').click()
+          await step('タブの「権限」を押す')
+          await expect(page.getByTestId('staff-detail-policies-error')).toHaveText(
+            '権限を読み込めませんでした。時間をおいて、読み直してください。',
+          )
+          await expect(page.getByTestId('staff-detail-policies-change')).toHaveAttribute(
+            'aria-disabled',
+            'true',
+          )
+          await check('権限の一覧の位置に失敗の文と読み直すが出て、権限を変えるを押せない')
+          await page.getByTestId('staff-detail-policies-retry').click()
+          await expect(page.getByTestId('staff-policy-list')).toBeVisible()
+          await check('読み直すを押すと、権限をまとまりに分けて並べる')
+        },
+      )
+    })
+
+    test(`${prefix}役職を読めなかった場合、権限を個別に足した権限に並べず、役職を変えるに失敗の文を出すこと`, async ({
+      browser,
+    }) => {
+      const url = story('positions-load-error')
+      await recordPrEvidence(
+        browser,
+        {
+          name: 'staff-detail-positions-load-error',
+          title: '役職を読めなかったら、権限のタブと役職を変えるに失敗の文を出す',
+          actor: ACTOR,
+          variant,
+        },
+        openStory(url),
+        async ({ page, step, check }) => {
+          await openStory(url)(page)
+          await step(
+            '石川 二葉の職員の詳細（Storybook の PositionsLoadError）を開いている。役職を読めない（架空のデータ）',
+          )
+          await page.getByTestId('staff-detail-tab-policies').click()
+          await step('タブの「権限」を押す')
+          await expect(page.getByTestId('staff-detail-policies-error')).toBeVisible()
+          await expect(page.getByTestId('staff-policy-list')).toBeHidden()
+          await check('権限を「個別に足した権限」に並べず、失敗の文と読み直すを出す')
+          await page.getByTestId('staff-detail-tab-profile').click()
+          await page.getByTestId('staff-detail-position-change').click()
+          const dialog = page.getByTestId('staff-position-dialog')
+          await step('タブの「プロフィール」に戻り、役職を変えるを押す')
+          await expect(dialog.getByTestId('staff-position-error')).toHaveText(
+            '役職を読み込めませんでした。閉じてから、開き直してください。',
+          )
+          await check(
+            '「役職を読み込めませんでした。閉じてから、開き直してください。」が出て、役職を変えるを押せない',
+          )
         },
       )
     })

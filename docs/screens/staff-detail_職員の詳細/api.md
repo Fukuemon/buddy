@@ -186,6 +186,10 @@
 | 5 | 読み込み中の表示 | `staff-detail-loading` |
 | 5 | 読み込みの失敗の文 | `staff-detail-error` |
 | 6 | 読み直す | `staff-detail-retry` |
+| 11 | 権限の読み込みの失敗の文 | `staff-detail-policies-error` |
+| 12 | 権限を読み直す | `staff-detail-policies-retry` |
+| 13 | 部署とチームの読み込みの失敗の文 | `staff-detail-save-error` |
+| 5 | 役職の読み込みの失敗の文 | `staff-position-error` |
 
 - 番号は、状態ごとの構成要素の表の番号である。同じ要素が状態ごとに違う番号を持つときは、番号ごとに行を分ける。
 - ダイアログの閉じる、キャンセル、確定のボタンと本体の testid は、packages/ui の `InputDialog` と `ConfirmDialog` が接頭辞から付ける。
@@ -220,6 +224,9 @@
 | 休職の確認 | 「自分と、職員の管理の権限を持つ最後の有効な職員は、休職にできません。」 | `startUserLeave` が 409 |
 | 休職の確認 | 「この操作をする権限がありません。」 | `startUserLeave` が 403 |
 | 休職の確認 | 「休職にできませんでした。時間をおいて、もう一度休職にしてください。」 | `startUserLeave` が 403、409 のほかの失敗、API に届かない |
+| 権限の読み込みの失敗 | 「権限を読み込めませんでした。時間をおいて、読み直してください。」 | `listPolicies` か `listPositions` が失敗、API に届かない |
+| 部署とチームの読み込みの失敗 | 「部署とチームを読み込めませんでした。閉じてから、開き直してください。」 | `listDepartments` か `listTeams` が失敗、API に届かない |
+| 役職の読み込みの失敗 | 「役職を読み込めませんでした。閉じてから、開き直してください。」 | `listPositions` が失敗、API に届かない |
 | 休職と退職の確認 | 「残る予定と担当の利用者を読み込めませんでした。閉じてから、開き直してください。」 | `getUserRemainingAssignments` が失敗、API に届かない |
 | 復職の失敗 | 「退職した職員は変えられません。」 | `reinstateUser` が 409 |
 | 復職の失敗 | 「この操作をする権限がありません。」 | `reinstateUser` が 403 |
