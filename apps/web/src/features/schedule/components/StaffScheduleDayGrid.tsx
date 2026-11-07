@@ -159,15 +159,21 @@ export const StaffScheduleDayGrid = ({
                   >
                     <span className="block truncate">
                       {event.isCancelled && <CancelledMark />}
-                      {event.needsReview && <NeedsReviewMark scheduleId={event.id} />}
                       <span
                         className={event.isCancelled ? 'line-through' : undefined}
                         data-testid={
                           event.isCancelled ? `schedule-event-${event.id}-cancelled` : undefined
                         }
                       >
-                        {/* 幅 768px 未満では、利用者の名前が切れないよう、時刻とタイトルを 2 行に分ける */}
+                        {/* 幅 768px 未満では、利用者の名前が切れないよう、時刻とタイトルを 2 行に分ける。
+                            「要確認」の印は時刻と同じ行に置き、30 分の予定でも 2 行に収める。
+                            印は inline-block にして、キャンセルの取り消し線を印に引かない */}
                         <span className="block desktop:inline">
+                          {event.needsReview && (
+                            <span className="inline-block">
+                              <NeedsReviewMark scheduleId={event.id} />
+                            </span>
+                          )}
                           {toTimeKey(start)}-{nextDayPrefix(start, end)}
                           {toTimeKey(end)}
                         </span>{' '}

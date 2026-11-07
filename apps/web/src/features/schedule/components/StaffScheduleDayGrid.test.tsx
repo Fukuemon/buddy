@@ -110,4 +110,20 @@ describe('StaffScheduleDayGrid', () => {
     expect(screen.getByTestId('schedule-event-e1')).toHaveAccessibleName(/^要確認、09:00/)
     expect(screen.getByTestId('schedule-event-e1-needs-review')).toHaveTextContent('要確認')
   })
+
+  it('「要確認」の印を時刻と同じ行に置き、狭い幅でもタイトルを 2 行目に収める', () => {
+    const event = {
+      id: 'e1',
+      title: '佐藤 花子 訪看I2',
+      staffId: 'staff-1',
+      start: '2026-10-20T09:00:00+09:00',
+      end: '2026-10-20T09:30:00+09:00',
+      color: 'red',
+      isCancelled: false,
+      needsReview: true,
+    }
+    render(<Default events={[event]} />)
+    const timeLine = screen.getByTestId('schedule-event-e1-needs-review').closest('.block')
+    expect(timeLine).toHaveTextContent(/^要確認、09:00-09:30$/)
+  })
 })
