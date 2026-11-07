@@ -166,7 +166,7 @@ test.describe('予定のカレンダー', () => {
                 '[data-testid="schedule-agenda"]',
               ),
             ).toEqual([])
-            await check('週の一覧の行が、一覧の幅に収まる。予定の名前は「…」で切れる')
+            await check('週の一覧の行が、一覧の幅に収まる')
 
             await page.goto(storyUrl('画面-schedule-schedulepagelayout--day'))
             const grid = page.getByTestId('staff-schedule-day-grid')
