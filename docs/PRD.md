@@ -282,8 +282,8 @@ flowchart TB
 - 予定は、翌日に終わる 24 時間未満の予定も扱う。
   - 事業所には、夜勤の訪問のように日をまたぐ訪問がある。
   - 日をまたぐ予定は、開始の日の予定として持ち、開始の日の一覧に出る。カレンダーは、0 時から 24 時を出し、日をまたぐ予定を開始の日と翌日の両方に描く。
-  - 扱いの設計は、ADR-0032 にある。
-    - ADR-0032: [日をまたぐ予定を、開始の日の予定に「終了が翌日か」の印を付けて持ち、取り込み、カレンダー、照合で扱う](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0032-overnight-schedule.md)
+  - 扱いの設計は、ADR-0033 にある。
+    - ADR-0033: [日をまたぐ予定を、開始の日の予定に「終了が翌日か」の印を付けて持ち、取り込み、カレンダー、照合で扱う](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0033-overnight-schedule.md)
   - 終了が翌日の予定の規則は、[予定の不変条件](https://github.com/Fukuemon/buddy/blob/develop/context/domain/schedule.md#invariants) にある。
 - カレンダーは、表示する職員をチームと職員で絞れる。
   - 初めて開いたときに表示する職員は未決である。
@@ -299,7 +299,7 @@ flowchart TB
   - 正本が buddy の事業所（`buddy_primary`）では、職員は buddy で予定を直し、buddy が Google カレンダーに書き出す。Google カレンダーで直した予定は、buddy に反映しない。
   - 新しい事業所は、Google カレンダーを正本にして始める。
   - 正本は、Google カレンダーから buddy への向きにだけ切り替える。
-  - ADR-0028: [Google カレンダーとの連携を、事業所ごとの正本のモードで分ける](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0028-google-calendar-sync.md)
+  - ADR-0029: [Google カレンダーとの連携を、事業所ごとの正本のモードで分ける](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0029-google-calendar-sync.md)
 - 職員の Google のアカウントは、事業所の Google Workspace のものである。
   - カレンダーを共有する手順は、Workspace のアカウントだけを前提にする。
 - マネージャーは、職員ごとに、その職員の Google カレンダーを buddy に結び付ける。
@@ -329,8 +329,8 @@ flowchart TB
   - 取り込みの期間は、切り替えの月の初日から先の全てにする。繰り返しの予定は、終わりの無いものも、規則のまま移す。
   - 取り込んでいない予定、buddy の繰り返しの規則に写せない予定、取り込んだ後に Google カレンダーで直された予定が残る間は、切り替えを完了しない。残った予定を一覧で示す。
   - 切り替えをやめると、切り替えで取り込んだ予定を消し、正本は Google カレンダーのままにする。
-- 認証の方式は、ADR-0029 にある。
-  - ADR-0029: [職員のカレンダーを、事業所ごとのサービスアカウントへの共有で読み書きする](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0029-google-calendar-service-accounts.md)
+- 認証の方式は、ADR-0030 にある。
+  - ADR-0030: [職員のカレンダーを、事業所ごとのサービスアカウントへの共有で読み書きする](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0030-google-calendar-service-accounts.md)
 
 ### 照合
 
@@ -436,7 +436,7 @@ flowchart TB
   - 開発者が、事業所で役職を増やす必要があるかを事業所の責任者に確認して、事業所で職員の管理を使い始めるまでに決める。
 - 日をまたぐ訪問の時間帯と、電子カルテの実績で日をまたぐ訪問の訪問日をどう数えるか。
   - 今の照合は、仮に、予定と実績の訪問日を開始の日として比べる。
-    - ADR-0032: [日をまたぐ予定を、開始の日の予定に「終了が翌日か」の印を付けて持ち、取り込み、カレンダー、照合で扱う](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0032-overnight-schedule.md)
+    - ADR-0033: [日をまたぐ予定を、開始の日の予定に「終了が翌日か」の印を付けて持ち、取り込み、カレンダー、照合で扱う](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0033-overnight-schedule.md)
   - 開発者が、事業所の責任者に確認して、事業所で照合を使い始めるまでに決める。
 - 未提供の要求を、どの段階で提供するか。
   - 繰り返しの予定の作成は、画面は未提供で、API は提供済み。

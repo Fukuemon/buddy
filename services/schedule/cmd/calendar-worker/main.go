@@ -1,4 +1,4 @@
-// Command calendar-worker は、Google カレンダーの書き出しか同期を、役割ごとのプロセスで動かす（ADR-0031）。
+// Command calendar-worker は、Google カレンダーの書き出しか同期を、役割ごとのプロセスで動かす（ADR-0032）。
 //
 // 使い方:
 //

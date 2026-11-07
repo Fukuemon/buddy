@@ -1,4 +1,4 @@
-# ADR-0034: worktree ごとのローカル環境を、portless で worktree ごとのホスト名の HTTPS の URL で出す
+# ADR-0035: worktree ごとのローカル環境を、portless で worktree ごとのホスト名の HTTPS の URL で出す
 
 ## Status
 

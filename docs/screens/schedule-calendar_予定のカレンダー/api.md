@@ -86,7 +86,7 @@ web の型（`apps/web/src/api/types.ts`）はフェイクの API に合わせ�
   - `google_primary` の事業所で一覧を読み直している間は、`cutover` が分からないので出さない。
   - 処理は `apps/web/src/features/schedule/components/ScheduleCalendarContainer.tsx` にある。
 - `google_primary` の事業所でも、`createSchedule` は予定を作り、Google カレンダーに書く。
-  - 書き込みの扱いは、[予定の作成の API との対応](../schedule-new_予定の作成/api.md) と [ADR-0028](../../adr/0028-google-calendar-sync.md) にある。
+  - 書き込みの扱いは、[予定の作成の API との対応](../schedule-new_予定の作成/api.md) と [ADR-0029](../../adr/0029-google-calendar-sync.md) にある。
 
 ## 権限の出し分け
 

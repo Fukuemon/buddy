@@ -15,7 +15,7 @@ import (
 	"github.com/Fukuemon/buddy/services/schedule/internal/tx"
 )
 
-// Cancel は、google_primary の事業所の単発の予定を、Google カレンダーの予定を消して取り消す（ADR-0028）。
+// Cancel は、google_primary の事業所の単発の予定を、Google カレンダーの予定を消して取り消す（ADR-0029）。
 type Cancel struct {
 	locks       FacilityLock
 	cutovers    Cutovers
@@ -46,7 +46,7 @@ func NewCancel(locks FacilityLock, cutovers Cutovers, staffRefs kernel.Finder[st
 // id が繰り返しの予定の展開した回の一覧での ID なら、その回を取り消す（CancelOccurrence.Do と同じ）。etag は親の予定の etag で、
 // 親の予定を Google から読み直して比べる。
 // 取り消しの ID は予定の ID と同じで、理由 reason は Google に書けないので保存しない。消せたら、Projection の行を取り消しの状態にし、
-// 予定の記録と訪問の情報を消す（ADR-0028 の、Google で取り消した予定の訪問の情報の行は消す規則）。
+// 予定の記録と訪問の情報を消す（ADR-0029 の、Google で取り消した予定の訪問の情報の行は消す規則）。
 // Google の予定に保留の版は置かない。消す書き込みは、Google が受けたかが分からなくても、残す訪問の情報を持たないためである。
 //
 // 理由の入力のエラーと apperr.ErrForbidden は schedule.Cancel と同じである。予定が無いときは apperr.ErrNotFound を返す。

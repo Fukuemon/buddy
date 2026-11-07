@@ -37,7 +37,7 @@ OpenAPI の項目は、`getSchedule`（`GET /v1/schedules/{schedule_id}`）の�
   - web の `BuddyApi.schedules.cancel` が呼び、本文に `reason` と、`etag` が `null` でなければ `etag` を送る。処理は `apps/web/src/api/http/httpBuddyApi.ts` にある。
   - `reason` は、理由の前後の空白を除いた値である。
   - `etag` は、キャンセルのダイアログを開いたときに読んでいた予定の `Schedule.etag` である。`buddy_primary` の事業所の予定は `etag` を持たないので、`null` を渡して送らない。
-  - `google_primary` の事業所では、予定の API が Google カレンダーの予定を消し、消せたときだけ成功を返す。理由は Google カレンダーに書けないので保存しない。扱いは [ADR-0028](../../adr/0028-google-calendar-sync.md) にある。
+  - `google_primary` の事業所では、予定の API が Google カレンダーの予定を消し、消せたときだけ成功を返す。理由は Google カレンダーに書けないので保存しない。扱いは [ADR-0029](../../adr/0029-google-calendar-sync.md) にある。
   - 成功すると、予定の 1 件の取得の結果を捨て、事業所の予定の取得の結果を捨てて取り直す。処理は `apps/web/src/features/schedule/queries.ts` の `useCancelSchedule` にある。
 - 確認が必要な理由の直し方の文は、`apps/web/src/features/schedule/lib/reviewFix.ts` の `reviewFixMessage` が `reviewReason` で決める。
 - 画面に出していない同行者、時間外の勤務の印は、`Schedule` の `visit_info.companion_name`、`is_over_time_work` に当たる。

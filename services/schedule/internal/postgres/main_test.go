@@ -467,7 +467,7 @@ func TestMigrateTeamColor(t *testing.T) {
 }
 
 // TestMigrateFacilitySourceMode は、正本のモードのマイグレーションが、今ある事業所を buddy_primary にし、
-// 後から足す事業所のデフォルトを google_primary にし、2 つの値のほかを拒むことを確認する（ADR-0028）。
+// 後から足す事業所のデフォルトを google_primary にし、2 つの値のほかを拒むことを確認する（ADR-0029）。
 func TestMigrateFacilitySourceMode(t *testing.T) {
 	cfg := newDatabase(t, "migrate_facility_source_mode")
 	ctx := context.Background()

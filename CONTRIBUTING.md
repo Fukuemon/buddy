@@ -100,7 +100,7 @@ docker compose up --build --wait
 - 照合の画面で、予定の取り方に「Google カレンダー」を、対象の月に `2026-11` を選ぶと、calendarpit の森 健太のカレンダーの予定で照合できる。
 - データを消して最初からにするときは、`docker compose down -v` でボリュームを消す。
 - 別の worktree で同時に起動するときは、worktree を `wt switch --create <ブランチ>` で作り、`portless compose up -d --build --wait` で起動する。
-  - worktree の環境は、`https://web.<プロジェクト>.localhost` のような、worktree ごとのホスト名の URL で開く（[ADR-0034](docs/adr/0034-local-hostnames-with-portless.md)）。
+  - worktree の環境は、`https://web.<プロジェクト>.localhost` のような、worktree ごとのホスト名の URL で開く（[ADR-0035](docs/adr/0035-local-hostnames-with-portless.md)）。
     - ホスト名が違うので、同じブラウザで複数の worktree の環境にログインしても、ログインのセッションが上書きし合わない。
     - web のセッションの cookie に `Secure` を付けて動く。
   - worktrunk のフック（`.config/wt.toml`）が、compose のプロジェクトの名前、ブラウザが開く URL、E2E の URL を、worktree の `.env` に書く。

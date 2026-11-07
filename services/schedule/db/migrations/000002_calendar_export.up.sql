@@ -1,4 +1,4 @@
--- Google カレンダーへの書き出し（ADR-0028 の書き出し）の列と表。
+-- Google カレンダーへの書き出し（ADR-0029 の書き出し）の列と表。
 -- 前のバージョンのアプリが動いたまま当てられるよう、列は既定値を持たせて足し、ビューは列を末尾に足す。
 
 ALTER TABLE schedules ADD COLUMN version integer NOT NULL DEFAULT 1;

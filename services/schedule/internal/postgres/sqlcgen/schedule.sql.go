@@ -351,7 +351,7 @@ type GetStoredRecurringScheduleRow struct {
 	ServiceCodeID   *string
 }
 
-// 予定を書く前の確認に使う繰り返しの予定を読む。種類、職員、訪問の情報の名前は結合しない（ADR-0025）。
+// 予定を書く前の確認に使う繰り返しの予定を読む。種類、職員、訪問の情報の名前は結合しない（ADR-0026）。
 func (q *Queries) GetStoredRecurringSchedule(ctx context.Context, id string) (GetStoredRecurringScheduleRow, error) {
 	row := q.db.QueryRow(ctx, getStoredRecurringSchedule, id)
 	var i GetStoredRecurringScheduleRow
@@ -415,7 +415,7 @@ type GetStoredScheduleRow struct {
 	Cancelled           bool
 }
 
-// 予定を書く前の確認に使う予定を読む。種類、職員、訪問の情報の名前は結合しない（ADR-0025）。
+// 予定を書く前の確認に使う予定を読む。種類、職員、訪問の情報の名前は結合しない（ADR-0026）。
 func (q *Queries) GetStoredSchedule(ctx context.Context, id string) (GetStoredScheduleRow, error) {
 	row := q.db.QueryRow(ctx, getStoredSchedule, id)
 	var i GetStoredScheduleRow
