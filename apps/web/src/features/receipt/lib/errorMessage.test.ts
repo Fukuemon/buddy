@@ -10,9 +10,7 @@ describe('checkErrorMessage', () => {
     expect(checkErrorMessage(new ApiError(400, 'ファイルのフィールド visits がない'))).toContain(
       '選び直して',
     )
-    expect(checkErrorMessage(new ApiError(403, 'x'))).toBe(
-      'この操作をする権限がありません。',
-    )
+    expect(checkErrorMessage(new ApiError(403, 'x'))).toBe('この操作をする権限がありません。')
     expect(checkErrorMessage(new ApiError(413, 'x'))).toContain('10 MB')
     expect(checkErrorMessage(new ApiError(422, 'visits の CSV に列がない'))).toBe(
       '入力の CSV に誤りがあります。次のところを直して、もう一度照合してください。',
