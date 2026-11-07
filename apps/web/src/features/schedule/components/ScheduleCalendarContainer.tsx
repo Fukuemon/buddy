@@ -2,8 +2,9 @@ import { useQuery } from '@tanstack/react-query'
 import { useNavigate, useSearch } from '@tanstack/react-router'
 import { useState, type ComponentProps } from 'react'
 
+import type { Staff } from '#/api/types'
 import { useBuddyApi } from '#/api/useBuddyApi'
-import { Loading } from '@buddy/ui'
+import { Loading, useIsDesktop } from '@buddy/ui'
 
 import { activeStaff, activeStaffIds, excludeInactiveStaffSchedules } from '../lib/activeStaff'
 import { getCalendarRange, shiftCalendarDate } from '../lib/calendarRange'
@@ -22,10 +23,15 @@ import {
   scheduleListQueryOptions,
   staffListQueryOptions,
 } from '../queries'
-import { pickCalendarSearch, type ScheduleSearch } from '../schema/scheduleSearch'
+import {
+  pickCalendarSearch,
+  resolveCalendarView,
+  type ScheduleSearch,
+} from '../schema/scheduleSearch'
 import { ScheduleCalendar } from './ScheduleCalendar'
 import { ScheduleCalendarToolbar, type StaffFilterToggle } from './ScheduleCalendarToolbar'
 import { ScheduleSourceNotices } from './ScheduleSourceNotices'
+import { ScheduleWeekAgenda } from './ScheduleWeekAgenda'
 import { StaffScheduleDayGrid } from './StaffScheduleDayGrid'
 
 /** 日の表示だけが 1 分ごとに描き直されるよう、今の時刻をここで読んで日の表に渡す。 */
@@ -40,6 +46,12 @@ const SourceNoticesWithNow = (props: Omit<ComponentProps<typeof ScheduleSourceNo
   return <ScheduleSourceNotices {...props} now={now} />
 }
 
+/** ログインした職員の列を左端に置く。外で日の表示を開いた職員が、横に送らずに自分の予定を見られるようにする。 */
+const viewerFirst = (staffList: Staff[], viewerStaffId: Staff['id']) => [
+  ...staffList.filter((staff) => staff.id === viewerStaffId),
+  ...staffList.filter((staff) => staff.id !== viewerStaffId),
+]
+
 export type ScheduleCalendarContainerProps = {
   /** 渡したときだけ、ツールバーに職員の絞り込みを開くボタンを出す。 */
   staffFilterToggle?: StaffFilterToggle
@@ -49,6 +61,7 @@ export type ScheduleCalendarContainerProps = {
  * `/schedule` の search params を読み、予定を取ってカレンダーに出す。
  * 職員の列は、ログインした職員が予定を見てよい職員に限る。「予定を作成」は誰かの予定を編集できる職員にだけ出し、
  * 時間の枠は、予定を編集できる職員の列でだけ押せる。
+ * 幅 768px 未満の週の表示は、時刻の格子の代わりに、予定を日ごとに縦に並べる週の一覧で出す。日の表示は、ログインした職員の列を左端に置く。
  * Google カレンダーを予定の正本にする事業所（google_primary）でも予定を作る操作を出し、予定の API が Google カレンダーに書く（ADR-0028）。
  * 予定の正本を buddy に切り替えている間は、予定を作る操作を出さない。カレンダーの上には、Google カレンダーと buddy のどちらでも
  * 予定を変えられる案内、切り替え中の案内、同期の警告、確認が必要な予定の通知を出す。事業所の正本は、予定の一覧か事業所から読む。
@@ -59,10 +72,12 @@ export const ScheduleCalendarContainer = ({
   const search = useSearch({ from: '/schedule' })
   const navigate = useNavigate({ from: '/schedule' })
   const { api, facilityId, viewer } = useBuddyApi()
+  const isDesktop = useIsDesktop()
 
   const [today] = useState(() => toDateKey(new Date()))
+  const view = resolveCalendarView(search.view)
   const date = search.date ?? today
-  const range = getCalendarRange(search.view, date)
+  const range = getCalendarRange(view, date)
 
   const staffQuery = useQuery(staffListQueryOptions(api, facilityId))
   const selectedStaffIds = readableStaffIds(
@@ -107,10 +122,12 @@ export const ScheduleCalendarContainer = ({
   const allStaff = staffQuery.data ?? []
   const staffList = readableStaff(viewer, activeStaff(allStaff))
   const canCreate = canWriteSchedules && canEditAnySchedule(viewer)
-  const visibleStaff =
+  const visibleStaff = viewerFirst(
     selectedStaffIds.length === 0
       ? staffList
-      : staffList.filter((staff) => selectedStaffIds.includes(staff.id))
+      : staffList.filter((staff) => selectedStaffIds.includes(staff.id)),
+    viewer.staffId,
+  )
   const events = toCalendarEvents(
     excludeInactiveStaffSchedules(schedulesQuery.data?.schedules ?? [], allStaff),
     staffList,
@@ -122,13 +139,13 @@ export const ScheduleCalendarContainer = ({
       <div className="px-2 py-2 desktop:px-6">
         <ScheduleCalendarToolbar
           date={date}
-          onNext={() => updateSearch({ date: shiftCalendarDate(search.view, date, 1) })}
-          onPrev={() => updateSearch({ date: shiftCalendarDate(search.view, date, -1) })}
+          onNext={() => updateSearch({ date: shiftCalendarDate(view, date, 1) })}
+          onPrev={() => updateSearch({ date: shiftCalendarDate(view, date, -1) })}
           onCreate={canCreate ? () => openCreate(date) : undefined}
           onToday={() => updateSearch({ date: undefined })}
           onViewChange={(view) => updateSearch({ view })}
           staffFilterToggle={staffFilterToggle}
-          view={search.view}
+          view={view}
         />
       </div>
       {sourceMode === 'google_primary' && (
@@ -150,7 +167,16 @@ export const ScheduleCalendarContainer = ({
           <p className="p-4 text-danger" role="alert">
             予定を取得できませんでした。
           </p>
-        ) : search.view === 'day' ? (
+        ) : view === 'week' && !isDesktop ? (
+          <ScheduleWeekAgenda
+            date={date}
+            events={events}
+            onDayClick={(dateKey) => updateSearch({ view: 'day', date: dateKey })}
+            onEventClick={openDetail}
+            staffList={staffList}
+            today={today}
+          />
+        ) : view === 'day' ? (
           <DayGridWithNow
             date={date}
             events={events}
@@ -171,7 +197,7 @@ export const ScheduleCalendarContainer = ({
                   : undefined
             }
             onEventClick={openDetail}
-            view={search.view}
+            view={view}
           />
         )}
       </div>
