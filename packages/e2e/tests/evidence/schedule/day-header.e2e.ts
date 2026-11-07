@@ -11,7 +11,6 @@ import {
   CALENDAR_FRAME,
   calendarColumnHeaders,
   calendarDayNumbers,
-  calendarTimeLabels,
 } from '../../selectors/scheduleCalendar'
 
 const ACTOR = 'ログインなし（Storybook の story）'
@@ -53,15 +52,15 @@ test.describe('予定のカレンダー', () => {
     for (const variant of EVIDENCE_VARIANTS) {
       const prefix = variant.label ? `${variant.label}: ` : ''
 
-      test(`${prefix}幅 390px で週の表示を開いた場合、列の見出しが曜日と日の 2 行で列の幅に収まること`, async ({
+      test(`${prefix}幅 390px で週の表示を開いた場合、時刻の格子の代わりに週の一覧が出て、行が一覧の幅に収まること`, async ({
         browser,
       }) => {
         const url = storyUrl('画面-schedule-schedulepagelayout--week')
         await recordPrEvidence(
           browser,
           {
-            name: 'schedule-day-header-phone',
-            title: 'スマートフォンの幅で週の表示を開き、列の見出しを見る',
+            name: 'schedule-week-agenda-phone',
+            title: 'スマートフォンの幅で週の表示を開き、週の一覧を見る',
             actor: ACTOR,
             variant,
             viewport: PHONE_VIEWPORT,
@@ -72,14 +71,20 @@ test.describe('予定のカレンダー', () => {
           async ({ page, step, check }) => {
             await page.clock.install({ time: NOW })
             await page.goto(url)
-            await expect(page.getByTestId('schedule-calendar')).toBeVisible()
+            const agenda = page.getByTestId('schedule-agenda')
+            await expect(agenda.getByTestId(/^schedule-event-/).first()).toBeVisible()
             await step(
               '幅 390px で、予定のカレンダーの週の表示（Storybook の SchedulePageLayout の Week）を、2026/11/2 として開いている',
             )
-            await expect(calendarColumnHeaders(page)).toHaveText(TWO_LINE_HEADERS)
-            await expectHeadersFit(page)
+            await expect(page.getByTestId('schedule-calendar')).toBeHidden()
+            expect(
+              await overflowingTexts(
+                agenda.getByTestId(/^schedule-event-/),
+                '[data-testid="schedule-agenda"]',
+              ),
+            ).toEqual([])
             await check(
-              '列の見出しが「日」「1」から「土」「7」までの曜日と日の 2 行で出て、列の幅に収まる',
+              '時刻の格子の代わりに、日ごとに時刻、タイトル、職員の名前の行が並ぶ週の一覧が出て、行が一覧の幅に収まる',
             )
           },
         )
@@ -152,18 +157,16 @@ test.describe('予定のカレンダー', () => {
             )
 
             await page.goto(storyUrl('画面-schedule-schedulepagelayout--week'))
-            await expect(calendar.getByTestId(/^schedule-event-/).first()).toBeVisible()
+            const agenda = page.getByTestId('schedule-agenda')
+            await expect(agenda.getByTestId(/^schedule-event-/).first()).toBeVisible()
             await step('週の表示（Storybook の SchedulePageLayout の Week）を開く')
             expect(
-              await overflowingTexts(calendarTimeLabels(page), CALENDAR_FRAME.timeLabel, true),
-            ).toEqual([])
-            expect(
               await overflowingTexts(
-                calendar.getByTestId(/^schedule-event-/),
-                CALENDAR_FRAME.weekColumn,
+                agenda.getByTestId(/^schedule-event-/),
+                '[data-testid="schedule-agenda"]',
               ),
             ).toEqual([])
-            await check('時間の目盛りと予定のブロックが、列の中に収まる。予定の名前は「…」で切れる')
+            await check('週の一覧の行が、一覧の幅に収まる。予定の名前は「…」で切れる')
 
             await page.goto(storyUrl('画面-schedule-schedulepagelayout--day'))
             const grid = page.getByTestId('staff-schedule-day-grid')
@@ -182,7 +185,7 @@ test.describe('予定のカレンダー', () => {
         )
       })
 
-      test(`${prefix}幅を 768px の前後で変えた場合、列の見出しの書式が切り替わり、どの幅でも列の幅に収まること`, async ({
+      test(`${prefix}幅を 768px の前後で変えた場合、767px では週の一覧に、768px 以上では列の幅に収まる見出しの格子に切り替わること`, async ({
         browser,
       }) => {
         const url = storyUrl('画面-schedule-schedulepagelayout--week')
@@ -190,7 +193,7 @@ test.describe('予定のカレンダー', () => {
           browser,
           {
             name: 'schedule-day-header-resize',
-            title: '週の表示で幅を 767px、768px、1280px に変え、列の見出しを見る',
+            title: '週の表示で幅を 767px、768px、1280px に変え、週の一覧と列の見出しを見る',
             actor: ACTOR,
             variant,
             viewport: DESKTOP_VIEWPORT,
@@ -211,18 +214,18 @@ test.describe('予定のカレンダー', () => {
 
             await step('画面の幅を 767px にする')
             await page.setViewportSize({ width: 767, height: DESKTOP_VIEWPORT.height })
-            await expect(calendarColumnHeaders(page)).toHaveText(TWO_LINE_HEADERS)
-            await expectHeadersFit(page)
-            await check('列の見出しが曜日と日の 2 行に切り替わり、列の幅に収まる')
+            await expect(page.getByTestId('schedule-agenda')).toBeVisible()
+            await expect(page.getByTestId('schedule-calendar')).toBeHidden()
+            await check('時刻の格子が、週の一覧に切り替わる')
 
             await step(
-              '画面の幅を 768px にする\n左の欄が開いてカレンダーが狭くなるので、見出しは 2 行のままになる',
+              '画面の幅を 768px にする\n左の欄が開いてカレンダーが狭くなるので、見出しは 2 行で出る',
             )
             await page.setViewportSize({ width: 768, height: DESKTOP_VIEWPORT.height })
             await expect(page.getByTestId('mini-calendar')).toBeVisible()
             await expect(calendarColumnHeaders(page)).toHaveText(TWO_LINE_HEADERS)
             await expectHeadersFit(page)
-            await check('左の欄が開き、列の見出しは 2 行のまま、列の幅に収まる')
+            await check('左の欄が開き、時刻の格子に戻る。列の見出しは 2 行で、列の幅に収まる')
 
             await step('画面の幅を 1280px に戻す')
             await page.setViewportSize(DESKTOP_VIEWPORT)
