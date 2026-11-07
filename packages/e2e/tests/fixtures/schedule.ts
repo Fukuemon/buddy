@@ -6,6 +6,23 @@ import type { GoogleEvent } from './googleCalendar'
 /** 予定の詳細の URL。予定の ID は ULID で、後ろに編集のパスか search params が続くことがある。 */
 export const SCHEDULE_DETAIL_URL = /\/schedule\/[0-9A-HJKMNP-TV-Z]{26}(?:[/?#]|$)/
 
+const CROCKFORD = '0123456789ABCDEFGHJKMNPQRSTVWXYZ'
+
+/**
+ * 新しい予定の ID（ULID）を返す。google_primary の事業所では、画面が予定の ID を決めて作成のリクエストに付ける。
+ * 先頭の 10 文字は今の時刻のミリ秒、残りの 16 文字は乱数である。
+ */
+export const newScheduleId = () => {
+  let time = Date.now()
+  let head = ''
+  for (let i = 0; i < 10; i++) {
+    head = CROCKFORD[time % 32] + head
+    time = Math.floor(time / 32)
+  }
+  const tail = Array.from(crypto.getRandomValues(new Uint8Array(16)), (b) => CROCKFORD[b % 32])
+  return head + tail.join('')
+}
+
 /**
  * 予定の詳細の URL（/schedule/<予定の ID>）から、予定の ID を返す。
  * 予定の作成と変更の画面は予定の ID を出さないので、作った予定を開いた後の URL から得る。
@@ -90,17 +107,21 @@ export const createOvernightSchedule = async (
     },
   })
 
-/** 予定の API で、facilityId の事業所に staffId の職員の毎週の通常の予定を作り（createRecurringSchedule）、レスポンスを返す。 */
+/**
+ * 予定の API で、facilityId の事業所に staffId の職員の毎週の通常の予定を作り（createRecurringSchedule）、レスポンスを返す。
+ * google_primary の事業所では、schedule.id に newScheduleId の ID を渡す。
+ */
 export const createWeeklyNormalSchedule = async (
   request: APIRequestContext,
   token: string,
   facilityId: string,
-  schedule: NormalSchedule,
+  schedule: NormalSchedule & { id?: string },
 ) =>
   request.post(`${SCHEDULE_URL}/v1/facilities/${facilityId}/schedules/recurring`, {
     headers: { Authorization: `Bearer ${token}` },
     data: {
       ...(await normalSlot(request, token, schedule)),
+      ...(schedule.id === undefined ? {} : { id: schedule.id }),
       recurring_rule: { frequency: 'weekly' },
     },
   })

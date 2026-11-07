@@ -1,10 +1,10 @@
 import { expect, test, type APIRequestContext, type Page } from '@playwright/test'
 
 import { issueAccessToken, routeApiReference, prepareApiReference } from '../../fixtures/apiReference'
-import { CALENDARPIT_URL, HAYASHI, LOGIN_EMAIL, LOGIN_STAFF } from '../../fixtures/env'
+import { CALENDARPIT_URL, HAYASHI, LOGIN_EMAIL, LOGIN_STAFF, OKADA, SCHEDULE_URL } from '../../fixtures/env'
 import { EVIDENCE_VARIANTS, recordPrEvidence } from '../../fixtures/evidence'
-import { listGoogleEvents } from '../../fixtures/googleCalendar'
-import { createWeeklyNormalSchedule } from '../../fixtures/schedule'
+import { deleteGoogleEvent, listGoogleEvents } from '../../fixtures/googleCalendar'
+import { createWeeklyNormalSchedule, newScheduleId } from '../../fixtures/schedule'
 import { STAFF_FORM } from '../../fixtures/staff'
 import {
   fillApiBody,
@@ -55,6 +55,31 @@ const findRecurringGoogleEvent = async (
   (await listGoogleEvents(request, calendarId)).find(
     (event) => event.summary === title && event.recurrence?.some((line) => line.includes(rule)),
   )
+
+/**
+ * 予定の一覧（listSchedules）で、facilityId の事業所の date の予定のうち、タイトルが title の繰り返しの回を返す。
+ * google_primary の事業所の回の etag は、親の予定の etag である。
+ */
+const findListedSchedule = async (
+  request: APIRequestContext,
+  token: string,
+  facilityId: string,
+  date: string,
+  title: string,
+) => {
+  const res = await request.get(`${SCHEDULE_URL}/v1/facilities/${facilityId}/schedules`, {
+    headers: { Authorization: `Bearer ${token}` },
+    params: { date_from: date, date_to: date },
+  })
+  expect(res.ok()).toBe(true)
+  const { schedules } = (await res.json()) as {
+    schedules: { title: string | null; etag: string | null; recurring_schedule_id: string | null }[]
+  }
+  const found = schedules.find((schedule) => schedule.title === title)
+  if (found?.etag == null || found.recurring_schedule_id === null)
+    throw new Error(`${date} の「${title}」の回が一覧に無い`)
+  return { etag: found.etag, recurring_schedule_id: found.recurring_schedule_id }
+}
 
 /** 規則の変更のクライアントを開き、トークンと繰り返しの予定の ID と本文を入れて送り、レスポンスの本文を返す。 */
 const sendChangeRule = async (page: Page, token: string, recurringScheduleId: string, body: unknown) => {
@@ -158,6 +183,96 @@ test.describe('予定の API', () => {
             } finally {
               await step('（撮影のため、ほかの撮影の前提に戻すよう、結び付けを外す）')
               await unlinkStaffCalendar(page, HAYASHI.id)
+            }
+          },
+        )
+      })
+
+      test(`${prefix}Google カレンダーを正本にする事業所で、毎週月曜の繰り返しの予定を API で毎週火曜に変えた場合、calendarpit の親の予定の RRULE が火曜になり、予定の表示が火曜の回を出すこと`, async ({
+        browser,
+        request,
+      }) => {
+        const title = `定例 ${Date.now()}`
+        const start = fromNextMonday(0)
+        const effective = fromNextMonday(7)
+        const tuesday = fromNextMonday(8)
+        await recordPrEvidence(
+          browser,
+          {
+            name: 'recurring-rule-google-primary',
+            title:
+              'Google カレンダーを正本にする事業所で、毎週月曜の繰り返しの予定を適用の日から毎週火曜に変えると、calendarpit の親の予定の RRULE が火曜になり、予定の表示が火曜の回を出す',
+            actor: `${OKADA.staff.name}（Google カレンダーを正本にする事業所のマネージャー）`,
+            variant,
+          },
+          async (page) => {
+            await page.goto('/schedule')
+            await signInAtBroker(page, OKADA.email)
+            const token = await issueAccessToken(page.request, OKADA.email)
+            const created = await createWeeklyNormalSchedule(page.request, token, OKADA.facilityId, {
+              id: newScheduleId(),
+              staffId: OKADA.staff.id,
+              title,
+              date: start,
+            })
+            expect(created.status()).toBe(201)
+            const occurrence = await findListedSchedule(page.request, token, OKADA.facilityId, effective, title)
+            await prepareApiReference('schedule', null)(page)
+            return { token, occurrence }
+          },
+          async ({ page, step, check }, { token, occurrence }) => {
+            try {
+              await openDay(page, OKADA.staff.id, effective)
+              await expect(dayEvent(page, OKADA.staff.id, title)).toBeVisible()
+              await step(
+                `${start} から毎週月曜の「${title}」を API で ${OKADA.staff.name} の Google カレンダーに作ってある。${effective}（月曜）の日の表示を開いている`,
+              )
+              await check(`${effective}（月曜）に「${title}」が出る`)
+
+              await routeApiReference(page)
+              await step(
+                `API の参照のページの「繰り返しの予定の規則を、適用の日以降の回について変える」で、予定の一覧で読んだ親の予定の etag を付け、適用の日を ${effective} にして毎週火曜に変える`,
+              )
+              await sendChangeRule(page, token, occurrence.recurring_schedule_id, {
+                effective_date: effective,
+                recurring_rule: { frequency: 'weekly', day_of_week: 2 },
+                id: newScheduleId(),
+                etag: occurrence.etag,
+              })
+              const dialog = apiClient(page).dialog
+              await expect(dialog).toContainText('200 OK')
+              await expect(dialog).toContainText(`"date": "${tuesday}"`)
+              await expect(dialog).toContainText('"day_of_week": 2')
+              await check(`200 が返り、最初の日付が ${tuesday}（火曜）の新しい繰り返しの予定が返る`)
+
+              const until = effective.replaceAll('-', '')
+              await expect
+                .poll(async () => {
+                  const tue = await findRecurringGoogleEvent(request, OKADA.calendarId, title, 'BYDAY=TU')
+                  const mon = await findRecurringGoogleEvent(request, OKADA.calendarId, title, 'BYDAY=MO')
+                  return tue !== undefined && mon?.recurrence?.some((line) => line.includes('UNTIL=')) === true
+                })
+                .toBe(true)
+              await step(
+                `Google カレンダーの代わりの calendarpit の管理の画面で、${OKADA.calendarId} の ${tuesday} を開く（元の親の RRULE は ${until} より前に終わる）`,
+              )
+              await page.goto(
+                `${CALENDARPIT_URL}/?calendar=${encodeURIComponent(OKADA.calendarId)}&date=${tuesday}`,
+              )
+              await expect(calendarpitEvent(page, title)).toBeVisible()
+              await check(`${OKADA.calendarId} の ${tuesday}（火曜）に「${title}」が出る`)
+
+              await step(`予定のカレンダーで、${effective}（月曜）と ${tuesday}（火曜）の日の表示を開く`)
+              await openDay(page, OKADA.staff.id, effective)
+              await expect(dayEvent(page, OKADA.staff.id, title)).toBeHidden()
+              await check(`${effective}（月曜）に「${title}」が出ない`)
+              await openDay(page, OKADA.staff.id, tuesday)
+              await expect(dayEvent(page, OKADA.staff.id, title)).toBeVisible()
+              await check(`${tuesday}（火曜）に「${title}」が出る`)
+            } finally {
+              for (const event of await listGoogleEvents(request, OKADA.calendarId)) {
+                if (event.summary === title) await deleteGoogleEvent(request, OKADA.calendarId, event.id)
+              }
             }
           },
         )
