@@ -472,8 +472,8 @@ ADR-0007: [権限を役職のデフォルトと職員ごとの上書きで持ち
     権限のタブを開き、事業所の全ての権限か役職を読めなかったとき。  
     権限の一覧の位置に失敗の文と読み直すを出し、権限を変えるを押せなくする。
 
-    <iframe class="mock" title="職員の詳細の、権限の読み込みの失敗" src="mocks/19-policies-load-error.html"></iframe>
-    <a class="mock-open" href="mocks/19-policies-load-error.html" target="_blank">別タブで開く</a>
+    <iframe class="mock" title="職員の詳細の、権限の読み込みの失敗" src="mocks/20-policies-load-error.html"></iframe>
+    <a class="mock-open" href="mocks/20-policies-load-error.html" target="_blank">別タブで開く</a>
 
     | 番号 | 種別 | 要素名 | 仕様 |
     | --- | --- | --- | --- |
@@ -496,8 +496,8 @@ ADR-0007: [権限を役職のデフォルトと職員ごとの上書きで持ち
     プロフィールの編集を開き、事業所の部署かチームを読めなかったとき。  
     フッターの左に失敗の文を出し、部署とチームの選択と保存を押せなくする。
 
-    <iframe class="mock" title="職員の詳細の、部署とチームの読み込みの失敗" src="mocks/20-edit-options-error.html"></iframe>
-    <a class="mock-open" href="mocks/20-edit-options-error.html" target="_blank">別タブで開く</a>
+    <iframe class="mock" title="職員の詳細の、部署とチームの読み込みの失敗" src="mocks/21-edit-options-error.html"></iframe>
+    <a class="mock-open" href="mocks/21-edit-options-error.html" target="_blank">別タブで開く</a>
 
     | 番号 | 種別 | 要素名 | 仕様 |
     | --- | --- | --- | --- |
@@ -520,8 +520,8 @@ ADR-0007: [権限を役職のデフォルトと職員ごとの上書きで持ち
     役職を変えるを開き、事業所の役職を読めなかったとき。  
     役職の選択肢を並べず、フッターの左に失敗の文を出し、ダイアログの役職を変えるを押せなくする。
 
-    <iframe class="mock" title="職員の詳細の、役職の読み込みの失敗" src="mocks/21-position-options-error.html"></iframe>
-    <a class="mock-open" href="mocks/21-position-options-error.html" target="_blank">別タブで開く</a>
+    <iframe class="mock" title="職員の詳細の、役職の読み込みの失敗" src="mocks/22-position-options-error.html"></iframe>
+    <a class="mock-open" href="mocks/22-position-options-error.html" target="_blank">別タブで開く</a>
 
     | 番号 | 種別 | 要素名 | 仕様 |
     | --- | --- | --- | --- |
