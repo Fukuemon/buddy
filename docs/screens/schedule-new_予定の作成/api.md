@@ -4,6 +4,8 @@
 OpenAPI の項目のうち、送る値は `createSchedule`（`POST /v1/facilities/{facility_id}/schedules`）のリクエストの `SlotRequest` の項目で書く。  
 選択肢は、一覧の操作のレスポンスの項目で書く。
 
+## 値の対応
+
 | 要素名 | 表示する値 | web の型の項目 | OpenAPI の項目 |
 | --- | --- | --- | --- |
 | 予定の種類 | 通常か訪問 | `ScheduleInput.kind` | `schedule_type_id` |
@@ -75,6 +77,67 @@ OpenAPI の項目のうち、送る値は `createSchedule`（`POST /v1/facilitie
   - 拒むのは予定の API である。
 - URL の `staffId` が候補の外の職員を指すときは、未選択にする。
   - 処理は `apps/web/src/features/schedule/components/ScheduleCreateModalContainer.tsx` にある。
+
+## 条件の対応
+
+| 条件 | 判定に使う値 |
+| --- | --- |
+| 職員が、作成を送っている途中である | react-hook-form の `formState.isSubmitting` が `true`（`ScheduleFormModal` が作成のボタンの `isLoading` に渡す）。`createSchedule` を呼んでから、成功してカレンダーへ移るまでを含む |
+
+- 作成のボタンは packages/ui の `Button` で、`isLoading` の間は押しても `onClick` と送信を止める。
+- 送っている間も、`ScheduleFormModal` は `Modal` に送信中を渡さず、`ScheduleForm` の欄も `disabled` にしない。
+  - 閉じる、キャンセル、覆い、Escape キー、入力の欄は、送っている間も動く。
+- 項目の一覧の項目と、右の入力の欄の出し分けは、フォームの値の `kind` と、`ScheduleForm` が持つ選んだ項目で決める。
+  - どちらも状態で決まるので、条件の表に載せない。
+
+## 要素の testid
+
+| 番号 | 要素名 | testid |
+| --- | --- | --- |
+| 3 | 予定の種類 | `schedule-kind-tab` |
+| 4 | 閉じる | `modal-close` |
+| 3 | 閉じる | `modal-close` |
+| 5 | 項目の一覧 | `schedule-field-title` |
+| 5 | 項目の一覧 | `schedule-field-date-time` |
+| 5 | 項目の一覧 | `schedule-field-patient` |
+| 5 | 項目の一覧 | `schedule-field-staff` |
+| 5 | 項目の一覧 | `schedule-field-category` |
+| 5 | 項目の一覧 | `schedule-field-description` |
+| 6 | 日付 | `schedule-form-date` |
+| 7 | 開始時間 | `schedule-form-start-time` |
+| 8 | 提供時間 | `schedule-form-service-time` |
+| 9 | 終了時間 | `schedule-form-end-time` |
+| 8 | 終了時間 | `schedule-form-end-time` |
+| 9 | 終了は翌日 | `schedule-form-ends-next-day` |
+| 10 | サービスコード | `service-code-{コード}` |
+| 6 | タイトル | `schedule-form-title` |
+| 6 | 利用者の検索 | `patient-select-search` |
+| 7 | 利用者の一覧 | `patient-select-option-{利用者の id}` |
+| 6 | 職員の検索 | `staff-select-search` |
+| 7 | 職員の一覧 | `staff-select-option-{職員の id}` |
+| 6 | 訪問の区分 | `schedule-category-night` |
+| 6 | 訪問の区分 | `schedule-category-emergency` |
+| 6 | 訪問の区分 | `schedule-category-hospitalization` |
+| 6 | メモ | `schedule-form-description` |
+| 7 | キャンセル | `schedule-new-cancel` |
+| 8 | キャンセル | `schedule-new-cancel` |
+| 10 | キャンセル | `schedule-new-cancel` |
+| 11 | キャンセル | `schedule-new-cancel` |
+| 12 | キャンセル | `schedule-new-cancel` |
+| 8 | 作成 | `schedule-create-submit` |
+| 9 | 作成 | `schedule-create-submit` |
+| 11 | 作成 | `schedule-create-submit` |
+| 12 | 作成 | `schedule-create-submit` |
+| 13 | 作成 | `schedule-create-submit` |
+
+- 番号は、状態ごとの構成要素の表の番号である。同じ要素が状態ごとに違う番号を持つときは、番号ごとに行を分ける。
+- 閉じるの `modal-close` は、packages/ui の `Modal` が付ける。
+- 予定の種類の選択肢は、`schedule-kind-tab-normal`、`schedule-kind-tab-visit` である。packages/ui の `SegmentedControl` が、組の testid に選択肢の `kind` を付ける。
+- 項目の一覧の testid の末尾は、項目の ID（`title`、`date-time`、`patient`、`staff`、`category`、`description`）である。
+- サービスコードの `{コード}` は、`listServiceCodes` の `code` の表記のままである。
+- 利用者の一覧と職員の一覧の testid は、行のラジオボタンに付く。「選択肢が無い」の状態のモックは行を持たないので、番号の印を表に付ける。
+- モーダルの本体の `schedule-form-modal` と、フォームの `schedule-form` は、構成要素の表に載せないので、この表に載せない。
+- 読み込み中の表示、読み込みの失敗の文、作成の失敗の文は、testid を持たない。
 
 ## 状態と失敗の要因
 
