@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useNavigate, useRouteContext } from '@tanstack/react-router'
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 
 import { ApiError, MAX_RECEIPT_UPLOAD_BYTES, type ReceiptCheckInput } from '#/api/BuddyApi'
 import { queryKeys } from '#/api/queryKeys'
@@ -20,8 +20,16 @@ export const ReceiptCheckFormContainer = () => {
   const [schedules, setSchedules] = useState<File | null>(null)
   const [visits, setVisits] = useState<File | null>(null)
 
+  // 送っている途中かを、入力を変えた時点の値で読む。check.isPending は描画のときの値で、照合が終わった直後は古い。
+  const sending = useRef(false)
   const check = useMutation({
     mutationFn: (input: ReceiptCheckInput) => receiptApi.check(input),
+    onMutate: () => {
+      sending.current = true
+    },
+    onSettled: () => {
+      sending.current = false
+    },
     onSuccess: async (report, input) => {
       const result: ReceiptResult = {
         report,
@@ -36,11 +44,12 @@ export const ReceiptCheckFormContainer = () => {
   const scheduleFile = source === 'csv' ? schedules : null
   const tooLarge = (visits?.size ?? 0) + (scheduleFile?.size ?? 0) > MAX_RECEIPT_UPLOAD_BYTES
   const ready = visits !== null && (source === 'calendar' ? isMonth(month) : scheduleFile !== null)
+  // 送っている途中は戻さない。戻すと照合するを押せるようになり、先の照合の失敗の文も出なくなる。
   const changed =
     <T,>(set: (value: T) => void) =>
     (value: T) => {
       set(value)
-      check.reset()
+      if (!sending.current) check.reset()
     }
 
   const submit = () => {

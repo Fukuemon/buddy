@@ -29,7 +29,7 @@ const synced = (id: string, staffId: string, name: string): CalendarSyncStatus =
 })
 
 /** Google カレンダーを予定の正本にし、結び付けた 2 人のカレンダーの最後の同期が成功している事業所のフェイクの API。 */
-const googlePrimaryApi = (): BuddyApi =>
+export const googlePrimaryApi = (): BuddyApi =>
   createFakeBuddyApi({
     baseDate: new Date('2026-11-05T09:00:00+09:00'),
     sourceMode: 'google_primary',
@@ -40,7 +40,7 @@ const googlePrimaryApi = (): BuddyApi =>
   })
 
 /** 切り替えを始めたフェイクの API。startCutover は待たずに状態を変える。 */
-const openApi = (): BuddyApi => {
+export const openApi = (): BuddyApi => {
   const api = googlePrimaryApi()
   void api.calendars.startCutover(MOCK_FACILITY_ID)
   return api

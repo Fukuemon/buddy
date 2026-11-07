@@ -117,7 +117,7 @@
 - 予定の種類を変えられる予定かは、`apps/web/src/features/schedule/lib/reviewFix.ts` の `canAddVisitInfo` が決める。
 - 保存のボタンは packages/ui の `Button` で、`isLoading` の間は押しても `onClick` と送信を止める。
 - 送っている間も、`ScheduleFormModal` は `Modal` に送信中を渡さず、`ScheduleForm` の欄も `disabled` にしない。
-  - 閉じる、キャンセル、覆い、Escape キー、入力の欄は、送っている間も動く。
+  - キャンセル、覆い、Escape キー、入力の欄は、送っている間も動く。
 - 「読み込み中」の状態の `Modal` には `onCloseRequest` を渡さないので、閉じる、覆い、Escape キーは何もしない。
   - 処理は `apps/web/src/features/schedule/components/ScheduleEditModalContainer.tsx` にある。
 - 項目の一覧の項目と、右の入力の欄の出し分けは、フォームの値の `kind` と、`ScheduleForm` が持つ選んだ項目で決める。
@@ -128,6 +128,43 @@
 | 番号 | 要素名 | testid |
 | --- | --- | --- |
 | 3 | 閉じる | `modal-close` |
+| 3 | 項目の一覧 | `schedule-field-title` |
+| 3 | 項目の一覧 | `schedule-field-date-time` |
+| 3 | 項目の一覧 | `schedule-field-patient` |
+| 3 | 項目の一覧 | `schedule-field-staff` |
+| 3 | 項目の一覧 | `schedule-field-category` |
+| 3 | 項目の一覧 | `schedule-field-description` |
+| 4 | 日付 | `schedule-form-date` |
+| 5 | 開始時間 | `schedule-form-start-time` |
+| 6 | 提供時間 | `schedule-form-service-time` |
+| 7 | 終了時間 | `schedule-form-end-time` |
+| 6 | 終了時間 | `schedule-form-end-time` |
+| 7 | 終了は翌日 | `schedule-form-ends-next-day` |
+| 8 | サービスコード | `service-code-{コード}` |
+| 4 | 利用者の検索 | `patient-select-search` |
+| 5 | 利用者の一覧 | `patient-select-option-{利用者の id}` |
+| 4 | 職員の検索 | `staff-select-search` |
+| 5 | 職員の一覧 | `staff-select-option-{職員の id}` |
+| 4 | 訪問の区分 | `schedule-category-night` |
+| 4 | 訪問の区分 | `schedule-category-emergency` |
+| 4 | 訪問の区分 | `schedule-category-hospitalization` |
+| 4 | メモ | `schedule-form-description` |
+| 4 | タイトル | `schedule-form-title` |
+| 5 | キャンセル | `schedule-edit-cancel` |
+| 6 | キャンセル | `schedule-edit-cancel` |
+| 8 | キャンセル | `schedule-edit-cancel` |
+| 9 | キャンセル | `schedule-edit-cancel` |
+| 10 | キャンセル | `schedule-edit-cancel` |
+| 6 | 保存 | `schedule-edit-submit` |
+| 7 | 保存 | `schedule-edit-submit` |
+| 9 | 保存 | `schedule-edit-submit` |
+| 10 | 保存 | `schedule-edit-submit` |
+| 11 | 保存 | `schedule-edit-submit` |
+| 12 | Google カレンダーの最新の予定 | `schedule-edit-latest` |
+| 13 | 最新の予定の日時 | `schedule-edit-latest-datetime` |
+| 14 | 最新の予定のタイトル | `schedule-edit-latest-title` |
+| 15 | 最新の予定の職員 | `schedule-edit-latest-staff` |
+| 3 | 予定の種類 | `schedule-kind-tab` |
 | 4 | 項目の一覧 | `schedule-field-title` |
 | 4 | 項目の一覧 | `schedule-field-date-time` |
 | 4 | 項目の一覧 | `schedule-field-patient` |
@@ -137,47 +174,9 @@
 | 5 | 日付 | `schedule-form-date` |
 | 6 | 開始時間 | `schedule-form-start-time` |
 | 7 | 提供時間 | `schedule-form-service-time` |
-| 8 | 終了時間 | `schedule-form-end-time` |
-| 7 | 終了時間 | `schedule-form-end-time` |
 | 8 | 終了は翌日 | `schedule-form-ends-next-day` |
+| 8 | 終了時間 | `schedule-form-end-time` |
 | 9 | サービスコード | `service-code-{コード}` |
-| 5 | 利用者の検索 | `patient-select-search` |
-| 6 | 利用者の一覧 | `patient-select-option-{利用者の id}` |
-| 5 | 職員の検索 | `staff-select-search` |
-| 6 | 職員の一覧 | `staff-select-option-{職員の id}` |
-| 5 | 訪問の区分 | `schedule-category-night` |
-| 5 | 訪問の区分 | `schedule-category-emergency` |
-| 5 | 訪問の区分 | `schedule-category-hospitalization` |
-| 5 | メモ | `schedule-form-description` |
-| 5 | タイトル | `schedule-form-title` |
-| 6 | キャンセル | `schedule-edit-cancel` |
-| 7 | キャンセル | `schedule-edit-cancel` |
-| 9 | キャンセル | `schedule-edit-cancel` |
-| 10 | キャンセル | `schedule-edit-cancel` |
-| 11 | キャンセル | `schedule-edit-cancel` |
-| 7 | 保存 | `schedule-edit-submit` |
-| 8 | 保存 | `schedule-edit-submit` |
-| 10 | 保存 | `schedule-edit-submit` |
-| 11 | 保存 | `schedule-edit-submit` |
-| 12 | 保存 | `schedule-edit-submit` |
-| 13 | Google カレンダーの最新の予定 | `schedule-edit-latest` |
-| 14 | 最新の予定の日時 | `schedule-edit-latest-datetime` |
-| 15 | 最新の予定のタイトル | `schedule-edit-latest-title` |
-| 16 | 最新の予定の職員 | `schedule-edit-latest-staff` |
-| 3 | 予定の種類 | `schedule-kind-tab` |
-| 4 | 閉じる | `modal-close` |
-| 5 | 項目の一覧 | `schedule-field-title` |
-| 5 | 項目の一覧 | `schedule-field-date-time` |
-| 5 | 項目の一覧 | `schedule-field-patient` |
-| 5 | 項目の一覧 | `schedule-field-staff` |
-| 5 | 項目の一覧 | `schedule-field-category` |
-| 5 | 項目の一覧 | `schedule-field-description` |
-| 6 | 日付 | `schedule-form-date` |
-| 7 | 開始時間 | `schedule-form-start-time` |
-| 8 | 提供時間 | `schedule-form-service-time` |
-| 9 | 終了は翌日 | `schedule-form-ends-next-day` |
-| 9 | 終了時間 | `schedule-form-end-time` |
-| 10 | サービスコード | `service-code-{コード}` |
 
 - 番号は、状態ごとの構成要素の表の番号である。同じ要素が状態ごとに違う番号を持つときは、番号ごとに行を分ける。
 - 閉じるの `modal-close` は、packages/ui の `Modal` が付ける。

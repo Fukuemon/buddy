@@ -84,10 +84,10 @@ web は `BuddyApi.calendars`（`apps/web/src/api/BuddyApi.ts`）で API を呼�
 | 10 | 取り込み | `site-nav-import` |
 | 11 | メニュー | `site-nav-toggle` |
 | 2 | 予定の確認のダイアログ | `calendar-review-dialog` |
-| 3 | 閉じる | `calendar-review-close` |
-| 4 | ダイアログの予定の日時 | `calendar-review-dialog-datetime` |
-| 7 | ダイアログの理由 | `calendar-review-dialog-reason` |
-| 8 | 予定を開く | `calendar-review-open-export-1` |
+| 3 | ダイアログの予定の日時 | `calendar-review-dialog-datetime` |
+| 6 | ダイアログの理由 | `calendar-review-dialog-reason` |
+| 7 | 予定を開く | `calendar-review-open-export-1` |
+| 8 | キャンセル | `calendar-review-cancel` |
 | 9 | buddy の内容で書き直す | `calendar-review-rewrite-export-1` |
 | 2 | 書き直すダイアログ | `calendar-rewrite-dialog` |
 | 3 | 書き直す予定 | `calendar-rewrite-target` |
@@ -97,7 +97,7 @@ web は `BuddyApi.calendars`（`apps/web/src/api/BuddyApi.ts`）で API を呼�
 | 5 | 書き直しの失敗の文 | `calendar-rewrite-error` |
 | 6 | キャンセル | `calendar-rewrite-cancel` |
 | 7 | ダイアログの書き直す | `calendar-rewrite-submit` |
-| 8 | 予定を開く | `calendar-review-open-export-5` |
+| 7 | 予定を開く | `calendar-review-open-export-5` |
 | 9 | buddy の内容で書き直す | `calendar-review-rewrite-export-5` |
 | 6 | 予定のカレンダーへ | `page-forbidden-back` |
 | 7 | メニュー | `site-nav-toggle` |

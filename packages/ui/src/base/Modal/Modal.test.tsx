@@ -29,7 +29,12 @@ describe('Modal', () => {
     expect(screen.getByRole('dialog')).toHaveProperty('open', true)
   })
 
-  it('関数の stickyFooter のキャンセルは、閉じるボタンと同じく、変更を破棄するかを確認してから閉じる', async () => {
+  it('stickyFooter を渡すと、右上の閉じるボタン（×）を出さない', () => {
+    render(<WithCancel />)
+    expect(screen.queryByTestId('modal-close')).toBeNull()
+  })
+
+  it('関数の stickyFooter のキャンセルは、Escape キーと同じく、変更を破棄するかを確認してから閉じる', async () => {
     const onCloseRequest = fn()
     const confirm = vi.spyOn(window, 'confirm').mockReturnValueOnce(false).mockReturnValueOnce(true)
     render(<WithCancel onCloseRequest={onCloseRequest} />)

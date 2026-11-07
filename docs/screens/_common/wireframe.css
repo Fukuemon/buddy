@@ -374,7 +374,11 @@ body {
   border-bottom: 1px solid var(--wf-line-soft);
 }
 
+/* 閉じるボタン（×）の無いヘッダーでも、× を置いたヘッダーと同じ高さにする */
 .wf-modal__title {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
   margin: 0 0 0 auto;
   font-size: 15px;
   font-weight: 700;
@@ -896,16 +900,19 @@ body {
   margin: 0;
 }
 
-/* 入力のダイアログのヘッダー。左にタイトルを、右上に閉じるボタン（×）を置く */
+/* 入力のダイアログのヘッダー。左にタイトルを置く。フッターで閉じるので、閉じるボタン（×）を置かない */
 .wf-dialog__header {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 12px 12px 12px 20px;
+  padding: 12px 20px;
   border-bottom: 1px solid var(--wf-line-soft);
 }
 
 .wf-dialog__header > .wf-dialog__title {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
   font-size: 15px;
   font-weight: 700;
 }
