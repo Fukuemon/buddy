@@ -332,6 +332,10 @@ pnpm check:generated
 pull request では、CI（[ci.yml](.github/workflows/ci.yml)）が通るまでマージしない。  
 変更ごとにローカルで流すテストは、[テスト](context/testing.md#required-tests) の Required Tests にある。
 
+- develop と main の ruleset の必須のチェックは、`ci-result` のジョブ 1 つである。
+  - `ci-result` は、ほかの全てのジョブの後に動き、失敗か取り消しのジョブがあれば失敗する。成功と飛ばしだけなら成功する。
+  - ジョブを足したときは、`ci-result` の `needs` に足す。足さないと、足したジョブが失敗してもマージできる。
+
 - pull request の変更が文書だけのときは、`e2e` と `go` のジョブを飛ばす。
   - 文書だけの変更は、`docs/` の下のファイルと、リポジトリの中の `*.md` だけを変えた変更である。
   - 飛ばしたジョブは、`gh pr checks` で `skipping` と表示され、`--watch` の終了コードを 1 にしない。

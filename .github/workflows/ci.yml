@@ -257,3 +257,20 @@ jobs:
         run: |
           docker image prune -f
           docker builder prune -f --filter until=168h
+
+  # ruleset の必須のチェックにする、全てのジョブの結果をまとめるジョブ。
+  # 飛ばした matrix のジョブは matrix の名前のチェックを報告しないので、必須のチェックを個々のジョブにすると、文書だけの pull request がマージできない。
+  # 失敗か取り消しのジョブがあれば失敗し、成功と飛ばしだけなら成功する。ジョブを足したら needs にも足す。
+  ci-result:
+    needs: [changes, typescript, docs, go, generated, db-docs, e2e]
+    if: always()
+    runs-on: ${{ fromJSON(vars.RUNS_ON || '"ubuntu-latest"') }}
+    timeout-minutes: 5
+    steps:
+      - name: ジョブの結果を出す
+        run: echo "$NEEDS"
+        env:
+          NEEDS: ${{ toJSON(needs) }}
+      - name: 失敗か取り消しのジョブがあれば失敗する
+        if: contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled')
+        run: exit 1
