@@ -1,7 +1,18 @@
 import { expect, test, type APIRequestContext, type Page } from '@playwright/test'
 
-import { issueAccessToken, routeApiReference, prepareApiReference } from '../../fixtures/apiReference'
-import { CALENDARPIT_URL, HAYASHI, LOGIN_EMAIL, LOGIN_STAFF, OKADA, SCHEDULE_URL } from '../../fixtures/env'
+import {
+  issueAccessToken,
+  routeApiReference,
+  prepareApiReference,
+} from '../../fixtures/apiReference'
+import {
+  CALENDARPIT_URL,
+  HAYASHI,
+  LOGIN_EMAIL,
+  LOGIN_STAFF,
+  OKADA,
+  SCHEDULE_URL,
+} from '../../fixtures/env'
 import { EVIDENCE_VARIANTS, recordPrEvidence } from '../../fixtures/evidence'
 import { deleteGoogleEvent, listGoogleEvents } from '../../fixtures/googleCalendar'
 import { createWeeklyNormalSchedule, newScheduleId } from '../../fixtures/schedule'
@@ -81,7 +92,12 @@ const listedEtag = async (
 }
 
 /** 規則の変更のクライアントを開き、トークンと繰り返しの予定の ID と本文を入れて送り、レスポンスの本文を返す。 */
-const sendChangeRule = async (page: Page, token: string, recurringScheduleId: string, body: unknown) => {
+const sendChangeRule = async (
+  page: Page,
+  token: string,
+  recurringScheduleId: string,
+  body: unknown,
+) => {
   await openApiClient(page, 'schedule', CHANGE_RULE)
   await fillApiToken(page, token)
   await fillApiVariable(page, 'recurring_schedule_id', recurringScheduleId)
@@ -120,11 +136,16 @@ test.describe('予定の API', () => {
             await signInAtBroker(page, LOGIN_EMAIL)
             await linkStaffCalendar(page, HAYASHI.id)
             const token = await issueAccessToken(page.request, LOGIN_EMAIL)
-            const created = await createWeeklyNormalSchedule(page.request, token, STAFF_FORM.facilityId, {
-              staffId: HAYASHI.id,
-              title,
-              date: start,
-            })
+            const created = await createWeeklyNormalSchedule(
+              page.request,
+              token,
+              STAFF_FORM.facilityId,
+              {
+                staffId: HAYASHI.id,
+                title,
+                date: start,
+              },
+            )
             expect(created.status()).toBe(201)
             const { id } = (await created.json()) as { id: string }
             await prepareApiReference('schedule', null)(page)
@@ -167,8 +188,12 @@ test.describe('予定の API', () => {
               await expect
                 .poll(
                   async () =>
-                    (await findRecurringGoogleEvent(request, HAYASHI.calendarId, title, 'BYDAY=TU')) !==
-                    undefined,
+                    (await findRecurringGoogleEvent(
+                      request,
+                      HAYASHI.calendarId,
+                      title,
+                      'BYDAY=TU',
+                    )) !== undefined,
                 )
                 .toBe(true)
               await step(
@@ -209,12 +234,17 @@ test.describe('予定の API', () => {
             await signInAtBroker(page, OKADA.email)
             const token = await issueAccessToken(page.request, OKADA.email)
             const id = newScheduleId()
-            const created = await createWeeklyNormalSchedule(page.request, token, OKADA.facilityId, {
-              id,
-              staffId: OKADA.staff.id,
-              title,
-              date: start,
-            })
+            const created = await createWeeklyNormalSchedule(
+              page.request,
+              token,
+              OKADA.facilityId,
+              {
+                id,
+                staffId: OKADA.staff.id,
+                title,
+                date: start,
+              },
+            )
             expect(created.status()).toBe(201)
             const etag = await listedEtag(page.request, token, OKADA.facilityId, effective, title)
             await prepareApiReference('schedule', null)(page)
@@ -248,9 +278,22 @@ test.describe('予定の API', () => {
               const until = effective.replaceAll('-', '')
               await expect
                 .poll(async () => {
-                  const tue = await findRecurringGoogleEvent(request, OKADA.calendarId, title, 'BYDAY=TU')
-                  const mon = await findRecurringGoogleEvent(request, OKADA.calendarId, title, 'BYDAY=MO')
-                  return tue !== undefined && mon?.recurrence?.some((line) => line.includes('UNTIL=')) === true
+                  const tue = await findRecurringGoogleEvent(
+                    request,
+                    OKADA.calendarId,
+                    title,
+                    'BYDAY=TU',
+                  )
+                  const mon = await findRecurringGoogleEvent(
+                    request,
+                    OKADA.calendarId,
+                    title,
+                    'BYDAY=MO',
+                  )
+                  return (
+                    tue !== undefined &&
+                    mon?.recurrence?.some((line) => line.includes('UNTIL=')) === true
+                  )
                 })
                 .toBe(true)
               await step(
@@ -262,7 +305,9 @@ test.describe('予定の API', () => {
               await expect(calendarpitEvent(page, title)).toBeVisible()
               await check(`${OKADA.calendarId} の ${tuesday}（火曜）に「${title}」が出る`)
 
-              await step(`予定のカレンダーで、${effective}（月曜）と ${tuesday}（火曜）の日の表示を開く`)
+              await step(
+                `予定のカレンダーで、${effective}（月曜）と ${tuesday}（火曜）の日の表示を開く`,
+              )
               await openDay(page, OKADA.staff.id, effective)
               await expect(dayEvent(page, OKADA.staff.id, title)).toBeHidden()
               await check(`${effective}（月曜）に「${title}」が出ない`)
@@ -271,7 +316,8 @@ test.describe('予定の API', () => {
               await check(`${tuesday}（火曜）に「${title}」が出る`)
             } finally {
               for (const event of await listGoogleEvents(request, OKADA.calendarId)) {
-                if (event.summary === title) await deleteGoogleEvent(request, OKADA.calendarId, event.id)
+                if (event.summary === title)
+                  await deleteGoogleEvent(request, OKADA.calendarId, event.id)
               }
             }
           },
