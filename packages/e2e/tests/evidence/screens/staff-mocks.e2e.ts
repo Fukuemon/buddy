@@ -215,7 +215,7 @@ test.describe('職員の管理の画面仕様書のモック', () => {
       )
     })
 
-    test(`${prefix}職員の登録のモックを開いた場合、入力のダイアログの形で出て、閉じるで一覧へ戻ること`, async ({
+    test(`${prefix}職員の登録のモックを開いた場合、入力のダイアログの形で出て、Escape で一覧へ戻ること`, async ({
       browser,
     }) => {
       await recordMock(
@@ -224,22 +224,21 @@ test.describe('職員の管理の画面仕様書のモック', () => {
         {
           name: 'staff-new-dialog',
           title:
-            '職員の登録は、× を右上に、? をタイトルの右に、キャンセルと登録をフッターの右に置く',
+            '職員の登録は、× を置かず、? をタイトルの右に、キャンセルと登録をフッターの右に置く',
           file: `${NEW}/01-initial.html`,
         },
         async ({ page, step, check }) => {
           await expect(page.getByTestId('staff-new-dialog')).toBeVisible()
-          await expect(page.getByTestId('staff-new-close')).toBeVisible()
           await expect(page.getByTestId('staff-new-cancel')).toHaveText('キャンセル')
-          await check('入力のダイアログに、×、?、キャンセル、登録が出る')
+          await check('入力のダイアログに、?、キャンセル、登録が出て、右上に × が無い')
 
           await step('? を押す')
           await page.getByTestId('staff-new-help').click()
           await expect(page.getByTestId('staff-new-help-text')).toBeVisible()
           await check('タイトルの下に、いつから使えるかの説明が出る')
 
-          await step('× を押す')
-          await page.getByTestId('staff-new-close').click()
+          await step('Escape キーを押す')
+          await page.keyboard.press('Escape')
           await expect(page).toHaveURL(/staff-list_.+\/01-list\.html/)
           await check('職員の一覧のモック（01-list.html）へ戻る')
         },
@@ -346,7 +345,7 @@ test.describe('職員の管理の画面仕様書のモック', () => {
       )
     })
 
-    test(`${prefix}職員の詳細のモックで編集を押した場合、プロフィールの編集のダイアログが開き、閉じるで戻ること`, async ({
+    test(`${prefix}職員の詳細のモックで編集を押した場合、プロフィールの編集のダイアログが開き、キャンセルで戻ること`, async ({
       browser,
     }) => {
       await recordMock(
@@ -354,7 +353,7 @@ test.describe('職員の管理の画面仕様書のモック', () => {
         variant,
         {
           name: 'staff-detail-edit',
-          title: '編集を押すとプロフィールの編集のダイアログが開き、× で閉じる',
+          title: '編集を押すとプロフィールの編集のダイアログが開き、フッターのキャンセルで閉じる',
           file: `${DETAIL}/01-detail.html`,
         },
         async ({ page, step, check }) => {
@@ -366,8 +365,8 @@ test.describe('職員の管理の画面仕様書のモック', () => {
             'プロフィールの編集のダイアログ（04-edit.html）に、名前、メールアドレス、電話番号、部署、チームが出る',
           )
 
-          await step('× を押す')
-          await page.getByTestId('staff-detail-edit-close').click()
+          await step('フッターの「キャンセル」を押す')
+          await page.getByTestId('staff-detail-edit-cancel').click()
           await expect(page).toHaveURL(/01-detail\.html/)
           await check('プロフィール（01-detail.html）へ戻る')
         },
