@@ -50,3 +50,14 @@ export const RowErrors: Story = {
     )
   },
 }
+
+/** 画面を開いた後に照合の権限を外された。照合するを押すと、照合の API が 403 を返す。 */
+export const ForbiddenAfterRevoke: Story = {
+  parameters: route({
+    receiptApi: {
+      check: async () => {
+        throw new ApiError(403, '照合の権限がない', [], 'forbidden')
+      },
+    },
+  }),
+}
