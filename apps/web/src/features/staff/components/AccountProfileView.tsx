@@ -3,6 +3,7 @@ import type { ReactNode } from 'react'
 
 import type { ExternalCalendar, StaffDetail, StaffPolicy } from '#/api/types'
 import { formatLastImport } from '#/components/lastImport'
+import { RefetchErrorMessage } from '#/components/page/RefetchErrorMessage'
 import { policyTargetText } from '../lib/format'
 
 import { orderPolicies } from '../lib/policyOrder'
@@ -21,17 +22,27 @@ export type AccountProfileViewState =
       calendar: ExternalCalendar | null
       /** 権限の対象の職員とチームの ID から、名前を引く。 */
       targetNames: ReadonlyMap<string, string>
+      /** 読み終えた後に読み直して、どれかを読めなかったか。 */
+      refetchFailed: boolean
     }
 
 export type AccountProfileViewProps = {
   state: AccountProfileViewState
   /** 職員の管理の権限を持つか。持つときだけ、自分の職員の詳細を開くリンクを出す。 */
   canManageStaff: boolean
+  /** 一度も読めなかったときに、全てを読み直す。 */
   onRetry: () => void
+  /** 読み終えた後に読めなかったデータだけを読み直す。 */
+  onRefetch: () => void
 }
 
 /** ログインした職員の、名前、所属、役職、持っている権限、カレンダーの連携の状態を並べる。書き換えの操作は持たない。 */
-export const AccountProfileView = ({ state, canManageStaff, onRetry }: AccountProfileViewProps) => (
+export const AccountProfileView = ({
+  state,
+  canManageStaff,
+  onRetry,
+  onRefetch,
+}: AccountProfileViewProps) => (
   <div className="flex max-w-4xl flex-col gap-5">
     <div className="flex flex-wrap items-center justify-between gap-3">
       <h1 className="text-heading-md" data-testid="account-profile-title">
@@ -64,6 +75,7 @@ export const AccountProfileView = ({ state, canManageStaff, onRetry }: AccountPr
     )}
     {state.status === 'ready' && (
       <>
+        {state.refetchFailed && <RefetchErrorMessage onRetry={onRefetch} />}
         <Profile staff={state.staff} />
         <Policies policies={state.staff.policies} targetNames={state.targetNames} />
         <Calendar calendar={state.calendar} />
