@@ -448,10 +448,10 @@ test.describe('確認が必要な予定とカレンダーの連携の画面仕�
         async ({ page, check }) => {
           await page.goto(mockUrl(`${LINK}08-not-configured.html`))
           await expect(page.getByTestId('calendar-link-not-configured')).toHaveText(
-            'この事業所では、まだ Google カレンダーを使う準備ができていません。buddy の管理者に設定を頼んでください。',
+            'この事業所では、まだ Google カレンダーを使う準備ができていません。事業所の管理者に、設定を頼んでください。',
           )
           await check(
-            '「この事業所では、まだ Google カレンダーを使う準備ができていません。buddy の管理者に設定を頼んでください。」が出る',
+            '「この事業所では、まだ Google カレンダーを使う準備ができていません。事業所の管理者に、設定を頼んでください。」が出る',
           )
         },
       )
