@@ -18,6 +18,8 @@ web の型（`apps/web/src/api/types.ts`）はフェイクの API に合わせ�
 | 予定 | タイトル | `Schedule.title`、`Schedule.kind`、`Schedule.visit.patientId` と `Patient.name` | `listSchedules` の `Schedule.title`、`schedule_type`、`visit_info.patient_id` と、`listPatients` の `Patient.name` |
 | 予定 | 色と、置く列 | `Schedule.staffId` | `listSchedules` の `Schedule.staff_id` |
 | 予定 | キャンセルした予定の印と取り消し線 | `Schedule.cancel` | `listSchedules` の `Schedule.cancel` |
+| 一覧の予定 | 時刻、タイトル、キャンセルした予定の印 | 予定と同じ | 予定と同じ |
+| 一覧の予定 | 職員の色と名前 | `Schedule.staffId` と `Staff.name` | `listSchedules` の `Schedule.staff_id` と、`listUsers` の `Staff.username` |
 | 職員の列 | 職員の名前 | `Staff.name` | `listUsers` の `Staff.username` |
 | 職員の予定の列 | 職員 | `Staff.id` | `listUsers` の `Staff.id` |
 | 予定を作成、空いた時間、時間の枠、Google カレンダーの案内 | 事業所が予定を Google カレンダーで管理しているか | `ScheduleList.sourceMode`。読み直している間は `Facility.sourceMode` | `listSchedules` の `source_mode`、`getFacility` の `Facility.source_mode` |
