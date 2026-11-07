@@ -1,9 +1,15 @@
+import { existsSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 import { savedLoginPath } from '@fukuemon/e2e-kit/auth'
 
 const root = fileURLToPath(new URL('../../../..', import.meta.url))
+
+// worktrunk で作った worktree では、.config/wt.toml がリポジトリのルートの .env に E2E の URL を書く（ADR-0034）。
+// loadEnvFile は既にある環境変数を上書きしないので、コマンドの前で渡した URL が .env より優先される
+const worktreeEnv = path.join(root, '.env')
+if (existsSync(worktreeEnv)) process.loadEnvFile(worktreeEnv)
 
 /** 画面の URL。デフォルトはルートの compose の web である。 */
 export const BASE_URL = process.env.E2E_BASE_URL ?? 'http://localhost:3000'

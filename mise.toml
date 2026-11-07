@@ -17,6 +17,3 @@ uv = "0.13"
 # portless は worktree ごとの compose の環境を、ホスト名の URL で出す（ADR-0034）
 "npm:portless" = "0.16.0"
 
-# worktree ごとのポートの組（.config/wt.toml が書く）を、compose 以外のコマンドにも渡す
-[env]
-_.file = ".env"
