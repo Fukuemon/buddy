@@ -86,7 +86,7 @@ web の型（`apps/web/src/api/types.ts`）はフェイクの API に合わせ�
   - `google_primary` の事業所で一覧を読み直している間は、`cutover` が分からないので出さない。
   - 処理は `apps/web/src/features/schedule/components/ScheduleCalendarContainer.tsx` にある。
 - `google_primary` の事業所でも、`createSchedule` は予定を作り、Google カレンダーに書く。
-  - 書き込みの扱いは、[予定の作成の API との対応](../schedule-new_予定の作成/api.md) と [ADR-0028](../../adr/0028-google-calendar-sync.md) にある。
+  - 書き込みの扱いは、[予定の作成の API との対応](../schedule-new_予定の作成/api.md) と [ADR-0029](../../adr/0029-google-calendar-sync.md) にある。
 
 ## 権限の出し分け
 
@@ -331,6 +331,8 @@ web の型（`apps/web/src/api/types.ts`）はフェイクの API に合わせ�
 | 31 | 週の一覧 | `schedule-agenda` |
 | 32 | 一覧の日の見出し | `schedule-agenda-day-{日付}` |
 | 33 | 一覧の予定 | `schedule-event-{予定の id}` |
+| 30 | 最新の情報の読み込みの失敗の文 | `refetch-error` |
+| 31 | 最新の情報を読み直す | `refetch-retry` |
 
 - 番号は、状態ごとの構成要素の表の番号である。同じ要素が状態ごとに違う番号を持つときは、番号ごとに行を分ける。
 - 空いた日、職員の列、週の表示の今の時刻の線、読み込み中の表示、読み込みの失敗の文には、実装が testid を付けないので、この表に載せない。
@@ -344,6 +346,7 @@ web の型（`apps/web/src/api/types.ts`）はフェイクの API に合わせ�
 | --- | --- | --- |
 | 読み込みの失敗 | 「予定を取得できませんでした。」 | `listSchedules` か `listUsers` が失敗（400、403、500）。403 は、職員が休職か退職しているときと、パスの事業所が職員の事業所と違うときを含む。API に届かない |
 | 読み込み中 | なし（ログインの画面へ移るまで続く） | `listSchedules` か `listUsers` が 401 |
+| 最新の情報の読み込みの失敗 | 「最新の情報を読み込めませんでした。」 | 読み終えた後に読み直して、`listSchedules` か `listUsers`が失敗、API に届かない。403 と 404 も含む |
 
 - 文は `apps/web/src/features/schedule/components/ScheduleCalendarContainer.tsx` が、status によらず 1 つの文にする。
 - 予定の一覧は、見てよくない職員の予定を除いて返すので、予定を見る権限が無いことの文は出さない。

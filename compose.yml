@@ -1,7 +1,7 @@
 # ローカル環境で全体を起動する構成。手順は CONTRIBUTING.md の Running Locally にある。
 # 値は全て開発用のダミーの値で、ほかの環境で使わない。
 #
-# portless compose up で起動し、ブラウザが開く URL を portless のホスト名の https の URL にする（ADR-0035）。
+# portless compose up で起動し、ブラウザが開く URL を portless のホスト名の https の URL にする（ADR-0036）。
 # ブラウザが開く URL は *_ORIGIN の環境変数で受ける。未設定のときは https://<サービス>.<プロジェクトの名前>.localhost にする。
 # worktrunk で作った worktree では、名前の _ を - に変えたホスト名を、.config/wt.toml が .env に書く。
 # CI は docker compose up で起動し、*_ORIGIN に http://localhost:<ポート> を渡す（.github/workflows/ci.yml）。
@@ -291,7 +291,7 @@ services:
       calendarpit-authorize: { condition: service_completed_successfully }
       gcalhold: { condition: service_healthy }
 
-  # 予定の API と同じイメージの calendar-worker が、書き出しと同期を役割ごとのプロセスで常駐して動かす（ADR-0031）
+  # 予定の API と同じイメージの calendar-worker が、書き出しと同期を役割ごとのプロセスで常駐して動かす（ADR-0032）
   schedule-calendar-export:
     image: ${COMPOSE_PROJECT_NAME}-schedule
     # イメージは schedule-migrate がビルドする

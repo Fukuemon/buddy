@@ -16,7 +16,7 @@ redirect=${WEB_ORIGIN:-https://web.buddy.localhost}/auth/callback
 jar=$(mktemp)
 trap 'rm -f "$jar"' EXIT
 
-# portless の CA はシステムに信頼させないので（ADR-0035）、https の URL は portless の CA で検証する
+# portless の CA はシステムに信頼させないので（ADR-0036）、https の URL は portless の CA で検証する
 ca=$HOME/.portless/ca.pem
 fetch() {
   if [ -f "$ca" ]; then curl --cacert "$ca" "$@"; else curl "$@"; fi

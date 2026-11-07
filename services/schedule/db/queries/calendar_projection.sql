@@ -1,7 +1,7 @@
 -- name: PutCalendarEventProjection :exec
 -- 同じカレンダーと Google の予定の ID の行があれば書き直す。同期を何度流しても、1 つの予定は 1 行になる。
 -- 書き直すのは、行の Google の更新の時刻が無いか、書く予定の時刻の方が新しいときだけにする。同期と予定の API の書き込みの、
--- 後から届いた古い内容で、新しい内容を上書きしないためである（ADR-0028）。
+-- 後から届いた古い内容で、新しい内容を上書きしないためである（ADR-0029）。
 INSERT INTO calendar_event_projections (
     external_calendar_id, external_event_id, facility_id, staff_id, recurring_event_id, original_start_at, original_start_date,
     status, title, start_at, start_date, end_at, end_date, time_zone, recurrence, etag, google_updated_at, last_end_date
@@ -54,7 +54,7 @@ WHERE external_calendar_id = sqlc.arg(external_calendar_id) AND last_end_date < 
 -- 繰り返しの予定の例外の回で記録の無い行は、展開した回と同じ occurrence_schedule_id である。回を変えても一覧での ID が変わらないためである。
 -- その値がほかの予定を指す記録の主キーと同じなら（回を移した後に元のカレンダーに残った回）、detached_occurrence_schedule_id である。
 -- 記録のある予定には、記録の確定した版の訪問の情報（visit_info_id）を、名前を付けて読む。保留の版の訪問の情報は読まない。
--- 繰り返しの予定の例外の回で、回の記録が無いか確定した版を持たないときは、親の予定の記録の訪問の情報を読む（ADR-0028）。
+-- 繰り返しの予定の例外の回で、回の記録が無いか確定した版を持たないときは、親の予定の記録の訪問の情報を読む（ADR-0029）。
 SELECT p.external_calendar_id, p.external_event_id, p.facility_id, p.staff_id, p.recurring_event_id, p.original_start_at, p.original_start_date,
        p.status, p.title, p.start_at, p.start_date, p.end_at, p.end_date, p.time_zone, p.recurrence, p.etag, p.google_updated_at,
        p.last_end_date, p.projected_at, u.username AS staff_name,
@@ -122,7 +122,7 @@ ORDER BY p.external_calendar_id, p.external_event_id
 LIMIT 1;
 
 -- name: FindOpenCalendarCutoverWithStarter :one
--- 予定の表示の読み出し（scheduleview）が、事業所の open の切り替えを、始めた職員の名前を付けて読む（ADR-0030）。
+-- 予定の表示の読み出し（scheduleview）が、事業所の open の切り替えを、始めた職員の名前を付けて読む（ADR-0031）。
 -- 職員の状態（休職、退職）によらず名前を返す。退職しても名前は残るためである。
 SELECT c.started_at, c.range_start, c.started_by, u.username AS started_by_name
 FROM calendar_cutovers c

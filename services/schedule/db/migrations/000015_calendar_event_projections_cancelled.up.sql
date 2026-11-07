@@ -1,4 +1,4 @@
--- Projection を書くのは、同期と予定の API の書き込みの 2 つで、書く順は決まらない（ADR-0028）。
+-- Projection を書くのは、同期と予定の API の書き込みの 2 つで、書く順は決まらない（ADR-0029）。
 -- Google で取り消した単発の予定と親の予定の行も、取り消しの状態と Google の更新の時刻を持つ行に残す。
 -- 行を消すと、予定の API が古い応答で予定を戻すためである。
 ALTER TABLE calendar_event_projections DROP CONSTRAINT calendar_event_projections_cancelled_check;

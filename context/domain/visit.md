@@ -32,7 +32,7 @@ status: stable
 - 主訪問者を替えて予定を別のカレンダーに移すと、記録のカレンダーと Google の予定の ID が替わり、主キーは変わらない。
 - 予定をキャンセルすると、記録と訪問の情報を消す。
   - Google が書き込みを受けたかが分からない間は、保留の版の訪問の情報を消さない。
-  - ADR-0028: [Google カレンダーとの連携を、事業所ごとの正本のモードで分ける](../../docs/adr/0028-google-calendar-sync.md)
+  - ADR-0029: [Google カレンダーとの連携を、事業所ごとの正本のモードで分ける](../../docs/adr/0029-google-calendar-sync.md)
 
 ## Prohibitions
 

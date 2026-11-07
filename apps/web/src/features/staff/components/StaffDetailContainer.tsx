@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { ApiError } from '#/api/BuddyApi'
 import type { Staff, StaffAssignments } from '#/api/types'
 import { queryKeys } from '#/api/queryKeys'
+import { refetchFailedQueries, screenLoadStatus } from '#/api/refetch'
 import { useBuddyApi } from '#/api/useBuddyApi'
 
 import {
@@ -105,13 +106,15 @@ const StaffDetailContent = ({ staffId, viewerId }: { staffId: Staff['id']; viewe
     ...(teams.data ?? []).map((t) => [t.id, t.name] as const),
   ])
 
-  const state: StaffDetailViewState = detail.isPending
-    ? { status: 'loading' }
-    : detail.isError
-      ? detail.error instanceof ApiError && detail.error.status === 404
-        ? { status: 'error', message: DETAIL_NOT_FOUND_MESSAGE, canRetry: false }
-        : { status: 'error', message: DETAIL_LOAD_ERROR_MESSAGE, canRetry: true }
-      : { status: 'ready', staff: detail.data }
+  const load = screenLoadStatus([detail])
+  const state: StaffDetailViewState =
+    load.status === 'ready' && detail.data !== undefined
+      ? { status: 'ready', staff: detail.data, refetchFailed: load.refetchFailed }
+      : load.status === 'error'
+        ? detail.error instanceof ApiError && detail.error.status === 404
+          ? { status: 'error', message: DETAIL_NOT_FOUND_MESSAGE, canRetry: false }
+          : { status: 'error', message: DETAIL_LOAD_ERROR_MESSAGE, canRetry: true }
+        : { status: 'loading' }
   const staff = detail.data
   const position = positions.data?.find((p) => p.id === staff?.position.id)
   // 役職を読み終えるまでは、役職で付いた権限を見分けられないので、権限の一覧を出さない
@@ -143,6 +146,7 @@ const StaffDetailContent = ({ staffId, viewerId }: { staffId: Staff['id']; viewe
         onLeave={() => openDialog('leave')}
         onReinstate={() => reinstate.mutateAsync()}
         onRetire={() => openDialog('retire')}
+        onRefetch={() => refetchFailedQueries([detail])}
         onRetry={() =>
           queryClient.resetQueries({ queryKey: queryKeys.staff.detail(facilityId, staffId) })
         }

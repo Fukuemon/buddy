@@ -7,7 +7,7 @@ import (
 )
 
 // OrganizationApp は、事業所、部署、チーム、役職、権限のハンドラが使う操作である。
-// 組み立ての場所が、organization の操作の型の Do を入れる。入れていない操作を呼ぶと panic する（ADR-0023）。
+// 組み立ての場所が、organization の操作の型の Do を入れる。入れていない操作を呼ぶと panic する（ADR-0024）。
 type OrganizationApp struct {
 	GetFacility      func(ctx context.Context, id string) (organization.Facility, error)
 	GetDepartment    func(ctx context.Context, id string) (organization.Department, error)

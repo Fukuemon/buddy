@@ -23,6 +23,46 @@ type Screen = {
 
 const SCREENS: Screen[] = [
   {
+    name: 'schedule-calendar-refetch-error',
+    label: '予定のカレンダー',
+    storyId: '画面-schedule-schedulecalendarcontainer--refetch-error',
+    storyName: 'ScheduleCalendarContainer の RefetchError',
+    what: '予定',
+    shown: (page) => page.getByTestId('schedule-calendar'),
+  },
+  {
+    name: 'calendar-link-refetch-error',
+    label: 'カレンダーの連携',
+    storyId: '画面-calendar-calendarlinkcontainer--refetch-error',
+    storyName: 'CalendarLinkContainer の RefetchError',
+    what: '結び付いたカレンダー',
+    shown: (page) => page.getByTestId('calendar-link-table'),
+  },
+  {
+    name: 'calendar-import-refetch-error',
+    label: '予定の取り込み',
+    storyId: '画面-calendar-calendarimportcontainer--refetch-error',
+    storyName: 'CalendarImportContainer の RefetchError',
+    what: '結び付いたカレンダー',
+    shown: (page) => page.getByTestId('calendar-import-form'),
+  },
+  {
+    name: 'calendar-review-refetch-error',
+    label: '確認が必要な予定',
+    storyId: '画面-calendar-calendarreviewcontainer--refetch-error',
+    storyName: 'CalendarReviewContainer の RefetchError',
+    what: '確認が必要な予定',
+    shown: (page) => page.getByTestId('calendar-review-table'),
+  },
+  {
+    name: 'calendar-cutover-refetch-error',
+    label: '予定の正本の切り替え',
+    storyId: '画面-calendar-calendarcutovercontainer--refetch-error',
+    storyName: 'CalendarCutoverContainer の RefetchError',
+    what: '切り替えの状況',
+    shown: (page) => page.getByTestId('calendar-cutover-calendars'),
+  },
+  {
     name: 'staff-list-refetch-error',
     label: '職員の一覧',
     storyId: '画面-staff-stafflistcontainer--refetch-error',
@@ -45,6 +85,14 @@ const SCREENS: Screen[] = [
     storyName: 'PatientDetailContainer の RefetchError',
     what: '利用者',
     shown: (page) => page.getByTestId('patient-detail-name'),
+  },
+  {
+    name: 'staff-detail-refetch-error',
+    label: '職員の詳細',
+    storyId: '画面-staff-staffdetailcontainer--refetch-error',
+    storyName: 'StaffDetailContainer の RefetchError',
+    what: '職員',
+    shown: (page) => page.getByTestId('staff-detail-name'),
   },
   {
     name: 'organization-list-refetch-error',

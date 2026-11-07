@@ -14,7 +14,7 @@ const countPendingCalendarEventRecords = `-- name: CountPendingCalendarEventReco
 SELECT count(*) FROM calendar_event_records WHERE facility_id = $1 AND pending_version IS NOT NULL
 `
 
-// 切り替えを始める操作と完了する操作が、予定の API が Google に書いている途中か、結果が分からない書き込みを数える（ADR-0030）。
+// 切り替えを始める操作と完了する操作が、予定の API が Google に書いている途中か、結果が分からない書き込みを数える（ADR-0031）。
 func (q *Queries) CountPendingCalendarEventRecords(ctx context.Context, facilityID string) (int64, error) {
 	row := q.db.QueryRow(ctx, countPendingCalendarEventRecords, facilityID)
 	var count int64
@@ -356,7 +356,7 @@ type ListCalendarEventRecordVisitsRow struct {
 	CategoryIds     []string
 }
 
-// 切り替えの取り込みが、予定の API が Google に書いた予定の訪問の情報を、タイトルの読み替えより優先して使う（ADR-0030）。
+// 切り替えの取り込みが、予定の API が Google に書いた予定の訪問の情報を、タイトルの読み替えより優先して使う（ADR-0031）。
 // Google が受けたと分かった版の訪問の情報だけを返し、保留の版の訪問の情報は返さない。
 // 訪問の情報を持たない確定した記録（通常の予定）も、訪問の情報を空にして返す。繰り返しの予定の例外の回が、自分の記録を持つかを見分けるためである。
 func (q *Queries) ListCalendarEventRecordVisits(ctx context.Context, externalCalendarID string) ([]ListCalendarEventRecordVisitsRow, error) {

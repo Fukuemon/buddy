@@ -60,7 +60,8 @@ status: stable
 | サービス内容 | 照合で比べるサービスの表記（`訪看I２` など） | `Record.Service`、`servicecode.Lookup` |
 | 許容範囲 | サービス内容ごとに許す分の範囲。両端を含む | `servicecode.Range` |
 | 加算 | 実績の加算①から加算⑤ | `Record.Additions` |
-| 注意の印 | 「 ※」。整合の行で値は違うが両方が許容範囲に入る値と、不整合の行で規則に合わない加算に付ける | `Checks.DurationEqual`、`EndEqual`、`Additions` |
+| 不一致の印 | 照合の結果の表で、区分を不整合にした項目（開始時間、サービス内容、許容範囲、加算）の値に付ける印。丸の中に「!」のアイコン | `Checks.Start`、`Service`、`*Elapsed`、`*Duration`、`Additions`、web `rowFindings` |
+| 注意の印 | 照合の結果の表で、区分を決めないが予定と実績で違う提供時間と終了時間の値に付ける印。三角のアイコン。行の区分によらず付ける | `Checks.DurationEqual`、`EndEqual`、web `rowFindings` |
 | 対象の月 | Google カレンダーから予定を取る月 | `source.Request.Month`、API `month` |
 
 ### Google カレンダーとの連携

@@ -76,7 +76,7 @@ type CalendarEventProjection struct {
 	ProjectedAt time.Time
 }
 
-// google_primary の事業所で、予定の API が Google カレンダーに書いた予定の、訪問の情報と書き込みの保留の版（ADR-0028）。通常の予定も保留の版を持つために行を作る
+// google_primary の事業所で、予定の API が Google カレンダーに書いた予定の、訪問の情報と書き込みの保留の版（ADR-0029）。通常の予定も保留の版を持つために行を作る
 type CalendarEventRecord struct {
 	// buddy の予定の ID。画面が作成のリクエストに付ける。Google の予定の ID はこの ID から決める
 	ScheduleID string

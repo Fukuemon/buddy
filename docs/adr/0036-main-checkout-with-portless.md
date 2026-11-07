@@ -1,4 +1,4 @@
-# ADR-0035: main の checkout と worktree のローカル環境を、portless でプロジェクトごとのホスト名の HTTPS の URL で出す
+# ADR-0036: main の checkout と worktree のローカル環境を、portless でプロジェクトごとのホスト名の HTTPS の URL で出す
 
 ## Status
 
@@ -6,21 +6,21 @@
 
 ## Context
 
-ADR-0034 で、worktrunk で作った worktree の環境を、portless の `https://<サービス>.<プロジェクト>.localhost` で出すようにした。main の checkout と CI は、`http://localhost:<ポート>` のまま残した。
+ADR-0035 で、worktrunk で作った worktree の環境を、portless の `https://<サービス>.<プロジェクト>.localhost` で出すようにした。main の checkout と CI は、`http://localhost:<ポート>` のまま残した。
 
 - main の checkout の環境は http で動き、web のセッションの cookie に `Secure` が付かない。worktree の環境と違う設定で確認していることになる。
 - main の checkout の環境は `localhost` のホスト名で、ほかの localhost のアプリと cookie を共有する。
 - 起動の手順と、コーディングエージェントへの指示が、main の checkout と worktree で 2 つに分かれる。
 - main の checkout の compose のプロジェクトの名前は `buddy` である。volume とビルドしたイメージの名前は、プロジェクトの名前から付く。
-- ADR-0034 の次の事実は変わらない。
+- ADR-0035 の次の事実は変わらない。
   - cookie はポートを区別しない。
   - portless は、compose の HTTP のサービスのポートを選び直す。
   - macOS の Node.js は、`/etc/hosts` に無い `*.localhost` の名前を引けない。
   - web は、TLS を終端するプロキシの後ろでは、リクエストの URL から戻り先の URL を作れない。
 
-この ADR は、ADR-0034 を置き換える。ADR-0034 の判断のうち変えないものも、この ADR に書く。
+この ADR は、ADR-0035 を置き換える。ADR-0035 の判断のうち変えないものも、この ADR に書く。
 
-- ADR-0034: [worktree ごとのローカル環境を、portless で worktree ごとのホスト名の HTTPS の URL で出す](0034-local-hostnames-with-portless.md)
+- ADR-0035: [worktree ごとのローカル環境を、portless で worktree ごとのホスト名の HTTPS の URL で出す](0035-local-hostnames-with-portless.md)
 
 ## Decision
 
@@ -71,8 +71,8 @@ flowchart LR
 | **採用:** compose の `*_ORIGIN` のデフォルトを portless のホスト名にし、main の checkout の名前を `buddy` のままにする | main の checkout に `.env` が要らない。今の volume と DB をそのまま使える。起動の手順が worktree と同じになる | `docker compose up` で起動すると、ブラウザが開くホスト名が portless に登録されず、ログインが失敗する。CI は `*_ORIGIN` を渡す必要がある |
 | デフォルトを `http://localhost` のままにし、main の checkout にも `.env` を書くスクリプトを足す | compose のデフォルトと CI の設定を変えない | main の checkout に、`.env` を書く手順が 1 つ増える。手順を忘れると http で動く |
 | main の checkout の名前を `buddy-main` などに変える | worktree と同じ形の名前になる | volume の名前が変わり、今の DB を使うには volume を移す手順が要る。同じ名前のブランチの worktree とぶつかる |
-| main の checkout は `http://localhost` のまま残す（ADR-0034） | 変更が要らない | cookie の `Secure` と localhost の cookie の共有が残る。手順が 2 つに分かれる |
-| Traefik と mkcert、OrbStack のコンテナのドメイン | 実績が多い。コンテナに名前と HTTPS が付く | ADR-0034 で採らなかった理由（設定の多さ、Docker の実行環境の乗り換え）が変わらない |
+| main の checkout は `http://localhost` のまま残す（ADR-0035） | 変更が要らない | cookie の `Secure` と localhost の cookie の共有が残る。手順が 2 つに分かれる |
+| Traefik と mkcert、OrbStack のコンテナのドメイン | 実績が多い。コンテナに名前と HTTPS が付く | ADR-0035 で採らなかった理由（設定の多さ、Docker の実行環境の乗り換え）が変わらない |
 
 ## Consequences
 

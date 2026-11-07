@@ -3,7 +3,12 @@ import type { Meta, StoryObj } from '@storybook/react-vite'
 import { ApiError, type BuddyApi } from '#/api/BuddyApi'
 import { createFakeBuddyApi } from '#/api/fake/fakeBuddyApi'
 import { FAKE_VIEWER } from '#/api/fake/fixtures'
-import { pendingBuddyApi, withAppRouter, type AppRouterParameters } from '#/storybook/withAppRouter'
+import {
+  failOnSecondCall,
+  pendingBuddyApi,
+  withAppRouter,
+  type AppRouterParameters,
+} from '#/storybook/withAppRouter'
 
 import { StaffDetailContainer } from './StaffDetailContainer'
 
@@ -292,3 +297,15 @@ export const NotFound: Story = {
     },
   }),
 }
+
+/** 職員を、2 回目だけ読めないフェイクの API を作る。 */
+export const refetchFailingApi = (): BuddyApi => {
+  const base = createFakeBuddyApi()
+  return {
+    ...base,
+    staff: { ...base.staff, get: failOnSecondCall((...args) => base.staff.get(...args)) },
+  }
+}
+
+/** 読み終えた後に読み直して、職員を読めない。詳細を残し、見出しの下に失敗の文と読み直すを出す。 */
+export const RefetchError: Story = { parameters: route('staff-2', { api: refetchFailingApi() }) }

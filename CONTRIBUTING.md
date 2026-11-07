@@ -52,7 +52,7 @@ apm lifecycle trust
 
 画面、API、ID ブローカーと、それらが使うサービスを、ルートの `compose.yml` で一緒に起動する。  
 main の checkout と worktree のどちらも、[portless](https://github.com/vercel-labs/portless) で起動し、プロジェクトごとのホスト名の https の URL で開く。  
-ADR-0035: [main の checkout と worktree のローカル環境を、portless でプロジェクトごとのホスト名の HTTPS の URL で出す](docs/adr/0035-main-checkout-with-portless.md)
+ADR-0036: [main の checkout と worktree のローカル環境を、portless でプロジェクトごとのホスト名の HTTPS の URL で出す](docs/adr/0036-main-checkout-with-portless.md)
 
 1. portless のプロキシを、最初に 1 回だけ起動する。管理者の権限は使わない。
 

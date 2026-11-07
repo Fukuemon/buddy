@@ -2,7 +2,7 @@
 
 ## Status
 
-承認
+ADR-0020 に置換
 
 ## Context
 

@@ -22,7 +22,7 @@ func findOpen(ctx context.Context, cutovers CutoverRepository, facilityID string
 	return &c, nil
 }
 
-// requireNoPendingWrites は、事業所 facilityID に、予定の API の保留の版を持つ記録が無いことを確認する（ADR-0030）。
+// requireNoPendingWrites は、事業所 facilityID に、予定の API の保留の版を持つ記録が無いことを確認する（ADR-0031）。
 // 事業所の行を排他のロックで取った後に、トランザクションの中で呼ぶ。予定の API の書き込みは同じ行を共有のロックで読んでから
 // 保留の版を書くので、ロックを取った後に新しい保留の版はできない。あれば code が CodeWritePending の apperr.ErrConflict を返す。
 func requireNoPendingWrites(ctx context.Context, cutovers CutoverRepository, facilityID, action string) error {
@@ -38,7 +38,7 @@ func requireNoPendingWrites(ctx context.Context, cutovers CutoverRepository, fac
 }
 
 // requireImportable は、事業所 f に予定を取り込めるかを確認する。buddy を予定の正本にする事業所と、open の切り替え open がある
-// Google カレンダーを予定の正本にする事業所で取り込める（ADR-0025 の RequireWritable の例外、ADR-0030）。
+// Google カレンダーを予定の正本にする事業所で取り込める（ADR-0026 の RequireWritable の例外、ADR-0031）。
 // 取り込めないときは、schedule.RequireWritable と同じく code が schedule.CodeGooglePrimary の apperr.ErrConflict を返す。
 func requireImportable(f organization.Facility, open *Cutover) error {
 	if open != nil && open.FacilityID == f.ID && f.SourceMode == organization.SourceGooglePrimary {

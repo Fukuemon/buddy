@@ -2,8 +2,10 @@ import { useQuery } from '@tanstack/react-query'
 import { useNavigate, useSearch } from '@tanstack/react-router'
 import { useState, type ComponentProps } from 'react'
 
+import { failedBeforeLoad, hasRefetchFailed, refetchFailedQueries } from '#/api/refetch'
 import type { Staff } from '#/api/types'
 import { useBuddyApi } from '#/api/useBuddyApi'
+import { RefetchErrorMessage } from '#/components/page/RefetchErrorMessage'
 import { Loading, useIsDesktop } from '@buddy/ui'
 
 import { activeStaff, activeStaffIds, excludeInactiveStaffSchedules } from '../lib/activeStaff'
@@ -62,7 +64,7 @@ export type ScheduleCalendarContainerProps = {
  * 職員の列は、ログインした職員が予定を見てよい職員に限る。「予定を作成」は誰かの予定を編集できる職員にだけ出し、
  * 時間の枠は、予定を編集できる職員の列でだけ押せる。
  * 幅 768px 未満の週の表示は、時刻の格子の代わりに、予定を日ごとに縦に並べる週の一覧で出す。日の表示は、ログインした職員の列を左端に置く。
- * Google カレンダーを予定の正本にする事業所（google_primary）でも予定を作る操作を出し、予定の API が Google カレンダーに書く（ADR-0028）。
+ * Google カレンダーを予定の正本にする事業所（google_primary）でも予定を作る操作を出し、予定の API が Google カレンダーに書く（ADR-0029）。
  * 予定の正本を buddy に切り替えている間は、予定を作る操作を出さない。カレンダーの上には、Google カレンダーと buddy のどちらでも
  * 予定を変えられる案内、切り替え中の案内、同期の警告、確認が必要な予定の通知を出す。事業所の正本は、予定の一覧か事業所から読む。
  */
@@ -148,6 +150,11 @@ export const ScheduleCalendarContainer = ({
           view={view}
         />
       </div>
+      {hasRefetchFailed([schedulesQuery, staffQuery]) && (
+        <div className="px-2 pb-2 desktop:px-6">
+          <RefetchErrorMessage onRetry={() => refetchFailedQueries([schedulesQuery, staffQuery])} />
+        </div>
+      )}
       {sourceMode === 'google_primary' && (
         <div className="px-2 pb-2 desktop:px-6">
           <SourceNoticesWithNow
@@ -163,7 +170,7 @@ export const ScheduleCalendarContainer = ({
       <div className="min-h-0 grow px-2 pb-4 desktop:px-6">
         {schedulesQuery.isPending || staffQuery.isPending ? (
           <Loading description="カレンダーを表示中..." />
-        ) : schedulesQuery.isError || staffQuery.isError ? (
+        ) : failedBeforeLoad([schedulesQuery, staffQuery]) !== undefined ? (
           <p className="p-4 text-danger" role="alert">
             予定を取得できませんでした。
           </p>

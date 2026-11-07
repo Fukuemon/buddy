@@ -6,6 +6,7 @@ import { createFakeBuddyApi } from '#/api/fake/fakeBuddyApi'
 import type { CalendarSyncStatus } from '#/api/types'
 import { MOCK_FACILITY_ID } from '#/mocks/scheduleData'
 import {
+  failOnSecondCall,
   failingBuddyApi,
   pendingBuddyApi,
   withAppRouter,
@@ -99,3 +100,18 @@ export const BuddyPrimary: Story = { parameters: route({ api: createFakeBuddyApi
 export const Loading: Story = { parameters: route({ api: pendingBuddyApi() }) }
 
 export const LoadError: Story = { parameters: route({ api: failingBuddyApi() }) }
+
+/** 切り替えの状況を、2 回目だけ読めないフェイクの API を作る。 */
+export const refetchFailingApi = (): BuddyApi => {
+  const base = googlePrimaryApi()
+  return {
+    ...base,
+    calendars: {
+      ...base.calendars,
+      cutoverStatus: failOnSecondCall((...args) => base.calendars.cutoverStatus(...args)),
+    },
+  }
+}
+
+/** 読み終えた後に読み直して、切り替えの状況を読めない。表示を残し、見出しの下に失敗の文と読み直すを出す。 */
+export const RefetchError: Story = { parameters: route({ api: refetchFailingApi() }) }
