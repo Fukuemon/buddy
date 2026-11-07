@@ -16,6 +16,14 @@
 
 - `apps/web/src/features/schedule/components/ScheduleFormModal.tsx`
 - `apps/web/src/features/schedule/components/ScheduleForm.tsx`
+- `apps/web/src/features/schedule/components/ScheduleFieldSummaryList.tsx`
+- `apps/web/src/features/schedule/components/ScheduleDateTimeEdit.tsx`
+- `apps/web/src/features/schedule/components/ServiceCodeRadioGroup.tsx`
+- `apps/web/src/features/schedule/components/PatientSelectList.tsx`
+- `apps/web/src/features/schedule/components/StaffSelectList.tsx`
+- `apps/web/src/features/schedule/components/OptionSearchSelectList.tsx`
+- `apps/web/src/features/schedule/components/ScheduleCategoryCheckboxGroup.tsx`
+- `packages/ui/src/base/Modal/Modal.tsx`
 
 ## 構成
 
@@ -332,30 +340,23 @@
 
 ## 覆い
 
-**概要**: モーダルの後ろの予定のカレンダーを暗くぼかして覆い、操作できなくする。  
+**概要**: モーダルの後ろの予定のカレンダーを、暗くぼかして覆う覆い。  
 押すとモーダルを閉じる。
 
 **値のソース**: 文言は無い。  
 後ろには `/schedule` の画面として描いたカレンダーが残る。
 
-**活性条件**: 常に活性
-
-**表示条件**: 常に表示
-
 **カタログ**: [ScheduleFormModal の Visit](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-scheduleformmodal--visit)、[ScheduleCreateModalContainer の Loading](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-schedulecreatemodalcontainer--loading)、[ScheduleCreateModalContainer の ListFailed](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-schedulecreatemodalcontainer--list-failed)
 
-### インタラクション
+**操作**: 押すと、[閉じる](#閉じる) を押したときと同じく閉じる。
 
-#### 1. 押す
-
-1. [閉じる](#閉じる) を押したときと同じ。
-   - 中身から覆いへドラッグして離したときは閉じない。
+1. 中身から覆いへドラッグして離したときは閉じない。
 
 ## 閉じる
 
-**概要**: 予定を作らずにモーダルを閉じる。
+**概要**: 予定を作らずにモーダルを閉じるボタン。
 
-**値のソース**: ×のアイコン。  
+**値のソース**: × のアイコン。  
 読み上げの名前は「閉じる」。  
 閉じるときに出す確認の文は次のとおり。
 
@@ -363,99 +364,73 @@
 | --- | --- |
 | 入力を変えた | 「変更が破棄されますがよろしいですか？」 |
 
-**活性条件**: 常に活性
-
-**表示条件**: 常に表示
-
 **カタログ**: [ScheduleFormModal の Visit](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-scheduleformmodal--visit)、[ScheduleCreateModalContainer の Loading](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-schedulecreatemodalcontainer--loading)、[ScheduleCreateModalContainer の ListFailed](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-schedulecreatemodalcontainer--list-failed)
 
-### インタラクション
+**操作**:
 
-#### 1. 入力を変えずに押すか、Escape キーを押す
-
-1. `/schedule` に戻る。
-   - カレンダーの `view`、`date`、`staff`、`cancelled` を引き継ぐ。
-   - 「読み込み中」「読み込みの失敗」の状態で押したときも、確認を出さずに戻る。
-
-#### 2. 入力を変えてから押すか、Escape キーを押す
-
-1. ブラウザの確認のダイアログで、変更を破棄してよいかを尋ねる。
-2. OK なら `/schedule` に戻る。
-   - キャンセルならモーダルに留まる。
+- 入力を変えずに押すか、Escape キーを押すと、`/schedule` に戻る。
+  - カレンダーの `view`、`date`、`staff`、`cancelled` を引き継ぐ。
+  - 「読み込み中」「読み込みの失敗」の状態で押したときも、確認を出さずに戻る。
+- 入力を変えてから押すか、Escape キーを押すと、ブラウザの確認のダイアログで、変更を破棄してよいかを尋ねる。
+  - OK なら `/schedule` に戻る。
+  - キャンセルならモーダルに留まる。
 
 ## ダイアログのタイトル
 
-**概要**: 何のモーダルかを示す。  
+**概要**: 何のモーダルかを示すラベル。  
 開いたとき、ダイアログのタイトルにフォーカスを移す。
 
 **値のソース**: 「予定の作成」
-
-**活性条件**: 常に活性
-
-**表示条件**: 常に表示
 
 **カタログ**: [ScheduleFormModal の Visit](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-scheduleformmodal--visit)、[ScheduleCreateModalContainer の Loading](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-schedulecreatemodalcontainer--loading)、[ScheduleCreateModalContainer の ListFailed](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-schedulecreatemodalcontainer--list-failed)
 
 ## 読み込み中の表示
 
-**概要**: 職員、利用者、サービスコードの一覧を読んでいる間であることを示す。
+**概要**: 職員、利用者、サービスコードの一覧を読んでいる途中であることを示す領域。
 
 **値のソース**: 回転するインジケーターだけ。  
 文は出さない。
-
-**活性条件**: 常に活性
-
-**表示条件**: 職員、利用者、サービスコードの一覧のどれかを読み終えていないとき
 
 **カタログ**: [ScheduleCreateModalContainer の Loading](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-schedulecreatemodalcontainer--loading)
 
 ## 読み込みの失敗の文
 
-**概要**: 主訪問者、予定者、利用者、サービスコードの選択肢を読めず、予定を作れないことを伝える。
+**概要**: 主訪問者、予定者、利用者、サービスコードの選択肢を読めず、予定を作れないことを伝えるメッセージ。
 
 **値のソース**: 「職員と利用者を読み込めませんでした。閉じてから、開き直してください。」。  
-読み上げでは警告として扱う。
-
-**活性条件**: 常に活性
-
-**表示条件**: 職員、利用者、サービスコードの一覧のどれかを読めなかったとき。  
-つながらないときは何度か読み直してから出すので、その間は読み込み中の表示が続く
+読み上げでは警告として扱う。  
+つながらないときは何度か読み直してから出すので、その間は読み込み中の表示が続く。
 
 **カタログ**: [ScheduleCreateModalContainer の ListFailed](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-schedulecreatemodalcontainer--list-failed)
 
 ## 予定の種類
 
-**概要**: 通常の予定と訪問の予定を切り替える。
+**概要**: 通常の予定と訪問の予定を切り替えるラジオボタン。  
+作成の画面だけが持ち、編集の画面は出さない。
 
 **値のソース**: 「通常」「訪問」。  
 読み上げの名前は「予定の種類」。
 
-**活性条件**: 常に活性
-
-**表示条件**: フォームを出しているとき。  
-編集の画面は出さず、作成の画面だけが持つ
-
 **カタログ**: [ScheduleFormModal の Visit](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-scheduleformmodal--visit)
 
-### インタラクション
+**操作**: 種類を押すと、フォームを選んだ種類の初期値に戻す。
 
-#### 1. 種類を押す
-
-1. フォームを、選んだ種類の初期値に戻す。
-   - 日付、開始時間、主訪問者か予定者は残す。
+1. 日付、開始時間、主訪問者か予定者は残す。
    - タイトル、利用者、サービスコード、提供時間、訪問の区分、メモは初期値に戻る。
    - 確認は出さない。
    - 残した日付、開始時間、主訪問者か予定者を開いたときの値から変えていれば、変更ありとして扱い、閉じるときに確認を出す。
-2. URL の `kind` を置き換える。履歴には積まない。
+2. URL の `kind` を置き換える。
+   - 履歴には積まない。
 3. 右の入力に開いていた項目が、選んだ種類に無ければ、右には日時の入力を出す。
 
 ## 項目の一覧
 
-**概要**: フォームの項目と今の値を要約して並べる。  
+**概要**: フォームの項目と今の値を要約して並べるボタンの一覧。  
 押した項目の入力を右に出す。  
 右に出している項目は枠を太くする。
 
-**値のソース**: 項目の名前と、今の値の要約。
+**値のソース**: 項目の名前と、今の値の要約。  
+項目は、種類の列の種類のときだけ出す。
 
 | 項目 | 種類 | 名前 | 値の要約 |
 | --- | --- | --- | --- |
@@ -472,7 +447,7 @@
   - 利用者、主訪問者、予定者は、薄い色で「選んでください」と出す。
   - 読み上げでは、項目の名前と「未入力」を読ませる。
 - 入力エラーがある項目は、枠を赤く太くし、要約の下にエラーの文を出す。
-  - 日付と時間のエラーは、日時の 1 つの枠にまとめ、日付、開始時間、終了時間、提供時間の順で最初の 1 つの文を出す。
+  - 日付と時間とサービスコードのエラーは、日時の 1 つの枠にまとめ、日付、開始時間、終了時間、サービスコード、提供時間の順で最初の 1 つの文を出す。
 - 日時とタイトルの入力では、右の入力の欄ごとに、その欄のエラーの文を欄の下に出す。
   - 利用者、主訪問者、予定者は、項目の一覧の枠と文だけで示す。
 - 作成を押した後、検証に通らない項目にエラーの文を出す。
@@ -490,101 +465,73 @@
 | 利用者（訪問） | 選んでいない | 「利用者を選んでください」 |
 | 主訪問者（訪問） | 選んでいない | 「主訪問者を選んでください」 |
 | 予定者（通常） | 選んでいない | 「予定者を選んでください」 |
+| サービスコード（訪問） | 選んでいないか、事業所のサービスコードの一覧に無い | 「サービスコードを選んでください」 |
 | 提供時間（訪問） | 数でないか、整数でない | 「提供時間を入力してください」 |
 | 提供時間（訪問） | サービスコードの提供時間の範囲の外 | 「訪看I2 の提供時間は 20 分から 29 分です」の形。サービスコード、下限、上限を入れる。下限と上限は、事業所のサービスコードの一覧の値 |
 
+- サービスコードのエラーは、事業所のサービスコードの一覧が空のときに出る。
+  - サービスコードを選べないので、訪問の予定は作れない。
 - タイトルとメモの長さは、画面で確認しない。
   - タイトルは 255 文字、メモは 2000 文字まで保存できる。
   - 超えると作成の失敗の文が出る。
 
-**活性条件**: 常に活性
-
-**表示条件**: 常に表示。  
-項目は種類の列の種類のときだけ出す
-
 **カタログ**: [ScheduleFormModal の Visit](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-scheduleformmodal--visit)
 
-### インタラクション
+**操作**: 項目を押すと、右の入力をその項目に替える。
 
-#### 1. 項目を押す
-
-1. 右の入力をその項目に替える。
-   - URL は変わらない。
+1. URL は変わらない。
 
 ## 日付
 
-**概要**: 予定の日を入れる。
+**概要**: 予定の日を入れるテキストボックス。
 
 **値のソース**: ラベルは、訪問では「訪問日」、通常では「日付」。  
 初期値は URL の `start` の日。
-
-**活性条件**: 常に活性
-
-**表示条件**: 項目の一覧で日時を選んでいるとき
 
 **カタログ**: [ScheduleFormModal の Visit](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-scheduleformmodal--visit)
 
 ## 開始時間
 
-**概要**: 予定の開始の時刻を入れる。
+**概要**: 予定の開始の時刻を入れるテキストボックス。
 
 **値のソース**: 「開始時間」。  
 初期値は URL の `time`。  
 無ければ 09:00。
 
-**活性条件**: 常に活性
-
-**表示条件**: 項目の一覧で日時を選んでいるとき
-
 **カタログ**: [ScheduleFormModal の Visit](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-scheduleformmodal--visit)
 
-### インタラクション
-
-#### 1. 変える
-
-1. 種類が訪問なら、[終了時間](#終了時間) を、開始時間に提供時間を足した時刻にする。
+**操作**: 変えると、種類が訪問なら、[終了時間](#終了時間) を、開始時間に提供時間を足した時刻にする。
 
 ## 提供時間
 
-**概要**: 訪問の長さを分で入れる。
+**概要**: 訪問の長さを分で入れるテキストボックス。  
+種類が訪問のときだけ出す。
 
 **値のソース**: 「提供時間（分）」。  
 初期値は、初期のサービスコードの提供時間の範囲の上限。  
 例えば、訪看I2 の範囲が 20 分から 29 分なら 29。
 
-**活性条件**: 常に活性
-
-**表示条件**: 種類が訪問で、項目の一覧で日時を選んでいるとき
-
 **カタログ**: [ScheduleFormModal の Visit](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-scheduleformmodal--visit)
 
-### インタラクション
-
-#### 1. 変える
-
-1. [終了時間](#終了時間) を、開始時間に提供時間を足した時刻にする。
+**操作**: 変えると、[終了時間](#終了時間) を、開始時間に提供時間を足した時刻にする。
 
 ## 終了時間
 
 **概要**: 予定の終わりの時刻。  
-通常の予定では入れ、訪問の予定では開始時間と提供時間から求めて示す。
+通常の予定では入れるテキストボックスで、訪問の予定では開始時間と提供時間から求めて示すラベルである。
 
 **値のソース**: 通常では「終了時間」の入力で、初期値は開始時間の 1 時間後。  
 訪問では「終了時間 09:29」の形の文で、提供時間が数でなければ「終了時間 -」にする。  
 訪問で、開始時間と提供時間の和が 24 時以上なら、終了を翌日にし、「終了時間 翌 00:30」の形にする。  
 24 時ちょうどは「終了時間 翌 00:00」になる。
 
-**活性条件**: 通常では常に活性。  
-訪問では入力できない
-
-**表示条件**: 項目の一覧で日時を選んでいるとき
-
 **カタログ**: [ScheduleFormModal の Visit](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-scheduleformmodal--visit)
 
 ## 終了は翌日
 
-**概要**: 通常の予定で、終了が日付の翌日の終了時間かを選ぶ。  
-夜勤のように日をまたぐ予定を入れるときに選ぶ。
+**概要**: 通常の予定で、終了が日付の翌日の終了時間かを選ぶチェックボックス。  
+夜勤のように日をまたぐ予定を入れるときに選ぶ。  
+終了時間の下に置く。
 
 **値のソース**: 「終了は翌日」。  
 初期値は、開始時間の 1 時間後が 24 時を過ぎれば選んだ状態、過ぎなければ選んでいない状態。
@@ -594,23 +541,15 @@
   - 開始時間と同じか後だと、予定が 24 時間以上になるので受けない。
   - 翌日の 0:00 に終わる予定は、終了時間を 00:00 にして選ぶ。
 
-**活性条件**: 常に活性
-
-**表示条件**: 種類が通常で、項目の一覧で日時を選んでいるとき。  
-終了時間の下に置く
-
 **カタログ**: [ScheduleFormModal の Normal](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-scheduleformmodal--normal)
 
-### インタラクション
+**操作**: 押すと、選択を切り替え、項目の一覧の「予定日時」の要約の終了時間に「翌日」を付けるか外す。
 
-#### 1. 押す
-
-1. 選択を切り替え、項目の一覧の「予定日時」の要約の終了時間に「翌日」を付けるか外す。
-2. 作成を押した後なら、終了時間を検証し直す。
+1. 作成を押した後なら、終了時間を検証し直す。
 
 ## サービスコード
 
-**概要**: 訪問のサービスコードを 1 つ選ぶ。
+**概要**: 訪問のサービスコードを 1 つ選ぶラジオボタン。
 
 **値のソース**: 見出しは「サービスコードを選んでください」。
 
@@ -623,107 +562,77 @@
 全角と半角の数字の違いは問わずに探す。  
 例えば、「訪看I２」も「訪看I2」として扱う。
 
-**活性条件**: 常に活性
-
-**表示条件**: 種類が訪問で、項目の一覧で日時を選んでいるとき
-
 **カタログ**: [ServiceCodeRadioGroup の Default](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-servicecoderadiogroup--default)
 
-### インタラクション
-
-#### 1. 選ぶ
-
-1. 提供時間を、そのコードの提供時間の範囲の上限にし、検証し直す。
+**操作**: 選ぶと、提供時間を、そのコードの提供時間の範囲の上限にし、検証し直す。
 
 ## タイトル
 
-**概要**: 通常の予定のタイトルを入れる。  
+**概要**: 通常の予定のタイトルを入れるテキストボックス。  
 訪問の予定のタイトルは画面で入れず、「訪問」を送る。
 
 **値のソース**: 「タイトル」。  
 初期値は空。
 
-**活性条件**: 常に活性
-
-**表示条件**: 種類が通常で、項目の一覧でタイトルを選んでいるとき
-
 **カタログ**: [TextareaField の Default](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/コンポーネント-base-textareafield--default)
 
 ## 利用者の検索
 
-**概要**: 利用者の一覧を名前で絞る。
+**概要**: 利用者の一覧を名前で絞るテキストボックス。
 
 **値のソース**: 見出しは「利用者を選んでください」。  
 欄の中の文は「利用者を検索」。
 
-**活性条件**: 常に活性
-
-**表示条件**: 種類が訪問で、項目の一覧で利用者を選んでいるとき
-
 **カタログ**: [PatientSelectList の Default](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-patientselectlist--default)
 
-### インタラクション
+**操作**:
 
-#### 1. 語を入れる
-
-1. 名前に語を含む利用者だけを、利用者の一覧に出す。
-   - 語の前後の空白は無視する。
-   - 語が空なら全てを出す。
-   - 一覧は読み直さない。
-2. Escape キーを押すと、語を消す。
-3. 項目の一覧でほかの項目を選んでから戻ると、語は消えている。
+- 語を入れると、名前に語を含む利用者だけを、利用者の一覧に出す。
+  - 語の前後の空白は無視する。
+  - 語が空なら全てを出す。
+  - 一覧は読み直さない。
+- Escape キーを押すと、語を消す。
+- 項目の一覧でほかの項目を選んでから戻ると、語は消えている。
 
 ## 利用者の一覧
 
-**概要**: 訪問先の利用者を 1 人選ぶ。
+**概要**: 訪問先の利用者を 1 人選ぶ表。
 
-**値のソース**: 「名前」のカラムの下に、事業所の利用者の名前を並べる。  
+**値のソース**: 「名前」のカラムの下に、事業所の利用者の名前を、利用者の一覧の順に並べる。  
+利用の終了の利用者は除く。  
+名前に検索の語を含む利用者だけを出す。  
 初期値は未選択。  
 絞った結果が 0 件なら、表の下に「該当する名前がありません。」を出す。
 
-**活性条件**: 常に活性
-
-**表示条件**: 種類が訪問で、項目の一覧で利用者を選んでいるとき。  
-名前に検索の語を含む利用者だけを出す
-
 **カタログ**: [PatientSelectList の Default](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-patientselectlist--default)
 
-### インタラクション
-
-#### 1. 利用者を選ぶ
-
-1. 選んだ利用者を、項目の一覧の「利用者」の要約に出す。
+**操作**: 利用者を選ぶと、選んだ利用者を、項目の一覧の「利用者」の要約に出す。
 
 ## 職員の検索
 
-**概要**: 職員の一覧を名前で絞る。
+**概要**: 職員の一覧を名前で絞るテキストボックス。
 
 **値のソース**: 見出しは、訪問では「主訪問者を選んでください」、通常では「予定者を選んでください」。  
 欄の中の文は「職員を検索」。
 
-**活性条件**: 常に活性
-
-**表示条件**: 項目の一覧で主訪問者か予定者を選んでいるとき
-
 **カタログ**: [StaffSelectList の Unselected](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-staffselectlist--unselected)
 
-### インタラクション
+**操作**:
 
-#### 1. 語を入れる
-
-1. 名前に語を含む職員だけを、職員の一覧に出す。
-   - 語の前後の空白は無視する。
-   - 語が空なら全てを出す。
-   - 一覧は読み直さない。
-2. Escape キーを押すと、語を消す。
-3. 項目の一覧でほかの項目を選んでから戻ると、語は消えている。
+- 語を入れると、名前に語を含む職員だけを、職員の一覧に出す。
+  - 語の前後の空白は無視する。
+  - 語が空なら全てを出す。
+  - 一覧は読み直さない。
+- Escape キーを押すと、語を消す。
+- 項目の一覧でほかの項目を選んでから戻ると、語は消えている。
 
 ## 職員の一覧
 
-**概要**: 訪問の予定の主訪問者か、通常の予定の予定者を 1 人選ぶ。
+**概要**: 訪問の予定の主訪問者か、通常の予定の予定者を 1 人選ぶ表。
 
 **値のソース**: 「名前」のカラムの下に、ログインした職員が予定を作れる職員の名前を、職員の一覧の順に並べる。  
 休職と退職の職員と、訪問しない職員は除く。  
+名前に検索の語を含む職員だけを出す。  
 絞った結果が 0 件なら、表の下に「該当する名前がありません。」を出す。
 
 初期値は URL の `staffId` の職員。  
@@ -733,22 +642,13 @@
   - 休職か退職の職員、訪問しない職員、予定を作る権限の外の職員、職員の一覧に無い ID が当たる。
   - 未選択で開いても、閉じるときに確認を出さない。
 
-**活性条件**: 常に活性
-
-**表示条件**: 項目の一覧で主訪問者か予定者を選んでいるとき。  
-名前に検索の語を含む職員だけを出す
-
 **カタログ**: [StaffSelectList の Unselected](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-staffselectlist--unselected)、[ScheduleCreateModalContainer の FromOnLeaveStaffSlot](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-schedulecreatemodalcontainer--from-on-leave-staff-slot)
 
-### インタラクション
-
-#### 1. 職員を選ぶ
-
-1. 選んだ職員を、項目の一覧の「主訪問者」か「予定者」の要約に出す。
+**操作**: 職員を選ぶと、選んだ職員を、項目の一覧の「主訪問者」か「予定者」の要約に出す。
 
 ## 訪問の区分
 
-**概要**: 訪問の区分を選ぶ。  
+**概要**: 訪問の区分を選ぶチェックボックス。  
 複数を選べる。  
 何も選ばなければ通常の訪問になる。
 
@@ -756,31 +656,23 @@
 選択肢は「夜勤」「緊急」「入院」。  
 初期値は全て外す。
 
-**活性条件**: 常に活性
-
-**表示条件**: 種類が訪問で、項目の一覧で訪問の区分を選んでいるとき
-
 **カタログ**: [ScheduleCategoryCheckboxGroup の Default](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-schedulecategorycheckboxgroup--default)
 
 ## メモ
 
-**概要**: 予定のメモを入れる。
+**概要**: 予定のメモを入れるテキストボックス。
 
 **値のソース**: 「メモ」。  
 初期値は空。
-
-**活性条件**: 常に活性
-
-**表示条件**: 項目の一覧でメモを選んでいるとき
 
 **カタログ**: [TextareaField の Default](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/コンポーネント-base-textareafield--default)
 
 ## 作成の失敗の文
 
-**概要**: 予定を作れなかったことと、職員が次にすることを示す。  
+**概要**: 予定を作れなかったことと、職員が次にすることを示すメッセージ。  
 入力は残す。
 
-**値のソース**: 失敗ごとに次の文を出す。  
+**値のソース**: 下端の、ボタンの左に、失敗ごとに次の文を出す。  
 読み上げでは警告として扱う。
 
 | 失敗 | 文 |
@@ -804,61 +696,44 @@
 - Google カレンダーに書けなかったときの文は、予定を Google カレンダーで管理する事業所でだけ出る。
 - 文と、その要因の対応は [API との対応の状態と失敗の要因](api.md#状態と失敗の要因) にある。
 
-**活性条件**: 常に活性
-
-**表示条件**: 最後の作成が失敗したとき
-
 **カタログ**: [ScheduleFormModal の SubmitError](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-scheduleformmodal--submit-error)、[ScheduleCreateModalContainer の GooglePrimaryWriteUnknown](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-schedulecreatemodalcontainer--google-primary-write-unknown)
 
 ## キャンセル
 
-**概要**: 予定を作らずにモーダルを閉じる。  
+**概要**: 予定を作らずにモーダルを閉じるボタン。  
 [閉じる](#閉じる) と同じく働く。
 
 **値のソース**: 「キャンセル」
 
-**活性条件**: 常に活性
+**操作**: 押すと、[閉じる](#閉じる) を押したときと同じく閉じる。
 
-**表示条件**: 常に表示
-
-### インタラクション
-
-#### 1. 押す
-
-1. [閉じる](#閉じる) を押したときと同じ。
-   - 入力を変えていなければ、`/schedule` に戻る。
-   - 入力を変えていれば、ブラウザの確認のダイアログで、変更を破棄してよいかを尋ねる。
+1. 入力を変えていなければ、`/schedule` に戻る。
+2. 入力を変えていれば、ブラウザの確認のダイアログで、変更を破棄してよいかを尋ねる。
 
 ## 作成
 
-**概要**: 入力を検証し、予定を作る。
+**概要**: 入力を検証し、予定を作るボタン。
 
 **値のソース**: 「作成」。  
-送信中は、文字に替えて回転するインジケーターを出す。
+送っている間は、文字に替えて回転するインジケーターを出す。
 
-**活性条件**: 送信中でないとき。  
-送信中に押しても無視する
+**活性**: 次の全てに当てはまるとき。
 
-**表示条件**: 常に表示
+- 職員が、作成を送っている途中でない
 
 **カタログ**: [ScheduleFormModal の Visit](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-scheduleformmodal--visit)
 
-### インタラクション
+**操作**: 押すと、入力を検証し、予定を作る。
 
-#### 1. 検証に通らない入力で押す
-
-1. 「入力エラー」の状態を出す。
+1. 検証に通らなければ、「入力エラー」の状態を出す。
    - 項目の一覧のエラーのある項目に、エラーの文を出す。
    - 作成はしない。
-
-#### 2. 検証に通る入力で押す
-
-1. 予定を作り、「送信中」の状態にする。
-2. 成功したら、モーダルを閉じ、`/schedule` に戻る。
+2. 検証に通れば、予定を作り、「送信中」の状態にする。
+3. 成功したら、モーダルを閉じ、`/schedule` に戻る。
    - `view`、`staff`、`cancelled` を引き継ぎ、`date` を作った予定の日にする。
    - 履歴に積む。
    - 成功の文は出さない。
-3. 失敗したら、「作成の失敗」の状態にし、モーダルを開いたままにする。
+4. 失敗したら、「作成の失敗」の状態にし、モーダルを開いたままにする。
    - Google カレンダーに書けたかを確認できなかったときは、「Google カレンダーに書けたかを確認できなかった」の状態にする。
    - 失敗の後にもう一度押しても、同じ予定として送る。予定を Google カレンダーで管理する事業所では、前の作成で Google カレンダーに書けていても、予定は 2 つにならない。
 
@@ -883,6 +758,8 @@ Tab はモーダルの中だけを回る。
 閉じると、開く前にフォーカスがあった要素へ戻す。
 
 背後のカレンダーは、`/schedule` の画面として描いたまま残る。
+
+作成を送っている間も、閉じる、キャンセル、覆い、入力の欄は押せる。
 
 予定のカレンダーの「予定を作成」、週の表示の空いた時間、日の表示の時間の枠から開く。
 
@@ -930,6 +807,7 @@ search params は次のとおり復元する。
 - 主訪問者と予定者の候補には、ログインした職員が予定を作れる職員だけを出す。
   - 休職と退職の職員と、訪問しない職員は、権限によらず除く。
 - 利用者の候補は、権限で絞らない。
+  - 利用の終了の利用者は、権限によらず除く。扱いは [ADR-0005](../../adr/0005-patient-service-end.md) にある。
 - 誰の予定も作れない職員には、予定のカレンダーに「予定を作成」を出さない。
 - 予定を Google カレンダーで管理する事業所でも、同じ権限で予定を作れる。
   - 予定の正本を切り替えている間は、権限によらず、予定のカレンダーに予定の作成を開く操作を出さない。
@@ -943,4 +821,3 @@ search params は次のとおり復元する。
 - PRD は、訪問の予定に同行者を持たせ、毎週と毎月の繰り返しの予定を作れるとしているが、この画面は、同行者を入れられず、単発の予定だけを作る。
   - 決める人: 開発者が、事業所の責任者に確認して決める
   - 期限: 同行者と繰り返しの予定を画面で扱うとき
-

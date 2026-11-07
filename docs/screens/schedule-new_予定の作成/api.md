@@ -4,6 +4,8 @@
 OpenAPI の項目のうち、送る値は `createSchedule`（`POST /v1/facilities/{facility_id}/schedules`）のリクエストの `SlotRequest` の項目で書く。  
 選択肢は、一覧の操作のレスポンスの項目で書く。
 
+## 値の対応
+
 | 要素名 | 表示する値 | web の型の項目 | OpenAPI の項目 |
 | --- | --- | --- | --- |
 | 予定の種類 | 通常か訪問 | `ScheduleInput.kind` | `schedule_type_id` |
@@ -17,6 +19,7 @@ OpenAPI の項目のうち、送る値は `createSchedule`（`POST /v1/facilitie
 | サービスコード | 選択肢の並びと表記 | `ServiceCodeRecord.code`、選んだものは `ScheduleInput.visit.serviceCode` | `listServiceCodes` の `code`、送るのは `visit_info.service_code_id` |
 | タイトル | タイトル | `ScheduleInput.title` | `title` |
 | 利用者の一覧 | 利用者の名前 | `Patient.name`、選んだものは `ScheduleInput.visit.patientId` | `listPatients` の `name`、送るのは `visit_info.patient_id` |
+| 利用者の一覧 | 利用の終了の利用者を除くか | `Patient.ended` | `listPatients`（`include_ended=true`）の `ended_at` |
 | 職員の一覧 | 職員の名前 | `Staff.name`、選んだものは `ScheduleInput.staffId` | `listUsers` の `username`、送るのは `staff_id`、`visit_info.assigned_staff_id` |
 | 職員の一覧 | 休職と退職の職員と、訪問しない職員を除くか | `Staff.status`、`Staff.nonVisiting` | `listUsers` の `Staff.status`、`visits` |
 | 職員の一覧 | 予定を作れる職員か | `Viewer.schedulePolicies`、`Staff.teamId` | `getMe` の `policies` の `code`、`target_user_ids`、`target_team_ids` |
@@ -36,12 +39,18 @@ OpenAPI の項目のうち、送る値は `createSchedule`（`POST /v1/facilitie
 - 職員、利用者、サービスコードの一覧は、`listUsers`、`listPatients`、`listServiceCodes` から取る。
   - 3 つを取り終えるまでフォームを出さない。
   - 名前の絞り込みは画面の中で行い、`username` と `name` の検索の項目は使わない。
+- `listPatients` は、web のサーバーが `include_ended=true` で利用の終了の利用者も含めて取る。
+  - この画面は、`Patient.ended` が `true` の利用者を利用者の候補から除く。
+  - 処理は `apps/web/src/api/activePatients.ts` の `activePatients` にある。
+  - 扱いは [ADR-0005](../../adr/0005-patient-service-end.md) にある。
 - サービスコードの選択肢は、`listServiceCodes` の順に並べ、`code` をそのまま出す。
   - 初期値は、`code` を NFKC で正規化して「訪看I2」に当たるもので、無ければ先頭の `code` である。
     - 処理は `apps/web/src/features/schedule/lib/scheduleFormMapper.ts` の `defaultServiceCode` にある。
   - 提供時間の初期値は、初期値のサービスコードの `service_time_range_end` である。
   - 提供時間の範囲の検証は、選んだ `code` の `service_time_range_start` と `service_time_range_end` で行う。
     - 検証は `apps/web/src/features/schedule/schema/scheduleForm.ts` にある。
+  - 選んだ `code` が空か、`listServiceCodes` に無いときは、「サービスコードを選んでください」を出し、提供時間の範囲を検証しない。
+    - 日時の枠の文は、`scheduleDate`、`startTime`、`endTime`、`serviceCode`、`serviceTime` の誤りの順で最初の 1 つを選ぶ。処理は `apps/web/src/features/schedule/components/ScheduleForm.tsx` にある。
 - 送る前に、web のサーバー（BFF、`apps/web/src/api/http/httpBuddyApi.ts`）がマスタを取り、予定の種類、サービスコード、訪問の区分を ID にする。
   - マスタは `listScheduleTypes`、`listServiceCodes`、`listVisitCategories` で取る。
   - サービスコードは、`listServiceCodes` の `code` と同じ表記で比べる。
@@ -75,6 +84,67 @@ OpenAPI の項目のうち、送る値は `createSchedule`（`POST /v1/facilitie
   - 拒むのは予定の API である。
 - URL の `staffId` が候補の外の職員を指すときは、未選択にする。
   - 処理は `apps/web/src/features/schedule/components/ScheduleCreateModalContainer.tsx` にある。
+
+## 条件の対応
+
+| 条件 | 判定に使う値 |
+| --- | --- |
+| 職員が、作成を送っている途中である | react-hook-form の `formState.isSubmitting` が `true`（`ScheduleFormModal` が作成のボタンの `isLoading` に渡す）。`createSchedule` を呼んでから、成功してカレンダーへ移るまでを含む |
+
+- 作成のボタンは packages/ui の `Button` で、`isLoading` の間は押しても `onClick` と送信を止める。
+- 送っている間も、`ScheduleFormModal` は `Modal` に送信中を渡さず、`ScheduleForm` の欄も `disabled` にしない。
+  - 閉じる、キャンセル、覆い、Escape キー、入力の欄は、送っている間も動く。
+- 項目の一覧の項目と、右の入力の欄の出し分けは、フォームの値の `kind` と、`ScheduleForm` が持つ選んだ項目で決める。
+  - どちらも状態で決まるので、条件の表に載せない。
+
+## 要素の testid
+
+| 番号 | 要素名 | testid |
+| --- | --- | --- |
+| 3 | 予定の種類 | `schedule-kind-tab` |
+| 4 | 閉じる | `modal-close` |
+| 3 | 閉じる | `modal-close` |
+| 5 | 項目の一覧 | `schedule-field-title` |
+| 5 | 項目の一覧 | `schedule-field-date-time` |
+| 5 | 項目の一覧 | `schedule-field-patient` |
+| 5 | 項目の一覧 | `schedule-field-staff` |
+| 5 | 項目の一覧 | `schedule-field-category` |
+| 5 | 項目の一覧 | `schedule-field-description` |
+| 6 | 日付 | `schedule-form-date` |
+| 7 | 開始時間 | `schedule-form-start-time` |
+| 8 | 提供時間 | `schedule-form-service-time` |
+| 9 | 終了時間 | `schedule-form-end-time` |
+| 8 | 終了時間 | `schedule-form-end-time` |
+| 9 | 終了は翌日 | `schedule-form-ends-next-day` |
+| 10 | サービスコード | `service-code-{コード}` |
+| 6 | タイトル | `schedule-form-title` |
+| 6 | 利用者の検索 | `patient-select-search` |
+| 7 | 利用者の一覧 | `patient-select-option-{利用者の id}` |
+| 6 | 職員の検索 | `staff-select-search` |
+| 7 | 職員の一覧 | `staff-select-option-{職員の id}` |
+| 6 | 訪問の区分 | `schedule-category-night` |
+| 6 | 訪問の区分 | `schedule-category-emergency` |
+| 6 | 訪問の区分 | `schedule-category-hospitalization` |
+| 6 | メモ | `schedule-form-description` |
+| 7 | キャンセル | `schedule-new-cancel` |
+| 8 | キャンセル | `schedule-new-cancel` |
+| 10 | キャンセル | `schedule-new-cancel` |
+| 11 | キャンセル | `schedule-new-cancel` |
+| 12 | キャンセル | `schedule-new-cancel` |
+| 8 | 作成 | `schedule-create-submit` |
+| 9 | 作成 | `schedule-create-submit` |
+| 11 | 作成 | `schedule-create-submit` |
+| 12 | 作成 | `schedule-create-submit` |
+| 13 | 作成 | `schedule-create-submit` |
+
+- 番号は、状態ごとの構成要素の表の番号である。同じ要素が状態ごとに違う番号を持つときは、番号ごとに行を分ける。
+- 閉じるの `modal-close` は、packages/ui の `Modal` が付ける。
+- 予定の種類の選択肢は、`schedule-kind-tab-normal`、`schedule-kind-tab-visit` である。packages/ui の `SegmentedControl` が、組の testid に選択肢の `kind` を付ける。
+- 項目の一覧の testid の末尾は、項目の ID（`title`、`date-time`、`patient`、`staff`、`category`、`description`）である。
+- サービスコードの `{コード}` は、`listServiceCodes` の `code` の表記のままである。
+- 利用者の一覧と職員の一覧の testid は、行のラジオボタンに付く。「選択肢が無い」の状態のモックは行を持たないので、番号の印を表に付ける。
+- モーダルの本体の `schedule-form-modal` と、フォームの `schedule-form` は、構成要素の表に載せないので、この表に載せない。
+- 読み込み中の表示、読み込みの失敗の文、作成の失敗の文は、testid を持たない。
 
 ## 状態と失敗の要因
 
