@@ -74,14 +74,17 @@ export type DialogHeaderProps = {
   title: ReactNode
   /** タイトルの右に置く要素。? のヘルプを置く。 */
   titleAddon?: ReactNode
-  /** 右上の閉じるボタン（×）を押したときに呼ぶ。何も変えずに閉じる。 */
-  onClose: () => void
+  /**
+   * 右上の閉じるボタン（×）を押したときに呼ぶ。何も変えずに閉じる。
+   * 渡したときだけ × を出す。フッターに操作のボタンを置くダイアログでは渡さず、フッターの「キャンセル」で閉じる。
+   */
+  onClose?: () => void
   /** true の間は、閉じるボタンを押せない。送っている間に渡す。 */
   isCloseDisabled?: boolean
   closeTestId?: string
 }
 
-/** 入力のダイアログのヘッダー。左にタイトル、右上に閉じるボタン（×）を置く。 */
+/** ダイアログのヘッダー。左にタイトルを置き、onClose を渡したときだけ右上に閉じるボタン（×）を置く。 */
 export const DialogHeader = ({
   titleId,
   title,
@@ -90,27 +93,34 @@ export const DialogHeader = ({
   isCloseDisabled = false,
   closeTestId,
 }: DialogHeaderProps) => (
-  <div className="flex items-center justify-between gap-3 border-b border-border py-2 pr-2 pl-5">
+  <div
+    className={clsx(
+      'flex items-center justify-between gap-3 border-b border-border py-2 pl-5',
+      onClose === undefined ? 'pr-5' : 'pr-2',
+    )}
+  >
     <div className="relative flex min-h-11 min-w-0 items-center gap-1">
       <h2 className="text-heading-sm" id={titleId}>
         {title}
       </h2>
       {titleAddon}
     </div>
-    <button
-      aria-disabled={isCloseDisabled || undefined}
-      aria-label="閉じる"
-      className="grid size-11 shrink-0 place-items-center rounded-8 hover:bg-surface-subtle focus-visible:focus-ring aria-disabled:text-text-disabled"
-      data-testid={closeTestId}
-      onClick={() => {
-        if (!isCloseDisabled) onClose()
-      }}
-      type="button"
-    >
-      <svg aria-hidden height="20" viewBox="0 0 20 20" width="20">
-        <path d="M5 5l10 10M15 5 5 15" fill="none" stroke="currentColor" strokeWidth="1.8" />
-      </svg>
-    </button>
+    {onClose !== undefined && (
+      <button
+        aria-disabled={isCloseDisabled || undefined}
+        aria-label="閉じる"
+        className="grid size-11 shrink-0 place-items-center rounded-8 hover:bg-surface-subtle focus-visible:focus-ring aria-disabled:text-text-disabled"
+        data-testid={closeTestId}
+        onClick={() => {
+          if (!isCloseDisabled) onClose()
+        }}
+        type="button"
+      >
+        <svg aria-hidden height="20" viewBox="0 0 20 20" width="20">
+          <path d="M5 5l10 10M15 5 5 15" fill="none" stroke="currentColor" strokeWidth="1.8" />
+        </svg>
+      </button>
+    )}
   </div>
 )
 

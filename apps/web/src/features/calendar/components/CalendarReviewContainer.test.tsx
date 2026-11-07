@@ -38,7 +38,7 @@ describe('CalendarReviewContainer', () => {
     )
   })
 
-  it('行を押すと、予定と理由と、その予定で選べる操作をダイアログに出す', async () => {
+  it('行を押すと、予定と理由と、その予定で選べる操作をダイアログに出し、× を置かずにキャンセルで閉じる', async () => {
     render(<Default />)
     const dialog = await openRow('calendar-review-row-schedule-schedule-1')
     expect(within(dialog).getByTestId('calendar-review-dialog-datetime')).toHaveTextContent(
@@ -47,7 +47,8 @@ describe('CalendarReviewContainer', () => {
     expect(within(dialog).getByTestId('calendar-review-open-export-1')).toBeInTheDocument()
     expect(within(dialog).getByTestId('calendar-review-rewrite-export-1')).toBeInTheDocument()
 
-    await userEvent.click(within(dialog).getByTestId('calendar-review-close'))
+    expect(within(dialog).queryByTestId('calendar-review-close')).toBeNull()
+    await userEvent.click(within(dialog).getByTestId('calendar-review-cancel'))
     expect(screen.queryByTestId('calendar-review-dialog')).toBeNull()
   })
 

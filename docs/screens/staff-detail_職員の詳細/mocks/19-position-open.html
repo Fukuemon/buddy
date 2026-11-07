@@ -91,23 +91,22 @@
               <div class="wf-dialog" role="dialog" aria-modal="true" aria-labelledby="position-title" data-m="2" data-testid="staff-position-dialog">
                 <div class="wf-dialog__header">
                   <h2 class="wf-dialog__title" id="position-title">役職を変える</h2>
-                  <span class="wf-btn wf-btn--icon" aria-label="閉じる" data-escape data-m="3" data-testid="staff-position-close" data-go="01-detail.html"><svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><path d="M5 5l10 10M15 5 5 15" fill="none" stroke="currentColor" stroke-width="1.8" /></svg></span>
                 </div>
                 <div class="wf-dialog__body">
                   <div class="wf-field">
                     <span class="wf-label">役職</span>
-                    <div class="wf-stack" role="radiogroup" aria-label="役職" data-m="4" data-testid="staff-position-options">
+                    <div class="wf-stack" role="radiogroup" aria-label="役職" data-m="3" data-testid="staff-position-options">
                       <span class="wf-radio" data-choice="position" data-testid="staff-position-option-{役職の id}" data-go="05-position.html">マネージャー</span>
                       <span class="wf-radio" data-choice="position" data-testid="staff-position-option-{役職の id}" data-go="05-position.html">チームリーダー</span>
                       <span class="wf-radio is-on" data-choice="position" data-testid="staff-position-option-{役職の id}">メンバー（今の役職）</span>
                     </div>
                   </div>
-                  <p class="st-warning" data-m="5" data-testid="staff-position-note">役職を変えると、林 さくら の権限は全て、新しい役職に決まっている権限に置き換わります。個別に足した権限（指定した職員の予定の閲覧）は消えます。</p>
+                  <p class="st-warning" data-m="4" data-testid="staff-position-note">役職を変えると、林 さくら の権限は全て、新しい役職に決まっている権限に置き換わります。個別に足した権限（指定した職員の予定の閲覧）は消えます。</p>
                 </div>
                 <div class="wf-dialog__footer">
-                  <p class="wf-hint" data-m="8" data-testid="staff-position-submit-hint">今の役職と違う役職を選んでください。</p>
-                  <span class="wf-btn" data-m="6" data-testid="staff-position-cancel" data-go="01-detail.html">キャンセル</span>
-                  <span class="wf-btn wf-btn--danger" aria-disabled="true" data-m="7" data-testid="staff-position-submit">役職を変える</span>
+                  <p class="wf-hint" data-m="7" data-testid="staff-position-submit-hint">今の役職と違う役職を選んでください。</p>
+                  <span class="wf-btn" data-escape data-m="5" data-testid="staff-position-cancel" data-go="01-detail.html">キャンセル</span>
+                  <span class="wf-btn wf-btn--danger" aria-disabled="true" data-m="6" data-testid="staff-position-submit">役職を変える</span>
                 </div>
               </div>
             </div>

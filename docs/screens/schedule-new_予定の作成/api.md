@@ -99,7 +99,7 @@ OpenAPI の項目のうち、送る値は `createSchedule`（`POST /v1/facilitie
 
 - 作成のボタンは packages/ui の `Button` で、`isLoading` の間は押しても `onClick` と送信を止める。
 - 送っている間も、`ScheduleFormModal` は `Modal` に送信中を渡さず、`ScheduleForm` の欄も `disabled` にしない。
-  - 閉じる、キャンセル、覆い、Escape キー、入力の欄は、送っている間も動く。
+  - キャンセル、覆い、Escape キー、入力の欄は、送っている間も動く。
 - 項目の一覧の項目と、右の入力の欄の出し分けは、フォームの値の `kind` と、`ScheduleForm` が持つ選んだ項目で決める。
   - どちらも状態で決まるので、条件の表に載せない。
 
@@ -108,40 +108,39 @@ OpenAPI の項目のうち、送る値は `createSchedule`（`POST /v1/facilitie
 | 番号 | 要素名 | testid |
 | --- | --- | --- |
 | 3 | 予定の種類 | `schedule-kind-tab` |
-| 4 | 閉じる | `modal-close` |
 | 3 | 閉じる | `modal-close` |
-| 5 | 項目の一覧 | `schedule-field-title` |
-| 5 | 項目の一覧 | `schedule-field-date-time` |
-| 5 | 項目の一覧 | `schedule-field-patient` |
-| 5 | 項目の一覧 | `schedule-field-staff` |
-| 5 | 項目の一覧 | `schedule-field-category` |
-| 5 | 項目の一覧 | `schedule-field-description` |
-| 6 | 日付 | `schedule-form-date` |
-| 7 | 開始時間 | `schedule-form-start-time` |
-| 8 | 提供時間 | `schedule-form-service-time` |
-| 9 | 終了時間 | `schedule-form-end-time` |
+| 4 | 項目の一覧 | `schedule-field-title` |
+| 4 | 項目の一覧 | `schedule-field-date-time` |
+| 4 | 項目の一覧 | `schedule-field-patient` |
+| 4 | 項目の一覧 | `schedule-field-staff` |
+| 4 | 項目の一覧 | `schedule-field-category` |
+| 4 | 項目の一覧 | `schedule-field-description` |
+| 5 | 日付 | `schedule-form-date` |
+| 6 | 開始時間 | `schedule-form-start-time` |
+| 7 | 提供時間 | `schedule-form-service-time` |
 | 8 | 終了時間 | `schedule-form-end-time` |
-| 9 | 終了は翌日 | `schedule-form-ends-next-day` |
-| 10 | サービスコード | `service-code-{コード}` |
-| 6 | タイトル | `schedule-form-title` |
-| 6 | 利用者の検索 | `patient-select-search` |
-| 7 | 利用者の一覧 | `patient-select-option-{利用者の id}` |
-| 6 | 職員の検索 | `staff-select-search` |
-| 7 | 職員の一覧 | `staff-select-option-{職員の id}` |
-| 6 | 訪問の区分 | `schedule-category-night` |
-| 6 | 訪問の区分 | `schedule-category-emergency` |
-| 6 | 訪問の区分 | `schedule-category-hospitalization` |
-| 6 | メモ | `schedule-form-description` |
+| 7 | 終了時間 | `schedule-form-end-time` |
+| 8 | 終了は翌日 | `schedule-form-ends-next-day` |
+| 9 | サービスコード | `service-code-{コード}` |
+| 5 | タイトル | `schedule-form-title` |
+| 5 | 利用者の検索 | `patient-select-search` |
+| 6 | 利用者の一覧 | `patient-select-option-{利用者の id}` |
+| 5 | 職員の検索 | `staff-select-search` |
+| 6 | 職員の一覧 | `staff-select-option-{職員の id}` |
+| 5 | 訪問の区分 | `schedule-category-night` |
+| 5 | 訪問の区分 | `schedule-category-emergency` |
+| 5 | 訪問の区分 | `schedule-category-hospitalization` |
+| 5 | メモ | `schedule-form-description` |
+| 6 | キャンセル | `schedule-new-cancel` |
 | 7 | キャンセル | `schedule-new-cancel` |
-| 8 | キャンセル | `schedule-new-cancel` |
+| 9 | キャンセル | `schedule-new-cancel` |
 | 10 | キャンセル | `schedule-new-cancel` |
 | 11 | キャンセル | `schedule-new-cancel` |
-| 12 | キャンセル | `schedule-new-cancel` |
+| 7 | 作成 | `schedule-create-submit` |
 | 8 | 作成 | `schedule-create-submit` |
-| 9 | 作成 | `schedule-create-submit` |
+| 10 | 作成 | `schedule-create-submit` |
 | 11 | 作成 | `schedule-create-submit` |
 | 12 | 作成 | `schedule-create-submit` |
-| 13 | 作成 | `schedule-create-submit` |
 
 - 番号は、状態ごとの構成要素の表の番号である。同じ要素が状態ごとに違う番号を持つときは、番号ごとに行を分ける。
 - 閉じるの `modal-close` は、packages/ui の `Modal` が付ける。

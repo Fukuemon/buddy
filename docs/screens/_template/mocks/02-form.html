@@ -81,27 +81,26 @@
               </tbody>
             </table>
           </main>
-          <!-- 入力のダイアログの形。× を右上に、フッターの右に「キャンセル」と主ボタンを置く。形は画面仕様書の規約の「ダイアログ」にある -->
+          <!-- 入力のダイアログの形。× を置かず、フッターの右に「キャンセル」と主ボタンを置く。形は画面仕様書の規約の「ダイアログ」にある -->
           <div class="wf-overlay" tabindex="-1" data-m="1" data-go="01-initial.html"></div>
           <div class="wf-dialog" role="dialog" aria-modal="true" aria-labelledby="form-title" data-testid="<画面 ID>-form-dialog">
             <div class="wf-dialog__header">
               <h2 class="wf-dialog__title" id="form-title" data-m="2">登録する</h2>
-              <span class="wf-btn wf-btn--icon" aria-label="閉じる" data-escape data-m="3" data-testid="<画面 ID>-form-close" data-go="01-initial.html"><svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><path d="M5 5l10 10M15 5 5 15" fill="none" stroke="currentColor" stroke-width="1.8" /></svg></span>
             </div>
             <div class="wf-dialog__body">
               <div class="wf-field">
                 <span class="wf-label">名前</span>
-                <div class="wf-input wf-field__input" data-m="4" data-testid="<画面 ID>-form-name"><span class="wf-text"></span></div>
+                <div class="wf-input wf-field__input" data-m="3" data-testid="<画面 ID>-form-name"><span class="wf-text"></span></div>
               </div>
               <div class="wf-field">
                 <span class="wf-label">区分</span>
-                <span class="wf-select wf-field__input" data-m="5" data-testid="<画面 ID>-form-<項目>">区分 1</span>
+                <span class="wf-select wf-field__input" data-m="4" data-testid="<画面 ID>-form-<項目>">区分 1</span>
                 <span class="wf-hint">欄の下の補足</span>
               </div>
             </div>
             <div class="wf-dialog__footer">
-              <span class="wf-btn" data-m="6" data-testid="<画面 ID>-form-cancel" data-go="01-initial.html">キャンセル</span>
-              <span class="wf-btn wf-btn--primary" data-m="7" data-testid="<画面 ID>-form-submit">登録する</span>
+              <span class="wf-btn" data-escape data-m="5" data-testid="<画面 ID>-form-cancel" data-go="01-initial.html">キャンセル</span>
+              <span class="wf-btn wf-btn--primary" data-m="6" data-testid="<画面 ID>-form-submit">登録する</span>
             </div>
           </div>
         </div>

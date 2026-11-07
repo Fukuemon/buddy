@@ -76,7 +76,7 @@
     - `StaffLeaveDialog.tsx`、`StaffRetireDialog.tsx`、`StaffAssignmentList.tsx`
   - 権限の変更の比べ方と、対象の有無: `apps/web/src/features/staff/lib/policyChanges.ts` の `planPolicyChanges`、`hasTargetsForAll`
   - 対象を指定する権限か、残るものが無いか: `apps/web/src/features/staff/lib/format.ts` の `policyTargetKind`、`hasNoAssignments`
-- 送っている間は、入力の欄に `disabled` を、閉じるとキャンセルに押せない印を付ける。覆いと Escape キーでも閉じない。
+- 送っている間は、入力の欄に `disabled` を、キャンセルに押せない印を付ける。覆いと Escape キーでも閉じない。
   - ボタンと覆いは packages/ui の `InputDialog`、`ConfirmDialog`、`DialogSubmit`、`Dialog` が決める。
   - 訪問の選択（`VisitsField`）には、送っている間も `disabled` を付けない。
 - プロフィールの編集のダイアログの残る予定と担当の一覧は、訪問しない職員への変更を拒まれた結果（`refusedAssignments`）があり、`visits` が `false` のときだけ出す（`StaffProfileDialog.tsx`）。
@@ -124,7 +124,7 @@
 | 14 | 在籍の状態 | `staff-detail-status-text` |
 | 10 | 権限を変える | `staff-detail-policies-change` |
 | 11 | 権限の一覧 | `staff-policy-list` |
-| 5 | 権限のまとまり | `staff-policies-group-position` |
+| 4 | 権限のまとまり | `staff-policies-group-position` |
 | 12 | 権限のまとまり | `staff-policy-group-position` |
 | 13 | 権限の対象 | `staff-policy-targets-{権限の code}` |
 | 13 | 休職にする | `staff-detail-leave` |
@@ -133,35 +133,35 @@
 | 14 | 退職にする | `staff-detail-retire` |
 | 16 | 退職にする | `staff-detail-retire` |
 | 2 | プロフィールの編集のダイアログ | `staff-detail-edit-dialog` |
-| 4 | 名前の入力 | `staff-detail-name-input` |
-| 5 | 変えられないメールアドレス | `staff-detail-email-readonly` |
-| 6 | 電話番号の入力 | `staff-detail-phone-input` |
-| 7 | 部署の選択 | `staff-detail-department-input` |
-| 8 | チームの選択 | `staff-detail-team-input` |
-| 10 | 訪問の選択 | `staff-detail-visits-input` |
-| 12 | 保存 | `staff-detail-save` |
+| 3 | 名前の入力 | `staff-detail-name-input` |
+| 4 | 変えられないメールアドレス | `staff-detail-email-readonly` |
+| 5 | 電話番号の入力 | `staff-detail-phone-input` |
+| 6 | 部署の選択 | `staff-detail-department-input` |
+| 7 | チームの選択 | `staff-detail-team-input` |
+| 9 | 訪問の選択 | `staff-detail-visits-input` |
+| 11 | 保存 | `staff-detail-save` |
 | 2 | 役職を変えるダイアログ | `staff-position-dialog` |
-| 4 | 役職の選択 | `staff-position-options` |
-| 5 | 役職を変えるときの注意 | `staff-position-note` |
-| 7 | ダイアログの役職を変える | `staff-position-submit` |
-| 8 | ダイアログの役職を変えるの条件の文 | `staff-position-submit-hint` |
+| 3 | 役職の選択 | `staff-position-options` |
+| 4 | 役職を変えるときの注意 | `staff-position-note` |
+| 6 | ダイアログの役職を変える | `staff-position-submit` |
+| 7 | ダイアログの役職を変えるの条件の文 | `staff-position-submit-hint` |
 | 2 | 権限を変えるダイアログ | `staff-policies-dialog` |
-| 4 | 権限の選択 | `staff-policies-option-{権限の code}` |
-| 6 | 対象の選択 | `staff-policies-targets` |
-| 7 | 対象を外す | `staff-policies-target-remove-{職員の id}` |
-| 4 | 対象を足す | `staff-policies-target-add` |
-| 8 | 対象を足す | `staff-policies-target-add` |
-| 5 | 対象の候補 | `staff-policies-target-options` |
-| 7 | 権限の保存 | `staff-policies-submit` |
-| 10 | 権限の保存 | `staff-policies-submit` |
-| 11 | 権限の保存の失敗の文 | `staff-policies-error` |
-| 8 | 権限の保存の条件の文 | `staff-policies-submit-hint` |
+| 3 | 権限の選択 | `staff-policies-option-{権限の code}` |
+| 5 | 対象の選択 | `staff-policies-targets` |
+| 6 | 対象を外す | `staff-policies-target-remove-{職員の id}` |
+| 3 | 対象を足す | `staff-policies-target-add` |
+| 7 | 対象を足す | `staff-policies-target-add` |
+| 4 | 対象の候補 | `staff-policies-target-options` |
+| 6 | 権限の保存 | `staff-policies-submit` |
+| 9 | 権限の保存 | `staff-policies-submit` |
+| 10 | 権限の保存の失敗の文 | `staff-policies-error` |
+| 7 | 権限の保存の条件の文 | `staff-policies-submit-hint` |
+| 10 | 権限の保存の条件の文 | `staff-policies-submit-hint` |
 | 11 | 権限の保存の条件の文 | `staff-policies-submit-hint` |
-| 12 | 権限の保存の条件の文 | `staff-policies-submit-hint` |
 | 2 | 休職のダイアログ | `staff-leave-dialog` |
 | 4 | 残る予定と担当の一覧 | `staff-leave-assignments` |
 | 4 | 残る予定と担当の一覧 | `staff-retire-assignments` |
-| 13 | 残る予定と担当の一覧 | `staff-non-visiting-assignments` |
+| 12 | 残る予定と担当の一覧 | `staff-non-visiting-assignments` |
 | 5 | 残る予定 | `staff-leave-assignment-schedule-{予定の id}` |
 | 5 | 残る予定 | `staff-retire-assignment-schedule-{予定の id}` |
 | 6 | 残る繰り返しの予定 | `staff-leave-assignment-recurring-{繰り返しの予定の id}` |
@@ -173,28 +173,25 @@
 | 2 | 退職のダイアログ | `staff-retire-dialog` |
 | 6 | ダイアログの退職にする | `staff-retire-submit` |
 | 9 | ダイアログの退職にする | `staff-retire-submit` |
-| 3 | 閉じる | `staff-detail-edit-close` |
-| 3 | 閉じる | `staff-position-close` |
-| 3 | 閉じる | `staff-policies-close` |
 | 5 | キャンセル | `staff-retire-cancel` |
-| 6 | キャンセル | `staff-position-cancel` |
-| 6 | キャンセル | `staff-policies-cancel` |
+| 5 | キャンセル | `staff-position-cancel` |
+| 5 | キャンセル | `staff-policies-cancel` |
 | 8 | キャンセル | `staff-retire-cancel` |
-| 9 | キャンセル | `staff-policies-cancel` |
+| 8 | キャンセル | `staff-policies-cancel` |
 | 9 | キャンセル | `staff-leave-cancel` |
-| 11 | キャンセル | `staff-detail-edit-cancel` |
+| 10 | キャンセル | `staff-detail-edit-cancel` |
 | 5 | 読み込み中の表示 | `staff-detail-loading` |
 | 5 | 読み込みの失敗の文 | `staff-detail-error` |
 | 6 | 読み直す | `staff-detail-retry` |
 | 11 | 権限の読み込みの失敗の文 | `staff-detail-policies-error` |
 | 12 | 権限を読み直す | `staff-detail-policies-retry` |
-| 13 | 部署とチームの読み込みの失敗の文 | `staff-detail-save-error` |
-| 5 | 役職の読み込みの失敗の文 | `staff-position-error` |
+| 12 | 部署とチームの読み込みの失敗の文 | `staff-detail-save-error` |
+| 4 | 役職の読み込みの失敗の文 | `staff-position-error` |
 | 14 | 最新の情報の読み込みの失敗の文 | `refetch-error` |
 | 15 | 最新の情報を読み直す | `refetch-retry` |
 
 - 番号は、状態ごとの構成要素の表の番号である。同じ要素が状態ごとに違う番号を持つときは、番号ごとに行を分ける。
-- ダイアログの閉じる、キャンセル、確定のボタンと本体の testid は、packages/ui の `InputDialog` と `ConfirmDialog` が接頭辞から付ける。
+- ダイアログのキャンセルと確定のボタンと本体の testid は、packages/ui の `InputDialog` と `ConfirmDialog` が接頭辞から付ける。
   - 接頭辞は、`staff-detail-edit`、`staff-position`、`staff-policies`、`staff-leave`、`staff-retire` である。
   - 保存のボタンだけは、`staff-detail-save` を渡して付ける。
 - 対象を足すと対象の候補の testid は、packages/ui の `ChipPicker` が接頭辞の `staff-policies-target` から付ける。

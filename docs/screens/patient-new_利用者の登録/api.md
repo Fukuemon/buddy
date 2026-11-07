@@ -25,7 +25,7 @@
 | 事業所のサービスコードを読み終えている | `serviceCodes.list` の結果（`ServiceCodeRecord[]`）がある。読めなかったときは `undefined` にする |
 | 事業所の職員を読み終えている | `staff.listRecords` の結果から作った担当の職員の選択肢（`staffOptions`）がある。読めなかったときは `undefined` にする |
 
-- 送っている間は、入力の欄に `disabled` を、閉じるとキャンセルに押せない印を付ける。覆いと Escape キーでも閉じない。
+- 送っている間は、入力の欄に `disabled` を、キャンセルに押せない印を付ける。覆いと Escape キーでも閉じない。
   - 欄は `PatientFormFields.tsx`、ボタンと覆いは packages/ui の `InputDialog`、`DialogSubmit`、`Dialog` が決める。
 - 登録のボタンは、2 つの選択肢を読み終えるまで押せない（`PatientCreateDialog.tsx` の `canSubmit`）。
 
@@ -33,16 +33,15 @@
 
 | 番号 | 要素名 | testid |
 | --- | --- | --- |
-| 3 | 閉じる | `patient-new-close` |
-| 4 | 名前 | `patient-new-name` |
-| 5 | サービス | `patient-new-service` |
-| 6 | 希望の時間帯 | `patient-new-time` |
-| 7 | 希望する担当の性別 | `patient-new-gender` |
-| 8 | 担当の職員 | `patient-new-staff` |
-| 9 | キャンセル | `patient-new-cancel` |
-| 10 | 登録 | `patient-new-submit` |
-| 11 | 入力の誤りの文 | `patient-new-error-{項目}` |
-| 11 | 登録の失敗の文 | `patient-new-submit-error` |
+| 3 | 名前 | `patient-new-name` |
+| 4 | サービス | `patient-new-service` |
+| 5 | 希望の時間帯 | `patient-new-time` |
+| 6 | 希望する担当の性別 | `patient-new-gender` |
+| 7 | 担当の職員 | `patient-new-staff` |
+| 8 | キャンセル | `patient-new-cancel` |
+| 9 | 登録 | `patient-new-submit` |
+| 10 | 入力の誤りの文 | `patient-new-error-{項目}` |
+| 10 | 登録の失敗の文 | `patient-new-submit-error` |
 
 - 入力の誤りの文の `{項目}` は、`name`、`service`、`time`、`gender`、`staff` のどれかである。
 - ラジオボタンの選択肢は、`patient-new-time-morning`、`patient-new-time-afternoon`、`patient-new-gender-male`、`patient-new-gender-female` である。
