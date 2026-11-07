@@ -30,7 +30,7 @@ describe.each(fields)('$name', ({ label, stories }) => {
     const message = document.getElementById(input.getAttribute('aria-describedby') ?? '')
     expect(message).not.toBeNull()
     expect(input).toHaveAccessibleDescription(message?.textContent ?? '')
-    // 誤りの文は割り込みで読み上げない（DESIGN.md の FormField の規則）
+    // 誤りの文は割り込みで読み上げない（packages/ui/design/components.md の FormField の規則）
     expect(screen.queryByRole('alert')).toBeNull()
   })
 

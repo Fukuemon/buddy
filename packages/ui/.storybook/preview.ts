@@ -9,7 +9,7 @@ const preview: Preview = {
     ...sharedPreview.parameters,
     options: {
       storySort: {
-        // DESIGN.md の「カタログのページ」の順
+        // packages/ui/design/catalog.md の「カタログのページ」の順
         order: [
           'はじめに',
           ['原則', 'アクセシビリティ'],

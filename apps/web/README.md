@@ -137,4 +137,4 @@ BFF の照合の server function（`checkReceiptFn`）が、照合の API のク
 
 - [画面仕様書](../../docs/screens/index.md): 画面ごとの表示と操作、構成要素の `data-testid`
 - [全体の Design Doc](../../docs/design/DesignDoc.md): 画面と BFF の責務、認証とセッション
-- [デザインシステム](../../packages/ui/DESIGN.md): トークンと、Base と Case のコンポーネント
+- [デザインシステム](../../packages/ui/DESIGN.md): 画面を作るときの原則と手順。トークンと、Base と Case のコンポーネントの規則は `packages/ui/design/` にある

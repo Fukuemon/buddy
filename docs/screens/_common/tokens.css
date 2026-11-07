@@ -158,7 +158,7 @@
   --buddy-color-categorical-9: var(--buddy-primitive-color-red-900);
   --buddy-color-categorical-10: var(--buddy-primitive-color-light-blue-900);
 
-  /* チームの色: 名前の横の点。名前の後ろの部分は、予定の API がチームに持つ値と同じ。選び方は DESIGN.md の「チームの色」にある */
+  /* チームの色: 名前の横の点。名前の後ろの部分は、予定の API がチームに持つ値と同じ。選び方は packages/ui/design/tokens.md の「チームの色」にある */
   --buddy-color-team-blue: var(--buddy-primitive-color-blue-500);
   --buddy-color-team-orange: var(--buddy-primitive-color-orange-700);
   --buddy-color-team-magenta: var(--buddy-primitive-color-magenta-600);

@@ -194,7 +194,7 @@ status: stable
 
   - 汎用の形のものは、今は 1 つの機能だけが使っていても `@buddy/ui` に置く。
     - 後から使う機能が増えたときに、移さずに済む。
-  - `@buddy/ui` に置くときは、Base か Case かを [DESIGN.md](../packages/ui/DESIGN.md) の基準で決める。
+  - `@buddy/ui` に置くときは、Base か Case かを [デザインシステムのコンポーネントの文書](../packages/ui/design/components.md) の基準で決める。
   - `src/components/` の中は、役割でディレクトリを分ける。
     - `layout/` は画面の枠（ヘッダー、ナビゲーション）、`page/` はページの本文に置く定型のもの（リード文、エラーと権限が無いときの文）を置く。
     - ディレクトリは、同じ役割のものが 3 つ以上あるときだけ作る。1〜2 個で作ると、後から入るものでディレクトリの意味がずれる。
@@ -206,8 +206,8 @@ status: stable
   - 画面の中のボタンとダイアログは `PermissionGuard` で出し分け、Container に権限の三項演算子を書かない。
   - 権限のキー、`hasPermission`、`requirePermission` は `src/api/permissions.ts` に、`PermissionGuard` は `src/components/` に置く。
   - 予定の 7 つの権限による予定ごとの判定は、機能のコードに置く。
-- デザインシステムの文書は `packages/ui/DESIGN.md` にある。
-  - 画面とコンポーネントのコード（`apps/web/src`、`apps/broker/src`、`packages/ui/src`）を書く前に読む。
+- デザインシステムの文書は、`packages/ui/DESIGN.md` と、`packages/ui/design/` のトークン、コンポーネント、カタログの 3 つの文書にある。
+  - 画面とコンポーネントのコード（`apps/web/src`、`apps/broker/src`、`packages/ui/src`）を書く前に、4 つの文書を全て読む。
 - ID ブローカーの画面は `apps/broker/src/pages.tsx` に書き、`pnpm --filter @buddy/broker generate` で生成し直して、生成物を同じコミットに入れる。
   - 画面の HTML と CSS を `services/broker` に手で書かない。
 - `services/schedule` のハンドラは `internal/httpapi` に、生成したインターフェースのメソッドとして書く。

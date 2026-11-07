@@ -277,7 +277,7 @@ CHECK が 8 つ以外を拒み、API は 400 を返す。
   - `staff.manage` を持つ職員だけが呼べる。
 - 色を足す前からあるチームには、マイグレーションで、事業所ごとに名前の順で表の順に入れた。
   - 9 個目からは表の先頭に戻る。
-- 色の選び方とコントラストは、[デザインシステム](https://github.com/Fukuemon/buddy/blob/develop/packages/ui/DESIGN.md) のチームの色にある。
+- 色の選び方とコントラストは、[デザインシステムのトークンの文書のチームの色](https://github.com/Fukuemon/buddy/blob/develop/packages/ui/design/tokens.md#チームの色) にある。
 
 ### 権限のレコード
 
