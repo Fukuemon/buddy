@@ -240,7 +240,7 @@ pnpm --filter @buddy/broker generate   # ID ブローカーの画面のテンプ
 pre-commit のフックと CI も同じチェックを流す。
 
 ```sh
-pnpm check:design   # 色の値、プリミティブトークンの名前、14px より小さい文字、focus-ring 以外のフォーカスの表示、余白の任意値
+pnpm check:design   # 色の値、プリミティブトークンの名前、14px より小さい文字、focus-ring 以外のフォーカスの表示、余白の任意値、アニメーションと緩急の任意値
 ```
 
 - 違反の行には、DESIGN.md の原則の ID が出る。
