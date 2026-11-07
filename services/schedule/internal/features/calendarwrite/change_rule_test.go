@@ -282,6 +282,28 @@ func TestChangeRuleResend(t *testing.T) {
 
 // TestChangeRuleRejects は、etag と id の無いリクエスト、過去の適用の日、Google で変わった親の予定、buddy の規則に写せない親の予定、
 // 保留の版がある親を、Google に書かずに拒むことを確認する。
+// 新しい繰り返しの予定の入力が規則に合わないとき（利用の終了の利用者の訪問）は、例外の回を作り直す前に 400 で拒み、Google に書かない。
+func TestChangeRuleRejectsEndedPatientBeforeWriting(t *testing.T) {
+	fx := newFixture(t)
+	fx.seedWeekly(t, mondays)
+	fx.moveToAfternoon(t, mondays[2])
+	if err := (inmem.Patients{Store: fx.store}).End(editorCtx(), inmem.PatientID); err != nil {
+		t.Fatal(err)
+	}
+	writes := fx.google.Writes()
+	effective := mondays[1]
+	_, err := fx.changeRule.Do(editorCtx(), inmem.FacilityID, scheduleID, nextID, fx.parentETag(t), &effective, tuesdayRule)
+	if !errors.Is(err, apperr.ErrInvalidInput) {
+		t.Fatalf("err = %v, want ErrInvalidInput", err)
+	}
+	if fx.google.Writes() != writes {
+		t.Errorf("Google への書き込み = %d, want %d", fx.google.Writes(), writes)
+	}
+	if _, ok := fx.store.Records[nextID]; ok {
+		t.Error("新しい親の記録ができた")
+	}
+}
+
 func TestChangeRuleRejects(t *testing.T) {
 	fx := newFixture(t)
 	fx.seedWeekly(t, mondays)

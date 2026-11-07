@@ -41,7 +41,7 @@ func PlanRuleChange(rs RecurringSchedule, effective *civil.Date, rule Rule, toda
 	if err != nil {
 		return RuleChange{}, err
 	}
-	if sameRepetition(rs.Rule, rule) {
+	if sameRepetition(resolved(rs.Rule, rs.Date), resolved(rule, rs.Date)) {
 		return planEndDateChange(rs, rule.EndDate, today)
 	}
 	if effective == nil {
@@ -83,10 +83,15 @@ func planEndDateChange(rs RecurringSchedule, end *civil.Date, today civil.Date) 
 	changed := rs
 	changed.Rule.EndDate = end
 	out := RuleChange{Kind: RuleChangeEndDate, Kept: changed, Next: changed}
+	yesterday := addDays(today, -1)
+	if old := rs.Rule.EndDate; old != nil && old.Before(yesterday) && (end == nil || end.After(*old)) {
+		// 終わった繰り返しの予定の終了日を延ばすと、今日より前の回が戻り、照合が読む過去の回が変わる
+		return RuleChange{}, apperr.Invalid("終わった繰り返しの予定の終了日は延ばせません")
+	}
 	if end == nil {
 		return out, nil
 	}
-	if end.Before(addDays(today, -1)) {
+	if end.Before(yesterday) {
 		return RuleChange{}, apperr.Invalid("繰り返しの終了日は今日の前の日以降にします")
 	}
 	if end.Before(rs.Date) {
@@ -95,6 +100,19 @@ func planEndDateChange(rs RecurringSchedule, end *civil.Date, today civil.Date) 
 	from := addDays(*end, 1)
 	out.ExclusionsFrom = &from
 	return out, nil
+}
+
+// resolved は、規則 r の曜日か日が無いときに、最初の日付 first から決まる値を入れた規則を返す。値で書いた規則と比べるためである。
+func resolved(r Rule, first civil.Date) Rule {
+	switch {
+	case r.Frequency == Weekly && r.DayOfWeek == nil:
+		wd := isoWeekday(first)
+		r.DayOfWeek = &wd
+	case r.Frequency == Monthly && r.DayOfMonth == nil && r.WeekOfMonth == nil:
+		day := first.Day
+		r.DayOfMonth = &day
+	}
+	return r
 }
 
 // sameRepetition は、a と b が終了日のほかに同じ規則かを返す。

@@ -23,6 +23,10 @@ func TestPlanRuleChange(t *testing.T) {
 	future.Date = date(26)
 	ended := base
 	ended.Rule.EndDate = dp(26)
+	finished := base
+	finished.Rule.EndDate = dp(12)
+	implicit := base
+	implicit.Rule.DayOfWeek = nil
 	tests := []struct {
 		name           string
 		rs             schedule.RecurringSchedule
@@ -44,6 +48,10 @@ func TestPlanRuleChange(t *testing.T) {
 			rule: schedule.Rule{Frequency: schedule.Weekly, DayOfWeek: &monday, EndDate: dp(20)}, wantKind: schedule.RuleChangeEndDate, wantNextDate: date(5), wantExclusions: dp(21)},
 		{name: "終了日を無くす", rs: ended,
 			rule: schedule.Rule{Frequency: schedule.Weekly, DayOfWeek: &monday}, wantKind: schedule.RuleChangeEndDate, wantNextDate: date(5)},
+		{name: "曜日を省いた規則に、同じ曜日を値で書いて終了日だけを変える", rs: implicit,
+			rule: schedule.Rule{Frequency: schedule.Weekly, DayOfWeek: &monday, EndDate: dp(30)}, wantKind: schedule.RuleChangeEndDate, wantNextDate: date(5), wantExclusions: dp(31)},
+		{name: "終わった繰り返しの終了日を延ばす", rs: finished, rule: schedule.Rule{Frequency: schedule.Weekly, DayOfWeek: &monday, EndDate: dp(30)}, wantErr: true},
+		{name: "終わった繰り返しの終了日を無くす", rs: finished, rule: schedule.Rule{Frequency: schedule.Weekly, DayOfWeek: &monday}, wantErr: true},
 		{name: "終了日を今日の前の日より前にする", rs: base, rule: schedule.Rule{Frequency: schedule.Weekly, DayOfWeek: &monday, EndDate: dp(19)}, wantErr: true},
 		{name: "規則を変えるのに適用の日が無い", rs: base, rule: schedule.Rule{Frequency: schedule.Weekly, DayOfWeek: &tuesday}, wantErr: true},
 		{name: "適用の日が今日より前", rs: base, effective: dp(20), rule: schedule.Rule{Frequency: schedule.Weekly, DayOfWeek: &tuesday}, wantErr: true},

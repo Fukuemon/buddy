@@ -130,6 +130,9 @@ func (r ChangeRule) Do(ctx context.Context, facilityID, recurringScheduleID, id,
 		if err := requireNewID(id, parent); err != nil {
 			return scheduleview.RecurringDetail{}, err
 		}
+		if err := r.precheckNext(ctx, facilityID, id, parent, current, plan.Next); err != nil {
+			return scheduleview.RecurringDetail{}, err
+		}
 	}
 	ctx = context.WithoutCancel(ctx)
 	from := plan.ExclusionsFrom
@@ -347,49 +350,7 @@ func (r ChangeRule) createNext(ctx context.Context, facilityID, id string, paren
 	next schedule.RecurringSchedule) (scheduleview.RecurringDetail, error) {
 	cr := r.create
 	w, ev, err := cr.run(ctx, facilityID, id, func(ctx context.Context) (write, string, *string, error) {
-		p, err := lockParent(ctx, cr.records, cr.projections, cr.staffRefs, cr.calendars, facilityID, parent.row.ScheduleID)
-		if err != nil {
-			return write{}, "", nil, err
-		}
-		typ, err := r.typeOf(ctx, p.row.Visit)
-		if err != nil {
-			return write{}, "", nil, err
-		}
-		in := schedule.SlotInput{
-			TypeID: typ.ID, Date: next.Date, StartTime: next.StartTime, EndTime: next.EndTime, EndsNextDay: next.EndsNextDay,
-			StaffID: p.row.StaffID, Description: descriptionOf(current), Visit: visitInputOf(p.row.Visit),
-		}
-		if p.row.Visit == nil {
-			title := calendar.NormalTitle(current.Summary)
-			in.Title = &title
-		}
-		var keptVisit *string
-		if p.row.Visit != nil {
-			keptVisit = &p.row.Visit.ID
-		}
-		kept, err := visitInfoOf(ctx, cr.details, keptVisit)
-		if err != nil {
-			return write{}, "", nil, err
-		}
-		sc, typ, err := schedule.PrepareChange(ctx, cr.types, cr.staffRefs, cr.visits, cr.now, facilityID, id, in, p.row.StaffID, kept)
-		if err != nil {
-			return write{}, "", nil, err
-		}
-		rs, err := schedule.NewRecurring(id, sc.Slot, typ, next.Rule)
-		if err != nil {
-			return write{}, "", nil, err
-		}
-		st, err := cr.staffNames.Get(ctx, rs.StaffID)
-		if err != nil {
-			return write{}, "", nil, err
-		}
-		rd := scheduleview.RecurringDetail{RecurringSchedule: rs, TypeName: typ.Name, StaffName: st.Username, ExclusionDates: []civil.Date{}}
-		w := write{recurring: &rd}
-		if err := w.useVisit(ctx, cr.details, rs.VisitInfoID); err != nil {
-			return write{}, "", nil, err
-		}
-		w.body = calendar.RecurringBody(rd, nil)
-		return w, rs.StaffID, rs.VisitInfoID, nil
+		return r.nextWrite(ctx, facilityID, id, parent, current, next)
 	})
 	if err != nil {
 		return scheduleview.RecurringDetail{}, err
@@ -398,6 +359,75 @@ func (r ChangeRule) createNext(ctx context.Context, facilityID, id string, paren
 	rd := *w.recurring
 	rd.Version, rd.CreatedAt, rd.UpdatedAt = d.Version, d.CreatedAt, d.UpdatedAt
 	return rd, nil
+}
+
+// errPrecheckDone は、precheckNext が確認だけで済ませ、トランザクションを戻すためのエラーである。
+var errPrecheckDone = errors.New("繰り返しの予定の入力を確認だけで戻す")
+
+// precheckNext は、新しい繰り返しの予定の入力を、Google に書く前に nextWrite と同じ規則で確認する。確認で作った訪問の情報の行は、
+// トランザクションを戻して残さない。例外の回を作り直した後に、入力のエラー（利用の終了の利用者など）で止まらないためである。
+func (r ChangeRule) precheckNext(ctx context.Context, facilityID, id string, parent parentEvent, current calendar.Event,
+	next schedule.RecurringSchedule) error {
+	err := r.update.tx.WithinTx(ctx, func(ctx context.Context) error {
+		if _, _, _, err := r.nextWrite(ctx, facilityID, id, parent, current, next); err != nil {
+			return err
+		}
+		return errPrecheckDone
+	})
+	if errors.Is(err, errPrecheckDone) {
+		return nil
+	}
+	return err
+}
+
+// nextWrite は、createNext が書く新しい繰り返しの予定を、親の予定の記録の訪問の情報から組み立てる。
+// 訪問の情報の行を作るので、トランザクションの中で呼ぶ。入力が規則に合わないときは入力のエラーを返す。
+func (r ChangeRule) nextWrite(ctx context.Context, facilityID, id string, parent parentEvent, current calendar.Event,
+	next schedule.RecurringSchedule) (write, string, *string, error) {
+	cr := r.create
+	p, err := lockParent(ctx, cr.records, cr.projections, cr.staffRefs, cr.calendars, facilityID, parent.row.ScheduleID)
+	if err != nil {
+		return write{}, "", nil, err
+	}
+	typ, err := r.typeOf(ctx, p.row.Visit)
+	if err != nil {
+		return write{}, "", nil, err
+	}
+	in := schedule.SlotInput{
+		TypeID: typ.ID, Date: next.Date, StartTime: next.StartTime, EndTime: next.EndTime, EndsNextDay: next.EndsNextDay,
+		StaffID: p.row.StaffID, Description: descriptionOf(current), Visit: visitInputOf(p.row.Visit),
+	}
+	if p.row.Visit == nil {
+		title := calendar.NormalTitle(current.Summary)
+		in.Title = &title
+	}
+	var keptVisit *string
+	if p.row.Visit != nil {
+		keptVisit = &p.row.Visit.ID
+	}
+	kept, err := visitInfoOf(ctx, cr.details, keptVisit)
+	if err != nil {
+		return write{}, "", nil, err
+	}
+	sc, typ, err := schedule.PrepareChange(ctx, cr.types, cr.staffRefs, cr.visits, cr.now, facilityID, id, in, p.row.StaffID, kept)
+	if err != nil {
+		return write{}, "", nil, err
+	}
+	rs, err := schedule.NewRecurring(id, sc.Slot, typ, next.Rule)
+	if err != nil {
+		return write{}, "", nil, err
+	}
+	st, err := cr.staffNames.Get(ctx, rs.StaffID)
+	if err != nil {
+		return write{}, "", nil, err
+	}
+	rd := scheduleview.RecurringDetail{RecurringSchedule: rs, TypeName: typ.Name, StaffName: st.Username, ExclusionDates: []civil.Date{}}
+	w := write{recurring: &rd}
+	if err := w.useVisit(ctx, cr.details, rs.VisitInfoID); err != nil {
+		return write{}, "", nil, err
+	}
+	w.body = calendar.RecurringBody(rd, nil)
+	return w, rs.StaffID, rs.VisitInfoID, nil
 }
 
 // descriptionOf は、Google の予定 ev の説明を返す。説明が無ければ nil を返す。
