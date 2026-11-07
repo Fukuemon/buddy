@@ -9,6 +9,7 @@ export type GoogleEvent = {
   status?: string
   start?: { dateTime?: string; timeZone?: string }
   end?: { dateTime?: string; timeZone?: string }
+  recurrence?: string[]
   extendedProperties?: { private?: Record<string, string> }
 }
 
