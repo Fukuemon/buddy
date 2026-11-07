@@ -47,6 +47,14 @@ const SCREENS: Screen[] = [
     shown: (page) => page.getByTestId('patient-detail-name'),
   },
   {
+    name: 'staff-detail-refetch-error',
+    label: '職員の詳細',
+    storyId: '画面-staff-staffdetailcontainer--refetch-error',
+    storyName: 'StaffDetailContainer の RefetchError',
+    what: '職員',
+    shown: (page) => page.getByTestId('staff-detail-name'),
+  },
+  {
     name: 'organization-list-refetch-error',
     label: '部署とチーム',
     storyId: '画面-organization-organizationlistcontainer--refetch-error',

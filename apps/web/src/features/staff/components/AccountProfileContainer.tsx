@@ -2,6 +2,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 
 import { STAFF_MANAGE, hasPermission } from '#/api/permissions'
 import { queryKeys } from '#/api/queryKeys'
+import { refetchFailedQueries, screenLoadStatus } from '#/api/refetch'
 import { useBuddyApi } from '#/api/useBuddyApi'
 import { useViewer } from '#/api/viewer'
 
@@ -26,8 +27,9 @@ export const AccountProfileContainer = () => {
   ] as const
   const [me, calendar, staffList, teams] = queries
 
-  // 読み終えた後に読み直して読めなかったときは、読み終えたデータで出し続ける
+  const load = screenLoadStatus(queries)
   const state: AccountProfileViewState =
+    load.status === 'ready' &&
     me.data !== undefined &&
     calendar.data !== undefined &&
     staffList.data !== undefined &&
@@ -40,18 +42,16 @@ export const AccountProfileContainer = () => {
             ...staffList.data.map((s) => [s.id, s.name] as const),
             ...teams.data.map((t) => [t.id, t.name] as const),
           ]),
-          refetchFailed: queries.some((q) => q.isError),
+          refetchFailed: load.refetchFailed,
         }
-      : queries.some((q) => q.isError)
+      : load.status === 'error'
         ? { status: 'error' }
         : { status: 'loading' }
 
   return (
     <AccountProfileView
       canManageStaff={hasPermission(viewer, STAFF_MANAGE)}
-      onRefetch={() => {
-        for (const query of queries) if (query.isError) void query.refetch()
-      }}
+      onRefetch={() => refetchFailedQueries(queries)}
       onRetry={() => {
         for (const queryKey of [
           queryKeys.me.detail(facilityId),
