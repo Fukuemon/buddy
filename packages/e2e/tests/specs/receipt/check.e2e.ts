@@ -3,6 +3,7 @@ import { readFile } from 'node:fs/promises'
 import { expect, test, type Page } from '@playwright/test'
 
 import { LEADER, RECEIPT_TESTDATA } from '../../fixtures/env'
+import { showAllReceiptRows } from '../../screens/receipt'
 import { receiptCategoryRowCells, receiptResultRow } from '../../selectors/receipt'
 
 // 照合の API は、compose/receipt-calendars.json の森のカレンダーを calendarpit から読む。
@@ -35,6 +36,7 @@ test.describe('照合の結果', () => {
     test('予定と実績の CSV を上げた場合、4 つの区分の件数が区分の見出しにだけ出ること', async ({
       page,
     }) => {
+      await showAllReceiptRows(page)
       await expect(page.getByTestId('receipt-category-mismatch')).toHaveText('不整合データ（3 件）')
       await expect(page.getByTestId('receipt-category-schedule_only')).toHaveText(
         '予定のみ（1 件）',
@@ -108,6 +110,8 @@ test.describe('照合の結果', () => {
       // 予定の終了時間と提供時間は、訪看I２ と訪看I３ では 1 分減らして比べる。
       // 主訪問者は compose/receipt-calendars.json の staff_name で、シードの職員の名前と同じ
       const mori = LEADER.staff.name
+
+      await showAllReceiptRows(page)
 
       // 11/02 の見本 一郎は、予定の 10:00〜10:30 の訪看I2 と、開始時間、終了時間、提供時間、サービス内容が合う
       await expect(receiptCategoryRowCells(page, 'match', '2026-11-02', '見本一郎')).toHaveText([
