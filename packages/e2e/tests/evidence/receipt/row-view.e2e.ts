@@ -271,10 +271,9 @@ test.describe('照合の結果', () => {
             const download = page.waitForEvent('download')
             await page.getByTestId('receipt-download').click()
             const csv = await readFile(await (await download).path(), 'utf8')
-            // 区切りの行を除いた、利用者の行の数
-            const rows = csv.split('\r\n').filter((line) => line.startsWith('2024-04-01,'))
+            const rows = csv.split('\r\n').filter((line) => line.includes(',2024-04-01,'))
             expect(rows).toHaveLength(4)
-            expect(csv).toContain('2024-04-01,利用者G,')
+            expect(csv).toContain(',2024-04-01,利用者G,')
             await shot(
               '表に出ていない利用者G の行も含め、CSV は 4 行の結果を持つ（録画に映らないので、本文に値を書く）',
             )
