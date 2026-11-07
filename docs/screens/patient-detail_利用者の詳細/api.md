@@ -43,7 +43,7 @@
 | 再開の担当の職員の欄が、空である | `PatientResumeDialog` の選んだ職員の id が空の文字列 |
 | 開いた利用者が、見つからなかった利用者である | `getPatient` の `ApiError.status` が 404（`PatientDetailContainer` の `canRetry` が `false`） |
 
-- 送っている間は、ダイアログの入力の欄に `disabled` を、閉じるとキャンセルに押せない印を付ける。覆いと Escape キーでも閉じない。
+- 送っている間は、ダイアログの入力の欄に `disabled` を、キャンセルに押せない印を付ける。覆いと Escape キーでも閉じない。
   - 欄は `PatientFormFields.tsx` と `PatientResumeDialog.tsx` が決める。
   - ボタンと覆いは packages/ui の `InputDialog`、`ConfirmDialog`、`DialogSubmit`、`Dialog` が決める。
 - 保存は、2 つの選択肢を読み終えるまで押せない（`PatientEditDialog.tsx` の `canSubmit`）。
@@ -70,14 +70,13 @@
 | 10 | 利用の状態 | `patient-detail-status-text` |
 | 11 | 利用を再開する | `patient-detail-resume` |
 | 2 | 利用者の編集のダイアログ | `patient-detail-edit-dialog` |
-| 3 | 閉じる | `patient-detail-edit-close` |
-| 4 | 名前の入力 | `patient-detail-name-input` |
-| 5 | サービスの選択 | `patient-detail-service-input` |
-| 6 | 希望の時間帯の選択 | `patient-detail-time-input` |
-| 7 | 希望する担当の性別の選択 | `patient-detail-gender-input` |
-| 8 | 担当の職員の選択 | `patient-detail-staff-input` |
-| 10 | キャンセル | `patient-detail-edit-cancel` |
-| 11 | 保存 | `patient-detail-save` |
+| 3 | 名前の入力 | `patient-detail-name-input` |
+| 4 | サービスの選択 | `patient-detail-service-input` |
+| 5 | 希望の時間帯の選択 | `patient-detail-time-input` |
+| 6 | 希望する担当の性別の選択 | `patient-detail-gender-input` |
+| 7 | 担当の職員の選択 | `patient-detail-staff-input` |
+| 9 | キャンセル | `patient-detail-edit-cancel` |
+| 10 | 保存 | `patient-detail-save` |
 | 2 | 利用の終了のダイアログ | `patient-end-dialog` |
 | 4 | 残る予定の一覧 | `patient-end-schedules` |
 | 5 | 残る予定 | `patient-end-schedule-{予定の id}` |
