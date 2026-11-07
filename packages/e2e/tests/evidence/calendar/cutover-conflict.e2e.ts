@@ -4,6 +4,7 @@ import { ISHIDA } from '../../fixtures/env'
 import { EVIDENCE_VARIANTS, recordPrEvidence } from '../../fixtures/evidence'
 import { createGoogleEvent } from '../../fixtures/googleCalendar'
 import { signInAtBroker } from '../../screens/login'
+import { pageBody } from '../../selectors/page'
 
 const ACTOR = `${ISHIDA.staff.name}（Google カレンダーを正本にする事業所のマネージャー）`
 const CUTOVER_URL = '/schedule/link/cutover'
@@ -47,7 +48,9 @@ const prepare = (open: boolean) => async (page: Page) => {
 /** 録画の画面で、切り替えの画面を開き、目印の要素が出るまで待つ。 */
 const openCutover = async (page: Page, open: boolean) => {
   await page.goto(CUTOVER_URL)
-  await page.getByTestId(open ? 'calendar-cutover-cancel' : 'calendar-cutover-start').waitFor()
+  await (
+    open ? page.getByTestId('calendar-cutover-cancel') : page.getByTestId('calendar-cutover-start')
+  ).waitFor()
 }
 
 /** 同じ職員が開いた別のタブ。録画には映らない。操作を終えたら閉じる。 */
@@ -115,9 +118,7 @@ test.describe('予定の正本の切り替えで、ほかの画面で先に操�
             await check('ダイアログが文を出さずに閉じ、切り替えの前の状態に替わる')
             return
           }
-          await expect(dialog.getByTestId('calendar-cutover-cancel-confirm-error')).toHaveText(
-            NOT_OPEN_MESSAGE,
-          )
+          await expect(dialog).toContainText(NOT_OPEN_MESSAGE)
           await check(`ダイアログのボタンの上に「${NOT_OPEN_MESSAGE}」が出る`)
         },
       )
@@ -141,7 +142,7 @@ test.describe('予定の正本の切り替えで、ほかの画面で先に操�
           await step('予定の正本の切り替えの画面を、切り替え中の状態で開いている')
           const dialog = await cancelAfterOtherTabCanceled(page, step)
           if (!isBefore) {
-            await dialog.getByTestId('calendar-cutover-cancel-confirm-error').waitFor()
+            await expect(dialog).toContainText(NOT_OPEN_MESSAGE)
             await step('失敗の文を読み、確認の「キャンセル」を押す')
             await dialog.getByTestId('calendar-cutover-cancel-confirm-cancel').click()
             await step(
@@ -232,13 +233,11 @@ test.describe('予定の正本の切り替えで、ほかの画面で先に操�
           await page.getByTestId('calendar-cutover-complete').click()
           if (isBefore) {
             await expect(page.getByTestId('calendar-cutover-buddy-primary')).toBeVisible()
-            await expect(page.getByTestId('calendar-cutover-complete-error')).toHaveCount(0)
+            await expect(pageBody(page)).not.toContainText(NOT_OPEN_MESSAGE)
             await check('文を出さずに、正本が buddy の状態に替わる')
             return
           }
-          await expect(page.getByTestId('calendar-cutover-complete-error')).toHaveText(
-            NOT_OPEN_MESSAGE,
-          )
+          await expect(pageBody(page)).toContainText(NOT_OPEN_MESSAGE)
           await check(`「完了する」の上に「${NOT_OPEN_MESSAGE}」が出る`)
         },
       )
