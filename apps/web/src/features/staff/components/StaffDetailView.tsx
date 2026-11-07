@@ -3,6 +3,7 @@ import { clsx } from 'clsx'
 import { useId, useState, type ReactNode } from 'react'
 
 import type { Policy, Position, StaffDetail } from '#/api/types'
+import { RefetchErrorMessage } from '#/components/page/RefetchErrorMessage'
 
 import {
   employmentText,
@@ -17,11 +18,18 @@ import { groupPolicies } from '../lib/policyChanges'
 export type StaffDetailViewState =
   | { status: 'loading' }
   | { status: 'error'; message: string; canRetry: boolean }
-  | { status: 'ready'; staff: StaffDetail }
+  | {
+      status: 'ready'
+      staff: StaffDetail
+      /** 読み終えた後に読み直して、職員を読めなかったか。 */
+      refetchFailed?: boolean
+    }
 
 export type StaffDetailViewProps = {
   state: StaffDetailViewState
   onRetry: () => void
+  /** 読み終えた後に読めなかった職員を読み直す。 */
+  onRefetch?: () => void
   /** ログインした職員の詳細か。自分は休職と退職にできないので、「…」のメニューを出さない。 */
   isSelf: boolean
   /** 全ての権限を、権限の一覧の並びで渡す。全ての権限と役職を読み終えるまでは undefined にする。 */
@@ -78,7 +86,13 @@ export const StaffDetailView = (props: StaffDetailViewProps) => {
           )}
         </div>
       )}
-      {state.status === 'ready' && <StaffDetailBody {...props} staff={state.staff} />}
+      {state.status === 'ready' && (
+        <StaffDetailBody
+          {...props}
+          refetchFailed={state.refetchFailed === true}
+          staff={state.staff}
+        />
+      )}
     </div>
   )
 }
@@ -99,7 +113,9 @@ const StaffDetailBody = ({
   onReinstate,
   isReinstating,
   reinstateErrorMessage,
-}: StaffDetailViewProps & { staff: StaffDetail }) => {
+  onRefetch,
+  refetchFailed,
+}: StaffDetailViewProps & { staff: StaffDetail; refetchFailed: boolean }) => {
   const tabsId = useId()
   const [tab, setTab] = useState<'profile' | 'policies'>('profile')
   const canChange = staff.status !== 'retired'
@@ -171,6 +187,7 @@ const StaffDetailBody = ({
           </div>
         )}
       </div>
+      {refetchFailed && onRefetch !== undefined && <RefetchErrorMessage onRetry={onRefetch} />}
       {reinstateErrorMessage !== undefined && (
         <p
           className="border-l-4 border-danger bg-danger-surface px-3 py-2 text-body text-danger"
