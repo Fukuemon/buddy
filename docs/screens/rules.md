@@ -171,6 +171,8 @@ docs/screens/
 
 #### カタログ
 
+トークンとコンポーネントの使い方の規則は、デザインシステムの [DESIGN.md](https://github.com/Fukuemon/buddy/blob/develop/packages/ui/DESIGN.md) と、そこから指す 3 つの文書にある。カタログは、その見本である。
+
 - カタログの欄のリンクの先は、画面の文言とデータで要素を見せる、apps/web のコンポーネントの story にする。
   - 要素を描く apps/web のコンポーネントのうち、story があり、その story に要素が出るいちばん小さいものを選ぶ。
   - story は、仕様書の状態に近いものを選ぶ。

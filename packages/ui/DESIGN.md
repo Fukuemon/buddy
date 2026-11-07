@@ -3,13 +3,16 @@
 buddy の画面を作る人とコーディングエージェントが、画面を作る前に読む文書。  
 packages/ui のトークンとコンポーネントの使い方と、アクセシビリティと UI/UX の規則を決める。  
 値と規則はデジタル庁デザインシステム（DADS）を元にしたが、規則の正本はこの文書と、下の「話題ごとの文書」の 3 つの文書である。DADS の指針のうち buddy が使うものを、buddy の規則として書き、DADS は出典として示す。  
-トークンの層の分け方を決めた理由は ADR-0013 に、コンポーネントの配置先は ADR-0014 に、規則の書き方は ADR-0017 に、カタログの組み方は ADR-0018 にある。
+出典と、構成を決めた理由の ADR は次のとおり。
 
 - 出典: [デジタル庁デザインシステム](https://design.digital.go.jp/dads/)
 - ADR-0013: [デザインシステムのトークンを、buddy に持つプリミティブトークン、セマンティックトークン、テーマ変数の 3 つの層にする](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0013-design-system-primitive-tokens.md)
 - ADR-0014: [packages/ui に、ドメインを持たない Base と Case のコンポーネントを置き、DADS の指針から外れる 3 点は理由を DESIGN.md に書く](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0014-ui-components.md)
+- ADR-0015: [アクセシビリティは WCAG 2.2 の AA を基準にし、自動で確認する](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0015-accessibility.md)
 - ADR-0017: [アクセシビリティと UI/UX の規則は、DADS の指針を元にし、DESIGN.md に buddy の規則として書く](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0017-design-system-guidelines.md)
 - ADR-0018: [apps/web の Storybook を 1 つのカタログにする](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0018-storybook-catalog.md)
+- ADR-0019: [カタログをドキュメントサイトと同じ Worker で、develop に入ったときだけ出す](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0019-docs-site-publish.md)
+- ADR-0020: [デザインシステムの文書を、原則と手順を持つ DESIGN.md と、トークン、コンポーネント、カタログの文書に分ける](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0020-design-system-topic-documents.md)
 
 トークンとコンポーネントの見た目と使い方は、[カタログ（Storybook）](https://buddy-docs.emon-apps.workers.dev/storybook/)で見る。  
 ローカルでは `pnpm --filter @buddy/web storybook` で開く。
@@ -34,7 +37,7 @@ packages/ui のトークンとコンポーネントの使い方と、アクセ�
 | Tailwind のユーティリティの名前 | [`src/tokens/theme.css`](https://github.com/Fukuemon/buddy/blob/develop/packages/ui/src/tokens/theme.css) |
 | トークンに置き換える前の apps/web の値が、どのトークンになったか | [置き換える前のテーマとトークンの対応表](https://github.com/Fukuemon/buddy/blob/develop/packages/ui/src/tokens/current-theme-map.md) |
 | コンポーネントの props と振る舞い | `src/base/` と `src/case/` のコンポーネントのコードと story |
-| 構成の判断と、却下した案 | `docs/adr/` の ADR |
+| 構成の判断と、却下した案 | [ADR の索引のデザインシステムとドキュメントサイト](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/index.md#デザインシステムとドキュメントサイト) |
 
 ## 画面を作るときの原則
 

@@ -1,7 +1,8 @@
 # buddy のデザインシステムのトークン
 
 デザインシステムの文書のうち、トークンの層と、セマンティックトークン、文字、角丸、影、ブレークポイントの使い方を決める文書。  
-原則と画面を作るときの手順は [DESIGN.md](https://github.com/Fukuemon/buddy/blob/develop/packages/ui/DESIGN.md) にある。値は書かず、[DESIGN.md の「知りたいことごとの参照先」](https://github.com/Fukuemon/buddy/blob/develop/packages/ui/DESIGN.md#知りたいことごとの参照先)の表が指すコードを参照先にする。
+原則と画面を作るときの手順は [DESIGN.md](https://github.com/Fukuemon/buddy/blob/develop/packages/ui/DESIGN.md) にある。値は書かず、[DESIGN.md の「知りたいことごとの参照先」](https://github.com/Fukuemon/buddy/blob/develop/packages/ui/DESIGN.md#知りたいことごとの参照先)の表が指すコードを参照先にする。  
+色、文字、余白と角丸と影の見本は、カタログの[トークン/色](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/docs/トークン-色--docs)、[トークン/文字](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/docs/トークン-文字--docs)、[トークン/余白と角丸と影](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/docs/トークン-余白と角丸と影--docs)で見る。
 
 トークンは 3 つの層に分かれる。画面とコンポーネントは、テーマ変数のユーティリティだけを書く。
 

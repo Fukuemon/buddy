@@ -32,6 +32,8 @@
 
 ### デザインシステムとドキュメントサイト
 
+画面を作るときに使う側の規則は [DESIGN.md](https://github.com/Fukuemon/buddy/blob/develop/packages/ui/DESIGN.md) と、そこから指す 3 つの文書にあり、見本は [カタログ（Storybook）](https://buddy-docs.emon-apps.workers.dev/storybook/) にある。このセクションの ADR は、その規則を決めた理由と、却下した案を持つ。
+
 | ADR | 題 | Status |
 | --- | --- | --- |
 | [ADR-0013](0013-design-system-primitive-tokens.md) | デザインシステムのトークンを、buddy に持つプリミティブトークン、セマンティックトークン、テーマ変数の 3 つの層にする | 承認 |
