@@ -17,6 +17,7 @@ OpenAPI の項目のうち、送る値は `createSchedule`（`POST /v1/facilitie
 | 提供時間 | 分 | なし。開始時間に足して `endsAt` にする | なし |
 | 提供時間 | 範囲の下限と上限、選んだときの値 | `ServiceCodeRecord.service_time_range_start`、`service_time_range_end` | `listServiceCodes` の `service_time_range_start`、`service_time_range_end` |
 | サービスコード | 選択肢の並びと表記 | `ServiceCodeRecord.code`、選んだものは `ScheduleInput.visit.serviceCode` | `listServiceCodes` の `code`、送るのは `visit_info.service_code_id` |
+| サービスコード | 利用者を選んだときに選ぶコード | `Patient.serviceCode` | `listPatients` の `service_code` |
 | タイトル | タイトル | `ScheduleInput.title` | `title` |
 | 利用者の一覧 | 利用者の名前 | `Patient.name`、選んだものは `ScheduleInput.visit.patientId` | `listPatients` の `name`、送るのは `visit_info.patient_id` |
 | 利用者の一覧 | 利用の終了の利用者を除くか | `Patient.ended` | `listPatients`（`include_ended=true`）の `ended_at` |
@@ -47,6 +48,11 @@ OpenAPI の項目のうち、送る値は `createSchedule`（`POST /v1/facilitie
   - 初期値は、`code` を NFKC で正規化して「訪看I2」に当たるもので、無ければ先頭の `code` である。
     - 処理は `apps/web/src/features/schedule/lib/scheduleFormMapper.ts` の `defaultServiceCode` にある。
   - 提供時間の初期値は、初期値のサービスコードの `service_time_range_end` である。
+  - 利用者を選ぶと、`Patient.serviceCode` と同じ表記の `code` を選び、提供時間をその `service_time_range_end` にする。
+    - 同じ表記の `code` が無ければ、初期値の `code` を選ぶ。
+    - 選ぶコードは、`apps/web/src/features/schedule/lib/scheduleFormMapper.ts` の `patientServiceCode` が決める。
+    - 職員がサービスコードを選んだかは、`apps/web/src/features/schedule/components/ScheduleForm.tsx` が持つ。選んだ後は替えず、`kind` が変わると選んでいない扱いに戻す。
+    - `Patient.serviceCode` は、web のサーバーが `listPatients` の `service_code` をそのまま入れる。処理は `apps/web/src/api/http/scheduleMapper.ts` の `fromApiPatient` にある。
   - 提供時間の範囲の検証は、選んだ `code` の `service_time_range_start` と `service_time_range_end` で行う。
     - 検証は `apps/web/src/features/schedule/schema/scheduleForm.ts` にある。
   - 選んだ `code` が空か、`listServiceCodes` に無いときは、「サービスコードを選んでください」を出し、提供時間の範囲を検証しない。

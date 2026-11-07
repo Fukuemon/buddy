@@ -17,6 +17,7 @@
 | 提供時間 | 範囲の下限と上限、サービスコードを選んだときの値 | `ServiceCodeRecord.service_time_range_start`、`service_time_range_end` | `listServiceCodes` の `service_time_range_start`、`service_time_range_end` |
 | サービスコード | 選択肢の並びと表記 | `ServiceCodeRecord.code` | `listServiceCodes` の `code` |
 | サービスコード | 選んだコード | `VisitDetail.serviceCode` | `getSchedule` の `visit_info.service_code`。保存では `visit_info.service_code_id` |
+| サービスコード | 利用者を替えたときに選ぶコード | `Patient.serviceCode` | `listPatients` の `service_code` |
 | 利用者の一覧 | 利用者の名前と選んだ利用者 | `Patient.name`、`VisitDetail.patientId` | `listPatients` の `name`、`visit_info.patient_id` |
 | 利用者の一覧 | 利用の終了の利用者を除くか | `Patient.ended` | `listPatients`（`include_ended=true`）の `ended_at` |
 | 職員の一覧 | 職員の名前と選んだ職員 | `Staff.name`、`Schedule.staffId` | `listUsers` の `username`、`staff_id`、`visit_info.assigned_staff_id` |
@@ -56,6 +57,12 @@
   - 訪問の担当の `visit_info.assigned_staff_id` は、今の担当が予定の職員と同じなら同じ職員を送り、違えば今の担当のまま送る。
 - 保存の前に、今の予定を `getSchedule` で読み直す。
 - サービスコードの選択肢は、`listServiceCodes` の順に並べ、`code` をそのまま出す。
+  - 開いたときは、`VisitDetail.serviceCode` を選び、`Patient.serviceCode` は使わない。
+  - 利用者を替えると、`Patient.serviceCode` と同じ表記の `code` を選び、提供時間をその `service_time_range_end` にする。
+    - 同じ表記の `code` が無ければ、`code` を NFKC で正規化して「訪看I2」に当たるものを、それも無ければ先頭の `code` を選ぶ。
+    - 選ぶコードは、`apps/web/src/features/schedule/lib/scheduleFormMapper.ts` の `patientServiceCode` が決める。
+    - 職員がサービスコードを選んだかは、`apps/web/src/features/schedule/components/ScheduleForm.tsx` が持つ。選んだ後は替えない。
+    - `Patient.serviceCode` は、web のサーバーが `listPatients` の `service_code` をそのまま入れる。処理は `apps/web/src/api/http/scheduleMapper.ts` の `fromApiPatient` にある。
   - 提供時間の範囲の検証は、選んだ `code` の `service_time_range_start` と `service_time_range_end` で行う。
     - 検証は `apps/web/src/features/schedule/schema/scheduleForm.ts` にある。
   - 選んだ `code` が空か、`listServiceCodes` に無いときは、「サービスコードを選んでください」を出し、提供時間の範囲を検証しない。

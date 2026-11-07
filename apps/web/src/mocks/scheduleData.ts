@@ -181,14 +181,19 @@ export const mockVisitCategories: Schemas['VisitCategory'][] = [
   { id: 'category-hospital', name: '入院' },
 ]
 
-const patient = (id: string, name: string): Schemas['Patient'] => ({
+/** 利用者。サービスコードを省くと訪看I2 にする。 */
+const patient = (
+  id: string,
+  name: string,
+  [serviceCodeId, serviceCode]: [string, string] = ['code-i2', '訪看I2'],
+): Schemas['Patient'] => ({
   id,
   facility_id: MOCK_FACILITY_ID,
   name,
   preferred_time: '午前',
   preferred_gender: '女性',
-  service_code_id: 'code-i2',
-  service_code: '訪看I2',
+  service_code_id: serviceCodeId,
+  service_code: serviceCode,
   assigned_staff_id: 'staff-1',
   assigned_staff_name: '青木 一郎',
   ended_at: null,
@@ -197,7 +202,7 @@ const patient = (id: string, name: string): Schemas['Patient'] => ({
 
 export const mockPatients: Schemas['Patient'][] = [
   patient('patient-1', '加藤 春子'),
-  patient('patient-2', '木村 夏夫'),
+  patient('patient-2', '木村 夏夫', ['code-i3', '訪看I3']),
   patient('patient-3', '久保 秋代'),
   patient('patient-4', '小林 冬馬'),
   { ...patient('patient-ended', '近藤 晴美'), ended_at: '2026-10-01T00:00:00Z' },

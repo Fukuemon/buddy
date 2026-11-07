@@ -45,7 +45,8 @@ describe('ScheduleFormModal', () => {
       staffId: 'staff-3',
       scheduleDate: '2026-10-20',
       startTime: '09:00',
-      serviceTime: 29,
+      serviceCode: '訪看I3',
+      serviceTime: 59,
     })
   })
 

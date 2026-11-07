@@ -86,8 +86,10 @@ export type Staff = {
   nonVisiting?: true
 }
 
-/** 利用者。API の型の ID と名前と、利用の終了かだけを使う。 */
+/** 利用者。API の型の ID、名前、サービスコードと、利用の終了かだけを使う。 */
 export type Patient = Pick<ScheduleComponents['schemas']['Patient'], 'id' | 'name'> & {
+  /** 利用者のサービスコードの表記。API の service_code を、そのまま使う。 */
+  serviceCode: ServiceCode
   /** 利用の終了の利用者は true を持つ。利用中の利用者は持たない（ADR-0005）。 */
   ended?: true
 }

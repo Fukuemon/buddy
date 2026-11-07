@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
+import { userEvent, within } from 'storybook/test'
 
 import { ApiError, type BuddyApi } from '#/api/BuddyApi'
 import { createFakeBuddyApi } from '#/api/fake/fakeBuddyApi'
@@ -33,6 +34,21 @@ const writeUnknownOnceApi = (): BuddyApi => {
         }
         return api.schedules.create(...args)
       },
+    },
+  }
+}
+
+/** 久保 秋代（patient-3）のサービスコードを、事業所のサービスコードの一覧に無い「訪看I9」にしたフェイクの API。 */
+const unlistedServiceCodeApi = (): BuddyApi => {
+  const api = createFakeBuddyApi()
+  return {
+    ...api,
+    patients: {
+      ...api.patients,
+      list: async (...args) =>
+        (await api.patients.list(...args)).map((patient) =>
+          patient.id === 'patient-3' ? { ...patient, serviceCode: '訪看I9' } : patient,
+        ),
     },
   }
 }
@@ -89,4 +105,29 @@ export const GooglePrimaryWriteUnknown: Story = {
     api: writeUnknownOnceApi(),
     url: '/schedule/new?kind=normal&start=2026-10-21&time=13:00&staffId=staff-2',
   }),
+}
+
+/** 木村 夏夫（サービスコードは訪看I3）を選んだ。サービスコードが訪看I3 に、提供時間が訪看I3 の上限の 59 分になる。 */
+export const PatientSelected: Story = {
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement.ownerDocument.body)
+    await userEvent.click(await canvas.findByTestId('schedule-field-patient'))
+    await userEvent.click(await canvas.findByTestId('patient-select-option-patient-2'))
+    await userEvent.click(canvas.getByTestId('schedule-field-date-time'))
+  },
+}
+
+/**
+ * 木村 夏夫を選んだ後に、サービスコードが事業所のサービスコードの一覧に無い久保 秋代に替えた。
+ * サービスコードが初期値の訪看I2 に、提供時間が訪看I2 の上限の 29 分になる。
+ */
+export const PatientServiceCodeUnlisted: Story = {
+  parameters: route({ api: unlistedServiceCodeApi() }),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement.ownerDocument.body)
+    await userEvent.click(await canvas.findByTestId('schedule-field-patient'))
+    await userEvent.click(await canvas.findByTestId('patient-select-option-patient-2'))
+    await userEvent.click(canvas.getByTestId('patient-select-option-patient-3'))
+    await userEvent.click(canvas.getByTestId('schedule-field-date-time'))
+  },
 }
