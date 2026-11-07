@@ -53,28 +53,28 @@ apps/web の画面だけが使うアイコンは、`apps/web/src/assets/icons/` 
 
 | コンポーネント | 使う場面 | 使わない場面 | キーボード |
 | --- | --- | --- | --- |
-| `Button` | 操作を 1 つ実行する。`variant="danger"`（塗りの赤）は、確認のダイアログでデータを失う操作を確定するボタンだけに使う | 画面を移る（`Link` に `buttonClassName` を渡す） | Tab で移り、Enter と Space で押す。押せない間は `aria-disabled` にし、フォーカスは受ける |
-| `Modal` | 今の画面の上で、予定の詳細や入力を行い、閉じて元の画面に戻る | 完了の通知、ナビゲーション | 開くとタイトルにフォーカスが移る。Tab はダイアログの中だけを回る。Esc で閉じる要求を出す。閉じると、開いたボタンにフォーカスが戻る |
-| `Dialog` | 短い入力を 1 つ受けるか、少ない選択肢から操作を 1 つ選び、元の画面に戻る。入力と確認は、パターンの `InputDialog` と `ConfirmDialog` で組む | 項目の多い入力（`Modal` を使う）、完了の通知 | 開くと最初の押せる要素にフォーカスが移る。Esc と覆いで `onClose` を呼び、送っている間は呼ばない。閉じると、開く前の要素にフォーカスが戻る |
-| `RowTable` | 名前と補足の値を持つ対象を並べ、行を押して詳細へ移るか選ぶか、行ごとに操作を置く。幅 768px 未満では 2 行のリストにする | 列を見比べる表（`Table` を使う） | Tab で行の名前のリンクかボタンに移り、Enter で押す。行の操作を置いた行は、操作のボタンに移る |
-| `ActionMenu` | 一覧の行に、2 つ以上の操作を「…」のメニューで置く | 操作が 1 つだけ（`Button` を置く）、ナビゲーション | Enter と Space で開き、最初の項目にフォーカスが移る。Esc で閉じ、「…」のボタンにフォーカスが戻る。外を押すと閉じる |
-| `HelpToggle` | 見出しの右に ? を置き、見出しが何を指すかを 1〜2 文で補う | 手順の説明（`MoreText` を使う）、エラーと注意 | Enter と Space で開閉し、Esc と外を押すと閉じる。`aria-expanded` で開閉を伝える |
-| `MoreText` | 初めてのときだけ要る手順や説明を、「詳しく」で開く | 見出しの短い補い（`HelpToggle` を使う）、操作に欠かせない説明 | Enter と Space で開閉する。`aria-expanded` で開閉を伝える |
-| `Drawer` | 幅 768px 未満で、画面の枠のナビゲーションと、予定のカレンダーの左の欄（日付と絞り込み）を、左端から開閉する | 予定の詳細や入力（`Modal` を使う）、幅 768px 以上のナビゲーションと左の欄（画面の枠の中に置く） | 開くとタイトルにフォーカスが移る。Tab はドロワーの中だけを回る。Esc で閉じる要求を出す。閉じると、開いたボタンにフォーカスが戻る。開くボタンには `aria-expanded` と `aria-controls` を付ける |
-| `SegmentedControl` | 2 から 4 個の選択肢から 1 つを選び、すぐに表示を切り替える（表示の単位、予定の種類） | 選択肢が 5 個以上、送信するまで反映しない入力 | Tab で選ばれている選択肢に移り、← と → で選び直す |
-| `Table` | 同じ項目を持つ行を並べる | 項目名と値の組（`dl` を使う） | コンポーネントの操作はない。見出しのセルは `th` にする |
-| `Loading` | 画面全体かダイアログの中身を待つ | ボタンを押した後の待ち（`Button` の `isLoading` を使う）、画面の一部の待ち | 操作はない。`aria-live` で待ちを伝える |
-| `DatePicker`、`TimePicker` | 日付と時刻を 1 つ入力する | 生年月日のように遠い日付 | ブラウザの入力欄の操作に従う |
-| `MonthPicker` | 照合の対象の月のように、日を問わず月を 1 つ入力する | 日まで決める入力（`DatePicker`） | ブラウザの入力欄の操作に従う |
-| `NumberPicker` | 分のような、単位の決まった数を入力する | 電話番号や番号のように、計算しない数字 | ブラウザの入力欄の操作に従う |
-| `FormField` | 入力のダイアログの 1 行の入力、選択、ラジオボタンの組に、見出し、補足の文、誤りの文を付ける | 日付と時刻（`DatePicker`、`TimePicker`）、複数行の文（`TextareaField`）、一覧の絞り込み | Tab で欄に移る。誤りの文は `role="alert"` で読み上げる |
-| `TextareaField` | 複数行の文を入力する | 1 行で足りる名前やタイトル | Tab で移る。改行は Enter |
-| `Select` | 決まった選択肢から 1 つを選ぶ（担当の職員、部署）。標準の矢印を消し、右から 12px に矢印の印を置く | 2 から 4 個の選択肢ですぐに表示を切り替える（`SegmentedControl`）、多い候補から少しを選ぶ（`ChipPicker`） | Tab で移る。上下の矢印キーで選び直す |
-| `FileField` | 端末に置いたファイルを 1 つ選んで送る（照合の実績の CSV） | 文や値の入力（`FormField`、`TextareaField`） | Tab で移り、Enter と Space でファイルを選ぶ画面を開く |
-| `ChipPicker` | 多い候補から少しを選ぶ（職員の権限の対象の職員）。選んだものだけをチップで並べ、名前で絞った候補から 1 つずつ足す | 1 つだけを選ぶ（`Select`）、候補が数個で全てを見比べる（チェックボックスの組） | Tab で × と足す欄に移る。足す欄で ↓ を押すと候補に移り、↑ と ↓ で移り、Enter で足す。Esc と外を押すと候補を閉じ、Esc は外側のダイアログを閉じない。× で外すと、次の × か足す欄にフォーカスが移る |
-| `StatusBadge` | 職員や利用者の状態（有効、休職、退職）を文字の印で示す。名前の先頭の 1 文字の丸（`Avatar`）と、名前の前の色の点（`DotLabel`）も同じファイルに置く | 操作の結果の通知、押して状態を変える操作 | 操作はない。`Avatar` と `DotLabel` の点は読み上げない |
-| `ListTools` | 一覧の上に、検索、絞り込みのセレクト（`FilterSelect`）、件数（`ListCount`）を並べる。絞り込みで 0 件のときは、表の代わりに `ListEmpty` を出す | 送信するまで反映しない入力のセレクト（`FormField` の中の `Select` を使う）、2 から 4 個の表示の切り替え（`SegmentedControl` を使う） | Tab で検索欄、絞り込み、絞り込みを外すボタンに移る。件数の変化は `aria-live` で読み上げる |
-| `SearchBox` | 一覧を語で絞り込む | 決まった選択肢から選ぶ（`SegmentedControl` か選択肢のカード） | Tab で移る。Esc で語を消す。見えるラベルがないので `aria-label` を渡す |
+| [`Button`](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/docs/コンポーネント-base-button--docs) | 操作を 1 つ実行する。`variant="danger"`（塗りの赤）は、確認のダイアログでデータを失う操作を確定するボタンだけに使う | 画面を移る（`Link` に `buttonClassName` を渡す） | Tab で移り、Enter と Space で押す。押せない間は `aria-disabled` にし、フォーカスは受ける |
+| [`Modal`](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/docs/コンポーネント-base-modal--docs) | 今の画面の上で、予定の詳細や入力を行い、閉じて元の画面に戻る | 完了の通知、ナビゲーション | 開くとタイトルにフォーカスが移る。Tab はダイアログの中だけを回る。Esc で閉じる要求を出す。閉じると、開いたボタンにフォーカスが戻る |
+| [`Dialog`](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/docs/コンポーネント-base-dialog--docs) | 短い入力を 1 つ受けるか、少ない選択肢から操作を 1 つ選び、元の画面に戻る。入力と確認は、パターンの `InputDialog` と `ConfirmDialog` で組む | 項目の多い入力（`Modal` を使う）、完了の通知 | 開くと最初の押せる要素にフォーカスが移る。Esc と覆いで `onClose` を呼び、送っている間は呼ばない。閉じると、開く前の要素にフォーカスが戻る |
+| [`RowTable`](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/docs/コンポーネント-base-rowtable--docs) | 名前と補足の値を持つ対象を並べ、行を押して詳細へ移るか選ぶか、行ごとに操作を置く。幅 768px 未満では 2 行のリストにする | 列を見比べる表（`Table` を使う） | Tab で行の名前のリンクかボタンに移り、Enter で押す。行の操作を置いた行は、操作のボタンに移る |
+| [`ActionMenu`](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/docs/コンポーネント-base-actionmenu--docs) | 一覧の行に、2 つ以上の操作を「…」のメニューで置く | 操作が 1 つだけ（`Button` を置く）、ナビゲーション | Enter と Space で開き、最初の項目にフォーカスが移る。Esc で閉じ、「…」のボタンにフォーカスが戻る。外を押すと閉じる |
+| [`HelpToggle`](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/docs/コンポーネント-base-helptoggle--docs) | 見出しの右に ? を置き、見出しが何を指すかを 1〜2 文で補う | 手順の説明（`MoreText` を使う）、エラーと注意 | Enter と Space で開閉し、Esc と外を押すと閉じる。`aria-expanded` で開閉を伝える |
+| [`MoreText`](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/docs/コンポーネント-base-moretext--docs) | 初めてのときだけ要る手順や説明を、「詳しく」で開く | 見出しの短い補い（`HelpToggle` を使う）、操作に欠かせない説明 | Enter と Space で開閉する。`aria-expanded` で開閉を伝える |
+| [`Drawer`](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/docs/コンポーネント-base-drawer--docs) | 幅 768px 未満で、画面の枠のナビゲーションと、予定のカレンダーの左の欄（日付と絞り込み）を、左端から開閉する | 予定の詳細や入力（`Modal` を使う）、幅 768px 以上のナビゲーションと左の欄（画面の枠の中に置く） | 開くとタイトルにフォーカスが移る。Tab はドロワーの中だけを回る。Esc で閉じる要求を出す。閉じると、開いたボタンにフォーカスが戻る。開くボタンには `aria-expanded` と `aria-controls` を付ける |
+| [`SegmentedControl`](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/docs/コンポーネント-base-segmentedcontrol--docs) | 2 から 4 個の選択肢から 1 つを選び、すぐに表示を切り替える（表示の単位、予定の種類） | 選択肢が 5 個以上、送信するまで反映しない入力 | Tab で選ばれている選択肢に移り、← と → で選び直す |
+| [`Table`](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/docs/コンポーネント-base-table--docs) | 同じ項目を持つ行を並べる | 項目名と値の組（`dl` を使う） | コンポーネントの操作はない。見出しのセルは `th` にする |
+| [`Loading`](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/docs/コンポーネント-base-loading--docs) | 画面全体かダイアログの中身を待つ | ボタンを押した後の待ち（`Button` の `isLoading` を使う）、画面の一部の待ち | 操作はない。`aria-live` で待ちを伝える |
+| [`DatePicker`](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/docs/コンポーネント-base-datepicker--docs)、[`TimePicker`](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/docs/コンポーネント-base-timepicker--docs) | 日付と時刻を 1 つ入力する | 生年月日のように遠い日付 | ブラウザの入力欄の操作に従う |
+| [`MonthPicker`](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/docs/コンポーネント-base-monthpicker--docs) | 照合の対象の月のように、日を問わず月を 1 つ入力する | 日まで決める入力（`DatePicker`） | ブラウザの入力欄の操作に従う |
+| [`NumberPicker`](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/docs/コンポーネント-base-numberpicker--docs) | 分のような、単位の決まった数を入力する | 電話番号や番号のように、計算しない数字 | ブラウザの入力欄の操作に従う |
+| [`FormField`](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/docs/コンポーネント-base-formfield--docs) | 入力のダイアログの 1 行の入力、選択、ラジオボタンの組に、見出し、補足の文、誤りの文を付ける | 日付と時刻（`DatePicker`、`TimePicker`）、複数行の文（`TextareaField`）、一覧の絞り込み | Tab で欄に移る。誤りの文は `role="alert"` で読み上げる |
+| [`TextareaField`](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/docs/コンポーネント-base-textareafield--docs) | 複数行の文を入力する | 1 行で足りる名前やタイトル | Tab で移る。改行は Enter |
+| [`Select`](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/docs/コンポーネント-base-select--docs) | 決まった選択肢から 1 つを選ぶ（担当の職員、部署）。標準の矢印を消し、右から 12px に矢印の印を置く | 2 から 4 個の選択肢ですぐに表示を切り替える（`SegmentedControl`）、多い候補から少しを選ぶ（`ChipPicker`） | Tab で移る。上下の矢印キーで選び直す |
+| [`FileField`](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/docs/コンポーネント-base-filefield--docs) | 端末に置いたファイルを 1 つ選んで送る（照合の実績の CSV） | 文や値の入力（`FormField`、`TextareaField`） | Tab で移り、Enter と Space でファイルを選ぶ画面を開く |
+| [`ChipPicker`](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/docs/コンポーネント-base-chippicker--docs) | 多い候補から少しを選ぶ（職員の権限の対象の職員）。選んだものだけをチップで並べ、名前で絞った候補から 1 つずつ足す | 1 つだけを選ぶ（`Select`）、候補が数個で全てを見比べる（チェックボックスの組） | Tab で × と足す欄に移る。足す欄で ↓ を押すと候補に移り、↑ と ↓ で移り、Enter で足す。Esc と外を押すと候補を閉じ、Esc は外側のダイアログを閉じない。× で外すと、次の × か足す欄にフォーカスが移る |
+| [`StatusBadge`](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/docs/コンポーネント-base-statusbadge--docs) | 職員や利用者の状態（有効、休職、退職）を文字の印で示す。名前の先頭の 1 文字の丸（`Avatar`）と、名前の前の色の点（`DotLabel`）も同じファイルに置く | 操作の結果の通知、押して状態を変える操作 | 操作はない。`Avatar` と `DotLabel` の点は読み上げない |
+| [`ListTools`](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/docs/コンポーネント-case-listtools--docs) | 一覧の上に、検索、絞り込みのセレクト（`FilterSelect`）、件数（`ListCount`）を並べる。絞り込みで 0 件のときは、表の代わりに `ListEmpty` を出す | 送信するまで反映しない入力のセレクト（`FormField` の中の `Select` を使う）、2 から 4 個の表示の切り替え（`SegmentedControl` を使う） | Tab で検索欄、絞り込み、絞り込みを外すボタンに移る。件数の変化は `aria-live` で読み上げる |
+| [`SearchBox`](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/docs/コンポーネント-case-searchbox--docs) | 一覧を語で絞り込む | 決まった選択肢から選ぶ（`SegmentedControl` か選択肢のカード） | Tab で移る。Esc で語を消す。見えるラベルがないので `aria-label` を渡す |
 
 入力のコンポーネントは、ラベルを入力欄に結び付け、エラーがあれば `aria-invalid` と、エラーの文への `aria-describedby` を付ける。
 
