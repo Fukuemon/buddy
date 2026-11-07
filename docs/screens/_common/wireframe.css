@@ -315,6 +315,15 @@ body {
   font-weight: 700;
 }
 
+/* 読み終えた表示を残したまま、読み直して読めなかったことを示す帯。wf-alert と重ね、文と読み直すを横に並べる */
+.wf-refetch-error {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
 /* 仕様が決まっていない箇所。未決の内容を枠の中に書く */
 .wf-undecided {
   padding: 10px 12px;
