@@ -80,7 +80,9 @@ test.describe('職員の詳細の操作の後のタブ', () => {
         async ({ page, step, check }) => {
           await openStory(url)(page)
           await expect(page.getByTestId('staff-detail-status')).toContainText('休職')
-          await step('休職の江藤 四郎の職員の詳細（Storybook の OnLeave）を開いている（架空のデータ）')
+          await step(
+            '休職の江藤 四郎の職員の詳細（Storybook の OnLeave）を開いている（架空のデータ）',
+          )
           await page.getByTestId('staff-detail-tab-policies').click()
           await expect(page.getByTestId('staff-detail-policies')).toBeVisible()
           await step('タブの「権限」を押し、「…」から「復職にする」を選ぶ')
@@ -142,7 +144,9 @@ test.describe('職員の詳細の操作の後のタブ', () => {
         openStory(url),
         async ({ page, step, check }) => {
           await openStory(url)(page)
-          await step('有効な石川 二葉の職員の詳細（Storybook の Default）を開いている（架空のデータ）')
+          await step(
+            '有効な石川 二葉の職員の詳細（Storybook の Default）を開いている（架空のデータ）',
+          )
           await page.getByTestId('staff-detail-tab-policies').click()
           await expect(page.getByTestId('staff-detail-policies')).toBeVisible()
           await step('タブの「権限」を押し、見出しの「編集」を押す')
