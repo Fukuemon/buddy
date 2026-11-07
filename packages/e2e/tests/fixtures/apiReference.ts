@@ -14,10 +14,10 @@ const root = fileURLToPath(new URL('../../../..', import.meta.url))
  */
 export const API_REFERENCE_ORIGIN = 'http://localhost:8000'
 
-/** openapi.yaml の servers が指す、compose のデフォルトのポートの API と、送り直す先。 */
+/** openapi.yaml の servers が指す、main の checkout の compose の API と、送り直す先。 */
 const API_FORWARDS = [
-  { from: 'http://localhost:8080', to: SCHEDULE_URL },
-  { from: 'http://localhost:8090', to: RECEIPT_URL },
+  { from: 'https://schedule.buddy.localhost', to: SCHEDULE_URL },
+  { from: 'https://receipt.buddy.localhost', to: RECEIPT_URL },
 ]
 
 const CONTENT_TYPES: Record<string, string> = {
@@ -29,8 +29,8 @@ const CONTENT_TYPES: Record<string, string> = {
 
 /**
  * API の参照のページ（docs/api/）を、ドキュメントサイトを起動せずに、リポジトリのファイルから開けるようにする。
- * ページが openapi.yaml の servers（compose のデフォルトのポート）へ送ったリクエストは、撮る compose の API へ送り直す。
- * 撮る compose のポートをずらしても、ページの Server の欄は openapi.yaml のままになる。
+ * ページが openapi.yaml の servers（main の checkout の compose）へ送ったリクエストは、撮る compose の API へ送り直す。
+ * 撮る compose が別の環境でも、ページの Server の欄は openapi.yaml のままになる。
  */
 export const routeApiReference = async (page: Page) => {
   await page.route(`${API_REFERENCE_ORIGIN}/**`, async (route) => {

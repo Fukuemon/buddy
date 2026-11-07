@@ -13,8 +13,8 @@ info:
 security:
   - bearerAuth: []
 servers:
-  # ローカル環境の compose の receipt（compose.yml の RECEIPT_PORT のデフォルト）
-  - url: http://localhost:8090
+  # main の checkout のローカル環境の compose の receipt（portless のホスト名）
+  - url: https://receipt.buddy.localhost
 tags:
   - name: health
     description: 死活と準備の確認

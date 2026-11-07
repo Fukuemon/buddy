@@ -2,7 +2,7 @@
 
 ## Status
 
-承認
+ADR-0036 に置換
 
 ## Context
 

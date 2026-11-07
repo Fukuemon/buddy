@@ -129,6 +129,7 @@ nav = [
     "adr/0033-overnight-schedule.md",
     "adr/0034-e2e-functions-without-page-object.md",
     "adr/0035-local-hostnames-with-portless.md",
+    "adr/0036-main-checkout-with-portless.md",
   ] },
 ]
 

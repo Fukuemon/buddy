@@ -245,7 +245,7 @@ buddy がデプロイのために満たす要件は、コンテナのイメー�
 | `OIDC_END_SESSION_ENDPOINT` | 任意 | 使わない | 使わない | 使わない | ログアウトでブラウザをリダイレクトする RP-Initiated Logout の URL |
 | `SESSION_STORE_URL` | 使う | 使わない | 使わない | 使わない | Valkey の接続先 |
 | `SESSION_SECRET` | 使う | 使わない | 使わない | 使わない | cookie の署名の鍵。32 バイト以上 |
-| `SESSION_COOKIE_SECURE` | 任意 | 使わない | 使わない | 使わない | `false` のときだけ、セッションの cookie に Secure を付けない。https でないローカル環境で使う |
+| `SESSION_COOKIE_SECURE` | 任意 | 使わない | 使わない | 使わない | `false` のときだけ、セッションの cookie に Secure を付けない。https でない CI の E2E と、portless を通さずに起動したローカル環境で使う |
 | `PUBLIC_URL` | 任意 | 使わない | 使わない | 使わない | ブラウザが開く web のオリジン。ログインとログアウトの戻り先の URL をこれから作る。TLS を終端するプロキシの後ろで、リクエストの URL が http になるときに渡す。渡さなければリクエストの URL を使う |
 | `SCHEDULE_URL` | 使う | 使わない | 使わない | 使う | 予定の API の URL。照合の API は、照合の権限の確認に使う |
 | `RECEIPT_URL` | 使う | 使わない | 使わない | 使わない | 照合の API の URL |

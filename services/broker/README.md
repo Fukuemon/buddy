@@ -77,7 +77,9 @@ compose で起動する手順は、[CONTRIBUTING.md](../../CONTRIBUTING.md#runni
 
 次の手順は、compose のブローカーを止め、ローカルで `go run` で起動する。  
 ブローカーの DB は、compose の PostgreSQL の `broker` のデータベースを使う。  
-ブローカーの DB は、Hydra と予定の API の DB とは分ける。
+ブローカーの DB は、Hydra と予定の API の DB とは分ける。  
+compose は、[CONTRIBUTING.md](../../CONTRIBUTING.md#portless-を通さずに起動する) の「portless を通さずに起動する」の環境変数を入れたシェルで起動する。  
+Hydra がブローカーの画面を `http://localhost:8100` へリダイレクトし、Hydra の admin API が `127.0.0.1:4445` で待ち受けるためである。
 
 ```sh
 docker compose up -d --wait hydra idp broker-seed

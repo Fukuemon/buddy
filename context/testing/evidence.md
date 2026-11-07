@@ -84,32 +84,34 @@ status: draft
 
 ### 撮るコマンド
 
-compose を、E2E と別のプロジェクトの名前とポートで起動して撮る。  
+compose を、E2E と別のプロジェクトの名前で、portless で起動して撮る。  
 撮影で作ったデータが、E2E を流す DB に残らないようにするためである。
 
 ```sh
-export WEB_PORT=3850 SCHEDULE_PORT=8850 RECEIPT_PORT=8851 GCALHOLD_PORT=8852 \
-  VALKEY_PORT=6850 IDP_PORT=9850 CALENDARPIT_PORT=4850 POSTGRES_PORT=15850 \
-  HYDRA_PUBLIC_PORT=4854 HYDRA_ADMIN_PORT=4855 BROKER_PORT=8853
-docker compose -p buddy-evidence up --build --wait
-EVIDENCE_FOR=<入れる先> E2E_BASE_URL=http://localhost:3850 \
-  E2E_CALENDARPIT_URL=http://localhost:4850 E2E_GCALHOLD_URL=http://localhost:8852 \
-  E2E_SCHEDULE_URL=http://localhost:8850 E2E_RECEIPT_URL=http://localhost:8851 \
-  E2E_HYDRA_URL=http://localhost:4854 \
+p=buddy-evidence
+# worktree では mise が .env の名前と URL を渡すので、撮る compose の値で上書きする
+export COMPOSE_PROJECT_NAME=$p POSTGRES_PORT=15850 VALKEY_PORT=6850 \
+  WEB_ORIGIN=https://web.$p.localhost HYDRA_PUBLIC_ORIGIN=https://hydra.$p.localhost \
+  BROKER_ORIGIN=https://broker.$p.localhost IDP_ORIGIN=https://idp.$p.localhost
+portless compose -p $p up -d --build --wait
+EVIDENCE_FOR=<入れる先> E2E_BASE_URL=https://web.$p.localhost \
+  E2E_CALENDARPIT_URL=https://calendarpit.$p.localhost E2E_GCALHOLD_URL=https://gcalhold.$p.localhost \
+  E2E_SCHEDULE_URL=https://schedule.$p.localhost E2E_RECEIPT_URL=https://receipt.$p.localhost \
+  E2E_HYDRA_URL=https://hydra.$p.localhost \
   pnpm --filter @buddy/e2e evidence -g '<test の名前の一部>'
-docker compose -p buddy-evidence down -v
+portless compose -p $p down -v
 ```
 
 | 環境変数 | 値 | デフォルト |
 | --- | --- | --- |
 | `EVIDENCE_FOR` | 入れる先。`issue-<番号>` か `pr-<番号>`。出力の配置先と字幕に出る | なし。無ければ spec が失敗する |
-| `E2E_BASE_URL` | 撮る web の URL | `http://localhost:3000` |
+| `E2E_BASE_URL` | 撮る web の URL | `https://web.buddy.localhost` |
 | `EVIDENCE_BEFORE_URL` | 改修前の web の URL。渡すと、改修前と改修後を 1 回で撮る | なし |
 | `EVIDENCE_ONLY` | `before` か `after`。`E2E_BASE_URL` をその版として 1 つだけ撮る | なし |
 | `E2E_STORYBOOK_URL` | Storybook の URL | `http://localhost:6006` |
-| `E2E_SCHEDULE_URL` | 撮る予定の API の URL。API の参照のページから送ったリクエストを、ここへ送り直す | `http://localhost:8080` |
-| `E2E_RECEIPT_URL` | 撮る照合の API の URL。API の参照のページから送ったリクエストを、ここへ送り直す | `http://localhost:8090` |
-| `E2E_HYDRA_URL` | 撮る compose の Hydra の URL。API の参照のページに入れるトークンを、ここから取る | `http://localhost:4444` |
+| `E2E_SCHEDULE_URL` | 撮る予定の API の URL。API の参照のページから送ったリクエストを、ここへ送り直す | `https://schedule.buddy.localhost` |
+| `E2E_RECEIPT_URL` | 撮る照合の API の URL。API の参照のページから送ったリクエストを、ここへ送り直す | `https://receipt.buddy.localhost` |
+| `E2E_HYDRA_URL` | 撮る compose の Hydra の URL。API の参照のページに入れるトークンを、ここから取る | `https://hydra.buddy.localhost` |
 
 - pull request のエビデンスは、ローカルの compose で撮る。
   - 実施日を渡さないので、改修前と改修後を別の日に撮っても同じ配置先にそろう。
@@ -123,13 +125,14 @@ docker compose -p buddy-evidence down -v
     - 改修前は、`E2E_BASE_URL` を改修前の compose の web に向け、`EVIDENCE_ONLY=before` で撮る。
     - 改修後は、`E2E_BASE_URL` を改修後の compose の web に向け、`EVIDENCE_ONLY=after` で撮る。
     - 同じ `<name>/` の `compare/` に比較の画像ができる。
-  - 2 つ目の compose のポートの組の例は次のとおり。改修前の spec は `E2E_BASE_URL=http://localhost:3860` で流す。
+  - 2 つ目の compose の起動の例は次のとおり。改修前の spec は `E2E_BASE_URL=https://web.buddy-evidence-before.localhost` で流す。
 
     ```sh
-    export WEB_PORT=3860 SCHEDULE_PORT=8860 RECEIPT_PORT=8861 GCALHOLD_PORT=8862 \
-      VALKEY_PORT=6860 IDP_PORT=9860 CALENDARPIT_PORT=4860 POSTGRES_PORT=15860 \
-      HYDRA_PUBLIC_PORT=4864 HYDRA_ADMIN_PORT=4865 BROKER_PORT=8863
-    docker compose -p buddy-evidence-before up --build --wait
+    p=buddy-evidence-before
+    export COMPOSE_PROJECT_NAME=$p POSTGRES_PORT=15860 VALKEY_PORT=6860 \
+      WEB_ORIGIN=https://web.$p.localhost HYDRA_PUBLIC_ORIGIN=https://hydra.$p.localhost \
+      BROKER_ORIGIN=https://broker.$p.localhost IDP_ORIGIN=https://idp.$p.localhost
+    portless compose -p $p up -d --build --wait
     ```
 
 - `services/*` も変わる改修と検証環境では、改修前と改修後の環境で 1 回ずつ流す。

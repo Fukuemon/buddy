@@ -188,9 +188,15 @@ jobs:
     runs-on: ${{ fromJSON(vars.RUNS_ON || '"ubuntu-latest"') }}
     timeout-minutes: 30
     # self-hosted runner の機械では、ローカル環境の compose が動いていることがある。
-    # プロジェクトの名前を分け、ポートをローカル環境のデフォルトから全てずらす（CONTRIBUTING.md の Running Locally）
+    # プロジェクトの名前を分け、ポートをローカル環境のデフォルトから全てずらす（CONTRIBUTING.md の Running Locally）。
+    # CI は portless を使わず http://localhost で開くので、ブラウザが開く URL と cookie の設定を渡す（ADR-0036）
     env:
       COMPOSE_PROJECT_NAME: buddy-ci
+      WEB_ORIGIN: http://localhost:13000
+      HYDRA_PUBLIC_ORIGIN: http://localhost:14444
+      BROKER_ORIGIN: http://localhost:18100
+      IDP_ORIGIN: http://localhost:19000
+      SESSION_COOKIE_SECURE: 'false'
       WEB_PORT: '13000'
       SCHEDULE_PORT: '18080'
       RECEIPT_PORT: '18090'

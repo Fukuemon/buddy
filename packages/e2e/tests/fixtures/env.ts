@@ -5,8 +5,8 @@ import { savedLoginPath } from '@fukuemon/e2e-kit/auth'
 
 const root = fileURLToPath(new URL('../../../..', import.meta.url))
 
-/** 画面の URL。デフォルトはルートの compose の web である。 */
-export const BASE_URL = process.env.E2E_BASE_URL ?? 'http://localhost:3000'
+/** 画面の URL。デフォルトは main の checkout の compose の web である。 */
+export const BASE_URL = process.env.E2E_BASE_URL ?? 'https://web.buddy.localhost'
 
 /**
  * ブローカーのログインの画面で入れるメール。ブローカーのシードの青木 陽菜を指す。
@@ -97,25 +97,27 @@ export const HAYASHI = {
  * compose の calendarpit の URL。spec は、予定の API が書いた予定を、管理の API で読んで確認し、Google の側で直す。
  * デフォルトはルートの compose の calendarpit である。
  */
-export const CALENDARPIT_URL = process.env.E2E_CALENDARPIT_URL ?? 'http://localhost:4173'
+export const CALENDARPIT_URL =
+  process.env.E2E_CALENDARPIT_URL ?? 'https://calendarpit.buddy.localhost'
 
 /** compose の予定の API の URL。API の参照のページから送ったリクエストを、ここへ送り直す。 */
-export const SCHEDULE_URL = process.env.E2E_SCHEDULE_URL ?? 'http://localhost:8080'
+export const SCHEDULE_URL = process.env.E2E_SCHEDULE_URL ?? 'https://schedule.buddy.localhost'
 
 /** compose の照合の API の URL。API の参照のページから送ったリクエストを、ここへ送り直す。 */
-export const RECEIPT_URL = process.env.E2E_RECEIPT_URL ?? 'http://localhost:8090'
+export const RECEIPT_URL = process.env.E2E_RECEIPT_URL ?? 'https://receipt.buddy.localhost'
 
 /** compose のブローカーのログインの画面の URL。内部の API をこのポートで受けないことを確認するのに使う。 */
-export const BROKER_URL = process.env.E2E_BROKER_URL ?? 'http://localhost:8100'
+export const BROKER_URL = process.env.E2E_BROKER_URL ?? 'https://broker.buddy.localhost'
 
 /** compose のブローカーの内部の API の URL。内部の API がトークンなしの呼び出しを拒むことを確認するのに使う。 */
-export const BROKER_INTERNAL_URL = process.env.E2E_BROKER_INTERNAL_URL ?? 'http://localhost:8101'
+export const BROKER_INTERNAL_URL =
+  process.env.E2E_BROKER_INTERNAL_URL ?? 'https://8081.broker.buddy.localhost'
 
 /** compose の Hydra の URL。API の参照のページで撮る spec が、ここからトークンを取る。 */
-export const HYDRA_URL = process.env.E2E_HYDRA_URL ?? 'http://localhost:4444'
+export const HYDRA_URL = process.env.E2E_HYDRA_URL ?? 'https://hydra.buddy.localhost'
 
 /** compose の、予定の API と calendarpit の間の中継の URL。デフォルトはルートの compose の gcalhold である。 */
-export const GCALHOLD_URL = process.env.E2E_GCALHOLD_URL ?? 'http://localhost:8085'
+export const GCALHOLD_URL = process.env.E2E_GCALHOLD_URL ?? 'https://gcalhold.buddy.localhost'
 
 /** compose の compose/google-calendar-service-accounts.json が、シードの事業所の組織に割り当てたダミーのサービスアカウント。 */
 export const FACILITY_SERVICE_ACCOUNT = 'buddy-org-sample@example.iam.gserviceaccount.com'

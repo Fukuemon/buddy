@@ -57,7 +57,7 @@ status: stable
 - Vite+ は、`pnpm-workspace.yaml` の catalog の `vite-plus` と `vite`（`@voidzero-dev/vite-plus-core` へのエイリアス）を一緒に上げる。
 - TanStack の Router、Query、Start は、`apps/web/package.json` に厳密なバージョンで書いてある。
   - 上げたら、`pnpm --filter @buddy/web check`、`test`、`build` と、compose での画面の確認（`pnpm e2e`）を流す。
-- PostgreSQL、Valkey、IdP、calendarpit のイメージを上げたら、`docker compose up --build --wait` と `pnpm e2e` を流す。
+- PostgreSQL、Valkey、IdP、calendarpit のイメージを上げたら、`portless compose up -d --build --wait` と `pnpm e2e` を流す。
   - PostgreSQL のタグは同じタグにそろえる。タグがあるのは次の 5 か所。
     - `compose.yml`
     - `services/schedule/internal/postgres/main_test.go`

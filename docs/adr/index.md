@@ -93,7 +93,9 @@
 
 | ADR | 題 | Status |
 | --- | --- | --- |
-| [ADR-0035](0035-local-hostnames-with-portless.md) | worktree ごとのローカル環境を、portless で worktree ごとのホスト名の HTTPS の URL で出す | 承認 |
+| [ADR-0036](0036-main-checkout-with-portless.md) | main の checkout と worktree のローカル環境を、portless でプロジェクトごとのホスト名の HTTPS の URL で出す | 承認 |
+
+- ADR-0035（[worktree ごとのローカル環境を、portless で worktree ごとのホスト名の HTTPS の URL で出す](0035-local-hostnames-with-portless.md)）は、ADR-0036 に置換した。
 
 ## ADR の間の依存
 
@@ -179,7 +181,7 @@ flowchart TB
     A0032 --> A0025
 ```
 
-- ADR-0027、ADR-0028、ADR-0030、ADR-0033、ADR-0034、ADR-0035 は、ほかの ADR を前提にせず、前提にもされないので、図に描かない。
+- ADR-0027、ADR-0028、ADR-0030、ADR-0033、ADR-0034、ADR-0036 は、ほかの ADR を前提にせず、前提にもされないので、図に描かない。
 
 ## 旧番号と新番号
 
