@@ -55,6 +55,8 @@
 | 事業所の職員かチームを読み終えている | 職員を対象にする権限では `staff.list` の結果（`Staff[]`）が、チームを対象にする権限では `teams.list` の結果がある（`StaffPoliciesDialog` の `staffOptions`、`teamOptions`） |
 | 職員が、開いたときから権限の選択か対象を変えている | `planPolicyChanges` が返す `PolicyChange[]` が空でない |
 | チェックを入れた対象を指定する権限の全てに、対象がある | `hasTargetsForAll` が `true` |
+| 開いたときからの、権限の選択と対象の変更がある | `planPolicyChanges` が返す `PolicyChange[]` が空でない |
+| チェックを入れた対象を指定する権限に、対象の無い権限がある | `hasTargetsForAll` が `false` |
 | 職員が、休職を送っている途中である | `startUserLeave` を呼ぶ mutation（`useStartLeave`）の `isPending` が `true`（`StaffLeaveDialog` の `isSubmitting`） |
 | 開いた職員の、残る予定と担当の利用者を読み終えている | `staff.remainingAssignments` の結果（`StaffAssignments`）がある。退職を拒まれた後は、拒まれた結果の `StaffAssignments` を使う |
 | 開いた職員に、今日以降に残る予定と担当の利用者がある | `hasNoAssignments` が `false`（`StaffAssignments.schedules`、`recurring_schedules`、`patients` のどれかが空でない） |
@@ -142,6 +144,7 @@
 | 4 | 役職の選択 | `staff-position-options` |
 | 5 | 役職を変えるときの注意 | `staff-position-note` |
 | 7 | ダイアログの役職を変える | `staff-position-submit` |
+| 8 | ダイアログの役職を変えるの条件の文 | `staff-position-submit-hint` |
 | 2 | 権限を変えるダイアログ | `staff-policies-dialog` |
 | 4 | 権限の選択 | `staff-policies-option-{権限の code}` |
 | 6 | 対象の選択 | `staff-policies-targets` |
@@ -152,6 +155,9 @@
 | 7 | 権限の保存 | `staff-policies-submit` |
 | 10 | 権限の保存 | `staff-policies-submit` |
 | 11 | 権限の保存の失敗の文 | `staff-policies-error` |
+| 8 | 権限の保存の条件の文 | `staff-policies-submit-hint` |
+| 11 | 権限の保存の条件の文 | `staff-policies-submit-hint` |
+| 12 | 権限の保存の条件の文 | `staff-policies-submit-hint` |
 | 2 | 休職のダイアログ | `staff-leave-dialog` |
 | 4 | 残る予定と担当の一覧 | `staff-leave-assignments` |
 | 4 | 残る予定と担当の一覧 | `staff-retire-assignments` |

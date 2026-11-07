@@ -29,11 +29,15 @@ OpenAPI の項目は、`createCheck`（`POST /v1/checks`）の本文とレスポ
 | 職員が、実績の CSV を選んでいる | 実績の CSV（`ReceiptCheckInput.visits` に送る `File`）が `null` でない |
 | 予定の取り方が Google カレンダーで、対象の月を選んでいる | 予定の取り方が `calendar` で、対象の月（`ReceiptCheckInput.month` に送る値）が `isMonth` で `true` |
 | 予定の取り方が予定の CSV で、予定の CSV を選んでいる | 予定の取り方が `csv` で、予定の CSV（`ReceiptCheckInput.schedules` に送る `File`）が `null` でない |
+| 実績の CSV の欄が、空である | 実績の CSV（`ReceiptCheckInput.visits` に送る `File`）が `null` |
+| 予定の取り方が Google カレンダーで、対象の月の欄が空である | 予定の取り方が `calendar` で、対象の月が `isMonth` で `false` |
+| 予定の取り方が予定の CSV で、予定の CSV の欄が空である | 予定の取り方が `csv` で、予定の CSV が `null` |
 | 選んだファイルの合計が、上限以下である | 実績の CSV と予定の CSV の `File.size` の和が `MAX_RECEIPT_UPLOAD_BYTES` 以下。予定の取り方が `calendar` なら、予定の CSV は数えない |
 | 職員が、照合を送っている途中である | `createCheck` を呼ぶ mutation の `isPending` が `true`（`ReceiptCheckForm` の `isSubmitting`） |
 
 - 予定の取り方、対象の月、2 つのファイルは、`ReceiptCheckFormContainer.tsx` の state（`source`、`month`、`schedules`、`visits`）が持つ。
 - 照合するの活性は、同じファイルの `ready`、`tooLarge` から作る `canSubmit` と、`isSubmitting` で決める。
+- 照合するの条件の文は、同じファイルが `ready` でないときに `submitHint` に文を渡し、`ReceiptCheckForm.tsx` が `canSubmit` が `false` で送っていない間だけ出す。
   - `ReceiptCheckForm.tsx` は、`canSubmit` が `false` なら `Button` に `disabled` を、送っている間は `isLoading` を渡す。packages/ui の `Button` は、どちらでも押しても動かない。
   - 入力を変えると `check.reset()` が `isPending` を `false` に戻すので、送っている途中でも押せるようになる（#811）。
 - 対象の月の欄と予定の CSV の欄は、`ReceiptCheckForm.tsx` が `source` で出し分ける。
@@ -52,6 +56,7 @@ OpenAPI の項目は、`createCheck`（`POST /v1/checks`）の本文とレスポ
 | 9 | 照合する | `receipt-check-submit` |
 | 9 | 照合の失敗の文 | `receipt-check-error` |
 | 10 | 照合する | `receipt-check-submit` |
+| 10 | 照合するの条件の文 | `receipt-check-submit-hint` |
 | 10 | メニュー | `site-nav-toggle` |
 | 11 | メニュー | `site-nav-toggle` |
 | 6 | 予定のカレンダーへ | `page-forbidden-back` |
