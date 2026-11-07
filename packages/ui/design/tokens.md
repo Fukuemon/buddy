@@ -1,7 +1,7 @@
 # buddy のデザインシステムのトークン
 
 デザインシステムの文書のうち、トークンの層と、セマンティックトークン、文字、角丸、影、ブレークポイントの使い方を決める文書。  
-原則と画面を作るときの手順は [DESIGN.md](https://github.com/Fukuemon/buddy/blob/develop/packages/ui/DESIGN.md) にある。値は書かず、DESIGN.md の「知りたいことごとの参照先」の表が指すコードを参照先にする。
+原則と画面を作るときの手順は [DESIGN.md](https://github.com/Fukuemon/buddy/blob/develop/packages/ui/DESIGN.md) にある。値は書かず、[DESIGN.md の「知りたいことごとの参照先」](https://github.com/Fukuemon/buddy/blob/develop/packages/ui/DESIGN.md#知りたいことごとの参照先)の表が指すコードを参照先にする。
 
 トークンは 3 つの層に分かれる。画面とコンポーネントは、テーマ変数のユーティリティだけを書く。
 
@@ -64,7 +64,7 @@
 
 - 出典: [レセプトの照合の Design Doc の、画面が JSON から作る表示](https://github.com/Fukuemon/buddy/blob/develop/services/receipt/DesignDoc.md#画面が-json-から作る表示)
 
-## チームの色
+### チームの色
 
 チームの色は、チームが持つ値（`blue` など）に `team-` を付けたトークンで塗る。  
 値の一覧と、色を省いて作ったチームに入る色の順は、[予定の管理の Design Doc](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/DesignDoc.md) にある。
