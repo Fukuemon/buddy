@@ -432,8 +432,8 @@ describe('createHttpBuddyApi', () => {
       }),
     )
     await expect(api().patients.list('facility-1', { name: 'B' })).resolves.toEqual([
-      { id: 'patient-2', name: '利用者 B' },
-      { id: 'patient-3', name: '利用者 B2', ended: true },
+      { id: 'patient-2', name: '利用者 B', serviceCode: '訪看I2' },
+      { id: 'patient-3', name: '利用者 B2', serviceCode: '訪看I2', ended: true },
     ])
   })
 
