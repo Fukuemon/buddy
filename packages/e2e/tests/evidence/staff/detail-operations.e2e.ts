@@ -126,6 +126,7 @@ test.describe('職員の詳細', () => {
       await page.getByTestId('staff-detail-reinstate').click()
       await expect(page.getByTestId('staff-detail-reinstate-error')).toHaveText(
         '退職した職員は変えられません。',
+        SLOW_STORY_WAIT,
       )
       await step('「…」の「復職にする」を押し、拒まれて、タブの上に理由の文が出る')
     }
@@ -193,7 +194,7 @@ test.describe('職員の詳細', () => {
     test(`${prefix}復職にできなかった後にもう一度復職にするを押した場合、送っている間は前の失敗の文を出さないこと`, async ({
       browser,
     }) => {
-      const url = story('reinstate-refused')
+      const url = story('slow-reinstate-refused')
       await recordPrEvidence(
         browser,
         {
@@ -206,7 +207,7 @@ test.describe('職員の詳細', () => {
         async ({ page, step, check }) => {
           await openStory(url)(page)
           await step(
-            '休職の江藤 四郎の職員の詳細（Storybook の ReinstateRefused）を開いている。復職は 1 秒後に拒まれる（架空のデータ）',
+            '休職の江藤 四郎の職員の詳細（Storybook の SlowReinstateRefused）を開いている。復職は 4 秒後に拒まれる（架空のデータ）',
           )
           await refuseReinstate(page, step)
           await page.getByTestId('staff-detail-menu').click()
@@ -216,6 +217,7 @@ test.describe('職員の詳細', () => {
           await check('もう一度「復職にする」を押すと、送っている間は前の失敗の文が消える')
           await expect(page.getByTestId('staff-detail-reinstate-error')).toHaveText(
             '退職した職員は変えられません。',
+            SLOW_STORY_WAIT,
           )
           await check('また拒まれると、理由の文をもう一度出す')
         },
