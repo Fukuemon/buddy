@@ -6,6 +6,7 @@ import type { ReceiptRow } from '#/api/types'
 import {
   cellMarks,
   markedCellValue,
+  needsCheck,
   RESULT_TABLE_COLUMNS,
   reportRowCells,
   rowFindings,
@@ -185,6 +186,23 @@ describe('cellMarks', () => {
 
   it('片側の無い行は、印を付けない', () => {
     expect(cellMarks(scheduleOnly)).toEqual({})
+  })
+})
+
+describe('needsCheck', () => {
+  const [mismatch, scheduleOnly, visitOnly, match] = mockReceiptReport.rows
+
+  it('不整合、予定のみ、実績のみの行は、確認が要る', () => {
+    expect([mismatch, scheduleOnly, visitOnly].map(needsCheck)).toEqual([true, true, true])
+  })
+
+  it('整合の行は、注意があるときだけ確認が要る', () => {
+    expect(needsCheck(match)).toBe(true)
+    const clean = {
+      ...match,
+      checks: { ...match.checks!, duration_equal: true, end_equal: true },
+    }
+    expect(needsCheck(clean)).toBe(false)
   })
 })
 
