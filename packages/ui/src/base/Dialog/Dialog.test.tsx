@@ -98,7 +98,12 @@ describe('Dialog', () => {
     const onClose = fn()
     render(
       <Dialog labelledBy="closing-title" onClose={onClose}>
-        <DialogHeader isCloseDisabled onClose={onClose} title="予定の理由" titleId="closing-title" />
+        <DialogHeader
+          isCloseDisabled
+          onClose={onClose}
+          title="予定の理由"
+          titleId="closing-title"
+        />
       </Dialog>,
     )
     const close = screen.getByRole('button', { name: '閉じる' })

@@ -78,10 +78,7 @@ export const Submitting: Story = {
   args: { canClose: false },
   render: (args) => (
     <Dialog {...args}>
-      <DialogHeader
-        title="予定の理由を直す"
-        titleId={TITLE_ID}
-      />
+      <DialogHeader title="予定の理由を直す" titleId={TITLE_ID} />
       <DialogBody>
         <ReasonField />
       </DialogBody>
@@ -101,10 +98,7 @@ export const Submitting: Story = {
 export const OperationsOnly: Story = {
   render: (args) => (
     <Dialog {...args}>
-      <DialogHeader
-        title="Google カレンダーと内容が違います"
-        titleId={TITLE_ID}
-      />
+      <DialogHeader title="Google カレンダーと内容が違います" titleId={TITLE_ID} />
       <DialogBody>
         <p>
           青木 一郎の 11 月 4 日の予定は、Google カレンダーでは 10:00〜11:00、buddy では

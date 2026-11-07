@@ -42,10 +42,7 @@ export const CalendarReviewDialog = ({
   const scheduleId = issue.schedule_id
   return (
     <Dialog data-testid="calendar-review-dialog" labelledBy={titleId} onClose={onClose}>
-      <DialogHeader
-        title="食い違った予定"
-        titleId={titleId}
-      />
+      <DialogHeader title="食い違った予定" titleId={titleId} />
       <DialogBody>
         <dl className="text-body">
           <Row label="予定の日時">
@@ -74,12 +71,7 @@ export const CalendarReviewDialog = ({
         )}
       </DialogBody>
       <DialogFooter>
-        <Button
-          data-testid="calendar-review-cancel"
-          onClick={onClose}
-          size="S"
-          variant="secondary"
-        >
+        <Button data-testid="calendar-review-cancel" onClick={onClose} size="S" variant="secondary">
           キャンセル
         </Button>
         <Button
