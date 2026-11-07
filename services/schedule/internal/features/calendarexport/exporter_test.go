@@ -116,7 +116,7 @@ func newExportEnv(t *testing.T) exportEnv {
 		CreateRecurring:  schedule.NewCreateRecurring(facilities, types, refs, facilities, nil, nil, recurring, outbox, tx, ids).Do,
 		ChangeOccurrence: schedule.NewChangeOccurrence(recurring, refs, facilities, schedules, types, nil, nil, outbox, tx, ids).Do,
 		Cancel:           schedule.NewCancel(schedules, refs, facilities, outbox, tx, ids).Do,
-		CancelOccurrence: schedule.NewCancelOccurrence(recurring, refs, facilities, schedules, types, outbox, tx, ids).Do,
+		CancelOccurrence: schedule.NewCancelOccurrence(recurring, refs, facilities, schedules, types, nil, outbox, tx, ids).Do,
 		Update:           schedule.NewUpdate(schedules, refs, facilities, types, nil, nil, outbox, tx).Do,
 	}
 	writers, logs := &[]string{}, &bytes.Buffer{}

@@ -432,12 +432,15 @@ type deps struct {
 	Facilities kernel.Finder[organization.Facility]
 	Staff      schedule.StaffRefs
 	Locks      schedule.FacilityLock
-	Visits     schedule.VisitInfos
-	Schedules  schedule.Repository
-	Recurring  schedule.RecurringRepository
-	Types      schedule.TypeRepository
-	Exports    schedule.Exports
-	Now        func() time.Time
+	Visits     interface {
+		schedule.VisitInfos
+		schedule.VisitCopier
+	}
+	Schedules schedule.Repository
+	Recurring schedule.RecurringRepository
+	Types     schedule.TypeRepository
+	Exports   schedule.Exports
+	Now       func() time.Time
 }
 
 // app は、テストが呼ぶ schedule の操作の Do である。
@@ -459,7 +462,7 @@ func build(d deps, tx tx.Transactor, ids kernel.IDGenerator) *app {
 		CreateRecurring:  schedule.NewCreateRecurring(d.Facilities, d.Types, d.Staff, d.Locks, d.Visits, d.Now, d.Recurring, d.Exports, tx, ids).Do,
 		ChangeOccurrence: schedule.NewChangeOccurrence(d.Recurring, d.Staff, d.Locks, d.Schedules, d.Types, d.Visits, d.Now, d.Exports, tx, ids).Do,
 		Cancel:           schedule.NewCancel(d.Schedules, d.Staff, d.Locks, d.Exports, tx, ids).Do,
-		CancelOccurrence: schedule.NewCancelOccurrence(d.Recurring, d.Staff, d.Locks, d.Schedules, d.Types, d.Exports, tx, ids).Do,
+		CancelOccurrence: schedule.NewCancelOccurrence(d.Recurring, d.Staff, d.Locks, d.Schedules, d.Types, d.Visits, d.Exports, tx, ids).Do,
 		Update:           schedule.NewUpdate(d.Schedules, d.Staff, d.Locks, d.Types, d.Visits, d.Now, d.Exports, tx).Do,
 	}
 }

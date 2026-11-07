@@ -16,18 +16,20 @@ type CancelOccurrence struct {
 	locks     FacilityLock
 	schedules Repository
 	types     TypeRepository
+	visits    VisitCopier
 	exports   Exports
 	tx        tx.Transactor
 	ids       kernel.IDGenerator
 }
 
 // NewCancelOccurrence は CancelOccurrence を作る。exports は、予定の変更を外部のカレンダーへの書き出しの待ちに積む。nil なら積まない。
-func NewCancelOccurrence(recurring RecurringRepository, staff StaffRefs, locks FacilityLock, schedules Repository, types TypeRepository, exports Exports, tx tx.Transactor, ids kernel.IDGenerator) CancelOccurrence {
-	return CancelOccurrence{recurring: recurring, staff: staff, locks: locks, schedules: schedules, types: types, exports: exports, tx: tx, ids: ids}
+func NewCancelOccurrence(recurring RecurringRepository, staff StaffRefs, locks FacilityLock, schedules Repository, types TypeRepository, visits VisitCopier, exports Exports, tx tx.Transactor, ids kernel.IDGenerator) CancelOccurrence {
+	return CancelOccurrence{recurring: recurring, staff: staff, locks: locks, schedules: schedules, types: types, visits: visits, exports: exports, tx: tx, ids: ids}
 }
 
 // Do は、繰り返しの予定の originalDate の回を、繰り返しの予定と同じ内容の単発の予定に置き換え、理由 reason でキャンセルする。
-// 作る予定は繰り返しの予定の訪問の情報を指し、内容を変えないので、休職と退職の職員と利用の終了の利用者を確認しない。
+// 作る予定は、繰り返しの予定の訪問の情報を写した訪問の情報を持つ。訪問の情報は予定ごとに 1 つである。
+// 内容を変えないので、休職と退職の職員と利用の終了の利用者を確認しない。
 // 書き出しの待ちには繰り返しの予定の変更だけを積む。キャンセルした予定は外部の予定と対応を持たず、回は除外する日で外部から消えるためである。
 // エラーは ChangeOccurrence と同じで、理由が不正なときは入力のエラーを、その回をすでに置き換えたかキャンセルしたときは apperr.ErrConflict を返す。
 func (s CancelOccurrence) Do(ctx context.Context, recurringScheduleID string, originalDate civil.Date, reason string) (Cancellation, error) {
@@ -59,6 +61,13 @@ func (s CancelOccurrence) Do(ctx context.Context, recurringScheduleID string, or
 		}
 		slot := rs.Slot
 		slot.Date = originalDate
+		if rs.Visit != nil {
+			id, err := s.visits.Copy(ctx, *rs.Visit)
+			if err != nil {
+				return err
+			}
+			slot.VisitInfoID = &id
+		}
 		sc, err := New(s.ids.NewID(), slot, typ)
 		if err != nil {
 			return err

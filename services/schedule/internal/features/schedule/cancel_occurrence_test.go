@@ -2,6 +2,7 @@ package schedule_test
 
 import (
 	"errors"
+	"reflect"
 	"testing"
 
 	"github.com/Fukuemon/buddy/services/schedule/internal/apperr"
@@ -94,7 +95,12 @@ func TestSchedulesCancelOccurrenceOfRetiredStaff(t *testing.T) {
 		t.Fatal(err)
 	}
 	sc := s.Schedules[got.ScheduleID]
-	if sc.VisitInfoID == nil || rs.VisitInfoID == nil || *sc.VisitInfoID != *rs.VisitInfoID {
-		t.Errorf("キャンセルした回の訪問の情報 = %v, want 繰り返しの予定の %v", sc.VisitInfoID, rs.VisitInfoID)
+	if sc.VisitInfoID == nil || rs.VisitInfoID == nil || *sc.VisitInfoID == *rs.VisitInfoID {
+		t.Fatalf("キャンセルした回の訪問の情報 = %v, want 繰り返しの予定の %v を写した別の訪問の情報", sc.VisitInfoID, rs.VisitInfoID)
+	}
+	copied, orig := s.Infos[*sc.VisitInfoID], s.Infos[*rs.VisitInfoID]
+	copied.ID = orig.ID
+	if !reflect.DeepEqual(copied, orig) {
+		t.Errorf("写した訪問の情報 = %+v, want %+v", copied, orig)
 	}
 }

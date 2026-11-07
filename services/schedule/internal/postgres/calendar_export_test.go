@@ -341,7 +341,7 @@ func TestScheduleWritesEnqueueExports(t *testing.T) {
 	requireQueued(t, calendar.Target{FacilityID: seedFacility, RecurringScheduleID: rs.ID})
 
 	// 回のキャンセルは、繰り返しの予定の変更を積み、その日を除外する日にする。キャンセルした単発の予定は Google の予定と対応を持たないので積まない
-	c, err := schedule.NewCancelOccurrence(recurring, refs, facilities, schedules, types, outbox, txr, ids).
+	c, err := schedule.NewCancelOccurrence(recurring, refs, facilities, schedules, types, nil, outbox, txr, ids).
 		Do(ctx, rs.ID, civil.Date{Year: 2099, Month: 1, Day: 19}, "休み")
 	if err != nil {
 		t.Fatal(err)

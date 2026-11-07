@@ -209,7 +209,10 @@ func scheduleApp(
 	facilities kernel.Finder[organization.Facility],
 	staffRefs schedule.StaffRefs,
 	locks schedule.FacilityLock,
-	visits schedule.VisitInfos,
+	visits interface {
+		schedule.VisitInfos
+		schedule.VisitCopier
+	},
 	schedules interface {
 		schedule.Repository
 		scheduleview.Schedules
@@ -234,7 +237,7 @@ func scheduleApp(
 		CreateRecurring:  schedule.NewCreateRecurring(facilities, types, staffRefs, locks, visits, nil, recurring, exports, tx, ids).Do,
 		ChangeOccurrence: schedule.NewChangeOccurrence(recurring, staffRefs, locks, schedules, types, visits, nil, exports, tx, ids).Do,
 		Cancel:           schedule.NewCancel(schedules, staffRefs, locks, exports, tx, ids).Do,
-		CancelOccurrence: schedule.NewCancelOccurrence(recurring, staffRefs, locks, schedules, types, exports, tx, ids).Do,
+		CancelOccurrence: schedule.NewCancelOccurrence(recurring, staffRefs, locks, schedules, types, visits, exports, tx, ids).Do,
 		Update:           schedule.NewUpdate(schedules, staffRefs, locks, types, visits, nil, exports, tx).Do,
 	}
 }
