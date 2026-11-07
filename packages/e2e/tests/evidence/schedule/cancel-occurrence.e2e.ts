@@ -8,7 +8,7 @@ import { createWeeklyNormalSchedule } from '../../fixtures/schedule'
 import { STAFF_FORM } from '../../fixtures/staff'
 import { linkStaffCalendar, unlinkStaffCalendar } from '../../screens/calendar'
 import { signInAtBroker } from '../../screens/login'
-import { calendarpitEvent } from '../../selectors/calendarpit'
+import { calendarpitText } from '../../selectors/calendarpit'
 
 const ACTOR = `${LOGIN_STAFF.name}（マネージャー）`
 
@@ -42,11 +42,11 @@ const openDay = async (page: Page, date: string) => {
   await expect(page.getByTestId(`day-grid-staff-${HAYASHI.id}`)).toBeVisible()
 }
 
-/** 日の表示の林の列の、title の予定。 */
+/** 日の表示の林の列の、title の予定。キャンセルした予定の取り消し線の要素（-cancelled）は数えない。 */
 const hayashiEvent = (page: Page, title: string) =>
   page
     .getByTestId(`day-grid-staff-${HAYASHI.id}`)
-    .getByTestId(/^schedule-event-/)
+    .getByTestId(/^schedule-event-(?!.*-cancelled$)/)
     .filter({ hasText: title })
 
 /** 予定の詳細を開いている回を、理由 reason でキャンセルし、詳細が閉じるまで待つ。 */
@@ -58,8 +58,17 @@ const cancelOpened = async (page: Page, reason: string) => {
   await expect(page.getByTestId('schedule-detail-modal')).toBeHidden()
 }
 
-const openCalendarpit = (page: Page, date: string) =>
-  page.goto(`${CALENDARPIT_URL}/?calendar=${encodeURIComponent(HAYASHI.calendarId)}&date=${date}`)
+/**
+ * calendarpit の管理の API で、林のカレンダーの予定を回に展開して（singleEvents）、最初の回から次の回までを開く。
+ * calendarpit の管理の画面は、繰り返しの予定を最初の日にだけ出し、後の回を出さないためである。
+ */
+const openInstances = (page: Page) =>
+  page.goto(
+    `${CALENDARPIT_URL}/__calendarpit/calendars/${encodeURIComponent(HAYASHI.calendarId)}/events?singleEvents=true&orderBy=startTime&timeMin=${FIRST_DATE}T00:00:00Z&timeMax=${NEXT_DATE}T23:59:59Z`,
+  )
+
+/** 開いた回の一覧の、date の 10:00 に始まる回。 */
+const instanceOn = (page: Page, date: string) => calendarpitText(page, `${date}T10:00:00+09:00`)
 
 test.describe('予定の詳細', () => {
   test.describe('繰り返しの予定の回のキャンセル', () => {
@@ -149,10 +158,10 @@ test.describe('予定の詳細', () => {
           prepareWeekly(title),
           async ({ page, step, check }) => {
             try {
-              await openCalendarpit(page, CANCEL_DATE)
-              await expect(calendarpitEvent(page, title)).toBeVisible()
+              await openInstances(page)
+              await expect(instanceOn(page, CANCEL_DATE)).toBeVisible()
               await step(
-                `${HAYASHI.name} に Google カレンダー（${HAYASHI.calendarId}、calendarpit）を結び付けてある。calendarpit の ${CANCEL_DATE} に、毎週の予定「${title}」の回が出ている`,
+                `${HAYASHI.name} に Google カレンダー（${HAYASHI.calendarId}、calendarpit）を結び付けてある。calendarpit の管理の API で毎週の予定「${title}」を回に展開すると、${FIRST_DATE}、${CANCEL_DATE}、${NEXT_DATE} の 3 回がある`,
               )
 
               await step(`buddy の ${CANCEL_DATE} の日の表示で、その回を開いてキャンセルする`)
@@ -161,7 +170,7 @@ test.describe('予定の詳細', () => {
               await cancelOpened(page, '利用者の入院')
               await expect(hayashiEvent(page, title)).toHaveCount(0)
 
-              // 書き出しは別の処理が行うので、繰り返しの予定に EXDATE が付くまで待ってから管理の画面を開く
+              // 書き出しは別の処理が行うので、繰り返しの予定に EXDATE が付くまで待ってから回を開き直す
               await expect
                 .poll(async () =>
                   (await findGoogleEvent(request, HAYASHI.calendarId, title))?.recurrence?.join(
@@ -169,17 +178,12 @@ test.describe('予定の詳細', () => {
                   ),
                 )
                 .toContain('EXDATE;TZID=Asia/Tokyo:20261123T100000')
-              await step(
-                `calendarpit の管理の画面で、${HAYASHI.calendarId} の ${CANCEL_DATE} を開く`,
-              )
-              await openCalendarpit(page, CANCEL_DATE)
-              await expect(calendarpitEvent(page, title)).toHaveCount(0)
-              await check(`${CANCEL_DATE} の「${title}」が消える`)
-
-              await step(`次の回の ${NEXT_DATE} を開く`)
-              await openCalendarpit(page, NEXT_DATE)
-              await expect(calendarpitEvent(page, title)).toBeVisible()
-              await check(`${NEXT_DATE} の「${title}」は残る`)
+              await step('書き出しが動いた後に、calendarpit の管理の API で、もう一度回に展開する')
+              await openInstances(page)
+              await expect(instanceOn(page, FIRST_DATE)).toBeVisible()
+              await expect(instanceOn(page, NEXT_DATE)).toBeVisible()
+              await expect(instanceOn(page, CANCEL_DATE)).toHaveCount(0)
+              await check(`${CANCEL_DATE} の回だけが消え、${FIRST_DATE} と ${NEXT_DATE} の回は残る`)
             } finally {
               await step('（撮影のため、ほかの撮影の前提に戻すよう、結び付けを外す）')
               await unlinkStaffCalendar(page, HAYASHI.id)
