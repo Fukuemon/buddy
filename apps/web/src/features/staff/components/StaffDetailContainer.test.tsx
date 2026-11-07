@@ -12,7 +12,7 @@ import { FAKE_VIEWER } from '#/api/fake/fixtures'
 import { queryKeys } from '#/api/queryKeys'
 
 import * as stories from './StaffDetailContainer.stories'
-import { onLeaveApi } from './StaffDetailContainer.stories'
+import { noAssignmentsApi, onLeaveApi } from './StaffDetailContainer.stories'
 
 const {
   Default,
@@ -197,6 +197,95 @@ describe('StaffDetailContainer', () => {
     expect(await screen.findByTestId('staff-detail-status')).toHaveTextContent(
       '休職（2027/04/01 に戻る予定）',
     )
+  })
+
+  describe('権限のタブを開いたまま操作すると、終わった後にプロフィールのタブを出す', () => {
+    const openPoliciesTab = async () => {
+      await userEvent.click(await screen.findByTestId('staff-detail-tab-policies'))
+      expect(screen.getByTestId('staff-detail-policies')).toBeInTheDocument()
+    }
+    const expectProfileTab = async () => {
+      expect(await screen.findByTestId('staff-detail-profile')).toBeInTheDocument()
+      expect(screen.getByTestId('staff-detail-tab-profile')).toHaveAttribute(
+        'aria-selected',
+        'true',
+      )
+      expect(screen.queryByTestId('staff-detail-policies')).toBeNull()
+    }
+
+    it('休職', async () => {
+      const Story = storyWith(noAssignmentsApi())
+      render(<Story />)
+      await openPoliciesTab()
+      await userEvent.click(screen.getByTestId('staff-detail-menu'))
+      await userEvent.click(screen.getByTestId('staff-detail-leave'))
+      const dialog = screen.getByTestId('staff-leave-dialog')
+      await within(dialog).findByTestId('staff-leave-assignments')
+      await userEvent.click(within(dialog).getByTestId('staff-leave-submit'))
+
+      expect(await screen.findByTestId('staff-detail-status')).toHaveTextContent('休職')
+      await expectProfileTab()
+    })
+
+    it('復職', async () => {
+      const Story = storyWith(onLeaveApi(), 'staff-4')
+      render(<Story />)
+      await openPoliciesTab()
+      await userEvent.click(screen.getByTestId('staff-detail-menu'))
+      await userEvent.click(screen.getByTestId('staff-detail-reinstate'))
+
+      await expect.poll(() => screen.queryByTestId('staff-detail-status')).toBeNull()
+      await expectProfileTab()
+    })
+
+    it('退職', async () => {
+      const Story = storyWith(noAssignmentsApi())
+      render(<Story />)
+      await openPoliciesTab()
+      await userEvent.click(screen.getByTestId('staff-detail-menu'))
+      await userEvent.click(screen.getByTestId('staff-detail-retire'))
+      const dialog = screen.getByTestId('staff-retire-dialog')
+      await within(dialog).findByText('石川 二葉 を退職にしますか')
+      await userEvent.click(within(dialog).getByTestId('staff-retire-submit'))
+
+      expect(await screen.findByTestId('staff-detail-status')).toHaveTextContent('退職')
+      await expectProfileTab()
+    })
+
+    it('プロフィールの保存', async () => {
+      const Story = storyWith(createFakeBuddyApi())
+      render(<Story />)
+      await openPoliciesTab()
+      await userEvent.click(screen.getByTestId('staff-detail-edit'))
+      const dialog = screen.getByTestId('staff-detail-edit-dialog')
+      await within(dialog).findByTestId('staff-detail-department-input')
+      await userEvent.click(within(dialog).getByTestId('staff-detail-save'))
+
+      await expect.poll(() => screen.queryByTestId('staff-detail-edit-dialog')).toBeNull()
+      await expectProfileTab()
+    })
+
+    it('復職にできなかったときは、権限のタブのままにする', async () => {
+      const base = onLeaveApi()
+      const api: BuddyApi = {
+        ...base,
+        staff: {
+          ...base.staff,
+          reinstate: async () => {
+            throw new ApiError(500, '失敗', [], 'internal')
+          },
+        },
+      }
+      const Story = storyWith(api, 'staff-4')
+      render(<Story />)
+      await openPoliciesTab()
+      await userEvent.click(screen.getByTestId('staff-detail-menu'))
+      await userEvent.click(screen.getByTestId('staff-detail-reinstate'))
+
+      expect(await screen.findByTestId('staff-detail-reinstate-error')).toBeInTheDocument()
+      expect(screen.getByTestId('staff-detail-policies')).toBeInTheDocument()
+      expect(screen.queryByTestId('staff-detail-profile')).toBeNull()
+    })
   })
 
   it('予定が残る職員を訪問しない職員にしようとすると、ダイアログを閉じずに残る予定を示し、訪問するに戻すと保存できる', async () => {

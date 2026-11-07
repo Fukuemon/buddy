@@ -1,6 +1,6 @@
 import { ActionMenu, type ActionMenuItem, Avatar, Button, Loading, StatusBadge } from '@buddy/ui'
 import { clsx } from 'clsx'
-import { useId, useState, type ReactNode } from 'react'
+import { useId, type ReactNode } from 'react'
 
 import type { Policy, Position, StaffDetail } from '#/api/types'
 import { RefetchErrorMessage } from '#/components/page/RefetchErrorMessage'
@@ -25,8 +25,14 @@ export type StaffDetailViewState =
       refetchFailed?: boolean
     }
 
+/** 職員の詳細のタブ。profile は役職と在籍の状態を含むプロフィール、policies は付いている権限の一覧である。 */
+export type StaffDetailTab = 'profile' | 'policies'
+
 export type StaffDetailViewProps = {
   state: StaffDetailViewState
+  /** 出すタブ。プロフィールの保存、休職、復職、退職の後にプロフィールへ戻すため、画面の外で持つ。 */
+  tab: StaffDetailTab
+  onTabChange: (tab: StaffDetailTab) => void
   onRetry: () => void
   /** 読み終えた後に読めなかった職員を読み直す。 */
   onRefetch?: () => void
@@ -115,9 +121,10 @@ const StaffDetailBody = ({
   reinstateErrorMessage,
   onRefetch,
   refetchFailed,
+  tab,
+  onTabChange,
 }: StaffDetailViewProps & { staff: StaffDetail; refetchFailed: boolean }) => {
   const tabsId = useId()
-  const [tab, setTab] = useState<'profile' | 'policies'>('profile')
   const canChange = staff.status !== 'retired'
   const menuItems: ActionMenuItem[] =
     staff.status === 'on_leave'
@@ -213,7 +220,7 @@ const StaffDetailBody = ({
             data-testid={`staff-detail-tab-${id}`}
             id={`${tabsId}-${id}-tab`}
             key={id}
-            onClick={() => setTab(id)}
+            onClick={() => onTabChange(id)}
             role="tab"
             type="button"
           >
