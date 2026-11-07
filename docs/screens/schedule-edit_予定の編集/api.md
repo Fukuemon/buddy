@@ -8,6 +8,7 @@
 
 | 要素名 | 表示する値 | web の型の項目 | OpenAPI の項目 |
 | --- | --- | --- | --- |
+| 予定の種類 | 通常と訪問のどちらを選んでいるか | フォームの値の `kind`。開いたときは `Schedule.kind` | 保存では `schedule_type_id` |
 | 項目の一覧 | 予定の種類で項目を切り替える | `Schedule.kind` | `getSchedule` の `schedule_type`。保存では `schedule_type_id` |
 | 日付 | 開始の日付 | `Schedule.startsAt` の日付 | `date` |
 | 開始時間 | 開始の時刻 | `Schedule.startsAt` の時刻 | `start_time` |
@@ -109,8 +110,11 @@
 
 | 条件 | 判定に使う値 |
 | --- | --- |
+| 開いた予定が、予定を Google カレンダーで管理する事業所の予定である | `Schedule.fromGoogleCalendar` が `true` |
+| 開いた予定が、訪問の情報を読み取れなかった確認が必要な予定である | `Schedule.reviewReason` が `patient_not_found`、`patient_ambiguous`、`service_code_not_found`、`title_unreadable` のどれか |
 | 職員が、保存を送っている途中である | react-hook-form の `formState.isSubmitting` が `true`（`ScheduleFormModal` が保存のボタンの `isLoading` に渡す）。`updateSchedule` を呼んでから、予定の詳細へ移るまでと、409 `google_event_changed` の後に `getSchedule` で読み直し終えるまでを含む |
 
+- 予定の種類を変えられる予定かは、`apps/web/src/features/schedule/lib/reviewFix.ts` の `canAddVisitInfo` が決める。
 - 保存のボタンは packages/ui の `Button` で、`isLoading` の間は押しても `onClick` と送信を止める。
 - 送っている間も、`ScheduleFormModal` は `Modal` に送信中を渡さず、`ScheduleForm` の欄も `disabled` にしない。
   - 閉じる、キャンセル、覆い、Escape キー、入力の欄は、送っている間も動く。
@@ -160,9 +164,24 @@
 | 14 | 最新の予定の日時 | `schedule-edit-latest-datetime` |
 | 15 | 最新の予定のタイトル | `schedule-edit-latest-title` |
 | 16 | 最新の予定の職員 | `schedule-edit-latest-staff` |
+| 3 | 予定の種類 | `schedule-kind-tab` |
+| 4 | 閉じる | `modal-close` |
+| 5 | 項目の一覧 | `schedule-field-title` |
+| 5 | 項目の一覧 | `schedule-field-date-time` |
+| 5 | 項目の一覧 | `schedule-field-patient` |
+| 5 | 項目の一覧 | `schedule-field-staff` |
+| 5 | 項目の一覧 | `schedule-field-category` |
+| 5 | 項目の一覧 | `schedule-field-description` |
+| 6 | 日付 | `schedule-form-date` |
+| 7 | 開始時間 | `schedule-form-start-time` |
+| 8 | 提供時間 | `schedule-form-service-time` |
+| 9 | 終了は翌日 | `schedule-form-ends-next-day` |
+| 9 | 終了時間 | `schedule-form-end-time` |
+| 10 | サービスコード | `service-code-{コード}` |
 
 - 番号は、状態ごとの構成要素の表の番号である。同じ要素が状態ごとに違う番号を持つときは、番号ごとに行を分ける。
 - 閉じるの `modal-close` は、packages/ui の `Modal` が付ける。
+- 予定の種類の選択肢は、`schedule-kind-tab-normal`、`schedule-kind-tab-visit` である。packages/ui の `SegmentedControl` が、組の testid に選択肢の `kind` を付ける。
 - 項目の一覧の testid の末尾は、項目の ID（`title`、`date-time`、`patient`、`staff`、`category`、`description`）である。
 - サービスコードの `{コード}` は、`listServiceCodes` の `code` の表記のままである。
 - 利用者の一覧と職員の一覧の testid は、行のラジオボタンに付く。
