@@ -12,7 +12,17 @@ import { queryKeys } from '#/api/queryKeys'
 import * as stories from './StaffDetailContainer.stories'
 import { onLeaveApi } from './StaffDetailContainer.stories'
 
-const { Default, NoAssignments, NotFound, OnLeave, Retired, Self } = composeStories(stories)
+const {
+  Default,
+  DepartmentsLoadError,
+  NoAssignments,
+  NotFound,
+  OnLeave,
+  PoliciesLoadError,
+  PositionsLoadError,
+  Retired,
+  Self,
+} = composeStories(stories)
 
 /** フェイクの API を差し替えた職員の詳細の story を作る。 */
 const storyWith = (api: BuddyApi, staffId = 'staff-2') =>
@@ -398,7 +408,7 @@ describe('StaffDetailContainer', () => {
     )
   })
 
-  it('部署の選択肢を読んでいる間も、プロフィールの編集を保存できる', async () => {
+  it('部署の選択肢を読んでいる間は、プロフィールの編集を保存できない', async () => {
     const base = createFakeBuddyApi()
     const api: BuddyApi = {
       ...base,
@@ -409,10 +419,54 @@ describe('StaffDetailContainer', () => {
     await userEvent.click(await screen.findByTestId('staff-detail-edit'))
     const dialog = screen.getByTestId('staff-detail-edit-dialog')
     expect(within(dialog).getByTestId('staff-detail-department-input')).toBeDisabled()
-    await userEvent.type(within(dialog).getByTestId('staff-detail-name-input'), '子')
-    await userEvent.click(within(dialog).getByTestId('staff-detail-save'))
+    expect(within(dialog).getByTestId('staff-detail-save')).toHaveAttribute('aria-disabled', 'true')
+  })
 
-    expect(await screen.findByTestId('staff-detail-name')).toHaveTextContent('石川 二葉子')
+  it('部署を読めなかったら、プロフィールの編集に失敗の文を出し、保存を押せない', async () => {
+    render(<DepartmentsLoadError />)
+    await userEvent.click(await screen.findByTestId('staff-detail-edit'))
+    const dialog = screen.getByTestId('staff-detail-edit-dialog')
+    expect(await within(dialog).findByTestId('staff-detail-save-error')).toHaveTextContent(
+      '部署とチームを読み込めませんでした。閉じてから、開き直してください。',
+    )
+    expect(within(dialog).getByTestId('staff-detail-save')).toHaveAttribute('aria-disabled', 'true')
+  })
+
+  it('全ての権限を読めなかったら、権限のタブに失敗の文と読み直すを出し、読み直すと一覧を出す', async () => {
+    render(<PoliciesLoadError />)
+    await userEvent.click(await screen.findByTestId('staff-detail-tab-policies'))
+    expect(await screen.findByTestId('staff-detail-policies-error')).toHaveTextContent(
+      '権限を読み込めませんでした。時間をおいて、読み直してください。',
+    )
+    expect(screen.getByTestId('staff-detail-policies-change')).toHaveAttribute(
+      'aria-disabled',
+      'true',
+    )
+
+    await userEvent.click(screen.getByTestId('staff-detail-policies-retry'))
+    await expect.poll(() => screen.queryByTestId('staff-detail-policies-error')).toBeNull()
+    expect(screen.getByTestId('staff-detail-policies-change')).not.toHaveAttribute(
+      'aria-disabled',
+      'true',
+    )
+  })
+
+  it('役職を読めなかったら、権限を個別に足した権限に並べずに失敗の文を出し、役職を変えるに失敗の文を出す', async () => {
+    render(<PositionsLoadError />)
+    await userEvent.click(await screen.findByTestId('staff-detail-tab-policies'))
+    expect(await screen.findByTestId('staff-detail-policies-error')).toBeInTheDocument()
+    expect(screen.queryByTestId('staff-policy-list')).toBeNull()
+
+    await userEvent.click(screen.getByTestId('staff-detail-tab-profile'))
+    await userEvent.click(screen.getByTestId('staff-detail-position-change'))
+    const dialog = screen.getByTestId('staff-position-dialog')
+    expect(await within(dialog).findByTestId('staff-position-error')).toHaveTextContent(
+      '役職を読み込めませんでした。閉じてから、開き直してください。',
+    )
+    expect(within(dialog).getByTestId('staff-position-submit')).toHaveAttribute(
+      'aria-disabled',
+      'true',
+    )
   })
 
   it('役職の選択肢を読んでいる間は、役職を変えるときの注意を出さない', async () => {
