@@ -144,14 +144,13 @@ describe('ScheduleFormModal', () => {
     expect(onKindChange).toHaveBeenCalledWith('visit')
   })
 
-  it('ヘッダーには、タイトル、種類のタブ、閉じるボタンの順に並べる', () => {
+  it('ヘッダーには、タイトル、種類のタブの順に並べ、閉じるボタンを置かない', () => {
     render(<Visit onKindChange={fn()} />)
-    const close = screen.getByTestId('modal-close')
     const title = screen.getByRole('heading', { name: '予定の作成' })
     const kindTab = screen.getByTestId('schedule-kind-tab')
 
     expect(title.compareDocumentPosition(kindTab) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
-    expect(kindTab.compareDocumentPosition(close) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    expect(screen.queryByTestId('modal-close')).not.toBeInTheDocument()
   })
 
   it('送信の失敗の文を出す', () => {

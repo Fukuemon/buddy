@@ -45,7 +45,6 @@ export const CalendarLinkDialog = ({
       submitHint={
         checking ? undefined : '「読めるか確認する」で読めることを確認すると、結び付けられます。'
       }
-      closeTestId="calendar-link-dialog-close"
       isSubmitting={isSubmitting}
       onClose={onClose}
       onSubmit={onSubmit}

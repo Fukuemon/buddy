@@ -16,7 +16,7 @@ export type CalendarReviewDialogProps = {
   onOpenSchedule: (scheduleId: string) => void
   /** buddy の内容で書き直す確認のダイアログを開く。 */
   onRewrite: () => void
-  /** ×、覆い、Escape キーで呼ぶ。 */
+  /** 「キャンセル」、覆い、Escape キーで呼ぶ。 */
   onClose: () => void
 }
 
@@ -29,7 +29,7 @@ const Row = ({ label, children }: { label: string; children: ReactNode }) => (
 
 /**
  * 一覧で押した予定の日時、職員、理由を示し、その予定で選べる操作をフッターに並べるダイアログ。
- * 書き直すと Google カレンダーでの変更が消えるので、勧めないよう主ボタンの色にしない。「キャンセル」は置かず、× で閉じる。
+ * 書き直すと Google カレンダーでの変更が消えるので、勧めないよう主ボタンの色にしない。フッターの「キャンセル」で閉じ、右上に × を置かない。
  */
 export const CalendarReviewDialog = ({
   issue,
@@ -43,8 +43,6 @@ export const CalendarReviewDialog = ({
   return (
     <Dialog data-testid="calendar-review-dialog" labelledBy={titleId} onClose={onClose}>
       <DialogHeader
-        closeTestId="calendar-review-close"
-        onClose={onClose}
         title="食い違った予定"
         titleId={titleId}
       />
@@ -76,6 +74,14 @@ export const CalendarReviewDialog = ({
         )}
       </DialogBody>
       <DialogFooter>
+        <Button
+          data-testid="calendar-review-cancel"
+          onClick={onClose}
+          size="S"
+          variant="secondary"
+        >
+          キャンセル
+        </Button>
         <Button
           data-testid={`calendar-review-rewrite-${issue.id}`}
           onClick={onRewrite}
