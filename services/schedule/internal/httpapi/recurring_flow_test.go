@@ -496,3 +496,118 @@ func TestRecurringOccurrenceMovedBackLeftGooglePrimary(t *testing.T) {
 		t.Errorf("残った元の回を取り消した後の一覧 = %v, want 戻した予定だけ", byStart)
 	}
 }
+
+// TestRecurringRuleChangeGooglePrimary は、google_primary の事業所で、changeRecurringRule が毎週月曜の繰り返しの予定を適用の日で分け、
+// 元の親の予定の RRULE を適用の日の前の日で終え、id の毎週火曜の繰り返しの予定を作ることを確認する（ADR-0037）。
+// listSchedules は、適用の日より前の月曜の回と、適用の日以降の火曜の回を返す。適用の日以降の変えた回は、単発の予定に作り直されても
+// 一覧での id が変わらない。etag か id が無いリクエストは 400 で拒む。
+func TestRecurringRuleChangeGooglePrimary(t *testing.T) {
+	const (
+		calendarAddr = "staff@example.com"
+		newID        = "01M3TC6CX4Y3D0KCGJ5A9N0WQZ"
+		nextID       = "01M3TC6CX4Y3D0KCGJ5A9N0WR0"
+	)
+	google := &gcaltest.Server{Calendars: map[string][][]*calendarv3.Event{calendarAddr: {nil}}}
+	h, s := flowRouterOn(organization.SourceGooglePrimary, googleAccounts{gcaltest.Start(t, google)})
+	s.Calendars["CAL"] = calendar.ExternalCalendar{ID: "CAL", FacilityID: facilityID, StaffID: staffID, Provider: calendar.ProviderGoogle, CalendarID: calendarAddr}
+	// 回は Projection を保持する期間（今月の前後）の中で引くので、来週の月曜から 3 回を使う。
+	today := civil.Today(time.Now())
+	first := civil.DateOf(today.Time().AddDate(0, 0, 7+(8-int(today.Weekday()))%7))
+	days := []civil.Date{first, civil.DateOf(first.Time().AddDate(0, 0, 7)), civil.DateOf(first.Time().AddDate(0, 0, 14))}
+	nextDay := func(d civil.Date) civil.Date { return civil.DateOf(d.Time().AddDate(0, 0, 1)) }
+	slot := func(d civil.Date, start, end string) string {
+		return `"schedule_type_id":"` + typeID + `","date":"` + d.String() + `","start_time":"` + start + `","end_time":"` + end +
+			`","staff_id":"` + staffID + `","title":"カンファレンス"`
+	}
+	request(t, h, http.MethodPost, "/v1/facilities/"+facilityID+"/schedules/recurring",
+		`{"id":"`+newID+`",`+slot(first, "09:00", "10:00")+`,"recurring_rule":{"frequency":"weekly"}}`, http.StatusCreated)
+	parentID, err := calendar.EventIDOf(newID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var items []*calendarv3.Event
+	for i, d := range days {
+		start := time.Date(d.Year, d.Month, d.Day, 9, 0, 0, 0, calendar.Tokyo)
+		items = append(items, &calendarv3.Event{
+			Id: parentID + "_" + start.UTC().Format("20060102T150405Z"), Status: "confirmed", Summary: "カンファレンス", RecurringEventId: parentID,
+			Etag:              `"i` + strconv.Itoa(i) + `"`,
+			OriginalStartTime: &calendarv3.EventDateTime{DateTime: start.Format(time.RFC3339), TimeZone: calendar.TimeZone},
+			Start:             &calendarv3.EventDateTime{DateTime: start.Format(time.RFC3339), TimeZone: calendar.TimeZone},
+			End:               &calendarv3.EventDateTime{DateTime: start.Add(time.Hour).Format(time.RFC3339), TimeZone: calendar.TimeZone},
+		})
+	}
+	google.Instances = map[string][]*calendarv3.Event{parentID: items}
+	list := func() map[civil.Date]listedSchedule {
+		got := request(t, h, http.MethodGet, "/v1/facilities/"+facilityID+"/schedules?date_from="+first.String()+"&date_to="+nextDay(days[2]).String(), "", http.StatusOK)
+		out := map[civil.Date]listedSchedule{}
+		for _, v := range got["schedules"].([]any) {
+			sc := v.(map[string]any)
+			d, err := civil.ParseDate(sc["date"].(string))
+			if err != nil {
+				t.Fatal(err)
+			}
+			etag, _ := sc["etag"].(string)
+			out[d] = listedSchedule{id: sc["id"].(string), start: sc["start_time"].(string), etag: etag}
+		}
+		return out
+	}
+	before := list()
+	third := before[days[2]]
+	changed := request(t, h, http.MethodPut, "/v1/schedules/"+third.id, `{"etag":`+strconv.Quote(third.etag)+`,`+slot(days[2], "13:00", "14:00")+`}`, http.StatusOK)
+	if changed["id"] != third.id {
+		t.Fatalf("変えた回 = %v", changed)
+	}
+
+	target := "/v1/schedules/recurring/" + newID + "/rule"
+	etag := strconv.Quote(google.Event(calendarAddr, parentID).Etag)
+	rule := `"recurring_rule":{"frequency":"weekly","day_of_week":2},"effective_date":"` + days[1].String() + `"`
+	request(t, h, http.MethodPut, target, `{`+rule+`,"id":"`+nextID+`"}`, http.StatusBadRequest)
+	request(t, h, http.MethodPut, target, `{`+rule+`,"etag":`+etag+`}`, http.StatusBadRequest)
+	got := request(t, h, http.MethodPut, target, `{`+rule+`,"id":"`+nextID+`","etag":`+etag+`}`, http.StatusOK)
+	if got["id"] != nextID || got["date"] != nextDay(days[1]).String() || field(t, got, "recurring_rule", "day_of_week") != float64(2) ||
+		got["title"] != "カンファレンス" {
+		t.Errorf("規則の変更の応答 = %v", got)
+	}
+	if ev := google.Event(calendarAddr, parentID); len(ev.Recurrence) != 1 || !strings.HasPrefix(ev.Recurrence[0], "RRULE:FREQ=WEEKLY;BYDAY=MO;UNTIL=") {
+		t.Errorf("元の親の予定の繰り返し = %v", ev.Recurrence)
+	}
+
+	after := list()
+	if got := after[days[0]]; got.id != before[days[0]].id || got.start != "09:00" {
+		t.Errorf("適用の日より前の回 = %+v, want %+v", got, before[days[0]])
+	}
+	if got, ok := after[days[1]]; ok {
+		t.Errorf("適用の日の月曜の回が残った: %+v", got)
+	}
+	for _, d := range []civil.Date{nextDay(days[1]), nextDay(days[2])} {
+		if got, ok := after[d]; !ok || got.start != "09:00" {
+			t.Errorf("%s の火曜の回 = %+v, ok = %v", d, got, ok)
+		}
+	}
+	if got := after[days[2]]; got.id != third.id || got.start != "13:00" {
+		t.Errorf("作り直した単発の予定 = %+v, want id %s の 13:00", got, third.id)
+	}
+}
+
+// TestRecurringRuleChangeBuddyPrimary は、buddy_primary の事業所で、changeRecurringRule が繰り返しの予定を適用の日で分け、
+// 新しい繰り返しの予定を返し、元の繰り返しの予定の終了日を適用の日の前の日にすることを確認する。適用の日が過去なら 400 で拒む。
+func TestRecurringRuleChangeBuddyPrimary(t *testing.T) {
+	h := flowRouter()
+	rs := request(t, h, http.MethodPost, "/v1/facilities/"+facilityID+"/schedules/recurring", `{"schedule_type_id":"`+typeID+`",
+		"date":"2099-01-05","start_time":"09:00","end_time":"10:00","staff_id":"`+staffID+`",
+		"title":"カンファレンス","recurring_rule":{"frequency":"weekly"}}`, http.StatusCreated)
+	rsID, _ := rs["id"].(string)
+	target := "/v1/schedules/recurring/" + rsID + "/rule"
+
+	request(t, h, http.MethodPut, target, `{"recurring_rule":{"frequency":"weekly","day_of_week":2},"effective_date":"2000-01-04"}`, http.StatusBadRequest)
+	got := request(t, h, http.MethodPut, target, `{"recurring_rule":{"frequency":"weekly","day_of_week":2},"effective_date":"2099-01-12"}`, http.StatusOK)
+	gotID, _ := got["id"].(string)
+	if gotID == "" || gotID == rsID || got["date"] != "2099-01-13" || field(t, got, "recurring_rule", "day_of_week") != float64(2) || got["title"] != "カンファレンス" {
+		t.Errorf("規則の変更の応答 = %v", got)
+	}
+	requireSameAsRead(t, h, got, "/v1/schedules/recurring/"+gotID)
+	old := request(t, h, http.MethodGet, "/v1/schedules/recurring/"+rsID, "", http.StatusOK)
+	if field(t, old, "recurring_rule", "end_date") != "2099-01-11" {
+		t.Errorf("元の繰り返しの予定の規則 = %v", old["recurring_rule"])
+	}
+}

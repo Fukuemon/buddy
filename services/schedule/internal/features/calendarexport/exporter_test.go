@@ -78,6 +78,7 @@ type scheduleOps struct {
 	Create           func(ctx context.Context, facilityID string, in schedule.SlotInput) (schedule.Schedule, error)
 	CreateRecurring  func(ctx context.Context, facilityID string, in schedule.SlotInput, rule schedule.RuleInput) (schedule.RecurringSchedule, error)
 	ChangeOccurrence func(ctx context.Context, recurringScheduleID string, originalDate civil.Date, in schedule.SlotInput) (schedule.Schedule, error)
+	ChangeRule       func(ctx context.Context, recurringScheduleID string, effective *civil.Date, rule schedule.RuleInput) (schedule.RecurringSchedule, error)
 	Cancel           func(ctx context.Context, scheduleID, reason string) (schedule.Cancellation, error)
 	Update           func(ctx context.Context, scheduleID string, in schedule.SlotInput) (schedule.Schedule, error)
 }
@@ -114,8 +115,10 @@ func newExportEnv(t *testing.T) exportEnv {
 		Create:           schedule.NewCreate(facilities, schedules, types, refs, facilities, nil, nil, outbox, tx, ids).Do,
 		CreateRecurring:  schedule.NewCreateRecurring(facilities, types, refs, facilities, nil, nil, recurring, outbox, tx, ids).Do,
 		ChangeOccurrence: schedule.NewChangeOccurrence(recurring, refs, facilities, schedules, types, nil, nil, outbox, tx, ids).Do,
-		Cancel:           schedule.NewCancel(schedules, refs, facilities, outbox, tx, ids).Do,
-		Update:           schedule.NewUpdate(schedules, refs, facilities, types, nil, nil, outbox, tx).Do,
+		// 規則の変更は今日より前の回を変えないので、今日を 2026-11-04 に決める
+		ChangeRule: schedule.NewChangeRule(recurring, refs, facilities, types, nil, func() time.Time { return civil.Date{Year: 2026, Month: 11, Day: 4}.Time().Add(9 * time.Hour) }, outbox, tx, ids).Do,
+		Cancel:     schedule.NewCancel(schedules, refs, facilities, outbox, tx, ids).Do,
+		Update:     schedule.NewUpdate(schedules, refs, facilities, types, nil, nil, outbox, tx).Do,
 	}
 	writers, logs := &[]string{}, &bytes.Buffer{}
 	exporter := calendarexport.NewExporter(calendarexport.ExporterDeps{
@@ -487,6 +490,54 @@ func TestExportRecurringWithReplacedOccurrence(t *testing.T) {
 	}
 	if single := e.srv.Event(googleCalID, eventID(t, occ.ID)); single == nil || single.Start.DateTime != "2026-11-09T14:00:00" {
 		t.Errorf("置き換えた回 = %+v", single)
+	}
+}
+
+// 繰り返しの予定の規則を適用の日以降について変えると、書き出しは、元の繰り返しの予定の RRULE を適用の日の前の日で終え、
+// 新しい規則の繰り返しの予定を Google に作る。適用の日以降の置き換えた回の単発の予定は残る（ADR-0037）。
+func TestExportRecurringRuleChange(t *testing.T) {
+	e := newExportEnv(t)
+	title := "定例"
+	end := civil.Date{Year: 2026, Month: 12, Day: 31}
+	monday, tuesday := 1, 2
+	rs, err := e.schedules.CreateRecurring(e.ctx, inmem.FacilityID, schedule.SlotInput{
+		TypeID: inmem.NormalTypeID, Date: civil.Date{Year: 2026, Month: 11, Day: 2},
+		StartTime: civil.Time{Hour: 9}, EndTime: civil.Time{Hour: 10}, StaffID: inmem.StaffID, Title: &title,
+	}, schedule.RuleInput{Frequency: schedule.Weekly, DayOfWeek: &monday, EndDate: &end})
+	if err != nil {
+		t.Fatal(err)
+	}
+	moved := "定例（11/16 は午後）"
+	occ, err := e.schedules.ChangeOccurrence(e.ctx, rs.ID, civil.Date{Year: 2026, Month: 11, Day: 16}, schedule.SlotInput{
+		TypeID: inmem.NormalTypeID, Date: civil.Date{Year: 2026, Month: 11, Day: 16},
+		StartTime: civil.Time{Hour: 14}, EndTime: civil.Time{Hour: 15}, StaffID: inmem.StaffID, Title: &moved,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	e.run(t)
+
+	effective := civil.Date{Year: 2026, Month: 11, Day: 10}
+	next, err := e.schedules.ChangeRule(e.ctx, rs.ID, &effective, schedule.RuleInput{Frequency: schedule.Weekly, DayOfWeek: &tuesday, EndDate: &end})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, id := range []string{rs.ID, next.ID} {
+		if x := e.export(t, id); x.Status != calendar.ExportPending {
+			t.Errorf("繰り返しの予定 %s の書き出しの待ち = %+v, want 待ち", id, x)
+		}
+	}
+	e.run(t)
+
+	if ev := e.srv.Event(googleCalID, eventID(t, rs.ID)); ev == nil || ev.Recurrence[0] != "RRULE:FREQ=WEEKLY;BYDAY=MO;UNTIL=20261109T145959Z" {
+		t.Errorf("元の繰り返しの予定 = %+v, want 11-09 までの毎週月曜", ev)
+	}
+	ev := e.srv.Event(googleCalID, eventID(t, next.ID))
+	if ev == nil || ev.Recurrence[0] != "RRULE:FREQ=WEEKLY;BYDAY=TU;UNTIL=20261231T145959Z" || ev.Start.DateTime != "2026-11-10T09:00:00" {
+		t.Errorf("新しい繰り返しの予定 = %+v, want 11-10 からの毎週火曜", ev)
+	}
+	if single := e.srv.Event(googleCalID, eventID(t, occ.ID)); single == nil || single.Start.DateTime != "2026-11-16T14:00:00" {
+		t.Errorf("置き換えた回 = %+v, want 残る", single)
 	}
 }
 

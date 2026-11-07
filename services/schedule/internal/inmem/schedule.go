@@ -139,6 +139,42 @@ func (s RecurringSchedules) ListByFacility(_ context.Context, facilityID string,
 	return out, nil
 }
 
+// UpdateRule は、schedule.RecurringRepository の UpdateRule を実装する。
+func (s RecurringSchedules) UpdateRule(_ context.Context, rs schedule.RecurringSchedule) error {
+	d, ok := s.Recurring[rs.ID]
+	if !ok {
+		return nil
+	}
+	d.Date = rs.Date
+	d.Rule = rs.Rule
+	d.Version++
+	s.Recurring[rs.ID] = d
+	return nil
+}
+
+// RemoveUnreplacedExclusions は、schedule.RecurringRepository の RemoveUnreplacedExclusions を実装する。
+func (s RecurringSchedules) RemoveUnreplacedExclusions(_ context.Context, id string, from civil.Date) error {
+	d, ok := s.Recurring[id]
+	if !ok {
+		return nil
+	}
+	replaced := map[civil.Date]bool{}
+	for _, sc := range s.Schedules {
+		if sc.RecurringScheduleID != nil && *sc.RecurringScheduleID == id && sc.OriginalDate != nil {
+			replaced[*sc.OriginalDate] = true
+		}
+	}
+	kept := []civil.Date{}
+	for _, e := range d.ExclusionDates {
+		if e.Before(from) || replaced[e] {
+			kept = append(kept, e)
+		}
+	}
+	d.ExclusionDates = kept
+	s.Recurring[id] = d
+	return nil
+}
+
 // AddExclusion は、繰り返しの予定から d の回を除外する。除外済みなら apperr.ErrConflict を返す。
 func (s RecurringSchedules) AddExclusion(_ context.Context, id string, d civil.Date) error {
 	rs := s.Recurring[id]

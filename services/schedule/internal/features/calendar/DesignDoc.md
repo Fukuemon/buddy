@@ -759,7 +759,8 @@ Projection を読むのは、予定の表示の読み出し（`scheduleview` の
 `google_primary` の事業所では、予定の API は職員が buddy で作り、変え、取り消す予定を、リクエストの中で Google カレンダーに書く。  
 書く操作は機能のパッケージ `calendarwrite` に置く。  
 `httpapi` の予定の作成、変更、取り消しの API は、事業所のモードで `schedule` か `calendarwrite` を呼ぶ。  
-呼び分ける API は、`createSchedule`、`updateSchedule`、`cancelSchedule`、`createRecurringSchedule`、`changeOccurrence` の 5 つである。  
+呼び分ける API は、単発の予定の `createSchedule`、`updateSchedule`、`cancelSchedule` の 3 つと、繰り返しの予定の 3 つである。  
+繰り返しの予定の API は、`createRecurringSchedule`、`changeOccurrence`、`changeRecurringRule` である。  
 単発の予定は、`calendarwrite.Create` が作り、`calendarwrite.Update` が変え、`calendarwrite.Cancel` が取り消す。  
 `updateSchedule`、`cancelSchedule`、`getSchedule` のパスは事業所を持たないので、`httpapi` は認証した職員の事業所のモードで呼び分ける。  
 予定がほかの事業所のものなら、認証のミドルウェアが予定の ID から事業所を引いて 403 を返す。
@@ -974,16 +975,40 @@ Google はその回を取り消した例外の回にし、親の予定の `EXDAT
 保留の版は、単発の予定の取り消しと同じく書かない。  
 取り消した回は、`events.instances` が返さないので、もう一度変えるか取り消すと 400 を返す。
 
+`calendarwrite.ChangeRule` は、繰り返しの規則を、適用の日以降の回について変える。  
+当て方は、`buddy_primary` と同じく `schedule.PlanRuleChange` が決める（[予定の管理の Design Doc の繰り返しの予定](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/DesignDoc.md#繰り返しの予定)）。
+
+- ADR-0037: [繰り返しの予定の規則の変更を、適用の日以降の回にだけ当て、繰り返しの予定を適用の日で分ける](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0037-recurring-rule-change.md)
+
+- 親の予定の引き方、権限、親の記録に保留の版があるときの 409（`google_write_pending`）、`etag` の比べ方は、`ChangeOccurrence` と同じである。`etag` は必須で、分けるときと作り直すときは新しい親の `id` も必須である。
+- 親の予定は、取り込みと同じ規則（`calendar.RuleFromRecurrence`、`calendar.Classify`）で buddy の繰り返しの予定に写す。写せない親は 409（`conflict`）で拒む。
+- Google に書く順は、例外の回の作り直し、新しい親の作成、元の親の書き換えか削除である。
+  - 新しい親の作成を元の親より先にするのは、元の親に書けなかったときに、同じ `id` の送り直しで、新しい親を重ねずにやり直せるためである。作成の手順、保留の版、送り直しは `CreateRecurring` と同じである。
+  - 新しい親の時刻、タイトル、説明、訪問の情報は、親の予定と親の記録の確定した版から写す。訪問の情報の行は新しく作る。
+
+| 当て方 | Google に書くもの |
+| --- | --- |
+| 分ける（`RuleChangeSplit`） | 新しい親を作り、元の親の RRULE の `UNTIL` を適用の日の前の日にする。元の親の `EXDATE` は残す |
+| 書き換える（`RuleChangeInPlace`） | 新しい親を作り、元の親を消す。応答の ID は新しい親の ID になる |
+| 終了日だけ（`RuleChangeEndDate`） | 元の親の RRULE の `UNTIL` だけを書き換える。`id` は読まない |
+
+- 書き換えるときも新しい親を作るのは、取り消した例外の回を新しい規則に引き継がないためである。元の親の RRULE を書き換えたときに Google が取り消した例外の回を残すかは、公式の文書に無い。残すと、同じ日時の新しい規則の回が隠れる。
+- 境界の日（分けるときは適用の日、終了日だけのときは新しい終了日の翌日）以降の変えた例外の回は、同じカレンダーの単発の予定に作り直してから消す。手順は [主訪問者を替えるときの移し方](#主訪問者を替えるときの移し方) と同じである。
+  - 例外の回は、`events.list`（`singleEvents=false`）で、Projection を保持する期間の初日から読む。`events.instances` は、回を変えたかを返さないためである。保持する期間の初日より前の日へ動かした例外の回は、作り直さない。
+  - 取り消した例外の回には、何もしない。
+- 元の親に書くときの `If-Match` は、例外の回を作り直したときは、親を読み直した `etag` にする。公式の文書は、例外の回を消すと親の `etag` が変わるかを書いていないためである。読み直した親のタイトル、説明、繰り返しの規則、開始と終了が最初に読んだ親と違えば、409（`google_event_changed`）を返す。
+- 元の親の書き換えと削除には、保留の版を書かない。訪問の情報を変えないので、結果が分からなくても失うものが無いためである。結果が分からないときは 503（`google_write_unknown`）を返す。
+
 次の操作は持たない。
 
-- 繰り返しの規則の変更。`buddy_primary` と一緒に別の issue で扱う。
 - 繰り返しの予定の全体の取り消しと、全体の予定の職員を替える移し方。`buddy_primary` に対応する操作が無いためである。親への `updateSchedule` と `cancelSchedule` は 409（`conflict`）で拒む。
 - 繰り返しの予定の 1 件の読み出し。`getRecurringSchedule` は buddy の繰り返しの予定のテーブルだけを読み、`google_primary` の事業所では 404 を返す。
 
 #### 主訪問者を替えるときの移し方
 
 予定の職員（主訪問者）を替えると、新しい職員のカレンダーに予定を作り直し、前の職員のカレンダーの予定を消す。  
-`events.move` は使わない。
+`events.move` は使わない。  
+繰り返しの規則の変更で、例外の回を同じカレンダーの単発の予定に作り直すときも、同じ手順を使う。作る先は新しい ID の予定で、記録と一覧での ID の扱いは同じである。記録の無い例外の回には、親の訪問の情報を写した新しい行を持たせる。
 
 - calendarpit 0.9.5 は `events.move` に 501 を返し、`gcaltest` も答えない。E2E と単体テストで確認できない。
 - `events.move` は予定の内容を変えないので、移した後に部分更新が要り、2 回の書き込みになる。公式の文書は `events.move` の `If-Match` を書いていない。

@@ -68,6 +68,7 @@ type fixture struct {
 	createRecurring  calendarwrite.CreateRecurring
 	changeOccurrence calendarwrite.ChangeOccurrence
 	cancelOccurrence calendarwrite.CancelOccurrence
+	changeRule       calendarwrite.ChangeRule
 	// now は、Create が読む今の時刻である。
 	now time.Time
 }
@@ -121,6 +122,10 @@ func newFixture(t *testing.T) *fixture {
 		func() time.Time { return fx.now }, &inmem.Tx{})
 	fx.cancelOccurrence = calendarwrite.NewCancelOccurrence(inmem.Facilities{Store: s}, inmem.Projections{Store: s}, inmem.StaffRefs{Store: s}, visits,
 		inmem.Calendars{Store: s}, inmem.CalendarEventRecords{Store: s}, inmem.Projections{Store: s}, accounts{svc}, func() time.Time { return fx.now }, &inmem.Tx{})
+	fx.changeRule = calendarwrite.NewChangeRule(inmem.Facilities{Store: s}, inmem.Projections{Store: s}, inmem.ScheduleTypes{Store: s},
+		inmem.StaffRefs{Store: s}, inmem.Staff{Store: s}, visits, inmem.VisitInfos{Store: s}, inmem.Calendars{Store: s},
+		inmem.CalendarEventRecords{Store: s}, inmem.Projections{Store: s}, accounts{svc}, ulid.Generator{}, slog.New(slog.DiscardHandler),
+		func() time.Time { return fx.now }, &inmem.Tx{})
 	return fx
 }
 
