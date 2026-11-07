@@ -289,10 +289,18 @@ func (s server) CancelSchedule(ctx context.Context, req openapi.CancelScheduleRe
 	return openapi.CancelSchedule201JSONResponse(toCancel(c)), nil
 }
 
-// CancelOccurrence は、schedule の回のキャンセルを呼ぶ。google_primary の事業所では、schedule が 409（google_primary）で拒む。
+// CancelOccurrence は、schedule の回のキャンセルを呼ぶ。google_primary の事業所では、何も読まずに 409（google_primary）で拒む。
+// google_primary の繰り返しの予定は buddy の繰り返しの予定のテーブルに行が無く、schedule に渡すと 404 になるためである。
 func (s server) CancelOccurrence(ctx context.Context, req openapi.CancelOccurrenceRequestObject) (openapi.CancelOccurrenceResponseObject, error) {
 	original, err := bodyDate(req.Body.OriginalDate)
 	if err != nil {
+		return nil, err
+	}
+	f, err := s.staffFacility(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if err := schedule.RequireWritable(f); err != nil {
 		return nil, err
 	}
 	c, err := s.u.Schedules.CancelOccurrence(ctx, req.RecurringScheduleId, original, req.Body.Reason)

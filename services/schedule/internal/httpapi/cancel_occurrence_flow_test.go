@@ -82,8 +82,11 @@ func TestCancelOccurrenceGooglePrimary(t *testing.T) {
 	f.SourceMode = organization.SourceGooglePrimary
 	s.Facilities[facilityID] = f
 
-	got := request(t, h, http.MethodPost, "/v1/schedules/recurring/"+rsID+"/occurrences/cancel", `{"original_date":"2099-01-12","reason":"休み"}`, http.StatusConflict)
-	if got["code"] != "google_primary" {
-		t.Errorf("code = %v, want google_primary", got["code"])
+	// google_primary の繰り返しの予定は、buddy の繰り返しの予定のテーブルに行が無い
+	for _, id := range []string{rsID, "01M3TCZZZZZZZZZZZZZZZZZZZZ"} {
+		got := request(t, h, http.MethodPost, "/v1/schedules/recurring/"+id+"/occurrences/cancel", `{"original_date":"2099-01-12","reason":"休み"}`, http.StatusConflict)
+		if got["code"] != "google_primary" {
+			t.Errorf("%s の code = %v, want google_primary", id, got["code"])
+		}
 	}
 }
