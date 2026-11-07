@@ -12,7 +12,8 @@ const WIDTHS = [390, 767, 768, 1280] as const
 const SCREENS = [
   {
     name: '予定のカレンダー',
-    path: '/schedule',
+    // 表示の単位を省くと幅 768px 未満では日の表示から始まるので、どの幅でも月の表示を開く
+    path: '/schedule?view=month',
     ready: (page: Page) => page.getByTestId('schedule-calendar'),
   },
   {
@@ -60,7 +61,7 @@ test.describe('画面の枠', () => {
             )
             .toBeLessThanOrEqual(0)
           await page.screenshot({
-            path: testInfo.outputPath(`${screen.path.slice(1)}-${width}.png`),
+            path: testInfo.outputPath(`${screen.path.split('?')[0]?.slice(1)}-${width}.png`),
             fullPage: true,
             animations: 'disabled',
           })
