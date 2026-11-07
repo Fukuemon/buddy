@@ -14,6 +14,9 @@ watch = [
   "services/broker/DesignDoc.md",
   "apps/web/src/features/schedule/DesignDoc.md",
   "packages/ui/DESIGN.md",
+  "packages/ui/design/tokens.md",
+  "packages/ui/design/components.md",
+  "packages/ui/design/catalog.md",
   "packages/e2e/DesignDoc.md",
 ]
 # ADR、画面仕様書、ワイヤーフレームのテンプレートは文書ではないので、サイトに載せない
@@ -64,7 +67,10 @@ nav = [
     { "自分の情報" = "screens/account-profile_自分の情報/index.md" },
   ] },
   { "デザインシステム" = [
-    { "使い方" = "design/packages/ui.md" },
+    { "規則（DESIGN.md）" = "design/packages/ui.md" },
+    { "トークン" = "design/packages/ui-tokens.md" },
+    { "コンポーネント" = "design/packages/ui-components.md" },
+    { "カタログの組み方" = "design/packages/ui-catalog.md" },
     # カタログは同じサイトの /storybook/ に置く（apps/docs-site）。ローカルの zensical serve には無い
     { "カタログ（Storybook）" = "/storybook/" },
   ] },

@@ -359,7 +359,8 @@ Hydra は discovery の `end_session_endpoint` を Issuer の URL から作る�
 │       └── db/          # マイグレーションとシード
 ├── packages/
 │   ├── ui/              # デザインシステム。トークン、Base と Case のコンポーネント、Storybook
-│   │   └── DESIGN.md    # デザインシステムの設計
+│   │   ├── DESIGN.md    # デザインシステムの原則と手順
+│   │   └── design/      # デザインシステムのトークン、コンポーネント、カタログの規則
 │   ├── e2e/             # E2E のテストと、手動検証のエビデンスを撮る spec
 │   │   └── DesignDoc.md # E2E のテストのコードの設計
 │   └── go/              # 2 つの API が共有する Go の module

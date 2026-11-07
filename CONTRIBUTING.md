@@ -224,7 +224,7 @@ node scripts/check-links.mjs
 
 ## Editing the Design System
 
-使い方の規則は [packages/ui/DESIGN.md](packages/ui/DESIGN.md) にある。  
+使い方の規則は [packages/ui/DESIGN.md](packages/ui/DESIGN.md) と、`packages/ui/design/` の 3 つの文書にある。  
 トークンを直すときは、スキル write-design-system に従う。  
 プリミティブトークン（`packages/ui/src/tokens/primitive.css`）かセマンティックトークン（`packages/ui/src/tokens/semantic.css`）を変えたら、次を流す。  
 生成した `docs/screens/_common/tokens.css` は、同じコミットに入れる。
@@ -263,7 +263,7 @@ pnpm check:design   # 色の値、プリミティブトークンの名前、14px
 
 - 却下した指摘は、指摘を受けた pull request のレビューのスレッドに、却下した理由を返信して残す。
 - 1 つの pull request に収まらない、デザインシステムの全体に関わる指摘は、issue に起票し、却下するときは理由を書いて閉じる。
-- DESIGN.md とスキルには、却下した指摘を書かない。画面を作るモデルが、却下した提案を規則として読まないためである。
+- デザインシステムの文書とスキルには、却下した指摘を書かない。画面を作るモデルが、却下した提案を規則として読まないためである。
 
 ## Changing the API Definition
 

@@ -30,6 +30,6 @@ pnpm --filter @buddy/ui exec playwright install chromium
 
 ## Documentation
 
-- [DESIGN.md](DESIGN.md): トークンとコンポーネントの使い方、カタログの組み方
+- [DESIGN.md](DESIGN.md): 画面を作るときの原則と手順。トークン、コンポーネント、カタログの規則は [design/](design/) の 3 つの文書にある
 - [ADR-0013](../../docs/adr/0013-design-system-primitive-tokens.md): トークンの層の分け方の判断
 - [ADR-0014](../../docs/adr/0014-ui-components.md): コンポーネントの配置先の判断
