@@ -21,7 +21,8 @@ info:
 security:
   - bearerAuth: []
 servers:
-  - url: http://localhost:8080
+  # main の checkout のローカル環境の compose の schedule（portless のホスト名）
+  - url: https://schedule.buddy.localhost
 tags:
   - name: health
     description: 死活と準備の確認

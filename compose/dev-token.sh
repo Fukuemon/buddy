@@ -4,21 +4,27 @@
 #
 # 使い方: compose/dev-token.sh <メール> [上流の IdP の sub]
 # 上流の IdP の sub を省くと、メールの @ の前の部分にする。職員に結び付けた後は、同じ sub で入る。
-# URL かポートを変えて起動したときは、compose と同じ環境変数（HYDRA_PUBLIC_ORIGIN、BROKER_ORIGIN、WEB_ORIGIN か、
-# HYDRA_PUBLIC_PORT、BROKER_PORT、WEB_PORT）を渡す。worktrunk で作った worktree では、mise が .env から渡す。
+# デフォルトは main の checkout の環境（https://<サービス>.buddy.localhost）である。別の名前で起動したときは、
+# compose と同じ環境変数（HYDRA_PUBLIC_ORIGIN、BROKER_ORIGIN、WEB_ORIGIN）を渡す。worktrunk で作った worktree では、mise が .env から渡す。
 set -eu
 
 email=${1:?メールを渡す}
 sub=${2:-${email%@*}}
-hydra=${HYDRA_PUBLIC_ORIGIN:-http://localhost:${HYDRA_PUBLIC_PORT:-4444}}
-broker=${BROKER_ORIGIN:-http://localhost:${BROKER_PORT:-8100}}
-redirect=${WEB_ORIGIN:-http://localhost:${WEB_PORT:-3000}}/auth/callback
+hydra=${HYDRA_PUBLIC_ORIGIN:-https://hydra.buddy.localhost}
+broker=${BROKER_ORIGIN:-https://broker.buddy.localhost}
+redirect=${WEB_ORIGIN:-https://web.buddy.localhost}/auth/callback
 jar=$(mktemp)
 trap 'rm -f "$jar"' EXIT
 
+# portless の CA はシステムに信頼させないので（ADR-0035）、https の URL は portless の CA で検証する
+ca=$HOME/.portless/ca.pem
+fetch() {
+  if [ -f "$ca" ]; then curl --cacert "$ca" "$@"; else curl "$@"; fi
+}
+
 # リダイレクト先を返す。リダイレクトしない応答はエラーで止める
 next() {
-  to=$(curl -sS -b "$jar" -c "$jar" -o /dev/null -w '%{redirect_url}' "$@")
+  to=$(fetch -sS -b "$jar" -c "$jar" -o /dev/null -w '%{redirect_url}' "$@")
   [ -n "$to" ] || { echo "リダイレクトされない: $*" >&2; exit 1; }
   echo "$to"
 }
@@ -36,6 +42,6 @@ while :; do
 done
 code=$(echo "$to" | sed -E 's/.*[?&]code=([^&]+).*/\1/')
 case $code in http*) echo "認可コードを受け取れない: $to" >&2; exit 1 ;; esac
-curl -sS -u web:web-dev "$hydra/oauth2/token" \
+fetch -sS -u web:web-dev "$hydra/oauth2/token" \
   -d grant_type=authorization_code -d "code=$code" -d "redirect_uri=$redirect" |
   sed -E 's/.*"access_token":"([^"]+)".*/\1/'
