@@ -78,6 +78,9 @@ const ITEMS: {
   before: (cells: Cells) => Promise<void>
   beforeResult: string
   after: (cells: Cells) => Promise<void>
+  /** 改修後の、確認することの列を見せた判定の文。 */
+  findingsResult: string
+  /** 改修後の、観点のセルを見せた判定の文。 */
   afterResult: string
 }[] = [
   {
@@ -97,8 +100,8 @@ const ITEMS: {
       await expect(cells.nth(COLUMN.scheduleStart)).toHaveText('09:00（不一致）')
       await expect(cells.nth(COLUMN.visitStart)).toHaveText('09:15（不一致）')
     },
-    afterResult:
-      '両側の開始時間に不一致のアイコンが付き、確認することの列に「開始時間が予定と違う」が出る',
+    findingsResult: '利用者A の確認することの列に「開始時間が予定と違う」が出る',
+    afterResult: '両側の開始時間に不一致のアイコンが付く',
   },
   {
     name: 'receipt-marks-duration-out-of-range',
@@ -121,8 +124,9 @@ const ITEMS: {
         '提供時間が予定と違う',
       ])
     },
-    afterResult:
-      '実績の提供時間に不一致のアイコンが 1 つだけ付き、下に「範囲 20〜29 分」が出て、確認することに範囲の外と予定と違うことの 2 つの文が出る',
+    findingsResult:
+      '利用者B の確認することの列に、提供時間が範囲の外であることと、予定と違うことの 2 つの文が出る',
+    afterResult: '実績の提供時間に不一致のアイコンが 1 つだけ付き、下に「範囲 20〜29 分」が出る',
   },
   {
     name: 'receipt-marks-additions',
@@ -140,8 +144,8 @@ const ITEMS: {
       await expect(cells.nth(COLUMN.additions)).toHaveText('緊急（不一致）')
       await expect(cells.nth(COLUMN.additions).getByTestId('receipt-mark-mismatch')).toHaveCount(1)
     },
-    afterResult:
-      '加算のセルに不一致のアイコンが付き、確認することの列に「加算が規則に合わない」が出る',
+    findingsResult: '利用者C の確認することの列に「加算が規則に合わない」が出る',
+    afterResult: '加算の「緊急」に不一致のアイコンが付く',
   },
   {
     name: 'receipt-marks-note',
@@ -162,8 +166,10 @@ const ITEMS: {
       await expect(cells.nth(COLUMN.visitEnd)).toHaveText('13:50（注意）')
       await expect(cells.nth(COLUMN.visitDuration)).toHaveText('50（注意）範囲 30〜59 分')
     },
+    findingsResult:
+      '利用者D の確認することの列に「提供時間が予定と違う」と「終了時間が予定と違う」が出る',
     afterResult:
-      '両側の提供時間と終了時間に注意のアイコンが付き、確認することの列に 2 つの文が出る',
+      '両側の提供時間と終了時間に注意のアイコンが付き、提供時間の下に「範囲 30〜59 分」が出る',
   },
   {
     name: 'receipt-marks-one-side',
@@ -180,8 +186,9 @@ const ITEMS: {
       await expect(findings(cells)).toHaveText(['実績が無い'])
       await expect(cells.nth(COLUMN.visitStart)).toHaveText('データなし')
     },
-    afterResult:
-      '予定のみの行の確認することに「実績が無い」が、実績のみの行に「予定が無い」が出て、無い側のセルは空のままである',
+    findingsResult:
+      '予定のみの利用者E の確認することに「実績が無い」が、実績のみの利用者F に「予定が無い」が出る',
+    afterResult: '実績のみの利用者F の、予定の側のセルは空のままである',
   },
 ]
 
@@ -215,15 +222,19 @@ test.describe('照合の結果', () => {
               await expect(page).toHaveURL(/\/receipt\/result$/)
 
               const cells = receiptCategoryRowCells(page, item.category, '2024-04-01', item.patient)
-              await step(`結果の表で、${item.patient} の行の観点のセルが見えるまで送る`)
-              const focus = isBefore ? BEFORE_COLUMN[item.focus] : COLUMN[item.focus]
-              await cells.nth(focus).scrollIntoViewIfNeeded()
               if (isBefore) {
+                await step(`結果の表で、${item.patient} の行の観点のセルが見えるまで送る`)
+                await cells.nth(BEFORE_COLUMN[item.focus]).scrollIntoViewIfNeeded()
                 await item.before(cells)
                 await check(item.beforeResult)
                 return
               }
               await item.after(cells)
+              await step(`結果の表で、${item.patient} の行の確認することの列を見る`)
+              await cells.nth(COLUMN.findings).scrollIntoViewIfNeeded()
+              await check(item.findingsResult)
+              await step(`結果の表で、${item.patient} の行の観点のセルが見えるまで送る`)
+              await cells.nth(COLUMN[item.focus]).scrollIntoViewIfNeeded()
               if (item.name === 'receipt-marks-one-side') {
                 const visitOnly = receiptCategoryRowCells(
                   page,
