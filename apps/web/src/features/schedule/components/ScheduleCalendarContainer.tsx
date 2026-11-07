@@ -2,8 +2,10 @@ import { useQuery } from '@tanstack/react-query'
 import { useNavigate, useSearch } from '@tanstack/react-router'
 import { useState, type ComponentProps } from 'react'
 
+import { failedBeforeLoad, hasRefetchFailed, refetchFailedQueries } from '#/api/refetch'
 import type { Staff } from '#/api/types'
 import { useBuddyApi } from '#/api/useBuddyApi'
+import { RefetchErrorMessage } from '#/components/page/RefetchErrorMessage'
 import { Loading, useIsDesktop } from '@buddy/ui'
 
 import { activeStaff, activeStaffIds, excludeInactiveStaffSchedules } from '../lib/activeStaff'
@@ -148,6 +150,11 @@ export const ScheduleCalendarContainer = ({
           view={view}
         />
       </div>
+      {hasRefetchFailed([schedulesQuery, staffQuery]) && (
+        <div className="px-2 pb-2 desktop:px-6">
+          <RefetchErrorMessage onRetry={() => refetchFailedQueries([schedulesQuery, staffQuery])} />
+        </div>
+      )}
       {sourceMode === 'google_primary' && (
         <div className="px-2 pb-2 desktop:px-6">
           <SourceNoticesWithNow
@@ -163,7 +170,7 @@ export const ScheduleCalendarContainer = ({
       <div className="min-h-0 grow px-2 pb-4 desktop:px-6">
         {schedulesQuery.isPending || staffQuery.isPending ? (
           <Loading description="カレンダーを表示中..." />
-        ) : schedulesQuery.isError || staffQuery.isError ? (
+        ) : failedBeforeLoad([schedulesQuery, staffQuery]) !== undefined ? (
           <p className="p-4 text-danger" role="alert">
             予定を取得できませんでした。
           </p>

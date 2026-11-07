@@ -4,6 +4,7 @@ import { useState } from 'react'
 
 import type { CalendarExportIssue } from '#/api/types'
 import { queryKeys } from '#/api/queryKeys'
+import { failedBeforeLoad, hasRefetchFailed, refetchFailedQueries } from '#/api/refetch'
 import { useBuddyApi } from '#/api/useBuddyApi'
 
 import {
@@ -31,9 +32,9 @@ const CalendarReviewContent = () => {
   const rewrite = useRetryExport()
   const [target, setTarget] = useState<DialogTarget | null>(null)
 
-  const state: CalendarReviewViewState = issuesQuery.isError
+  const state: CalendarReviewViewState = failedBeforeLoad([issuesQuery])
     ? { status: 'error', message: loadErrorMessage(issuesQuery.error, REVIEW_LOAD_ERROR_MESSAGE) }
-    : issuesQuery.isPending
+    : issuesQuery.data === undefined
       ? { status: 'loading' }
       : { status: 'ready', issues: issuesQuery.data }
 
@@ -47,6 +48,8 @@ const CalendarReviewContent = () => {
   return (
     <>
       <CalendarReviewView
+        onRefetch={() => refetchFailedQueries([issuesQuery])}
+        refetchFailed={hasRefetchFailed([issuesQuery])}
         onRetry={() =>
           queryClient.resetQueries({ queryKey: queryKeys.calendars.exportIssues(facilityId) })
         }
