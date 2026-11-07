@@ -57,10 +57,10 @@ const findRecurringGoogleEvent = async (
   )
 
 /**
- * 予定の一覧（listSchedules）で、facilityId の事業所の date の予定のうち、タイトルが title の繰り返しの回を返す。
+ * 予定の一覧（listSchedules）で、facilityId の事業所の date の予定のうち、タイトルが title の繰り返しの回の etag を返す。
  * google_primary の事業所の回の etag は、親の予定の etag である。
  */
-const findListedSchedule = async (
+const listedEtag = async (
   request: APIRequestContext,
   token: string,
   facilityId: string,
@@ -73,12 +73,11 @@ const findListedSchedule = async (
   })
   expect(res.ok()).toBe(true)
   const { schedules } = (await res.json()) as {
-    schedules: { title: string | null; etag: string | null; recurring_schedule_id: string | null }[]
+    schedules: { title: string | null; etag: string | null }[]
   }
-  const found = schedules.find((schedule) => schedule.title === title)
-  if (found?.etag == null || found.recurring_schedule_id === null)
-    throw new Error(`${date} の「${title}」の回が一覧に無い`)
-  return { etag: found.etag, recurring_schedule_id: found.recurring_schedule_id }
+  const etag = schedules.find((schedule) => schedule.title === title)?.etag
+  if (etag == null) throw new Error(`${date} の「${title}」の回が一覧に無い`)
+  return etag
 }
 
 /** 規則の変更のクライアントを開き、トークンと繰り返しの予定の ID と本文を入れて送り、レスポンスの本文を返す。 */
@@ -209,18 +208,19 @@ test.describe('予定の API', () => {
             await page.goto('/schedule')
             await signInAtBroker(page, OKADA.email)
             const token = await issueAccessToken(page.request, OKADA.email)
+            const id = newScheduleId()
             const created = await createWeeklyNormalSchedule(page.request, token, OKADA.facilityId, {
-              id: newScheduleId(),
+              id,
               staffId: OKADA.staff.id,
               title,
               date: start,
             })
             expect(created.status()).toBe(201)
-            const occurrence = await findListedSchedule(page.request, token, OKADA.facilityId, effective, title)
+            const etag = await listedEtag(page.request, token, OKADA.facilityId, effective, title)
             await prepareApiReference('schedule', null)(page)
-            return { token, occurrence }
+            return { token, id, etag }
           },
-          async ({ page, step, check }, { token, occurrence }) => {
+          async ({ page, step, check }, { token, id, etag }) => {
             try {
               await openDay(page, OKADA.staff.id, effective)
               await expect(dayEvent(page, OKADA.staff.id, title)).toBeVisible()
@@ -233,11 +233,11 @@ test.describe('予定の API', () => {
               await step(
                 `API の参照のページの「繰り返しの予定の規則を、適用の日以降の回について変える」で、予定の一覧で読んだ親の予定の etag を付け、適用の日を ${effective} にして毎週火曜に変える`,
               )
-              await sendChangeRule(page, token, occurrence.recurring_schedule_id, {
+              await sendChangeRule(page, token, id, {
                 effective_date: effective,
                 recurring_rule: { frequency: 'weekly', day_of_week: 2 },
                 id: newScheduleId(),
-                etag: occurrence.etag,
+                etag,
               })
               const dialog = apiClient(page).dialog
               await expect(dialog).toContainText('200 OK')
