@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 
-import type { BuddyApi } from '#/api/BuddyApi'
+import { ApiError, type BuddyApi } from '#/api/BuddyApi'
 import { createFakeBuddyApi } from '#/api/fake/fakeBuddyApi'
 import { FAKE_VIEWER } from '#/api/fake/fixtures'
 import type { StaffPolicy, Viewer } from '#/api/types'
@@ -58,6 +58,25 @@ export const notLinkedApi = (base: BuddyApi = createFakeBuddyApi()): BuddyApi =>
   me: { ...base.me, externalCalendar: async () => null },
 })
 
+/**
+ * 自分の情報を、1 回目は返し、2 回目は失敗し、3 回目からは返すフェイクの API を作る。
+ * 読み終えた後に読み直して読めなかったときと、その後に読み直して読めたときを見る。
+ */
+export const refetchFailingApi = (base: BuddyApi = withPoliciesApi(memberPolicies)): BuddyApi => {
+  let calls = 0
+  return {
+    ...base,
+    me: {
+      ...base.me,
+      get: async (facilityId) => {
+        calls += 1
+        if (calls === 2) throw new ApiError(500, '自分の情報を読めない', [], 'internal')
+        return base.me.get(facilityId)
+      },
+    },
+  }
+}
+
 const meta = {
   title: '画面/Staff/AccountProfileContainer',
   component: AccountProfileContainer,
@@ -98,3 +117,8 @@ export const NoPolicies: Story = {
 export const Loading: Story = { parameters: route({ api: pendingBuddyApi() }) }
 
 export const LoadError: Story = { parameters: route({ api: failingBuddyApi() }) }
+
+/** 読み終えた後に、ウィンドウに戻ったときの読み直しで自分の情報を読めない。表示を残し、見出しの下に失敗の文と読み直すを出す。 */
+export const RefetchError: Story = {
+  parameters: route({ api: refetchFailingApi(), viewer: memberViewer }),
+}
