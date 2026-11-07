@@ -122,9 +122,7 @@ test.describe('照合', () => {
             await expect(page.getByTestId('receipt-check-submit')).toBeVisible()
             await step('照合の画面を開いている')
 
-            await step(
-              '（撮影のため、照合の要求を、実績の CSV を選び直すまで止め、500 を返す）',
-            )
+            await step('（撮影のため、照合の要求を、実績の CSV を選び直すまで止め、500 を返す）')
             const held = await holdCheck(page, (route) =>
               route.fulfill({ status: 500, contentType: 'application/json', body: '{}' }),
             )
