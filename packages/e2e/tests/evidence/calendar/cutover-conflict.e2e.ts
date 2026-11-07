@@ -72,7 +72,7 @@ const cancelInOtherTab = (page: Page) =>
  */
 const returnToTab = (page: Page) =>
   page.evaluate(() => {
-    document.dispatchEvent(new Event('visibilitychange'))
+    document.dispatchEvent(new Event('visibilitychange', { bubbles: true }))
   })
 
 /** やめる前の確認を開き、別のタブで切り替えをやめてから、確認の「やめる」を押す。 */

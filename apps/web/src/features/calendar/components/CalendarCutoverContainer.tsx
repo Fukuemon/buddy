@@ -95,6 +95,7 @@ export const CalendarCutoverContainer = () => {
               onSuccess: () => {
                 setCancelTargetId(null)
                 complete.reset()
+                start.reset()
               },
             })
           }

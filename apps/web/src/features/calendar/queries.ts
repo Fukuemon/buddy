@@ -167,6 +167,7 @@ const invalidateCutover = (queryClient: QueryClient, facilityId: FacilityId) =>
 /**
  * 予定の正本の切り替えを始める mutation。始められたら、切り替えの状況と予定を読み直す。
  * 始められなければ読み直さず、今の状態のまま始めるの失敗の文を出させる。
+ * 最後の同期が成功していない職員がいて始められないときだけ、カレンダーの一覧の最後の同期を出し直すため、切り替えの状況を読み直す。
  */
 export const useStartCutover = () => {
   const { api, facilityId } = useBuddyApi()
@@ -174,6 +175,10 @@ export const useStartCutover = () => {
   return useMutation({
     mutationFn: () => api.calendars.startCutover(facilityId),
     onSuccess: () => invalidateCutover(queryClient, facilityId),
+    onError: (error) =>
+      error instanceof ApiError && error.code === 'cutover_sync_not_ready'
+        ? queryClient.invalidateQueries({ queryKey: queryKeys.calendars.cutover(facilityId) })
+        : undefined,
   })
 }
 

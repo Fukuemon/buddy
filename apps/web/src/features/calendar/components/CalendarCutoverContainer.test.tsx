@@ -128,6 +128,20 @@ describe('ほかの画面で先に操作されたとき', () => {
     expect(screen.queryByTestId('calendar-cutover-cancel-confirm-dialog')).toBeNull()
   })
 
+  it('やめる前の確認を開いたまま、ほかの画面でやめたことを読み直すと確認を閉じ、始め直しても確認を開かない', async () => {
+    const api = stories.openApi()
+    renderWithApi(stories.Open, api)
+    await userEvent.click(await screen.findByTestId('calendar-cutover-cancel'))
+    await screen.findByTestId('calendar-cutover-cancel-confirm-dialog')
+    const { cutover } = await api.calendars.cutoverStatus(MOCK_FACILITY_ID)
+    await api.calendars.cancelCutover(MOCK_FACILITY_ID, cutover?.id ?? '')
+
+    refocusWindow()
+    await userEvent.click(await screen.findByTestId('calendar-cutover-start'))
+    expect(await screen.findByTestId('calendar-cutover-open')).toBeInTheDocument()
+    expect(screen.queryByTestId('calendar-cutover-cancel-confirm-dialog')).toBeNull()
+  })
+
   it('ほかの画面で始めた後に、始めると、始めるの失敗の文を出す', async () => {
     const api = stories.googlePrimaryApi()
     renderWithApi(stories.NotStarted, api)
