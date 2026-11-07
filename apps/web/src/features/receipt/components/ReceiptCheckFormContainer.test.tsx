@@ -1,16 +1,21 @@
 import { composeStories } from '@storybook/react-vite'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it } from 'vite-plus/test'
+import { beforeEach, describe, expect, it, vi } from 'vite-plus/test'
 
 import * as stories from './ReceiptCheckFormContainer.stories'
 
 const { SlowCheckError } = composeStories(stories)
+const check = vi.mocked(SlowCheckError.parameters.appRouter.receiptApi.check)
 
 const csv = (name: string) => new File(['訪問日'], name, { type: 'text/csv' })
 
 describe('ReceiptCheckFormContainer', () => {
-  it('送っている途中に実績の CSV を選び直しても、照合するを押せないままにし、先の照合の失敗の文を出す', async () => {
+  beforeEach(() => {
+    check.mockClear()
+  })
+
+  it('送っている途中に実績の CSV を選び直しても、照合するを押せないままにして 2 回目を送らず、先の照合の失敗の文を出す', async () => {
     render(<SlowCheckError />)
     await userEvent.upload(await screen.findByTestId('receipt-visits-file'), csv('visits.csv'))
     const submit = screen.getByTestId('receipt-check-submit')
@@ -19,6 +24,8 @@ describe('ReceiptCheckFormContainer', () => {
 
     await userEvent.upload(screen.getByTestId('receipt-visits-file'), csv('visits-2.csv'))
     expect(submit).toHaveAttribute('aria-busy', 'true')
+    await userEvent.click(submit)
+    expect(check).toHaveBeenCalledTimes(1)
 
     expect(await screen.findByTestId('receipt-check-error')).toHaveTextContent(
       '照合できませんでした。時間をおいて、もう一度照合してください。',
