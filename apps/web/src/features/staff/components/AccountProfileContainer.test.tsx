@@ -55,7 +55,7 @@ describe('AccountProfileContainer', () => {
   it('カレンダーが結び付いていなければ、連携していないことと、連携を頼む相手を出す', async () => {
     render(<NotLinked />)
     expect(await screen.findByTestId('account-profile-calendar-not-linked')).toHaveTextContent(
-      '連携していません。連携は、職員の管理の権限を持つ職員に頼んでください。',
+      '連携していません。連携は、事業所の管理者に頼んでください。',
     )
     expect(screen.queryByTestId('account-profile-calendar-id')).toBeNull()
   })

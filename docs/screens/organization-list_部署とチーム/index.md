@@ -605,7 +605,7 @@
 
 | 文言 |
 | --- |
-| 「職員の管理の権限を持つ職員だけが開けます。権限が要るときは、職員の管理の権限を持つ職員に頼んでください。」 |
+| 「職員の管理の権限を持つ職員だけが開けます。権限が要るときは、事業所の管理者に頼んでください。」 |
 
 **カタログ**: [PageForbiddenMessage の Default](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-common-pageforbiddenmessage--default)
 

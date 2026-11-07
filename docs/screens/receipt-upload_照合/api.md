@@ -75,7 +75,7 @@ OpenAPI の項目は、`createCheck`（`POST /v1/checks`）の本文とレスポ
 | ファイルのエラー | 「入力を読めませんでした。ファイルを選び直して、もう一度照合してください。」 | `createCheck` が 400 の `bad_request` か `missing_file`。本文の形が違う、実績の CSV が無い、予定の CSV も対象の月も無い、対象の月の形が違う、のどれか |
 | カレンダーの失敗 | 「Google カレンダーから予定を取れませんでした。時間をおいて、もう一度照合してください。」 | `createCheck` が 502 の `schedule_source_failed` |
 | カレンダーの失敗 | 「この事業所では、まだ Google カレンダーを使う準備ができていません。予定の CSV で照合してください。」 | `createCheck` が 503 の `calendar_not_configured` |
-| 照合の失敗 | 「照合の権限がありません。権限が要るときは、職員の管理の権限を持つ職員に頼んでください。」 | `createCheck` が 403 の `forbidden` |
+| 照合の失敗 | 「この操作をする権限がありません。」 | `createCheck` が 403 の `forbidden` |
 | 照合の失敗 | 「照合の権限を確認できませんでした。時間をおいて、もう一度照合してください。」 | `createCheck` が 502 の `permission_check_failed` |
 | 照合の失敗 | 「照合できませんでした。時間をおいて、もう一度照合してください。」 | `createCheck` が 500 の `internal` かそのほかの status、照合の API に届かない |
 

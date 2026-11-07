@@ -43,10 +43,10 @@ test.describe('自分の情報', () => {
           await step('(撮影のため、カレンダーの連携まで送る)')
           await page.getByTestId('account-profile-calendar').scrollIntoViewIfNeeded()
           await expect(page.getByTestId('account-profile-calendar-not-linked')).toHaveText(
-            '連携していません。連携は、職員の管理の権限を持つ職員に頼んでください。',
+            '連携していません。連携は、事業所の管理者に頼んでください。',
           )
           await check(
-            'カレンダーを連携していないことと、「連携は、職員の管理の権限を持つ職員に頼んでください。」が出る',
+            'カレンダーを連携していないことと、「連携は、事業所の管理者に頼んでください。」が出る',
           )
         },
       )
