@@ -16,10 +16,6 @@ describe('InputDialog', () => {
       'data-testid',
       'reason-dialog',
     )
-    expect(screen.getByRole('button', { name: '閉じる' })).toHaveAttribute(
-      'data-testid',
-      'reason-close',
-    )
     expect(screen.getByRole('button', { name: 'キャンセル' })).toHaveAttribute(
       'data-testid',
       'reason-cancel',
@@ -30,9 +26,10 @@ describe('InputDialog', () => {
     )
   })
 
-  it('開くと、閉じるボタンにフォーカスを移す', () => {
+  it('右上に閉じるボタン（×）を置かず、開くと最初の欄にフォーカスを移す', () => {
     render(<Default />)
-    expect(screen.getByRole('button', { name: '閉じる' })).toHaveFocus()
+    expect(screen.queryByRole('button', { name: '閉じる' })).toBeNull()
+    expect(screen.getByRole('textbox', { name: '理由' })).toHaveFocus()
   })
 
   it('initialFocusRef を渡すと、開いたときにその欄にフォーカスを移す', () => {
@@ -48,24 +45,15 @@ describe('InputDialog', () => {
     expect(screen.getByRole('textbox', { name: '名前' })).toHaveFocus()
   })
 
-  it('closeTestId を渡すと、閉じるボタンにその testid を付ける', () => {
-    render(<Default closeTestId="reason-x" />)
-    expect(screen.getByRole('button', { name: '閉じる' })).toHaveAttribute(
-      'data-testid',
-      'reason-x',
-    )
-  })
-
-  it('×、「キャンセル」、Escape で onClose を呼ぶ', async () => {
+  it('「キャンセル」と Escape で onClose を呼ぶ', async () => {
     const onClose = fn()
     render(<Default onClose={onClose} />)
-    await userEvent.click(screen.getByRole('button', { name: '閉じる' }))
     await userEvent.click(screen.getByRole('button', { name: 'キャンセル' }))
     await userEvent.keyboard('{Escape}')
-    expect(onClose).toHaveBeenCalledTimes(3)
+    expect(onClose).toHaveBeenCalledTimes(2)
   })
 
-  it('送っている間は、×、「キャンセル」、Escape で onClose を呼ばず、確定のボタンも押せない', async () => {
+  it('送っている間は、「キャンセル」と Escape で onClose を呼ばず、確定のボタンも押せない', async () => {
     const onClose = fn()
     const onSubmit = fn()
     render(<Submitting onClose={onClose} onSubmit={onSubmit} />)
@@ -73,7 +61,6 @@ describe('InputDialog', () => {
     expect(submit).toHaveAttribute('aria-disabled', 'true')
 
     // Playwright は aria-disabled の要素を押せないものとして待つので、force で押す
-    await userEvent.click(screen.getByRole('button', { name: '閉じる' }), { force: true })
     await userEvent.click(screen.getByRole('button', { name: 'キャンセル' }), { force: true })
     await userEvent.keyboard('{Escape}')
     await userEvent.click(submit, { force: true })

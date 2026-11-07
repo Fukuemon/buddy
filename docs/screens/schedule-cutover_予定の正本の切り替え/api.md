@@ -91,6 +91,8 @@ web は `BuddyApi.calendars`（`apps/web/src/api/BuddyApi.ts`）で API を呼�
 - 完了の失敗の文は、`createCalendarCutoverCompletion` の 409 `cutover_incomplete` のほかの全ての失敗で出す。
   - 出す場所は、完了するのボタンの上である（`CalendarCutoverView.tsx` の `completeError`）。
 - 完了の条件の 6 つは、`CalendarCutoverUnmet.reason` の `not_imported`、`sync_stale`、`event_not_imported`、`needs_review`、`changed`、`deleted` に当たる。
-- 始める、完了する、やめるの mutation は、成否によらず `onSettled` で切り替えの状況、事業所、予定を読み直す（`apps/web/src/features/calendar/queries.ts`）。
-  - 読み直して状態が替わると、その状態に無い失敗の文は消える。仕様書との食い違いは、仕様書の未決にある。
+- 始める、完了する、やめるの mutation は、成功したときだけ `onSuccess` で切り替えの状況、事業所、予定を読み直す（`apps/web/src/features/calendar/queries.ts`）。
+  - 完了は、完了したときと、完了の条件を満たさない一覧が返ったときに読み直す。
+  - 失敗したときは読み直さず、今の状態のまま失敗の文を出す。ほかの画面で先に操作されても、失敗の文が消えない。
+  - 始めるが 409 `cutover_sync_not_ready` で失敗したときだけ、カレンダーの一覧の最後の同期を出し直すために、切り替えの状況を読み直す。状態は「始められない」のままである。
 - 完了できない一覧の理由の文言は `apps/web/src/features/calendar/lib/cutover.ts` の `UNMET_REASON_LABEL` と `UNMET_REASON_ACTION` にある。

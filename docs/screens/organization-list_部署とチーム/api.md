@@ -32,7 +32,7 @@
 | 職員が、作るか保存を送っている途中である | 作成か編集を送る mutation の `isPending` が `true`（`OrganizationUnitDialog` の `isSubmitting`） |
 
 - 一覧と、無いことの文の出し分けは、`OrganizationListView.tsx` の `rows.length === 0` にある。
-- 送っている間は、名前と色の欄に `disabled` を、閉じるとキャンセルに押せない印を付ける。覆いと Escape キーでも閉じない。
+- 送っている間は、名前と色の欄に `disabled` を、キャンセルに押せない印を付ける。覆いと Escape キーでも閉じない。
   - 欄は `OrganizationUnitDialog.tsx`、ボタンと覆いは packages/ui の `InputDialog`、`DialogSubmit`、`Dialog` が決める。
 
 ## 要素の testid
@@ -55,17 +55,15 @@
 | 14 | チームの行 | `organization-list-team-row-{チームの id}` |
 | 15 | チーム | `organization-list-team-name-{チームの id}` |
 | 16 | 編集 | `organization-list-team-edit-{チームの id}` |
-| 3 | 閉じる | `organization-list-department-close` |
-| 3 | 閉じる | `organization-list-team-close` |
-| 4 | 名前 | `organization-list-department-name` |
-| 4 | 名前 | `organization-list-team-name` |
-| 5 | 色 | `organization-list-team-color` |
-| 5 | キャンセル | `organization-list-department-cancel` |
-| 6 | キャンセル | `organization-list-team-cancel` |
-| 6 | 作る、保存 | `organization-list-department-submit` |
-| 7 | 作る、保存 | `organization-list-team-submit` |
-| 8 | 入力の誤りの文 | `organization-list-team-error-name` |
-| 8 | 保存の失敗の文 | `organization-list-team-submit-error` |
+| 3 | 名前 | `organization-list-department-name` |
+| 3 | 名前 | `organization-list-team-name` |
+| 4 | 色 | `organization-list-team-color` |
+| 4 | キャンセル | `organization-list-department-cancel` |
+| 5 | キャンセル | `organization-list-team-cancel` |
+| 5 | 作る、保存 | `organization-list-department-submit` |
+| 6 | 作る、保存 | `organization-list-team-submit` |
+| 7 | 入力の誤りの文 | `organization-list-team-error-name` |
+| 7 | 保存の失敗の文 | `organization-list-team-submit-error` |
 | 6 | 読み込み中の表示 | `organization-list-loading` |
 | 6 | 読み込みの失敗の文 | `organization-list-error` |
 | 7 | 読み直す | `organization-list-retry` |
