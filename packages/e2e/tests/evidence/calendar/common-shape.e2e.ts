@@ -112,7 +112,7 @@ test.describe('画面の共通の形', () => {
       )
     })
 
-    test(`${prefix}buddy を正本にする事業所で確認が必要な予定の行を押した場合、予定と、buddy の内容で書き直すだけを入れたダイアログが出ること`, async ({
+    test(`${prefix}buddy を正本にする事業所で確認が必要な予定の行を押した場合、予定と、buddy の内容で書き直すと、閉じるためのボタンを入れたダイアログが出ること`, async ({
       browser,
     }) => {
       await recordPrEvidence(
@@ -120,7 +120,7 @@ test.describe('画面の共通の形', () => {
         {
           name: 'review-detail-dialog',
           title:
-            'buddy を正本にする事業所で確認が必要な予定の行を押し、予定と書き直すだけを入れたダイアログを見て、× で閉じる',
+            'buddy を正本にする事業所で確認が必要な予定の行を押し、予定と書き直すだけを入れたダイアログを見て、閉じる',
           actor: ACTOR,
           variant,
         },
@@ -141,12 +141,23 @@ test.describe('画面の共通の形', () => {
           const rewrite = dialog.getByTestId(/^calendar-review-rewrite-/)
           await expect(rewrite).not.toHaveClass(/bg-primary/)
           await expect(dialog).not.toContainText('Google の内容に合わせる')
-          await check(
-            '「食い違った予定」のダイアログに、予定の日時、職員、最後に変わった日時、理由、予定を開くが出て、フッターに「buddy の内容で書き直す」だけが主ボタンの色でなく出る',
-          )
+          if (variant.name === 'before') {
+            await check(
+              '「食い違った予定」のダイアログに、予定の日時、職員、最後に変わった日時、理由、予定を開くが出て、右上に × があり、フッターに「buddy の内容で書き直す」だけが主ボタンの色でなく出る',
+            )
 
-          await step('右上の × を押す')
-          await dialog.getByTestId('calendar-review-close').click()
+            await step('右上の × を押す')
+            await dialog.getByTestId('calendar-review-close').click()
+          } else {
+            await expect(dialog.getByTestId('calendar-review-close')).toHaveCount(0)
+            await expect(dialog.getByTestId('calendar-review-cancel')).toBeVisible()
+            await check(
+              '「食い違った予定」のダイアログに、予定の日時、職員、最後に変わった日時、理由、予定を開くが出て、右上に × が無く、フッターに「キャンセル」と、主ボタンの色でない「buddy の内容で書き直す」が出る',
+            )
+
+            await step('フッターの「キャンセル」を押す')
+            await dialog.getByTestId('calendar-review-cancel').click()
+          }
           await expect(dialog).toBeHidden()
           await check('ダイアログが閉じ、一覧に戻る')
         },
