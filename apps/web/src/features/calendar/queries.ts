@@ -164,19 +164,23 @@ const invalidateCutover = (queryClient: QueryClient, facilityId: FacilityId) =>
     ].map((queryKey) => queryClient.invalidateQueries({ queryKey })),
   )
 
-/** 予定の正本の切り替えを始める mutation。成否によらず、切り替えの状況と予定を読み直す。 */
+/**
+ * 予定の正本の切り替えを始める mutation。始められたら、切り替えの状況と予定を読み直す。
+ * 始められなければ読み直さず、今の状態のまま始めるの失敗の文を出させる。
+ */
 export const useStartCutover = () => {
   const { api, facilityId } = useBuddyApi()
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: () => api.calendars.startCutover(facilityId),
-    onSettled: () => invalidateCutover(queryClient, facilityId),
+    onSuccess: () => invalidateCutover(queryClient, facilityId),
   })
 }
 
 /**
  * 切り替えを完了する mutation。完了の確認を満たさなければ、data に満たさないカレンダーと予定（unmet）を持つ。
- * 成否によらず、切り替えの状況、事業所の正本、予定を読み直す。
+ * 完了したか満たさない一覧が返ったら、切り替えの状況、事業所の正本、予定を読み直す。
+ * 完了の操作が失敗したら読み直さず、今の状態のまま完了の失敗の文を出させる。
  */
 export const useCompleteCutover = () => {
   const { api, facilityId } = useBuddyApi()
@@ -184,17 +188,20 @@ export const useCompleteCutover = () => {
   return useMutation({
     mutationFn: (cutoverId: CalendarCutover['id']) =>
       api.calendars.completeCutover(facilityId, cutoverId),
-    onSettled: () => invalidateCutover(queryClient, facilityId),
+    onSuccess: () => invalidateCutover(queryClient, facilityId),
   })
 }
 
-/** 切り替えをやめる mutation。成否によらず、切り替えの状況と予定を読み直す。 */
+/**
+ * 切り替えをやめる mutation。やめられたら、切り替えの状況と予定を読み直す。
+ * やめられなければ読み直さず、確認のダイアログにやめるの失敗の文を出させる。
+ */
 export const useCancelCutover = () => {
   const { api, facilityId } = useBuddyApi()
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (cutoverId: CalendarCutover['id']) =>
       api.calendars.cancelCutover(facilityId, cutoverId),
-    onSettled: () => invalidateCutover(queryClient, facilityId),
+    onSuccess: () => invalidateCutover(queryClient, facilityId),
   })
 }
