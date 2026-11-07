@@ -130,17 +130,19 @@ test.describe('予定の編集', () => {
                 `「編集」を押し、予定の種類で「訪問」を選び、利用者に ${patientName} を選んで保存する`,
               )
               await addVisitInfo(page, patientId)
+              const detail = page.getByTestId('schedule-detail-modal')
+              await expect(detail).toContainText(patientName)
+              await expect(page.getByTestId('schedule-detail-review-reason')).toHaveCount(0)
+              await check('保存すると予定の詳細に戻り、利用者が出て、確認が必要な理由が出ない')
+
+              await step('予定の詳細を閉じる')
+              await page.getByTestId('schedule-detail-close').click()
+              await expect(detail).toBeHidden()
               const visit = okadaEvent(page, patientName)
               await expect(visit).toBeVisible()
               await expect(okadaEvent(page, title)).toHaveCount(0)
               await visit.scrollIntoViewIfNeeded()
               await check(`日の表示の ${OKADA.staff.name} の列に、${patientName} の訪問として出る`)
-
-              await step('訪問の予定を押して詳細を開く')
-              await visit.click()
-              await expect(page.getByTestId('schedule-detail-modal')).toContainText(patientName)
-              await expect(page.getByTestId('schedule-detail-review-reason')).toHaveCount(0)
-              await check('詳細に利用者が出て、確認が必要な理由が出ない')
             },
           )
         } finally {
