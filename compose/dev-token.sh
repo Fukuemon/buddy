@@ -5,14 +5,25 @@
 # 使い方: compose/dev-token.sh <メール> [上流の IdP の sub]
 # 上流の IdP の sub を省くと、メールの @ の前の部分にする。職員に結び付けた後は、同じ sub で入る。
 # URL かポートを変えて起動したときは、compose と同じ環境変数（HYDRA_PUBLIC_ORIGIN、BROKER_ORIGIN、WEB_ORIGIN か、
-# HYDRA_PUBLIC_PORT、BROKER_PORT、WEB_PORT）を渡す。worktrunk で作った worktree では、mise が .env から渡す。
+# HYDRA_PUBLIC_PORT、BROKER_PORT、WEB_PORT）を渡す。
+# worktrunk で作った worktree では、リポジトリのルートの .env から、まだ渡していない環境変数だけを読む。
 set -eu
+
+env_file="$(dirname "$0")/../.env"
+if [ -f "$env_file" ]; then
+  while IFS='=' read -r key value; do
+    case $key in '' | '#'*) continue ;; esac
+    [ -n "$(printenv "$key" || true)" ] || export "$key=$value"
+  done <"$env_file"
+fi
 
 email=${1:?メールを渡す}
 sub=${2:-${email%@*}}
 hydra=${HYDRA_PUBLIC_ORIGIN:-http://localhost:${HYDRA_PUBLIC_PORT:-4444}}
 broker=${BROKER_ORIGIN:-http://localhost:${BROKER_PORT:-8100}}
 redirect=${WEB_ORIGIN:-http://localhost:${WEB_PORT:-3000}}/auth/callback
+# portless の https の URL は、portless の CA で証明書を確かめる。CA はシステムに信頼させていない（ADR-0034）
+case $hydra in https://*) [ -f "$HOME/.portless/ca.pem" ] && export CURL_CA_BUNDLE="$HOME/.portless/ca.pem" ;; esac
 jar=$(mktemp)
 trap 'rm -f "$jar"' EXIT
 
