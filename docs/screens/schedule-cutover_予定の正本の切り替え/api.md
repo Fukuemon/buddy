@@ -80,6 +80,14 @@ web は `BuddyApi.calendars`（`apps/web/src/api/BuddyApi.ts`）で API を呼�
 | 切り替え中 | 「この切り替えは、ほかの画面で完了したか、やめています。画面を読み直してください。」 | `createCalendarCutoverCompletion` か `cancelCalendarCutover` が 409 `cutover_not_open` |
 | 切り替え中 | 「Google カレンダーから予定を読めませんでした。時間をおいて、もう一度完了してください。」 | `createCalendarCutoverCompletion` が 502 `calendar_unavailable` |
 | 切り替え中 | 「Google カレンダーを読めない職員がいます。カレンダーの共有が外れていないかを、職員に確認してください。」 | `createCalendarCutoverCompletion` が 422 `calendar_unreadable` |
+| 切り替え中 | 「この事業所では、まだ Google カレンダーを使う準備ができていません。事業所の管理者に、設定を頼んでください。」 | `createCalendarCutoverCompletion` が 503 `calendar_not_configured` |
+| 始められない、切り替え中 | 「この操作をする権限がありません。」 | `startCalendarCutover`、`createCalendarCutoverCompletion`、`cancelCalendarCutover` が 403 |
+| 始められない、切り替え中 | 「操作できませんでした。時間をおいて、もう一度試してください。」 | `startCalendarCutover`、`createCalendarCutoverCompletion`、`cancelCalendarCutover` のほかの失敗。409 `google_write_pending`、API に届かないときを含む |
 
 - 文を選ぶ処理は `apps/web/src/features/calendar/lib/errorMessage.ts` の `cutoverErrorMessage` にある。
+- 完了の失敗の文は、`createCalendarCutoverCompletion` の 409 `cutover_incomplete` のほかの全ての失敗で出す。
+  - 出す場所は、完了するのボタンの上である（`CalendarCutoverView.tsx` の `completeError`）。
+- 完了の条件の 6 つは、`CalendarCutoverUnmet.reason` の `not_imported`、`sync_stale`、`event_not_imported`、`needs_review`、`changed`、`deleted` に当たる。
+- 始める、完了する、やめるの mutation は、成否によらず `onSettled` で切り替えの状況、事業所、予定を読み直す（`apps/web/src/features/calendar/queries.ts`）。
+  - 読み直して状態が替わると、その状態に無い失敗の文は消える。仕様書との食い違いは、仕様書の未決にある。
 - 完了できない一覧の理由の文言は `apps/web/src/features/calendar/lib/cutover.ts` の `UNMET_REASON_LABEL` と `UNMET_REASON_ACTION` にある。

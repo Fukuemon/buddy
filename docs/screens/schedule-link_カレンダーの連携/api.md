@@ -14,7 +14,7 @@ web は `BuddyApi.calendars`（`apps/web/src/api/BuddyApi.ts`）で API を呼�
 | 共有する相手のメールアドレス | この事業所のサービスアカウントのメールアドレス | `calendars.serviceAccount` の戻り値 | `getCalendarServiceAccount` の `email` |
 | 職員の一覧 | 職員の名前 | `Staff.name` | `listUsers` の `Staff.username` |
 | カレンダーの ID | カレンダーの ID | `ExternalCalendar.calendar_id` | `listExternalCalendars` の `items[].calendar_id` |
-| 最後の取り込み | 終わった日時、期間、失敗か | `ExternalCalendar.last_import` | `ExternalCalendar.last_import` の `finished_at`、`range_start`、`range_end`、`status` |
+| 最後の取り込み | 終わった日時か始めた日時、期間、失敗か | `ExternalCalendar.last_import` | `ExternalCalendar.last_import` の `finished_at`、`started_at`、`range_start`、`range_end`、`status` |
 | 結び付ける、行の操作 | どちらを出すか | `ExternalCalendar` が職員にあるか | `listExternalCalendars` の `items[].staff_id` に職員があるか |
 | カレンダーの ID の入力 | デフォルト値 | `Staff.email` | `listUsers` の `Staff.email` |
 | 読めるか確認する | 読めたか | `calendars.check` が成功したか | `createExternalCalendarCheck` のレスポンス |
@@ -25,6 +25,13 @@ web は `BuddyApi.calendars`（`apps/web/src/api/BuddyApi.ts`）で API を呼�
 - 職員の一覧の行は、`CalendarLinkContainer.tsx` が、`Staff.status` が `retired` の職員を除き、`Staff.name` の順（`localeCompare` の `ja`）に並べて作る。
 - 最後の取り込みの文言は、`apps/web/src/components/lastImport.ts` の `formatLastImport` が作る。
   - `finished_at` が `null` なら `started_at` を出す。
+  - `last_import` は、取り込みの途中のものも含めて、`started_at` が最も新しい取り込みである。途中の取り込みを出してよいかは、仕様書の未決にある。
+- 読めるか確認するの横の文は、`CalendarLinkDialog.tsx` が、`calendarId.trim()` が空のときに出す（`calendar-link-check-hint`）。
+- ダイアログの結び付けるの上の文（`calendar-link-submit-hint`）は、packages/ui の `DialogSubmit` が出す。
+  - `canSubmit` が false で、送っている途中でなく、`submitHint` があるときに出す。
+  - `CalendarLinkDialog.tsx` は、`CalendarCheckStatus` が `checking` の間は `submitHint` を渡さない。
+- 確認の結果は、`CalendarCheckStatus` が `checking` の間は出さない。もう一度確認している間は、前の結果を消す。
+- 行の操作のメニューは、packages/ui の `ActionMenu` が、行の操作をもう一度押したときも閉じる。
 
 ## 条件の対応
 

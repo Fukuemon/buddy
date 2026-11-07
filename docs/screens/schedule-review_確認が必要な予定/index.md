@@ -305,8 +305,10 @@ buddy の予定のうち、Google カレンダーと食い違った予定を確�
 
 **値のソース**: 鈴のアイコンと「要確認」。  
 確認が必要な予定の件数の印を、開いた形では項目の右端に、レールではアイコンの右上に出す。  
+100 件以上は、印を「99+」にする。  
 0 件のとき、一覧を読み込んでいるとき、一覧の取得に失敗したときは印を出さない。  
-読み上げる名前は、「要確認 3 件」のように件数を入れる。
+読み上げる名前は、「要確認 3 件」のように件数を入れる。  
+100 件以上も、印によらず件数をそのまま読む。
 
 **カタログ**: [CalendarReviewBadge の WithReview](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-calendar-calendarreviewbadge--with-review)、[CalendarReviewBadge の NoReview](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-calendar-calendarreviewbadge--no-review)
 
@@ -474,6 +476,7 @@ Google カレンダーで職員が変えた予定は、数分のうちに buddy 
 | Google カレンダーで予定が消されていた | 「Google カレンダーで予定が見つかりません。」 |
 | カレンダーに書く権限が無い | 「Google カレンダーに書けません。」 |
 | Google カレンダーが予定の内容を受け付けなかった | 「Google カレンダーが予定の内容を受け付けませんでした。」 |
+| 事業所が予定を buddy で管理していないので、書き出していない | 「この事業所の予定は Google カレンダーで管理しているので、書き出していません。」 |
 | Google に届かず、書き直しの上限に達した | 「Google カレンダーに届かず、書き出せませんでした。」 |
 | そのほか | 「Google カレンダーに書き出せませんでした。」 |
 

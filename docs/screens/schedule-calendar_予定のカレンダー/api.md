@@ -9,6 +9,7 @@ web の型（`apps/web/src/api/types.ts`）はフェイクの API に合わせ�
 | 要素名 | 表示する値 | web の型の項目 | OpenAPI の項目 |
 | --- | --- | --- | --- |
 | ログインした職員 | 職員の名前 | `Viewer.staffName` | `getMe` の `username` |
+| 要確認 | 確認が必要な予定の件数。100 件以上は「99+」 | `calendars.exportIssues` の戻り値の数 | `listCalendarExportIssues` の `items` の数 |
 | チームのチェックボックス | チームの名前 | `Team.name` | `listTeams` の `Unit.name` |
 | 職員のチェックボックス | 職員の名前と、属するチーム | `Staff.name`、`Staff.teamId` | `listUsers` の `Staff.username`、`Staff.team.id` |
 | 職員のチェックボックス、職員の列、予定 | 休職と退職の職員と、訪問しない職員を除くか | `Staff.status`、`Staff.nonVisiting` | `listUsers` の `Staff.status`、`visits` |
@@ -113,8 +114,9 @@ web の型（`apps/web/src/api/types.ts`）はフェイクの API に合わせ�
 | --- | --- |
 | ログインした職員が、職員の管理の権限を持つ | `Viewer.policyCodes` に `staff.manage` がある（`hasPermission(viewer, STAFF_MANAGE)`） |
 | 表示する職員の絞り込みが、全員である | 選んだ職員（search params の `staff` から、`activeStaffIds` で休職と退職の職員と訪問しない職員を、`readableStaffIds` で予定を見てよくない職員と職員の一覧に無い職員を除いた配列）が空（`StaffFilterSidebar` の `isAll`、`ScheduleCalendarContainer` の `selectedStaffIds`） |
-| 表示する職員の絞り込みが、ログインした職員だけである | 選んだ職員が `Viewer.staffId` の 1 人だけか、選んだ職員が空で、職員の絞り込みに出す職員が 1 人だけ（`StaffFilterSidebar` の `isOnlyViewer`） |
-| ログインした職員が、職員の一覧にいる | 職員の絞り込みに出す職員（`activeStaff` と `readableStaff` で絞った `Staff[]`）に、`Viewer.staffId` の職員がいる（`StaffFilterSidebar` の `canShowOnlyViewer`） |
+| 表示する職員の絞り込みが、ログインした職員だけである | 選んだ職員が `Viewer.staffId` の 1 人だけ（`StaffFilterSidebar` の `isOnlyViewer` の前半） |
+| 職員の絞り込みに出す職員が、ログインした職員だけである | 選んだ職員が空で、職員の絞り込みに出す職員（`StaffFilterSidebar` の `staffList`）が 1 人だけ（`isOnlyViewer` の後半）。自分だけを出すのはログインした職員がその中にいるときなので、1 人はログインした職員である |
+| ログインした職員が、職員の絞り込みに出す職員にいる | 職員の絞り込みに出す職員（`activeStaff` と `readableStaff` で絞った `Staff[]`）に、`Viewer.staffId` の職員がいる（`StaffFilterSidebar` の `canShowOnlyViewer`） |
 | 事業所のチームの一覧を読めている | `teamListQueryOptions` の結果（`Team[]`）がある。無い間は空の配列として扱う |
 | チームに、ログインした職員が予定を見られる職員がいる | `readableStaff` で絞った職員に、`Staff.teamId` がチームの `Team.id` の職員がいる |
 | チームが、職員のいないチームである | `activeStaff` で絞った職員に、`Staff.teamId` がチームの `Team.id` の職員がいない |
@@ -162,6 +164,12 @@ web の型（`apps/web/src/api/types.ts`）はフェイクの API に合わせ�
   - Google カレンダーの案内、同期の警告、確認が必要な予定の通知の事業所の判定は、状態で決まるので、条件の表に載せない。
 - ナビゲーションの項目は、`apps/web/src/components/layout/SiteNav.tsx` の `siteNavGroups` が、職員の管理の権限で出し分ける。
   - 要確認の件数の印は、`apps/web/src/features/calendar/components/CalendarReviewBadgeContainer.tsx` が出し分ける。
+    - 件数は `listCalendarExportIssues` の `items` の数である。読み終える前と 0 件のときは印を出さず、100 件以上は `CalendarReviewBadge` が「99+」にする。
+- URL の `staff` は、`activeStaffIds` で休職と退職の職員と訪問しない職員を除き、`readableStaffIds` で職員の一覧に無い職員と予定を見てよくない職員を除く。
+  - 残りが空なら、全員を選んだ形として扱う。見えない職員が選んだままになり、全員と一部の判定が崩れないためである。
+  - 「表示する職員が無い」の状態は、職員の絞り込みに出す職員（`readableStaff(viewer, activeStaff(...))`）が空のときにだけなる。
+- 予定と職員のチェックボックスの色は、`staffColorMap` が、`activeStaff` と `readableStaff` で絞った職員の並びの位置から決める。
+  - 処理は `apps/web/src/features/schedule/lib/toCalendarEvents.ts` にある。
 
 ## 要素の testid
 
@@ -175,16 +183,22 @@ web の型（`apps/web/src/api/types.ts`）はフェイクの API に合わせ�
 | 6 | チームのチェックボックス | `staff-filter-team-{チームの id}` |
 | 7 | 職員のチェックボックス | `staff-filter-staff-{職員の id}` |
 | 6 | 前へ | `calendar-prev` |
+| 7 | 前へ | `calendar-prev` |
 | 8 | 前へ | `calendar-prev` |
 | 7 | 今日 | `calendar-today` |
+| 8 | 今日 | `calendar-today` |
 | 9 | 今日 | `calendar-today` |
 | 8 | 次へ | `calendar-next` |
+| 9 | 次へ | `calendar-next` |
 | 10 | 次へ | `calendar-next` |
 | 9 | ミニカレンダー | `mini-calendar` |
+| 10 | ミニカレンダー | `mini-calendar` |
 | 11 | ミニカレンダー | `mini-calendar` |
 | 10 | 表示の単位 | `calendar-view` |
+| 11 | 表示の単位 | `calendar-view` |
 | 12 | 表示の単位 | `calendar-view` |
 | 11 | 予定を作成 | `schedule-create-open` |
+| 12 | 予定を作成 | `schedule-create-open` |
 | 13 | 予定を作成 | `schedule-create-open` |
 | 32 | 予定を作成 | `schedule-create-open` |
 | 35 | 予定を作成 | `schedule-create-open` |
@@ -192,6 +206,7 @@ web の型（`apps/web/src/api/types.ts`）はフェイクの API に合わせ�
 | 15 | 予定 | `schedule-event-{予定の id}` |
 | 18 | 予定 | `schedule-event-{予定の id}` |
 | 13 | 表示の期間の見出し | `calendar-title` |
+| 14 | 表示の期間の見出し | `calendar-title` |
 | 15 | 表示の期間の見出し | `calendar-title` |
 | 16 | 表示の期間の見出し | `calendar-title` |
 | 17 | 表示の期間の見出し | `calendar-title` |
@@ -202,18 +217,21 @@ web の型（`apps/web/src/api/types.ts`）はフェイクの API に合わせ�
 | 19 | 自分だけ | `staff-filter-only-me` |
 | 21 | 自分だけ | `staff-filter-only-me` |
 | 14 | 職員の名前の検索 | `staff-filter-search` |
+| 15 | 職員の名前の検索 | `staff-filter-search` |
 | 17 | 職員の名前の検索 | `staff-filter-search` |
 | 18 | 職員の名前の検索 | `staff-filter-search` |
 | 19 | 職員の名前の検索 | `staff-filter-search` |
 | 20 | 職員の名前の検索 | `staff-filter-search` |
 | 22 | 職員の名前の検索 | `staff-filter-search` |
 | 15 | キャンセルした予定を出す | `calendar-show-cancelled` |
+| 16 | キャンセルした予定を出す | `calendar-show-cancelled` |
 | 18 | キャンセルした予定を出す | `calendar-show-cancelled` |
 | 19 | キャンセルした予定を出す | `calendar-show-cancelled` |
 | 20 | キャンセルした予定を出す | `calendar-show-cancelled` |
 | 21 | キャンセルした予定を出す | `calendar-show-cancelled` |
 | 23 | キャンセルした予定を出す | `calendar-show-cancelled` |
 | 16 | ミニカレンダーの月 | `mini-calendar-month` |
+| 17 | ミニカレンダーの月 | `mini-calendar-month` |
 | 19 | ミニカレンダーの月 | `mini-calendar-month` |
 | 20 | ミニカレンダーの月 | `mini-calendar-month` |
 | 21 | ミニカレンダーの月 | `mini-calendar-month` |
@@ -221,6 +239,7 @@ web の型（`apps/web/src/api/types.ts`）はフェイクの API に合わせ�
 | 24 | ミニカレンダーの月 | `mini-calendar-month` |
 | 25 | ミニカレンダーの月 | `mini-calendar-month` |
 | 17 | 前の月 | `mini-calendar-prev` |
+| 18 | 前の月 | `mini-calendar-prev` |
 | 20 | 前の月 | `mini-calendar-prev` |
 | 21 | 前の月 | `mini-calendar-prev` |
 | 22 | 前の月 | `mini-calendar-prev` |
@@ -228,6 +247,7 @@ web の型（`apps/web/src/api/types.ts`）はフェイクの API に合わせ�
 | 25 | 前の月 | `mini-calendar-prev` |
 | 26 | 前の月 | `mini-calendar-prev` |
 | 18 | 次の月 | `mini-calendar-next` |
+| 19 | 次の月 | `mini-calendar-next` |
 | 21 | 次の月 | `mini-calendar-next` |
 | 22 | 次の月 | `mini-calendar-next` |
 | 23 | 次の月 | `mini-calendar-next` |
@@ -235,6 +255,7 @@ web の型（`apps/web/src/api/types.ts`）はフェイクの API に合わせ�
 | 26 | 次の月 | `mini-calendar-next` |
 | 27 | 次の月 | `mini-calendar-next` |
 | 19 | ミニカレンダーの日 | `mini-calendar-day-{日付}` |
+| 20 | ミニカレンダーの日 | `mini-calendar-day-{日付}` |
 | 22 | ミニカレンダーの日 | `mini-calendar-day-{日付}` |
 | 23 | ミニカレンダーの日 | `mini-calendar-day-{日付}` |
 | 24 | ミニカレンダーの日 | `mini-calendar-day-{日付}` |
@@ -242,6 +263,7 @@ web の型（`apps/web/src/api/types.ts`）はフェイクの API に合わせ�
 | 27 | ミニカレンダーの日 | `mini-calendar-day-{日付}` |
 | 28 | ミニカレンダーの日 | `mini-calendar-day-{日付}` |
 | 20 | 日付と絞り込み | `site-sidebar-open` |
+| 21 | 日付と絞り込み | `site-sidebar-open` |
 | 23 | 日付と絞り込み | `site-sidebar-open` |
 | 24 | 日付と絞り込み | `site-sidebar-open` |
 | 25 | 日付と絞り込み | `site-sidebar-open` |
@@ -249,6 +271,7 @@ web の型（`apps/web/src/api/types.ts`）はフェイクの API に合わせ�
 | 28 | 日付と絞り込み | `site-sidebar-open` |
 | 29 | 日付と絞り込み | `site-sidebar-open` |
 | 21 | 左の欄を閉じる | `site-sidebar-close` |
+| 22 | 左の欄を閉じる | `site-sidebar-close` |
 | 24 | 左の欄を閉じる | `site-sidebar-close` |
 | 25 | 左の欄を閉じる | `site-sidebar-close` |
 | 26 | 左の欄を閉じる | `site-sidebar-close` |
@@ -256,6 +279,7 @@ web の型（`apps/web/src/api/types.ts`）はフェイクの API に合わせ�
 | 29 | 左の欄を閉じる | `site-sidebar-close` |
 | 30 | 左の欄を閉じる | `site-sidebar-close` |
 | 22 | 要確認 | `site-nav-review` |
+| 23 | 要確認 | `site-nav-review` |
 | 25 | 要確認 | `site-nav-review` |
 | 26 | 要確認 | `site-nav-review` |
 | 27 | 要確認 | `site-nav-review` |
@@ -263,6 +287,7 @@ web の型（`apps/web/src/api/types.ts`）はフェイクの API に合わせ�
 | 30 | 要確認 | `site-nav-review` |
 | 31 | 要確認 | `site-nav-review` |
 | 23 | 取り込み | `site-nav-import` |
+| 24 | 取り込み | `site-nav-import` |
 | 26 | 取り込み | `site-nav-import` |
 | 27 | 取り込み | `site-nav-import` |
 | 28 | 取り込み | `site-nav-import` |
@@ -271,12 +296,14 @@ web の型（`apps/web/src/api/types.ts`）はフェイクの API に合わせ�
 | 32 | 取り込み | `site-nav-import` |
 | 17 | メニュー | `site-nav-toggle` |
 | 24 | メニュー | `site-nav-toggle` |
+| 25 | メニュー | `site-nav-toggle` |
 | 27 | メニュー | `site-nav-toggle` |
 | 28 | メニュー | `site-nav-toggle` |
 | 29 | メニュー | `site-nav-toggle` |
 | 30 | メニュー | `site-nav-toggle` |
 | 32 | メニュー | `site-nav-toggle` |
 | 33 | メニュー | `site-nav-toggle` |
+| 13 | 職員ごとの日の表 | `staff-schedule-day-grid` |
 | 14 | 職員ごとの日の表 | `staff-schedule-day-grid` |
 | 16 | 職員の予定の列 | `day-grid-staff-{職員の id}` |
 | 17 | 時間の枠 | `day-grid-slot-{職員の id}-{HH:mm}` |

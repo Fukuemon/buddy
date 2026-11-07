@@ -12,6 +12,7 @@ web は `BuddyApi.calendars`（`apps/web/src/api/BuddyApi.ts`）で API を呼�
 | --- | --- | --- | --- |
 | ナビゲーション | 「取り込み」「要確認」「連携」を出すか | `Viewer.policyCodes` に `staff.manage` があるか（`hasPermission`） | `getMe` の `policies[].code` に `staff.manage` があるか |
 | ログインした職員 | 職員の名前 | `Viewer.staffName` | `getMe` の `username` |
+| 要確認 | 確認が必要な予定の件数。100 件以上は「99+」 | `calendars.exportIssues` の戻り値の数 | `listCalendarExportIssues` の `items` の数 |
 | 職員 | 結び付けた職員の名前 | `ExternalCalendar.staff_id` と `Staff.name` | `listExternalCalendars` の `items[].staff_id` と、`listUsers` の `Staff.username` |
 | 期間の開始日、期間の終了日 | 日付 | `ImportRange.range_start`、`range_end` | リクエストの `range_start`、`range_end` |
 | 切り替えの期間 | 期間の最初の日 | `CalendarCutoverState.cutover` の `range_start`（`CalendarImportContainer` の `openCutover`） | `getCalendarCutoverStatus` の `cutover.range_start`。プレビューと取り込みのリクエストでは、`range_start` に入れ、`range_end` を `null` にする |
@@ -32,15 +33,13 @@ web は `BuddyApi.calendars`（`apps/web/src/api/BuddyApi.ts`）で API を呼�
 | 職員が、取り込みを送っている途中である | `useImportCalendar` の mutation の `isPending` が `true`（`CalendarImportContainer` の `isLocked`、`CalendarImportPreview` の `isSubmitting`） |
 | 事業所が、予定の正本を buddy に切り替えている途中である | `getCalendarCutoverStatus` の `cutover` が `null` でない（`CalendarImportContainer` の `openCutover`。`CalendarImportForm` には `cutoverRangeStart` で渡す） |
 | 職員の欄が、空である | `CalendarImportForm` の `staffId` が空。`CalendarImportContainer` は、選んだ職員か、結び付けたカレンダーのある職員の 1 人目を必ず渡す |
-| 期間の開始日の欄が、空である | `range_start` が `YYYY-MM-DD` の形でない（`isImportRangeReady` が false） |
-| 期間の終了日の欄が、空である | `range_end` が `YYYY-MM-DD` の形でない（`isImportRangeReady` が false） |
-| 期間の開始日が、期間の終了日より後の日である | `range_start` が `range_end` より後（`validateImportRange` が `start` のエラーを返す） |
-| 期間が、1 年以内である | `range_end` が、`range_start` の 1 年後の日より前（`validateImportRange` が `end` のエラーを返さない） |
+| 期間の欄が、プレビューできる期間である | `isImportRangeReady(range_start, range_end)` が true。`range_start` と `range_end` が `YYYY-MM-DD` の形で、`validateImportRange` が `start`（開始日が終了日より後）と `end`（1 年を超える）のエラーを返さない。`CalendarImportContainer` は、`openCutover` が `null` でないか、これが true のときに `CalendarImportForm` の `canPreview` を true にする |
 | プレビューの結果に、確認が必要な予定がある | `ImportPreview.needs_review` が空でない |
 | 確認が必要な予定の取り込み方で、「利用者を選ぶ」を選んでいる | 予定の `ReviewChoice.action` が `patient`（`CalendarImportReviewItem` の `choice`） |
 | プレビューの結果に、取り込まない予定がある | `ImportPreview.skipped` が空でない |
 | 確認が必要な予定に、取り込み方を選び終えていない予定がある | `countRemaining(needs_review, choices)` が 1 以上。`ReviewChoice` が無い予定と、`action` が `patient` で `patientId` が無い予定を数える |
 | プレビューの結果に、取り込む予定がある | `ImportPreview.counts.import` が 1 以上 |
+| プレビューの結果に、上書きの予定がある | `ImportPreview.counts.overwrite` が 1 以上 |
 
 - 判定の処理は、次のファイルにある。
   - 送っている途中かと切り替えの間かは、`apps/web/src/features/calendar/components/CalendarImportContainer.tsx` が決める。
@@ -48,7 +47,11 @@ web は `BuddyApi.calendars`（`apps/web/src/api/BuddyApi.ts`）で API を呼�
   - 期間の確認は、`apps/web/src/features/calendar/lib/importRange.ts` の `validateImportRange` と `isImportRangeReady` にある。
   - 選び残りと確定して取り込むを押せるかは、`apps/web/src/features/calendar/lib/importSummary.ts` の `countRemaining` と `canSubmitImport` にある。
   - 取り込み済みの文を出すかは、同じファイルの `isAllImported` にある。
+    - `counts.overwrite` が 1 以上のときは出さない。切り替えの取り込み直しで上書きする予定があるためである。
+  - プレビューするの横の文は、`CalendarImportForm.tsx` の `showsPreviewHint` が決める。
+    - `canPreview` が false で、送っている途中でなく、`cutoverRangeStart` が無く、`range_start` か `range_end` が空のときに出す。
 - 状態は、`CalendarImportContainer.tsx` が、読み込みの失敗、読み込み中、結び付けたカレンダーが無い、入力の表示の順に決める。
+  - 読み込みの失敗と読み込み中は、`listExternalCalendars`、`listUsers`、`getCalendarCutoverStatus` の 3 つで決める。読み直すは、3 つの結果を捨てて読み直す。
   - プレビューの結果は、プレビューしたカレンダーが今選んでいる職員のカレンダーのときだけ出す。
 
 ## 要素の testid
@@ -148,8 +151,8 @@ web は `BuddyApi.calendars`（`apps/web/src/api/BuddyApi.ts`）で API を呼�
 | 状態 | 出す文 | 要因 |
 | --- | --- | --- |
 | 権限が無い | 「この画面を開く権限がありません」 | `getMe` の `policies[].code` に `staff.manage` が無い。web は、ほかの操作を呼ばない |
-| 読み込みの失敗 | 「この操作をする権限がありません。」 | `listExternalCalendars` か `listUsers` が 403 |
-| 読み込みの失敗 | 「結び付けたカレンダーを読み込めませんでした。時間をおいて、読み直してください。」 | `listExternalCalendars` か `listUsers` が 403 以外の失敗。API に届かないときを含む |
+| 読み込みの失敗 | 「この操作をする権限がありません。」 | `listExternalCalendars`、`listUsers`、`getCalendarCutoverStatus` のどれかが 403 |
+| 読み込みの失敗 | 「結び付けたカレンダーを読み込めませんでした。時間をおいて、読み直してください。」 | `listExternalCalendars`、`listUsers`、`getCalendarCutoverStatus` のどれかが 403 以外の失敗。API に届かないときを含む |
 | プレビューの失敗 | 「この操作をする権限がありません。」 | `createCalendarImportPreview` が 403 |
 | プレビューの失敗 | 「Google カレンダーから予定を読めませんでした。時間をおいて、もう一度プレビューしてください。」 | `createCalendarImportPreview` が 502 `calendar_unavailable` |
 | プレビューの失敗 | 「職員 A の Google カレンダーを読めません。カレンダーの共有が外れていないかを、職員に確認してください。」 | `createCalendarImportPreview` が 422 `calendar_unreadable` |

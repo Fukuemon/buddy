@@ -19,6 +19,7 @@ OpenAPI の項目のうち、送る値は `createSchedule`（`POST /v1/facilitie
 | サービスコード | 選択肢の並びと表記 | `ServiceCodeRecord.code`、選んだものは `ScheduleInput.visit.serviceCode` | `listServiceCodes` の `code`、送るのは `visit_info.service_code_id` |
 | タイトル | タイトル | `ScheduleInput.title` | `title` |
 | 利用者の一覧 | 利用者の名前 | `Patient.name`、選んだものは `ScheduleInput.visit.patientId` | `listPatients` の `name`、送るのは `visit_info.patient_id` |
+| 利用者の一覧 | 利用の終了の利用者を除くか | `Patient.ended` | `listPatients`（`include_ended=true`）の `ended_at` |
 | 職員の一覧 | 職員の名前 | `Staff.name`、選んだものは `ScheduleInput.staffId` | `listUsers` の `username`、送るのは `staff_id`、`visit_info.assigned_staff_id` |
 | 職員の一覧 | 休職と退職の職員と、訪問しない職員を除くか | `Staff.status`、`Staff.nonVisiting` | `listUsers` の `Staff.status`、`visits` |
 | 職員の一覧 | 予定を作れる職員か | `Viewer.schedulePolicies`、`Staff.teamId` | `getMe` の `policies` の `code`、`target_user_ids`、`target_team_ids` |
@@ -38,12 +39,18 @@ OpenAPI の項目のうち、送る値は `createSchedule`（`POST /v1/facilitie
 - 職員、利用者、サービスコードの一覧は、`listUsers`、`listPatients`、`listServiceCodes` から取る。
   - 3 つを取り終えるまでフォームを出さない。
   - 名前の絞り込みは画面の中で行い、`username` と `name` の検索の項目は使わない。
+- `listPatients` は、web のサーバーが `include_ended=true` で利用の終了の利用者も含めて取る。
+  - この画面は、`Patient.ended` が `true` の利用者を利用者の候補から除く。
+  - 処理は `apps/web/src/api/activePatients.ts` の `activePatients` にある。
+  - 扱いは [ADR-0005](../../adr/0005-patient-service-end.md) にある。
 - サービスコードの選択肢は、`listServiceCodes` の順に並べ、`code` をそのまま出す。
   - 初期値は、`code` を NFKC で正規化して「訪看I2」に当たるもので、無ければ先頭の `code` である。
     - 処理は `apps/web/src/features/schedule/lib/scheduleFormMapper.ts` の `defaultServiceCode` にある。
   - 提供時間の初期値は、初期値のサービスコードの `service_time_range_end` である。
   - 提供時間の範囲の検証は、選んだ `code` の `service_time_range_start` と `service_time_range_end` で行う。
     - 検証は `apps/web/src/features/schedule/schema/scheduleForm.ts` にある。
+  - 選んだ `code` が空か、`listServiceCodes` に無いときは、「サービスコードを選んでください」を出し、提供時間の範囲を検証しない。
+    - 日時の枠の文は、`scheduleDate`、`startTime`、`endTime`、`serviceCode`、`serviceTime` の誤りの順で最初の 1 つを選ぶ。処理は `apps/web/src/features/schedule/components/ScheduleForm.tsx` にある。
 - 送る前に、web のサーバー（BFF、`apps/web/src/api/http/httpBuddyApi.ts`）がマスタを取り、予定の種類、サービスコード、訪問の区分を ID にする。
   - マスタは `listScheduleTypes`、`listServiceCodes`、`listVisitCategories` で取る。
   - サービスコードは、`listServiceCodes` の `code` と同じ表記で比べる。

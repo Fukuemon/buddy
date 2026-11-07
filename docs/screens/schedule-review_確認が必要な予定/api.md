@@ -11,6 +11,7 @@ web は `BuddyApi.calendars`（`apps/web/src/api/BuddyApi.ts`）で API を呼�
 | --- | --- | --- | --- |
 | ナビゲーション | 「取り込み」「要確認」「連携」を出すか | `Viewer.policyCodes` に `staff.manage` があるか（`hasPermission`） | `getMe` の `policies[].code` に `staff.manage` があるか |
 | ログインした職員 | 職員の名前 | `Viewer.staffName` | `getMe` の `username` |
+| 要確認 | 確認が必要な予定の件数。100 件以上は「99+」 | `calendars.exportIssues` の戻り値の数 | `listCalendarExportIssues` の `items` の数 |
 | 予定の一覧 | 行と並びと、行がどの予定か | `calendars.exportIssues` の戻り値と、`CalendarExportIssue.schedule_id`、`recurring_schedule_id` | `listCalendarExportIssues` の `items` |
 | 予定の日時 | 日付、時刻、繰り返しか | `CalendarExportIssue.date`、`start_time`、`end_time`、`ends_next_day`、`recurring_schedule_id` | `CalendarExportIssue` の `date`、`start_time`、`end_time`、`ends_next_day`、`recurring_schedule_id` |
 | 職員 | 職員の名前 | `CalendarExportIssue.staff_name` | `CalendarExportIssue` の `staff_name` |
@@ -34,7 +35,8 @@ web は `BuddyApi.calendars`（`apps/web/src/api/BuddyApi.ts`）で API を呼�
 - 予定の一覧の `items` は、新しく変わった順に並ぶ。
   - 確認が必要な書き出しは予定ごとに 1 件なので、行は単発の予定の `schedule_id` か、繰り返しの予定の `recurring_schedule_id` で 1 行に決まる。
 - 繰り返しの予定の `date` は、最初の回の日付である。
-- 理由の文は、`error_code`（`precondition_failed`、`not_found`、`forbidden`、`rejected`、`unavailable`、`unappliable`）と `status`（`conflict`、`failed`）で分ける。
+- 理由の文は、`error_code` と `status`（`conflict`、`failed`）で分ける。
+  - `error_code` は、`precondition_failed`、`not_found`、`forbidden`、`rejected`、`unavailable`、`unappliable`、`not_buddy_primary` のどれかである。
   - `precondition_failed` は、`CalendarExportIssue` の `acceptable` と `recurring_schedule_id` でも文を分ける。
   - 単発の予定で `acceptable` が false なのは、buddy でキャンセルした予定である。
 - 予定の確認のダイアログを開くときに、API は呼ばない。
@@ -157,6 +159,8 @@ web は `BuddyApi.calendars`（`apps/web/src/api/BuddyApi.ts`）で API を呼�
     - `rejected`: Google が予定の内容を受け付けなかった
     - `unavailable`: Google に届かないか、一時的なエラーが続いた
     - `unappliable`: Google カレンダーの変更を buddy の予定に読み替えられない
+    - `not_buddy_primary`: 事業所が `buddy_primary` でないので、書かずに `conflict` で保留にした
+      - 扱いは [Google カレンダーとの連携の Design Doc](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/internal/features/calendar/DesignDoc.md) にある。
 - `CalendarExportIssue` は、`CalendarExport` に、予定の職員（`staff_id`、`staff_name`）と日時と `acceptable` を足した項目を持つ。
   - 日時は `date`、`start_time`、`end_time`、`ends_next_day` で表す。
   - `acceptable` は、Google カレンダーで予定が変わったか消えたので書けなかった、buddy でキャンセルしていない単発の予定かを示す。`status` が `conflict` で、`error_code` が `precondition_failed` か `not_found` のときに true になる。
