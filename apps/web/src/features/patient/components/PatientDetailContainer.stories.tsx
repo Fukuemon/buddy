@@ -4,6 +4,7 @@ import { ApiError, type BuddyApi } from '#/api/BuddyApi'
 import { createFakeBuddyApi } from '#/api/fake/fakeBuddyApi'
 import { MOCK_FACILITY_ID } from '#/mocks/scheduleData'
 import {
+  failOnSecondCall,
   failingBuddyApi,
   pendingBuddyApi,
   withAppRouter,
@@ -132,3 +133,15 @@ export const NotFound: Story = {
   args: { patientId: 'missing' },
   parameters: route('missing'),
 }
+
+/** 利用者の詳細を、2 回目だけ読めないフェイクの API を作る。 */
+export const refetchFailingApi = (): BuddyApi => {
+  const base = createFakeBuddyApi()
+  return {
+    ...base,
+    patients: { ...base.patients, get: failOnSecondCall((...args) => base.patients.get(...args)) },
+  }
+}
+
+/** 読み終えた後に読み直して、利用者を読めない。詳細を残し、見出しの下に失敗の文と読み直すを出す。 */
+export const RefetchError: Story = { parameters: route('patient-4', { api: refetchFailingApi() }) }

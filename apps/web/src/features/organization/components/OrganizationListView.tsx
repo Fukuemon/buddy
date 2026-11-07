@@ -2,17 +2,27 @@ import { Button, DotLabel, HelpToggle, Loading, RowTable, RowTableRow } from '@b
 import type { ReactNode } from 'react'
 
 import type { Department, Team } from '#/api/types'
+import { RefetchErrorMessage } from '#/components/page/RefetchErrorMessage'
 import { teamColorDotClassName } from '#/components/teamColor'
 
 /** 部署とチームの画面の状態。ready の部署とチームは、名前の順に並べたものである。 */
 export type OrganizationListViewState =
   | { status: 'loading' }
   | { status: 'error'; message: string }
-  | { status: 'ready'; departments: readonly Department[]; teams: readonly Team[] }
+  | {
+      status: 'ready'
+      departments: readonly Department[]
+      teams: readonly Team[]
+      /** 読み終えた後に読み直して、部署かチームを読めなかったか。 */
+      refetchFailed?: boolean
+    }
 
 export type OrganizationListViewProps = {
   state: OrganizationListViewState
+  /** 一度も読めなかったときに、部署とチームを読み直す。 */
   onRetry: () => void
+  /** 読み終えた後に読めなかったデータだけを読み直す。 */
+  onRefetch?: () => void
   onCreateDepartment: () => void
   onEditDepartment: (department: Department) => void
   onCreateTeam: () => void
@@ -93,6 +103,7 @@ const UnitSection = ({
 export const OrganizationListView = ({
   state,
   onRetry,
+  onRefetch,
   onCreateDepartment,
   onEditDepartment,
   onCreateTeam,
@@ -127,6 +138,9 @@ export const OrganizationListView = ({
     )}
     {state.status === 'ready' && (
       <>
+        {state.refetchFailed === true && onRefetch !== undefined && (
+          <RefetchErrorMessage onRetry={onRefetch} />
+        )}
         <UnitSection
           createLabel="部署を作る"
           emptyMessage="部署はまだありません。"

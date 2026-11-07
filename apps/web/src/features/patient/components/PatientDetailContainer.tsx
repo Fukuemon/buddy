@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { ApiError } from '#/api/BuddyApi'
 import type { Patient, PatientSchedules } from '#/api/types'
 import { queryKeys } from '#/api/queryKeys'
+import { refetchFailedQueries, screenLoadStatus } from '#/api/refetch'
 import { useBuddyApi } from '#/api/useBuddyApi'
 
 import {
@@ -65,13 +66,15 @@ const PatientDetailContent = ({ patientId }: { patientId: Patient['id'] }) => {
   }
   const close = () => openDialog(null)
 
-  const state: PatientDetailViewState = detail.isPending
-    ? { status: 'loading' }
-    : detail.isError
-      ? detail.error instanceof ApiError && detail.error.status === 404
-        ? { status: 'error', message: DETAIL_NOT_FOUND_MESSAGE, canRetry: false }
-        : { status: 'error', message: DETAIL_LOAD_ERROR_MESSAGE, canRetry: true }
-      : { status: 'ready', patient: detail.data }
+  const load = screenLoadStatus([detail])
+  const state: PatientDetailViewState =
+    load.status === 'ready' && detail.data !== undefined
+      ? { status: 'ready', patient: detail.data, refetchFailed: load.refetchFailed }
+      : load.status === 'error'
+        ? detail.error instanceof ApiError && detail.error.status === 404
+          ? { status: 'error', message: DETAIL_NOT_FOUND_MESSAGE, canRetry: false }
+          : { status: 'error', message: DETAIL_LOAD_ERROR_MESSAGE, canRetry: true }
+        : { status: 'loading' }
   const patient = detail.data
   const currentStaff = staff.data?.find((s) => s.id === patient?.assigned_staff_id)
   const activeStaff = staff.data === undefined ? undefined : activeStaffOptions(staff.data)
@@ -82,6 +85,7 @@ const PatientDetailContent = ({ patientId }: { patientId: Patient['id'] }) => {
       <PatientDetailView
         onEdit={() => openDialog('edit')}
         onEnd={() => openDialog('end')}
+        onRefetch={() => refetchFailedQueries([detail])}
         onResume={() => openDialog('resume')}
         onRetry={() =>
           queryClient.resetQueries({ queryKey: queryKeys.patients.detail(facilityId, patientId) })

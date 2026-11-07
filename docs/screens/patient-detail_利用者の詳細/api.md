@@ -99,6 +99,8 @@
 | 12 | メニュー | `site-nav-toggle` |
 | 6 | メニュー | `site-nav-toggle` |
 | 7 | メニュー | `site-nav-toggle` |
+| 10 | 最新の情報の読み込みの失敗の文 | `refetch-error` |
+| 11 | 最新の情報を読み直す | `refetch-retry` |
 
 - 利用の状態の `patient-detail-status-text` は、モックでは値の欄に、実装では値の欄の中の文に付く。どちらも同じ文を指す。
 - メニューの項目の並びの `patient-detail-menu-list` と、編集のフォームの `patient-detail-profile-form` は、構成要素の表に載せないので、この表に載せない。
@@ -144,6 +146,7 @@
 | 利用の再開 | 「この操作をする権限がありません。」 | `resumePatientService` が 403 |
 | 利用の再開 | 「利用を再開できませんでした。時間をおいて、もう一度再開してください。」 | `resumePatientService` が 400、403 のほかの失敗、API に届かない |
 | 利用の再開 | 「サービスと職員を読み込めませんでした。閉じてから、開き直してください。」 | `listUsers` が失敗、API に届かない |
+| 最新の情報の読み込みの失敗 | 「最新の情報を読み込めませんでした。」 | 読み終えた後に読み直して、`getPatient` が失敗、API に届かない。403 と 404 も含む |
 
 - 文を選ぶ処理は `apps/web/src/features/patient/lib/errorMessage.ts` にある。
   - 保存は `patientSubmitErrorMessage`、利用の終了は `endServiceErrorMessage`、利用の再開は `resumeServiceErrorMessage` が選ぶ。
