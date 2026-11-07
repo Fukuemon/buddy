@@ -207,9 +207,11 @@ func (r ChangeRule) detachExceptions(ctx context.Context, source calendar.EventS
 		return 0, nil
 	}
 	u := r.update
-	first, _ := scheduleview.RetainedRange(u.now())
+	// buddy が変えられる回は Projection を保持する期間の中にあるので、その期間だけを読む。終わりを渡さないと、calendarpit は繰り返しを含む一覧を拒む
+	first, last := scheduleview.RetainedRange(u.now())
 	callCtx, cancel := context.WithTimeout(ctx, CallTimeout)
-	events, err := source.Events(callCtx, parent.cal.CalendarID, time.Date(first.Year, first.Month, first.Day, 0, 0, 0, 0, calendar.Tokyo), time.Time{})
+	events, err := source.Events(callCtx, parent.cal.CalendarID, time.Date(first.Year, first.Month, first.Day, 0, 0, 0, 0, calendar.Tokyo),
+		time.Date(last.Year, last.Month, last.Day+1, 0, 0, 0, 0, calendar.Tokyo))
 	cancel()
 	if err != nil {
 		return 0, fmt.Errorf("%w: %w", ErrGoogleUnavailable, err)
