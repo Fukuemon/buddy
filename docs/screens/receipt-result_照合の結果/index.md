@@ -320,7 +320,7 @@ PC の幅で表が画面に収まり、横に送らないときの列の幅と�
 
 | 文言 |
 | --- |
-| 「照合の権限を持つ職員だけが開けます。権限が要るときは、職員の管理の権限を持つ職員に頼んでください。」 |
+| 「照合の権限を持つ職員だけが開けます。権限が要るときは、事業所の管理者に頼んでください。」 |
 
 **カタログ**: [PageForbiddenMessage の ReceiptCheck](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-common-pageforbiddenmessage--receipt-check)
 

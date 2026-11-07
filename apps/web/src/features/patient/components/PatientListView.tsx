@@ -13,6 +13,7 @@ import {
 } from '@buddy/ui'
 
 import type { PatientRecord, StaffRecord } from '#/api/types'
+import { RefetchErrorMessage } from '#/components/page/RefetchErrorMessage'
 
 import { STATUS_FILTER_OPTIONS, type PatientListFilter } from '../lib/filter'
 import { assignedStaffLabel, endedLabel, endedOnText } from '../lib/format'
@@ -21,7 +22,12 @@ import { assignedStaffLabel, endedLabel, endedOnText } from '../lib/format'
 export type PatientListViewState =
   | { status: 'loading' }
   | { status: 'error'; message: string }
-  | { status: 'ready'; patients: readonly PatientRecord[] }
+  | {
+      status: 'ready'
+      patients: readonly PatientRecord[]
+      /** 読み終えた後に読み直して、利用者か職員を読めなかったか。 */
+      refetchFailed?: boolean
+    }
 
 export type PatientListViewProps = {
   state: PatientListViewState
@@ -33,7 +39,10 @@ export type PatientListViewProps = {
   staffOptions: readonly { id: string; name: string }[]
   /** 担当の職員の休職と退職を出すための職員。読み終えるまでは undefined にする。 */
   staffList?: readonly StaffRecord[]
+  /** 一度も読めなかったときに、利用者と職員を読み直す。 */
   onRetry: () => void
+  /** 読み終えた後に読めなかったデータだけを読み直す。 */
+  onRefetch?: () => void
   onCreate: () => void
 }
 
@@ -78,6 +87,7 @@ export const PatientListView = ({
   staffOptions,
   staffList,
   onRetry,
+  onRefetch,
   onCreate,
 }: PatientListViewProps) => (
   <div className="flex flex-col gap-5">
@@ -109,6 +119,9 @@ export const PatientListView = ({
     )}
     {state.status === 'ready' && (
       <>
+        {state.refetchFailed === true && onRefetch !== undefined && (
+          <RefetchErrorMessage onRetry={onRefetch} />
+        )}
         <ListTools>
           <div className="w-full desktop:w-60">
             <SearchBox

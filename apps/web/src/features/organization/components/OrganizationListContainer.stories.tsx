@@ -3,6 +3,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite'
 import type { BuddyApi } from '#/api/BuddyApi'
 import { createFakeBuddyApi } from '#/api/fake/fakeBuddyApi'
 import {
+  failOnSecondCall,
   failingBuddyApi,
   pendingBuddyApi,
   withAppRouter,
@@ -47,3 +48,18 @@ export const Empty: Story = { parameters: route({ api: emptyOrganizationApi() })
 export const Loading: Story = { parameters: route({ api: pendingBuddyApi() }) }
 
 export const LoadError: Story = { parameters: route({ api: failingBuddyApi() }) }
+
+/** 部署を、2 回目だけ読めないフェイクの API を作る。 */
+export const refetchFailingApi = (): BuddyApi => {
+  const base = createFakeBuddyApi()
+  return {
+    ...base,
+    departments: {
+      ...base.departments,
+      list: failOnSecondCall((...args) => base.departments.list(...args)),
+    },
+  }
+}
+
+/** 読み終えた後に読み直して、部署を読めない。一覧を残し、見出しの下に失敗の文と読み直すを出す。 */
+export const RefetchError: Story = { parameters: route({ api: refetchFailingApi() }) }

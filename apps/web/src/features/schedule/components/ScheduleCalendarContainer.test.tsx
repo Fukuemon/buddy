@@ -1,10 +1,17 @@
 import { composeStories } from '@storybook/react-vite'
 import { render, screen } from '@testing-library/react'
-import { describe, expect, it } from 'vite-plus/test'
+import { afterEach, describe, expect, it, vi } from 'vite-plus/test'
+
+import { stubViewport } from '#/test/stubViewport'
 
 import * as stories from './ScheduleCalendarContainer.stories'
 
-const { Day, DaySelfEditOnly, GooglePrimaryCutoverDay, GooglePrimaryDay } = composeStories(stories)
+const { Day, DayAsSecondStaff, DaySelfEditOnly, GooglePrimaryCutoverDay, GooglePrimaryDay, Week } =
+  composeStories(stories)
+
+afterEach(() => {
+  vi.unstubAllGlobals()
+})
 
 describe('ScheduleCalendarContainer', () => {
   it('見る権限のある職員の列だけを出し、編集できる職員の列の枠だけを押せる', async () => {
@@ -42,5 +49,28 @@ describe('ScheduleCalendarContainer', () => {
     expect(await screen.findByTestId('day-grid-staff-staff-1')).toBeInTheDocument()
     expect(screen.queryByTestId('day-grid-slot-staff-1-09:00')).not.toBeInTheDocument()
     expect(screen.queryByTestId('schedule-create-open')).not.toBeInTheDocument()
+  })
+
+  it('幅 768px 未満の週の表示では、時刻の格子の代わりに週の一覧を出す', async () => {
+    stubViewport(false)
+    render(<Week />)
+    expect(await screen.findByTestId('schedule-agenda')).toBeInTheDocument()
+    expect(screen.queryByTestId('schedule-calendar')).not.toBeInTheDocument()
+  })
+
+  it('幅 768px 以上の週の表示では、時刻の格子を出す', async () => {
+    stubViewport(true)
+    render(<Week />)
+    expect(await screen.findByTestId('schedule-calendar')).toBeInTheDocument()
+    expect(screen.queryByTestId('schedule-agenda')).not.toBeInTheDocument()
+  })
+
+  it('日の表示では、ログインした職員の列を左端に置く', async () => {
+    render(<DayAsSecondStaff />)
+    await screen.findByTestId('day-grid-staff-staff-2')
+    expect(screen.getAllByTestId(/^day-grid-staff-/)[0]).toHaveAttribute(
+      'data-testid',
+      'day-grid-staff-staff-2',
+    )
   })
 })

@@ -88,6 +88,12 @@
 | --- | --- | --- |
 | [ADR-0033](0033-e2e-functions-without-page-object.md) | E2E のテストのコードを、Page Object を使わず page を受け取る関数で書き、描画の完了の信号をアプリに足さない | 承認 |
 
+### ローカルの開発環境
+
+| ADR | 題 | Status |
+| --- | --- | --- |
+| [ADR-0034](0034-local-hostnames-with-portless.md) | worktree ごとのローカル環境を、portless で worktree ごとのホスト名の HTTPS の URL で出す | 承認 |
+
 ## ADR の間の依存
 
 次の図は、ADR が、Context で前提にした ADR を指す向きを示す。統合の ADR は、まとめた ADR の前提を引き継ぐので、2 本が互いを指すことがある。
@@ -171,7 +177,7 @@ flowchart TB
     A0031 --> A0024
 ```
 
-- ADR-0026、ADR-0027、ADR-0029、ADR-0032、ADR-0033 は、ほかの ADR を前提にせず、前提にもされないので、図に描かない。
+- ADR-0026、ADR-0027、ADR-0029、ADR-0032、ADR-0033、ADR-0034 は、ほかの ADR を前提にせず、前提にもされないので、図に描かない。
 
 ## 旧番号と新番号
 

@@ -1,4 +1,5 @@
-import { composeStories } from '@storybook/react-vite'
+import { composeStories, composeStory } from '@storybook/react-vite'
+import type { QueryClient } from '@tanstack/react-query'
 import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vite-plus/test'
@@ -55,7 +56,7 @@ describe('AccountProfileContainer', () => {
   it('カレンダーが結び付いていなければ、連携していないことと、連携を頼む相手を出す', async () => {
     render(<NotLinked />)
     expect(await screen.findByTestId('account-profile-calendar-not-linked')).toHaveTextContent(
-      '連携していません。連携は、職員の管理の権限を持つ職員に頼んでください。',
+      '連携していません。連携は、事業所の管理者に頼んでください。',
     )
     expect(screen.queryByTestId('account-profile-calendar-id')).toBeNull()
   })
@@ -74,5 +75,37 @@ describe('AccountProfileContainer', () => {
     )
     await userEvent.click(screen.getByTestId('account-profile-retry'))
     expect(await screen.findByTestId('account-profile-error')).toBeInTheDocument()
+  })
+
+  it('読み終えた後に読み直して読めなければ、表示を残して失敗の文を出し、読み直すで読めたら文を消す', async () => {
+    let client: QueryClient | undefined
+    const Story = composeStory(
+      {
+        ...stories.RefetchError,
+        parameters: {
+          appRouter: {
+            ...stories.default.parameters.appRouter,
+            api: stories.refetchFailingApi(),
+            seed: (queryClient: QueryClient) => {
+              client = queryClient
+            },
+          },
+        },
+      },
+      stories.default,
+    )
+    render(<Story />)
+    expect(await screen.findByTestId('account-profile-name')).toHaveTextContent('青木 一郎')
+
+    await client?.refetchQueries()
+    expect(await screen.findByTestId('refetch-error')).toHaveTextContent(
+      '最新の情報を読み込めませんでした。',
+    )
+    expect(screen.getByTestId('account-profile-name')).toHaveTextContent('青木 一郎')
+    expect(screen.queryByTestId('account-profile-error')).toBeNull()
+
+    await userEvent.click(screen.getByTestId('refetch-retry'))
+    await expect.poll(() => screen.queryByTestId('refetch-error')).toBeNull()
+    expect(screen.getByTestId('account-profile-name')).toHaveTextContent('青木 一郎')
   })
 })

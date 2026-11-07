@@ -55,6 +55,8 @@ const NON_TEXT_PAIRS = [
   ["primary", "surface-canvas"],
   ["danger", "surface"],
   ["danger", "primary-surface"],
+  // 表の見出しの行とデータの行の区切り
+  ["border-strong", "surface"],
   // 入力の欄にマウスを乗せたときの枠
   ["border-field-hover", "surface"],
   ["border-field-hover", "primary-surface"],

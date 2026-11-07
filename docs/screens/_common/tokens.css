@@ -123,6 +123,8 @@
 
   /* 線: field は入力欄と押せる枠の境界で 3:1 以上。border は飾りの区切り */
   --buddy-color-border: var(--buddy-primitive-color-neutral-solid-gray-100);
+  /* 表の見出しの行とデータの行の区切り。DADS のテーブルの見出しの黒の線 */
+  --buddy-color-border-strong: var(--buddy-primitive-color-neutral-black);
   --buddy-color-border-field: var(--buddy-primitive-color-neutral-solid-gray-600);
   /* 入力の欄にマウスを乗せたときの枠。DADS のインプットテキストの hover と同じ黒 */
   --buddy-color-border-field-hover: var(--buddy-primitive-color-neutral-black);

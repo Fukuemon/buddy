@@ -163,9 +163,9 @@ dependencies:
   materialization_repo_url: Fukuemon/agent-harness
   name: design-system
   host: github.com
-  resolved_commit: a0605c1dee3e625fc42b68ea284ea7363813999e
-  resolved_ref: design-system-v0.1.5
-  version: 0.1.5
+  resolved_commit: 61daa518e4a68fc9a75d955416bddd4b5badc387
+  resolved_ref: design-system-v0.1.6
+  version: 0.1.6
   virtual_path: packages/design-system
   is_virtual: true
   package_type: marketplace_plugin
@@ -183,7 +183,10 @@ dependencies:
   - .agents/skills/setup-design-system/references/design-system.md
   - .agents/skills/write-design-system
   - .agents/skills/write-design-system/SKILL.md
+  - .agents/skills/write-design-system/references/accessibility.md
   - .agents/skills/write-design-system/references/catalog.md
+  - .agents/skills/write-design-system/references/document.md
+  - .agents/skills/write-design-system/references/tokens.md
   - .claude/skills/setup-design-system
   - .claude/skills/setup-design-system/SKILL.md
   - .claude/skills/setup-design-system/references/build-static-tokens.mjs
@@ -197,9 +200,12 @@ dependencies:
   - .claude/skills/setup-design-system/references/design-system.md
   - .claude/skills/write-design-system
   - .claude/skills/write-design-system/SKILL.md
+  - .claude/skills/write-design-system/references/accessibility.md
   - .claude/skills/write-design-system/references/catalog.md
+  - .claude/skills/write-design-system/references/document.md
+  - .claude/skills/write-design-system/references/tokens.md
   deployed_file_hashes:
-    .agents/skills/setup-design-system/SKILL.md: sha256:7764854fdae4ffb9c51b23108df1fa8af583744c1852e4ac496cc83bb4388f1d
+    .agents/skills/setup-design-system/SKILL.md: sha256:e999237f84d79c7883981b8afbc407799ac8033597640df17df6eeff40f27bd5
     .agents/skills/setup-design-system/references/build-static-tokens.mjs: sha256:ad285c185e1140661834b0efc3b7cf51368bb2a4e0f59ba243043344b9c3c44a
     .agents/skills/setup-design-system/references/build-static-tokens.test.mjs: sha256:f04aef71a1f8862cc26bf3a5bd5a8fcb1b048de819d6165f1c78c8354ad22f34
     .agents/skills/setup-design-system/references/check-contrast.mjs: sha256:b09a4b9094f062111d51b89bb4850da703dbd6fcc58c44ac9879d8b36bb5826a
@@ -209,9 +215,12 @@ dependencies:
     .agents/skills/setup-design-system/references/check-utilities.mjs: sha256:1cda4ef2d615fa6e03f7664d2a418961f11f976d2f6d207ccf61aafa3832a823
     .agents/skills/setup-design-system/references/check-utilities.test.mjs: sha256:1f546366012ee6e39de55cfe152803c34ecd1943c892b76bd4f97319541393e1
     .agents/skills/setup-design-system/references/design-system.md: sha256:0080f7c5450812606feda83b330b138c88406d0f243567d70ab79d9ef23f05f4
-    .agents/skills/write-design-system/SKILL.md: sha256:df54e3ef0b66e51edac1b9787dea88bd5ee61449db7927801e49b61f445d2003
+    .agents/skills/write-design-system/SKILL.md: sha256:a9660da26fb86307f0a5808739beb375b7097518ea7b5275dfca5315bfdb62ca
+    .agents/skills/write-design-system/references/accessibility.md: sha256:fe50181ec9f649fe17225d8ad845dda600268f088e4dfd57a4c712eec5a25895
     .agents/skills/write-design-system/references/catalog.md: sha256:dfcf3a3d906e0094253a2cd0c4ed0a5b35633f8ca977b5e3f7cb81990c36d5f8
-    .claude/skills/setup-design-system/SKILL.md: sha256:7764854fdae4ffb9c51b23108df1fa8af583744c1852e4ac496cc83bb4388f1d
+    .agents/skills/write-design-system/references/document.md: sha256:ec4e18477a49a6af9ec1da2bd88669f4e7067e88bfc617b9cda743c893d6d56b
+    .agents/skills/write-design-system/references/tokens.md: sha256:216d58447913502aa381165f139122ece03a660ca4cc14c82dd70e655aa1c756
+    .claude/skills/setup-design-system/SKILL.md: sha256:e999237f84d79c7883981b8afbc407799ac8033597640df17df6eeff40f27bd5
     .claude/skills/setup-design-system/references/build-static-tokens.mjs: sha256:ad285c185e1140661834b0efc3b7cf51368bb2a4e0f59ba243043344b9c3c44a
     .claude/skills/setup-design-system/references/build-static-tokens.test.mjs: sha256:f04aef71a1f8862cc26bf3a5bd5a8fcb1b048de819d6165f1c78c8354ad22f34
     .claude/skills/setup-design-system/references/check-contrast.mjs: sha256:b09a4b9094f062111d51b89bb4850da703dbd6fcc58c44ac9879d8b36bb5826a
@@ -221,9 +230,12 @@ dependencies:
     .claude/skills/setup-design-system/references/check-utilities.mjs: sha256:1cda4ef2d615fa6e03f7664d2a418961f11f976d2f6d207ccf61aafa3832a823
     .claude/skills/setup-design-system/references/check-utilities.test.mjs: sha256:1f546366012ee6e39de55cfe152803c34ecd1943c892b76bd4f97319541393e1
     .claude/skills/setup-design-system/references/design-system.md: sha256:0080f7c5450812606feda83b330b138c88406d0f243567d70ab79d9ef23f05f4
-    .claude/skills/write-design-system/SKILL.md: sha256:df54e3ef0b66e51edac1b9787dea88bd5ee61449db7927801e49b61f445d2003
+    .claude/skills/write-design-system/SKILL.md: sha256:a9660da26fb86307f0a5808739beb375b7097518ea7b5275dfca5315bfdb62ca
+    .claude/skills/write-design-system/references/accessibility.md: sha256:fe50181ec9f649fe17225d8ad845dda600268f088e4dfd57a4c712eec5a25895
     .claude/skills/write-design-system/references/catalog.md: sha256:dfcf3a3d906e0094253a2cd0c4ed0a5b35633f8ca977b5e3f7cb81990c36d5f8
-  content_hash: sha256:3379f1fbe28b4d962805fe8bd82d03a91cf259802c300e6c08f736308ad3dc53
+    .claude/skills/write-design-system/references/document.md: sha256:ec4e18477a49a6af9ec1da2bd88669f4e7067e88bfc617b9cda743c893d6d56b
+    .claude/skills/write-design-system/references/tokens.md: sha256:216d58447913502aa381165f139122ece03a660ca4cc14c82dd70e655aa1c756
+  content_hash: sha256:4ffd5263a02f48ef0be4aae5e3b957c615558f4a50b4999654e78f5963c81213
   declared_license: MIT
 - repo_url: fukuemon/agent-harness
   materialization_repo_url: Fukuemon/agent-harness
@@ -1184,7 +1196,7 @@ deployments:
   owners:
   - fukuemon/agent-harness/packages/design-system
   active_owner: fukuemon/agent-harness/packages/design-system
-  content_hash: sha256:7764854fdae4ffb9c51b23108df1fa8af583744c1852e4ac496cc83bb4388f1d
+  content_hash: sha256:e999237f84d79c7883981b8afbc407799ac8033597640df17df6eeff40f27bd5
 - kind: project-relative
   target: claude
   value: .claude/skills/setup-design-system/references/build-static-tokens.mjs
@@ -1526,7 +1538,16 @@ deployments:
   owners:
   - fukuemon/agent-harness/packages/design-system
   active_owner: fukuemon/agent-harness/packages/design-system
-  content_hash: sha256:df54e3ef0b66e51edac1b9787dea88bd5ee61449db7927801e49b61f445d2003
+  content_hash: sha256:a9660da26fb86307f0a5808739beb375b7097518ea7b5275dfca5315bfdb62ca
+- kind: project-relative
+  target: claude
+  value: .claude/skills/write-design-system/references/accessibility.md
+  runtime: null
+  scope: project
+  owners:
+  - fukuemon/agent-harness/packages/design-system
+  active_owner: fukuemon/agent-harness/packages/design-system
+  content_hash: sha256:fe50181ec9f649fe17225d8ad845dda600268f088e4dfd57a4c712eec5a25895
 - kind: project-relative
   target: claude
   value: .claude/skills/write-design-system/references/catalog.md
@@ -1536,6 +1557,24 @@ deployments:
   - fukuemon/agent-harness/packages/design-system
   active_owner: fukuemon/agent-harness/packages/design-system
   content_hash: sha256:dfcf3a3d906e0094253a2cd0c4ed0a5b35633f8ca977b5e3f7cb81990c36d5f8
+- kind: project-relative
+  target: claude
+  value: .claude/skills/write-design-system/references/document.md
+  runtime: null
+  scope: project
+  owners:
+  - fukuemon/agent-harness/packages/design-system
+  active_owner: fukuemon/agent-harness/packages/design-system
+  content_hash: sha256:ec4e18477a49a6af9ec1da2bd88669f4e7067e88bfc617b9cda743c893d6d56b
+- kind: project-relative
+  target: claude
+  value: .claude/skills/write-design-system/references/tokens.md
+  runtime: null
+  scope: project
+  owners:
+  - fukuemon/agent-harness/packages/design-system
+  active_owner: fukuemon/agent-harness/packages/design-system
+  content_hash: sha256:216d58447913502aa381165f139122ece03a660ca4cc14c82dd70e655aa1c756
 - kind: project-relative
   target: claude
   value: .claude/skills/write-e2e-test
@@ -2372,7 +2411,7 @@ deployments:
   owners:
   - fukuemon/agent-harness/packages/design-system
   active_owner: fukuemon/agent-harness/packages/design-system
-  content_hash: sha256:7764854fdae4ffb9c51b23108df1fa8af583744c1852e4ac496cc83bb4388f1d
+  content_hash: sha256:e999237f84d79c7883981b8afbc407799ac8033597640df17df6eeff40f27bd5
 - kind: project-relative
   target: codex
   value: .agents/skills/setup-design-system/references/build-static-tokens.mjs
@@ -2714,7 +2753,16 @@ deployments:
   owners:
   - fukuemon/agent-harness/packages/design-system
   active_owner: fukuemon/agent-harness/packages/design-system
-  content_hash: sha256:df54e3ef0b66e51edac1b9787dea88bd5ee61449db7927801e49b61f445d2003
+  content_hash: sha256:a9660da26fb86307f0a5808739beb375b7097518ea7b5275dfca5315bfdb62ca
+- kind: project-relative
+  target: codex
+  value: .agents/skills/write-design-system/references/accessibility.md
+  runtime: null
+  scope: project
+  owners:
+  - fukuemon/agent-harness/packages/design-system
+  active_owner: fukuemon/agent-harness/packages/design-system
+  content_hash: sha256:fe50181ec9f649fe17225d8ad845dda600268f088e4dfd57a4c712eec5a25895
 - kind: project-relative
   target: codex
   value: .agents/skills/write-design-system/references/catalog.md
@@ -2724,6 +2772,24 @@ deployments:
   - fukuemon/agent-harness/packages/design-system
   active_owner: fukuemon/agent-harness/packages/design-system
   content_hash: sha256:dfcf3a3d906e0094253a2cd0c4ed0a5b35633f8ca977b5e3f7cb81990c36d5f8
+- kind: project-relative
+  target: codex
+  value: .agents/skills/write-design-system/references/document.md
+  runtime: null
+  scope: project
+  owners:
+  - fukuemon/agent-harness/packages/design-system
+  active_owner: fukuemon/agent-harness/packages/design-system
+  content_hash: sha256:ec4e18477a49a6af9ec1da2bd88669f4e7067e88bfc617b9cda743c893d6d56b
+- kind: project-relative
+  target: codex
+  value: .agents/skills/write-design-system/references/tokens.md
+  runtime: null
+  scope: project
+  owners:
+  - fukuemon/agent-harness/packages/design-system
+  active_owner: fukuemon/agent-harness/packages/design-system
+  content_hash: sha256:216d58447913502aa381165f139122ece03a660ca4cc14c82dd70e655aa1c756
 - kind: project-relative
   target: codex
   value: .agents/skills/write-e2e-test

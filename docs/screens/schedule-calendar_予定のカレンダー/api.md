@@ -21,6 +21,8 @@ web の型（`apps/web/src/api/types.ts`）はフェイクの API に合わせ�
 | 予定 | タイトル | `Schedule.title`、`Schedule.kind`、`Schedule.visit.patientId` と `Patient.name` | `listSchedules` の `Schedule.title`、`schedule_type`、`visit_info.patient_id` と、`listPatients` の `Patient.name` |
 | 予定 | 色と、置く列 | `Schedule.staffId` | `listSchedules` の `Schedule.staff_id` |
 | 予定 | キャンセルした予定の印と取り消し線 | `Schedule.cancel` | `listSchedules` の `Schedule.cancel` |
+| 一覧の予定 | 時刻、タイトル、キャンセルした予定の印 | 予定と同じ | 予定と同じ |
+| 一覧の予定 | 職員の色と名前 | `Schedule.staffId` と `Staff.name` | `listSchedules` の `Schedule.staff_id` と、`listUsers` の `Staff.username` |
 | 職員の列 | 職員の名前 | `Staff.name` | `listUsers` の `Staff.username` |
 | 職員の予定の列 | 職員 | `Staff.id` | `listUsers` の `Staff.id` |
 | 予定を作成、空いた時間、時間の枠、Google カレンダーの案内 | 事業所が予定を Google カレンダーで管理しているか | `ScheduleList.sourceMode`。読み直している間は `Facility.sourceMode` | `listSchedules` の `source_mode`、`getFacility` の `Facility.source_mode` |
@@ -147,6 +149,10 @@ web の型（`apps/web/src/api/types.ts`）はフェイクの API に合わせ�
 | 列の職員が、訪問しない職員である | `Staff.nonVisiting` が `true`（`activeStaff` が除く） |
 | ログインした職員が、列の職員の予定を見られる | `canReadScheduleOf(viewer, staff)` が true（`readableStaff` が残す） |
 | ログインした職員が、列の職員の予定を編集できる | `canEditScheduleOf(viewer, staff)` が true（`StaffScheduleDayGrid` の `canCreateFor`） |
+| 表示の単位が、週である | search params の `view` を `resolveCalendarView` で決めた値が `week` |
+| 画面の幅が、768px 以上である | `useIsDesktop()`（`@buddy/ui`。`(min-width: 48rem)` に当たるか）が true |
+| 画面の幅が、768px 未満である | `useIsDesktop()` が false |
+| 予定が、カレンダーに予定を出す条件に当てはまる | カレンダーと職員ごとの日の表に渡す `events`（`toCalendarEvents` の結果）にある。`ScheduleWeekAgenda` が、同じ `events` を `groupWeekAgenda` で日ごとに分ける |
 | 表示の期間が、今日を含む | 週の表示は FullCalendar の `nowIndicator` が今日の列にだけ線を引く。日の表示は `nowForDay(date, now)` が、`date` が今日のときだけ今の時刻を返す |
 
 - 判定の処理は、次のファイルにある。
@@ -156,6 +162,10 @@ web の型（`apps/web/src/api/types.ts`）はフェイクの API に合わせ�
     - `canWriteSchedules` は、`buddy_primary` の事業所か、`google_primary` の事業所で `cutover` が `null` の一覧を読み終えたときに true になる。
     - `canCreate` は、`canWriteSchedules` と `canEditAnySchedule` が true のときに true になる。「予定を作成」と週の表示の空いた時間に使う。
   - 時間の枠は、`canWriteSchedules` と `canEditScheduleOf` が true の列でだけ、`StaffScheduleDayGrid` がボタンにする。
+  - 週の表示で `useIsDesktop()` が false のときは、`ScheduleCalendar` の代わりに `ScheduleWeekAgenda` を描く。週の表示の空いた時間は `ScheduleCalendar` にだけあるので、幅 768px 未満では出ない。
+    - `useIsDesktop()` は、幅が 768px の境を越えると描き直す。`view` を省いたときの表示の単位は、`apps/web/src/features/schedule/schema/scheduleSearch.ts` の `resolveCalendarView` が開いたときの幅で 1 度だけ決める。
+  - 週の一覧の並びは、`apps/web/src/features/schedule/lib/weekAgenda.ts` の `groupWeekAgenda` が決める。
+  - 日の表示の職員の列は、`viewerFirst` が `Viewer.staffId` の職員を左端に移す。
   - 休職と退職の職員と訪問しない職員は、`apps/web/src/features/schedule/lib/activeStaff.ts` の関数が除く。
     - 関数は `activeStaff`、`activeStaffIds`、`excludeInactiveStaffSchedules` である。
   - 予定を見てよいかと編集してよいかは、`apps/web/src/features/schedule/lib/schedulePermission.ts` の関数が決める。
@@ -318,10 +328,14 @@ web の型（`apps/web/src/api/types.ts`）はフェイクの API に合わせ�
 | 34 | 要確認の印 | `schedule-event-{予定の id}-needs-review` |
 | 35 | 切り替え中の案内 | `schedule-calendar-cutover` |
 | 36 | 切り替えの開始 | `schedule-calendar-cutover-started` |
+| 31 | 週の一覧 | `schedule-agenda` |
+| 32 | 一覧の日の見出し | `schedule-agenda-day-{日付}` |
+| 33 | 一覧の予定 | `schedule-event-{予定の id}` |
 
 - 番号は、状態ごとの構成要素の表の番号である。同じ要素が状態ごとに違う番号を持つときは、番号ごとに行を分ける。
 - 空いた日、職員の列、週の表示の今の時刻の線、読み込み中の表示、読み込みの失敗の文には、実装が testid を付けないので、この表に載せない。
 - 職員の予定の列の `day-grid-staff-{職員の id}` は、構成要素の表に要素はあるがセクションを持たない。
+- 職員ごとの日の表の時刻の列の `day-grid-times` は、構成要素の表に番号を持たないので、この表に載せない。
 - 左の欄を閉じるの `site-sidebar-close` は、packages/ui の `Drawer` の `closeButtonTestId` に渡す値である。
 
 ## 状態と失敗の要因

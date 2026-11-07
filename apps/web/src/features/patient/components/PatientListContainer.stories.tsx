@@ -5,6 +5,7 @@ import { createFakeBuddyApi } from '#/api/fake/fakeBuddyApi'
 import { MOCK_FACILITY_ID } from '#/mocks/scheduleData'
 import {
   emptyBuddyApi,
+  failOnSecondCall,
   failingBuddyApi,
   pendingBuddyApi,
   withAppRouter,
@@ -53,3 +54,18 @@ export const Empty: Story = { parameters: route({ api: emptyBuddyApi() }) }
 export const Loading: Story = { parameters: route({ api: pendingBuddyApi() }) }
 
 export const LoadError: Story = { parameters: route({ api: failingBuddyApi() }) }
+
+/** 利用者の一覧を、2 回目だけ読めないフェイクの API を作る。 */
+export const refetchFailingApi = (): BuddyApi => {
+  const base = onLeaveStaffApi()
+  return {
+    ...base,
+    patients: {
+      ...base.patients,
+      listRecords: failOnSecondCall((...args) => base.patients.listRecords(...args)),
+    },
+  }
+}
+
+/** 読み終えた後に読み直して、利用者を読めない。一覧を残し、見出しの下に失敗の文と読み直すを出す。 */
+export const RefetchError: Story = { parameters: route({ api: refetchFailingApi() }) }

@@ -13,7 +13,7 @@ export type RowTableProps = {
   children: ReactNode
 }
 
-const headClassName = 'px-4 py-2 text-left text-caption font-normal text-text-secondary'
+const headClassName = 'px-4 py-2 text-left text-caption font-bold text-text-secondary'
 
 /**
  * 一覧の表。行は RowTableRow で並べる。
@@ -30,7 +30,7 @@ export const RowTable = ({
 }: RowTableProps) => (
   <table className="block w-full border-collapse desktop:table" data-testid={testId}>
     <thead className="hidden desktop:table-header-group">
-      <tr className="border-b border-border">
+      <tr className="border-b border-border-strong">
         <th className={headClassName} scope="col">
           {primaryHeader}
         </th>

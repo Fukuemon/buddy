@@ -4,14 +4,15 @@
 #
 # 使い方: compose/dev-token.sh <メール> [上流の IdP の sub]
 # 上流の IdP の sub を省くと、メールの @ の前の部分にする。職員に結び付けた後は、同じ sub で入る。
-# ポートを変えて起動したときは、compose と同じ環境変数（HYDRA_PUBLIC_PORT、BROKER_PORT、IDP_PORT、WEB_PORT）を渡す。
+# URL かポートを変えて起動したときは、compose と同じ環境変数（HYDRA_PUBLIC_ORIGIN、BROKER_ORIGIN、WEB_ORIGIN か、
+# HYDRA_PUBLIC_PORT、BROKER_PORT、WEB_PORT）を渡す。worktrunk で作った worktree では、mise が .env から渡す。
 set -eu
 
 email=${1:?メールを渡す}
 sub=${2:-${email%@*}}
-hydra=http://localhost:${HYDRA_PUBLIC_PORT:-4444}
-broker=http://localhost:${BROKER_PORT:-8100}
-redirect=http://localhost:${WEB_PORT:-3000}/auth/callback
+hydra=${HYDRA_PUBLIC_ORIGIN:-http://localhost:${HYDRA_PUBLIC_PORT:-4444}}
+broker=${BROKER_ORIGIN:-http://localhost:${BROKER_PORT:-8100}}
+redirect=${WEB_ORIGIN:-http://localhost:${WEB_PORT:-3000}}/auth/callback
 jar=$(mktemp)
 trap 'rm -f "$jar"' EXIT
 

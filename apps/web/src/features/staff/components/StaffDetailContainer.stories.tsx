@@ -163,6 +163,26 @@ export const ReinstateRefused: Story = {
   }),
 }
 
+/** 休職の職員を、ほかの職員の操作で退職にしていたので、4 秒後に復職を拒む。送っている間に、前の失敗の文が消えたことを見られる。 */
+export const SlowReinstateRefused: Story = {
+  args: { staffId: 'staff-4' },
+  parameters: route('staff-4', {
+    api: ((): BuddyApi => {
+      const base = onLeaveApi()
+      return {
+        ...base,
+        staff: {
+          ...base.staff,
+          reinstate: async () => {
+            await wait(4000)
+            throw new ApiError(409, '退職した職員は変えられません', [], 'conflict')
+          },
+        },
+      }
+    })(),
+  }),
+}
+
 /** 部署の選択肢を読み終えるまで 8 秒かかる。読んでいる間も、プロフィールの編集を保存できる。 */
 export const SlowDepartments: Story = {
   parameters: route('staff-2', {
