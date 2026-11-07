@@ -21,7 +21,7 @@
 | [public.calendar_event_projections](public.calendar_event_projections.md) | 19      | Google カレンダーを予定の正本にする事業所の、Google カレンダーの予定の写し（Projection）。1 つの予定を 1 行にする                                              | BASE TABLE |
 | [public.calendar_cutovers](public.calendar_cutovers.md)                   | 9       | 事業所の予定の正本を Google カレンダーから buddy に切り替える作業の記録（切り替え）。事業所ごとに open は 1 つまで                                             | BASE TABLE |
 | [public.calendar_cutover_skips](public.calendar_cutover_skips.md)         | 6       | 切り替えの取り込みで、確認が必要な予定に取り込まないを選んだ記録                                                                                               | BASE TABLE |
-| [public.calendar_event_records](public.calendar_event_records.md)         | 15      | google_primary の事業所で、予定の API が Google カレンダーに書いた予定の、訪問の情報と書き込みの保留の版（ADR-0028）。通常の予定も保留の版を持つために行を作る | BASE TABLE |
+| [public.calendar_event_records](public.calendar_event_records.md)         | 15      | google_primary の事業所で、予定の API が Google カレンダーに書いた予定の、訪問の情報と書き込みの保留の版（ADR-0029）。通常の予定も保留の版を持つために行を作る | BASE TABLE |
 
 ## Relations
 

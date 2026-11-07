@@ -30,7 +30,7 @@ type ProjectionTime struct {
 	Date *civil.Date
 }
 
-// Projection は、Google カレンダーを予定の正本にする事業所（google_primary）の、Google カレンダーの 1 つの予定の写しである（ADR-0028）。
+// Projection は、Google カレンダーを予定の正本にする事業所（google_primary）の、Google カレンダーの 1 つの予定の写しである（ADR-0029）。
 // calendarsync の同期の処理だけが書き、scheduleview だけが読む。繰り返しの予定は展開せず、親の予定と例外の回を別の行に持つ。
 // 説明、場所、参加者、作成者と主催者のメール、添付は持たない。タイトルは利用者名を含むが、表示と照合に要るので持つ。
 type Projection struct {
@@ -174,7 +174,7 @@ func expandParent(r ProjectionDetail, rules EventRules, replaced map[civil.Date]
 	return out
 }
 
-// startsIn は、rd が from から to までの日に始まるか、from の前の日に始まり from に終わる予定かを返す（ADR-0032）。
+// startsIn は、rd が from から to までの日に始まるか、from の前の日に始まり from に終わる予定かを返す（ADR-0033）。
 func startsIn(rd EventReading, from, to civil.Date) bool {
 	if rd.EndsNextDay && rd.Date == dayBefore(from) {
 		return true
@@ -237,7 +237,7 @@ func movedAway(e projectedEvent, recs map[string]RecordedEvent) bool {
 }
 
 // OccurrenceScheduleID は、結び付けたカレンダー externalCalendarID の繰り返しの予定 parentEventID の、元の規則で d に始まる回の、
-// 一覧での予定の ID を返す。展開した回と、回を変えた例外の回の記録の無い行に使い、回を変えても ID が変わらない（ADR-0028）。
+// 一覧での予定の ID を返す。展開した回と、回を変えた例外の回の記録の無い行に使い、回を変えても ID が変わらない（ADR-0029）。
 // ProjectedScheduleID と同じ形で作り、DB の関数 occurrence_schedule_id も同じ値を返す。
 func OccurrenceScheduleID(externalCalendarID, parentEventID string, d civil.Date) string {
 	return hashID(externalCalendarID + "\x00" + parentEventID + "\x00" + d.String())
@@ -304,7 +304,7 @@ func findOccurrence(ctx context.Context, recorded RecordedEvents, facilityID str
 	return projectedEvent{}, false, nil
 }
 
-// RetainedRange は、今の時刻 now の、Projection を保持する期間（前々月の初日から 3 か月後の月末）の最初の日と最後の日を返す（ADR-0028）。
+// RetainedRange は、今の時刻 now の、Projection を保持する期間（前々月の初日から 3 か月後の月末）の最初の日と最後の日を返す（ADR-0029）。
 // 一覧での ID から繰り返しの回を引くときに、親を展開する期間にする。
 func RetainedRange(now time.Time) (civil.Date, civil.Date) {
 	return projectionRange(ListQuery{}, now)

@@ -255,7 +255,7 @@ func TestCalendarExportIssues(t *testing.T) {
 		t.Errorf("書き直し: status = %d, body = %v", rec.Code, body)
 	}
 
-	// Google の内容で解く操作は消した（ADR-0028）
+	// Google の内容で解く操作は消した（ADR-0029）
 	rec, _ = do(t, newCalendarRouter(&fakeCalendars{}), http.MethodPost, "/v1/calendar_exports/"+calendarID+"/acceptances", "")
 	if rec.Code != http.StatusNotFound {
 		t.Errorf("Google の内容で解く: status = %d, want 404", rec.Code)

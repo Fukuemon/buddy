@@ -41,7 +41,7 @@ func sequence(dues ...dueFunc) dueFunc {
 	}
 }
 
-// resident は、ctx が終わるまで、drain で取れるものが無くなるまで due を呼んでから、interval を待つことを繰り返す（ADR-0031）。
+// resident は、ctx が終わるまで、drain で取れるものが無くなるまで due を呼んでから、interval を待つことを繰り返す（ADR-0032）。
 // 待ちとカレンダーを取れなかったときは、ログに書き、interval を待ってから取り直す。
 func resident(ctx context.Context, due dueFunc, interval time.Duration, log *slog.Logger) {
 	t := time.NewTicker(interval)

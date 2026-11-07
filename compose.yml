@@ -1,7 +1,7 @@
 # ローカル環境で全体を起動する構成。手順は CONTRIBUTING.md の Running Locally にある。
 # 値は全て開発用のダミーの値で、ほかの環境で使わない。
 #
-# ブラウザが開く URL は *_ORIGIN の環境変数で受ける（ADR-0034）。未設定のときは http://localhost:<ポート> にする。
+# ブラウザが開く URL は *_ORIGIN の環境変数で受ける（ADR-0035）。未設定のときは http://localhost:<ポート> にする。
 # worktrunk で作った worktree では、.config/wt.toml が portless のホスト名の URL を .env に書く。
 
 name: buddy
@@ -289,7 +289,7 @@ services:
       calendarpit-authorize: { condition: service_completed_successfully }
       gcalhold: { condition: service_healthy }
 
-  # 予定の API と同じイメージの calendar-worker が、書き出しと同期を役割ごとのプロセスで常駐して動かす（ADR-0031）
+  # 予定の API と同じイメージの calendar-worker が、書き出しと同期を役割ごとのプロセスで常駐して動かす（ADR-0032）
   schedule-calendar-export:
     image: ${COMPOSE_PROJECT_NAME}-schedule
     # イメージは schedule-migrate がビルドする

@@ -8,9 +8,9 @@ import (
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/scheduleview"
 )
 
-// ScheduleApp は、予定のハンドラが使う操作である。予定を書く操作は書いた予定を返し、ハンドラは応答を Get と GetRecurring で読み直して作る（ADR-0025）。
+// ScheduleApp は、予定のハンドラが使う操作である。予定を書く操作は書いた予定を返し、ハンドラは応答を Get と GetRecurring で読み直して作る（ADR-0026）。
 // GetProjected は、google_primary の事業所の、一覧での ID が id の Projection の単発の予定を返す。
-// 組み立ての場所が、schedule と scheduleview の操作の型の Do を入れる。入れていない操作を呼ぶと panic する（ADR-0023）。
+// 組み立ての場所が、schedule と scheduleview の操作の型の Do を入れる。入れていない操作を呼ぶと panic する（ADR-0024）。
 type ScheduleApp struct {
 	ListTypes        func(ctx context.Context) ([]schedule.Type, error)
 	Get              func(ctx context.Context, id string) (scheduleview.Detail, error)

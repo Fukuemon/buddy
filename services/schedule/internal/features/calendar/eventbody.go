@@ -21,7 +21,7 @@ import (
 const (
 	PropScheduleID          = "buddyScheduleId"
 	PropRecurringScheduleID = "buddyRecurringScheduleId"
-	// PropVersion は、予定の API が google_primary の事業所で書いた予定の、書き込みの保留の版のキーである（ADR-0028）。
+	// PropVersion は、予定の API が google_primary の事業所で書いた予定の、書き込みの保留の版のキーである（ADR-0029）。
 	PropVersion = "buddyVersion"
 )
 
@@ -54,7 +54,7 @@ var (
 	// ErrUnwritable は、サービスアカウントがカレンダーに予定を書けないことを表す。
 	ErrUnwritable = errors.New("カレンダーに予定を書けません。予定の変更の権限で共有されているかを確認してください")
 	// ErrOutcomeUnknown は、外部が書き込みを受けたかが分からないこと（5xx、通信のエラー、時間切れ）を表す。外部が書いた後に、
-	// 応答だけが失われたことがある。外部が拒んだことが確かな一時的なエラー（429 と、件数の上限による 403）は ErrUnavailable である（ADR-0028）。
+	// 応答だけが失われたことがある。外部が拒んだことが確かな一時的なエラー（429 と、件数の上限による 403）は ErrUnavailable である（ADR-0029）。
 	ErrOutcomeUnknown = errors.New("外部のカレンダーが予定を書いたかを確認できませんでした")
 )
 
@@ -107,7 +107,7 @@ func summary(v *visit.Detail, title *string) string {
 	return ""
 }
 
-// endDate は、予定の枠 s の終わる日を返す。終了が翌日の予定は、予定の日付の翌日に終わる（ADR-0032）。
+// endDate は、予定の枠 s の終わる日を返す。終了が翌日の予定は、予定の日付の翌日に終わる（ADR-0033）。
 // 繰り返しの予定では、最初の回の終わる日である。
 func endDate(s schedule.Slot) civil.Date {
 	if s.EndsNextDay {
