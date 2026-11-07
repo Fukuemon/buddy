@@ -101,6 +101,8 @@ web は `BuddyApi.calendars`（`apps/web/src/api/BuddyApi.ts`）で API を呼�
 | 9 | buddy の内容で書き直す | `calendar-review-rewrite-export-5` |
 | 6 | 予定のカレンダーへ | `page-forbidden-back` |
 | 7 | メニュー | `site-nav-toggle` |
+| 16 | 最新の情報の読み込みの失敗の文 | `refetch-error` |
+| 17 | 最新の情報を読み直す | `refetch-retry` |
 
 - 番号は、状態ごとの構成要素の表の番号である。同じ要素が状態ごとに違う番号を持つときは、番号ごとに行を分ける。
 - 行は、[確認が必要な予定](index.md) の構成の状態の順に並べた。ほかの状態と番号と testid が同じ行は、最初の状態の行だけを置く。
@@ -124,6 +126,7 @@ web は `BuddyApi.calendars`（`apps/web/src/api/BuddyApi.ts`）で API を呼�
 | 書き直しの失敗 | 「この操作をする権限がありません。」 | `createCalendarExportRetry` が 403 |
 | 書き直しの失敗 | 「この予定は、すでに書き直しを始めたか、書き直し終えています。一覧を読み直してください。」 | `createCalendarExportRetry` が 409 `export_not_in_review` か 404 `not_found` |
 | 書き直しの失敗 | 「書き直せませんでした。時間をおいて、もう一度書き直してください。」 | `createCalendarExportRetry` がほかの理由で失敗したか、API に届かない |
+| 最新の情報の読み込みの失敗 | 「最新の情報を読み込めませんでした。」 | 読み終えた後に読み直して、`listCalendarExportIssues`が失敗、API に届かない。403 と 404 も含む |
 
 - 権限が無いときは、web は、ほかの操作を呼ばない。
 - 文を選ぶ処理は、`apps/web/src/features/calendar/lib/errorMessage.ts` にある。

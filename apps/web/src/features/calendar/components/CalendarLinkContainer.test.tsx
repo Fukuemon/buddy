@@ -1,7 +1,9 @@
-import { composeStories } from '@storybook/react-vite'
+import { composeStories, composeStory } from '@storybook/react-vite'
 import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vite-plus/test'
+
+import { refocusWindow } from '#/test/refocusWindow'
 
 import * as stories from './CalendarLinkContainer.stories'
 
@@ -138,5 +140,31 @@ describe('CalendarLinkContainer', () => {
       '職員とカレンダーを読み込めませんでした。時間をおいて、読み直してください。',
     )
     expect(screen.getByTestId('calendar-link-retry')).toBeInTheDocument()
+  })
+})
+
+describe('カレンダーの連携の読み直し', () => {
+  it('読み終えた後に読み直して結び付いたカレンダーを読めなければ、表示を残して失敗の文を出し、読み直すで読めたら消す', async () => {
+    const Story = composeStory(
+      {
+        ...stories.RefetchError,
+        parameters: {
+          ...stories.default.parameters,
+          appRouter: { ...stories.default.parameters.appRouter, api: stories.refetchFailingApi() },
+        },
+      },
+      stories.default,
+    )
+    render(<Story />)
+    await screen.findByTestId('calendar-link-table')
+
+    refocusWindow()
+    expect(await screen.findByTestId('refetch-error')).toHaveTextContent(
+      '最新の情報を読み込めませんでした。',
+    )
+    expect(screen.getByTestId('calendar-link-table')).toBeInTheDocument()
+
+    await userEvent.click(screen.getByTestId('refetch-retry'))
+    await expect.poll(() => screen.queryByTestId('refetch-error')).toBeNull()
   })
 })

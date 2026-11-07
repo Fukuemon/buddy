@@ -5,6 +5,7 @@ import { ApiError, type BuddyApi } from '#/api/BuddyApi'
 import { createFakeBuddyApi } from '#/api/fake/fakeBuddyApi'
 import { MOCK_FACILITY_ID } from '#/mocks/scheduleData'
 import {
+  failOnSecondCall,
   emptyBuddyApi,
   failingBuddyApi,
   pendingBuddyApi,
@@ -142,3 +143,18 @@ export const Cutover: Story = {
     await canvas.findByTestId('calendar-import-review-event-biweekly')
   },
 }
+
+/** 結び付いたカレンダーを、2 回目だけ読めないフェイクの API を作る。 */
+export const refetchFailingApi = (): BuddyApi => {
+  const base = createFakeBuddyApi()
+  return {
+    ...base,
+    calendars: {
+      ...base.calendars,
+      list: failOnSecondCall((...args) => base.calendars.list(...args)),
+    },
+  }
+}
+
+/** 読み終えた後に読み直して、結び付いたカレンダーを読めない。表示を残し、見出しの下に失敗の文と読み直すを出す。 */
+export const RefetchError: Story = { parameters: route({ api: refetchFailingApi() }) }

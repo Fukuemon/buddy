@@ -129,6 +129,8 @@ web は `BuddyApi.calendars`（`apps/web/src/api/BuddyApi.ts`）で API を呼�
 | 13 | 要確認 | `site-nav-review` |
 | 14 | 取り込み | `site-nav-import` |
 | 15 | メニュー | `site-nav-toggle` |
+| 14 | 最新の情報の読み込みの失敗の文 | `refetch-error` |
+| 15 | 最新の情報を読み直す | `refetch-retry` |
 
 - 番号は、状態ごとの構成要素の表の番号である。同じ要素が状態ごとに違う番号を持つときは、番号ごとに行を分ける。
 - 行は、[予定の取り込み](index.md) の構成の状態の順に並べた。ほかの状態と番号と testid が同じ行は、最初の状態の行だけを置く。
@@ -168,6 +170,7 @@ web は `BuddyApi.calendars`（`apps/web/src/api/BuddyApi.ts`）で API を呼�
 | 取り込みの失敗 | 「この職員のカレンダーの結び付けが外れています。画面を読み直してください。予定は 1 件も取り込んでいません。」 | `createCalendarImport` が 404 `not_found` |
 | 取り込みの失敗 | 「利用者の一覧を読み込めませんでした。時間をおいて、もう一度プレビューしてください。」 | 確認が必要な予定があり、`listPatients` が失敗した |
 | 取り込みの失敗 | 「取り込めませんでした。時間をおいて、もう一度取り込んでください。予定は 1 件も取り込んでいません。」 | `createCalendarImport` のほかの失敗。422、502、503、API に届かないときを含む |
+| 最新の情報の読み込みの失敗 | 「最新の情報を読み込めませんでした。」 | 読み終えた後に読み直して、`listExternalCalendars`、`listUsers`、`getCalendarCutoverStatus` のどれかが失敗、API に届かない。403 と 404 も含む |
 
 - 文を選ぶ処理は、`apps/web/src/features/calendar/lib/errorMessage.ts` にある。
   - `loadErrorMessage`、`previewErrorMessage`、`importErrorMessage` が文を選ぶ。

@@ -2,6 +2,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 
 import { queryKeys } from '#/api/queryKeys'
+import { failedBeforeLoad, hasRefetchFailed, refetchFailedQueries } from '#/api/refetch'
 import { useBuddyApi } from '#/api/useBuddyApi'
 
 import {
@@ -33,7 +34,8 @@ export const CalendarCutoverContainer = () => {
   const cancel = useCancelCutover()
   const [isCancelOpen, setIsCancelOpen] = useState(false)
 
-  const failed = [facilityQuery, cutoverQuery].find((query) => query.isError)
+  const screenQueries = [facilityQuery, cutoverQuery]
+  const failed = failedBeforeLoad(screenQueries)
   const completion = complete.data
   const open = cutoverQuery.data?.cutover ?? null
   const state: CalendarCutoverViewState =
@@ -70,7 +72,9 @@ export const CalendarCutoverContainer = () => {
         onComplete={() => {
           if (open !== null) complete.mutate(open.id)
         }}
+        onRefetch={() => refetchFailedQueries(screenQueries)}
         onRetry={retry}
+        refetchFailed={hasRefetchFailed(screenQueries)}
         onStart={() => {
           complete.reset()
           start.mutate()

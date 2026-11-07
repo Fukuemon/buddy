@@ -13,9 +13,39 @@ describe('ReceiptResultView', () => {
     render(<Default />)
     expect(screen.queryByTestId('receipt-summary')).toBeNull()
     expect(screen.getByTestId('receipt-category-mismatch').textContent).toBe('不整合データ（1 件）')
+  })
+
+  it('印のあるセルは、記号を使わず、アイコンと読み上げの重さの名前と範囲を出す', () => {
+    render(<Default />)
     const table = screen.getByTestId('receipt-result-table')
-    expect(within(table).getByText('10:05 ❌')).toBeDefined()
-    expect(within(table).getByText('35 ❌ ❌ (20~29)')).toBeDefined()
+    expect(table.textContent).not.toMatch(/❌|※/)
+    const marked = within(table).getAllByTestId('receipt-marked-cell')
+    const visitDuration = marked.find((el) => el.textContent?.startsWith('35'))
+    expect(visitDuration?.dataset.severity).toBe('mismatch')
+    expect(visitDuration?.textContent).toBe('35（不一致）範囲 20〜29 分')
+    // 不一致と注意の両方に当たるセルにも、アイコンは 1 つだけ置く
+    expect(within(visitDuration!).getAllByTestId('receipt-mark-mismatch')).toHaveLength(1)
+    expect(within(visitDuration!).queryByTestId('receipt-mark-note')).toBeNull()
+    const sr = within(visitDuration!).getByText('（不一致）')
+    expect(sr.classList.contains('sr-only')).toBe(true)
+  })
+
+  it('確認することの列に、行の判定の文を並べる', () => {
+    render(<Default />)
+    const findings = screen.getAllByTestId('receipt-findings').map((el) => el.textContent)
+    expect(findings).toEqual([
+      '開始時間が予定と違う実績の終了時間が範囲（20〜29 分）の外実績の提供時間 35 分が範囲（20〜29 分）の外加算が規則に合わない提供時間が予定と違う終了時間が予定と違う',
+      '実績が無い',
+      '予定が無い',
+      '提供時間が予定と違う終了時間が予定と違う',
+    ])
+  })
+
+  it('表の上に、2 つの印の意味を出す', () => {
+    render(<Default />)
+    expect(screen.getByTestId('receipt-mark-legend').textContent).toBe(
+      '不一致: 規則に合わない注意: 範囲の中だが予定と違う',
+    )
   })
 
   it('片側の無い行は、無い側のセルを読み上げの「データなし」だけにする', () => {

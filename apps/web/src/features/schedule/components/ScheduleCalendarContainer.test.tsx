@@ -1,6 +1,9 @@
-import { composeStories } from '@storybook/react-vite'
+import { composeStories, composeStory } from '@storybook/react-vite'
 import { render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vite-plus/test'
+
+import { refocusWindow } from '#/test/refocusWindow'
 
 import { stubViewport } from '#/test/stubViewport'
 
@@ -72,5 +75,32 @@ describe('ScheduleCalendarContainer', () => {
       'data-testid',
       'day-grid-staff-staff-2',
     )
+  })
+})
+
+describe('予定のカレンダーの読み直し', () => {
+  it('読み終えた後に読み直して予定を読めなければ、表示を残して失敗の文を出し、読み直すで読めたら消す', async () => {
+    stubViewport(true)
+    const Story = composeStory(
+      {
+        ...stories.RefetchError,
+        parameters: {
+          ...stories.default.parameters,
+          appRouter: { ...stories.default.parameters.appRouter, api: stories.refetchFailingApi() },
+        },
+      },
+      stories.default,
+    )
+    render(<Story />)
+    await screen.findByTestId('schedule-calendar')
+
+    refocusWindow()
+    expect(await screen.findByTestId('refetch-error')).toHaveTextContent(
+      '最新の情報を読み込めませんでした。',
+    )
+    expect(screen.getByTestId('schedule-calendar')).toBeInTheDocument()
+
+    await userEvent.click(screen.getByTestId('refetch-retry'))
+    await expect.poll(() => screen.queryByTestId('refetch-error')).toBeNull()
   })
 })
