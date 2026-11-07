@@ -4,6 +4,8 @@
 OpenAPI の項目は、`services/schedule/openapi.yaml` の名前で書く。  
 web の型（`apps/web/src/api/types.ts`）はフェイクの API に合わせた形で、OpenAPI と名前が違う。
 
+## 値の対応
+
 | 要素名 | 表示する値 | web の型の項目 | OpenAPI の項目 |
 | --- | --- | --- | --- |
 | ログインした職員 | 職員の名前 | `Viewer.staffName` | `getMe` の `username` |
@@ -104,6 +106,196 @@ web の型（`apps/web/src/api/types.ts`）はフェイクの API に合わせ�
   - 写すのは `apps/web/src/api/http/scheduleMapper.ts` の `fromApiMe` である。
 - 出し分けは表示だけに使う。
   - 予定を拒むのは、予定の API の `listSchedules` と `createSchedule` である。
+
+## 条件の対応
+
+| 条件 | 判定に使う値 |
+| --- | --- |
+| ログインした職員が、職員の管理の権限を持つ | `Viewer.policyCodes` に `staff.manage` がある（`hasPermission(viewer, STAFF_MANAGE)`） |
+| 表示する職員の絞り込みが、全員である | 選んだ職員（search params の `staff` から、`activeStaffIds` で休職と退職の職員と訪問しない職員を、`readableStaffIds` で予定を見てよくない職員と職員の一覧に無い職員を除いた配列）が空（`StaffFilterSidebar` の `isAll`、`ScheduleCalendarContainer` の `selectedStaffIds`） |
+| 表示する職員の絞り込みが、ログインした職員だけである | 選んだ職員が `Viewer.staffId` の 1 人だけか、選んだ職員が空で、職員の絞り込みに出す職員が 1 人だけ（`StaffFilterSidebar` の `isOnlyViewer`） |
+| ログインした職員が、職員の一覧にいる | 職員の絞り込みに出す職員（`activeStaff` と `readableStaff` で絞った `Staff[]`）に、`Viewer.staffId` の職員がいる（`StaffFilterSidebar` の `canShowOnlyViewer`） |
+| 事業所のチームの一覧を読めている | `teamListQueryOptions` の結果（`Team[]`）がある。無い間は空の配列として扱う |
+| チームに、ログインした職員が予定を見られる職員がいる | `readableStaff` で絞った職員に、`Staff.teamId` がチームの `Team.id` の職員がいる |
+| チームが、職員のいないチームである | `activeStaff` で絞った職員に、`Staff.teamId` がチームの `Team.id` の職員がいない |
+| 職員の名前の検索が、空である | `StaffFilterSidebar` の `keyword`（入力した語の全角と半角をそろえ、空白を除いた値）が空の文字列 |
+| チームに、名前に検索の語を含む職員がいる | `StaffFilterSidebar` の `teamRows` の `shownMembers` が空でない |
+| 事業所の職員の一覧を読めている | `staffListQueryOptions` の結果（`Staff[]`）がある。無い間は空の配列として扱う |
+| チェックボックスの職員が、職員の絞り込みに出すチームに属する | `Staff.teamId` が、職員の絞り込みに出すチームの `Team.id` のどれか |
+| チェックボックスの職員が、休職か退職の職員である | `Staff.status` がある（`isActiveStaff` が false） |
+| チェックボックスの職員が、訪問しない職員である | `Staff.nonVisiting` が `true`（`isActiveStaff` が false） |
+| ログインした職員が、チェックボックスの職員の予定を見られる | `canReadScheduleOf(viewer, staff)` が true |
+| チェックボックスの職員の名前が、検索の語を含む | `Staff.name` の全角と半角をそろえ、空白を除いた値が `keyword` を含む |
+| ログインした職員が、誰かの予定を編集できる | `Viewer.schedulePolicies` に、`code` が `.edit` で終わる権限がある（`canEditAnySchedule`） |
+| 事業所が、予定の正本を buddy に切り替えている途中である | `google_primary` の事業所で、`ScheduleList.cutover` が `null` でない（`listSchedules` の `cutover`）。`buddy_primary` の事業所では読まず、`null` として扱う |
+| 事業所が、予定を buddy で管理している | `ScheduleList.sourceMode` があればそれが、無ければ `Facility.sourceMode` が `buddy_primary` |
+| 表示の期間の予定を、読み終えている | `scheduleListQueryOptions` の結果（`ScheduleList`）がある。日付を移ると query のキーが変わるので、読み直す間は無い |
+| 予定が、表示の期間に重なる | web のサーバーが、`ScheduleListParams` の `from` と `to` に重なる予定だけを `ScheduleList.schedules` に入れる |
+| 表示する職員の絞り込みが、予定の職員を含む | 選んだ職員に `Schedule.staffId` がある。web のサーバーが `ScheduleListParams` の `staffIds` で絞る |
+| 予定の職員が、休職か退職の職員である | `Schedule.staffId` の職員の `Staff.status` がある（`excludeInactiveStaffSchedules` が除く） |
+| 予定の職員が、訪問しない職員である | `Schedule.staffId` の職員の `Staff.nonVisiting` が `true`（`excludeInactiveStaffSchedules` が除く） |
+| ログインした職員が、予定の職員の予定を見られる | `listSchedules` が返す予定である。予定の API が、閲覧の権限で見てよい職員の予定だけを返す |
+| 予定が、キャンセルした予定である | `Schedule.cancel` がある |
+| 職員が、「キャンセルした予定を出す」にチェックを入れている | search params の `cancelled` が `true`。`ScheduleListParams` の `includeCancelled` に渡す |
+| 予定が、確認が必要な予定である | `Schedule.reviewReason` がある（`ScheduleCalendarEvent.needsReview`） |
+| 表示する職員のカレンダーに、予定が最新でない可能性のあるカレンダーがある | `calendarSyncProblemsOf(ScheduleList.calendarSyncs, now)` が空でない |
+| 表示する職員の予定に、確認が必要な予定がある | `ScheduleList.needsReview` が空でない |
+| 表示する職員の絞り込みが、列の職員を含む | 選んだ職員に `Staff.id` がある（`ScheduleCalendarContainer` の `visibleStaff`） |
+| 列の職員が、休職か退職の職員である | `Staff.status` がある（`activeStaff` が除く） |
+| 列の職員が、訪問しない職員である | `Staff.nonVisiting` が `true`（`activeStaff` が除く） |
+| ログインした職員が、列の職員の予定を見られる | `canReadScheduleOf(viewer, staff)` が true（`readableStaff` が残す） |
+| ログインした職員が、列の職員の予定を編集できる | `canEditScheduleOf(viewer, staff)` が true（`StaffScheduleDayGrid` の `canCreateFor`） |
+| 表示の期間が、今日を含む | 週の表示は FullCalendar の `nowIndicator` が今日の列にだけ線を引く。日の表示は `nowForDay(date, now)` が、`date` が今日のときだけ今の時刻を返す |
+
+- 判定の処理は、次のファイルにある。
+  - 職員の絞り込みの出し分けと押せるかは、`StaffFilterSidebar.tsx` と `StaffFilterSidebarContainer.tsx` にある。
+    - どちらも `apps/web/src/features/schedule/components/` にある。
+  - 予定を作る操作、職員の列、時間の枠の出し分けは、`ScheduleCalendarContainer.tsx` にある。
+    - `canWriteSchedules` は、`buddy_primary` の事業所か、`google_primary` の事業所で `cutover` が `null` の一覧を読み終えたときに true になる。
+    - `canCreate` は、`canWriteSchedules` と `canEditAnySchedule` が true のときに true になる。「予定を作成」と週の表示の空いた時間に使う。
+  - 時間の枠は、`canWriteSchedules` と `canEditScheduleOf` が true の列でだけ、`StaffScheduleDayGrid` がボタンにする。
+  - 休職と退職の職員と訪問しない職員は、`apps/web/src/features/schedule/lib/activeStaff.ts` の関数が除く。
+    - 関数は `activeStaff`、`activeStaffIds`、`excludeInactiveStaffSchedules` である。
+  - 予定を見てよいかと編集してよいかは、`apps/web/src/features/schedule/lib/schedulePermission.ts` の関数が決める。
+    - 関数は `canReadScheduleOf`、`canEditScheduleOf`、`canEditAnySchedule` である。
+- 通知は、`apps/web/src/features/schedule/components/ScheduleSourceNotices.tsx` が、`google_primary` の事業所でだけ描く。
+  - Google カレンダーの案内、同期の警告、確認が必要な予定の通知の事業所の判定は、状態で決まるので、条件の表に載せない。
+- ナビゲーションの項目は、`apps/web/src/components/layout/SiteNav.tsx` の `siteNavGroups` が、職員の管理の権限で出し分ける。
+  - 要確認の件数の印は、`apps/web/src/features/calendar/components/CalendarReviewBadgeContainer.tsx` が出し分ける。
+
+## 要素の testid
+
+| 番号 | 要素名 | testid |
+| --- | --- | --- |
+| 1 | ナビゲーション | `site-nav` |
+| 2 | アカウント | `viewer-menu-open` |
+| 3 | ログアウト | `viewer-logout` |
+| 4 | 職員の絞り込み | `staff-filter-sidebar` |
+| 5 | 全員を表示 | `staff-filter-reset` |
+| 6 | チームのチェックボックス | `staff-filter-team-{チームの id}` |
+| 7 | 職員のチェックボックス | `staff-filter-staff-{職員の id}` |
+| 6 | 前へ | `calendar-prev` |
+| 8 | 前へ | `calendar-prev` |
+| 7 | 今日 | `calendar-today` |
+| 9 | 今日 | `calendar-today` |
+| 8 | 次へ | `calendar-next` |
+| 10 | 次へ | `calendar-next` |
+| 9 | ミニカレンダー | `mini-calendar` |
+| 11 | ミニカレンダー | `mini-calendar` |
+| 10 | 表示の単位 | `calendar-view` |
+| 12 | 表示の単位 | `calendar-view` |
+| 11 | 予定を作成 | `schedule-create-open` |
+| 13 | 予定を作成 | `schedule-create-open` |
+| 32 | 予定を作成 | `schedule-create-open` |
+| 35 | 予定を作成 | `schedule-create-open` |
+| 14 | カレンダー | `schedule-calendar` |
+| 15 | 予定 | `schedule-event-{予定の id}` |
+| 18 | 予定 | `schedule-event-{予定の id}` |
+| 13 | 表示の期間の見出し | `calendar-title` |
+| 15 | 表示の期間の見出し | `calendar-title` |
+| 16 | 表示の期間の見出し | `calendar-title` |
+| 17 | 表示の期間の見出し | `calendar-title` |
+| 19 | 表示の期間の見出し | `calendar-title` |
+| 16 | 自分だけ | `staff-filter-only-me` |
+| 17 | 自分だけ | `staff-filter-only-me` |
+| 18 | 自分だけ | `staff-filter-only-me` |
+| 19 | 自分だけ | `staff-filter-only-me` |
+| 21 | 自分だけ | `staff-filter-only-me` |
+| 14 | 職員の名前の検索 | `staff-filter-search` |
+| 17 | 職員の名前の検索 | `staff-filter-search` |
+| 18 | 職員の名前の検索 | `staff-filter-search` |
+| 19 | 職員の名前の検索 | `staff-filter-search` |
+| 20 | 職員の名前の検索 | `staff-filter-search` |
+| 22 | 職員の名前の検索 | `staff-filter-search` |
+| 15 | キャンセルした予定を出す | `calendar-show-cancelled` |
+| 18 | キャンセルした予定を出す | `calendar-show-cancelled` |
+| 19 | キャンセルした予定を出す | `calendar-show-cancelled` |
+| 20 | キャンセルした予定を出す | `calendar-show-cancelled` |
+| 21 | キャンセルした予定を出す | `calendar-show-cancelled` |
+| 23 | キャンセルした予定を出す | `calendar-show-cancelled` |
+| 16 | ミニカレンダーの月 | `mini-calendar-month` |
+| 19 | ミニカレンダーの月 | `mini-calendar-month` |
+| 20 | ミニカレンダーの月 | `mini-calendar-month` |
+| 21 | ミニカレンダーの月 | `mini-calendar-month` |
+| 22 | ミニカレンダーの月 | `mini-calendar-month` |
+| 24 | ミニカレンダーの月 | `mini-calendar-month` |
+| 25 | ミニカレンダーの月 | `mini-calendar-month` |
+| 17 | 前の月 | `mini-calendar-prev` |
+| 20 | 前の月 | `mini-calendar-prev` |
+| 21 | 前の月 | `mini-calendar-prev` |
+| 22 | 前の月 | `mini-calendar-prev` |
+| 23 | 前の月 | `mini-calendar-prev` |
+| 25 | 前の月 | `mini-calendar-prev` |
+| 26 | 前の月 | `mini-calendar-prev` |
+| 18 | 次の月 | `mini-calendar-next` |
+| 21 | 次の月 | `mini-calendar-next` |
+| 22 | 次の月 | `mini-calendar-next` |
+| 23 | 次の月 | `mini-calendar-next` |
+| 24 | 次の月 | `mini-calendar-next` |
+| 26 | 次の月 | `mini-calendar-next` |
+| 27 | 次の月 | `mini-calendar-next` |
+| 19 | ミニカレンダーの日 | `mini-calendar-day-{日付}` |
+| 22 | ミニカレンダーの日 | `mini-calendar-day-{日付}` |
+| 23 | ミニカレンダーの日 | `mini-calendar-day-{日付}` |
+| 24 | ミニカレンダーの日 | `mini-calendar-day-{日付}` |
+| 25 | ミニカレンダーの日 | `mini-calendar-day-{日付}` |
+| 27 | ミニカレンダーの日 | `mini-calendar-day-{日付}` |
+| 28 | ミニカレンダーの日 | `mini-calendar-day-{日付}` |
+| 20 | 日付と絞り込み | `site-sidebar-open` |
+| 23 | 日付と絞り込み | `site-sidebar-open` |
+| 24 | 日付と絞り込み | `site-sidebar-open` |
+| 25 | 日付と絞り込み | `site-sidebar-open` |
+| 26 | 日付と絞り込み | `site-sidebar-open` |
+| 28 | 日付と絞り込み | `site-sidebar-open` |
+| 29 | 日付と絞り込み | `site-sidebar-open` |
+| 21 | 左の欄を閉じる | `site-sidebar-close` |
+| 24 | 左の欄を閉じる | `site-sidebar-close` |
+| 25 | 左の欄を閉じる | `site-sidebar-close` |
+| 26 | 左の欄を閉じる | `site-sidebar-close` |
+| 27 | 左の欄を閉じる | `site-sidebar-close` |
+| 29 | 左の欄を閉じる | `site-sidebar-close` |
+| 30 | 左の欄を閉じる | `site-sidebar-close` |
+| 22 | 要確認 | `site-nav-review` |
+| 25 | 要確認 | `site-nav-review` |
+| 26 | 要確認 | `site-nav-review` |
+| 27 | 要確認 | `site-nav-review` |
+| 28 | 要確認 | `site-nav-review` |
+| 30 | 要確認 | `site-nav-review` |
+| 31 | 要確認 | `site-nav-review` |
+| 23 | 取り込み | `site-nav-import` |
+| 26 | 取り込み | `site-nav-import` |
+| 27 | 取り込み | `site-nav-import` |
+| 28 | 取り込み | `site-nav-import` |
+| 29 | 取り込み | `site-nav-import` |
+| 31 | 取り込み | `site-nav-import` |
+| 32 | 取り込み | `site-nav-import` |
+| 17 | メニュー | `site-nav-toggle` |
+| 24 | メニュー | `site-nav-toggle` |
+| 27 | メニュー | `site-nav-toggle` |
+| 28 | メニュー | `site-nav-toggle` |
+| 29 | メニュー | `site-nav-toggle` |
+| 30 | メニュー | `site-nav-toggle` |
+| 32 | メニュー | `site-nav-toggle` |
+| 33 | メニュー | `site-nav-toggle` |
+| 14 | 職員ごとの日の表 | `staff-schedule-day-grid` |
+| 16 | 職員の予定の列 | `day-grid-staff-{職員の id}` |
+| 17 | 時間の枠 | `day-grid-slot-{職員の id}-{HH:mm}` |
+| 33 | 時間の枠 | `day-grid-slot-{職員の id}-{HH:mm}` |
+| 20 | 今の時刻の線 | `day-grid-now-{職員の id}` |
+| 24 | キャンセルした予定 | `schedule-event-{予定の id}` |
+| 13 | Google カレンダーの案内 | `schedule-calendar-google-primary` |
+| 30 | 同期の警告 | `schedule-calendar-sync-warning` |
+| 31 | 同期の警告の行 | `schedule-calendar-sync-warning-{カレンダーの id}` |
+| 32 | 確認が必要な予定の通知 | `schedule-calendar-needs-review` |
+| 33 | 通知の予定 | `schedule-calendar-needs-review-{予定の id}` |
+| 34 | 要確認の印 | `schedule-event-{予定の id}-needs-review` |
+| 35 | 切り替え中の案内 | `schedule-calendar-cutover` |
+| 36 | 切り替えの開始 | `schedule-calendar-cutover-started` |
+
+- 番号は、状態ごとの構成要素の表の番号である。同じ要素が状態ごとに違う番号を持つときは、番号ごとに行を分ける。
+- 空いた日、職員の列、週の表示の今の時刻の線、読み込み中の表示、読み込みの失敗の文には、実装が testid を付けないので、この表に載せない。
+- 職員の予定の列の `day-grid-staff-{職員の id}` は、構成要素の表に要素はあるがセクションを持たない。
+- 左の欄を閉じるの `site-sidebar-close` は、packages/ui の `Drawer` の `closeButtonTestId` に渡す値である。
 
 ## 状態と失敗の要因
 
