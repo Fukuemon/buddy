@@ -20,8 +20,8 @@ import * as Stories from './Button.stories'
 ## Do
 
 - 主のボタン（`variant="primary"`）は、1 つの画面かダイアログに 1 つまでにする
-- 入力が条件を満たさない間に押せなくするときは `disabled` にし、押せるようにする条件の文をボタンのすぐ近くに出して `aria-describedby` で結び付ける。ダイアログの確定のボタンは、`InputDialog` と `ConfirmDialog` の `submitHint` に条件の文を渡す
-- 送っている間と、選択肢やデータを読み込む間は、条件の文を出さずに押せなくし、待ちを `isLoading` で示す
+- 入力が条件を満たさない間に押せなくするときは `disabled` にし、押せるようにする条件の文をボタンのすぐ近くに出して、`aria-describedby` でボタンに結び付ける。ダイアログの確定のボタンは、`InputDialog` と `ConfirmDialog` の `submitHint` に条件の文を渡す
+- 送っている間と、選択肢やデータを読み込む間は、条件の文を出さずに押せなくし、待ちを `isLoading` か、次の項目の `BusyLabel` で示す
 - データを失う操作は、`variant="destructive"` のボタンで確認のダイアログを開き、確認のダイアログの確定のボタンを `variant="danger"` にする。文言は操作の動詞（「外す」「書き直す」）にする
 - 文字を読ませたまま待たせるときは、子に `BusyLabel` を渡し、文字の前に回転の印を出す
 
