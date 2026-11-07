@@ -7,7 +7,8 @@ import { signInAtBroker } from '../../screens/login'
 // 照合の API は、compose/receipt-calendars.json の森のカレンダーを calendarpit から読む。
 const CALENDAR_MONTH = '2026-11'
 const ACTOR = `${LOGIN_STAFF.name}（マネージャー）`
-const CHECK_URL = '**/v1/checks'
+/** web の BFF の server function。照合するの要求は、ブラウザからここへ送る。 */
+const SERVER_FN_URL = '**/_serverFn/**'
 const RETRY_MESSAGE = '照合できませんでした。時間をおいて、もう一度照合してください。'
 
 const signIn = async (page: Page) => {
@@ -16,7 +17,8 @@ const signIn = async (page: Page) => {
 }
 
 /**
- * 照合の API への要求を、release を呼ぶまで止める。送っている途中に入力を変える操作を撮るためである。
+ * 照合の要求（実績の CSV を含む server function の要求）を、release を呼ぶまで止める。
+ * 送っている途中に入力を変える操作を撮るためである。answered は、止めた要求に answer が応じ終えたら解決する。
  *
  * @param answer 止めた要求を release の後に流す処理
  */
@@ -25,11 +27,20 @@ const holdCheck = async (page: Page, answer: (route: Route) => Promise<void>) =>
   const released = new Promise<void>((resolve) => {
     release = resolve
   })
-  await page.route(CHECK_URL, async (route) => {
+  let answered = () => {}
+  const done = new Promise<void>((resolve) => {
+    answered = resolve
+  })
+  await page.route(SERVER_FN_URL, async (route) => {
+    if (!(route.request().postDataBuffer()?.includes('name="visits"') ?? false)) {
+      await route.fallback()
+      return
+    }
     await released
     await answer(route)
+    answered()
   })
-  return release
+  return { release, answered: done }
 }
 
 /** 対象の月と実績の CSV を選んで、照合するを押す。 */
@@ -63,8 +74,8 @@ test.describe('照合', () => {
             await expect(page.getByTestId('receipt-check-submit')).toBeVisible()
             await step('照合の画面を開いている')
 
-            await step('（撮影のため、照合の API への要求を、実績の CSV を選び直すまで止める）')
-            const release = await holdCheck(page, (route) => route.continue())
+            await step('（撮影のため、照合の要求を、実績の CSV を選び直すまで止める）')
+            const held = await holdCheck(page, (route) => route.continue())
 
             await step('対象の月に 2026-11 を入れ、実績の CSV を選び、「照合する」を押す')
             await submit(page)
@@ -83,8 +94,8 @@ test.describe('照合', () => {
               await check('回転するインジケーターが残り、「照合する」は押せないまま')
             }
 
-            await step('（撮影のため、止めた要求を照合の API へ流す）')
-            release()
+            await step('（撮影のため、止めた照合の要求を流す）')
+            held.release()
             await expect(page).toHaveURL(/\/receipt\/result$/)
             await expect(page.getByTestId('receipt-result')).toContainText(
               '2026 年 11 月の Google カレンダー',
@@ -112,9 +123,9 @@ test.describe('照合', () => {
             await step('照合の画面を開いている')
 
             await step(
-              '（撮影のため、照合の API への要求を、実績の CSV を選び直すまで止め、500 を返す）',
+              '（撮影のため、照合の要求を、実績の CSV を選び直すまで止め、500 を返す）',
             )
-            const release = await holdCheck(page, (route) =>
+            const held = await holdCheck(page, (route) =>
               route.fulfill({ status: 500, contentType: 'application/json', body: '{}' }),
             )
 
@@ -134,10 +145,9 @@ test.describe('照合', () => {
               await check('回転するインジケーターが残り、「照合する」は押せないまま')
             }
 
-            await step('（撮影のため、止めた要求に照合の API の 500 を返す）')
-            const responded = page.waitForResponse(CHECK_URL)
-            release()
-            await responded
+            await step('（撮影のため、止めた照合の要求に 500 を返す）')
+            held.release()
+            await held.answered
             const error = page.getByTestId('receipt-check-error')
             if (isBefore) {
               await expect(button).not.toHaveAttribute('aria-busy')
