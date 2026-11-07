@@ -578,7 +578,8 @@
 訪問の予定だけが持つ。
 
 **値のソース**: 「提供時間（分）」。  
-初期値は、予定の開始の時刻から終了の時刻までの分。
+初期値は、予定の開始の時刻から終了の時刻までの分。  
+利用者を替えてサービスコードが替わると、替わったコードの提供時間の範囲の上限にする。
 
 **カタログ**: [ScheduleEditModalContainer の Visit](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-scheduleeditmodalcontainer--visit)
 
@@ -624,11 +625,22 @@
 並びは、「予防看I2」…「医」「訪看I2」…「訪看I5・2超」のようになる。  
 コードごとの提供時間の範囲も、事業所のサービスコードの一覧の値を使う。
 
-初期値は予定のサービスコード。
+初期値は予定のサービスコード。  
+予定の利用者のサービスコードと違っても、開いたときは予定のサービスコードのままにする。
 
-**カタログ**: [ServiceCodeRadioGroup の Default](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-servicecoderadiogroup--default)
+利用者を替えると、替えた後の利用者のサービスコードにする。
+
+- 職員がサービスコードを選んだ後は、利用者を替えても替えない。
+- 利用者のサービスコードが事業所のサービスコードの一覧に無ければ、「訪看I2」にする。
+  - 一覧に「訪看I2」が無ければ、一覧の先頭のサービスコードにする。
+  - 全角と半角の数字の違いは問わずに探す。予定の作成の初期値と同じである。
+- 替え方は、[利用者の一覧](#利用者の一覧) の操作にある。
+
+**カタログ**: [ServiceCodeRadioGroup の Default](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-servicecoderadiogroup--default)、[ScheduleEditModalContainer の VisitWithOtherServiceCode](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-scheduleeditmodalcontainer--visit-with-other-service-code)
 
 **操作**: コードを選ぶと、提供時間を、そのコードの提供時間の範囲の上限にし、検証し直す。
+
+1. この後は、利用者を替えても、サービスコードを利用者のサービスコードに替えない。
 
 ## 利用者の検索
 
@@ -668,6 +680,12 @@
 **カタログ**: [PatientSelectList の Default](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-patientselectlist--default)
 
 **操作**: 利用者を選ぶと、選んだ利用者を、項目の一覧の「利用者」の要約に出す。
+
+1. 職員がサービスコードを選んでいなければ、[サービスコード](#サービスコード) を選んだ利用者のサービスコードにし、[提供時間](#提供時間) をそのコードの提供時間の範囲の上限にする。
+   - 例えば、サービスコードが訪看I3 の利用者に替えると、サービスコードは訪看I3、提供時間は 59 になる。
+   - 利用者のサービスコードが事業所のサービスコードの一覧に無ければ、[サービスコード](#サービスコード) の値のソースのとおりにする。
+   - 職員がサービスコードを選んだ後は、サービスコードも提供時間も替えない。予定の作成と同じく、先に選んだコードを上書きしないためである。
+2. 項目の一覧の「訪問日時」の要約の終了時間、提供時間、サービスコードも、替えた値にする。
 
 ## 職員の検索
 
