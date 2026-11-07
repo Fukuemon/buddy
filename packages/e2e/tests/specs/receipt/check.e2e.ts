@@ -63,7 +63,7 @@ test.describe('照合の結果', () => {
       expect((labelBox?.x ?? 0) - (tableBox?.x ?? 0)).toBeLessThan(40)
     })
 
-    test('結果の CSV をダウンロードした場合、BOM 付きの UTF-8 で区分の区切りの行を持つこと', async ({
+    test('結果の CSV をダウンロードした場合、BOM 付きの UTF-8 で区分と確認することの列を持ち、区切りの行を持たないこと', async ({
       page,
     }) => {
       const download = page.waitForEvent('download')
@@ -73,9 +73,10 @@ test.describe('照合の結果', () => {
       const bytes = await readFile(file)
       expect([...bytes.subarray(0, 3)]).toEqual([0xef, 0xbb, 0xbf])
       const csv = bytes.subarray(3).toString('utf8')
-      expect(csv).toMatch(/^訪問日,利用者名,主訪問者,/)
-      expect(csv).toContain('\r\n不整合データ,---,')
-      expect(csv).toContain('\r\n整合データ,---,')
+      expect(csv).toMatch(/^区分,訪問日,利用者名,主訪問者,[^\r\n]*,加算,確認すること\r\n/)
+      expect(csv).not.toContain(',---')
+      expect(csv).toMatch(/\r\n不整合データ,[^\r\n]*,不一致: /)
+      expect(csv).toMatch(/\r\n整合データ,/)
     })
   })
 

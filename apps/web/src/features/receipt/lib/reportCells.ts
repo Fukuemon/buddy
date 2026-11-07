@@ -11,97 +11,8 @@ export const RECEIPT_CATEGORIES: { category: ReceiptCategory; label: string }[] 
   { category: 'match', label: '整合データ' },
 ]
 
-/** 結果の CSV の列。結果の表の列は RESULT_TABLE_COLUMNS である。 */
-export const RECEIPT_COLUMNS = [
-  '訪問日',
-  '利用者名',
-  '主訪問者',
-  'サービス内容_予定',
-  '開始時間_予定',
-  '終了時間_予定',
-  '提供時間_予定',
-  'サービス内容_実績',
-  '開始時間_実績',
-  '終了時間_実績',
-  '提供時間_実績',
-  '加算',
-] as const
-
+/** 結果の表で、空の提供時間と、片側の無い行の無い側の読み上げに出す文字列。 */
 export const NO_DATA = 'データなし'
-const MISMATCH_MARK = ' ❌'
-const NOTE_MARK = ' ※'
-
-type SideCells = { service: string; start: string; end: string; duration: string }
-
-const empty = (): SideCells => ({
-  service: NO_DATA,
-  start: NO_DATA,
-  end: NO_DATA,
-  duration: NO_DATA,
-})
-
-const cellsOf = (side: Side): SideCells => ({
-  service: side.service,
-  start: side.start,
-  end: side.end,
-  duration: side.duration === null ? NO_DATA : String(side.duration),
-})
-
-const rangeText = (check: RangeCheck) =>
-  check.range === null ? '' : ` (${check.range.min}~${check.range.max})`
-
-const rangeMark = (check: RangeCheck) => (check.ok ? '' : MISMATCH_MARK + rangeText(check))
-
-/**
- * 照合の結果の 1 行を、CSV のセルの文字列にする。並びは RECEIPT_COLUMNS である。
- *
- * 不整合の行は、食い違う項目に ` ❌` を、許容範囲を外れた終了時間と提供時間に ` ❌ (最小~最大)` を、
- * 加算が通常の 1 つでない行に ` ※` を付ける。整合の行は、両側の提供時間か終了時間が違うときに ` ※` を付ける。
- * 片側しか無い行の、無い側のセルは「データなし」にする。
- */
-export const reportRowCells = (row: ReceiptRow): string[] => {
-  const schedule = row.schedule === null ? empty() : cellsOf(row.schedule)
-  const visit = row.visit === null ? empty() : cellsOf(row.visit)
-  let addition = row.visit === null ? NO_DATA : (row.visit.additions ?? '')
-  const checks = row.checks
-  if (checks !== null) {
-    const markBoth = (ok: boolean, key: keyof SideCells, mark: string) => {
-      if (ok) return
-      schedule[key] += mark
-      visit[key] += mark
-    }
-    if (row.category === 'mismatch') {
-      markBoth(checks.start.ok, 'start', MISMATCH_MARK)
-      markBoth(checks.duration_equal, 'duration', MISMATCH_MARK)
-      markBoth(checks.service.ok, 'service', MISMATCH_MARK)
-      schedule.end += rangeMark(checks.schedule_elapsed)
-      visit.end += rangeMark(checks.visit_elapsed)
-      schedule.duration += rangeMark(checks.schedule_duration)
-      visit.duration += rangeMark(checks.visit_duration)
-      if (!checks.additions.ok) addition += NOTE_MARK
-    } else if (row.category === 'match') {
-      if (!checks.duration_equal) {
-        schedule.duration += NOTE_MARK + rangeText(checks.schedule_duration)
-        visit.duration += NOTE_MARK + rangeText(checks.visit_duration)
-      }
-      markBoth(checks.end_equal, 'end', NOTE_MARK)
-    }
-  }
-  return [
-    row.date,
-    row.client,
-    row.staff,
-    schedule.service,
-    schedule.start,
-    schedule.end,
-    schedule.duration,
-    visit.service,
-    visit.start,
-    visit.end,
-    visit.duration,
-    addition,
-  ]
-}
 
 /**
  * 判定の重さ。mismatch（不一致）は区分を不整合にした項目、note（注意）は区分を決めないが予定と実績の値が違う項目である。
@@ -267,7 +178,56 @@ export const markedCellValue = (row: ReceiptRow, cell: MarkedCell): string | nul
   const [sideName, field] = cell.split('.') as [SideName, SideField]
   const side = row[sideName]
   if (side === null) return null
-  return cellsOf(side)[field]
+  if (field !== 'duration') return side[field]
+  return side.duration === null ? NO_DATA : String(side.duration)
+}
+
+/** 結果の CSV の列。区分を先頭に、確認することを最後に置く。結果の表の列は RESULT_TABLE_COLUMNS である。 */
+export const RECEIPT_COLUMNS = [
+  '区分',
+  '訪問日',
+  '利用者名',
+  '主訪問者',
+  'サービス内容_予定',
+  '開始時間_予定',
+  '終了時間_予定',
+  '提供時間_予定',
+  'サービス内容_実績',
+  '開始時間_実績',
+  '終了時間_実績',
+  '提供時間_実績',
+  '加算',
+  '確認すること',
+] as const
+
+const SEVERITY_PREFIX: Record<Severity, string> = { mismatch: '不一致: ', note: '注意: ' }
+
+const sideCsvCells = (side: Side | null) =>
+  side === null
+    ? ['', '', '', '']
+    : [side.service, side.start, side.end, side.duration === null ? '' : String(side.duration)]
+
+/**
+ * 照合の結果の 1 行を、CSV のセルの文字列にする。並びは RECEIPT_COLUMNS である。
+ *
+ * 値に印を混ぜない。片側の無い行の無い側のセルと、空の提供時間は空にする。
+ * 確認することは、rowFindings の文に重さを「不一致: 」「注意: 」と前に付け、「 / 」でつなぐ。
+ */
+export const reportRowCells = (row: ReceiptRow): string[] => {
+  const label = RECEIPT_CATEGORIES.find(({ category }) => category === row.category)?.label ?? ''
+  const findings = rowFindings(row)
+    .map(({ text, severity }) => (severity === undefined ? text : SEVERITY_PREFIX[severity] + text))
+    .join(' / ')
+  return [
+    label,
+    row.date,
+    row.client,
+    row.staff,
+    ...sideCsvCells(row.schedule),
+    ...sideCsvCells(row.visit),
+    row.visit === null ? '' : (row.visit.additions ?? ''),
+    findings,
+  ]
 }
 
 /** Excel が UTF-8 と読むための BOM。整形の道具が見えない文字に置き換えないよう、符号で書く。 */
@@ -280,15 +240,12 @@ const csvCell = (value: string) =>
 /**
  * 照合の結果を CSV の文字列にする。先頭に BOM を付け、行は CRLF で区切る。
  *
- * 区分ごとに、区分の名前と `---` の区切りの行を置き、その後に区分の行を並べる。行の無い区分も区切りの行を置く。
+ * 1 行に 1 つの対を、照合の API の rows の順のまま書く。区切りの行は置かない。
  */
 export const toReceiptCsv = (report: ReceiptReport) => {
-  const lines = [RECEIPT_COLUMNS.join(',')]
-  for (const { category, label } of RECEIPT_CATEGORIES) {
-    lines.push([label, ...Array(RECEIPT_COLUMNS.length - 1).fill('---')].join(','))
-    for (const row of report.rows.filter((r) => r.category === category)) {
-      lines.push(reportRowCells(row).map(csvCell).join(','))
-    }
-  }
+  const lines = [
+    RECEIPT_COLUMNS.join(','),
+    ...report.rows.map((row) => reportRowCells(row).map(csvCell).join(',')),
+  ]
   return `${BOM}${lines.join('\r\n')}\r\n`
 }

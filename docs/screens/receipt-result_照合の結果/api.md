@@ -31,7 +31,7 @@ OpenAPI の項目は、`createCheck`（`POST /v1/checks`）のレスポンスの
   - `warnings[].message` は画面に出さない。
 - 結果の表の印と確認することの文は、`apps/web/src/features/receipt/lib/reportCells.ts` の `rowFindings` と `cellMarks` が `checks` から作る。
   - アイコンと重さの名前は `ReceiptMark.tsx` の `MARKS` にある。
-- CSV の印は、`reportCells.ts` の `reportRowCells` が、照合の API の `tools/parity/report` と同じ付け方で作る。
+- CSV の行は、`reportCells.ts` の `reportRowCells` が作る。確認することの列は、`rowFindings` の文に重さを前に付けてつなぐ。
 - ログアウトは、開発の設定（フェイクの API で動かす形、`mode` が `bff` でない）では出さない（`SiteLayoutContainer.tsx` の `canLogout`、`ViewerMenu.tsx`）。
 - 「結果が無い」の状態は、query の cache に `ReceiptResult`（`useReceiptResult`）が無いときになる（`ReceiptResultContainer.tsx`）。
 - 「使わなかった予定がある」の状態は、`ReceiptReport.warnings` が空でないときになる（`ReceiptResultView.tsx`）。

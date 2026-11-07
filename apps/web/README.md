@@ -117,8 +117,8 @@ BFF の照合の server function（`checkReceiptFn`）が、照合の API のク
 画面の仕様は `docs/screens/receipt-upload_照合/` と `docs/screens/receipt-result_照合の結果/` にある。
 
 - 結果の表の印（不一致と注意のアイコン、許容範囲）、確認することの文、CSV は、`src/features/receipt/lib/reportCells.ts` が作る。
-  - CSV の印の付け方と値の引用は、照合の API の `tools/parity/report` と同じにし、同じ期待値のテストで確認する。
-  - 行の区切りだけは、Excel で開くために CRLF にした。Go は LF を使う。
+  - CSV は値に印を混ぜず、区分と確認することの列を持つ。照合の API の `tools/parity/report` の記号つきの CSV とは形が違う。
+  - 値の引用は Go の encoding/csv と同じにし、行の区切りは、Excel で開くために CRLF にした。
 - ファイルの合計の上限は、照合の API の `MAX_UPLOAD_BYTES` のデフォルト値（10 MiB）から multipart の分の 64 KiB を引いた値にする。
   - `src/start.ts` は、server function の本文を読む前に、10 MiB を超えるものと長さの分からないものを 413 で拒む。
 - フェイクの API（`fake`）の照合は、入力によらず `src/mocks/receiptData.ts` の `mockReceiptReport` を返す。
