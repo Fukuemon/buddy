@@ -123,7 +123,9 @@ describe('StaffScheduleDayGrid', () => {
       needsReview: true,
     }
     render(<Default events={[event]} />)
-    const timeLine = screen.getByTestId('schedule-event-e1-needs-review').closest('.block')
-    expect(timeLine).toHaveTextContent(/^要確認、09:00-09:30$/)
+    const timeLine = screen
+      .getByTestId('schedule-event-e1-needs-review')
+      .closest<HTMLElement>('.block')
+    expect(timeLine?.textContent).toBe('要確認、09:00-09:30')
   })
 })
