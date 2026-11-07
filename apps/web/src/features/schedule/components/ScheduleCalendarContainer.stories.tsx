@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 
 import { createFakeBuddyApi } from '#/api/fake/fakeBuddyApi'
+import { FAKE_VIEWER } from '#/api/fake/fixtures'
 import { MOCK_FACILITY_ID } from '#/mocks/scheduleData'
 import {
   emptyBuddyApi,
@@ -11,7 +12,7 @@ import {
 } from '#/storybook/withAppRouter'
 
 import { ScheduleCalendarContainer } from './ScheduleCalendarContainer'
-import { selfEditViewer } from './storyData'
+import { selfEditViewer, storyStaff } from './storyData'
 
 const route = (appRouter: Partial<AppRouterParameters>) => ({
   appRouter: { route: '/schedule', url: '/schedule', ...appRouter },
@@ -39,6 +40,14 @@ export const Month: Story = {}
 export const Week: Story = { parameters: route({ url: '/schedule?view=week' }) }
 
 export const Day: Story = { parameters: route({ url: '/schedule?view=day' }) }
+
+/** 2 人目の職員（staff-2）でログインした日の表示。その職員の列を左端に置く。 */
+export const DayAsSecondStaff: Story = {
+  parameters: route({
+    url: '/schedule?view=day',
+    viewer: { ...FAKE_VIEWER, staffId: storyStaff[1]!.id, staffName: storyStaff[1]!.name },
+  }),
+}
 
 export const Empty: Story = { parameters: route({ api: emptyBuddyApi() }) }
 

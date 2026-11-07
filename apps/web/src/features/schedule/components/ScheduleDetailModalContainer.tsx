@@ -23,7 +23,7 @@ import {
   staffListQueryOptions,
   useCancelSchedule,
 } from '../queries'
-import { pickCalendarSearch } from '../schema/scheduleSearch'
+import { pickCalendarSearch, resolveCalendarView } from '../schema/scheduleSearch'
 import { ScheduleCancelDialog } from './ScheduleCancelDialog'
 import { ScheduleDetailModal } from './ScheduleDetailModal'
 
@@ -55,7 +55,7 @@ export const ScheduleDetailModalContainer = ({ scheduleId }: { scheduleId: Sched
   })
   const listQuery = useQuery({
     ...scheduleListQueryOptions(api, facilityId, {
-      ...getCalendarRange(search.view, search.date ?? today),
+      ...getCalendarRange(resolveCalendarView(search.view), search.date ?? today),
       includeCancelled: search.cancelled,
     }),
     enabled: sourceMode === 'google_primary',

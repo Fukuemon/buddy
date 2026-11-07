@@ -1,5 +1,5 @@
 import { clsx } from 'clsx'
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, type CSSProperties } from 'react'
 
 import type { Staff } from '#/api/types'
 
@@ -65,15 +65,16 @@ export const StaffScheduleDayGrid = ({
   const nowMinutes = now === undefined ? undefined : minutesInDay(date, now)
   return (
     <div
-      className="h-full overflow-auto bg-surface"
+      className="h-full snap-x snap-mandatory overflow-auto bg-surface desktop:snap-none"
       data-testid="staff-schedule-day-grid"
       ref={scrollRef}
     >
       <div
-        className="grid min-w-max"
-        style={{ gridTemplateColumns: `4rem repeat(${staffList.length}, minmax(10rem, 1fr))` }}
+        // 幅 768px 未満では、時刻の列を 3rem、職員の列を 9rem 以上にし、幅 390px で 2 人分と 3 人目の一部を見せる
+        className="grid min-w-max grid-cols-[3rem_repeat(var(--staff-count),minmax(9rem,1fr))] desktop:grid-cols-[4rem_repeat(var(--staff-count),minmax(10rem,1fr))]"
+        style={{ '--staff-count': staffList.length } as CSSProperties}
       >
-        <div className="sticky top-0 z-10 border-b border-border bg-surface" />
+        <div className="sticky top-0 left-0 z-20 border-b border-border bg-surface" />
         {staffList.map((staff) => (
           <div
             className="sticky top-0 z-10 truncate border-b border-l border-border bg-surface px-2 py-2 text-center text-caption font-bold"
@@ -83,7 +84,7 @@ export const StaffScheduleDayGrid = ({
           </div>
         ))}
 
-        <div className="relative">
+        <div className="sticky left-0 z-10 bg-surface" data-testid="day-grid-times">
           {SLOT_TIMES.filter((time) => time.endsWith(':00')).map((time) => (
             <div
               className="pr-2 text-right text-caption text-text-secondary"
@@ -96,7 +97,7 @@ export const StaffScheduleDayGrid = ({
         </div>
         {staffList.map((staff) => (
           <div
-            className="relative border-l border-border"
+            className="relative snap-start scroll-ml-12 border-l border-border desktop:scroll-ml-16"
             data-testid={`day-grid-staff-${staff.id}`}
             key={staff.id}
           >
@@ -158,15 +159,25 @@ export const StaffScheduleDayGrid = ({
                   >
                     <span className="block truncate">
                       {event.isCancelled && <CancelledMark />}
-                      {event.needsReview && <NeedsReviewMark scheduleId={event.id} />}
                       <span
                         className={event.isCancelled ? 'line-through' : undefined}
                         data-testid={
                           event.isCancelled ? `schedule-event-${event.id}-cancelled` : undefined
                         }
                       >
-                        {toTimeKey(start)}-{nextDayPrefix(start, end)}
-                        {toTimeKey(end)} <span className="font-bold">{event.title}</span>
+                        {/* 幅 768px 未満では、利用者の名前が切れないよう、時刻とタイトルを 2 行に分ける。
+                            「要確認」の印は時刻と同じ行に置き、30 分の予定でも 2 行に収める。
+                            印は inline-block にして、キャンセルの取り消し線を印に引かない */}
+                        <span className="block desktop:inline">
+                          {event.needsReview && (
+                            <span className="inline-block">
+                              <NeedsReviewMark scheduleId={event.id} />
+                            </span>
+                          )}
+                          {toTimeKey(start)}-{nextDayPrefix(start, end)}
+                          {toTimeKey(end)}
+                        </span>{' '}
+                        <span className="font-bold">{event.title}</span>
                       </span>
                     </span>
                   </button>
