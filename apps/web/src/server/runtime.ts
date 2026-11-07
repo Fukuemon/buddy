@@ -50,6 +50,7 @@ export const getAuthDeps = async (): Promise<AuthDeps> => {
     oidc: await getOidc(config),
     secret: config.sessionSecret,
     usesSecureCookie: config.usesSecureCookie,
+    publicUrl: config.publicUrl,
     getMe: (accessToken) => getMe(config.scheduleApiUrl, accessToken),
   }
 }

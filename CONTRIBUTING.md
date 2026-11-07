@@ -99,14 +99,21 @@ docker compose up --build --wait
     - シードを変えた後は、`docker compose down -v` で作り直す。
 - 照合の画面で、予定の取り方に「Google カレンダー」を、対象の月に `2026-11` を選ぶと、calendarpit の森 健太のカレンダーの予定で照合できる。
 - データを消して最初からにするときは、`docker compose down -v` でボリュームを消す。
-- 別の worktree で同時に起動するときは、worktree を `wt switch --create <ブランチ>` で作る。
-  - worktrunk のフック（`.config/wt.toml`）が、compose のプロジェクトの名前と、20000 番台からのポートの組を、worktree の `.env` に書く。
-    - compose は `.env` を読むので、`docker compose up --build --wait` をそのまま流す。
+- 別の worktree で同時に起動するときは、worktree を `wt switch --create <ブランチ>` で作り、`portless compose up -d --build --wait` で起動する。
+  - worktree の環境は、`https://web.<プロジェクト>.localhost` のような、worktree ごとのホスト名の URL で開く（[ADR-0034](docs/adr/0034-local-hostnames-with-portless.md)）。
+    - ホスト名が違うので、同じブラウザで複数の worktree の環境にログインしても、ログインのセッションが上書きし合わない。
+    - web のセッションの cookie に `Secure` を付けて動く。
+  - worktrunk のフック（`.config/wt.toml`）が、compose のプロジェクトの名前、ブラウザが開く URL、E2E の URL を、worktree の `.env` に書く。
+    - 開く URL は `.env` の `E2E_BASE_URL` にある。
     - mise が `.env` を環境変数に入れるので、`pnpm e2e` と `compose/dev-token.sh` も、その worktree の環境に向く。mise を有効にしていないシェルでは `mise exec -- pnpm e2e` で流す。
-    - 起動した後の URL は `.env` の `E2E_BASE_URL` にある。
-    - 2 つの worktree のポートがぶつかったときは、片方の `.env` のポートを手で直す。
+    - `.env` は、portless が変えない postgres と valkey のポートもずらす。2 つの worktree のポートがぶつかったときは、片方の `.env` のポートを手で直す。
+  - worktree では、`docker compose up` で起動しない。`.env` のホスト名の URL が portless に登録されず、ログインが失敗する。
   - 初めてフックを流すときは、worktrunk が承認を求める。コーディングエージェントは `--yes` を付ける。
-  - `wt remove <ブランチ>` で worktree を消すと、フックがその worktree の compose を、DB のボリュームとビルドしたイメージごと消す。
+  - `wt remove <ブランチ>` で worktree を消すと、フックがその worktree の compose を、DB のボリューム、ビルドしたイメージ、portless に登録したホスト名ごと消す。
+  - portless のプロキシは、最初に 1 回だけ `portless proxy start --unprivileged --https` で起動する。管理者の権限は使わない。
+    - portless はこのモードを覚え、次からは `portless compose up` が同じモードでプロキシを起動する。
+    - portless の CA はシステムに信頼させないので、ブラウザで開くと証明書の警告が出る。警告を受け入れて開く。
+    - E2E は、Playwright の設定（`packages/e2e/localhostResolver.ts`）で `*.localhost` を loopback に引き、https の URL では証明書のエラーを無視する。
 - worktrunk を使わずに並べるときは、`docker compose -p <名前> up --build --wait` でプロジェクトの名前を変え、表の環境変数でポートをずらす。
   - E2E は、ずらしたポートに URL の環境変数を合わせて流す。
     - 画面と外部のサービスは `E2E_BASE_URL`、`E2E_CALENDARPIT_URL`、`E2E_GCALHOLD_URL`、`E2E_HYDRA_URL`

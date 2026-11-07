@@ -1,7 +1,11 @@
 import { defineConfig, devices } from '@playwright/test'
 
+import { resolveLocalhostToLoopback } from './localhostResolver'
 import { BASE_URL, LOGIN_STATE, TIMEZONE_ID } from './tests/fixtures/env'
 import { TIMEOUT_MS } from './tests/fixtures/timeouts'
+
+// 設定は、test の runner と worker のそれぞれで読まれるので、両方のプロセスで差し替わる
+resolveLocalhostToLoopback()
 
 /**
  * ルートの compose で立てた全体に向けて流す。先に `docker compose up --build --wait` で起動しておく。
@@ -27,6 +31,9 @@ export default defineConfig({
     actionTimeout: TIMEOUT_MS.action,
     navigationTimeout: TIMEOUT_MS.navigation,
     trace: 'retain-on-failure',
+    // worktree の環境の portless の証明書は、管理者の権限が無いとシステムに信頼させられない（ADR-0034）。
+    // ローカルの環境だけに向けて流すので、https の URL のときは証明書のエラーを無視する
+    ignoreHTTPSErrors: BASE_URL.startsWith('https://'),
   },
   projects: [
     { name: 'setup', testMatch: /setup\/.*\.setup\.ts/ },
