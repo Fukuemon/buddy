@@ -50,34 +50,52 @@ apm lifecycle trust
 
 ## Running Locally
 
-画面、API、ID ブローカーと、それらが使うサービスを、ルートの `compose.yml` で一緒に起動する。
+画面、API、ID ブローカーと、それらが使うサービスを、ルートの `compose.yml` で一緒に起動する。  
+main の checkout と worktree のどちらも、[portless](https://github.com/vercel-labs/portless) で起動し、プロジェクトごとのホスト名の https の URL で開く。  
+ADR-0035: [main の checkout と worktree のローカル環境を、portless でプロジェクトごとのホスト名の HTTPS の URL で出す](docs/adr/0035-main-checkout-with-portless.md)
 
-```sh
-docker compose up --build --wait
-```
+1. portless のプロキシを、最初に 1 回だけ起動する。管理者の権限は使わない。
 
-ポートは `127.0.0.1` にだけ公開する。
+   ```sh
+   portless proxy start --unprivileged --https
+   ```
 
-| サービス | ローカルの URL | ポートを変える環境変数 |
-| --- | --- | --- |
-| web | `http://localhost:3000` | `WEB_PORT` |
-| schedule | `http://localhost:8080` | `SCHEDULE_PORT` |
-| schedule-calendar-export、schedule-calendar-sync（Google カレンダーの書き出しと同期の Worker） | 公開しない | なし |
-| receipt | `http://localhost:8090` | `RECEIPT_PORT` |
-| broker（ログインの画面） | `http://localhost:8100` | `BROKER_PORT` |
-| broker（内部の API） | `http://localhost:8101` | `BROKER_INTERNAL_PORT` |
-| hydra（public API と admin API） | `http://localhost:4444`、`http://localhost:4445` | `HYDRA_PUBLIC_PORT`、`HYDRA_ADMIN_PORT` |
-| idp（上流の IdP のフェイク。事業所ごとに `/office-a`、`/office-b`、`/office-c`、`/office-d`） | `http://localhost:9000` | `IDP_PORT` |
-| postgres | `localhost:15432` | `POSTGRES_PORT` |
-| valkey | `localhost:6379` | `VALKEY_PORT` |
-| calendarpit（Google Calendar API のフェイク） | `http://localhost:4173` | `CALENDARPIT_PORT` |
-| gcalhold（予定の API と calendarpit の間の中継） | `http://localhost:8085` | `GCALHOLD_PORT` |
+   - portless はこのモードを覚え、次からは `portless compose up` が同じモードでプロキシを起動する。
 
-- `http://localhost:3000` を開き、ブローカーのログインの画面でメールに `hina.aoki@example.com` を入れる。
+2. compose を起動する。
+
+   ```sh
+   portless compose up -d --build --wait
+   ```
+
+   - `docker compose up` で起動しない。ブラウザが開くホスト名が portless に登録されず、ログインが失敗する。
+   - 止めるときは `portless compose down` を流す。portless に登録したホスト名も消える。
+
+main の checkout の compose のプロジェクトの名前は `buddy` で、URL は次のとおり。  
+worktree では、ホスト名の `buddy` の部分が worktree ごとの名前になる。
+
+| サービス | main の checkout の URL |
+| --- | --- |
+| web | `https://web.buddy.localhost` |
+| schedule | `https://schedule.buddy.localhost` |
+| schedule-calendar-export、schedule-calendar-sync（Google カレンダーの書き出しと同期の Worker） | 公開しない |
+| receipt | `https://receipt.buddy.localhost` |
+| broker（ログインの画面と内部の API） | `https://broker.buddy.localhost`、`https://8081.broker.buddy.localhost` |
+| hydra（public API と admin API） | `https://hydra.buddy.localhost`、`https://4445.hydra.buddy.localhost` |
+| idp（上流の IdP のフェイク。事業所ごとに `/office-a`、`/office-b`、`/office-c`、`/office-d`） | `https://idp.buddy.localhost` |
+| calendarpit（Google Calendar API のフェイク） | `https://calendarpit.buddy.localhost` |
+| gcalhold（予定の API と calendarpit の間の中継） | `https://gcalhold.buddy.localhost` |
+| postgres | `localhost:15432`（`POSTGRES_PORT` で変える） |
+| valkey | `localhost:6379`（`VALKEY_PORT` で変える） |
+
+- portless の CA はシステムに信頼させないので、ブラウザで開くと証明書の警告が出る。警告を受け入れて開く。
+- ホスト名が違うので、同じブラウザで main の checkout と複数の worktree の環境にログインしても、ログインのセッションが上書きし合わない。
+- web のセッションの cookie に `Secure` を付けて動く。
+- `https://web.buddy.localhost` を開き、ブローカーのログインの画面でメールに `hina.aoki@example.com` を入れる。
   - 上流の IdP のフェイクの画面で、クレームの欄に `{"email": "hina.aoki@example.com", "email_verified": true}` を書いて入ると、青木 陽菜（マネージャー）としてログインする。
   - クレームのメールが無いときと、ブローカーで入れたメールと違うときは、ログインの失敗の画面になる。
   - フェイクの画面の名前の欄の値は、初回のログインで職員に結び付く。以後は同じ値で入る。
-    - 別の値で入るときは、`docker compose down -v` でデータを消す。
+    - 別の値で入るときは、`portless compose down -v` でデータを消す。
 - シードの職員のメールは次のとおり。
   - 1 つ目の事業所（組織 `org-sample`）: `hina.aoki@example.com`（青木 陽菜、マネージャー）、`kenta.mori@example.com`（森 健太、チームリーダー）
     - ほかに `sakura.hayashi@example.com` と `misaki.sato@example.com` がいる
@@ -93,57 +111,73 @@ docker compose up --build --wait
     - 岡田に calendarpit のカレンダー `aoi.okada@example.com` を結び付けてある。同期の Worker は、このカレンダーの予定を参照のモデル（`calendar_event_projections`）に写す。
   - 4 つ目の事業所（組織 `org-sample-d`）: `ren.ishida@example.com`（石田 蓮、マネージャー）
     - 3 つ目と同じく `google_primary` で、石田に calendarpit のカレンダー `ren.ishida@example.com` を結び付けてある。
-    - 予定の正本の切り替えを確認するのに使う。切り替えを完了すると `buddy_primary` に移り、戻せない。戻すときは `docker compose down -v` で作り直す。
+    - 予定の正本の切り替えを確認するのに使う。切り替えを完了すると `buddy_primary` に移り、戻せない。戻すときは `portless compose down -v` で作り直す。
   - 1 つ目と 2 つ目の事業所のカレンダーは、同期が読まない。Google カレンダーでの変更は buddy の予定に当たらない。
   - シードは、空の DB にだけ適用される。
-    - シードを変えた後は、`docker compose down -v` で作り直す。
+    - シードを変えた後は、`portless compose down -v` で作り直す。
 - 照合の画面で、予定の取り方に「Google カレンダー」を、対象の月に `2026-11` を選ぶと、calendarpit の森 健太のカレンダーの予定で照合できる。
-- データを消して最初からにするときは、`docker compose down -v` でボリュームを消す。
-- 別の worktree で同時に起動するときは、worktree を `wt switch --create <ブランチ>` で作り、`portless compose up -d --build --wait` で起動する。
-  - worktree の環境は、`https://web.<プロジェクト>.localhost` のような、worktree ごとのホスト名の URL で開く（[ADR-0034](docs/adr/0034-local-hostnames-with-portless.md)）。
-    - ホスト名が違うので、同じブラウザで複数の worktree の環境にログインしても、ログインのセッションが上書きし合わない。
-    - web のセッションの cookie に `Secure` を付けて動く。
+- データを消して最初からにするときは、`portless compose down -v` でボリュームを消す。
+- 別の worktree で同時に起動するときは、worktree を `wt switch --create <ブランチ>` で作り、同じ手順で起動する。
   - worktrunk のフック（`.config/wt.toml`）が、compose のプロジェクトの名前、ブラウザが開く URL、E2E の URL を、worktree の `.env` に書く。
     - 開く URL は `.env` の `E2E_BASE_URL` にある。
     - mise が `.env` を環境変数に入れるので、`pnpm e2e` と `compose/dev-token.sh` も、その worktree の環境に向く。mise を有効にしていないシェルでは `mise exec -- pnpm e2e` で流す。
     - `.env` は、portless が変えない postgres と valkey のポートもずらす。2 つの worktree のポートがぶつかったときは、片方の `.env` のポートを手で直す。
-  - worktree では、`docker compose up` で起動しない。`.env` のホスト名の URL が portless に登録されず、ログインが失敗する。
   - 初めてフックを流すときは、worktrunk が承認を求める。コーディングエージェントは `--yes` を付ける。
   - `wt remove <ブランチ>` で worktree を消すと、フックがその worktree の compose を、DB のボリューム、ビルドしたイメージ、portless に登録したホスト名ごと消す。
-  - portless のプロキシは、最初に 1 回だけ `portless proxy start --unprivileged --https` で起動する。管理者の権限は使わない。
-    - portless はこのモードを覚え、次からは `portless compose up` が同じモードでプロキシを起動する。
-    - portless の CA はシステムに信頼させないので、ブラウザで開くと証明書の警告が出る。警告を受け入れて開く。
-    - E2E は、Playwright の設定（`packages/e2e/localhostResolver.ts`）で `*.localhost` を loopback に引き、https の URL では証明書のエラーを無視する。
-- worktrunk を使わずに並べるときは、`docker compose -p <名前> up --build --wait` でプロジェクトの名前を変え、表の環境変数でポートをずらす。
-  - E2E は、ずらしたポートに URL の環境変数を合わせて流す。
+- worktrunk を使わずに並べるときは、`portless compose -p <名前> up -d --build --wait` でプロジェクトの名前を変え、`POSTGRES_PORT` と `VALKEY_PORT` でポートをずらす。
+  - ブラウザが開く URL は、compose が `https://<サービス>.<名前>.localhost` にする。名前に `_` を使わない。portless はホスト名で `_` を `-` に変えるが、compose は変えない。
+  - E2E は、URL の環境変数を `https://<サービス>.<名前>.localhost` に合わせて流す。
     - 画面と外部のサービスは `E2E_BASE_URL`、`E2E_CALENDARPIT_URL`、`E2E_GCALHOLD_URL`、`E2E_HYDRA_URL`
-    - API とブローカーは `E2E_SCHEDULE_URL`、`E2E_BROKER_URL`、`E2E_BROKER_INTERNAL_URL`
+    - API とブローカーは `E2E_SCHEDULE_URL`、`E2E_BROKER_URL`、`E2E_BROKER_INTERNAL_URL`（`https://8081.broker.<名前>.localhost`）
+- E2E とスクリプトは、portless の CA（`~/.portless/ca.pem`）で証明書を検証する。
+  - Node.js には、mise が `NODE_EXTRA_CA_CERTS` を渡す。
+  - E2E のブラウザは、Playwright の設定（`packages/e2e/localhostResolver.ts`）で `*.localhost` を loopback に引き、https の URL では証明書のエラーを無視する。
+- CI は portless を使わず、`docker compose up` で `http://localhost:<ポート>` に起動する。ブラウザが開く URL とポートは、`.github/workflows/ci.yml` の `e2e` のジョブが渡す。
+
+### portless を通さずに起動する
+
+各サービスの README の、1 つのサービスを `go run` で動かす手順は、compose のほかのサービスを固定のポートで呼ぶ。  
+そのときは、portless を通さず、CI と同じく `http://localhost:<ポート>` で compose を起動する。ポートは `compose.yml` のデフォルトになる。
+
+```sh
+portless compose down   # portless で起動していれば、先に止める。volume は消えない
+export WEB_ORIGIN=http://localhost:3000 HYDRA_PUBLIC_ORIGIN=http://localhost:4444 \
+  BROKER_ORIGIN=http://localhost:8100 IDP_ORIGIN=http://localhost:9000 SESSION_COOKIE_SECURE=false
+docker compose up -d --build --wait
+```
+
+- 終えたら `docker compose down` で止め、環境変数を戻したシェルで `portless compose up -d --build --wait` で起動し直す。
+- このシェルの E2E は、`E2E_BASE_URL` などの URL を `http://localhost:<ポート>` に合わせて流す。
 
 ### API を手で呼ぶ
 
 `compose/dev-token.sh` で、引数のメールの職員の access token を取る。  
-ポートを変えて起動したときは、同じ環境変数を渡す。
+デフォルトは main の checkout の環境である。worktree では、mise が `.env` からその環境の URL を渡す。  
+次の例は main の checkout の URL を呼ぶ。worktree では、ホスト名の `buddy` を worktree の名前に変える。  
+portless の CA はシステムに信頼させないので、curl に `--cacert` を付ける。
 
 ```sh
 TOKEN=$(compose/dev-token.sh hina.aoki@example.com)
-curl -H "Authorization: Bearer $TOKEN" localhost:8080/v1/facilities/01M3TC5H00QV17BC0J9V3393ZP
+curl --cacert ~/.portless/ca.pem -H "Authorization: Bearer $TOKEN" https://schedule.buddy.localhost/v1/facilities/01M3TC5H00QV17BC0J9V3393ZP
 ```
 
 照合の API も、同じトークンで呼べる。  
 `month` を送ると、calendarpit の森 健太のカレンダーのその月の予定と照合する。
 
 ```sh
-curl -H "Authorization: Bearer $TOKEN" -F visits=@services/receipt/testdata/visits_utf8.csv -F month=2026-11 localhost:8090/v1/checks
+curl --cacert ~/.portless/ca.pem -H "Authorization: Bearer $TOKEN" -F visits=@services/receipt/testdata/visits_utf8.csv -F month=2026-11 https://receipt.buddy.localhost/v1/checks
 ```
 
 ドキュメントサイトの API の仕様のページからも、ローカルの API を呼べる。  
 公開したドキュメントサイトからは呼べない。
 
-1. `docker compose up --build --wait schedule receipt` で API を立てる。
+1. `portless compose up -d --build --wait schedule receipt` で API を立てる。
 2. `uv run zensical serve` で、ドキュメントサイトを `http://localhost:8000` で開く。
    - `127.0.0.1` で開くと、CORS で失敗する。
-3. 「API の仕様」のページで操作を選び、「Test Request」を押す。
-4. `$TOKEN` の値を「Bearer Token」の欄に貼り、「Send」を押す。
+3. 同じブラウザで `https://schedule.buddy.localhost/readyz` と `https://receipt.buddy.localhost/readyz` を開き、証明書の警告を受け入れる。
+   - 受け入れていないと、ページから API へのリクエストが証明書のエラーで失敗する。
+4. 「API の仕様」のページで操作を選び、「Test Request」を押す。
+5. `$TOKEN` の値を「Bearer Token」の欄に貼り、「Send」を押す。
 
 ## E2E Tests
 
@@ -151,7 +185,7 @@ curl -H "Authorization: Bearer $TOKEN" -F visits=@services/receipt/testdata/visi
 
 ```sh
 pnpm --filter @buddy/e2e exec playwright install chromium
-docker compose up --build --wait
+portless compose up -d --build --wait
 pnpm e2e
 ```
 

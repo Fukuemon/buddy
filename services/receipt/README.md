@@ -43,8 +43,9 @@ iBow から出した実訪問の CSV と予定（予定の CSV か Google カレ
 
 ## Running
 
-API の 8080 とフェイクの Issuer の 9000 は、ルートの compose の予定の API と IdP と重なる。  
-compose を起動しているときは、重なる 2 つを `docker compose stop schedule idp` で止めてから実行する。
+API の 8080 とフェイクの Issuer の 9000 は、portless を通さずに起動したルートの compose の予定の API と IdP と重なる。  
+そのときは、重なる 2 つを `docker compose stop schedule idp` で止めてから実行する。  
+portless で起動した compose は、8080 と 9000 を使わない。
 
 照合の API は、`SCHEDULE_URL` の予定の API に同じトークンで `GET /v1/me` を呼び、照合の権限を確認する。  
 予定の API はフェイクの Issuer のトークンを受けないので、この起動の仕方では、照合は 502 か 403 を返す。  

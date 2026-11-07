@@ -72,10 +72,12 @@ E2E のテストのディレクトリは、`context/project.yml` の `e2e.dir`�
 - worker は 1 つにする（`packages/e2e/playwright.config.ts`）。
   - spec は職員ごとのログインの状態のファイルを共有するためである。
   - ローカルの dev サーバに向けて流すときも、`--workers` で増やさない。
-- 環境変数 `E2E_BASE_URL`（デフォルトは `http://localhost:3000`）で、向ける画面を変える。
-  - Google カレンダーの spec が向ける calendarpit と gcalhold は、`E2E_CALENDARPIT_URL` と `E2E_GCALHOLD_URL` で変える。デフォルトは、それぞれ `http://localhost:4173` と `http://localhost:8085` である。
+- 環境変数 `E2E_BASE_URL`（デフォルトは main の checkout の `https://web.buddy.localhost`）で、向ける画面を変える。
+  - Google カレンダーの spec が向ける calendarpit と gcalhold は、`E2E_CALENDARPIT_URL` と `E2E_GCALHOLD_URL` で変える。デフォルトは、それぞれ `https://calendarpit.buddy.localhost` と `https://gcalhold.buddy.localhost` である。
   - 職員の登録と停止の spec は、予定の API とブローカーを直に呼ぶ。向ける先は `E2E_SCHEDULE_URL`、`E2E_HYDRA_URL`、`E2E_BROKER_URL`、`E2E_BROKER_INTERNAL_URL` で変える。
-    - デフォルトは、それぞれ `http://localhost:8080`、`http://localhost:4444`、`http://localhost:8100`、`http://localhost:8101` である。
+    - デフォルトは main の checkout の環境を指す。
+      - `E2E_SCHEDULE_URL` は `https://schedule.buddy.localhost`、`E2E_HYDRA_URL` は `https://hydra.buddy.localhost`
+      - `E2E_BROKER_URL` は `https://broker.buddy.localhost`、`E2E_BROKER_INTERNAL_URL` は `https://8081.broker.buddy.localhost`
 
 ## Test Data and Login
 
@@ -87,12 +89,12 @@ E2E のテストのディレクトリは、`context/project.yml` の `e2e.dir`�
   - ログインのメールは、`packages/e2e/tests/fixtures/env.ts` の `LOGIN_EMAIL` と `LEADER.email` である。
   - ログインの状態を保存したアカウントを、並列の worker で共有しない。保存したファイルを書き合うためである。
 - E2E は、メールの @ の前の部分を上流の `sub` にして入る。
-  - ローカルで同じ職員に別の名前で入ったことがあれば、`docker compose down -v` でデータを消す。
+  - ローカルで同じ職員に別の名前で入ったことがあれば、`portless compose down -v` でデータを消す。
 - 職員の登録、休職、退職の spec は、流すたびに新しいメールの職員を登録し、消さない。
   - 休職にした職員がログインの画面へ戻るのを待つ spec は、web が access token を取り直すまで、4 分ほどかかる。
 - Google カレンダーの取り込みの spec は、森にカレンダーを結び付けて取り込んだまま残す。
-  - 同じ DB で 2 回目を流すと失敗するので、流し直すときは `docker compose down -v` で作り直す。
-- 森 健太や上野 渚で入れないときや、職員の一覧に佐藤 美咲がいないときは、シードを変える前の DB である。`docker compose down -v` で作り直す。
+  - 同じ DB で 2 回目を流すと失敗するので、流し直すときは `portless compose down -v` で作り直す。
+- 森 健太や上野 渚で入れないときや、職員の一覧に佐藤 美咲がいないときは、シードを変える前の DB である。`portless compose down -v` で作り直す。
 
 ## Timeouts
 

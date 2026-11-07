@@ -26,7 +26,7 @@ pnpm --filter @buddy/web dev
 ```
 
 開発サーバーは `http://localhost:3000` で待ち受ける。  
-ルートの compose の web も 3000 を使うので、compose の全体を起動しているときは `docker compose stop web` で止めてから起動する。  
+ルートの compose の web は、portless が選んだポートで待ち受けるので、3000 と重ならない。  
 フェイクの API はブラウザのメモリにデータを持つため、ページを読み直すと作った予定は消える。
 
 BFF の処理をローカルの開発サーバーで確認するときは、`dev:msw` で起動する。  
@@ -34,10 +34,13 @@ BFF の処理をローカルの開発サーバーで確認するときは、`dev
 セッションは、compose の Valkey に置く。  
 2 つの API へのリクエストは、MSW の handler（`src/mocks/`）が受ける。  
 Go の API と PostgreSQL は立てない。  
-設定は `.env.msw` にある。
+設定は `.env.msw` にある。  
+`.env.msw` は、IdP のフェイクを `localhost:9000` で、Valkey を `localhost:6379` で読む。  
+portless は compose の IdP のフェイクのポートを選び直すので、IdP のフェイクだけを、`docker compose` で別のプロジェクトの名前と 9000 番で起動する。  
+Valkey は、main の checkout の compose のものを使う。main の checkout の compose を起動していないときは、`valkey` も一緒に起動する。
 
 ```sh
-docker compose up -d --wait idp valkey
+IDP_PORT=9000 docker compose -p buddy-msw up -d --wait idp
 pnpm --filter @buddy/web dev:msw
 ```
 

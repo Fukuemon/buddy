@@ -49,8 +49,10 @@ API、Google カレンダーの Worker、マイグレーションは、次の環
 
 コマンドは、このディレクトリで実行する。  
 パスワードはローカルでだけ使う値を決めて、環境変数に入れる。  
-API の 8080 とフェイクの Issuer の 9000 は、ルートの compose の予定の API と IdP と重なる。  
-compose を起動しているときは、重なる 2 つを `docker compose stop schedule idp` で止めてから実行する。  
+職員の登録、休職、復職、退職は、ルートの compose のブローカーの内部の API（`127.0.0.1:8101`）と Hydra（`127.0.0.1:4444`）を呼ぶ。  
+試すときは、compose を [CONTRIBUTING.md](../../CONTRIBUTING.md#portless-を通さずに起動する) の「portless を通さずに起動する」の手順で起動する。  
+このとき、API の 8080 とフェイクの Issuer の 9000 は、compose の予定の API と IdP と重なるので、`docker compose stop schedule idp` で止めてから実行する。  
+portless で起動した compose は、8080 と 9000 を使わない。  
 PostgreSQL は、`DB_PORT` のポート（デフォルトは 5432）で `127.0.0.1` にだけ公開する。  
 ほかのコンテナが 5432 を使っているときは、手順の前に `export DB_PORT=15433` のように空いているポートを入れる。
 
@@ -95,9 +97,9 @@ calendarpit は、ルートの `compose/calendarpit/fixture.json` の職員の�
 compose は、同じ calendarpit を `calendarpit` として起動する。  
 calendarpit は、サービスアカウントの token を出さない。  
 このため、`compose/calendarpit/authorize.mjs` で fixture の利用者の refresh token を取り、Application Default Credentials のファイルに書いて渡す。  
-次の手順の calendarpit の 4173 は、ルートの compose の calendarpit と重なる。  
-compose を起動しているときは、`docker compose stop calendarpit` で止めてから実行する。  
-試し終えたら、`docker compose start calendarpit` で compose の calendarpit を戻す。
+次の手順の calendarpit の 4173 は、portless を通さずに起動した compose の calendarpit と重なる。  
+そのときは、`docker compose stop calendarpit` で止めてから実行し、試し終えたら `docker compose start calendarpit` で戻す。  
+portless で起動した compose の calendarpit は、4173 を使わない。
 
 ```sh
 docker run -d --rm --name calendarpit -p 127.0.0.1:4173:4173 \
