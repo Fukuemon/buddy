@@ -13,7 +13,7 @@
 | 変えない項目 | 利用者の名前か、タイトル | `Schedule.visit.patientId` を利用者の一覧（`Patient.name`）で引いた名前、`Schedule.title` | `getSchedule` の `visit_info.patient_id`、`title` |
 | 変えない項目 | 主訪問者か予定者の名前 | `Schedule.staffId` を職員の一覧（`Staff.name`）で引く | `getSchedule` の `staff_id` |
 | 繰り返し | 選択肢と、選んでいる選択肢 | 選択肢は開いた回の日から作る。選んでいる選択肢は、フォームの値の `recurrence` が当たる選択肢 | 開いたときは `recurring_rule` |
-| 繰り返す | 毎週か毎月か | フォームの値の `recurrence.frequency`。開いたときは `Schedule.recurrence.rule.frequency` | `recurring_rule.frequency` |
+| 頻度 | 毎週か毎月か | フォームの値の `recurrence.frequency`。開いたときは `Schedule.recurrence.rule.frequency` | `recurring_rule.frequency` |
 | 間隔 | 毎週の間隔の週の数 | フォームの値の `recurrence.interval`。開いたときは `RecurringRule.interval`（毎月と、値が無いときは 1） | `recurring_rule.interval` |
 | 曜日 | 毎週の曜日の集まり | フォームの値の `recurrence.weeklyDays`。開いたときは `RecurringRule.daysOfWeek`（毎月と、値が無いときは開いた回の曜日の 1 つ） | `recurring_rule.days_of_week` |
 | 日にちで決める、曜日で決める | 日にちか第何週の曜日か | フォームの値の `recurrence.monthlyBy`。開いたときは `RecurringRule.weekOfMonth` があれば `weekday` | `recurring_rule.week_of_month` があるか |
@@ -80,7 +80,7 @@
 | 3 | 変える範囲の説明 | `schedule-recurrence-lead` |
 | 4 | 変えない項目 | `schedule-recurrence-summary` |
 | 5 | 繰り返し | `recurring-rule-preset` |
-| 6 | 繰り返す | `recurring-rule-frequency` |
+| 6 | 頻度 | `recurring-rule-frequency` |
 | 7 | 間隔 | `recurring-rule-interval` |
 | 8 | 曜日 | `recurring-rule-day-of-week-{曜日}` |
 | 7 | 日にちで決める | `recurring-rule-monthly-by-day` |
