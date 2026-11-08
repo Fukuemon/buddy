@@ -150,7 +150,8 @@ test.describe('画面の共通の形', () => {
             await commonShapeParts(dialog).closeButton.click()
           } else {
             await expect(commonShapeParts(dialog).closeButton).toHaveCount(0)
-            await expect(dialog.getByTestId('calendar-review-cancel')).toBeVisible()
+            await expect(rewrite).toHaveClass(/text-danger/)
+            await expect(dialog.getByTestId('calendar-review-cancel')).toHaveText('閉じる')
             await check(
               '「食い違った予定」のダイアログに、予定の日時、職員、最後に変わった日時、理由、予定を開くが出て、右上に × が無く、フッターの左端に赤い文字の「buddy の内容で書き直す」と、右に「閉じる」が出る',
             )
@@ -172,7 +173,7 @@ test.describe('画面の共通の形', () => {
         {
           name: 'review-rewrite-confirm',
           title:
-            '予定の確認のダイアログで buddy の内容で書き直すを押し、確定のボタンの色を見て、キャンセルで戻る',
+            '予定の確認のダイアログで buddy の内容で書き直すを押し、確定のボタンの色を見て、戻るで戻る',
           actor: ACTOR,
           variant,
         },

@@ -274,7 +274,7 @@ test.describe('確認が必要な予定', () => {
         )
       })
 
-      test(`${prefix}キャンセルした単発の予定のダイアログで buddy の内容で書き直すを押した場合、Google カレンダーの予定を消すことが分かるダイアログが出て、キャンセルで予定のダイアログに戻ること`, async ({
+      test(`${prefix}キャンセルした単発の予定のダイアログで buddy の内容で書き直すを押した場合、Google カレンダーの予定を消すことが分かるダイアログが出て、戻るで予定のダイアログに戻ること`, async ({
         browser,
       }) => {
         const url = storyUrl('画面-calendar-calendarreviewcontainer--default')

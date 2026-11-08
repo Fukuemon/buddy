@@ -115,8 +115,8 @@ test.describe('確認が必要な予定とカレンダーの連携の画面仕�
           await expect(page.getByTestId('calendar-review-dialog')).not.toContainText(
             'Google の内容に合わせる',
           )
-          await expect(page.getByTestId('calendar-review-rewrite-export-1')).not.toHaveClass(
-            /wf-btn--primary/,
+          await expect(page.getByTestId('calendar-review-rewrite-export-1')).toHaveClass(
+            /wf-btn--destructive/,
           )
           await expect(page.getByTestId('calendar-review-cancel')).toHaveText('閉じる')
           await check(
@@ -139,7 +139,7 @@ test.describe('確認が必要な予定とカレンダーの連携の画面仕�
         {
           name: 'review-mock-rewrite',
           title:
-            '書き直すの確認のダイアログは、確定の「書き直す」が赤で、「数十秒のうちに」の文が無く、キャンセルで予定の確認へ戻る',
+            '書き直すの確認のダイアログは、確定の「書き直す」が赤で、「数十秒のうちに」の文が無く、戻るで予定の確認へ戻る',
           actor: 'ログインなし',
           variant,
         },
