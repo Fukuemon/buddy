@@ -152,6 +152,25 @@ func (q *Queries) CreateScheduleCancel(ctx context.Context, arg CreateScheduleCa
 	return err
 }
 
+const deleteUnreplacedRecurringScheduleExclusions = `-- name: DeleteUnreplacedRecurringScheduleExclusions :exec
+DELETE FROM recurring_schedule_exclusions e
+WHERE e.recurring_schedule_id = $1 AND e.date >= $2
+  AND NOT EXISTS (
+    SELECT 1 FROM schedules s WHERE s.recurring_schedule_id = e.recurring_schedule_id AND s.original_date = e.date
+  )
+`
+
+type DeleteUnreplacedRecurringScheduleExclusionsParams struct {
+	RecurringScheduleID string
+	FromDate            time.Time
+}
+
+// 置き換えた回の単発の予定がある日は、回が単発の予定と重ならないように残す。
+func (q *Queries) DeleteUnreplacedRecurringScheduleExclusions(ctx context.Context, arg DeleteUnreplacedRecurringScheduleExclusionsParams) error {
+	_, err := q.db.Exec(ctx, deleteUnreplacedRecurringScheduleExclusions, arg.RecurringScheduleID, arg.FromDate)
+	return err
+}
+
 const getRecurringScheduleDetail = `-- name: GetRecurringScheduleDetail :one
 SELECT id, facility_id, schedule_type_id, schedule_type_code, schedule_type_name, date, start_time, end_time, is_over_time_work, staff_id, staff_name, title, description, frequency, day_of_week, day_of_month, week_of_month, end_date, visit_info_id, patient_id, patient_name, assigned_staff_id, assigned_staff_name, companion_id, companion_name, service_code_id, service_code, created_at, updated_at, version, ends_next_day FROM recurring_schedule_details WHERE id = $1
 `
@@ -545,6 +564,38 @@ func (q *Queries) ListRecurringScheduleExclusions(ctx context.Context, recurring
 	return items, nil
 }
 
+const listReplacedOriginalDates = `-- name: ListReplacedOriginalDates :many
+SELECT original_date::date FROM schedules
+WHERE recurring_schedule_id = $1 AND original_date >= $2
+ORDER BY original_date
+`
+
+type ListReplacedOriginalDatesParams struct {
+	RecurringScheduleID *string
+	FromDate            *time.Time
+}
+
+// 繰り返しの予定の回を置き換えた単発の予定（キャンセルしたものを含む）の、元の回の日付を読む。
+func (q *Queries) ListReplacedOriginalDates(ctx context.Context, arg ListReplacedOriginalDatesParams) ([]time.Time, error) {
+	rows, err := q.db.Query(ctx, listReplacedOriginalDates, arg.RecurringScheduleID, arg.FromDate)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []time.Time{}
+	for rows.Next() {
+		var original_date time.Time
+		if err := rows.Scan(&original_date); err != nil {
+			return nil, err
+		}
+		items = append(items, original_date)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listScheduleDetailsByFacility = `-- name: ListScheduleDetailsByFacility :many
 SELECT id, facility_id, schedule_type_id, schedule_type_code, schedule_type_name, date, start_time, end_time, is_over_time_work, staff_id, staff_name, title, description, recurring_schedule_id, original_date, visit_info_id, patient_id, patient_name, assigned_staff_id, assigned_staff_name, companion_id, companion_name, service_code_id, service_code, cancel_id, cancel_reason, created_at, updated_at, version, ends_next_day FROM schedule_details
 WHERE facility_id = $1
@@ -679,6 +730,37 @@ func (q *Queries) LockSchedule(ctx context.Context, id string) (string, error) {
 	var id_2 string
 	err := row.Scan(&id_2)
 	return id_2, err
+}
+
+const updateRecurringScheduleRule = `-- name: UpdateRecurringScheduleRule :exec
+UPDATE recurring_schedules
+SET date = $1, frequency = $2, day_of_week = $3,
+    day_of_month = $4, week_of_month = $5, end_date = $6,
+    version = version + 1
+WHERE id = $7
+`
+
+type UpdateRecurringScheduleRuleParams struct {
+	Date        time.Time
+	Frequency   string
+	DayOfWeek   *int16
+	DayOfMonth  *int16
+	WeekOfMonth *int16
+	EndDate     *time.Time
+	ID          string
+}
+
+func (q *Queries) UpdateRecurringScheduleRule(ctx context.Context, arg UpdateRecurringScheduleRuleParams) error {
+	_, err := q.db.Exec(ctx, updateRecurringScheduleRule,
+		arg.Date,
+		arg.Frequency,
+		arg.DayOfWeek,
+		arg.DayOfMonth,
+		arg.WeekOfMonth,
+		arg.EndDate,
+		arg.ID,
+	)
+	return err
 }
 
 const updateSchedule = `-- name: UpdateSchedule :exec

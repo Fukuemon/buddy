@@ -163,21 +163,9 @@ func (s server) CreateRecurringSchedule(ctx context.Context, req openapi.CreateR
 	if err != nil {
 		return nil, err
 	}
-	rule := b.RecurringRule
-	var endDate *civil.Date
-	if rule.EndDate != nil {
-		d, err := bodyDate(*rule.EndDate)
-		if err != nil {
-			return nil, err
-		}
-		endDate = &d
-	}
-	ruleIn := schedule.RuleInput{
-		Frequency:   schedule.Frequency(rule.Frequency),
-		DayOfWeek:   rule.DayOfWeek,
-		DayOfMonth:  rule.DayOfMonth,
-		WeekOfMonth: rule.WeekOfMonth,
-		EndDate:     endDate,
+	ruleIn, err := ruleInput(b.RecurringRule)
+	if err != nil {
+		return nil, err
 	}
 	f, err := s.u.Organization.GetFacility(ctx, req.FacilityId)
 	if err != nil {
@@ -199,6 +187,62 @@ func (s server) CreateRecurringSchedule(ctx context.Context, req openapi.CreateR
 		return nil, err
 	}
 	return openapi.CreateRecurringSchedule201JSONResponse(toRecurringSchedule(d)), nil
+}
+
+// ruleInput は、本文の繰り返しの規則を、操作の入力にする。
+func ruleInput(rule openapi.RecurringRule) (schedule.RuleInput, error) {
+	var endDate *civil.Date
+	if rule.EndDate != nil {
+		d, err := bodyDate(*rule.EndDate)
+		if err != nil {
+			return schedule.RuleInput{}, err
+		}
+		endDate = &d
+	}
+	return schedule.RuleInput{
+		Frequency:   schedule.Frequency(rule.Frequency),
+		DayOfWeek:   rule.DayOfWeek,
+		DayOfMonth:  rule.DayOfMonth,
+		WeekOfMonth: rule.WeekOfMonth,
+		EndDate:     endDate,
+	}, nil
+}
+
+// ChangeRecurringRule は、職員の事業所の正本のモードで、buddy_primary なら schedule の規則の変更を、google_primary なら calendarwrite の規則の変更を呼ぶ。
+func (s server) ChangeRecurringRule(ctx context.Context, req openapi.ChangeRecurringRuleRequestObject) (openapi.ChangeRecurringRuleResponseObject, error) {
+	b := req.Body
+	ruleIn, err := ruleInput(b.RecurringRule)
+	if err != nil {
+		return nil, err
+	}
+	var effective *civil.Date
+	if b.EffectiveDate != nil {
+		d, err := bodyDate(*b.EffectiveDate)
+		if err != nil {
+			return nil, err
+		}
+		effective = &d
+	}
+	f, err := s.staffFacility(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if f.SourceMode == organization.SourceGooglePrimary {
+		d, err := s.u.CalendarWrites.ChangeRule(ctx, f.ID, req.RecurringScheduleId, value(b.Id), value(b.Etag), effective, ruleIn)
+		if err != nil {
+			return nil, err
+		}
+		return openapi.ChangeRecurringRule200JSONResponse(toRecurringSchedule(d)), nil
+	}
+	rs, err := s.u.Schedules.ChangeRule(ctx, req.RecurringScheduleId, effective, ruleIn)
+	if err != nil {
+		return nil, err
+	}
+	d, err := s.u.Schedules.GetRecurring(ctx, rs.ID)
+	if err != nil {
+		return nil, err
+	}
+	return openapi.ChangeRecurringRule200JSONResponse(toRecurringSchedule(d)), nil
 }
 
 // ChangeOccurrence は、職員の事業所の正本のモードで、buddy_primary なら schedule の回の置き換えを、google_primary なら calendarwrite の回の変更を呼ぶ。
@@ -287,6 +331,27 @@ func (s server) CancelSchedule(ctx context.Context, req openapi.CancelScheduleRe
 		return nil, err
 	}
 	return openapi.CancelSchedule201JSONResponse(toCancel(c)), nil
+}
+
+// CancelOccurrence は、schedule の回のキャンセルを呼ぶ。google_primary の事業所では、何も読まずに 409（google_primary）で拒む。
+// google_primary の繰り返しの予定は buddy の繰り返しの予定のテーブルに行が無く、schedule に渡すと 404 になるためである。
+func (s server) CancelOccurrence(ctx context.Context, req openapi.CancelOccurrenceRequestObject) (openapi.CancelOccurrenceResponseObject, error) {
+	original, err := bodyDate(req.Body.OriginalDate)
+	if err != nil {
+		return nil, err
+	}
+	f, err := s.staffFacility(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if err := schedule.RequireWritable(f); err != nil {
+		return nil, err
+	}
+	c, err := s.u.Schedules.CancelOccurrence(ctx, req.RecurringScheduleId, original, req.Body.Reason)
+	if err != nil {
+		return nil, err
+	}
+	return openapi.CancelOccurrence201JSONResponse(toCancel(c)), nil
 }
 
 // staffFacility は、認証のミドルウェアが特定した職員の事業所を返す。パスに事業所の無い予定の操作が、正本のモードを読むのに使う。

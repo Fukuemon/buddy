@@ -14,7 +14,6 @@ import {
   type Team,
   type Viewer,
 } from '../types'
-import { parseOccurrenceId } from './recurrence'
 
 type Schemas = components['schemas']
 /** 予定の API が返す予定。 */
@@ -150,7 +149,6 @@ export const fromApiSchedule = (schedule: ApiSchedule): Schedule => {
   if (schedule.cancel !== null) result.cancel = { reason: schedule.cancel.reason }
   if (schedule.source === 'google_calendar') result.fromGoogleCalendar = true
   if (schedule.etag !== null) result.etag = schedule.etag
-  if (parseOccurrenceId(schedule.id) !== undefined) result.recurringOccurrence = true
   if (schedule.review_reason !== null) result.reviewReason = schedule.review_reason
   return result
 }

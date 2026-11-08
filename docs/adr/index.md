@@ -99,6 +99,12 @@
 
 - ADR-0035（[worktree ごとのローカル環境を、portless で worktree ごとのホスト名の HTTPS の URL で出す](0035-local-hostnames-with-portless.md)）は、ADR-0036 に置換した。
 
+### 繰り返しの予定
+
+| ADR | 題 | Status |
+| --- | --- | --- |
+| [ADR-0037](0037-recurring-rule-change.md) | 繰り返しの予定の規則の変更を、適用の日以降の回にだけ当て、繰り返しの予定を適用の日で分ける | 承認 |
+
 ## ADR の間の依存
 
 次の図は、ADR が、Context で前提にした ADR を指す向きを示す。統合の ADR は、まとめた ADR の前提を引き継ぐので、2 本が互いを指すことがある。
@@ -146,6 +152,9 @@ flowchart TB
     subgraph worker["calendar-worker"]
         A0032["0032"]
     end
+    subgraph recurring["繰り返しの予定"]
+        A0037["0037"]
+    end
 
     A0001 --> A0007
     A0001 --> A0002
@@ -181,6 +190,7 @@ flowchart TB
     A0032 --> A0021
     A0032 --> A0029
     A0032 --> A0025
+    A0037 --> A0029
 ```
 
 - ADR-0027、ADR-0028、ADR-0030、ADR-0033、ADR-0034、ADR-0036 は、ほかの ADR を前提にせず、前提にもされないので、図に描かない。
