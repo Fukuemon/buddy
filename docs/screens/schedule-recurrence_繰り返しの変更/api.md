@@ -14,7 +14,8 @@
 | 変えない項目 | 主訪問者か予定者の名前 | `Schedule.staffId` を職員の一覧（`Staff.name`）で引く | `getSchedule` の `staff_id` |
 | 繰り返し | 選択肢と、選んでいる選択肢 | 選択肢は開いた回の日から作る。選んでいる選択肢は、フォームの値の `recurrence` が当たる選択肢 | 開いたときは `recurring_rule` |
 | 繰り返す | 毎週か毎月か | フォームの値の `recurrence.frequency`。開いたときは `Schedule.recurrence.rule.frequency` | `recurring_rule.frequency` |
-| 曜日 | 毎週の曜日 | フォームの値の `recurrence.dayOfWeek`。開いたときは `RecurringRule.dayOfWeek` | `recurring_rule.day_of_week` |
+| 間隔 | 毎週の間隔の週の数 | フォームの値の `recurrence.interval`。開いたときは `RecurringRule.interval`（毎月と、値が無いときは 1） | `recurring_rule.interval` |
+| 曜日 | 毎週の曜日の集まり | フォームの値の `recurrence.weeklyDays`。開いたときは `RecurringRule.daysOfWeek`（毎月と、値が無いときは開いた回の曜日の 1 つ） | `recurring_rule.days_of_week` |
 | 日にちで決める、曜日で決める | 日にちか第何週の曜日か | フォームの値の `recurrence.monthlyBy`。開いたときは `RecurringRule.weekOfMonth` があれば `weekday` | `recurring_rule.week_of_month` があるか |
 | 日にち | 毎月の日 | フォームの値の `recurrence.dayOfMonth`。開いたときは `RecurringRule.dayOfMonth` | `recurring_rule.day_of_month` |
 | 週 | 毎月の第何週か | フォームの値の `recurrence.weekOfMonth`。開いたときは `RecurringRule.weekOfMonth` | `recurring_rule.week_of_month` |
@@ -70,28 +71,29 @@
 | 4 | 変えない項目 | `schedule-recurrence-summary` |
 | 5 | 繰り返し | `recurring-rule-preset` |
 | 6 | 繰り返す | `recurring-rule-frequency` |
-| 7 | 曜日 | `recurring-rule-day-of-week-{曜日}` |
+| 7 | 間隔 | `recurring-rule-interval` |
+| 8 | 曜日 | `recurring-rule-day-of-week-{曜日}` |
 | 7 | 日にちで決める | `recurring-rule-monthly-by-day` |
 | 8 | 日にち | `recurring-rule-day-of-month` |
 | 9 | 曜日で決める | `recurring-rule-monthly-by-weekday` |
 | 10 | 週 | `recurring-rule-week-of-month` |
 | 11 | 毎月の曜日 | `recurring-rule-monthly-day-of-week` |
 | 6 | 終了日なし | `recurring-rule-ends-never` |
-| 8 | 終了日なし | `recurring-rule-ends-never` |
+| 9 | 終了日なし | `recurring-rule-ends-never` |
 | 12 | 終了日なし | `recurring-rule-ends-never` |
 | 7 | 終了日あり | `recurring-rule-ends-on` |
-| 9 | 終了日あり | `recurring-rule-ends-on` |
+| 10 | 終了日あり | `recurring-rule-ends-on` |
 | 13 | 終了日あり | `recurring-rule-ends-on` |
 | 8 | 終了日 | `recurring-rule-end-date` |
-| 10 | 終了日 | `recurring-rule-end-date` |
+| 11 | 終了日 | `recurring-rule-end-date` |
 | 14 | 終了日 | `recurring-rule-end-date` |
 | 9 | キャンセル | `schedule-recurrence-cancel` |
 | 10 | キャンセル | `schedule-recurrence-cancel` |
-| 11 | キャンセル | `schedule-recurrence-cancel` |
+| 12 | キャンセル | `schedule-recurrence-cancel` |
 | 15 | キャンセル | `schedule-recurrence-cancel` |
 | 10 | 保存 | `schedule-recurrence-submit` |
 | 11 | 保存 | `schedule-recurrence-submit` |
-| 12 | 保存 | `schedule-recurrence-submit` |
+| 13 | 保存 | `schedule-recurrence-submit` |
 | 16 | 保存 | `schedule-recurrence-submit` |
 
 - 番号は、状態ごとの構成要素の表の番号である。同じ要素が状態ごとに違う番号を持つときは、番号ごとに行を分ける。

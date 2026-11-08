@@ -169,3 +169,14 @@
     gap: 4px;
   }
 }
+
+/* 間隔の欄。見出しを隠した 44px の数の欄（packages/ui の NumberPicker の isLabelHidden）の右に「週ごと」を置く */
+.sr-interval {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.sr-interval__input {
+  width: 6rem;
+}

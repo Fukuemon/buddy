@@ -1,6 +1,6 @@
 # schedule-recurrence 繰り返しの変更
 
-職員が、繰り返しの予定の 1 回を開き、その回の日以降の回の繰り返しの規則（毎週か毎月か、曜日か日、終了日）を変える画面。  
+職員が、繰り返しの予定の 1 回を開き、その回の日以降の回の繰り返しの規則（毎週か毎月か、毎週の間隔と曜日か毎月の日、終了日）を変える画面。  
 予定の詳細の「編集」のメニューの「繰り返しを変更」から開き、予定のカレンダーの上にモーダルで重ねて出す。  
 保存すると予定のカレンダーに戻る。
 
@@ -100,12 +100,13 @@
     | 4 | 領域 | 変えない項目 | [変えない項目](#変えない項目) |
     | 5 | セレクト | 繰り返し | [繰り返し](#繰り返し) |
     | 6 | セレクト | 繰り返す | [繰り返す](#繰り返す) |
-    | 7 | ラジオボタン | 曜日 | [曜日](#曜日) |
-    | 8 | ラジオボタン | 終了日なし | [終了日なし](#終了日なし) |
-    | 9 | ラジオボタン | 終了日あり | [終了日あり](#終了日あり) |
-    | 10 | テキストボックス | 終了日 | [終了日](#終了日) |
-    | 11 | ボタン | キャンセル | [キャンセル](#キャンセル) |
-    | 12 | ボタン | 保存 | [保存](#保存) |
+    | 7 | テキストボックス | 間隔 | [間隔](#間隔) |
+    | 8 | チェックボックス | 曜日 | [曜日](#曜日) |
+    | 9 | ラジオボタン | 終了日なし | [終了日なし](#終了日なし) |
+    | 10 | ラジオボタン | 終了日あり | [終了日あり](#終了日あり) |
+    | 11 | テキストボックス | 終了日 | [終了日](#終了日) |
+    | 12 | ボタン | キャンセル | [キャンセル](#キャンセル) |
+    | 13 | ボタン | 保存 | [保存](#保存) |
 
 === "カスタム（毎月）"
 
@@ -354,17 +355,17 @@
 
 - 開いたときは、今の繰り返しに当たる選択肢を選ぶ。どれにも当たらなければ「カスタム…」を選び、「カスタム（毎週）」か「カスタム（毎月）」の状態で始める。
 - 第何週かは、月の 1 日から 7 日ずつ区切って数える。
-- 毎週の選択肢は、今の規則の間隔で送る。間隔が 1 なら「毎週」、2 なら「隔週」、3 以上なら「3 週ごと」の形で出す。今の規則が毎月なら、間隔は 1 である。
+- 毎週の選択肢は、[間隔](#間隔) の値で送る。間隔が 1 なら「毎週」、2 なら「隔週」、3 以上なら「3 週ごと」の形で出す。
+  - 間隔の初期値は今の規則の間隔で、今の規則が毎月なら 1 である。曜日の選択肢を選んでも、間隔は 1 に戻さない（ADR-0038）。
   - 今の規則の選択肢と間隔の文言は、[RecurringRuleFields の BiweeklyDays](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-recurringrulefields--biweekly-days) にある。
   - 3 週ごとの文言は、[RecurringRuleFields の EveryThreeWeeks](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-recurringrulefields--every-three-weeks) にある。
-- 複数の曜日と間隔を選ぶ欄は、#892 で足す。それまでは、曜日を 1 つにしても今の規則の間隔を保つ（ADR-0038）。
 
 **カタログ**: [RecurringRuleFields の Weekly](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-recurringrulefields--weekly)、[RecurringRuleFields の Custom](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-recurringrulefields--custom)
 
 **操作**:
 
 - 「カスタム…」のほかの選択肢を選ぶと、その繰り返しにし、繰り返すと、曜日か日の欄を閉じる。
-- 「カスタム…」を選ぶと、同じモーダルの中に [繰り返す](#繰り返す) と、[曜日](#曜日) か日の欄を開き、「カスタム（毎週）」か「カスタム（毎月）」の状態にする。
+- 「カスタム…」を選ぶと、同じモーダルの中に [繰り返す](#繰り返す) と、[間隔](#間隔) と [曜日](#曜日) か日の欄を開き、「カスタム（毎週）」か「カスタム（毎月）」の状態にする。
   - 欄の初期値は、その前に選んでいた繰り返しのままにする。
 - 「カスタム…」で選んだ繰り返しがほかの選択肢のどれかと同じになっても、「カスタム…」を選んだまま欄を開いておく。
 
@@ -373,25 +374,43 @@
 **概要**: 「カスタム…」で、毎週か毎月かを選ぶセレクト。
 
 **値のソース**: 見出し「繰り返す」と、「毎週」「毎月」。  
-「毎週」は、今の規則の間隔が 2 なら「隔週」、3 以上なら「3 週ごと」の形で出す。
+「毎週」は、[間隔](#間隔) の値が 2 なら「隔週」、3 以上なら「3 週ごと」の形で出す。間隔の欄を空にしている間は「毎週」と出す。
 
 **カタログ**: [RecurringRuleFields の Custom](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-recurringrulefields--custom)、[ScheduleRecurrenceModalContainer の CustomMonthly](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-schedulerecurrencemodalcontainer--custom-monthly)
 
-**操作**: 選ぶと、「毎週」では [曜日](#曜日) を、「毎月」では日の欄を出し、「カスタム（毎週）」か「カスタム（毎月）」の状態にする。
+**操作**: 選ぶと、「毎週」では [間隔](#間隔) と [曜日](#曜日) を、「毎月」では日の欄を出し、「カスタム（毎週）」か「カスタム（毎月）」の状態にする。
 
 1. 替えても、ほかの頻度の欄の値は残す。
 
+## 間隔
+
+**概要**: 毎週の繰り返しを、何週ごとに繰り返すかを入れる数のテキストボックス。  
+見出し「間隔」の右に欄を置き、欄の右に「週ごと」を出す。
+
+**値のソース**: 1〜52 の週の数。  
+1 が毎週、2 が隔週である。  
+読み上げの名前は「間隔」。  
+初期値は、今の繰り返しが毎週ならその間隔で、毎月なら 1。
+
+- 隔週の 1 週目は、変える範囲の説明の日付を含む週である。週は日曜に始まる。
+  - ADR-0038: [繰り返しの規則に、毎週の複数の曜日と間隔を足し、終わりは終了日だけで持つ](../../adr/0038-recurring-rule-scope.md)
+
+**カタログ**: [RecurringRuleFields の Custom](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-recurringrulefields--custom)、[RecurringRuleFields の CustomWeeklyInvalid](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-recurringrulefields--custom-weekly-invalid)
+
 ## 曜日
 
-**概要**: 毎週の繰り返しの曜日を 1 つ選ぶ、丸いボタンのラジオボタン。
+**概要**: 毎週の繰り返しの曜日を 1 つ以上選ぶ、丸いボタンのチェックボックス。
 
 **値のソース**: 見出し「曜日」と、「月」「火」「水」「木」「金」「土」「日」の 7 つのボタン。  
 選んだ曜日は主の色で塗る。  
 読み上げの名前は「月曜日」から「日曜日」。  
-初期値は、今の繰り返しが毎週ならその曜日（複数の曜日なら先頭の曜日）で、毎月なら開いた回の曜日。  
-「カスタム…」を選んだ後は、選んだ 1 つの曜日の繰り返しを送る。
+初期値は、今の繰り返しが毎週ならその曜日の全てで、毎月なら開いた回の曜日。
 
-**カタログ**: [RecurringRuleFields の Custom](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-recurringrulefields--custom)
+**カタログ**: [RecurringRuleFields の Custom](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-recurringrulefields--custom)、[RecurringRuleFields の CustomWeeklyInvalid](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-recurringrulefields--custom-weekly-invalid)
+
+**操作**: 押すと、選んでいない曜日は選び、選んだ曜日は外す。
+
+1. 選んだ曜日は、月曜から日曜の順に並べて送る。
 
 ## 日にちで決める
 
@@ -518,6 +537,8 @@
 | 欄 | 条件 | 文 |
 | --- | --- | --- |
 | 繰り返し | 繰り返しも終了日も、今のまま変えていない | 「今の繰り返しから変えてください」 |
+| 間隔 | 繰り返すが毎週で、1〜52 の整数でないか、空 | 「間隔は 1〜52 の週の数で入力してください」 |
+| 曜日 | 繰り返すが毎週で、曜日を 1 つも選んでいない | 「曜日を 1 つ以上選んでください」 |
 | 終了日 | 「あり」を選び、日付として読めない | 「終了日を入力してください」 |
 | 終了日 | 繰り返しを今のままにし、変える範囲の説明の日付の前の日より前 | 「終了日は 2026-11-08 以降にしてください」の形。日付は変える範囲の説明の日付の前の日 |
 | 終了日 | 繰り返しを変え、変える範囲の説明の日付より前 | 「繰り返しを変えるときは、終了日を 2026-11-09 以降にしてください」の形。日付は変える範囲の説明の日付 |
