@@ -84,6 +84,12 @@ web と予定の API の責務と依存は、[buddy Design Doc](https://github.c
   - 予定の API は、変更の予定の種類と訪問の情報をそのまま受けるので、BFF の変換は予定の作成と同じである。
 - 繰り返しの予定の回を保存すると、BFF はその回だけを単発の予定に置き換える（`POST /v1/schedules/recurring/{recurring_schedule_id}/occurrences`）。
   - 画面は、置き換えた予定の ID の詳細へ戻る。
+- 繰り返しの予定のまだ変えていない回（`Schedule.recurrence` を持つ回）では、予定の編集が「この日以降の全ての回」を選べる。選ぶと、BFF は規則を変える（`PUT /v1/schedules/recurring/{recurring_schedule_id}/rule`、ADR-0037）。
+  - `buddy_primary` では回の ID から繰り返しの予定を読み、`google_primary` では予定の API が回に返す親の ID と規則（`recurring_schedule_id`、`recurring_rule`）を使う。`getRecurringSchedule` は `google_primary` で 404 を返すためである。
+  - 適用の日は開いた回の日で、`etag` は回の `etag`（親の予定の etag）である。新しい繰り返しの予定の `id` は編集を開いたときに作り、送り直しでも同じ値を送る。
+  - 終了日だけを変えたときは、今の規則の終了日だけを替えて送る。
+  - 成功すると、開いた回の取得の結果を捨て、予定のカレンダーへ戻る。開いた回は別の繰り返しの予定の回に替わることがあるためである。
+  - 規則の欄は `apps/web/src/features/schedule/components/RecurringRuleFields.tsx` にあり、予定の作成の繰り返しでも使う。
 - 予定のキャンセルは、詳細から開くモーダルで理由を入れ、`POST /v1/schedules/{schedule_id}/cancel` に送る。
   - BFF が画面で展開した `buddy_primary` の繰り返しの予定の回は、回のキャンセルの API に回の日付と理由を送る。
     - API は `POST /v1/schedules/recurring/{recurring_schedule_id}/occurrences/cancel` である。

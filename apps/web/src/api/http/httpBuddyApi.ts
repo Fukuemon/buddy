@@ -18,6 +18,7 @@ import {
   fromApiTeam,
   keepCurrentVisit,
   splitDateTime,
+  toApiRecurringRule,
   toSlotRequest,
 } from './scheduleMapper'
 
@@ -250,6 +251,20 @@ export const createHttpBuddyApi = ({ baseUrl, fetch }: HttpApiOptions): BuddyApi
             body: etag === null ? { reason } : { reason, etag },
           }),
         )
+      },
+      changeRule: async (_facilityId, recurringScheduleId, { effectiveDate, rule, id }, etag) => {
+        const body = {
+          effective_date: effectiveDate,
+          recurring_rule: toApiRecurringRule(rule),
+          id,
+        }
+        const changed = await unwrap(
+          client.PUT('/v1/schedules/recurring/{recurring_schedule_id}/rule', {
+            params: { path: { recurring_schedule_id: recurringScheduleId } },
+            body: etag === null ? body : { ...body, etag },
+          }),
+        )
+        return { id: changed.id, date: changed.date }
       },
     },
     staff: {

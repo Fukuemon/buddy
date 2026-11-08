@@ -221,7 +221,6 @@
 | 8 | 終了日を決める | `recurring-rule-has-end-date` |
 | 9 | 終了日を決める | `recurring-rule-has-end-date` |
 | 8 | 終了日 | `recurring-rule-end-date` |
-| 9 | 入力の誤りの文 | `recurring-rule-end-date-error` |
 
 - 番号は、状態ごとの構成要素の表の番号である。同じ要素が状態ごとに違う番号を持つときは、番号ごとに行を分ける。
 - 閉じるの `modal-close` は、packages/ui の `Modal` が付ける。
@@ -231,7 +230,7 @@
   - 繰り返し: `recurring-rule-frequency-weekly`、`recurring-rule-frequency-monthly`
   - 毎月の決め方: `recurring-rule-monthly-by-day`、`recurring-rule-monthly-by-weekday`
 - 曜日の `{曜日}` は、1（月曜）から 7（日曜）の数である。
-- `recurring-rule-` で始まる testid は、予定の作成でも使う繰り返しの欄（`apps/web/src/features/schedule/components/RecurringRuleFields.tsx`）が付ける。入力の誤りの文の testid は、欄の testid に `-error` を付けたものである。
+- `recurring-rule-` で始まる testid は、予定の作成でも使う繰り返しの欄（`apps/web/src/features/schedule/components/RecurringRuleFields.tsx`）が付ける。
 - 項目の一覧の testid の末尾は、項目の ID（`title`、`date-time`、`patient`、`staff`、`category`、`description`）である。
 - サービスコードの `{コード}` は、`listServiceCodes` の `code` の表記のままである。
 - 利用者の一覧と職員の一覧の testid は、行のラジオボタンに付く。
@@ -240,7 +239,7 @@
   - 「権限が無い」の状態のモーダルの `schedule-edit-forbidden`
   - 「繰り返しの規則を buddy で表せない」の状態のモーダルの `schedule-edit-recurrence-unsupported`
   - キャンセルした予定のモーダルの `schedule-edit-cancelled`。この状態はモックを持たない
-- 読み込み中の表示、読み込みの失敗の文、権限が無いことの説明、繰り返しの規則を変えられないことの文、保存の失敗の文は、testid を持たない。
+- 読み込み中の表示、読み込みの失敗の文、権限が無いことの説明、繰り返しの規則を変えられないことの文、保存の失敗の文、繰り返しの入力の誤りの文は、testid を持たない。
 
 ## 状態と失敗の要因
 

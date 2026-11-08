@@ -18,6 +18,9 @@ const {
   GooglePrimaryRecurrenceUnsupported,
   NotFound,
   SuspendedStaff,
+  RecurringFollowingPast,
+  RecurringOccurrence,
+  Visit,
   VisitWithOtherServiceCode,
 } = composeStories(stories)
 
@@ -32,6 +35,104 @@ describe('ScheduleEditModalContainer', () => {
       'この予定を編集する権限がありません。',
     )
     expect(screen.queryByTestId('schedule-edit-submit')).not.toBeInTheDocument()
+  })
+
+  it('繰り返しの予定の回でない予定では、変更の範囲を出さない', async () => {
+    render(<Visit />)
+    expect(await screen.findByTestId('schedule-field-date-time')).toBeInTheDocument()
+    expect(screen.queryByTestId('schedule-edit-scope')).not.toBeInTheDocument()
+  })
+
+  it('繰り返しの予定の回では、変更の範囲を「この回だけ」にして、回のフォームを出す', async () => {
+    render(<RecurringOccurrence />)
+    expect(await screen.findByTestId('schedule-edit-scope-occurrence')).toBeChecked()
+    expect(screen.getByTestId('schedule-field-date-time')).toBeInTheDocument()
+  })
+
+  it('「この日以降の全ての回」を選ぶと、項目の一覧の代わりに、今の繰り返しを初期値にした繰り返しの欄を出す', async () => {
+    render(<RecurringOccurrence />)
+    await userEvent.click(await screen.findByTestId('schedule-edit-scope-following'))
+
+    expect(screen.queryByTestId('schedule-field-date-time')).not.toBeInTheDocument()
+    expect(screen.getByTestId('schedule-edit-rule-lead')).toHaveTextContent(
+      '以降の回の繰り返しだけを変え',
+    )
+    expect(screen.getByTestId('recurring-rule-frequency-weekly')).toBeChecked()
+    expect(screen.getByTestId('recurring-rule-has-end-date')).not.toBeChecked()
+  })
+
+  it('繰り返しを変えずに保存すると、変えることを促し、規則の変更を送らない', async () => {
+    const { api } = RecurringOccurrence.parameters.appRouter as AppRouterParameters
+    if (api === undefined) throw new Error('story にフェイクの API が無い')
+    const changeRule = vi.spyOn(api.schedules, 'changeRule')
+    render(<RecurringOccurrence />)
+    await userEvent.click(await screen.findByTestId('schedule-edit-scope-following'))
+    await userEvent.click(screen.getByTestId('schedule-edit-submit'))
+
+    expect(await screen.findByText('今の繰り返しから変えてください')).toBeInTheDocument()
+    expect(changeRule).not.toHaveBeenCalled()
+  })
+
+  it('終了日だけを変えると、今の規則の終了日だけを替えて送る', async () => {
+    const { api } = RecurringOccurrence.parameters.appRouter as AppRouterParameters
+    if (api === undefined) throw new Error('story にフェイクの API が無い')
+    const changeRule = vi.spyOn(api.schedules, 'changeRule')
+    render(<RecurringOccurrence />)
+    await userEvent.click(await screen.findByTestId('schedule-edit-scope-following'))
+    await userEvent.click(screen.getByTestId('recurring-rule-has-end-date'))
+    await userEvent.clear(screen.getByTestId('recurring-rule-end-date'))
+    await userEvent.type(screen.getByTestId('recurring-rule-end-date'), '2099-12-31')
+    await userEvent.click(screen.getByTestId('schedule-edit-submit'))
+
+    await waitFor(() => expect(changeRule).toHaveBeenCalledOnce())
+    expect(changeRule.mock.calls[0]?.[2].rule).toEqual({
+      frequency: 'weekly',
+      dayOfWeek: null,
+      dayOfMonth: null,
+      weekOfMonth: null,
+      endDate: '2099-12-31',
+    })
+  })
+
+  it('今日より前の回で「この日以降の全ての回」を選ぶと、変えられないことを出し、保存を押せない', async () => {
+    render(<RecurringFollowingPast />)
+    await userEvent.click(await screen.findByTestId('schedule-edit-scope-following'))
+
+    expect(screen.getByTestId('schedule-edit-rule-past')).toHaveTextContent(
+      '今日より前の回からは、繰り返しを変えられません。',
+    )
+    expect(screen.getByTestId('schedule-edit-submit')).toHaveAttribute('aria-disabled', 'true')
+  })
+
+  it('曜日を変えて保存すると、開いた回の日を適用の日にして規則の変更を送り、予定のカレンダーへ戻る', async () => {
+    const { api, history } = RecurringOccurrence.parameters.appRouter as AppRouterParameters
+    if (api === undefined || history === undefined)
+      throw new Error('story にフェイクの API と履歴が無い')
+    // 履歴は story の間で共有し、前のテストの保存でカレンダーへ移っていることがあるので、編集の URL に戻す
+    history.push('/schedule/recurring-occurrence/edit')
+    const changeRule = vi.spyOn(api.schedules, 'changeRule')
+    render(<RecurringOccurrence />)
+    await userEvent.click(await screen.findByTestId('schedule-edit-scope-following'))
+    const opened = screen.getByTestId('schedule-edit-rule-lead').textContent?.slice(0, 10)
+    await userEvent.click(screen.getByTestId('recurring-rule-day-of-week-3'))
+    await userEvent.click(screen.getByTestId('schedule-edit-submit'))
+
+    await waitFor(() => expect(history.location.pathname).toBe('/schedule'))
+    const [, recurringId, change, etag] = changeRule.mock.calls[0] ?? []
+    expect(recurringId).toBe('recurring-1')
+    expect(change).toMatchObject({
+      effectiveDate: opened,
+      rule: {
+        frequency: 'weekly',
+        dayOfWeek: 3,
+        dayOfMonth: null,
+        weekOfMonth: null,
+        endDate: null,
+      },
+    })
+    expect(change?.id).toMatch(/^[0-9A-HJKMNP-TV-Z]{26}$/)
+    expect(etag).toBeNull()
+    expect(new URLSearchParams(history.location.search).get('date')).toBe(opened)
   })
 
   it('開いたときは、利用者のサービスコードによらず、予定のサービスコードと提供時間のままにする', async () => {

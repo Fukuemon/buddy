@@ -325,6 +325,104 @@ describe('createHttpBuddyApi', () => {
     ])
   })
 
+  it('繰り返しの予定の回は、繰り返しの予定の ID と規則を持ち、置き換えた予定と google_primary の単発の予定は持たない', async () => {
+    const rs: components['schemas']['RecurringSchedule'] = {
+      ...schedule('01M3TC6E9G4N8Q2R5T7V9W1X3Y', { date: '2026-10-06' }),
+      recurring_rule: { frequency: 'weekly', day_of_week: 2, end_date: '2026-12-31' },
+      exclusion_dates: [],
+    }
+    server.use(
+      scheduleHttp.get('/v1/schedules/recurring/{recurring_schedule_id}', ({ response }) =>
+        response(200).json(rs),
+      ),
+      scheduleHttp.get('/v1/schedules/{schedule_id}', ({ params, response }) =>
+        response(200).json(
+          params.schedule_id === 'gcal-occurrence'
+            ? schedule('gcal-occurrence', {
+                source: 'google_calendar',
+                etag: '"parent"',
+                recurring_schedule_id: '01M3TC6E9G4N8Q2R5T7V9W1X40',
+                recurring_rule: { frequency: 'monthly', day_of_month: 20 },
+              })
+            : schedule('replaced', { recurring_schedule_id: rs.id }),
+        ),
+      ),
+    )
+    const occurrence = await api().schedules.get('facility-1', occurrenceId(rs.id, '2026-10-20'))
+    expect(occurrence.recurrence).toEqual({
+      recurringScheduleId: rs.id,
+      rule: {
+        frequency: 'weekly',
+        dayOfWeek: 2,
+        dayOfMonth: null,
+        weekOfMonth: null,
+        endDate: '2026-12-31',
+      },
+    })
+    expect((await api().schedules.get('facility-1', 'replaced')).recurrence).toBeUndefined()
+    expect((await api().schedules.get('facility-1', 'gcal-occurrence')).recurrence).toEqual({
+      recurringScheduleId: '01M3TC6E9G4N8Q2R5T7V9W1X40',
+      rule: {
+        frequency: 'monthly',
+        dayOfWeek: null,
+        dayOfMonth: 20,
+        weekOfMonth: null,
+        endDate: null,
+      },
+    })
+  })
+
+  it('規則の変更は、適用の日、規則、新しい ID と、読んだ etag を送り、変えた後の繰り返しの予定の ID と最初の日付を返す', async () => {
+    const sent: unknown[] = []
+    server.use(
+      scheduleHttp.put(
+        '/v1/schedules/recurring/{recurring_schedule_id}/rule',
+        async ({ params, request, response }) => {
+          sent.push({ id: params.recurring_schedule_id, body: await request.json() })
+          return response(200).json({
+            ...schedule('01M3TC6E9G4N8Q2R5T7V9W1X41', { date: '2026-10-21' }),
+            recurring_rule: { frequency: 'weekly', day_of_week: 3 },
+            exclusion_dates: [],
+          })
+        },
+      ),
+    )
+    const changed = await api().schedules.changeRule(
+      'facility-1',
+      '01M3TC6E9G4N8Q2R5T7V9W1X3Y',
+      {
+        effectiveDate: '2026-10-20',
+        rule: {
+          frequency: 'weekly',
+          dayOfWeek: 3,
+          dayOfMonth: null,
+          weekOfMonth: null,
+          endDate: null,
+        },
+        id: '01M3TC6E9G4N8Q2R5T7V9W1X41',
+      },
+      '"parent"',
+    )
+    expect(changed).toEqual({ id: '01M3TC6E9G4N8Q2R5T7V9W1X41', date: '2026-10-21' })
+    expect(sent).toEqual([
+      {
+        id: '01M3TC6E9G4N8Q2R5T7V9W1X3Y',
+        body: {
+          effective_date: '2026-10-20',
+          recurring_rule: {
+            frequency: 'weekly',
+            day_of_week: 3,
+            day_of_month: null,
+            week_of_month: null,
+            end_date: null,
+          },
+          id: '01M3TC6E9G4N8Q2R5T7V9W1X41',
+          etag: '"parent"',
+        },
+      },
+    ])
+  })
+
   it('マスタの ID を引いて予定を作る', async () => {
     server.use(
       ...masters([{ id: 'type-normal', name: '通常' }]),

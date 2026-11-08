@@ -348,6 +348,26 @@ export const createFakeBuddyApi = ({
         if (mode === 'google_primary') schedules.delete(scheduleId)
         else schedules.set(scheduleId, { ...current, cancel: { reason } })
       },
+      // フェイクの予定は回を規則から求めないので、適用の日以降の回の規則だけを書き換え、回の日は動かさない
+      changeRule: async (facilityId, recurringScheduleId, { effectiveDate, rule, id }, etag) => {
+        assertFacility(facilityId)
+        assertWritable()
+        const occurrences = [...schedules.values()].filter(
+          (schedule) => schedule.recurrence?.recurringScheduleId === recurringScheduleId,
+        )
+        if (occurrences.length === 0) {
+          throw new ApiError(404, `繰り返しの予定 ${recurringScheduleId} が見つかりません`)
+        }
+        assertETag(occurrences[0], etag)
+        for (const schedule of occurrences) {
+          if (schedule.startsAt.slice(0, 10) < effectiveDate) continue
+          schedules.set(schedule.id, {
+            ...schedule,
+            recurrence: { recurringScheduleId: id, rule },
+          })
+        }
+        return { id, date: effectiveDate }
+      },
     },
     ...staffApi,
     teams: {

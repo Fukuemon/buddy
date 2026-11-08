@@ -1,7 +1,9 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { createMemoryHistory } from '@tanstack/react-router'
+import { userEvent, within } from 'storybook/test'
 
 import { ApiError, type BuddyApi } from '#/api/BuddyApi'
+import type { RecurringRule } from '#/api/types'
 import { createFakeBuddyApi } from '#/api/fake/fakeBuddyApi'
 import {
   failingBuddyApi,
@@ -52,6 +54,53 @@ const changedInGoogleApi = (): BuddyApi => {
       },
     },
   }
+}
+
+const DAY_MS = 24 * 60 * 60 * 1000
+
+/** 今日（Asia/Tokyo）から days 日後の YYYY-MM-DD。 */
+const tokyoDateFromToday = (days: number) =>
+  new Date(Date.now() + 9 * 60 * 60 * 1000 + days * DAY_MS).toISOString().slice(0, 10)
+
+/** 毎週の、終了日の無い繰り返しの規則。曜日は最初の日付から決まる。 */
+const WEEKLY: RecurringRule = {
+  frequency: 'weekly',
+  dayOfWeek: null,
+  dayOfMonth: null,
+  weekOfMonth: null,
+  endDate: null,
+}
+
+/**
+ * 今日から days 日後の、繰り返しの予定のまだ変えていない回（訪問の予定の schedule-1 を写したもの）を読むフェイクの API。
+ * 規則の変更は、適用の日を最初の日付にした新しい繰り返しの予定を返す。
+ */
+const recurringOccurrenceApi = (days: number, rule: RecurringRule = WEEKLY): BuddyApi => {
+  const api = createFakeBuddyApi()
+  const date = tokyoDateFromToday(days)
+  return {
+    ...api,
+    schedules: {
+      ...api.schedules,
+      get: async (facilityId, scheduleId) => ({
+        ...(await api.schedules.get(facilityId, 'schedule-1')),
+        id: scheduleId,
+        startsAt: `${date}T09:00:00+09:00`,
+        endsAt: `${date}T09:29:00+09:00`,
+        recurrence: { recurringScheduleId: 'recurring-1', rule },
+      }),
+      changeRule: async (_facilityId, _recurringScheduleId, change) => ({
+        id: change.id,
+        date: change.effectiveDate,
+      }),
+    },
+  }
+}
+
+/** 変更の範囲の「この日以降の全ての回」を押す。 */
+const chooseFollowing = async ({ canvasElement }: { canvasElement: HTMLElement }) => {
+  const canvas = within(canvasElement.ownerDocument.body)
+  await userEvent.click(await canvas.findByTestId('schedule-edit-scope-following'))
 }
 
 const route = (appRouter: Partial<AppRouterParameters>) => ({
@@ -145,4 +194,28 @@ export const GooglePrimaryRecurrenceUnsupported: Story = {
     url: '/schedule/gcal-review-3/edit',
     api: createFakeBuddyApi({ sourceMode: 'google_primary' }),
   }),
+}
+
+/** 明日の、毎週の繰り返しの予定のまだ変えていない回。フォームの上に変更の範囲を出し、「この回だけ」で始める。 */
+export const RecurringOccurrence: Story = {
+  parameters: route({
+    url: '/schedule/recurring-occurrence/edit',
+    api: recurringOccurrenceApi(1),
+    history: createMemoryHistory({ initialEntries: ['/schedule/recurring-occurrence/edit'] }),
+  }),
+}
+
+/** 明日の回で「この日以降の全ての回」を選んだ。項目の一覧の代わりに、繰り返しの欄だけを出す。 */
+export const RecurringFollowing: Story = {
+  parameters: route({ url: '/schedule/recurring-occurrence/edit', api: recurringOccurrenceApi(1) }),
+  play: chooseFollowing,
+}
+
+/** 昨日の回で「この日以降の全ての回」を選んだ。繰り返しを変えられないことを出し、保存を押せない。 */
+export const RecurringFollowingPast: Story = {
+  parameters: route({
+    url: '/schedule/recurring-occurrence/edit',
+    api: recurringOccurrenceApi(-1),
+  }),
+  play: chooseFollowing,
 }
