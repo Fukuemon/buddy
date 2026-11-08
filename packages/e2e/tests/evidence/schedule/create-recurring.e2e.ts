@@ -335,12 +335,12 @@ test.describe('予定のカレンダー', () => {
               expect(rrule).toContain('FREQ=WEEKLY')
               expect(rrule).toContain('BYDAY=MO,TH')
               await step(
-                `Google カレンダーの代わりの calendarpit の管理の画面で、${OKADA.calendarId} の ${fromNextMonday(3)}（木曜）を開く`,
+                `Google カレンダーの代わりの calendarpit の管理の画面で、${OKADA.calendarId} の ${start}（最初の回の月曜）を開く`,
               )
               await page.goto(
-                `${CALENDARPIT_URL}/?calendar=${encodeURIComponent(OKADA.calendarId)}&date=${fromNextMonday(3)}`,
+                `${CALENDARPIT_URL}/?calendar=${encodeURIComponent(OKADA.calendarId)}&date=${start}`,
               )
-              await expect(calendarpitEvent(page, title).first()).toBeVisible()
+              await expect(calendarpitEvent(page, title)).toBeVisible()
               await check(
                 [
                   `calendarpit に「${title}」が出る`,
