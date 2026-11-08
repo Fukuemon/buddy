@@ -19,7 +19,6 @@ import { createWeeklyNormalSchedule } from '../../fixtures/schedule'
 import { STAFF_FORM } from '../../fixtures/staff'
 import { linkStaffCalendar, unlinkStaffCalendar } from '../../screens/calendar'
 import { signInAtBroker } from '../../screens/login'
-import { calendarpitEvent } from '../../selectors/calendarpit'
 
 /** 今日の Asia/Tokyo の日付から days 日後の日付（YYYY-MM-DD）。 */
 const daysFromToday = (days: number) =>
@@ -83,6 +82,38 @@ const listSchedules = async (
   })
   expect(res.ok()).toBe(true)
   return (await res.json()) as ListedSchedules
+}
+
+/**
+ * calendarpit の Calendar API（events.list の singleEvents）が返す、calendarId の title の予定の回の日付（YYYY-MM-DD）。
+ * from の 0 時から to の 0 時（Asia/Tokyo）までの回を読む。
+ */
+const googleInstanceDates = async (
+  request: APIRequestContext,
+  calendarId: string,
+  title: string,
+  from: string,
+  to: string,
+) => {
+  const res = await request.get(
+    `${CALENDARPIT_URL}/__calendarpit/calendars/${encodeURIComponent(calendarId)}/events`,
+    {
+      params: {
+        singleEvents: true,
+        maxResults: 2500,
+        timeMin: `${from}T00:00:00+09:00`,
+        timeMax: `${to}T00:00:00+09:00`,
+      },
+    },
+  )
+  expect(res.ok()).toBe(true)
+  const { items = [] } = (await res.json()) as {
+    items?: { summary?: string; start?: { dateTime?: string } }[]
+  }
+  return items
+    .filter((item) => item.summary === title)
+    .map((item) => item.start?.dateTime?.slice(0, 10) ?? '')
+    .sort()
 }
 
 /** 移行の前と後で同じ繰り返しの予定を見るための、固定のタイトル。 */
@@ -234,27 +265,26 @@ test.describe('予定の API', () => {
               await step(
                 `calendarpit の ${OKADA.calendarId} に、「${biweekly}」（FREQ=WEEKLY;INTERVAL=2;BYDAY=TU）と「${twice}」（FREQ=WEEKLY;BYDAY=MO,TH）を作った。同期が読むまで待つ`,
               )
-              await expect
-                .poll(async () => {
-                  const listed = await listSchedules(
-                    page.request,
-                    token,
-                    OKADA.facilityId,
-                    fromNextMonday(0),
-                    fromNextMonday(21),
-                  )
-                  const recurring = listed.recurring_schedules.map((rs) => rs.title)
-                  const reviewed = listed.schedules
-                    .filter((s) => s.review_reason !== null)
-                    .map((s) => s.title)
-                  return (
-                    recurring.includes(biweekly) &&
+              // 同期は別の処理が読むので、一覧に出るまで読み直す
+              await expect(async () => {
+                const listed = await listSchedules(
+                  page.request,
+                  token,
+                  OKADA.facilityId,
+                  fromNextMonday(0),
+                  fromNextMonday(21),
+                )
+                const recurring = listed.recurring_schedules.map((rs) => rs.title)
+                const reviewed = listed.schedules
+                  .filter((s) => s.review_reason !== null)
+                  .map((s) => s.title)
+                expect(
+                  recurring.includes(biweekly) &&
                     recurring.includes(twice) &&
                     !reviewed.includes(biweekly) &&
-                    !reviewed.includes(twice)
-                  )
-                })
-                .toBe(true)
+                    !reviewed.includes(twice),
+                ).toBe(true)
+              }).toPass()
               await check(
                 `予定の一覧（listSchedules）で、2 つとも繰り返しの予定（recurring_schedules）に入り、review_reason の付いた予定に無い`,
               )
@@ -345,6 +375,17 @@ test.describe('予定の API', () => {
                 })
                 .toContain('INTERVAL=2;BYDAY=MO,TH;WKST=SU')
               await check(`calendarpit の親の予定の RRULE が「${rrule}」になる`)
+              // calendarpit の管理の画面の日の表示は、曜日が複数の隔週の回を出さないので、Calendar API の回（singleEvents）を読む
+              const instances = await googleInstanceDates(
+                request,
+                HAYASHI.calendarId,
+                title,
+                fromNextMonday(0),
+                fromNextMonday(21),
+              )
+              await check(
+                `calendarpit が Calendar API で返す回の日は ${instances.join('、')} である`,
+              )
 
               const dates: [number, boolean, string][] = [
                 [3, true, '1 週目の木曜'],
@@ -355,16 +396,11 @@ test.describe('予定の API', () => {
               ]
               for (const [days, shown, weekday] of dates) {
                 const date = fromNextMonday(days)
-                await page.goto(
-                  `${CALENDARPIT_URL}/?calendar=${encodeURIComponent(HAYASHI.calendarId)}&date=${date}`,
-                )
-                const event = calendarpitEvent(page, title)
-                if (shown) await expect(event).toBeVisible()
-                else await expect(event).toBeHidden()
-                await check(
-                  `calendarpit の ${HAYASHI.calendarId} の ${date}（${weekday}）に「${title}」が${shown ? '出る' : '出ない'}`,
-                )
+                expect(instances.includes(date)).toBe(shown)
                 await checkDay(page, check, HAYASHI.id, date, title, shown, weekday)
+                await check(
+                  `calendarpit の回にも ${date}（${weekday}）が${shown ? 'ある' : '無い'}`,
+                )
               }
             } finally {
               await step('（撮影のため、ほかの撮影の前提に戻すよう、結び付けを外す）')
