@@ -84,12 +84,12 @@ const Row = ({
 }) => (
   <>
     {htmlFor === undefined ? (
-      <span className="text-label desktop:flex desktop:min-h-11 desktop:items-center" id={labelId}>
+      <span className="text-label desktop:flex desktop:min-h-11 desktop:items-center desktop:self-start" id={labelId}>
         {label}
       </span>
     ) : (
       <label
-        className="text-label desktop:flex desktop:min-h-11 desktop:items-center"
+        className="text-label desktop:flex desktop:min-h-11 desktop:items-center desktop:self-start"
         htmlFor={htmlFor}
         id={labelId}
       >
