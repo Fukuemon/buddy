@@ -10,6 +10,7 @@ import {
   moveGoogleEvent,
 } from '../../fixtures/googleCalendar'
 import { endPatientService, registerPatient } from '../../fixtures/patient'
+import { detailDateTimeText } from '../../fixtures/schedule'
 import { calendarpitEvent } from '../../selectors/calendarpit'
 import { signInAtBroker } from '../../screens/login'
 
@@ -133,9 +134,9 @@ test.describe('予定のカレンダー', () => {
               await page.getByTestId('schedule-form-end-time').fill('16:00')
               await page.getByTestId('schedule-edit-submit').click()
               await expect(page.getByTestId('schedule-form-modal')).toBeHidden()
-              const datetime = page.getByTestId('schedule-detail-datetime')
-              await expect(datetime).toContainText('15:00')
-              await expect(datetime).toContainText('16:00')
+              await expect(page.getByTestId('schedule-detail-datetime')).toHaveText(
+                detailDateTimeText(tomorrow, '15:00', '16:00'),
+              )
               await check('予定の詳細に戻り、日時が明日の 15:00〜16:00 になっている')
 
               await step(`予定の詳細を閉じ、${tomorrow} の日の表示を開く`)
@@ -238,7 +239,9 @@ test.describe('予定のカレンダー', () => {
               await step('予定を押して詳細を開く')
               await moved.click()
               const detail = page.getByTestId('schedule-detail-modal')
-              await expect(page.getByTestId('schedule-detail-datetime')).toContainText('14:00')
+              await expect(page.getByTestId('schedule-detail-datetime')).toHaveText(
+                detailDateTimeText(tomorrow, '14:00', endTime),
+              )
               const visit = detail.getByTestId('schedule-detail-visit-fields')
               await expect(visit).toContainText(patientName)
               await expect(visit).toContainText('訪看I3')
