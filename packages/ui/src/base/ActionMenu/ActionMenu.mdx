@@ -46,6 +46,12 @@ import * as Stories from './ActionMenu.stories'
 
 <Canvas of={Stories.WithDisabledItem} />
 
+### 文言のボタンで上に開く
+
+`triggerLabel` を渡すと、「…」の代わりに文言のボタンを出す。モーダルの下端のように下に場所が無いところでは、`placement="top"` で上に開く。押せない項目の理由は `description` に書く。
+
+<Canvas of={Stories.TextTriggerOpensUp} />
+
 ## キーボードの操作
 
 - Tab で「…」のボタンに移り、Enter と Space で開く
