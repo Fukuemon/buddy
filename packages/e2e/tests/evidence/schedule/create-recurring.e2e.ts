@@ -294,18 +294,19 @@ test.describe('予定のカレンダー', () => {
         const start = fromNextMonday(0)
         const endDate = fromNextMonday(10)
         const expected = [start, fromNextMonday(3), fromNextMonday(7), endDate]
-        await recordPrEvidence(
-          browser,
-          {
-            name: 'schedule-create-recurring-google-primary',
-            title:
-              'Google カレンダーを正本にする事業所で、予定の作成から毎週の月曜と木曜の繰り返しの予定を作ると、Google カレンダー（calendarpit）に繰り返しの予定ができ、回が buddy と同じ日に出る',
-            actor: OKADA_ACTOR,
-            variant,
-          },
-          signIn(OKADA.email),
-          async ({ page, step, check }) => {
-            try {
+        // 録画の中で消すと calendarpit の画面から予定が消える様子が映るので、録画を終えてから消す
+        try {
+          await recordPrEvidence(
+            browser,
+            {
+              name: 'schedule-create-recurring-google-primary',
+              title:
+                'Google カレンダーを正本にする事業所で、予定の作成から毎週の月曜と木曜の繰り返しの予定を作ると、Google カレンダー（calendarpit）に繰り返しの予定ができ、回が buddy と同じ日に出る',
+              actor: OKADA_ACTOR,
+              variant,
+            },
+            signIn(OKADA.email),
+            async ({ page, step, check }) => {
               await openDay(page, OKADA.staff.id, start)
               await step(`予定のカレンダーを ${start}（月曜）の日の表示で開いている`)
               await step(
@@ -348,14 +349,14 @@ test.describe('予定のカレンダー', () => {
                   `${start} から 3 週の回は ${expected.join('、')} で、buddy と同じ`,
                 ].join('\n'),
               )
-            } finally {
-              for (const event of await listGoogleEvents(request, OKADA.calendarId)) {
-                if (event.summary === title)
-                  await deleteGoogleEvent(request, OKADA.calendarId, event.id)
-              }
-            }
-          },
-        )
+            },
+          )
+        } finally {
+          for (const event of await listGoogleEvents(request, OKADA.calendarId)) {
+            if (event.summary === title)
+              await deleteGoogleEvent(request, OKADA.calendarId, event.id)
+          }
+        }
       })
     }
 
