@@ -37,6 +37,7 @@
   - 欄の初期値は、`recurring_rule` の空の項目を開いた回の日から埋めて作る。処理は `apps/web/src/features/schedule/schema/recurringRuleForm.ts` の `toRecurringRuleFormValues` にある。
 - 保存の流れは次のとおり。
   - `effective_date` は、開いた回の日と今日の遅い方である。今日は画面を開いたときに決める。予定の API が今日より前の `effective_date` を拒むためである（ADR-0037）。
+  - `first_week_date` は、開いた回の日である。予定の API は、この日を含む週から毎週の間隔を数える。今日より前の回を開いたときも、開いた回の週を訪問の週のまま残すためである（ADR-0038）。
   - `etag` は開いたときの `Schedule.etag`（`google_primary` では親の予定の etag）で、`null` なら送らない。409 `google_event_changed` の後は、`getSchedule` で読み直した予定の `etag` に置き換える。読み直せないか、別の繰り返しの予定の回か、規則が変わっていたら、置き換えずに開き直すことを出す。開いたときの規則から作った入力のまま送ると、Google カレンダーで変えた規則を知らずに消すためである。
   - `id` は画面を開いたときに作った ULID で、送り直しでも同じ値を送る。`google_primary` で元の親に書けずに失敗したとき、新しい親を重ねずにやり直すためである。
   - 繰り返しを変えずに終了日だけを変えたときは、今の `recurring_rule` の終了日だけを替えて送る。予定の API は、終了日だけの変更として扱い、`effective_date` を読まない。処理は `apps/web/src/features/schedule/schema/recurringRuleChange.ts` の `recurringRuleToSend` にある。
