@@ -39,28 +39,33 @@
                   <div class="sr-rule__field">
                     <span class="wf-select" data-m="6" data-testid="recurring-rule-frequency" data-go="05-custom-monthly.html">毎週</span>
                   </div>
+                  <span class="sr-rule__label">間隔</span>
+                  <div class="sr-rule__field sr-interval">
+                    <span class="sr-date sr-interval__input" aria-label="間隔" data-m="7" data-testid="recurring-rule-interval">1</span>
+                    <span>週ごと</span>
+                  </div>
                   <span class="sr-rule__label">曜日</span>
-                  <div class="sr-rule__field sr-days" role="radiogroup" aria-label="曜日">
-                    <span class="sr-day is-on" aria-label="月曜日" data-m="7" data-testid="recurring-rule-day-of-week-{曜日}" data-choice="day-of-week">月</span>
-                    <span class="sr-day" aria-label="火曜日" data-m="7" data-testid="recurring-rule-day-of-week-{曜日}" data-choice="day-of-week">火</span>
-                    <span class="sr-day" aria-label="水曜日" data-m="7" data-testid="recurring-rule-day-of-week-{曜日}" data-choice="day-of-week">水</span>
-                    <span class="sr-day" aria-label="木曜日" data-m="7" data-testid="recurring-rule-day-of-week-{曜日}" data-choice="day-of-week">木</span>
-                    <span class="sr-day" aria-label="金曜日" data-m="7" data-testid="recurring-rule-day-of-week-{曜日}" data-choice="day-of-week">金</span>
-                    <span class="sr-day" aria-label="土曜日" data-m="7" data-testid="recurring-rule-day-of-week-{曜日}" data-choice="day-of-week">土</span>
-                    <span class="sr-day" aria-label="日曜日" data-m="7" data-testid="recurring-rule-day-of-week-{曜日}" data-choice="day-of-week">日</span>
+                  <div class="sr-rule__field sr-days" role="group" aria-label="曜日">
+                    <span class="sr-day is-on" aria-label="月曜日" data-m="8" data-testid="recurring-rule-day-of-week-{曜日}" data-toggle>月</span>
+                    <span class="sr-day" aria-label="火曜日" data-m="8" data-testid="recurring-rule-day-of-week-{曜日}" data-toggle>火</span>
+                    <span class="sr-day" aria-label="水曜日" data-m="8" data-testid="recurring-rule-day-of-week-{曜日}" data-toggle>水</span>
+                    <span class="sr-day" aria-label="木曜日" data-m="8" data-testid="recurring-rule-day-of-week-{曜日}" data-toggle>木</span>
+                    <span class="sr-day" aria-label="金曜日" data-m="8" data-testid="recurring-rule-day-of-week-{曜日}" data-toggle>金</span>
+                    <span class="sr-day" aria-label="土曜日" data-m="8" data-testid="recurring-rule-day-of-week-{曜日}" data-toggle>土</span>
+                    <span class="sr-day" aria-label="日曜日" data-m="8" data-testid="recurring-rule-day-of-week-{曜日}" data-toggle>日</span>
                   </div>
                   <span class="sr-rule__label">終了日</span>
                   <div class="sr-rule__field sr-ends" role="radiogroup" aria-label="終了日">
-                    <span class="wf-radio is-on" data-m="8" data-testid="recurring-rule-ends-never" data-choice="ends">なし</span>
+                    <span class="wf-radio is-on" data-m="9" data-testid="recurring-rule-ends-never" data-choice="ends">なし</span>
                     <span></span>
-                    <span class="wf-radio" data-m="9" data-testid="recurring-rule-ends-on" data-choice="ends">あり</span>
-                    <span class="sr-date sr-disabled" aria-disabled="true" aria-label="終了日" data-m="10" data-testid="recurring-rule-end-date">2026/11/09</span>
+                    <span class="wf-radio" data-m="10" data-testid="recurring-rule-ends-on" data-choice="ends">あり</span>
+                    <span class="sr-date sr-disabled" aria-disabled="true" aria-label="終了日" data-m="11" data-testid="recurring-rule-end-date">2026/11/09</span>
                   </div>
                 </div>
               </div>
               <div class="wf-modal__footer">
-                <span class="wf-btn" data-escape data-m="11" data-testid="schedule-recurrence-cancel" data-go="../../schedule-detail_予定の詳細/mocks/13-recurring.html">キャンセル</span>
-                <span class="wf-btn wf-btn--primary" data-m="12" data-testid="schedule-recurrence-submit">保存</span>
+                <span class="wf-btn" data-escape data-m="12" data-testid="schedule-recurrence-cancel" data-go="../../schedule-detail_予定の詳細/mocks/13-recurring.html">キャンセル</span>
+                <span class="wf-btn wf-btn--primary" data-m="13" data-testid="schedule-recurrence-submit">保存</span>
               </div>
             </div>
           </div>

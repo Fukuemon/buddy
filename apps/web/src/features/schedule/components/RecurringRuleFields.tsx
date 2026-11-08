@@ -8,10 +8,11 @@ import {
   type UseFormReturn,
 } from 'react-hook-form'
 
-import { DatePicker, Select } from '@buddy/ui'
+import { DatePicker, Select, fieldControlClassName } from '@buddy/ui'
 
 import {
   isoWeekdayOf,
+  isValidInterval,
   weekOfMonthOf,
   weeklyDaysOf,
   weeklyIntervalLabel,
@@ -29,10 +30,11 @@ const WEEKS = [1, 2, 3, 4, 5] as const
  */
 type Preset = 'current' | 'weekly' | 'monthly-day' | 'monthly-weekday' | 'custom'
 
+/** 選択肢が決める欄の値。毎月の選択肢は毎週の曜日を持たず、選んでも曜日の欄の値を残す。 */
 type Repetition = Pick<
   RecurringRuleFormValues,
-  'frequency' | 'dayOfWeek' | 'weeklyDays' | 'monthlyBy' | 'dayOfMonth' | 'weekOfMonth'
->
+  'frequency' | 'dayOfWeek' | 'monthlyBy' | 'dayOfMonth' | 'weekOfMonth'
+> & { weeklyDays?: number[] }
 
 const weekdayLabel = (day: number) => `${WEEKDAYS[day - 1]}曜日`
 
@@ -60,7 +62,6 @@ const presetsOf = (baseDate: string, originalDays: number[]): Presets => {
     'monthly-day': {
       frequency: 'monthly',
       dayOfWeek,
-      weeklyDays: [],
       monthlyBy: 'day',
       dayOfMonth,
       weekOfMonth,
@@ -68,18 +69,16 @@ const presetsOf = (baseDate: string, originalDays: number[]): Presets => {
     'monthly-weekday': {
       frequency: 'monthly',
       dayOfWeek,
-      weeklyDays: [],
       monthlyBy: 'weekday',
       dayOfMonth,
       weekOfMonth,
     },
   }
-  const [first] = originalDays
-  if (originalDays.length < 2 || first === undefined) return presets
+  if (originalDays.length < 2) return presets
   return {
     current: {
       frequency: 'weekly',
-      dayOfWeek: first,
+      dayOfWeek,
       weeklyDays: originalDays,
       monthlyBy: 'day',
       dayOfMonth,
@@ -92,7 +91,7 @@ const presetsOf = (baseDate: string, originalDays: number[]): Presets => {
 /** 選択肢の文言。毎週の選択肢は、送る間隔 interval を「毎週」「隔週」「3 週ごと」の形で前に付ける。 */
 const presetLabel = (preset: Exclude<Preset, 'custom'>, r: Repetition, interval: number) => {
   if (preset === 'current') {
-    return `${weeklyIntervalLabel(interval)} ${r.weeklyDays.map(weekdayLabel).join('、')}`
+    return `${weeklyIntervalLabel(interval)} ${(r.weeklyDays ?? []).map(weekdayLabel).join('、')}`
   }
   if (preset === 'weekly') return `${weeklyIntervalLabel(interval)} ${weekdayLabel(r.dayOfWeek)}`
   if (preset === 'monthly-day') return `毎月 ${r.dayOfMonth} 日`
@@ -163,8 +162,9 @@ export type RecurringRuleFieldsProps<T extends RecurringRuleFormShape> = {
 /**
  * 繰り返しの欄。繰り返しを、baseDate から作った 3 つの選択肢か「カスタム…」から選び、終了日を「なし」か「あり」から選び、「あり」の右の日付の欄で終了日を入れる。
  * 開いた規則が複数の曜日の毎週のときは、先頭に今の規則の選択肢（「隔週 月曜日、木曜日」の形）を足す。
- * 毎週の選択肢と「繰り返す」の毎週は、元の規則の間隔を「隔週」「3 週ごと」の形で出し、曜日を変えてもその間隔で送る（ADR-0038）。
- * 「カスタム…」を選ぶと、同じ欄の中に、繰り返す（毎週、毎月）と、曜日か毎月の日の欄を開く。値がどの選択肢とも違うときも、開いた形で始める。
+ * 毎週の選択肢と「繰り返す」の毎週は、間隔の値を「隔週」「3 週ごと」の形で出し、曜日を変えてもその間隔で送る（ADR-0038）。
+ * 「カスタム…」を選ぶと、同じ欄の中に、繰り返す（毎週、毎月）と、毎週では間隔（1〜52 の週の数）と曜日（1 つ以上）の欄を、毎月では日の欄を開く。
+ * 値がどの選択肢とも違うときも、開いた形で始める。
  * 予定の編集の「繰り返しを変更」と、予定の作成の繰り返しで使う。値の検証は、使う側の resolver が行う。
  * 選択肢や頻度を替えても、使わない欄の値は残す。testid は `recurring-rule-` で始める。
  */
@@ -179,6 +179,7 @@ export const RecurringRuleFields = <T extends RecurringRuleFormShape>({
   const recurrence = useWatch({ control, name: 'recurrence' })
   // 今の規則の選択肢は、開いたときの曜日の並びで作る。選択肢を選ぶと weeklyDays が替わるので、開いたときの値を残す
   const [originalDays] = useState(() => own.getValues('recurrence.weeklyDays'))
+  const [originalInterval] = useState(() => own.getValues('recurrence.interval'))
   const presets = presetsOf(baseDate, originalDays)
   const [isCustom, setCustom] = useState(
     () => matchPreset(own.getValues('recurrence'), presets) === 'custom',
@@ -192,10 +193,6 @@ export const RecurringRuleFields = <T extends RecurringRuleFormShape>({
   const choosePreset = (next: Preset) => {
     if (next === 'custom') {
       setCustom(true)
-      // 「カスタム…」の曜日の欄は 1 つの曜日を出すので、送る曜日の並びも、その 1 つにそろえる
-      own.setValue('recurrence.weeklyDays', [own.getValues('recurrence.dayOfWeek')], {
-        shouldDirty: true,
-      })
       return
     }
     const repetition = presets[next]
@@ -203,6 +200,20 @@ export const RecurringRuleFields = <T extends RecurringRuleFormShape>({
     setCustom(false)
     for (const [key, value] of Object.entries(repetition)) {
       own.setValue(`recurrence.${key as keyof Repetition}`, value, { shouldDirty: true })
+    }
+    // 毎週の選択肢を選ぶと間隔の欄が閉じるので、範囲の外の間隔を開いたときの間隔に戻し、見えない誤りで保存を止めない
+    if (
+      repetition.frequency === 'weekly' &&
+      !isValidInterval(own.getValues('recurrence.interval'))
+    ) {
+      own.setValue(
+        'recurrence.interval',
+        isValidInterval(originalInterval) ? originalInterval : 1,
+        {
+          shouldDirty: true,
+        },
+      )
+      own.clearErrors('recurrence.interval')
     }
   }
 
@@ -242,7 +253,7 @@ export const RecurringRuleFields = <T extends RecurringRuleFormShape>({
               control={control}
               name="recurrence.frequency"
               render={({ field }) => (
-                <div className="w-28">
+                <div className="w-36">
                   <Select
                     data-testid="recurring-rule-frequency"
                     id={`${id}-frequency`}
@@ -258,48 +269,103 @@ export const RecurringRuleFields = <T extends RecurringRuleFormShape>({
             />
           </Row>
           {recurrence.frequency === 'weekly' ? (
-            <Row label="曜日" labelId={dayOfWeekLabelId}>
-              <Controller
-                control={control}
-                name="recurrence.dayOfWeek"
-                render={({ field }) => (
-                  <div
-                    aria-labelledby={dayOfWeekLabelId}
-                    className="flex gap-1 desktop:gap-2"
-                    role="radiogroup"
-                  >
-                    {WEEKDAYS.map((label, i) => {
-                      const day = i + 1
-                      const checked = field.value === day
-                      return (
-                        <label
-                          className={clsx(
-                            'relative grid size-11 shrink-0 cursor-pointer place-items-center rounded-full text-body has-[:focus-visible]:focus-ring',
-                            checked
-                              ? 'bg-primary font-bold text-text-inverse'
-                              : 'ring-1 ring-border-field ring-inset',
-                          )}
-                          key={day}
-                        >
-                          {/* sr-only だと label がクリックを受け、Playwright が radio を押せない。選択肢の全面に透明で重ねる */}
-                          <input
-                            aria-label={weekdayLabel(day)}
-                            checked={checked}
-                            className="absolute inset-0 m-0 size-full cursor-pointer opacity-0"
-                            data-testid={`recurring-rule-day-of-week-${day}`}
-                            name={field.name}
-                            onChange={() => field.onChange(day)}
-                            type="radio"
-                            value={day}
-                          />
-                          {label}
-                        </label>
-                      )
-                    })}
-                  </div>
-                )}
-              />
-            </Row>
+            <>
+              <Row htmlFor={`${id}-interval`} label="間隔">
+                <Controller
+                  control={control}
+                  name="recurrence.interval"
+                  render={({ field, fieldState }) => (
+                    <div className="flex flex-col gap-1">
+                      {/* 誤りの文を欄の幅で折り返さず、「週ごと」の下まで使って出すため、NumberPicker の枠を使わない */}
+                      <div className="flex items-center gap-3">
+                        <input
+                          aria-describedby={
+                            fieldState.error === undefined ? undefined : `${id}-interval-error`
+                          }
+                          aria-invalid={fieldState.error === undefined ? undefined : true}
+                          className={clsx(fieldControlClassName, 'h-11 w-24 px-4 text-body')}
+                          data-testid="recurring-rule-interval"
+                          id={`${id}-interval`}
+                          max={52}
+                          min={1}
+                          name={field.name}
+                          onBlur={field.onBlur}
+                          onChange={(event) => field.onChange(event.target.valueAsNumber)}
+                          ref={field.ref}
+                          type="number"
+                          value={Number.isNaN(field.value) ? '' : field.value}
+                        />
+                        <span>週ごと</span>
+                      </div>
+                      {fieldState.error?.message !== undefined && (
+                        <span className="text-caption text-danger" id={`${id}-interval-error`}>
+                          {fieldState.error.message}
+                        </span>
+                      )}
+                    </div>
+                  )}
+                />
+              </Row>
+              <Row label="曜日" labelId={dayOfWeekLabelId}>
+                <Controller
+                  control={control}
+                  name="recurrence.weeklyDays"
+                  render={({ field, fieldState }) => (
+                    <div className="flex flex-col gap-1">
+                      <fieldset
+                        aria-describedby={
+                          fieldState.error === undefined ? undefined : `${id}-days-error`
+                        }
+                        aria-labelledby={dayOfWeekLabelId}
+                        className="flex gap-1 desktop:gap-2"
+                      >
+                        {WEEKDAYS.map((label, i) => {
+                          const day = i + 1
+                          const checked = field.value.includes(day)
+                          return (
+                            <label
+                              className={clsx(
+                                'relative grid size-11 shrink-0 cursor-pointer place-items-center rounded-full text-body has-[:focus-visible]:focus-ring',
+                                checked
+                                  ? 'bg-primary font-bold text-text-inverse'
+                                  : fieldState.error === undefined
+                                    ? 'ring-1 ring-border-field ring-inset'
+                                    : 'ring-2 ring-danger ring-inset',
+                              )}
+                              key={day}
+                            >
+                              {/* sr-only だと label がクリックを受け、Playwright が checkbox を押せない。選択肢の全面に透明で重ねる */}
+                              <input
+                                aria-label={weekdayLabel(day)}
+                                checked={checked}
+                                className="absolute inset-0 m-0 size-full cursor-pointer opacity-0"
+                                data-testid={`recurring-rule-day-of-week-${day}`}
+                                name={field.name}
+                                onChange={() =>
+                                  field.onChange(
+                                    checked
+                                      ? field.value.filter((d) => d !== day)
+                                      : [...field.value, day].sort((a, b) => a - b),
+                                  )
+                                }
+                                type="checkbox"
+                                value={day}
+                              />
+                              {label}
+                            </label>
+                          )
+                        })}
+                      </fieldset>
+                      {fieldState.error?.message !== undefined && (
+                        <span className="text-caption text-danger" id={`${id}-days-error`}>
+                          {fieldState.error.message}
+                        </span>
+                      )}
+                    </div>
+                  )}
+                />
+              </Row>
+            </>
           ) : (
             <Row label="日" labelId={monthlyLabelId}>
               <Controller

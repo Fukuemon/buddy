@@ -169,3 +169,14 @@
     gap: 4px;
   }
 }
+
+/* 間隔の欄。44px の数の欄の右に「週ごと」を置き、誤りの文は欄と「週ごと」の下に出す */
+.sr-interval {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.sr-interval__input {
+  width: 6rem;
+}

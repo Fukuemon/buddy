@@ -11,15 +11,11 @@ export type MonthlyBy = 'day' | 'weekday'
  */
 export type RecurringRuleFormValues = {
   frequency: RecurringRule['frequency']
-  /** 毎週と、毎月の第何週の曜日の曜日。1 が月曜、7 が日曜。 */
+  /** 毎月の第何週の曜日の曜日。1 が月曜、7 が日曜。 */
   dayOfWeek: number
-  /**
-   * 毎週の曜日の並び。欄には出さず、先頭が dayOfWeek と同じときだけ、この並びを送る。違えば dayOfWeek の 1 つを送る。
-   * 開いたときは元の規則の並びを持ち、繰り返しの欄が曜日を 1 つ選ばせるときに、選んだ曜日の 1 つの並びにする。
-   * 複数の曜日を選ぶ欄が無い間（#892 まで）に、規則の変更で元の曜日を落とさないためである。
-   */
+  /** 毎週の曜日の集まり。1 が月曜、7 が日曜。欄は月曜から日曜の順に持ち、送るときも重なりを除いて同じ順に並べる。 */
   weeklyDays: number[]
-  /** 毎週の間隔の週の数。欄には出さず、元の規則の間隔を、曜日を変えてもそのまま送る（ADR-0038）。 */
+  /** 毎週の間隔の週の数。1 が毎週、2 が隔週。欄を空にすると NaN になる。 */
   interval: number
   monthlyBy: MonthlyBy
   dayOfMonth: number
@@ -50,10 +46,11 @@ export const toRecurringRuleFormValues = (
   baseDate: string,
 ): RecurringRuleFormValues => ({
   frequency: rule?.frequency ?? 'weekly',
-  dayOfWeek:
-    (rule?.frequency === 'weekly' ? rule.daysOfWeek?.[0] : rule?.dayOfWeek) ??
-    isoWeekdayOf(baseDate),
-  weeklyDays: rule?.frequency === 'weekly' ? (rule.daysOfWeek ?? []) : [],
+  dayOfWeek: (rule?.frequency === 'monthly' ? rule.dayOfWeek : null) ?? isoWeekdayOf(baseDate),
+  weeklyDays:
+    rule?.frequency === 'weekly' && rule.daysOfWeek?.length
+      ? rule.daysOfWeek
+      : [isoWeekdayOf(baseDate)],
   interval: rule?.frequency === 'weekly' ? (rule.interval ?? 1) : 1,
   monthlyBy: rule?.frequency === 'monthly' && rule.weekOfMonth !== null ? 'weekday' : 'day',
   dayOfMonth: rule?.dayOfMonth ?? dayOf(baseDate).getUTCDate(),
@@ -62,13 +59,20 @@ export const toRecurringRuleFormValues = (
   endDate: rule?.endDate ?? baseDate,
 })
 
-/** 毎週の繰り返しで送る曜日の並び。weeklyDays の先頭が dayOfWeek と同じならその並び、違えば dayOfWeek の 1 つである。 */
+/** 毎週の繰り返しで送る曜日の並び。weeklyDays の重なりを除き、月曜から日曜の順に並べる。 */
 export const weeklyDaysOf = (values: RecurringRuleFormValues): number[] =>
-  values.weeklyDays[0] === values.dayOfWeek ? values.weeklyDays : [values.dayOfWeek]
+  [...new Set(values.weeklyDays)].sort((a, b) => a - b)
 
-/** 毎週の間隔の文言。1 は「毎週」、2 は「隔週」、3 以上は「3 週ごと」の形である。 */
+/** 毎週の間隔として送れる値か。1〜52 の整数である（ADR-0038）。 */
+export const isValidInterval = (interval: number) =>
+  Number.isInteger(interval) && interval >= 1 && interval <= 52
+
+/**
+ * 毎週の間隔の文言。1 は「毎週」、2 は「隔週」、3 以上は「3 週ごと」の形である。
+ * 欄を空にした間（NaN）は「毎週」を出す。範囲の外の数は、入れた数のまま出し、誤りの文で直させる。
+ */
 export const weeklyIntervalLabel = (interval: number) => {
-  if (interval === 1) return '毎週'
+  if (interval === 1 || Number.isNaN(interval)) return '毎週'
   if (interval === 2) return '隔週'
   return `${interval} 週ごと`
 }
@@ -129,7 +133,8 @@ export const recurringRuleFormSchema = z
     frequency: z.enum(['weekly', 'monthly']),
     dayOfWeek: z.number().int().min(1).max(7),
     weeklyDays: z.array(z.number().int().min(1).max(7)),
-    interval: z.number().int().min(1).max(52),
+    // 毎月では使わない欄なので、範囲は毎週のときだけ下で確認する。欄を空にした NaN も受ける
+    interval: z.union([z.number(), z.nan()]),
     monthlyBy: z.enum(['day', 'weekday']),
     dayOfMonth: z.number().int().min(1).max(31),
     weekOfMonth: z.number().int().min(1).max(5),
@@ -137,6 +142,20 @@ export const recurringRuleFormSchema = z
     endDate: z.string(),
   })
   .superRefine((values, ctx) => {
+    if (values.frequency === 'weekly' && values.weeklyDays.length === 0) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['weeklyDays'],
+        message: '曜日を 1 つ以上選んでください',
+      })
+    }
+    if (values.frequency === 'weekly' && !isValidInterval(values.interval)) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['interval'],
+        message: '間隔は 1〜52 の週の数で入力してください',
+      })
+    }
     if (values.hasEndDate && !z.iso.date().safeParse(values.endDate).success) {
       ctx.addIssue({ code: 'custom', path: ['endDate'], message: '終了日を入力してください' })
     }
