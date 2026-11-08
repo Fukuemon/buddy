@@ -252,7 +252,12 @@ export const createHttpBuddyApi = ({ baseUrl, fetch }: HttpApiOptions): BuddyApi
           }),
         )
       },
-      changeRule: async (_facilityId, recurringScheduleId, { effectiveDate, firstWeekDate, rule, id }, etag) => {
+      changeRule: async (
+        _facilityId,
+        recurringScheduleId,
+        { effectiveDate, firstWeekDate, rule, id },
+        etag,
+      ) => {
         const body = {
           effective_date: effectiveDate,
           ...(firstWeekDate === undefined ? {} : { first_week_date: firstWeekDate }),
