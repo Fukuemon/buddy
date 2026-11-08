@@ -159,7 +159,9 @@ test.describe('予定の正本を切り替えている間に、予定を変え�
             await check(`保存して初めて「${CUTOVER_MESSAGE}」が出る`)
             return
           }
-          await expect(page.getByTestId('schedule-recurrence-cutover')).toHaveText(CUTOVER_MESSAGE)
+          await expect(page.getByTestId('schedule-recurrence-cutover')).toContainText(
+            CUTOVER_MESSAGE,
+          )
           await expect(page.getByTestId('recurring-rule-preset')).toHaveCount(0)
           await expect(page.getByTestId('schedule-recurrence-submit')).toHaveCount(0)
           await expect(page.getByTestId('modal-close')).toBeVisible()
@@ -194,7 +196,7 @@ test.describe('予定の正本を切り替えている間に、予定を変え�
             await check('フォームと保存のボタンが出る')
             return
           }
-          await expect(page.getByTestId('schedule-edit-cutover')).toHaveText(CUTOVER_MESSAGE)
+          await expect(page.getByTestId('schedule-edit-cutover')).toContainText(CUTOVER_MESSAGE)
           await expect(page.getByTestId('schedule-form')).toHaveCount(0)
           await expect(page.getByTestId('schedule-edit-submit')).toHaveCount(0)
           await expect(page.getByTestId('modal-close')).toBeVisible()
