@@ -20,4 +20,7 @@ type RecurringRepository interface {
 	// RemoveUnreplacedExclusions は、繰り返しの予定 recurringScheduleID の from 以降の除外する日のうち、
 	// その日の回を置き換えた単発の予定が無い日を消す。取り消した回を、規則を変えた後の回に引き継がないためである（ADR-0037）。
 	RemoveUnreplacedExclusions(ctx context.Context, recurringScheduleID string, from civil.Date) error
+	// ReplacedDates は、繰り返しの予定 recurringScheduleID の回を置き換えた単発の予定（キャンセルしたものを含む）のうち、
+	// 元の回の日付が from 以降のものの日付を、古い順に返す。
+	ReplacedDates(ctx context.Context, recurringScheduleID string, from civil.Date) ([]civil.Date, error)
 }

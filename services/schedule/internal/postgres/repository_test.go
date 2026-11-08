@@ -911,6 +911,12 @@ func TestRecurringScheduleUpdateRule(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	if got, err := r.ReplacedDates(ctx, rs.ID, before); err != nil || !reflect.DeepEqual(got, []civil.Date{replacedDay}) {
+		t.Errorf("ReplacedDates = %v, %v, want [%v]", got, err, replacedDay)
+	}
+	if got, err := r.ReplacedDates(ctx, rs.ID, cancelledDay); err != nil || len(got) != 0 {
+		t.Errorf("%v 以降の ReplacedDates = %v, %v, want 無し", cancelledDay, got, err)
+	}
 
 	changed := rs
 	changed.Date = civil.Date{Year: 2026, Month: 11, Day: 3}

@@ -175,6 +175,18 @@ func (s RecurringSchedules) RemoveUnreplacedExclusions(_ context.Context, id str
 	return nil
 }
 
+// ReplacedDates は、schedule.RecurringRepository の ReplacedDates を実装する。
+func (s RecurringSchedules) ReplacedDates(_ context.Context, id string, from civil.Date) ([]civil.Date, error) {
+	var out []civil.Date
+	for _, sc := range s.Schedules {
+		if sc.RecurringScheduleID != nil && *sc.RecurringScheduleID == id && sc.OriginalDate != nil && !sc.OriginalDate.Before(from) {
+			out = append(out, *sc.OriginalDate)
+		}
+	}
+	slices.SortFunc(out, func(a, b civil.Date) int { return a.Time().Compare(b.Time()) })
+	return out, nil
+}
+
 // AddExclusion は、繰り返しの予定から d の回を除外する。除外済みなら apperr.ErrConflict を返す。
 func (s RecurringSchedules) AddExclusion(_ context.Context, id string, d civil.Date) error {
 	rs := s.Recurring[id]

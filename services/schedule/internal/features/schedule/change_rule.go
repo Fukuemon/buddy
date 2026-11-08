@@ -94,6 +94,18 @@ func (s ChangeRule) split(ctx context.Context, rs StoredRecurring, plan RuleChan
 	if err := s.recurring.Create(ctx, next); err != nil {
 		return RecurringSchedule{}, err
 	}
+	// 置き換えた回の元の日には、新しい規則の回を出さない。その日の訪問は職員が移したためである（ADR-0037）
+	replaced, err := s.recurring.ReplacedDates(ctx, rs.ID, next.Date)
+	if err != nil {
+		return RecurringSchedule{}, err
+	}
+	for _, d := range replaced {
+		if next.HasOccurrenceOn(d) {
+			if err := s.recurring.AddExclusion(ctx, next.ID, d); err != nil {
+				return RecurringSchedule{}, err
+			}
+		}
+	}
 	if err := recurringChanged(ctx, s.exports, rs.Slot, rs.ID); err != nil {
 		return RecurringSchedule{}, err
 	}

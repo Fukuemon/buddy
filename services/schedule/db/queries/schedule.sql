@@ -76,6 +76,12 @@ WHERE e.recurring_schedule_id = sqlc.arg(recurring_schedule_id) AND e.date >= sq
     SELECT 1 FROM schedules s WHERE s.recurring_schedule_id = e.recurring_schedule_id AND s.original_date = e.date
   );
 
+-- name: ListReplacedOriginalDates :many
+-- 繰り返しの予定の回を置き換えた単発の予定（キャンセルしたものを含む）の、元の回の日付を読む。
+SELECT original_date::date FROM schedules
+WHERE recurring_schedule_id = sqlc.arg(recurring_schedule_id) AND original_date >= sqlc.arg(from_date)
+ORDER BY original_date;
+
 -- name: ListRecurringScheduleExclusions :many
 SELECT recurring_schedule_id, date
 FROM recurring_schedule_exclusions

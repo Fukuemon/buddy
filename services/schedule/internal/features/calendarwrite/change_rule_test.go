@@ -282,6 +282,31 @@ func TestChangeRuleResend(t *testing.T) {
 
 // TestChangeRuleRejects は、etag と id の無いリクエスト、過去の適用の日、Google で変わった親の予定、buddy の規則に写せない親の予定、
 // 保留の版がある親を、Google に書かずに拒むことを確認する。
+// 置き換えた回の元の日に新しい規則が当たるときは、新しい親の予定の EXDATE にして、その日の回を出さない（ADR-0037）。
+func TestChangeRuleExcludesReplacedDate(t *testing.T) {
+	fx := newFixture(t)
+	fx.seedWeekly(t, mondays)
+	fx.moveToAfternoon(t, mondays[1])
+	effective := mondays[1]
+	// 10-26 は第 4 月曜である
+	rule := schedule.RuleInput{Frequency: schedule.Monthly, WeekOfMonth: ptr(4), DayOfWeek: ptr(1)}
+	got, err := fx.changeRule.Do(editorCtx(), inmem.FacilityID, scheduleID, nextID, fx.parentETag(t), &effective, rule)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.Date != mondays[1] || !slices.Equal(got.ExclusionDates, []civil.Date{mondays[1]}) {
+		t.Errorf("got = 最初の日付 %v、除外する日 %v, want %v と [%v]", got.Date, got.ExclusionDates, mondays[1], mondays[1])
+	}
+	nextEventID, err := calendar.EventIDOf(nextID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	next := fx.google.Event(calendarID, nextEventID)
+	if next == nil || !slices.Contains(next.Recurrence, "EXDATE;TZID=Asia/Tokyo:20261026T090000") {
+		t.Errorf("新しい親の予定 = %+v, want 10-26 の EXDATE", next)
+	}
+}
+
 // 新しい繰り返しの予定の入力が規則に合わないとき（利用の終了の利用者の訪問）は、例外の回を作り直す前に 400 で拒み、Google に書かない。
 func TestChangeRuleRejectsEndedPatientBeforeWriting(t *testing.T) {
 	fx := newFixture(t)

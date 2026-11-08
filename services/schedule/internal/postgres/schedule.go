@@ -483,6 +483,21 @@ func (r *RecurringScheduleRepository) RemoveUnreplacedExclusions(ctx context.Con
 		sqlcgen.DeleteUnreplacedRecurringScheduleExclusionsParams{RecurringScheduleID: recurringScheduleID, FromDate: from.Time()}))
 }
 
+// ReplacedDates は、繰り返しの予定 recurringScheduleID の回を置き換えた単発の予定のうち、元の回の日付が from 以降のものの日付を、古い順に返す。
+func (r *RecurringScheduleRepository) ReplacedDates(ctx context.Context, recurringScheduleID string, from civil.Date) ([]civil.Date, error) {
+	rows, err := r.q(ctx).ListReplacedOriginalDates(ctx, sqlcgen.ListReplacedOriginalDatesParams{
+		RecurringScheduleID: &recurringScheduleID, FromDate: ptr(from.Time()),
+	})
+	if err != nil {
+		return nil, translate("list replaced original dates", err)
+	}
+	out := make([]civil.Date, len(rows))
+	for i, d := range rows {
+		out[i] = civil.DateOf(d)
+	}
+	return out, nil
+}
+
 func visitInfoIDs[T any](rows []T, id func(T) *string) []string {
 	var ids []string
 	for _, r := range rows {

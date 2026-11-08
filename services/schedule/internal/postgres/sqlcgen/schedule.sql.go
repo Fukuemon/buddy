@@ -564,6 +564,38 @@ func (q *Queries) ListRecurringScheduleExclusions(ctx context.Context, recurring
 	return items, nil
 }
 
+const listReplacedOriginalDates = `-- name: ListReplacedOriginalDates :many
+SELECT original_date::date FROM schedules
+WHERE recurring_schedule_id = $1 AND original_date >= $2
+ORDER BY original_date
+`
+
+type ListReplacedOriginalDatesParams struct {
+	RecurringScheduleID *string
+	FromDate            *time.Time
+}
+
+// 繰り返しの予定の回を置き換えた単発の予定（キャンセルしたものを含む）の、元の回の日付を読む。
+func (q *Queries) ListReplacedOriginalDates(ctx context.Context, arg ListReplacedOriginalDatesParams) ([]time.Time, error) {
+	rows, err := q.db.Query(ctx, listReplacedOriginalDates, arg.RecurringScheduleID, arg.FromDate)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []time.Time{}
+	for rows.Next() {
+		var original_date time.Time
+		if err := rows.Scan(&original_date); err != nil {
+			return nil, err
+		}
+		items = append(items, original_date)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listScheduleDetailsByFacility = `-- name: ListScheduleDetailsByFacility :many
 SELECT id, facility_id, schedule_type_id, schedule_type_code, schedule_type_name, date, start_time, end_time, is_over_time_work, staff_id, staff_name, title, description, recurring_schedule_id, original_date, visit_info_id, patient_id, patient_name, assigned_staff_id, assigned_staff_name, companion_id, companion_name, service_code_id, service_code, cancel_id, cancel_reason, created_at, updated_at, version, ends_next_day FROM schedule_details
 WHERE facility_id = $1

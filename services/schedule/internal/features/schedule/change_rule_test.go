@@ -57,6 +57,39 @@ func TestSchedulesChangeRuleSplits(t *testing.T) {
 	}
 }
 
+// 分けるときは、置き換えた回の元の日に新しい規則が当たっても、新しい繰り返しの予定の除外する日にして回を出さない（ADR-0037）。
+func TestSchedulesChangeRuleSplitExcludesReplacedDate(t *testing.T) {
+	s := inmem.Seeded()
+	uc, _ := newSchedules(s)
+	ctx := editorCtx()
+	monday, fourth := 1, 4
+	in := normalSlot()
+	in.Date = civil.Date{Year: 2026, Month: 10, Day: 5}
+	rs, err := uc.CreateRecurring(ctx, facilityID, in, schedule.RuleInput{Frequency: schedule.Weekly, DayOfWeek: &monday})
+	if err != nil {
+		t.Fatal(err)
+	}
+	// 10-26 は第 4 月曜で、回を置き換えてある。置き換えた 11-02 は第 1 月曜で、新しい規則には当たらない
+	replacedDate, other := civil.Date{Year: 2026, Month: 10, Day: 26}, civil.Date{Year: 2026, Month: 11, Day: 2}
+	for _, d := range []civil.Date{replacedDate, other} {
+		if _, err := uc.ChangeOccurrence(ctx, rs.ID, d, normalSlot()); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	effective := civil.Date{Year: 2026, Month: 10, Day: 22}
+	next, err := uc.ChangeRule(ctx, rs.ID, &effective, schedule.RuleInput{Frequency: schedule.Monthly, WeekOfMonth: &fourth, DayOfWeek: &monday})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if next.Date != replacedDate {
+		t.Fatalf("新しい繰り返しの予定の最初の日付 = %v, want %v", next.Date, replacedDate)
+	}
+	if ex := s.Recurring[next.ID].ExclusionDates; !slices.Equal(ex, []civil.Date{replacedDate}) {
+		t.Errorf("新しい繰り返しの予定の ExclusionDates = %v, want 置き換えた回の %v だけ", ex, replacedDate)
+	}
+}
+
 // まだ始まっていない繰り返しの予定は、分けずに規則と最初の日付を書き換える。
 // 取り消した回は引き継がず、置き換えた回の日は、回が単発の予定と重ならないように除外する日に残す（ADR-0037）。
 func TestSchedulesChangeRuleInPlace(t *testing.T) {

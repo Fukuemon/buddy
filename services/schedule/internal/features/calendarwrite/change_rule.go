@@ -421,13 +421,42 @@ func (r ChangeRule) nextWrite(ctx context.Context, facilityID, id string, parent
 	if err != nil {
 		return write{}, "", nil, err
 	}
-	rd := scheduleview.RecurringDetail{RecurringSchedule: rs, TypeName: typ.Name, StaffName: st.Username, ExclusionDates: []civil.Date{}}
+	exdates, err := replacedExceptionDates(ctx, cr.records, p, rs, cr.now())
+	if err != nil {
+		return write{}, "", nil, err
+	}
+	rd := scheduleview.RecurringDetail{RecurringSchedule: rs, TypeName: typ.Name, StaffName: st.Username, ExclusionDates: exdates}
 	w := write{recurring: &rd}
 	if err := w.useVisit(ctx, cr.details, rs.VisitInfoID); err != nil {
 		return write{}, "", nil, err
 	}
-	w.body = calendar.RecurringBody(rd, nil)
+	w.body = calendar.RecurringBody(rd, exdates)
 	return w, rs.StaffID, rs.VisitInfoID, nil
+}
+
+// replacedExceptionDates は、新しい繰り返しの予定 next の回のうち、元の親の予定 parent の同じ日の回を置き換えた日を、古い順に返す。
+// その日には新しい規則の回を出さないので、新しい親の予定の EXDATE にする（ADR-0037）。置き換えた回は、回の一覧での ID の記録を持つ。
+// 作り直した例外の回と、別の職員に移した回が当たり、取り消した回は記録を消すので当たらない。記録で決めるので、送り直しても同じ日になる。
+// 読むのは Projection を保持する期間の終わりまでである。buddy で変えられる回は、この期間の中にあるためである。
+func replacedExceptionDates(ctx context.Context, records RecordRepository, parent parentEvent, next schedule.RecurringSchedule, now time.Time) ([]civil.Date, error) {
+	_, last := scheduleview.RetainedRange(now)
+	out := []civil.Date{}
+	for d := next.Date; !d.After(last); d = civil.DateOf(d.Time().AddDate(0, 0, 1)) {
+		if next.Rule.EndDate != nil && d.After(*next.Rule.EndDate) {
+			break
+		}
+		if !next.HasOccurrenceOn(d) {
+			continue
+		}
+		_, err := records.GetForUpdate(ctx, scheduleview.OccurrenceScheduleID(parent.cal.ID, parent.row.EventID, d))
+		switch {
+		case err == nil:
+			out = append(out, d)
+		case !errors.Is(err, apperr.ErrNotFound):
+			return nil, err
+		}
+	}
+	return out, nil
 }
 
 // descriptionOf は、Google の予定 ev の説明を返す。説明が無ければ nil を返す。
