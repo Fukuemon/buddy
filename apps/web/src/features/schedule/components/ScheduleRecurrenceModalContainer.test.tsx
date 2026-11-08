@@ -32,6 +32,7 @@ const apiOf = (parameters: { appRouter?: unknown }) => {
 describe('ScheduleRecurrenceModalContainer', () => {
   afterEach(() => {
     vi.restoreAllMocks()
+    focusManager.setFocused(undefined)
   })
 
   it('開いた回の日から作った選択肢のうち、今の規則と同じものを選び、終了を「なし」にして始める', async () => {
@@ -245,6 +246,10 @@ describe('ScheduleRecurrenceModalContainer', () => {
       focusManager.setFocused(true)
     })
     await waitFor(() => expect(list.mock.calls.length).toBeGreaterThan(listed))
+    // 読み直した一覧が cache に入り、描き直し終えてから確かめる
+    await act(async () => {
+      await list.mock.results.at(-1)?.value
+    })
     expect(screen.queryByTestId('schedule-recurrence-cutover')).not.toBeInTheDocument()
     expect(screen.getByTestId('recurring-rule-preset')).toHaveValue('monthly-day')
 
@@ -255,6 +260,5 @@ describe('ScheduleRecurrenceModalContainer', () => {
     expect(await screen.findByTestId('schedule-recurrence-error')).toHaveTextContent(
       '予定の正本を buddy に切り替えています。',
     )
-    act(() => focusManager.setFocused(undefined))
   })
 })

@@ -1,18 +1,23 @@
 import { composeStories } from '@storybook/react-vite'
-import { render, screen, waitFor, within } from '@testing-library/react'
+import { focusManager } from '@tanstack/react-query'
+import { act, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vite-plus/test'
 
 import type { Schedule } from '#/api/types'
+import { ApiError } from '#/api/BuddyApi'
+import { MOCK_FACILITY_ID } from '#/mocks/scheduleData'
 import type { AppRouterParameters } from '#/storybook/withAppRouter'
 
 import * as stories from './ScheduleEditModalContainer.stories'
 
 const {
+  BuddyPrimary,
   Cancelled,
   Cutover,
   Forbidden,
   GooglePrimary,
+  GooglePrimaryBeforeCutover,
   GooglePrimaryChangedInGoogle,
   GooglePrimaryFromOtherDay,
   GooglePrimaryNeedsReview,
@@ -25,6 +30,7 @@ const {
 describe('ScheduleEditModalContainer', () => {
   afterEach(() => {
     vi.restoreAllMocks()
+    focusManager.setFocused(undefined)
   })
 
   it('編集の権限の外の予定の編集の URL では、フォームを出さずに権限が無いことを出す', async () => {
@@ -220,5 +226,52 @@ describe('ScheduleEditModalContainer', () => {
     )
     expect(screen.getByTestId('modal-close')).toBeInTheDocument()
     expect(screen.queryByTestId('schedule-edit-submit')).not.toBeInTheDocument()
+  })
+
+  it('buddy_primary の事業所では、予定の一覧を読まずにフォームを出す', async () => {
+    const { api } = BuddyPrimary.parameters.appRouter as AppRouterParameters
+    if (api === undefined) throw new Error('story にフェイクの API が無い')
+    const list = vi.spyOn(api.schedules, 'list')
+    render(<BuddyPrimary />)
+
+    expect(await screen.findByTestId('schedule-edit-submit')).toBeInTheDocument()
+    expect(list).not.toHaveBeenCalled()
+  })
+
+  it('事業所を読めないときは、フォームを出さずに読み込みの失敗の文を出す', async () => {
+    const { api } = BuddyPrimary.parameters.appRouter as AppRouterParameters
+    if (api === undefined) throw new Error('story にフェイクの API が無い')
+    vi.spyOn(api.facilities, 'get').mockRejectedValue(new ApiError(500, '事業所を読めない'))
+    render(<BuddyPrimary />)
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('予定を取得できませんでした。')
+    expect(screen.queryByTestId('schedule-edit-submit')).not.toBeInTheDocument()
+  })
+
+  it('開いた後に切り替えが始まっても、フォームを残し、保存すると切り替え中の文を出す', async () => {
+    const { api } = GooglePrimaryBeforeCutover.parameters.appRouter as AppRouterParameters
+    if (api === undefined) throw new Error('story にフェイクの API が無い')
+    const list = vi.spyOn(api.schedules, 'list')
+    render(<GooglePrimaryBeforeCutover />)
+    const submit = await screen.findByTestId('schedule-edit-submit')
+
+    await api.calendars.startCutover(MOCK_FACILITY_ID)
+    const listed = list.mock.calls.length
+    // 窓に戻ったときの読み直しで、一覧が切り替えを返しても、開いたときの状態のままにする
+    act(() => {
+      focusManager.setFocused(false)
+      focusManager.setFocused(true)
+    })
+    await waitFor(() => expect(list.mock.calls.length).toBeGreaterThan(listed))
+    await act(async () => {
+      await list.mock.results.at(-1)?.value
+    })
+    expect(screen.queryByTestId('schedule-edit-cutover')).not.toBeInTheDocument()
+
+    await userEvent.click(submit)
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      '予定の正本を buddy に切り替えています。',
+    )
+    expect(screen.getByTestId('schedule-form')).toBeInTheDocument()
   })
 })
