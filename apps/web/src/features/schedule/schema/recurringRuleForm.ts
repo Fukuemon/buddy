@@ -13,7 +13,7 @@ export type RecurringRuleFormValues = {
   frequency: RecurringRule['frequency']
   /** 毎月の第何週の曜日の曜日。1 が月曜、7 が日曜。 */
   dayOfWeek: number
-  /** 毎週の曜日の集まり。1 が月曜、7 が日曜。選んだ順に持ち、送るときに月曜から日曜の順に並べる。 */
+  /** 毎週の曜日の集まり。1 が月曜、7 が日曜。欄は月曜から日曜の順に持ち、送るときも重なりを除いて同じ順に並べる。 */
   weeklyDays: number[]
   /** 毎週の間隔の週の数。1 が毎週、2 が隔週。欄を空にすると NaN になる。 */
   interval: number

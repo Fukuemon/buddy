@@ -12,6 +12,7 @@ import { DatePicker, Select, fieldControlClassName } from '@buddy/ui'
 
 import {
   isoWeekdayOf,
+  isValidInterval,
   weekOfMonthOf,
   weeklyDaysOf,
   weeklyIntervalLabel,
@@ -29,10 +30,11 @@ const WEEKS = [1, 2, 3, 4, 5] as const
  */
 type Preset = 'current' | 'weekly' | 'monthly-day' | 'monthly-weekday' | 'custom'
 
+/** 選択肢が決める欄の値。毎月の選択肢は毎週の曜日を持たず、選んでも曜日の欄の値を残す。 */
 type Repetition = Pick<
   RecurringRuleFormValues,
-  'frequency' | 'dayOfWeek' | 'weeklyDays' | 'monthlyBy' | 'dayOfMonth' | 'weekOfMonth'
->
+  'frequency' | 'dayOfWeek' | 'monthlyBy' | 'dayOfMonth' | 'weekOfMonth'
+> & { weeklyDays?: number[] }
 
 const weekdayLabel = (day: number) => `${WEEKDAYS[day - 1]}曜日`
 
@@ -60,7 +62,6 @@ const presetsOf = (baseDate: string, originalDays: number[]): Presets => {
     'monthly-day': {
       frequency: 'monthly',
       dayOfWeek,
-      weeklyDays: [],
       monthlyBy: 'day',
       dayOfMonth,
       weekOfMonth,
@@ -68,18 +69,16 @@ const presetsOf = (baseDate: string, originalDays: number[]): Presets => {
     'monthly-weekday': {
       frequency: 'monthly',
       dayOfWeek,
-      weeklyDays: [],
       monthlyBy: 'weekday',
       dayOfMonth,
       weekOfMonth,
     },
   }
-  const [first] = originalDays
-  if (originalDays.length < 2 || first === undefined) return presets
+  if (originalDays.length < 2) return presets
   return {
     current: {
       frequency: 'weekly',
-      dayOfWeek: first,
+      dayOfWeek,
       weeklyDays: originalDays,
       monthlyBy: 'day',
       dayOfMonth,
@@ -92,7 +91,7 @@ const presetsOf = (baseDate: string, originalDays: number[]): Presets => {
 /** 選択肢の文言。毎週の選択肢は、送る間隔 interval を「毎週」「隔週」「3 週ごと」の形で前に付ける。 */
 const presetLabel = (preset: Exclude<Preset, 'custom'>, r: Repetition, interval: number) => {
   if (preset === 'current') {
-    return `${weeklyIntervalLabel(interval)} ${r.weeklyDays.map(weekdayLabel).join('、')}`
+    return `${weeklyIntervalLabel(interval)} ${(r.weeklyDays ?? []).map(weekdayLabel).join('、')}`
   }
   if (preset === 'weekly') return `${weeklyIntervalLabel(interval)} ${weekdayLabel(r.dayOfWeek)}`
   if (preset === 'monthly-day') return `毎月 ${r.dayOfMonth} 日`
@@ -180,6 +179,7 @@ export const RecurringRuleFields = <T extends RecurringRuleFormShape>({
   const recurrence = useWatch({ control, name: 'recurrence' })
   // 今の規則の選択肢は、開いたときの曜日の並びで作る。選択肢を選ぶと weeklyDays が替わるので、開いたときの値を残す
   const [originalDays] = useState(() => own.getValues('recurrence.weeklyDays'))
+  const [originalInterval] = useState(() => own.getValues('recurrence.interval'))
   const presets = presetsOf(baseDate, originalDays)
   const [isCustom, setCustom] = useState(
     () => matchPreset(own.getValues('recurrence'), presets) === 'custom',
@@ -200,6 +200,20 @@ export const RecurringRuleFields = <T extends RecurringRuleFormShape>({
     setCustom(false)
     for (const [key, value] of Object.entries(repetition)) {
       own.setValue(`recurrence.${key as keyof Repetition}`, value, { shouldDirty: true })
+    }
+    // 毎週の選択肢を選ぶと間隔の欄が閉じるので、範囲の外の間隔を開いたときの間隔に戻し、見えない誤りで保存を止めない
+    if (
+      repetition.frequency === 'weekly' &&
+      !isValidInterval(own.getValues('recurrence.interval'))
+    ) {
+      own.setValue(
+        'recurrence.interval',
+        isValidInterval(originalInterval) ? originalInterval : 1,
+        {
+          shouldDirty: true,
+        },
+      )
+      own.clearErrors('recurrence.interval')
     }
   }
 

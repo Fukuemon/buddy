@@ -72,6 +72,28 @@ describe('RecurringRuleFields', () => {
     ])
   })
 
+  it('範囲の外の間隔のまま毎週の選択肢を選ぶと、間隔を開いたときの値に戻す', async () => {
+    render(<BiweeklyDays />)
+    const preset = await screen.findByTestId('recurring-rule-preset')
+    await userEvent.selectOptions(preset, 'custom')
+    await userEvent.clear(screen.getByTestId('recurring-rule-interval'))
+    await userEvent.type(screen.getByTestId('recurring-rule-interval'), '60')
+    await userEvent.selectOptions(preset, 'weekly')
+    expect(within(preset).getByRole('option', { name: '隔週 木曜日' })).toBeInTheDocument()
+    await userEvent.selectOptions(preset, 'custom')
+    expect(screen.getByTestId('recurring-rule-interval')).toHaveValue(2)
+  })
+
+  it('毎月の選択肢を選んでも、毎週の曜日を残す', async () => {
+    render(<BiweeklyDays />)
+    const preset = await screen.findByTestId('recurring-rule-preset')
+    await userEvent.selectOptions(preset, 'monthly-day')
+    await userEvent.selectOptions(preset, 'custom')
+    await userEvent.selectOptions(screen.getByTestId('recurring-rule-frequency'), 'weekly')
+    expect(screen.getByTestId('recurring-rule-day-of-week-1')).toBeChecked()
+    expect(screen.getByTestId('recurring-rule-day-of-week-4')).toBeChecked()
+  })
+
   it('曜日と間隔の誤りの文を、それぞれの欄の下に出す', async () => {
     render(<CustomWeeklyInvalid />)
     expect(await screen.findByText('曜日を 1 つ以上選んでください')).toBeInTheDocument()

@@ -150,6 +150,10 @@ test.describe('繰り返しの変更', () => {
             await step('繰り返しで「カスタム…」を選ぶ')
             await page.getByTestId('recurring-rule-preset').selectOption('custom')
             await expect(page.getByTestId('recurring-rule-day-of-week-1')).toBeChecked()
+            if (variant.name !== 'before') {
+              await expect(page.getByTestId('recurring-rule-day-of-week-4')).toBeChecked()
+              await expect(page.getByTestId('recurring-rule-interval')).toHaveValue('2')
+            }
             await check('繰り返す、間隔、曜日の欄と、選んでいる曜日')
             await step('曜日の「金」を押す')
             await page.getByTestId('recurring-rule-day-of-week-5').click()
