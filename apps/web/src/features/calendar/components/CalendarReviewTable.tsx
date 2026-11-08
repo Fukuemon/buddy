@@ -16,6 +16,18 @@ export type CalendarReviewTableProps = {
  * 書き出しの ID は画面にも予定の応答にも出ないので、E2E は予定の ID で行を指す。
  * 両方の ID が無い書き出しは API の制約で起きないが、起きても行が区別できるよう書き出しの ID で作る。
  */
+/** 予定の日時。PC の幅で折り返すときも、時刻の範囲（最後の空白の後ろ）は 1 行に保つ。 */
+const DateTimeText = ({ issue }: { issue: CalendarExportIssue }) => {
+  const text = formatExportIssueDateTime(issue)
+  const timeStart = text.lastIndexOf(' ') + 1
+  return (
+    <>
+      {text.slice(0, timeStart)}
+      <span className="whitespace-nowrap">{text.slice(timeStart)}</span>
+    </>
+  )
+}
+
 const rowTestId = (issue: CalendarExportIssue) =>
   issue.schedule_id !== null
     ? `calendar-review-row-schedule-${issue.schedule_id}`
@@ -50,8 +62,12 @@ export const CalendarReviewTable = ({ issues, onSelect }: CalendarReviewTablePro
           { header: '最後に変わった日時', value: formatDateTime(issue.updated_at), isNoWrap: true },
         ]}
         name={
-          <span data-testid={`calendar-review-datetime-${issue.id}`}>
-            {formatExportIssueDateTime(issue)}
+          // RowTable の名前の列は PC の幅で中身より狭くなりうるので、繰り返しの長い日時を隣の列に重ねずに折り返す
+          <span
+            className="desktop:whitespace-normal"
+            data-testid={`calendar-review-datetime-${issue.id}`}
+          >
+            <DateTimeText issue={issue} />
           </span>
         }
         onSelect={() => onSelect(issue.id)}
