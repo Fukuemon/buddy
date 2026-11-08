@@ -64,7 +64,8 @@ describe('formatRecurrence', () => {
     [{ frequency: 'weekly', days_of_week: [3], interval: 1 }, '毎週水曜日の繰り返し'],
     [{ frequency: 'weekly', days_of_week: [7], interval: 1 }, '毎週日曜日の繰り返し'],
     [{ frequency: 'weekly', days_of_week: [1, 4], interval: 1 }, '毎週月曜日、木曜日の繰り返し'],
-    [{ frequency: 'weekly', days_of_week: [2], interval: 2 }, '2 週ごとの火曜日の繰り返し'],
+    [{ frequency: 'weekly', days_of_week: [2], interval: 2 }, '隔週火曜日の繰り返し'],
+    [{ frequency: 'weekly', days_of_week: [2], interval: 3 }, '3 週ごとの火曜日の繰り返し'],
     [{ frequency: 'monthly', day_of_month: 15 }, '毎月 15 日の繰り返し'],
     [{ frequency: 'monthly', week_of_month: 2, day_of_week: 1 }, '毎月第 2 月曜日の繰り返し'],
   ] as const)('%o を文にする', (rule, expected) => {
