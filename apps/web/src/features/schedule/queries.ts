@@ -1,4 +1,5 @@
-import { queryOptions, useMutation, useQueryClient } from '@tanstack/react-query'
+import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useState } from 'react'
 
 import type { BuddyApi } from '#/api/BuddyApi'
 import type {
@@ -12,7 +13,10 @@ import type {
 import { queryKeys } from '#/api/queryKeys'
 import { useBuddyApi } from '#/api/useBuddyApi'
 
+import { getCalendarRange } from './lib/calendarRange'
 import { CALENDAR_SYNC_REFRESH_MS } from './lib/calendarSync'
+import { toDateKey } from './lib/dateTime'
+import { resolveCalendarView, type ScheduleSearch } from './schema/scheduleSearch'
 
 /**
  * 事業所の予定を、params の期間（from を含み、to を含まない）と職員で絞って読む query。
@@ -163,4 +167,42 @@ export const useCancelSchedule = (scheduleId: Schedule['id']) => {
       return queryClient.invalidateQueries({ queryKey: queryKeys.schedules.all(facilityId) })
     },
   })
+}
+
+/**
+ * 画面を開いた時点で、事業所が予定の正本を buddy に切り替えている途中かを返す。切り替えている途中なら true である。
+ * 予定の詳細と同じく、事業所の sourceMode と、カレンダーの search params の期間の予定の一覧の cutover で読む。
+ * calendar_cutover_status は職員の管理の権限を求めるので使わない。buddy_primary の事業所では一覧を読まずに false にする。
+ * 一覧は、cache に値があっても、画面を開いてから読み直し終えるまで待つ。切り替えをやめた後に cache の古い cutover で決めると、
+ * 変えられる予定に切り替え中の文を出し続けるためである。
+ * 最初に読み終えた値を保ち、開いた後に切り替えが始まっても変えない。google_primary の一覧は同期の状況のために読み直すが、
+ * 開いた後の切り替えは、保存が 409 の cutover_open で拒まれて知らせ、入力を消さないためである。
+ * 読み終えるまでは undefined を、事業所か一覧を読めなければ 'error' を返す。
+ */
+export const useCutoverAtOpen = (search: Pick<ScheduleSearch, 'view' | 'date' | 'cancelled'>) => {
+  const { api, facilityId } = useBuddyApi()
+  const [today] = useState(() => toDateKey(new Date()))
+  const facilityQuery = useQuery(facilityQueryOptions(api, facilityId))
+  const isGooglePrimary = facilityQuery.data?.sourceMode === 'google_primary'
+  const listQuery = useQuery({
+    ...scheduleListQueryOptions(api, facilityId, {
+      ...getCalendarRange(resolveCalendarView(search.view), search.date ?? today),
+      includeCancelled: search.cancelled,
+    }),
+    enabled: isGooglePrimary,
+  })
+  const current =
+    facilityQuery.data === undefined
+      ? undefined
+      : !isGooglePrimary
+        ? false
+        : listQuery.data === undefined || !listQuery.isFetchedAfterMount || listQuery.isError
+          ? undefined
+          : listQuery.data.cutover !== null
+  const [atOpen, setAtOpen] = useState<boolean>()
+  if (atOpen === undefined && current !== undefined) setAtOpen(current)
+  if (atOpen !== undefined) return atOpen
+  if (current !== undefined) return current
+  if (facilityQuery.isError || (isGooglePrimary && listQuery.isError)) return 'error' as const
+  return undefined
 }

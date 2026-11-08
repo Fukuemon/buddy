@@ -2,7 +2,6 @@ import type { Meta, StoryObj } from '@storybook/react-vite'
 import { userEvent, within } from 'storybook/test'
 
 import { createFakeBuddyApi } from '#/api/fake/fakeBuddyApi'
-import { MOCK_FACILITY_ID } from '#/mocks/scheduleData'
 import {
   failingBuddyApi,
   pendingBuddyApi,
@@ -11,14 +10,7 @@ import {
 } from '#/storybook/withAppRouter'
 
 import { ScheduleDetailModalContainer } from './ScheduleDetailModalContainer'
-import { recurringOccurrenceApi, selfEditViewer } from './storyData'
-
-/** 予定の正本を buddy に切り替えている、google_primary の事業所のフェイクの API。 */
-const cutoverBuddyApi = () => {
-  const api = createFakeBuddyApi({ sourceMode: 'google_primary', calendarSyncs: [] })
-  void api.calendars.startCutover(MOCK_FACILITY_ID)
-  return api
-}
+import { cutoverBuddyApi, recurringOccurrenceApi, selfEditViewer } from './storyData'
 
 const route = (appRouter: Partial<AppRouterParameters>) => ({
   appRouter: { route: '/schedule/$scheduleId/', url: '/schedule/schedule-1', ...appRouter },

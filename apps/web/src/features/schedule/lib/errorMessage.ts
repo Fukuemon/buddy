@@ -32,6 +32,10 @@ export const SCHEDULE_GOOGLE_PRIMARY_MESSAGE =
 export const SCHEDULE_GOOGLE_EVENT_CHANGED_MESSAGE =
   'Google カレンダーで予定が変更されていました。最新の予定を確認してから、もう一度保存してください。'
 
+/** 予定の正本を buddy に切り替えている間に、予定を変えようとしたときの文（409 の cutover_open と、切り替えの間に開いた編集の画面）。 */
+export const SCHEDULE_CUTOVER_OPEN_MESSAGE =
+  '予定の正本を buddy に切り替えています。切り替えが終わるまで、予定を作成、変更、キャンセルできません。'
+
 /**
  * google_primary の事業所で、予定の API が Google カレンダーに書けなかったときの code ごとの文（ADR-0029）。
  * google_write_unknown は、作成とほかの操作で案内が違うので、scheduleSubmitErrorMessage が決める。
@@ -48,8 +52,7 @@ const GOOGLE_WRITE_MESSAGES: Record<string, string> = {
     '予定の職員が Google カレンダーを結び付けていません。カレンダーの結び付けを、事業所の管理者に頼んでください。',
   calendar_not_configured:
     'この事業所には、Google カレンダーと連携する設定がありません。事業所の管理者に確認してください。',
-  cutover_open:
-    '予定の正本を buddy に切り替えています。切り替えが終わるまで、予定を作成、変更、キャンセルできません。',
+  cutover_open: SCHEDULE_CUTOVER_OPEN_MESSAGE,
 }
 
 /**

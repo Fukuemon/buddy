@@ -12,7 +12,7 @@ import {
 } from '#/storybook/withAppRouter'
 
 import { ScheduleEditModalContainer } from './ScheduleEditModalContainer'
-import { selfEditViewer } from './storyData'
+import { cutoverBuddyApi, selfEditViewer } from './storyData'
 
 /**
  * google_primary の事業所で、編集を開いた後に Google カレンダーで予定が 1 時間遅れたフェイクの API。
@@ -145,4 +145,22 @@ export const GooglePrimaryRecurrenceUnsupported: Story = {
     url: '/schedule/gcal-review-3/edit',
     api: createFakeBuddyApi({ sourceMode: 'google_primary' }),
   }),
+}
+
+/** buddy_primary の事業所の予定。予定の一覧を読まないことと、事業所を読めないときを確かめるテストが、API を spy にする。 */
+export const BuddyPrimary: Story = {
+  parameters: route({ url: '/schedule/schedule-4/edit', api: createFakeBuddyApi() }),
+}
+
+/** google_primary の事業所で、切り替えていないときに開いた。開いた後に切り替えを始めるテストが、この story の API を書き換える。 */
+export const GooglePrimaryBeforeCutover: Story = {
+  parameters: route({
+    url: '/schedule/gcal-schedule-1/edit',
+    api: createFakeBuddyApi({ sourceMode: 'google_primary', calendarSyncs: [] }),
+  }),
+}
+
+/** 予定の正本を buddy に切り替えている事業所で、URL を直に開いた。フォームと保存のボタンを出さずに、切り替えていることを出す。 */
+export const Cutover: Story = {
+  parameters: route({ url: '/schedule/gcal-schedule-1/edit', api: cutoverBuddyApi() }),
 }

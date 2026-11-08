@@ -3,10 +3,17 @@ import { createMemoryHistory } from '@tanstack/react-router'
 import { userEvent, within } from 'storybook/test'
 
 import { ApiError, type BuddyApi } from '#/api/BuddyApi'
+import { createFakeBuddyApi } from '#/api/fake/fakeBuddyApi'
+import { FAKE_VIEWER } from '#/api/fake/fixtures'
+import { queryKeys } from '#/api/queryKeys'
+import type { ScheduleList } from '#/api/types'
 import { withAppRouter, type AppRouterParameters } from '#/storybook/withAppRouter'
 
+import { getCalendarRange } from '../lib/calendarRange'
+import { toDateKey } from '../lib/dateTime'
 import { isoWeekdayOf } from '../schema/recurringRuleForm'
-import { recurringOccurrenceApi, tokyoDateFromToday } from './storyData'
+import { resolveCalendarView } from '../schema/scheduleSearch'
+import { cutoverBuddyApi, recurringOccurrenceApi, tokyoDateFromToday } from './storyData'
 import { ScheduleRecurrenceModalContainer } from './ScheduleRecurrenceModalContainer'
 
 /**
@@ -139,6 +146,55 @@ export const Past: Story = { parameters: route({ api: recurringOccurrenceApi(-1)
 /** 1 回を置き換えた予定（単発の予定として扱う）の繰り返しの変更を URL で開いた。欄を出さずに理由を出す。 */
 export const Replaced: Story = {
   parameters: route({ api: recurringOccurrenceApi(1, { replaced: true }) }),
+}
+
+/** 予定の正本を buddy に切り替えている事業所で、URL を直に開いた。欄と保存のボタンを出さずに、切り替えていることを出す。 */
+export const Cutover: Story = {
+  parameters: route({
+    api: recurringOccurrenceApi(1, { base: cutoverBuddyApi(), sourceId: 'gcal-schedule-1' }),
+  }),
+}
+
+/**
+ * 切り替えをやめた後に開き直した。予定の一覧の cache には切り替え中の古い結果が残っているが、開いてから読み直した一覧は切り替えていない。
+ * 読み直し終えてから決めるので、欄を出す。
+ */
+export const StaleCutoverCache: Story = {
+  parameters: route({
+    api: recurringOccurrenceApi(1, {
+      base: createFakeBuddyApi({ sourceMode: 'google_primary', calendarSyncs: [] }),
+      sourceId: 'gcal-schedule-1',
+    }),
+    seed: (queryClient) => {
+      const stale: ScheduleList = {
+        schedules: [],
+        needsReview: [],
+        sourceMode: 'google_primary',
+        calendarSyncs: [],
+        cutover: {
+          started_at: '2026-11-01T00:00:00Z',
+          started_by: 'staff-1',
+          started_by_name: '青木 一郎',
+          range_start: '2026-11-01',
+        },
+      }
+      const range = getCalendarRange(resolveCalendarView(undefined), toDateKey(new Date()))
+      queryClient.setQueryData(
+        queryKeys.schedules.list(FAKE_VIEWER.facilityId, { ...range, includeCancelled: false }),
+        stale,
+      )
+    },
+  }),
+}
+
+/** google_primary の事業所で、切り替えていないときに開いた。欄を出す。 */
+export const GooglePrimary: Story = {
+  parameters: route({
+    api: recurringOccurrenceApi(1, {
+      base: createFakeBuddyApi({ sourceMode: 'google_primary', calendarSyncs: [] }),
+      sourceId: 'gcal-schedule-1',
+    }),
+  }),
 }
 
 /** 保存したら、Google カレンダーで親の規則が変わって開いた回が無くなっていた。開き直すことを出し、保存を押せなくする。 */

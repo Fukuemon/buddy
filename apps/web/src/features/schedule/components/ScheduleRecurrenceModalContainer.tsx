@@ -10,6 +10,7 @@ import { Button, Loading, Modal } from '@buddy/ui'
 
 import { WEEKDAYS, nextDayPrefix, toTimeKey, toTokyoDateKey } from '../lib/dateTime'
 import {
+  SCHEDULE_CUTOVER_OPEN_MESSAGE,
   SCHEDULE_EDIT_FORBIDDEN_MESSAGE,
   SCHEDULE_LOAD_ERROR_MESSAGE,
   isGoogleEventChanged,
@@ -23,6 +24,7 @@ import {
   scheduleQueryOptions,
   staffListQueryOptions,
   useChangeRecurringRule,
+  useCutoverAtOpen,
 } from '../queries'
 import { createRecurringRuleChangeSchema, recurringRuleToSend } from '../schema/recurringRuleChange'
 import { toRecurringRuleFormValues, type RecurringRuleFormShape } from '../schema/recurringRuleForm'
@@ -200,7 +202,8 @@ const RecurrenceForm = ({ schedule, staffList, patients, calendarSearch }: Recur
  * 繰り返しの予定の回を 1 件取り、その回の日（今日より前の回では今日）以降の回の繰り返しの規則を変えるモーダルを出す（ADR-0037）。予定の詳細の「編集」のメニューの「繰り返しを変更」から開く。
  * 繰り返しと終了の欄だけを出し、時刻、利用者、職員は本文の文字で示して変えさせない。保存するとカレンダーへ戻り、閉じると予定の詳細へ戻る。
  * 編集の権限が無い予定、キャンセルした予定、繰り返しの予定のまだ変えていない回でない予定（単発の予定と、1 回を置き換えた予定）では、欄を出さずに理由を出す。
- * 詳細はこれらの予定にメニューを出さないが、URL を直に開いたときのためである。
+ * 開いた時点で事業所が予定の正本を buddy に切り替えている途中なら、欄を出さずに切り替えていることを出す（useCutoverAtOpen）。
+ * 詳細はこれらの予定と切り替えの間にメニューを出さないが、URL を直に開いたときのためである。
  */
 export const ScheduleRecurrenceModalContainer = ({
   scheduleId,
@@ -213,6 +216,7 @@ export const ScheduleRecurrenceModalContainer = ({
   const scheduleQuery = useQuery(scheduleQueryOptions(api, facilityId, scheduleId))
   const staffQuery = useQuery(staffListQueryOptions(api, facilityId))
   const patientsQuery = useQuery(patientListQueryOptions(api, facilityId))
+  const cutover = useCutoverAtOpen(calendarSearch)
 
   const schedule = scheduleQuery.data
   const staffList = staffQuery.data
@@ -227,10 +231,16 @@ export const ScheduleRecurrenceModalContainer = ({
     </Modal>
   )
 
-  if (schedule === undefined || staffList === undefined || patients === undefined) {
+  if (
+    schedule === undefined ||
+    staffList === undefined ||
+    patients === undefined ||
+    cutover === undefined ||
+    cutover === 'error'
+  ) {
     if (scheduleQuery.isError)
       return message(scheduleLoadErrorMessage(scheduleQuery.error), undefined, true)
-    if (staffQuery.isError || patientsQuery.isError) {
+    if (staffQuery.isError || patientsQuery.isError || cutover === 'error') {
       return message(SCHEDULE_LOAD_ERROR_MESSAGE, undefined, true)
     }
     return (
@@ -256,6 +266,7 @@ export const ScheduleRecurrenceModalContainer = ({
       'schedule-recurrence-blocked',
     )
   }
+  if (cutover) return message(SCHEDULE_CUTOVER_OPEN_MESSAGE, 'schedule-recurrence-cutover')
 
   return (
     <RecurrenceForm

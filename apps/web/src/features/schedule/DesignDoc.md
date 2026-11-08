@@ -98,6 +98,7 @@ web と予定の API の責務と依存は、[buddy Design Doc](https://github.c
   - 作成は、フォームを開いたときに作った予定の ID（`apps/web/src/features/schedule/lib/scheduleId.ts`）を送る。送り直しでも同じ ID を送る。
   - 変更とキャンセルは、フォームかモーダルを開いたときに読んだ予定の `etag` を送る。
   - 予定の正本の切り替え中と、繰り返しの規則を buddy で表せない予定では、変更とキャンセルの操作を閉じる（`apps/web/src/features/schedule/lib/scheduleWritable.ts`）。
+  - 予定の編集と繰り返しの変更の URL を切り替え中に直に開いたときは、フォームを出さずに切り替えていることを出す。切り替え中かは、開いたときに予定の詳細と同じ一覧の `cutover` で読み、開いた後は変えない（`apps/web/src/features/schedule/queries.ts` の `useCutoverAtOpen`）。
   - 409（`google_event_changed`）では、入力を残して予定を読み直し、最新の予定をフォームの上に出し、送る `etag` を置き換える。
   - 動きの全体は、`services/schedule/internal/features/calendar/DesignDoc.md` の「画面からの書き込み」にある。
 - 保存とキャンセルの失敗は、403、Google カレンダーに書けなかったときの code、400 をほかの失敗と分けて文を出す。

@@ -80,6 +80,8 @@ export const OKADA = {
 export const ISHIDA = {
   email: 'ren.ishida@example.com',
   staff: { id: '01MA0CT0000000000000000STF', name: '石田 蓮' },
+  /** シードの 4 つ目の事業所（google_primary）の ID。 */
+  facilityId: '01MA0CT0000000000000000FAC',
   calendarId: 'ren.ishida@example.com',
 }
 
