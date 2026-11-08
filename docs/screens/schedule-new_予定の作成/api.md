@@ -153,7 +153,7 @@ OpenAPI の項目のうち、送る値は `createSchedule`（`POST /v1/facilitie
 | 5 | メモ | `schedule-form-description` |
 | 5 | 繰り返しの予定にする | `schedule-form-repeats` |
 | 6 | 繰り返し | `recurring-rule-preset` |
-| 8 | カスタムの繰り返す | `recurring-rule-frequency` |
+| 8 | カスタムの頻度 | `recurring-rule-frequency` |
 | 9 | 間隔 | `recurring-rule-interval` |
 | 10 | 曜日 | `recurring-rule-day-of-week-{曜日}` |
 | 7 | 終了日なし | `recurring-rule-ends-never` |

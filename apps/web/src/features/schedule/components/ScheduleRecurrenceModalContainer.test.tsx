@@ -46,11 +46,12 @@ describe('ScheduleRecurrenceModalContainer', () => {
     expect(screen.getByTestId('schedule-recurrence-summary')).toHaveTextContent('09:00〜09:29')
   })
 
-  it('「カスタム…」を選ぶと、同じモーダルの中に、繰り返すと曜日の欄を開く', async () => {
+  it('「カスタム…」を選ぶと、同じモーダルの中に、頻度と曜日の欄を開く', async () => {
     render(<Weekly />)
     await userEvent.selectOptions(await screen.findByTestId('recurring-rule-preset'), 'custom')
 
     expect(screen.getByTestId('recurring-rule-frequency')).toHaveValue('weekly')
+    expect(screen.getByTestId('recurring-rule-frequency')).toHaveAccessibleName('頻度')
     const weekday = isoWeekdayOf(tokyoDateFromToday(1))
     expect(screen.getByTestId(`recurring-rule-day-of-week-${weekday}`)).toBeChecked()
   })

@@ -1,7 +1,7 @@
 import type { RecurringRule } from '#/api/types'
 import { describe, expect, it } from 'vite-plus/test'
 
-import { recurringRuleLabel } from './recurringRuleLabel'
+import { recurringRuleLabel, repetitionLabel } from './recurringRuleLabel'
 
 const weekly = (daysOfWeek: number[] | null, interval: number): RecurringRule => ({
   frequency: 'weekly',
@@ -59,5 +59,30 @@ describe('recurringRuleLabel', () => {
         '2026-11-09',
       ),
     ).toBe('毎月 第 2 月曜日（2027年3月31日まで）')
+  })
+})
+
+describe('repetitionLabel', () => {
+  const values = {
+    frequency: 'weekly',
+    weeklyDays: [4, 1, 4],
+    interval: 2,
+    monthlyBy: 'day',
+    dayOfMonth: 9,
+    weekOfMonth: 2,
+    dayOfWeek: 1,
+  } as const
+
+  it('毎週の曜日は、重なりを除いて月曜から日曜の順に並べる', () => {
+    expect(repetitionLabel({ ...values, weeklyDays: [...values.weeklyDays] })).toBe(
+      '隔週 月曜日、木曜日',
+    )
+  })
+
+  it('毎月の値は、決め方の欄の値だけを使う', () => {
+    expect(repetitionLabel({ ...values, weeklyDays: [], frequency: 'monthly' })).toBe('毎月 9 日')
+    expect(
+      repetitionLabel({ ...values, weeklyDays: [], frequency: 'monthly', monthlyBy: 'weekday' }),
+    ).toBe('毎月 第 2 月曜日')
   })
 })
