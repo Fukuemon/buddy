@@ -49,6 +49,7 @@ nav = [
     { "予定の作成" = "screens/schedule-new_予定の作成/index.md" },
     { "予定の詳細" = "screens/schedule-detail_予定の詳細/index.md" },
     { "予定の編集" = "screens/schedule-edit_予定の編集/index.md" },
+    { "繰り返しの変更" = "screens/schedule-recurrence_繰り返しの変更/index.md" },
     { "カレンダーの連携" = "screens/schedule-link_カレンダーの連携/index.md" },
     { "予定の取り込み" = "screens/schedule-import_予定の取り込み/index.md" },
     { "確認が必要な予定" = "screens/schedule-review_確認が必要な予定/index.md" },

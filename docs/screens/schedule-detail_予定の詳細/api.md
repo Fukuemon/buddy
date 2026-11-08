@@ -88,6 +88,10 @@ OpenAPI の項目は、`getSchedule`（`GET /v1/schedules/{schedule_id}`）の�
   - キャンセルした予定では、`ScheduleDetailModal` が下端（下端の閉じる、予定をキャンセル、編集）を描かない。
   - 予定をキャンセルできない予定では `onCancelSchedule` を、編集できない予定では `onEdit` を、`ScheduleDetailModalContainer` が渡さない。
   - Google カレンダーの予定でも、ほかの条件に当てはまれば、どちらも渡す。
+  - 開いた予定が `Schedule.recurrence` を持てば、`ScheduleDetailModalContainer` は `onChangeRecurrence` も渡す。
+  - `ScheduleDetailModal` は、`onEdit` と `onChangeRecurrence` の両方を受けたときだけ、編集を packages/ui の `ActionMenu` にする。`triggerLabel` は「編集」、`placement` は `top` である。
+  - `Schedule.recurrence` は、繰り返しの予定のまだ変えていない回だけが持つ。1 回だけ変えた回とキャンセルした回は単発の予定として返るので持たない。
+  - web のサーバーは、`recurring_schedule_id` と `recurring_rule` の両方がある予定に `Schedule.recurrence` を付ける。処理は `apps/web/src/api/http/scheduleMapper.ts` の `fromApiSchedule` にある。
 - 予定と事業所の状態は、`apps/web/src/features/schedule/lib/scheduleWritable.ts` の `canChangeSchedule` が判定する。
   - キャンセルした予定、`cutover` が `null` でない間、`reviewReason` が `recurrence_unsupported` の予定で false を返す。編集と予定をキャンセルのボタンに使う。
   - 職員の権限の `canEditScheduleOf` と合わせて判定する。
@@ -137,6 +141,9 @@ OpenAPI の項目は、`getSchedule`（`GET /v1/schedules/{schedule_id}`）の�
 | 11 | 予定をキャンセル | `schedule-detail-cancel-schedule` |
 | 13 | 予定をキャンセル | `schedule-detail-cancel-schedule` |
 | 14 | 予定をキャンセル | `schedule-detail-cancel-schedule` |
+| 15 | 編集のメニュー | `schedule-detail-edit-list` |
+| 16 | この予定を編集 | `schedule-detail-edit-occurrence` |
+| 17 | 繰り返しを変更 | `schedule-detail-edit-recurrence` |
 | 2 | キャンセルのダイアログ | `schedule-cancel-dialog` |
 | 4 | キャンセルする予定の日時 | `schedule-cancel-datetime` |
 | 5 | キャンセルの説明 | `schedule-cancel-description` |
@@ -149,6 +156,7 @@ OpenAPI の項目は、`getSchedule`（`GET /v1/schedules/{schedule_id}`）の�
 
 - 番号は、状態ごとの構成要素の表の番号である。同じ要素が状態ごとに違う番号を持つときは、番号ごとに行を分ける。
 - 閉じるの `modal-close` は、packages/ui の `Modal` が付ける。
+- 編集のメニューの `schedule-detail-edit-list` は、packages/ui の `ActionMenu` が、開くボタンの testid に `-list` を付けて付ける。
 - 訪問の情報の項目の並び（`schedule-detail-visit-fields`）は、構成要素の表に載せないので、この表に載せない。
 
 ## 状態と失敗の要因

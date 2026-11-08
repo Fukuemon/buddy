@@ -73,35 +73,3 @@
 .se-latest__text {
   margin: 8px 0 0;
 }
-
-/* 変更の範囲。繰り返しの予定の回でだけ、フォームの上に出す（apps/web の SegmentedControl） */
-.se-scope {
-  display: flex;
-  max-width: 400px;
-  margin: 0 0 16px;
-}
-
-.se-scope .wf-tab {
-  flex: 1;
-}
-
-/* 「この日以降の全ての回」の繰り返しの欄。項目の一覧を置かず、欄を縦に積む */
-.se-rule {
-  display: grid;
-  gap: 20px;
-  max-width: 480px;
-}
-
-.se-rule .wf-tabs {
-  display: flex;
-  max-width: 320px;
-}
-
-.se-rule .wf-tabs .wf-tab {
-  flex: 1;
-}
-
-/* 押せない保存のボタン。apps/web の Button の disabled と同じく薄くする */
-.se-btn--disabled {
-  opacity: 0.4;
-}
