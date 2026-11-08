@@ -60,6 +60,7 @@ test.describe('予定の編集', () => {
       await openRecurrenceChange(page)
       await page.getByTestId('recurring-rule-preset').selectOption('custom')
       await page.getByTestId('recurring-rule-day-of-week-2').check()
+      await page.getByTestId('recurring-rule-day-of-week-1').uncheck()
       await page.getByTestId('schedule-recurrence-submit').click()
 
       await expect(page.getByTestId('schedule-recurrence-modal')).toBeHidden()
@@ -95,6 +96,7 @@ test.describe('予定の編集', () => {
       )
       await page.getByTestId('recurring-rule-preset').selectOption('custom')
       await page.getByTestId(`recurring-rule-day-of-week-${nextWeekday}`).check()
+      await page.getByTestId(`recurring-rule-day-of-week-${isoWeekdayOf(start)}`).uncheck()
       await page.getByTestId('schedule-recurrence-submit').click()
 
       await expect(page.getByTestId('schedule-recurrence-modal')).toBeHidden()
