@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>schedule-new 繰り返しのエラー</title>
+    <link rel="stylesheet" href="../../_common/mock.css" />
+    <link rel="stylesheet" href="../../_common/tokens.css" />
+    <link rel="stylesheet" href="../../_common/wireframe.css" />
+    <link rel="stylesheet" href="schedule-new.css" />
+  </head>
+  <body data-view="desktop">
+    <div class="stage">
+      <div class="screen">
+        <div class="screen-body">
+          <div class="wf-modal-stage">
+            <div aria-hidden="true" class="wf-bg-calendar"></div>
+            <div class="wf-overlay" data-m="1" tabindex="-1" data-go="../../schedule-calendar_予定のカレンダー/mocks/01-month.html"></div>
+            <div class="wf-modal" role="dialog" aria-label="予定の作成" data-testid="schedule-form-modal">
+              <div class="wf-modal__header">
+                <h2 class="wf-modal__title wf-dialog__title" data-m="2">予定の作成</h2>
+                <div class="wf-tabs sn-kind" role="radiogroup" aria-label="予定の種類" data-m="3" data-testid="schedule-kind-tab">
+                  <span class="wf-tab" data-testid="schedule-kind-tab-normal" data-go="02-normal.html">通常</span>
+                  <span class="wf-tab is-active" data-testid="schedule-kind-tab-visit">訪問</span>
+                </div>
+              </div>
+              <div class="wf-modal__body">
+                <div class="wf-split" data-testid="schedule-form">
+                  <ul class="wf-stack sn-fields">
+                    <li>
+                      <span class="wf-summary" data-m="4" data-testid="schedule-field-date-time" data-go="01-visit.html">
+                        <span class="wf-label">訪問日時</span>
+                        <span>2024-04-01 09:00 - 09:29（29 分、訪看I2）</span>
+                      </span>
+                    </li>
+                    <li>
+                      <span class="wf-summary is-active is-invalid" aria-current="true" data-m="4" data-testid="schedule-field-recurrence">
+                        <span class="wf-label">繰り返し</span>
+                        <span>毎週 火曜日</span>
+                        <span class="wf-error" role="alert">日付が繰り返しの回に当たりません。日付か繰り返しを変えてください</span>
+                      </span>
+                    </li>
+                    <li>
+                      <span class="wf-summary" data-m="4" data-testid="schedule-field-patient" data-go="04-patient.html">
+                        <span class="wf-label">利用者</span>
+                        <span><span class="wf-text wf-text--s"></span></span>
+                      </span>
+                    </li>
+                    <li>
+                      <span class="wf-summary" data-m="4" data-testid="schedule-field-staff" data-go="05-staff.html">
+                        <span class="wf-label">主訪問者</span>
+                        <span><span class="wf-text wf-text--s"></span></span>
+                      </span>
+                    </li>
+                    <li>
+                      <span class="wf-summary" data-m="4" data-testid="schedule-field-category" data-go="06-category.html">
+                        <span class="wf-label">訪問の区分</span>
+                        <span>通常</span>
+                      </span>
+                    </li>
+                    <li>
+                      <span class="wf-summary" data-m="4" data-testid="schedule-field-description" data-go="07-description.html">
+                        <span class="wf-label">メモ</span>
+                        <span class="wf-visually-hidden">未入力</span>
+                      </span>
+                    </li>
+                  </ul>
+                  <div>
+                    <div class="wf-pane sn-pane--wide">
+                      <span class="wf-check is-on" data-m="5" data-testid="schedule-form-repeats" data-toggle>繰り返しの予定にする</span>
+                      <div class="sn-rule">
+                        <span class="sn-rule__label">繰り返し</span>
+                        <div class="sn-rule__field sn-field">
+                          <span class="wf-select sn-preset sn-preset--invalid" data-m="6" data-testid="recurring-rule-preset" data-go="15-recurrence.html">カスタム…</span>
+                          <p class="wf-error sn-error" data-m="7">日付が繰り返しの回に当たりません。日付か繰り返しを変えてください</p>
+                        </div>
+                        <span class="sn-rule__label">繰り返す</span>
+                        <div class="sn-rule__field">
+                          <span class="wf-select" data-m="8" data-testid="recurring-rule-frequency">毎週</span>
+                        </div>
+                        <span class="sn-rule__label">曜日</span>
+                        <div class="sn-rule__field sn-days" role="radiogroup" aria-label="曜日">
+                          <span class="sn-day" aria-label="月曜日" data-m="9" data-testid="recurring-rule-day-of-week-{曜日}" data-choice="day-of-week">月</span>
+                          <span class="sn-day is-on" aria-label="火曜日" data-m="9" data-testid="recurring-rule-day-of-week-{曜日}" data-choice="day-of-week">火</span>
+                          <span class="sn-day" aria-label="水曜日" data-m="9" data-testid="recurring-rule-day-of-week-{曜日}" data-choice="day-of-week">水</span>
+                          <span class="sn-day" aria-label="木曜日" data-m="9" data-testid="recurring-rule-day-of-week-{曜日}" data-choice="day-of-week">木</span>
+                          <span class="sn-day" aria-label="金曜日" data-m="9" data-testid="recurring-rule-day-of-week-{曜日}" data-choice="day-of-week">金</span>
+                          <span class="sn-day" aria-label="土曜日" data-m="9" data-testid="recurring-rule-day-of-week-{曜日}" data-choice="day-of-week">土</span>
+                          <span class="sn-day" aria-label="日曜日" data-m="9" data-testid="recurring-rule-day-of-week-{曜日}" data-choice="day-of-week">日</span>
+                        </div>
+                        <span class="sn-rule__label">終了日</span>
+                        <div class="sn-rule__field sn-ends" role="radiogroup" aria-label="終了日">
+                          <span class="wf-radio is-on" data-m="10" data-testid="recurring-rule-ends-never" data-choice="ends">なし</span>
+                          <span></span>
+                          <span class="wf-radio" data-m="11" data-testid="recurring-rule-ends-on" data-choice="ends">あり</span>
+                          <span class="sn-date sn-disabled" aria-disabled="true" aria-label="終了日" data-m="12" data-testid="recurring-rule-end-date">2024/04/01</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="wf-modal__footer">
+                <span class="wf-btn" data-escape data-m="13" data-testid="schedule-new-cancel" data-go="../../schedule-calendar_予定のカレンダー/mocks/01-month.html">キャンセル</span>
+                <span class="wf-btn wf-btn--primary" data-m="14" data-testid="schedule-create-submit">作成</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="markers"></div>
+    </div>
+    <script src="../../_common/mock.js"></script>
+    <script src="../../_common/interact.js"></script>
+  </body>
+</html>
