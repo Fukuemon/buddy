@@ -135,8 +135,12 @@ describe('ScheduleDetailModalContainer', () => {
   it('繰り返しの予定の回では、「編集」を押すと「この予定を編集」と「繰り返しを変更」のメニューを出す', async () => {
     render(<RecurringOccurrence />)
     await userEvent.click(await screen.findByTestId('schedule-detail-edit'))
-    expect(screen.getByTestId('schedule-detail-edit-occurrence')).toHaveTextContent('この予定を編集')
-    expect(screen.getByTestId('schedule-detail-edit-recurrence')).not.toHaveAttribute('aria-disabled')
+    expect(screen.getByTestId('schedule-detail-edit-occurrence')).toHaveTextContent(
+      'この予定を編集',
+    )
+    expect(screen.getByTestId('schedule-detail-edit-recurrence')).not.toHaveAttribute(
+      'aria-disabled',
+    )
   })
 
   it('今日より前の回でも、「繰り返しを変更」を押せる', async () => {

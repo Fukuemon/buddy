@@ -84,7 +84,10 @@ const Row = ({
 }) => (
   <>
     {htmlFor === undefined ? (
-      <span className="text-label desktop:flex desktop:min-h-11 desktop:items-center desktop:self-start" id={labelId}>
+      <span
+        className="text-label desktop:flex desktop:min-h-11 desktop:items-center desktop:self-start"
+        id={labelId}
+      >
         {label}
       </span>
     ) : (
@@ -243,7 +246,11 @@ export const RecurringRuleFields = <T extends RecurringRuleFormShape>({
                 control={control}
                 name="recurrence.monthlyBy"
                 render={({ field: by }) => (
-                  <div aria-labelledby={monthlyLabelId} className="flex flex-col gap-2" role="radiogroup">
+                  <div
+                    aria-labelledby={monthlyLabelId}
+                    className="flex flex-col gap-2"
+                    role="radiogroup"
+                  >
                     <div className="flex flex-wrap items-center gap-3">
                       <label className={radioClassName}>
                         <input

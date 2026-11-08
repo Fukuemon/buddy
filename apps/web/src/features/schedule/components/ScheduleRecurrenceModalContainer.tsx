@@ -65,7 +65,11 @@ const RecurrenceForm = ({ schedule, staffList, patients, calendarSearch }: Recur
   const changeRule = useChangeRecurringRule(schedule.id)
 
   const backToDetail = () =>
-    navigate({ to: '/schedule/$scheduleId', params: { scheduleId: schedule.id }, search: calendarSearch })
+    navigate({
+      to: '/schedule/$scheduleId',
+      params: { scheduleId: schedule.id },
+      search: calendarSearch,
+    })
 
   const submit = async (values: RecurringRuleFormShape) => {
     try {
@@ -113,7 +117,11 @@ const RecurrenceForm = ({ schedule, staffList, patients, calendarSearch }: Recur
       onCloseRequest={backToDetail}
       stickyFooter={(requestClose) => (
         <>
-          <Button data-testid="schedule-recurrence-cancel" onClick={requestClose} variant="secondary">
+          <Button
+            data-testid="schedule-recurrence-cancel"
+            onClick={requestClose}
+            variant="secondary"
+          >
             キャンセル
           </Button>
           <Button
@@ -168,7 +176,11 @@ const RecurrenceForm = ({ schedule, staffList, patients, calendarSearch }: Recur
  * 編集の権限が無い予定、キャンセルした予定、繰り返しの予定のまだ変えていない回でない予定（単発の予定と、1 回を置き換えた予定）では、欄を出さずに理由を出す。
  * 詳細はこれらの予定にメニューを出さないが、URL を直に開いたときのためである。
  */
-export const ScheduleRecurrenceModalContainer = ({ scheduleId }: { scheduleId: Schedule['id'] }) => {
+export const ScheduleRecurrenceModalContainer = ({
+  scheduleId,
+}: {
+  scheduleId: Schedule['id']
+}) => {
   const navigate = useNavigate()
   const calendarSearch = pickCalendarSearch(useSearch({ from: '/schedule' }))
   const { api, facilityId, viewer } = useBuddyApi()
@@ -190,7 +202,8 @@ export const ScheduleRecurrenceModalContainer = ({ scheduleId }: { scheduleId: S
   )
 
   if (schedule === undefined || staffList === undefined || patients === undefined) {
-    if (scheduleQuery.isError) return message(scheduleLoadErrorMessage(scheduleQuery.error), undefined, true)
+    if (scheduleQuery.isError)
+      return message(scheduleLoadErrorMessage(scheduleQuery.error), undefined, true)
     if (staffQuery.isError || patientsQuery.isError) {
       return message(SCHEDULE_LOAD_ERROR_MESSAGE, undefined, true)
     }
@@ -206,7 +219,10 @@ export const ScheduleRecurrenceModalContainer = ({ scheduleId }: { scheduleId: S
     return message(SCHEDULE_EDIT_FORBIDDEN_MESSAGE, 'schedule-recurrence-forbidden')
   }
   if (schedule.cancel !== undefined) {
-    return message('キャンセルした予定からは、繰り返しを変えられません。', 'schedule-recurrence-blocked')
+    return message(
+      'キャンセルした予定からは、繰り返しを変えられません。',
+      'schedule-recurrence-blocked',
+    )
   }
   if (schedule.recurrence === undefined) {
     return message(
