@@ -9,7 +9,8 @@ import { isoWeekdayOf } from '../schema/recurringRuleForm'
 import { tokyoDateFromToday } from './storyData'
 import * as stories from './ScheduleRecurrenceModalContainer.stories'
 
-const { OccurrenceGone, Past, Replaced, StartsCustom, Weekly } = composeStories(stories)
+const { OccurrenceGone, Past, Replaced, RuleChangedInGoogle, StartsCustom, Weekly } =
+  composeStories(stories)
 
 const apiOf = (parameters: { appRouter?: unknown }) => {
   const { api, history } = parameters.appRouter as AppRouterParameters
@@ -142,11 +143,25 @@ describe('ScheduleRecurrenceModalContainer', () => {
     await userEvent.click(screen.getByTestId('schedule-recurrence-submit'))
 
     expect(await screen.findByTestId('schedule-recurrence-error')).toHaveTextContent(
-      '予定のカレンダーから開き直してください。',
+      '予定のカレンダーから開き直し、最新の繰り返しを確認してください。',
     )
     expect(screen.getByTestId('schedule-recurrence-submit')).toHaveAttribute(
       'aria-disabled',
       'true',
     )
+  })
+
+  it('Google カレンダーで規則が変わっていたら、開いた回が残っていても、開き直すことを出し、保存を押せなくする', async () => {
+    const { api } = apiOf(RuleChangedInGoogle.parameters)
+    const changeRule = vi.spyOn(api.schedules, 'changeRule')
+    render(<RuleChangedInGoogle />)
+    await userEvent.selectOptions(await screen.findByTestId('recurring-rule-preset'), 'monthly-day')
+    await userEvent.click(screen.getByTestId('schedule-recurrence-submit'))
+
+    expect(await screen.findByTestId('schedule-recurrence-error')).toHaveTextContent(
+      '最新の繰り返しを確認してください。',
+    )
+    await userEvent.click(screen.getByTestId('schedule-recurrence-submit'))
+    expect(changeRule).toHaveBeenCalledOnce()
   })
 })

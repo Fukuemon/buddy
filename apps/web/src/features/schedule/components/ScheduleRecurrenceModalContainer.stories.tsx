@@ -10,10 +10,10 @@ import { recurringOccurrenceApi, tokyoDateFromToday } from './storyData'
 import { ScheduleRecurrenceModalContainer } from './ScheduleRecurrenceModalContainer'
 
 /**
- * 開いた後に Google カレンダーで親の規則が変わり、開いた回が無くなったフェイクの API。
- * 規則の変更を 409（google_event_changed）で拒み、2 回目からの読み出しは 404 で拒む。
+ * 開いた後に Google カレンダーで親の規則が変わったフェイクの API。規則の変更を 409（google_event_changed）で拒む。
+ * 2 回目からの読み出しは、gone なら 404 で拒み（開いた回が無くなった）、そうでなければ終了日を足した規則の回を返す。
  */
-const occurrenceGoneApi = (): BuddyApi => {
+const changedInGoogleApi = (gone: boolean): BuddyApi => {
   const api = recurringOccurrenceApi(1)
   let reads = 0
   return {
@@ -22,8 +22,16 @@ const occurrenceGoneApi = (): BuddyApi => {
       ...api.schedules,
       get: async (facilityId, scheduleId) => {
         reads += 1
-        if (reads > 1) throw new ApiError(404, '予定が見つかりません')
-        return api.schedules.get(facilityId, scheduleId)
+        const schedule = await api.schedules.get(facilityId, scheduleId)
+        if (reads === 1) return schedule
+        if (gone) throw new ApiError(404, '予定が見つかりません')
+        const recurrence = schedule.recurrence
+        if (recurrence === undefined) return schedule
+        return {
+          ...schedule,
+          etag: '"etag-latest"',
+          recurrence: { ...recurrence, rule: { ...recurrence.rule, endDate: '2099-03-31' } },
+        }
       },
       changeRule: async () => {
         throw new ApiError(
@@ -131,10 +139,16 @@ export const Replaced: Story = {
 
 /** 保存したら、Google カレンダーで親の規則が変わって開いた回が無くなっていた。開き直すことを出し、保存を押せなくする。 */
 export const OccurrenceGone: Story = {
-  parameters: route({ api: occurrenceGoneApi() }),
+  parameters: route({ api: changedInGoogleApi(true) }),
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement.ownerDocument.body)
     await userEvent.selectOptions(await canvas.findByTestId('recurring-rule-preset'), 'monthly-day')
     await userEvent.click(canvas.getByTestId('schedule-recurrence-submit'))
   },
+}
+
+/** 保存したら、Google カレンダーで終了日が足されていた。知らずに消さないよう、開き直すことを出し、保存を押せなくする。 */
+export const RuleChangedInGoogle: Story = {
+  ...OccurrenceGone,
+  parameters: route({ api: changedInGoogleApi(false) }),
 }

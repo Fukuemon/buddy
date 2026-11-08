@@ -36,7 +36,7 @@
   - 欄の初期値は、`recurring_rule` の空の項目を開いた回の日から埋めて作る。処理は `apps/web/src/features/schedule/schema/recurringRuleForm.ts` の `toRecurringRuleFormValues` にある。
 - 保存の流れは次のとおり。
   - `effective_date` は、開いた回の日と今日の遅い方である。今日は画面を開いたときに決める。予定の API が今日より前の `effective_date` を拒むためである（ADR-0037）。
-  - `etag` は開いたときの `Schedule.etag`（`google_primary` では親の予定の etag）で、`null` なら送らない。409 `google_event_changed` の後は、`getSchedule` で読み直した予定の `etag` に置き換える。読み直せないか、別の繰り返しの予定の回になっていたら、置き換えずに開き直すことを出す。
+  - `etag` は開いたときの `Schedule.etag`（`google_primary` では親の予定の etag）で、`null` なら送らない。409 `google_event_changed` の後は、`getSchedule` で読み直した予定の `etag` に置き換える。読み直せないか、別の繰り返しの予定の回か、規則が変わっていたら、置き換えずに開き直すことを出す。開いたときの規則から作った入力のまま送ると、Google カレンダーで変えた規則を知らずに消すためである。
   - `id` は画面を開いたときに作った ULID で、送り直しでも同じ値を送る。`google_primary` で元の親に書けずに失敗したとき、新しい親を重ねずにやり直すためである。
   - 繰り返しを変えずに終了日だけを変えたときは、今の `recurring_rule` の終了日だけを替えて送る。予定の API は、終了日だけの変更として扱い、`effective_date` を読まない。処理は `apps/web/src/features/schedule/schema/recurringRuleChange.ts` の `recurringRuleToSend` にある。
   - 成功すると、応答の `date`（新しい繰り返しの最初の日付）と `effective_date` の遅い方を `date` にして、予定のカレンダーへ戻る。開いた回の取得の結果を捨て、事業所の予定の取得の結果を捨てて取り直す。処理は `apps/web/src/features/schedule/queries.ts` の `useChangeRecurringRule` にある。
@@ -118,7 +118,7 @@
 | 保存の失敗 | 「入力の内容では予定を更新できません。内容を直してください。」 | `changeRecurringRule` が 400 |
 | 保存の失敗 | 「この事業所の予定は Google カレンダーで管理しています。予定は Google カレンダーで作成、変更してください。」 | `changeRecurringRule` が 409 `google_primary` |
 | 保存の失敗 | 「Google カレンダーで予定が変更されていました。最新の予定を確認してから、もう一度保存してください。」 | `changeRecurringRule` が 409 `google_event_changed` |
-| 保存の失敗 | 「Google カレンダーで繰り返しの予定が変わり、開いた回が無くなりました。予定のカレンダーから開き直してください。」 | `changeRecurringRule` が 409 `google_event_changed` で、`getSchedule` で読み直せないか、読み直した予定の `Schedule.recurrence.recurringScheduleId` が開いたときと違う。保存のボタンを押せなくする |
+| 保存の失敗 | 「Google カレンダーで繰り返しの予定が変わっていました。予定のカレンダーから開き直し、最新の繰り返しを確認してください。」 | `changeRecurringRule` が 409 `google_event_changed` で、`getSchedule` で読み直せないか、読み直した予定の `Schedule.recurrence` の `recurringScheduleId` か `rule` が開いたときと違う。保存のボタンを押せなくする |
 | 保存の失敗 | 「Google カレンダーで予定が消されたか、見つかりません。」 | `changeRecurringRule` が 409 `google_event_not_found` |
 | 保存の失敗 | 「前の保存の結果を確認しています。時間をおいて、予定を開き直してください。」 | `changeRecurringRule` が 409 `google_write_pending` |
 | 保存の失敗 | 「Google カレンダーに書けませんでした。時間をおいて、やり直してください。」 | `changeRecurringRule` が 503 `google_unavailable` |

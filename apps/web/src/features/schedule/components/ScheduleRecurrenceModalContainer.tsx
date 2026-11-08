@@ -4,7 +4,7 @@ import { useNavigate, useSearch } from '@tanstack/react-router'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 
-import type { Patient, Schedule, Staff } from '#/api/types'
+import type { Patient, RecurringRule, Schedule, Staff } from '#/api/types'
 import { useBuddyApi } from '#/api/useBuddyApi'
 import { Button, Loading, Modal } from '@buddy/ui'
 
@@ -31,6 +31,14 @@ import { RecurringRuleFields } from './RecurringRuleFields'
 
 const TITLE = '繰り返しの変更'
 const FORM_ID = 'schedule-recurrence-form'
+
+/** 2 つの規則が、同じ回と終了日を決めるか。 */
+const sameRule = (a: RecurringRule, b: RecurringRule) =>
+  a.frequency === b.frequency &&
+  a.dayOfWeek === b.dayOfWeek &&
+  a.dayOfMonth === b.dayOfMonth &&
+  a.weekOfMonth === b.weekOfMonth &&
+  a.endDate === b.endDate
 
 /** YYYY-MM-DD を `11月16日（月）` の形にする。 */
 const formatMonthDay = (date: string) => {
@@ -94,8 +102,12 @@ const RecurrenceForm = ({ schedule, staffList, patients, calendarSearch }: Recur
     } catch (error) {
       if (!isGoogleEventChanged(error)) return
       const latest = await api.schedules.get(facilityId, schedule.id).catch(() => undefined)
-      // Google カレンダーで親の規則が変わると、開いた回が無くなるか別の繰り返しの予定の回になり、etag を取り直せない。保存し直しても同じ競合になるので、開き直させる
-      if (latest?.recurrence?.recurringScheduleId !== recurrence.recurringScheduleId) {
+      // 開いた回が無くなったか別の繰り返しの予定の回になったときは、etag を取り直せない。規則が変わっていたときは、
+      // 開いたときの規則から作った入力のまま送ると、Google カレンダーで変えた規則（終了日など）を知らずに消すので、どちらも開き直させる
+      if (
+        latest?.recurrence?.recurringScheduleId !== recurrence.recurringScheduleId ||
+        !sameRule(latest.recurrence.rule, recurrence.rule)
+      ) {
         setGone(true)
         return
       }
@@ -170,7 +182,7 @@ const RecurrenceForm = ({ schedule, staffList, patients, calendarSearch }: Recur
         {changeRule.isError && (
           <p className="text-danger" data-testid="schedule-recurrence-error" role="alert">
             {isGone
-              ? 'Google カレンダーで繰り返しの予定が変わり、開いた回が無くなりました。予定のカレンダーから開き直してください。'
+              ? 'Google カレンダーで繰り返しの予定が変わっていました。予定のカレンダーから開き直し、最新の繰り返しを確認してください。'
               : scheduleSubmitErrorMessage(changeRule.error, '更新')}
           </p>
         )}
