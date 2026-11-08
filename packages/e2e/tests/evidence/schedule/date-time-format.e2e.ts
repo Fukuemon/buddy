@@ -1,4 +1,4 @@
-import { expect, test, type Page } from '@playwright/test'
+import { expect, test, type Locator, type Page } from '@playwright/test'
 
 import type { Recording } from '@fukuemon/e2e-kit/recording'
 
@@ -18,12 +18,12 @@ type Shot = {
   stay?: boolean
   /** 開いた画面の字幕 */
   opened: string
-  /** 見えるのを待ち、画面に入れる要素の testid */
-  testId: string
-  /** 撮る前に選ぶ絞り込み。testid と値 */
-  select?: { testId: string; value: string }
-  /** 撮る前に押す要素の testid */
-  click?: string
+  /** 見えるのを待ち、画面に入れる要素 */
+  target: (page: Page) => Locator
+  /** 撮る前に選ぶ絞り込みの欄と値 */
+  select?: { field: (page: Page) => Locator; value: string }
+  /** 撮る前に押す要素 */
+  click?: (page: Page) => Locator
   /** 撮る場面の字幕。改修前と改修後で出る文言の例を入れる */
   check: { before: string; after: string }
 }
@@ -40,18 +40,18 @@ const shoot = async (
       await shiftStory(page)
     }
     if (shot.select !== undefined) {
-      await expect(page.getByTestId(shot.select.testId)).toBeVisible()
+      await expect(shot.select.field(page)).toBeVisible()
       await step(shot.opened)
-      await page.getByTestId(shot.select.testId).selectOption(shot.select.value)
+      await shot.select.field(page).selectOption(shot.select.value)
     } else if (shot.click !== undefined) {
-      await expect(page.getByTestId(shot.click)).toBeVisible()
+      await expect(shot.click(page)).toBeVisible()
       await step(shot.opened)
-      await page.getByTestId(shot.click).check()
+      await shot.click(page).check()
     } else {
-      await expect(page.getByTestId(shot.testId).first()).toBeVisible()
+      await expect(shot.target(page).first()).toBeVisible()
       await step(shot.opened)
     }
-    const target = page.getByTestId(shot.testId).first()
+    const target = shot.target(page).first()
     await expect(target).toBeVisible()
     // 字幕の帯に隠れないように、画面の中ほどに送る。カレンダーの格子のように中で送る箱にも効く
     await target.evaluate((element) => element.scrollIntoView({ block: 'center' }))
@@ -63,7 +63,7 @@ const SCHEDULE_SCREENS: readonly Shot[] = [
   {
     story: '画面-schedule-scheduleformmodal--visit',
     opened: '予定の作成のダイアログ（Storybook の ScheduleFormModal の Visit）を開いている',
-    testId: 'schedule-field-date-time',
+    target: (page) => page.getByTestId('schedule-field-date-time'),
     check: {
       before: '左の要約の「訪問日時」が「2026-10-20 09:00 - 09:29」の形で出る',
       after: '左の要約の「訪問日時」が「2026年10月20日（火） 09:00〜09:29」の形で出る',
@@ -73,8 +73,8 @@ const SCHEDULE_SCREENS: readonly Shot[] = [
     story: '画面-schedule-scheduleformmodal--normal',
     opened:
       '通常の予定の作成のダイアログ（Storybook の ScheduleFormModal の Normal）を開き、「終了は翌日」を選ぶ',
-    testId: 'schedule-field-date-time',
-    click: 'schedule-form-ends-next-day',
+    target: (page) => page.getByTestId('schedule-field-date-time'),
+    click: (page) => page.getByTestId('schedule-form-ends-next-day'),
     check: {
       before:
         '左の要約の「予定日時」が、翌日に終わる予定を「2026-10-20 09:00 - 翌 10:00」の形で出す',
@@ -85,7 +85,7 @@ const SCHEDULE_SCREENS: readonly Shot[] = [
   {
     story: '画面-schedule-scheduledetailmodal--visit',
     opened: '予定の詳細（Storybook の ScheduleDetailModal の Visit）を開いている',
-    testId: 'schedule-detail-datetime',
+    target: (page) => page.getByTestId('schedule-detail-datetime'),
     check: {
       before: '詳細の日時が「2026年10月20日（火） 09:00〜09:29」の形で出る',
       after: '詳細の日時が「2026年10月20日（火） 09:00〜09:29」の形で出る',
@@ -94,7 +94,7 @@ const SCHEDULE_SCREENS: readonly Shot[] = [
   {
     story: '画面-calendar-calendarreviewcontainer--default',
     opened: '確認が必要な予定（Storybook の CalendarReviewContainer の Default）を開いている',
-    testId: 'calendar-review-datetime-export-1',
+    target: (page) => page.getByTestId('calendar-review-datetime-export-1'),
     check: {
       before:
         '予定の日時が「2026/11/04（水）09:00〜09:29」、確認の日時が「2026/10/22 10:00」の形で出る',
@@ -109,7 +109,7 @@ const CALENDAR: readonly Shot[] = [
     story: '画面-schedule-schedulecalendarcontainer--week',
     opened:
       '予定のカレンダーの週の表示（Storybook の ScheduleCalendarContainer の Week）を開いている。(撮影のため、9 時の予定まで送る)',
-    testId: 'schedule-event-schedule-1',
+    target: (page) => page.getByTestId('schedule-event-schedule-1'),
     check: {
       before: '週の表示の予定の時刻が「9:00 - 9:29」の形で出る',
       after: '週の表示の予定の時刻が「09:00〜09:29」の形で出る',
@@ -119,7 +119,7 @@ const CALENDAR: readonly Shot[] = [
     story: '画面-schedule-schedulecalendarcontainer--week',
     stay: true,
     opened: '(撮影のため、週の表示を翌日に終わる夜勤の予定まで送る)',
-    testId: 'schedule-event-schedule-7',
+    target: (page) => page.getByTestId('schedule-event-schedule-7'),
     check: {
       before: '週の表示の翌日に終わる予定が「22:00 - 翌 1:00」の形で出る',
       after: '週の表示の翌日に終わる予定が「22:00〜翌 01:00」の形で出る',
@@ -129,7 +129,7 @@ const CALENDAR: readonly Shot[] = [
     story: '画面-schedule-schedulecalendarcontainer--day',
     opened:
       '予定のカレンダーの日の表示（Storybook の ScheduleCalendarContainer の Day）を開いている。(撮影のため、9 時の予定まで送る)',
-    testId: 'schedule-event-schedule-1',
+    target: (page) => page.getByTestId('schedule-event-schedule-1'),
     check: {
       before: '日の表示の予定の時刻が「09:00-09:29」の形で出る',
       after: '日の表示の予定の時刻が「09:00〜09:29」の形で出る',
@@ -139,7 +139,7 @@ const CALENDAR: readonly Shot[] = [
     story: '画面-schedule-schedulecalendarcontainer--day',
     stay: true,
     opened: '(撮影のため、日の表示を翌日に終わる夜勤の予定まで送る)',
-    testId: 'schedule-event-schedule-7',
+    target: (page) => page.getByTestId('schedule-event-schedule-7'),
     check: {
       before: '日の表示の翌日に終わる予定が「22:00-翌 01:00」の形で出る',
       after: '日の表示の翌日に終わる予定が「22:00〜翌 01:00」の形で出る',
@@ -148,7 +148,7 @@ const CALENDAR: readonly Shot[] = [
   {
     story: '画面-schedule-scheduleweekagenda--default',
     opened: '幅の狭い週の一覧（Storybook の ScheduleWeekAgenda の Default）を開いている',
-    testId: 'schedule-agenda-day-2026-10-20',
+    target: (page) => page.getByTestId('schedule-agenda-day-2026-10-20'),
     check: {
       before: '予定の時刻が「9:00 - 9:29」、翌日に終わる予定が「22:00 - 翌 1:00」の形で出る',
       after: '予定の時刻が「09:00〜09:29」、翌日に終わる予定が「22:00〜翌 01:00」の形で出る',
@@ -160,8 +160,8 @@ const STAFF_PATIENT: readonly Shot[] = [
   {
     story: '画面-staff-stafflistcontainer--default',
     opened: '職員の一覧（Storybook の StaffListContainer の Default）を開き、状態を「休職」に絞る',
-    testId: 'staff-list-leave-return-staff-2',
-    select: { testId: 'staff-list-filter-status', value: 'on_leave' },
+    target: (page) => page.getByTestId('staff-list-leave-return-staff-2'),
+    select: { field: (page) => page.getByTestId('staff-list-filter-status'), value: 'on_leave' },
     check: {
       before: '戻る予定の日が「2027/04/01 に戻る予定」の形で出る',
       after: '戻る予定の日が「2027年4月1日（木）に戻る予定」の形で出る',
@@ -170,8 +170,8 @@ const STAFF_PATIENT: readonly Shot[] = [
   {
     story: '画面-staff-stafflistcontainer--default',
     opened: '職員の一覧（Storybook の StaffListContainer の Default）を開き、状態を「退職」に絞る',
-    testId: 'staff-list-retired-on-staff-4',
-    select: { testId: 'staff-list-filter-status', value: 'retired' },
+    target: (page) => page.getByTestId('staff-list-retired-on-staff-4'),
+    select: { field: (page) => page.getByTestId('staff-list-filter-status'), value: 'retired' },
     check: {
       before: '退職した日が「2026/09/30 に退職」の形で出る',
       after: '退職した日が「2026年9月30日（水）に退職」の形で出る',
@@ -180,7 +180,7 @@ const STAFF_PATIENT: readonly Shot[] = [
   {
     story: '画面-staff-staffdetailcontainer--on-leave',
     opened: '休職中の職員の詳細（Storybook の StaffDetailContainer の OnLeave）を開いている',
-    testId: 'staff-detail-status-text',
+    target: (page) => page.getByTestId('staff-detail-status-text'),
     check: {
       before:
         '状態が「休職（2027/04/01 に戻る予定）」、休職の文が「2026/11/09 から休職です。」の形で出る',
@@ -192,8 +192,8 @@ const STAFF_PATIENT: readonly Shot[] = [
     story: '画面-patient-patientlistcontainer--default',
     opened:
       '利用者の一覧（Storybook の PatientListContainer の Default）を開き、状態を「利用の終了」に絞る',
-    testId: 'patient-list-ended-on-patient-ended',
-    select: { testId: 'patient-list-filter-status', value: 'ended' },
+    target: (page) => page.getByTestId('patient-list-ended-on-patient-ended'),
+    select: { field: (page) => page.getByTestId('patient-list-filter-status'), value: 'ended' },
     check: {
       before: '利用の終了にした日が「2026/10/01 に利用の終了」の形で出る',
       after: '利用の終了にした日が「2026年10月1日（木）に利用の終了」の形で出る',
@@ -206,7 +206,7 @@ const CALENDAR_IMPORT: readonly Shot[] = [
     story: '画面-calendar-calendarimportpreview--preview',
     opened:
       '予定の取り込みのプレビュー（Storybook の CalendarImportPreview の Preview）を開いている',
-    testId: 'schedule-import-help',
+    target: (page) => page.getByTestId('schedule-import-help'),
     check: {
       before:
         'プレビューの期間が「2026/11/01〜2026/11/30」、確認が必要な予定の日時が「2026/11/09（月）14:00〜14:30」の形で出る',
@@ -218,7 +218,7 @@ const CALENDAR_IMPORT: readonly Shot[] = [
     story: '画面-calendar-calendarimportpreview--preview',
     stay: true,
     opened: '(撮影のため、取り込まない予定の表まで送る)',
-    testId: 'calendar-import-skipped',
+    target: (page) => page.getByTestId('calendar-import-skipped'),
     check: {
       before: '取り込まない予定の日時が「2026/11/12（木）17:00〜翌 09:00」の形で出る',
       after: '取り込まない予定の日時が「2026年11月12日（木） 17:00〜翌 09:00」の形で出る',
@@ -227,7 +227,7 @@ const CALENDAR_IMPORT: readonly Shot[] = [
   {
     story: '画面-calendar-calendarlinkcontainer--default',
     opened: 'カレンダーの連携（Storybook の CalendarLinkContainer の Default）を開いている',
-    testId: 'calendar-link-row-staff-1',
+    target: (page) => page.getByTestId('calendar-link-row-staff-1'),
     check: {
       before: '最後の取り込みが「2026/10/15 10:00（2026/10/01〜2026/10/31）」の形で出る',
       after:
@@ -238,7 +238,7 @@ const CALENDAR_IMPORT: readonly Shot[] = [
     story: '画面-calendar-calendarcutovercontainer--open',
     opened:
       '予定の正本の切り替え中の画面（Storybook の CalendarCutoverContainer の Open）を開いている',
-    testId: 'calendar-cutover-open',
+    target: (page) => page.getByTestId('calendar-cutover-open'),
     check: {
       before: '取り込みの期間が「2026/11/01〜」、最後の同期が「2026/11/05 09:59」の形で出る',
       after:
@@ -252,7 +252,7 @@ const RECEIPT_RESULT: readonly Shot[] = [
     story: '画面-receipt-receiptresultview--default',
     opened:
       '照合の結果（Storybook の ReceiptResultView の Default）を開き、(撮影のため、結果の表まで送る)',
-    testId: 'receipt-category-schedule_only',
+    target: (page) => page.getByTestId('receipt-category-schedule_only'),
     check: {
       before: '表の訪問日の列が「2024-04-01」の形で出る',
       after: '表の訪問日の列が「2024年4月1日（月）」の形で出る',
