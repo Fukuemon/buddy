@@ -17,13 +17,12 @@ const EDIT = 'schedule-detail-edit'
 
 /** 予定の詳細のフッターの 3 つのボタンの testid を、画面の左にあるものから順に返す。 */
 const footerOrder = async (page: Page) => {
-  const boxes = await Promise.all(
-    [CANCEL, CLOSE, EDIT].map(async (id) => ({
-      id,
-      x: (await page.getByTestId(id).boundingBox())?.x ?? -1,
-    })),
-  )
-  return [...boxes].sort((a, b) => a.x - b.x).map(({ id }) => id)
+  const boxes = [
+    { id: CANCEL, box: await page.getByTestId('schedule-detail-cancel-schedule').boundingBox() },
+    { id: CLOSE, box: await page.getByTestId('schedule-detail-close').boundingBox() },
+    { id: EDIT, box: await page.getByTestId('schedule-detail-edit').boundingBox() },
+  ]
+  return boxes.sort((a, b) => (a.box?.x ?? -1) - (b.box?.x ?? -1)).map(({ id }) => id)
 }
 
 test.describe('予定の詳細', () => {
@@ -50,9 +49,11 @@ test.describe('予定の詳細', () => {
             await step(
               'キャンセルできる訪問の予定の詳細（Storybook の ScheduleDetailModalContainer の Visit）を開いている',
             )
-            await expect(page.getByTestId(CANCEL)).toHaveText('予定をキャンセル')
-            await expect(page.getByTestId(CLOSE)).toHaveText('閉じる')
-            await expect(page.getByTestId(EDIT)).toHaveText('編集')
+            await expect(page.getByTestId('schedule-detail-cancel-schedule')).toHaveText(
+              '予定をキャンセル',
+            )
+            await expect(page.getByTestId('schedule-detail-close')).toHaveText('閉じる')
+            await expect(page.getByTestId('schedule-detail-edit')).toHaveText('編集')
             if (isBefore) {
               await expect.poll(() => footerOrder(page)).toEqual([CLOSE, CANCEL, EDIT])
               await check(
