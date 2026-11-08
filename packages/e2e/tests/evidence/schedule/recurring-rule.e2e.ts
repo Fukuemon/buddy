@@ -166,12 +166,12 @@ test.describe('予定の API', () => {
               )
               await sendChangeRule(page, token, id, {
                 effective_date: effective,
-                recurring_rule: { frequency: 'weekly', day_of_week: 2 },
+                recurring_rule: { frequency: 'weekly', days_of_week: [2] },
               })
               const dialog = apiClient(page).dialog
               await expect(dialog).toContainText('200 OK')
               await expect(dialog).toContainText(`"date": "${tuesday}"`)
-              await expect(dialog).toContainText('"day_of_week": 2')
+              await expect(dialog).toContainText(/"days_of_week": \[\s*2\s*\]/)
               await check(
                 `200 が返り、最初の日付が ${tuesday}（火曜）、曜日が 2（火曜）の新しい繰り返しの予定が返る`,
               )
@@ -265,14 +265,14 @@ test.describe('予定の API', () => {
               )
               await sendChangeRule(page, token, id, {
                 effective_date: effective,
-                recurring_rule: { frequency: 'weekly', day_of_week: 2 },
+                recurring_rule: { frequency: 'weekly', days_of_week: [2] },
                 id: newScheduleId(),
                 etag,
               })
               const dialog = apiClient(page).dialog
               await expect(dialog).toContainText('200 OK')
               await expect(dialog).toContainText(`"date": "${tuesday}"`)
-              await expect(dialog).toContainText('"day_of_week": 2')
+              await expect(dialog).toContainText(/"days_of_week": \[\s*2\s*\]/)
               await check(`200 が返り、最初の日付が ${tuesday}（火曜）の新しい繰り返しの予定が返る`)
 
               const until = effective.replaceAll('-', '')

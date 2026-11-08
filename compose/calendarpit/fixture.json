@@ -142,7 +142,7 @@
         "timeZone": "Asia/Tokyo"
       },
       "recurrence": [
-        "RRULE:FREQ=WEEKLY;INTERVAL=2;BYDAY=FR"
+        "RRULE:FREQ=DAILY;INTERVAL=14"
       ]
     },
     {
