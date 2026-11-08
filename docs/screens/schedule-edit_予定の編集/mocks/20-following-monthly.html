@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>schedule-edit 毎月の日にちで繰り返す</title>
+    <link rel="stylesheet" href="../../_common/mock.css" />
+    <link rel="stylesheet" href="../../_common/tokens.css" />
+    <link rel="stylesheet" href="../../_common/wireframe.css" />
+    <link rel="stylesheet" href="schedule-edit.css" />
+  </head>
+  <body data-view="desktop">
+    <div class="stage">
+      <div class="screen">
+        <div class="screen-body">
+          <div class="wf-modal-stage">
+            <div aria-hidden="true" class="wf-bg-calendar"></div>
+            <div class="wf-overlay" data-m="1" tabindex="-1" data-go="../../schedule-detail_予定の詳細/mocks/01-visit.html"></div>
+            <div aria-label="予定の編集" class="wf-modal" data-testid="schedule-form-modal" role="dialog">
+              <div class="wf-modal__header">
+                <h2 class="wf-modal__title wf-dialog__title" data-m="2">予定の編集</h2>
+              </div>
+              <div class="wf-modal__body">
+                <div class="wf-tabs se-scope" role="radiogroup" aria-label="変更の範囲" data-m="3" data-testid="schedule-edit-scope">
+                  <span class="wf-tab" data-testid="schedule-edit-scope-occurrence" data-go="18-occurrence.html">この回だけ</span>
+                  <span class="wf-tab is-active" data-testid="schedule-edit-scope-following">この日以降の全ての回</span>
+                </div>
+                <div class="se-rule" data-testid="schedule-edit-rule">
+                  <p class="wf-lead" data-m="4" data-testid="schedule-edit-rule-lead">2026-10-20 以降の回の繰り返しだけを変え、時刻、職員、内容は今のままにします。</p>
+                  <div class="wf-stack">
+                    <h3 class="wf-heading">繰り返し</h3>
+                    <div class="wf-tabs" role="radiogroup" aria-label="繰り返し" data-m="5" data-testid="recurring-rule-frequency">
+                      <span class="wf-tab" data-testid="recurring-rule-frequency-weekly" data-go="19-following.html">毎週</span>
+                      <span class="wf-tab is-active" data-testid="recurring-rule-frequency-monthly">毎月</span>
+                    </div>
+                  </div>
+                  <div class="wf-stack">
+                    <h3 class="wf-heading">毎月の決め方</h3>
+                    <div class="wf-tabs" role="radiogroup" aria-label="毎月の決め方" data-m="6" data-testid="recurring-rule-monthly-by">
+                      <span class="wf-tab is-active" data-testid="recurring-rule-monthly-by-day">日にち</span>
+                      <span class="wf-tab" data-testid="recurring-rule-monthly-by-weekday" data-go="21-following-monthly-weekday.html">第何週の曜日</span>
+                    </div>
+                  </div>
+                  <div class="wf-stack">
+                    <span class="wf-label">日にち</span>
+                    <span class="wf-select" data-m="7" data-testid="recurring-rule-day-of-month">20 日</span>
+                  </div>
+                  <div class="wf-stack">
+                    <span class="wf-check" data-m="8" data-testid="recurring-rule-has-end-date" data-toggle>終了日を決める</span>
+                  </div>
+                </div>
+              </div>
+              <div class="wf-modal__footer">
+                <span class="wf-btn" data-escape data-m="9" data-testid="schedule-edit-cancel" data-go="../../schedule-detail_予定の詳細/mocks/01-visit.html">キャンセル</span>
+                <span class="wf-btn wf-btn--primary" data-m="10" data-testid="schedule-edit-submit">保存</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="markers"></div>
+    </div>
+    <script src="../../_common/mock.js"></script>
+    <script src="../../_common/interact.js"></script>
+  </body>
+</html>

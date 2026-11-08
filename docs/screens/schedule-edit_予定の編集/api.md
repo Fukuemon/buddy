@@ -34,6 +34,17 @@
 | 最新の予定のタイトル | 利用者の名前とサービスコード、通常の予定のタイトル | `Schedule.visit.patientId` を利用者の一覧（`Patient.name`）で引いた名前と `Schedule.visit.serviceCode`、`Schedule.title` | `getSchedule` の `visit_info.patient_id`、`visit_info.service_code`、`title` |
 | 最新の予定の職員 | 職員の名前 | `Schedule.staffId` を、職員の一覧（`Staff.name`）で引く | `getSchedule` の `staff_id` |
 | （画面に出さない） | 保存で送る予定の etag | `Schedule.etag` | `getSchedule` の `etag`。送るのは `updateSchedule` の本文の `etag` |
+| 変更の範囲 | 繰り返しの予定のまだ変えていない回か | `Schedule.recurrence` | `buddy_primary` は `getRecurringSchedule`、`google_primary` は `getSchedule` の `recurring_schedule_id` と `recurring_rule` |
+| 繰り返しを変えることの説明 | 開いた回の日 | `Schedule.startsAt` の日付 | `getSchedule` の `date`。保存では `changeRecurringRule` の `effective_date` |
+| 繰り返し | 毎週か毎月か | フォームの値の `frequency`。開いたときは `Schedule.recurrence.rule.frequency` | `recurring_rule.frequency` |
+| 曜日 | 毎週の曜日 | フォームの値の `dayOfWeek`。開いたときは `RecurringRule.dayOfWeek` | `recurring_rule.day_of_week` |
+| 毎月の決め方 | 日にちか第何週の曜日か | フォームの値の `monthlyBy`。開いたときは `RecurringRule.weekOfMonth` があれば `weekday` | `recurring_rule.week_of_month` があるか |
+| 日にち | 毎月の日 | フォームの値の `dayOfMonth`。開いたときは `RecurringRule.dayOfMonth` | `recurring_rule.day_of_month` |
+| 週 | 毎月の第何週か | フォームの値の `weekOfMonth`。開いたときは `RecurringRule.weekOfMonth` | `recurring_rule.week_of_month` |
+| 毎月の曜日 | 毎月の第何週の曜日 | フォームの値の `dayOfWeek`。開いたときは `RecurringRule.dayOfWeek` | `recurring_rule.day_of_week` |
+| 終了日を決める | 終了日があるか | フォームの値の `hasEndDate`。開いたときは `RecurringRule.endDate` があるか | `recurring_rule.end_date` が null でない |
+| 終了日 | 繰り返しの最後の日 | フォームの値の `endDate`。開いたときは `RecurringRule.endDate` | `recurring_rule.end_date` |
+| （画面に出さない） | 繰り返しを変えるときの、新しい繰り返しの予定の ID | 編集を開いたときに作った ID | `changeRecurringRule` の本文の `id` |
 
 - 画面は事業所を読まず、`buddy_primary` と `google_primary` のどちらの事業所でも `getSchedule` で予定を読み、同じフォームを出す。
   - 処理は `apps/web/src/features/schedule/components/ScheduleEditModalContainer.tsx` にある。
@@ -90,6 +101,17 @@
   - パスは `POST /v1/schedules/recurring/{recurring_schedule_id}/occurrences` である。
 - キャンセルした予定は、`updateSchedule` が 409 で拒む。
   - 画面はキャンセルした予定のフォームを出さないので、保存まで進まない。
+- 「この日以降の全ての回」で保存すると、`changeRecurringRule`（`PUT /v1/schedules/recurring/{recurring_schedule_id}/rule`）を呼ぶ。
+  - `recurring_schedule_id` は `Schedule.recurrence.recurringScheduleId` である。`buddy_primary` では回の ID から読んだ繰り返しの予定の ID、`google_primary` では親の予定の一覧での ID である。
+  - `effective_date` は開いた回の日、`etag` は開いた回の `Schedule.etag`（親の予定の etag）、`id` は編集を開いたときに作った ULID である。
+    - `id` は、送り直しでも同じ値を送る。`google_primary` で元の親に書けずに失敗したとき、新しい親を重ねずにやり直すためである。
+  - 繰り返しの頻度、曜日、日にち、週を変えず、終了日だけを変えたときは、今の `recurring_rule` の終了日だけを替えて送る。予定の API は、終了日だけの変更として扱い、`effective_date` を読まない。
+  - 成功すると、応答の `date`（新しい繰り返しの最初の日付）と開いた回の日の遅い方を `date` にして、予定のカレンダーへ戻る。
+  - 呼び出しは `apps/web/src/api/http/httpBuddyApi.ts` の `schedules.changeRule` にある。
+  - 戻る先は `apps/web/src/features/schedule/components/ScheduleEditModalContainer.tsx` が決める。
+- `google_primary` の事業所では `getRecurringSchedule` が 404 を返すので、規則は `getSchedule` と `listSchedules` の回の `recurring_rule` で読む。
+- 繰り返しの欄の初期値は、`recurring_rule` の空の項目を開いた回の日から埋めて作る。
+  - 処理は `apps/web/src/features/schedule/schema/recurringRuleForm.ts` の `toRecurringRuleFormValues` にある。
 
 ## 権限の判定
 
@@ -113,6 +135,15 @@
 | 開いた予定が、予定を Google カレンダーで管理する事業所の予定である | `Schedule.fromGoogleCalendar` が `true` |
 | 開いた予定が、訪問の情報を読み取れなかった確認が必要な予定である | `Schedule.reviewReason` が `patient_not_found`、`patient_ambiguous`、`service_code_not_found`、`title_unreadable` のどれか |
 | 職員が、保存を送っている途中である | react-hook-form の `formState.isSubmitting` が `true`（`ScheduleFormModal` が保存のボタンの `isLoading` に渡す）。`updateSchedule` を呼んでから、予定の詳細へ移るまでと、409 `google_event_changed` の後に `getSchedule` で読み直し終えるまでを含む |
+| 開いた予定が、繰り返しの予定のまだ変えていない回である | `Schedule.recurrence` がある |
+| 職員が、変更の範囲で「この日以降の全ての回」を選んでいる | `ScheduleEditForm` の `scope` が `following` |
+| 職員が、変更の範囲で「この回だけ」を選んでいる | `ScheduleEditForm` の `scope` が `occurrence`。繰り返しの予定の回でない予定では、常に `occurrence` である |
+| 開いた回が、今日より前の回である | `Schedule.startsAt` の日付が、Asia/Tokyo の今日より前 |
+| 職員が、繰り返しで「毎週」を選んでいる | フォームの値の `recurrence.frequency` が `weekly` |
+| 職員が、繰り返しで「毎月」を選んでいる | フォームの値の `recurrence.frequency` が `monthly` |
+| 職員が、毎月の決め方で「日にち」を選んでいる | フォームの値の `recurrence.monthlyBy` が `day` |
+| 職員が、毎月の決め方で「第何週の曜日」を選んでいる | フォームの値の `recurrence.monthlyBy` が `weekday` |
+| 職員が、「終了日を決める」を選んでいる | フォームの値の `recurrence.hasEndDate` が `true` |
 
 - 予定の種類を変えられる予定かは、`apps/web/src/features/schedule/lib/reviewFix.ts` の `canAddVisitInfo` が決める。
 - 保存のボタンは packages/ui の `Button` で、`isLoading` の間は押しても `onClick` と送信を止める。
@@ -177,10 +208,30 @@
 | 8 | 終了は翌日 | `schedule-form-ends-next-day` |
 | 8 | 終了時間 | `schedule-form-end-time` |
 | 9 | サービスコード | `service-code-{コード}` |
+| 3 | 変更の範囲 | `schedule-edit-scope` |
+| 4 | 繰り返しを変えることの説明 | `schedule-edit-rule-lead` |
+| 4 | 今日より前の回の繰り返しを変えられないことの文 | `schedule-edit-rule-past` |
+| 5 | 繰り返し | `recurring-rule-frequency` |
+| 6 | 曜日 | `recurring-rule-day-of-week-{曜日}` |
+| 6 | 毎月の決め方 | `recurring-rule-monthly-by` |
+| 7 | 日にち | `recurring-rule-day-of-month` |
+| 7 | 週 | `recurring-rule-week-of-month` |
+| 8 | 毎月の曜日 | `recurring-rule-monthly-day-of-week` |
+| 7 | 終了日を決める | `recurring-rule-has-end-date` |
+| 8 | 終了日を決める | `recurring-rule-has-end-date` |
+| 9 | 終了日を決める | `recurring-rule-has-end-date` |
+| 8 | 終了日 | `recurring-rule-end-date` |
+| 9 | 入力の誤りの文 | `recurring-rule-end-date-error` |
 
 - 番号は、状態ごとの構成要素の表の番号である。同じ要素が状態ごとに違う番号を持つときは、番号ごとに行を分ける。
 - 閉じるの `modal-close` は、packages/ui の `Modal` が付ける。
 - 予定の種類の選択肢は、`schedule-kind-tab-normal`、`schedule-kind-tab-visit` である。packages/ui の `SegmentedControl` が、組の testid に選択肢の `kind` を付ける。
+- 次の選択肢の testid は、packages/ui の `SegmentedControl` が組の testid に選択肢の ID を付けたものである。
+  - 変更の範囲: `schedule-edit-scope-occurrence`、`schedule-edit-scope-following`
+  - 繰り返し: `recurring-rule-frequency-weekly`、`recurring-rule-frequency-monthly`
+  - 毎月の決め方: `recurring-rule-monthly-by-day`、`recurring-rule-monthly-by-weekday`
+- 曜日の `{曜日}` は、1（月曜）から 7（日曜）の数である。
+- `recurring-rule-` で始まる testid は、予定の作成でも使う繰り返しの欄（`apps/web/src/features/schedule/components/RecurringRuleFields.tsx`）が付ける。入力の誤りの文の testid は、欄の testid に `-error` を付けたものである。
 - 項目の一覧の testid の末尾は、項目の ID（`title`、`date-time`、`patient`、`staff`、`category`、`description`）である。
 - サービスコードの `{コード}` は、`listServiceCodes` の `code` の表記のままである。
 - 利用者の一覧と職員の一覧の testid は、行のラジオボタンに付く。
@@ -201,20 +252,20 @@
 | 読み込みの失敗 | 「予定を取得できませんでした。」 | `getSchedule` か `getRecurringSchedule` が 401、403、404 以外で失敗。`listUsers`、`listPatients`、`listServiceCodes` のどれかが 401 以外で失敗。API に届かない |
 | 繰り返しの規則を buddy で表せない | 「この予定の繰り返しの規則は buddy で表せないため、buddy では変更できません。Google カレンダーで変更してください。」 | API の失敗ではない。`getSchedule` の `review_reason` が `recurrence_unsupported` |
 | 権限が無い | 「この予定を編集する権限がありません。」 | API の失敗ではない。`getMe` の `policies` で、予定の職員の予定を編集できない |
-| 保存の失敗 | 「この操作をする権限がありません。」 | `updateSchedule` か `changeOccurrence` が 403 |
-| 保存の失敗 | 「入力の内容では予定を更新できません。内容を直してください。」 | `updateSchedule` か `changeOccurrence` が 400 |
-| 保存の失敗 | 「この事業所の予定は Google カレンダーで管理しています。予定は Google カレンダーで作成、変更してください。」 | `updateSchedule` か `changeOccurrence` が 409 `google_primary`。事業所が Google カレンダーを予定の正本にしている |
-| Google カレンダーで変更されていた | 「Google カレンダーで予定が変更されていました。最新の予定を確認してから、もう一度保存してください。」 | `updateSchedule` が 409 `google_event_changed` |
-| 保存の失敗 | 「Google カレンダーで予定が消されたか、見つかりません。」 | `updateSchedule` が 409 `google_event_not_found` |
-| 保存の失敗 | 「前の保存の結果を確認しています。時間をおいて、予定を開き直してください。」 | `updateSchedule` が 409 `google_write_pending` |
-| 保存の失敗 | 「Google カレンダーに書けませんでした。時間をおいて、やり直してください。」 | `updateSchedule` が 503 `google_unavailable` |
-| 保存の失敗 | 「Google カレンダーに書けたかを確認できませんでした。時間をおいて、予定を開き直してください。」 | `updateSchedule` が 503 `google_write_unknown` |
-| 保存の失敗 | 「Google カレンダーに予定を書く権限がありません。カレンダーの共有の設定を、事業所の管理者に確認してください。」 | `updateSchedule` が 409 `google_calendar_unwritable` |
-| 保存の失敗 | 「Google カレンダーが予定を受け付けませんでした。入力を確認してください。」 | `updateSchedule` が 409 `google_event_rejected` |
-| 保存の失敗 | 「予定の職員が Google カレンダーを結び付けていません。カレンダーの結び付けを、事業所の管理者に頼んでください。」 | `updateSchedule` が 409 `calendar_not_linked` |
-| 保存の失敗 | 「この事業所には、Google カレンダーと連携する設定がありません。事業所の管理者に確認してください。」 | `updateSchedule` が 503 `calendar_not_configured` |
-| 保存の失敗 | 「予定の正本を buddy に切り替えています。切り替えが終わるまで、予定を作成、変更、キャンセルできません。」 | `updateSchedule` が 409 `cutover_open` |
-| 保存の失敗 | 「予定を更新できませんでした。」 | `updateSchedule` か `changeOccurrence` が、ここまでのほかの失敗（404、409 `conflict`、500 など）。保存の前の `getSchedule` の読み直しか、マスタ（`listScheduleTypes`、`listServiceCodes`、`listVisitCategories`）の取得が失敗。選んだ値に当たるマスタが無い。API に届かない |
+| 保存の失敗 | 「この操作をする権限がありません。」 | `updateSchedule`、`changeOccurrence`、`changeRecurringRule` のどれかが 403 |
+| 保存の失敗 | 「入力の内容では予定を更新できません。内容を直してください。」 | `updateSchedule`、`changeOccurrence`、`changeRecurringRule` のどれかが 400 |
+| 保存の失敗 | 「この事業所の予定は Google カレンダーで管理しています。予定は Google カレンダーで作成、変更してください。」 | `updateSchedule`、`changeOccurrence`、`changeRecurringRule` のどれかが 409 `google_primary`。事業所が Google カレンダーを予定の正本にしている |
+| Google カレンダーで変更されていた | 「Google カレンダーで予定が変更されていました。最新の予定を確認してから、もう一度保存してください。」 | `updateSchedule` か `changeRecurringRule` が 409 `google_event_changed` |
+| 保存の失敗 | 「Google カレンダーで予定が消されたか、見つかりません。」 | `updateSchedule` か `changeRecurringRule` が 409 `google_event_not_found` |
+| 保存の失敗 | 「前の保存の結果を確認しています。時間をおいて、予定を開き直してください。」 | `updateSchedule` か `changeRecurringRule` が 409 `google_write_pending` |
+| 保存の失敗 | 「Google カレンダーに書けませんでした。時間をおいて、やり直してください。」 | `updateSchedule` か `changeRecurringRule` が 503 `google_unavailable` |
+| 保存の失敗 | 「Google カレンダーに書けたかを確認できませんでした。時間をおいて、予定を開き直してください。」 | `updateSchedule` か `changeRecurringRule` が 503 `google_write_unknown` |
+| 保存の失敗 | 「Google カレンダーに予定を書く権限がありません。カレンダーの共有の設定を、事業所の管理者に確認してください。」 | `updateSchedule` か `changeRecurringRule` が 409 `google_calendar_unwritable` |
+| 保存の失敗 | 「Google カレンダーが予定を受け付けませんでした。入力を確認してください。」 | `updateSchedule` か `changeRecurringRule` が 409 `google_event_rejected` |
+| 保存の失敗 | 「予定の職員が Google カレンダーを結び付けていません。カレンダーの結び付けを、事業所の管理者に頼んでください。」 | `updateSchedule` か `changeRecurringRule` が 409 `calendar_not_linked` |
+| 保存の失敗 | 「この事業所には、Google カレンダーと連携する設定がありません。事業所の管理者に確認してください。」 | `updateSchedule` か `changeRecurringRule` が 503 `calendar_not_configured` |
+| 保存の失敗 | 「予定の正本を buddy に切り替えています。切り替えが終わるまで、予定を作成、変更、キャンセルできません。」 | `updateSchedule` か `changeRecurringRule` が 409 `cutover_open` |
+| 保存の失敗 | 「予定を更新できませんでした。」 | `updateSchedule`、`changeOccurrence`、`changeRecurringRule` のどれかが、ここまでのほかの失敗（404、409 `conflict`、500 など）。保存の前の `getSchedule` の読み直しか、マスタ（`listScheduleTypes`、`listServiceCodes`、`listVisitCategories`）の取得が失敗。選んだ値に当たるマスタが無い。API に届かない |
 | 送信中 | なし（ログインの画面へ移るまで続く） | 保存の操作が 401 |
 
 - 読み込みの失敗の文は、`apps/web/src/features/schedule/lib/errorMessage.ts` の `scheduleLoadErrorMessage` が、予定の取得の status で選ぶ。
