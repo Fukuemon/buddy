@@ -1,5 +1,5 @@
 import { Button, Dialog, DialogBody, DialogFooter, DialogHeader } from '@buddy/ui'
-import { useId, type ReactNode } from 'react'
+import { useId, useRef, type ReactNode } from 'react'
 
 import type { CalendarExportIssue } from '#/api/types'
 
@@ -39,10 +39,17 @@ export const CalendarReviewDialog = ({
   onClose,
 }: CalendarReviewDialogProps) => {
   const titleId = useId()
+  // 予定を開くが無い繰り返しの予定で、最初の押せる要素の書き直すにフォーカスが移らないようにする
+  const closeRef = useRef<HTMLButtonElement>(null)
   const detail = exportIssueReasonDetail(issue)
   const scheduleId = issue.schedule_id
   return (
-    <Dialog data-testid="calendar-review-dialog" labelledBy={titleId} onClose={onClose}>
+    <Dialog
+      data-testid="calendar-review-dialog"
+      initialFocusRef={closeRef}
+      labelledBy={titleId}
+      onClose={onClose}
+    >
       <DialogHeader title="食い違った予定" titleId={titleId} />
       <DialogBody>
         <dl className="text-body">
@@ -81,7 +88,13 @@ export const CalendarReviewDialog = ({
         >
           buddy の内容で書き直す
         </Button>
-        <Button data-testid="calendar-review-cancel" onClick={onClose} size="S" variant="secondary">
+        <Button
+          data-testid="calendar-review-cancel"
+          onClick={onClose}
+          ref={closeRef}
+          size="S"
+          variant="secondary"
+        >
           閉じる
         </Button>
       </DialogFooter>

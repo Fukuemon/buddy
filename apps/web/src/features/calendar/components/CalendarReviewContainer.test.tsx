@@ -72,10 +72,11 @@ describe('CalendarReviewContainer', () => {
     expect(dialog).not.toHaveTextContent('Google の内容に合わせる')
   })
 
-  it('繰り返しの予定には、予定を開くを出さない', async () => {
+  it('繰り返しの予定には、予定を開くを出さず、開いたときのフォーカスを書き直すでなく閉じるに置く', async () => {
     render(<Default />)
     const dialog = await openRow('calendar-review-row-recurring-recurring-1')
     expect(within(dialog).queryByTestId('calendar-review-open-export-3')).toBeNull()
+    expect(within(dialog).getByTestId('calendar-review-cancel')).toHaveFocus()
   })
 
   it('確認してから buddy の内容で書き直すと、一覧から消える', async () => {
