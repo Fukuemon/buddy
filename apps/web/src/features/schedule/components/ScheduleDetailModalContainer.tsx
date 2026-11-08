@@ -7,14 +7,13 @@ import { useBuddyApi } from '#/api/useBuddyApi'
 import { Loading, Modal } from '@buddy/ui'
 
 import { getCalendarRange } from '../lib/calendarRange'
-import { toDateKey, toTokyoDateKey } from '../lib/dateTime'
+import { toDateKey } from '../lib/dateTime'
 import {
   SCHEDULE_NOT_FOUND_MESSAGE,
   scheduleLoadErrorMessage,
   scheduleSubmitErrorMessage,
 } from '../lib/errorMessage'
 import { canEditScheduleOf } from '../lib/schedulePermission'
-import { isRecurringSchedule, recurrenceChangeBlockedReason } from '../lib/recurrenceChange'
 import { canChangeSchedule } from '../lib/scheduleWritable'
 import {
   facilityQueryOptions,
@@ -44,7 +43,6 @@ export const ScheduleDetailModalContainer = ({ scheduleId }: { scheduleId: Sched
   const calendarSearch = pickCalendarSearch(search)
   const { api, facilityId, viewer } = useBuddyApi()
   const [today] = useState(() => toDateKey(new Date()))
-  const [tokyoToday] = useState(() => toTokyoDateKey(new Date()))
   // キャンセルのダイアログを開いた時点の予定の etag。開いていなければ undefined である
   const [cancelETag, setCancelETag] = useState<string | null>()
   const cancelSchedule = useCancelSchedule(scheduleId)
@@ -114,17 +112,14 @@ export const ScheduleDetailModalContainer = ({ scheduleId }: { scheduleId: Sched
         }
         onClose={close}
         onChangeRecurrence={
-          isRecurringSchedule(schedule)
-            ? {
-                onSelect: () =>
-                  navigate({
-                    to: '/schedule/$scheduleId/recurrence',
-                    params: { scheduleId },
-                    search: calendarSearch,
-                  }),
-                blockedReason: recurrenceChangeBlockedReason(schedule, tokyoToday),
-              }
-            : undefined
+          schedule.recurrence === undefined
+            ? undefined
+            : () =>
+                navigate({
+                  to: '/schedule/$scheduleId/recurrence',
+                  params: { scheduleId },
+                  search: calendarSearch,
+                })
         }
         onEdit={
           canEdit

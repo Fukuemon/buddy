@@ -145,8 +145,6 @@ export type Schedule = {
    * 1 回だけ変えた回とキャンセルした回は、単発の予定に替わっているので持たない。
    */
   recurrence?: { recurringScheduleId: string; rule: RecurringRule }
-  /** 繰り返しの予定の 1 回を置き換えた単発の予定のときだけ true である。予定の詳細で、繰り返しを変えられない理由を出すのに使う。 */
-  replacedOccurrence?: true
 }
 
 /** 繰り返しの規則。予定の API の RecurringRule と同じ組み合わせで、null の項目は最初の日付の曜日や日から決まる。 */
@@ -193,13 +191,7 @@ export type ScheduleList = {
 /** 予定の作成と更新で送る値。 */
 export type ScheduleInput = Omit<
   Schedule,
-  | 'id'
-  | 'facilityId'
-  | 'fromGoogleCalendar'
-  | 'etag'
-  | 'reviewReason'
-  | 'recurrence'
-  | 'replacedOccurrence'
+  'id' | 'facilityId' | 'fromGoogleCalendar' | 'etag' | 'reviewReason' | 'recurrence'
 >
 
 /** 予定の一覧の条件。 */

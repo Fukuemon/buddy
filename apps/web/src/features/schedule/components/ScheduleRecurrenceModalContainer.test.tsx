@@ -104,18 +104,35 @@ describe('ScheduleRecurrenceModalContainer', () => {
     expect(new URLSearchParams(history.location.search).get('date')).toBe(opened)
   })
 
-  it('今日より前の回では、欄を出さずに変えられない理由を出す', async () => {
+  it('今日より前の回では、今日以降の回を変えることを出し、今日を適用の日にして送る', async () => {
+    const { api } = apiOf(Past.parameters)
+    const changeRule = vi.spyOn(api.schedules, 'changeRule')
     render(<Past />)
-    expect(await screen.findByTestId('schedule-recurrence-blocked')).toHaveTextContent(
-      '今日より前の回からは、繰り返しを変えられません。',
+    expect(await screen.findByTestId('schedule-recurrence-lead')).toHaveTextContent(
+      '今日より前の回は変わりません。',
     )
-    expect(screen.queryByTestId('schedule-recurrence-submit')).not.toBeInTheDocument()
+    await userEvent.selectOptions(screen.getByTestId('recurring-rule-preset'), 'monthly-day')
+    await userEvent.click(screen.getByTestId('schedule-recurrence-submit'))
+
+    await waitFor(() => expect(changeRule).toHaveBeenCalledOnce())
+    expect(changeRule.mock.calls[0]?.[2].effectiveDate).toBe(tokyoDateFromToday(0))
   })
 
-  it('1 回を置き換えた予定では、欄を出さずに変えられない理由を出す', async () => {
+  it('1 回を置き換えた予定は単発の予定として扱い、欄を出さずに変えられない理由を出す', async () => {
     render(<Replaced />)
     expect(await screen.findByTestId('schedule-recurrence-blocked')).toHaveTextContent(
-      '1 回だけ変えた予定のため',
+      '繰り返しの予定の回ではないため',
+    )
+  })
+
+  it('終了日の「あり」の右の日付の欄は、見出しを見せずに、読み上げの名前を「終了日」にする', async () => {
+    // 履歴は story の間で共有し、前のテストの保存でカレンダーへ移っているので、繰り返しの変更の URL に戻す
+    apiOf(Weekly.parameters).history?.push('/schedule/recurring-occurrence/recurrence')
+    render(<Weekly />)
+    expect(await screen.findByRole('radio', { name: 'あり' })).toBeInTheDocument()
+    expect(screen.getByLabelText('終了日', { selector: 'input' })).toHaveAttribute(
+      'data-testid',
+      'recurring-rule-end-date',
     )
   })
 })

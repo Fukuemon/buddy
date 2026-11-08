@@ -92,10 +92,10 @@ export const Unchanged: Story = {
   },
 }
 
-/** 昨日の回の繰り返しの変更を URL で開いた。欄を出さずに理由を出す。 */
+/** 昨日の回の繰り返しの変更。今日から当てることを出し、今日以降の回の繰り返しを変える。 */
 export const Past: Story = { parameters: route({ api: recurringOccurrenceApi(-1) }) }
 
-/** 1 回を置き換えた予定の繰り返しの変更を URL で開いた。欄を出さずに理由を出す。 */
+/** 1 回を置き換えた予定（単発の予定として扱う）の繰り返しの変更を URL で開いた。欄を出さずに理由を出す。 */
 export const Replaced: Story = {
   parameters: route({ api: recurringOccurrenceApi(1, { replaced: true }) }),
 }

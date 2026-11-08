@@ -18,7 +18,7 @@ const {
   ReadOnly,
   RecurringOccurrence,
   RecurringPastMenu,
-  RecurringReplacedMenu,
+  RecurringReplaced,
   Visit,
 } = composeStories(stories)
 
@@ -120,21 +120,17 @@ describe('ScheduleDetailModalContainer', () => {
     expect(screen.getByTestId('schedule-detail-edit-recurrence')).not.toHaveAttribute('aria-disabled')
   })
 
-  it('今日より前の回では、「繰り返しを変更」を押せなくし、理由を出す', async () => {
+  it('今日より前の回でも、「繰り返しを変更」を押せる', async () => {
     render(<RecurringPastMenu />)
     await userEvent.click(await screen.findByTestId('schedule-detail-edit'))
     const item = await screen.findByTestId('schedule-detail-edit-recurrence')
-    expect(item).toHaveAttribute('aria-disabled', 'true')
-    expect(item).toHaveAccessibleDescription(
-      '今日より前の回からは、繰り返しを変えられません。今日以降の回を開いて変えてください。',
-    )
+    expect(item).not.toHaveAttribute('aria-disabled')
+    expect(item.textContent).toBe('繰り返しを変更')
   })
 
-  it('1 回を置き換えた予定では、「繰り返しを変更」を押せなくし、理由を出す', async () => {
-    render(<RecurringReplacedMenu />)
-    await userEvent.click(await screen.findByTestId('schedule-detail-edit'))
-    const item = await screen.findByTestId('schedule-detail-edit-recurrence')
-    expect(item).toHaveAttribute('aria-disabled', 'true')
-    expect(item).toHaveTextContent('1 回だけ変えた予定のため')
+  it('1 回を置き換えた予定は、単発の予定と同じく、メニューにせず「編集」のボタンだけを出す', async () => {
+    render(<RecurringReplaced />)
+    expect(await screen.findByTestId('schedule-detail-edit')).not.toHaveAttribute('aria-haspopup')
+    expect(screen.queryByTestId('schedule-detail-edit-recurrence')).not.toBeInTheDocument()
   })
 })

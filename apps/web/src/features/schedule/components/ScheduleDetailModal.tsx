@@ -17,10 +17,10 @@ export type ScheduleDetailModalProps = {
   /** 編集の画面へ移る。省くと編集のボタンを出さない。編集の権限が無い予定で省く。 */
   onEdit?: () => void
   /**
-   * 渡すと、「編集」を、「この予定を編集」（onEdit）と「繰り返しを変更」（onChangeRecurrence.onSelect）が出るメニューにする。繰り返しの予定の回で渡す。
-   * blockedReason を渡すと、「繰り返しを変更」を押せなくし、その理由を項目の下に出す。onEdit を省いたときは使わない。
+   * 渡すと、「編集」を、「この予定を編集」（onEdit）と「繰り返しを変更」（onChangeRecurrence）が出るメニューにする。繰り返しの予定のまだ変えていない回（recurrence を持つ予定）で渡す。1 回を置き換えた予定は単発の予定として扱い、渡さない。
+   * onEdit を省いたときは使わない。
    */
-  onChangeRecurrence?: { onSelect: () => void; blockedReason?: string }
+  onChangeRecurrence?: () => void
   /** キャンセルのダイアログを開く。省くとキャンセルのボタンを出さない。キャンセルできない予定で省く。 */
   onCancelSchedule?: () => void
   onClose: () => void
@@ -99,10 +99,8 @@ export const ScheduleDetailModal = ({
                         },
                         {
                           label: '繰り返しを変更',
-                          onSelect: onChangeRecurrence.onSelect,
+                          onSelect: onChangeRecurrence,
                           'data-testid': 'schedule-detail-edit-recurrence',
-                          disabled: onChangeRecurrence.blockedReason !== undefined,
-                          description: onChangeRecurrence.blockedReason,
                         },
                       ]}
                       label="編集"

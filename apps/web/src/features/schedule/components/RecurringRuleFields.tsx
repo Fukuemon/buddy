@@ -111,7 +111,7 @@ export type RecurringRuleFieldsProps<T extends RecurringRuleFormShape> = {
 }
 
 /**
- * 繰り返しの欄。繰り返しを、baseDate から作った 3 つの選択肢か「カスタム…」から選び、終了を「なし」か「終了日」から選ぶ。
+ * 繰り返しの欄。繰り返しを、baseDate から作った 3 つの選択肢か「カスタム…」から選び、終了日を「なし」か「あり」から選び、「あり」の右の日付の欄で終了日を入れる。
  * 「カスタム…」を選ぶと、同じ欄の中に、繰り返す（毎週、毎月）と、曜日か毎月の日の欄を開く。値が 3 つの選択肢のどれとも違うときも、開いた形で始める。
  * 予定の編集の「繰り返しを変更」と、予定の作成の繰り返しで使う。値の検証は、使う側の resolver が行う。
  * 選択肢や頻度を替えても、使わない欄の値は残す。testid は `recurring-rule-` で始める。
@@ -340,14 +340,14 @@ export const RecurringRuleFields = <T extends RecurringRuleFormShape>({
           )}
         </>
       )}
-      <Row label="終了" labelId={endsLabelId}>
+      <Row label="終了日" labelId={endsLabelId}>
         <Controller
           control={control}
           name="recurrence.hasEndDate"
           render={({ field }) => (
             <div
               aria-labelledby={endsLabelId}
-              className="grid grid-cols-[max-content_minmax(0,12.5rem)] items-center gap-x-4 gap-y-2"
+              className="grid grid-cols-[max-content_minmax(0,12.5rem)] items-start gap-x-4 gap-y-2"
               role="radiogroup"
             >
               <label className={radioClassName}>
@@ -371,12 +371,13 @@ export const RecurringRuleFields = <T extends RecurringRuleFormShape>({
                   onChange={() => field.onChange(true)}
                   type="radio"
                 />
-                終了日
+                あり
               </label>
               <DatePicker
                 control={control}
                 data-testid="recurring-rule-end-date"
                 disabled={!field.value}
+                isLabelHidden
                 isWide
                 label="終了日"
                 name="recurrence.endDate"

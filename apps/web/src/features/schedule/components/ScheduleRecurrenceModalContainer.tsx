@@ -16,7 +16,6 @@ import {
   scheduleLoadErrorMessage,
   scheduleSubmitErrorMessage,
 } from '../lib/errorMessage'
-import { recurrenceChangeBlockedReason } from '../lib/recurrenceChange'
 import { newScheduleId } from '../lib/scheduleId'
 import { canEditScheduleOf } from '../lib/schedulePermission'
 import {
@@ -51,12 +50,15 @@ const RecurrenceForm = ({ schedule, staffList, patients, calendarSearch }: Recur
   const { api, facilityId } = useBuddyApi()
   const { recurrence } = schedule
   const occurrenceDate = toTokyoDateKey(new Date(schedule.startsAt))
+  // 予定の API は今日より前の日から当てないので（ADR-0037）、今日より前の回を開いたときは今日から当てる
+  const [today] = useState(() => toTokyoDateKey(new Date()))
+  const effectiveDate = occurrenceDate < today ? today : occurrenceDate
   // 開いたときの etag で送る。Google カレンダーで変わっていたら、読み直した最新の予定の etag に置き換える
   const [etag, setETag] = useState(schedule.etag ?? null)
   const [initial] = useState(() => toRecurringRuleFormValues(recurrence.rule, occurrenceDate))
   const form = useForm<RecurringRuleFormShape>({
     defaultValues: { recurrence: initial },
-    resolver: zodResolver(createRecurringRuleChangeSchema(initial, occurrenceDate)),
+    resolver: zodResolver(createRecurringRuleChangeSchema(initial, effectiveDate)),
   })
   // 送り直しでも同じ ID を送る。google_primary で元の親に書けずに失敗したとき、新しい親を重ねずにやり直すためである
   const [newRecurringId] = useState(() => newScheduleId())
@@ -70,7 +72,7 @@ const RecurrenceForm = ({ schedule, staffList, patients, calendarSearch }: Recur
       const changed = await changeRule.mutateAsync({
         recurringScheduleId: recurrence.recurringScheduleId,
         change: {
-          effectiveDate: occurrenceDate,
+          effectiveDate,
           rule: recurringRuleToSend(values, initial, recurrence.rule),
           id: newRecurringId,
         },
@@ -81,7 +83,7 @@ const RecurrenceForm = ({ schedule, staffList, patients, calendarSearch }: Recur
         to: '/schedule',
         search: {
           ...calendarSearch,
-          date: changed.date > occurrenceDate ? changed.date : occurrenceDate,
+          date: changed.date > effectiveDate ? changed.date : effectiveDate,
         },
       })
     } catch (error) {
@@ -133,8 +135,10 @@ const RecurrenceForm = ({ schedule, staffList, patients, calendarSearch }: Recur
         onSubmit={form.handleSubmit(submit)}
       >
         <p data-testid="schedule-recurrence-lead">
-          {formatMonthDay(occurrenceDate)}
-          以降の回の繰り返しを変えます。時刻、利用者、職員、内容は変わりません。
+          {effectiveDate === occurrenceDate
+            ? `${formatMonthDay(effectiveDate)}以降の回の繰り返しを変えます。`
+            : `今日（${formatMonthDay(effectiveDate)}）以降の回の繰り返しを変えます。今日より前の回は変わりません。`}
+          時刻、利用者、職員、内容は変わりません。
         </p>
         <dl
           className="grid grid-cols-1 gap-x-4 gap-y-1 rounded-8 bg-surface-subtle p-4 desktop:grid-cols-[7rem_minmax(0,1fr)] desktop:gap-y-2"
@@ -159,15 +163,15 @@ const RecurrenceForm = ({ schedule, staffList, patients, calendarSearch }: Recur
 }
 
 /**
- * 繰り返しの予定の回を 1 件取り、その回の日以降の回の繰り返しの規則を変えるモーダルを出す（ADR-0037）。予定の詳細の「編集」のメニューの「繰り返しを変更」から開く。
+ * 繰り返しの予定の回を 1 件取り、その回の日（今日より前の回では今日）以降の回の繰り返しの規則を変えるモーダルを出す（ADR-0037）。予定の詳細の「編集」のメニューの「繰り返しを変更」から開く。
  * 繰り返しと終了の欄だけを出し、時刻、利用者、職員は本文の文字で示して変えさせない。保存するとカレンダーへ戻り、閉じると予定の詳細へ戻る。
- * 編集の権限が無い予定、キャンセルした予定、1 回を置き換えた予定、今日より前の回では、欄を出さずに理由を出す。詳細のメニューで押せなくしているが、URL を直に開いたときのためである。
+ * 編集の権限が無い予定、キャンセルした予定、繰り返しの予定のまだ変えていない回でない予定（単発の予定と、1 回を置き換えた予定）では、欄を出さずに理由を出す。
+ * 詳細はこれらの予定にメニューを出さないが、URL を直に開いたときのためである。
  */
 export const ScheduleRecurrenceModalContainer = ({ scheduleId }: { scheduleId: Schedule['id'] }) => {
   const navigate = useNavigate()
   const calendarSearch = pickCalendarSearch(useSearch({ from: '/schedule' }))
   const { api, facilityId, viewer } = useBuddyApi()
-  const [today] = useState(() => toTokyoDateKey(new Date()))
   const scheduleQuery = useQuery(scheduleQueryOptions(api, facilityId, scheduleId))
   const staffQuery = useQuery(staffListQueryOptions(api, facilityId))
   const patientsQuery = useQuery(patientListQueryOptions(api, facilityId))
@@ -204,9 +208,11 @@ export const ScheduleRecurrenceModalContainer = ({ scheduleId }: { scheduleId: S
   if (schedule.cancel !== undefined) {
     return message('キャンセルした予定からは、繰り返しを変えられません。', 'schedule-recurrence-blocked')
   }
-  const blocked = recurrenceChangeBlockedReason(schedule, today)
-  if (blocked !== undefined || schedule.recurrence === undefined) {
-    return message(blocked ?? '', 'schedule-recurrence-blocked')
+  if (schedule.recurrence === undefined) {
+    return message(
+      'この予定は繰り返しの予定の回ではないため、繰り返しを変えられません。',
+      'schedule-recurrence-blocked',
+    )
   }
 
   return (

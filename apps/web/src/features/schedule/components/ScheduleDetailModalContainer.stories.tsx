@@ -107,17 +107,16 @@ export const RecurringOccurrenceMenu: Story = {
   play: openEditMenu,
 }
 
-/** 昨日の回で「編集」のメニューを開いた。「繰り返しを変更」を押せず、理由を出す。 */
+/** 昨日の回で「編集」のメニューを開いた。今日より前の回でも、どちらの項目も押せる（繰り返しの変更は今日から当てる）。 */
 export const RecurringPastMenu: Story = {
   parameters: route({ url: '/schedule/recurring-occurrence', api: recurringOccurrenceApi(-1) }),
   play: openEditMenu,
 }
 
-/** 1 回を置き換えた予定で「編集」のメニューを開いた。「繰り返しを変更」を押せず、理由を出す。 */
-export const RecurringReplacedMenu: Story = {
+/** 1 回を置き換えた予定。単発の予定として扱い、メニューにせず「編集」のボタンだけを出す。 */
+export const RecurringReplaced: Story = {
   parameters: route({
     url: '/schedule/replaced-occurrence',
     api: recurringOccurrenceApi(1, { replaced: true }),
   }),
-  play: openEditMenu,
 }
