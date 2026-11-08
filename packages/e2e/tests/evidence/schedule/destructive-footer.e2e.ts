@@ -99,7 +99,7 @@ test.describe('予定の詳細', () => {
             } else {
               await expect(dialog.getByTestId('schedule-cancel-cancel')).toHaveText('戻る')
               await check(
-                '閉じる側の「戻る」と、赤い塗りの確定の「予定をキャンセルする」が並び、「キャンセル」の語だけのボタンが無い',
+                '閉じる側の「戻る」と、確定の「予定をキャンセルする」（理由を入れるまで押せない）が並び、「キャンセル」の語だけのボタンが無い',
               )
             }
           },
