@@ -1416,8 +1416,16 @@ export interface components {
             staff_name: string;
             title: string | null;
             description: string | null;
-            /** @description 繰り返しの予定の 1 回を置き換えた予定のとき、元の繰り返しの予定 */
+            /**
+             * @description 繰り返しの予定の 1 回を置き換えた予定のとき、元の繰り返しの予定。
+             *     google_primary の事業所で、繰り返しの親を展開した回のときは、親の予定の一覧での ID で、changeRecurringRule の recurring_schedule_id に使う
+             */
             recurring_schedule_id: (string & components["schemas"]["ID"]) | null;
+            /**
+             * @description google_primary の事業所で、繰り返しの親を展開した回のときの、親の繰り返しの規則。ほかの予定では null である。
+             *     指定しない項目は、親の最初の日付の曜日や日から決まり、展開した回の日付の曜日や日と同じである（ADR-0037）
+             */
+            recurring_rule?: components["schemas"]["RecurringRule"] | null;
             visit_info: components["schemas"]["VisitInfo"] | null;
             cancel: components["schemas"]["Cancel"] | null;
             /**

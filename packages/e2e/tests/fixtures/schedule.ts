@@ -127,6 +127,22 @@ export const createWeeklyNormalSchedule = async (
     },
   })
 
+/**
+ * 予定の API で、繰り返しの予定 recurringScheduleId の originalDate の回を、schedule.date の 10:00〜11:00 の通常の予定に置き換え（changeOccurrence）、
+ * レスポンスを返す。buddy_primary の事業所で使う。
+ */
+export const replaceOccurrence = async (
+  request: APIRequestContext,
+  token: string,
+  recurringScheduleId: string,
+  originalDate: string,
+  schedule: NormalSchedule,
+) =>
+  request.post(`${SCHEDULE_URL}/v1/schedules/recurring/${recurringScheduleId}/occurrences`, {
+    headers: { Authorization: `Bearer ${token}` },
+    data: { ...(await normalSlot(request, token, schedule)), original_date: originalDate },
+  })
+
 /** 予定の API で、予定 scheduleId を通常の予定 schedule に置き換え（updateSchedule）、レスポンスを返す。 */
 export const updateNormalSchedule = async (
   request: APIRequestContext,

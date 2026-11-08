@@ -64,6 +64,17 @@
   color: var(--wf-warning);
 }
 
+/* 繰り返しの予定の回の「編集」。文言の右に上向きの印を置く（packages/ui の ActionMenu の triggerLabel） */
+.sd-menu-button {
+  gap: 8px;
+}
+
+/* 下端の「編集」のメニューは、下に場所が無いのでボタンの上に開く（ActionMenu の placement の top） */
+.sd-menu--top {
+  top: auto;
+  bottom: calc(100% + 4px);
+}
+
 /* キャンセルの理由の欄の placeholder。apps/web の TextareaField と同じ薄い色にする */
 .sd-placeholder {
   color: var(--wf-muted);

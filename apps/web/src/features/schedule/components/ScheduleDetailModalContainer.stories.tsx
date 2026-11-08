@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
+import { userEvent, within } from 'storybook/test'
 
 import { createFakeBuddyApi } from '#/api/fake/fakeBuddyApi'
 import { MOCK_FACILITY_ID } from '#/mocks/scheduleData'
@@ -10,7 +11,7 @@ import {
 } from '#/storybook/withAppRouter'
 
 import { ScheduleDetailModalContainer } from './ScheduleDetailModalContainer'
-import { selfEditViewer } from './storyData'
+import { recurringOccurrenceApi, selfEditViewer } from './storyData'
 
 /** 予定の正本を buddy に切り替えている、google_primary の事業所のフェイクの API。 */
 const cutoverBuddyApi = () => {
@@ -87,4 +88,35 @@ export const GoogleCalendarRecurrenceUnsupported: Story = {
 /** 予定の正本を buddy に切り替えている事業所の予定。編集とキャンセルのボタンを出さない。 */
 export const GoogleCalendarCutover: Story = {
   parameters: route({ url: '/schedule/gcal-schedule-3', api: cutoverBuddyApi() }),
+}
+
+/** 「編集」のメニューを開く。 */
+const openEditMenu = async ({ canvasElement }: { canvasElement: HTMLElement }) => {
+  const canvas = within(canvasElement.ownerDocument.body)
+  await userEvent.click(await canvas.findByTestId('schedule-detail-edit'))
+}
+
+/** 明日の、繰り返しの予定の回。「編集」を押すと、「この予定を編集」と「繰り返しを変更」のメニューを出す。 */
+export const RecurringOccurrence: Story = {
+  parameters: route({ url: '/schedule/recurring-occurrence', api: recurringOccurrenceApi(1) }),
+}
+
+/** 明日の回で「編集」のメニューを開いた。どちらの項目も押せる。 */
+export const RecurringOccurrenceMenu: Story = {
+  parameters: route({ url: '/schedule/recurring-occurrence', api: recurringOccurrenceApi(1) }),
+  play: openEditMenu,
+}
+
+/** 昨日の回で「編集」のメニューを開いた。今日より前の回でも、どちらの項目も押せる（繰り返しの変更は今日から当てる）。 */
+export const RecurringPastMenu: Story = {
+  parameters: route({ url: '/schedule/recurring-occurrence', api: recurringOccurrenceApi(-1) }),
+  play: openEditMenu,
+}
+
+/** 1 回を置き換えた予定。単発の予定として扱い、メニューにせず「編集」のボタンだけを出す。 */
+export const RecurringReplaced: Story = {
+  parameters: route({
+    url: '/schedule/replaced-occurrence',
+    api: recurringOccurrenceApi(1, { replaced: true }),
+  }),
 }

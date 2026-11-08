@@ -228,6 +228,11 @@ func (b projectionBuilder) detail(e projectedEvent) Detail {
 		Source: SourceGoogleCalendar,
 	}
 	d.ETag = e.row.ETag
+	// 別の職員へ移した後に残った回（left）は、移した予定と別の回として扱うので、親の規則を付けない
+	if e.rule != nil && !e.left {
+		parentID := e.row.ScheduleID
+		d.RecurringScheduleID, d.Rule = &parentID, e.rule
+	}
 	if strings.TrimSpace(rd.Title) != "" {
 		title := rd.Title
 		d.Title = &title

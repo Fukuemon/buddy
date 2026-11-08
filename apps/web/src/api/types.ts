@@ -140,6 +140,34 @@ export type Schedule = {
   etag?: string
   /** Google カレンダーの予定のうち、buddy の予定に読み替えられず確認が必要な予定のときだけ、その理由を持つ。 */
   reviewReason?: ScheduleReviewReason
+  /**
+   * 繰り返しの予定のまだ変えていない回のときだけ、繰り返しの予定の ID と今の規則を持つ。規則の変更（changeRecurringRule）に使う。
+   * 1 回だけ変えた回とキャンセルした回は、単発の予定に替わっているので持たない。
+   */
+  recurrence?: { recurringScheduleId: string; rule: RecurringRule }
+}
+
+/** 繰り返しの規則。予定の API の RecurringRule と同じ組み合わせで、null の項目は最初の日付の曜日や日から決まる。 */
+export type RecurringRule = {
+  frequency: 'weekly' | 'monthly'
+  /** 毎週の、重ならない曜日を月曜から日曜の順に並べたもの。1 が月曜、7 が日曜。毎月は null。 */
+  daysOfWeek: number[] | null
+  /** 毎週の間隔の週の数。1 が毎週、2 が隔週。毎月は null。 */
+  interval: number | null
+  /** 毎月の第何週の曜日の曜日。1 が月曜、7 が日曜。毎週は null。 */
+  dayOfWeek: number | null
+  dayOfMonth: number | null
+  weekOfMonth: number | null
+  /** この日を含む YYYY-MM-DD。 */
+  endDate: string | null
+}
+
+/** 繰り返しの規則の変更。effectiveDate（YYYY-MM-DD）以降の回に rule を当てる（ADR-0037）。 */
+export type RecurringRuleChange = {
+  effectiveDate: string
+  rule: RecurringRule
+  /** 繰り返しの予定を分けるときの、新しい繰り返しの予定の ID。送り直しでも同じ値を渡す。 */
+  id: string
 }
 
 /** Google カレンダーの予定を、buddy の予定に読み替えられなかった理由。予定の API の ScheduleReviewReason をそのまま使う。 */
@@ -167,7 +195,7 @@ export type ScheduleList = {
 /** 予定の作成と更新で送る値。 */
 export type ScheduleInput = Omit<
   Schedule,
-  'id' | 'facilityId' | 'fromGoogleCalendar' | 'etag' | 'reviewReason'
+  'id' | 'facilityId' | 'fromGoogleCalendar' | 'etag' | 'reviewReason' | 'recurrence'
 >
 
 /** 予定の一覧の条件。 */

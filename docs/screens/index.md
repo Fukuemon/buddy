@@ -12,6 +12,7 @@
 | `schedule-new` | `/schedule/new` | [予定の作成](schedule-new_予定の作成/index.md) |
 | `schedule-detail` | `/schedule/$scheduleId` | [予定の詳細](schedule-detail_予定の詳細/index.md) |
 | `schedule-edit` | `/schedule/$scheduleId/edit` | [予定の編集](schedule-edit_予定の編集/index.md) |
+| `schedule-recurrence` | `/schedule/$scheduleId/recurrence` | [繰り返しの変更](schedule-recurrence_繰り返しの変更/index.md) |
 | `schedule-link` | `/schedule/link` | [カレンダーの連携](schedule-link_カレンダーの連携/index.md) |
 | `schedule-import` | `/schedule/import` | [予定の取り込み](schedule-import_予定の取り込み/index.md) |
 | `schedule-review` | `/schedule/review` | [確認が必要な予定](schedule-review_確認が必要な予定/index.md) |
@@ -61,6 +62,7 @@
 | `import` | 外部のサービスからの取り込み |
 | `review` | 人が確認して決める必要があるものの一覧 |
 | `cutover` | 正本の切り替え |
+| `recurrence` | 繰り返しの規則の変更 |
 | `login`、`profile`、`error` | `account` のドメインだけで使う。`error` はログインの失敗 |
 
 - 固有の URL を持つものを 1 つの画面に数える。
@@ -84,6 +86,7 @@ flowchart TB
   create["予定の作成<br/>/schedule/new"]
   detail["予定の詳細<br/>/schedule/$scheduleId"]
   edit["予定の編集<br/>/schedule/$scheduleId/edit"]
+  recurrence["繰り返しの変更<br/>/schedule/$scheduleId/recurrence"]
   upload["照合<br/>/receipt"]
   result["照合の結果<br/>/receipt/result"]
   root -- "リダイレクト" --> calendar
@@ -91,9 +94,12 @@ flowchart TB
   create -- "作成に成功、閉じる" --> calendar
   calendar -- "予定を押す" --> detail
   detail -- "閉じる" --> calendar
-  detail -- "編集" --> edit
+  detail -- "編集、繰り返しの回の「この予定を編集」" --> edit
   edit -- "保存に成功、閉じる" --> detail
   edit -- "取得の失敗から閉じる" --> calendar
+  detail -- "繰り返しの回の「繰り返しを変更」" --> recurrence
+  recurrence -- "保存に成功" --> calendar
+  recurrence -- "閉じる" --> detail
   calendar -- "ナビゲーションの「照合」" --> upload
   upload -- "ナビゲーションの「カレンダー」" --> calendar
   upload -- "照合に成功" --> result

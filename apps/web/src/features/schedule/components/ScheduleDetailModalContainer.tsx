@@ -111,6 +111,16 @@ export const ScheduleDetailModalContainer = ({ scheduleId }: { scheduleId: Sched
             : undefined
         }
         onClose={close}
+        onChangeRecurrence={
+          schedule.recurrence === undefined
+            ? undefined
+            : () =>
+                navigate({
+                  to: '/schedule/$scheduleId/recurrence',
+                  params: { scheduleId },
+                  search: calendarSearch,
+                })
+        }
         onEdit={
           canEdit
             ? () =>

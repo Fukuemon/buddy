@@ -4,6 +4,10 @@ const pad = (value: number) => String(value).padStart(2, '0')
 export const toDateKey = (date: Date) =>
   `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`
 
+/** 日時を、事業所の時間帯（Asia/Tokyo）の `YYYY-MM-DD` にする。予定の API の「今日」と回の日付は、この時間帯で決まる。 */
+export const toTokyoDateKey = (date: Date) =>
+  new Date(date.getTime() + 9 * 60 * 60 * 1000).toISOString().slice(0, 10)
+
 /** `YYYY-MM-DD` を、デバイスの時間帯の 0 時の Date にする。 */
 export const parseDateKey = (dateKey: string) => {
   const [year, month, day] = dateKey.split('-').map(Number) as [number, number, number]

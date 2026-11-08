@@ -22,6 +22,7 @@ import type {
   Position,
   ReceiptReport,
   ReceiptCsvError,
+  RecurringRuleChange,
   Schedule,
   ScheduleInput,
   ScheduleList,
@@ -132,6 +133,17 @@ export interface BuddyApi {
       reason: string,
       etag: string | null,
     ): Promise<void>
+    /**
+     * 繰り返しの予定 recurringScheduleId（Schedule.recurrence.recurringScheduleId）の規則を、change.effectiveDate 以降の回について変える（ADR-0037）。
+     * etag は、画面が回を読んだときの etag（親の予定の etag）で、google_primary の事業所では必須である。buddy の予定では null を渡す。
+     * 変えた後の、effectiveDate 以降の回を持つ繰り返しの予定の ID と最初の日付を返す。分けたときは新しい繰り返しの予定である。
+     */
+    changeRule(
+      facilityId: FacilityId,
+      recurringScheduleId: string,
+      change: RecurringRuleChange,
+      etag: string | null,
+    ): Promise<{ id: string; date: string }>
   }
   /**
    * 職員。list のほかは職員の管理の画面が使う。

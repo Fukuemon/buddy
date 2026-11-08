@@ -4,6 +4,7 @@ import type { BuddyApi } from '#/api/BuddyApi'
 import type {
   FacilityId,
   NameSearchParams,
+  RecurringRuleChange,
   Schedule,
   ScheduleInput,
   ScheduleListParams,
@@ -114,6 +115,32 @@ export const useUpdateSchedule = (scheduleId: Schedule['id']) => {
           queryKey: scheduleQueryOptions(api, facilityId, scheduleId).queryKey,
         })
       }
+      return queryClient.invalidateQueries({ queryKey: queryKeys.schedules.all(facilityId) })
+    },
+  })
+}
+
+/**
+ * 繰り返しの予定の規則を、開いた回 scheduleId の日以降について変える（ADR-0037）。etag は、編集を開いたときに読んだ回の etag である。
+ * 成功すると、開いた回の取得の結果を捨て、事業所の予定の取得の結果を捨てて取り直す。開いた回は、別の繰り返しの予定の回に替わることがある。
+ */
+export const useChangeRecurringRule = (scheduleId: Schedule['id']) => {
+  const { api, facilityId } = useBuddyApi()
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({
+      recurringScheduleId,
+      change,
+      etag,
+    }: {
+      recurringScheduleId: string
+      change: RecurringRuleChange
+      etag: string | null
+    }) => api.schedules.changeRule(facilityId, recurringScheduleId, change, etag),
+    onSuccess: () => {
+      queryClient.removeQueries({
+        queryKey: scheduleQueryOptions(api, facilityId, scheduleId).queryKey,
+      })
       return queryClient.invalidateQueries({ queryKey: queryKeys.schedules.all(facilityId) })
     },
   })
