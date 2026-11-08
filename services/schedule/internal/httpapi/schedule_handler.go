@@ -236,18 +236,26 @@ func (s server) ChangeRecurringRule(ctx context.Context, req openapi.ChangeRecur
 		}
 		effective = &d
 	}
+	var firstWeek *civil.Date
+	if b.FirstWeekDate != nil {
+		d, err := bodyDate(*b.FirstWeekDate)
+		if err != nil {
+			return nil, err
+		}
+		firstWeek = &d
+	}
 	f, err := s.staffFacility(ctx)
 	if err != nil {
 		return nil, err
 	}
 	if f.SourceMode == organization.SourceGooglePrimary {
-		d, err := s.u.CalendarWrites.ChangeRule(ctx, f.ID, req.RecurringScheduleId, value(b.Id), value(b.Etag), effective, ruleIn)
+		d, err := s.u.CalendarWrites.ChangeRule(ctx, f.ID, req.RecurringScheduleId, value(b.Id), value(b.Etag), effective, firstWeek, ruleIn)
 		if err != nil {
 			return nil, err
 		}
 		return openapi.ChangeRecurringRule200JSONResponse(toRecurringSchedule(d)), nil
 	}
-	rs, err := s.u.Schedules.ChangeRule(ctx, req.RecurringScheduleId, effective, ruleIn)
+	rs, err := s.u.Schedules.ChangeRule(ctx, req.RecurringScheduleId, effective, firstWeek, ruleIn)
 	if err != nil {
 		return nil, err
 	}

@@ -590,7 +590,8 @@ func TestRecurringRuleChangeGooglePrimary(t *testing.T) {
 }
 
 // TestRecurringRuleChangeBuddyPrimary は、buddy_primary の事業所で、changeRecurringRule が繰り返しの予定を適用の日で分け、
-// 新しい繰り返しの予定を返し、元の繰り返しの予定の終了日を適用の日の前の日にすることを確認する。適用の日が過去なら 400 で拒む。
+// 新しい繰り返しの予定を返し、元の繰り返しの予定の終了日を適用の日の前の日にすることを確認する。新しい規則の間隔は first_week_date の週から数える。
+// 適用の日が過去のときと、first_week_date が適用の日の後のときは 400 で拒む。
 func TestRecurringRuleChangeBuddyPrimary(t *testing.T) {
 	h := flowRouter()
 	rs := request(t, h, http.MethodPost, "/v1/facilities/"+facilityID+"/schedules/recurring", `{"schedule_type_id":"`+typeID+`",
@@ -600,9 +601,12 @@ func TestRecurringRuleChangeBuddyPrimary(t *testing.T) {
 	target := "/v1/schedules/recurring/" + rsID + "/rule"
 
 	request(t, h, http.MethodPut, target, `{"recurring_rule":{"frequency":"weekly","days_of_week":[2]},"effective_date":"2000-01-04"}`, http.StatusBadRequest)
-	got := request(t, h, http.MethodPut, target, `{"recurring_rule":{"frequency":"weekly","days_of_week":[2]},"effective_date":"2099-01-12"}`, http.StatusOK)
+	request(t, h, http.MethodPut, target, `{"recurring_rule":{"frequency":"weekly","days_of_week":[2]},"effective_date":"2099-01-12","first_week_date":"2099-01-13"}`, http.StatusBadRequest)
+	// 2099-01-05 の週を 1 週目にした隔週の火曜は、適用の日の後では 3 週目の 01-20 に始まる
+	got := request(t, h, http.MethodPut, target, `{"recurring_rule":{"frequency":"weekly","days_of_week":[2],"interval":2},
+		"effective_date":"2099-01-12","first_week_date":"2099-01-05"}`, http.StatusOK)
 	gotID, _ := got["id"].(string)
-	if gotID == "" || gotID == rsID || got["date"] != "2099-01-13" || !reflect.DeepEqual(field(t, got, "recurring_rule", "days_of_week"), []any{float64(2)}) || got["title"] != "カンファレンス" {
+	if gotID == "" || gotID == rsID || got["date"] != "2099-01-20" || !reflect.DeepEqual(field(t, got, "recurring_rule", "days_of_week"), []any{float64(2)}) || got["title"] != "カンファレンス" {
 		t.Errorf("規則の変更の応答 = %v", got)
 	}
 	requireSameAsRead(t, h, got, "/v1/schedules/recurring/"+gotID)

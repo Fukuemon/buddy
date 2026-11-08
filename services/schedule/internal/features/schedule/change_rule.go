@@ -33,11 +33,12 @@ func NewChangeRule(recurring RecurringRepository, staff StaffRefs, locks Facilit
 }
 
 // Do は、繰り返しの予定 recurringScheduleID の規則を、effective 以降の回について rule に変え、effective 以降の回を持つ繰り返しの予定を返す。
+// firstWeek は、分けるときに新しい規則の 1 週目を決める日で、nil なら effective を使う（ADR-0038）。
 // 当て方は PlanRuleChange が決める。繰り返しの予定を分けるときは、元の繰り返しの予定の終了日を適用の日の前の日にし、
 // 時刻、職員、訪問の情報を写した新しい繰り返しの予定を作る。置き換えた回の単発の予定は、元の繰り返しの予定を指したまま残す。
 // 繰り返しの予定が見つからないときは apperr.ErrNotFound を、入力が規則に合わないときは入力のエラーを、
 // 事業所が buddy を予定の正本にしていないとき（code は CodeGooglePrimary）は apperr.ErrConflict を返す。
-func (s ChangeRule) Do(ctx context.Context, recurringScheduleID string, effective *civil.Date, rule RuleInput) (RecurringSchedule, error) {
+func (s ChangeRule) Do(ctx context.Context, recurringScheduleID string, effective, firstWeek *civil.Date, rule RuleInput) (RecurringSchedule, error) {
 	var out RecurringSchedule
 	err := s.tx.WithinTx(ctx, func(ctx context.Context) error {
 		rs, err := s.recurring.GetForUpdate(ctx, recurringScheduleID)
@@ -50,7 +51,7 @@ func (s ChangeRule) Do(ctx context.Context, recurringScheduleID string, effectiv
 		if err := RequireScheduleAccess(ctx, s.staff, rs.StaffID, true); err != nil {
 			return err
 		}
-		plan, err := PlanRuleChange(rs.RecurringSchedule, effective, Rule(rule), civil.Today(s.now()))
+		plan, err := PlanRuleChange(rs.RecurringSchedule, effective, firstWeek, Rule(rule), civil.Today(s.now()))
 		if err != nil {
 			return err
 		}

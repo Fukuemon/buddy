@@ -124,7 +124,7 @@ func TestChangeRuleSplits(t *testing.T) {
 	parentBefore, _ := fx.record(t)
 	effective := mondays[1]
 
-	got, err := fx.changeRule.Do(editorCtx(), inmem.FacilityID, scheduleID, nextID, fx.parentETag(t), &effective, tuesdayRule)
+	got, err := fx.changeRule.Do(editorCtx(), inmem.FacilityID, scheduleID, nextID, fx.parentETag(t), &effective, nil, tuesdayRule)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -183,7 +183,7 @@ func TestChangeRuleInPlace(t *testing.T) {
 	fx.moveToAfternoon(t, mondays[2])
 	effective := mondays[1]
 
-	got, err := fx.changeRule.Do(editorCtx(), inmem.FacilityID, scheduleID, nextID, fx.parentETag(t), &effective, tuesdayRule)
+	got, err := fx.changeRule.Do(editorCtx(), inmem.FacilityID, scheduleID, nextID, fx.parentETag(t), &effective, nil, tuesdayRule)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -218,7 +218,7 @@ func TestChangeRuleEndDate(t *testing.T) {
 	fx.moveToAfternoon(t, mondays[3])
 	end := civil.Date{Year: 2026, Month: 11, Day: 8}
 
-	got, err := fx.changeRule.Do(editorCtx(), inmem.FacilityID, scheduleID, "", fx.parentETag(t), nil,
+	got, err := fx.changeRule.Do(editorCtx(), inmem.FacilityID, scheduleID, "", fx.parentETag(t), nil, nil,
 		schedule.RuleInput{Frequency: schedule.Weekly, DaysOfWeek: []int{1}, EndDate: &end})
 	if err != nil {
 		t.Fatal(err)
@@ -252,7 +252,7 @@ func TestChangeRuleResend(t *testing.T) {
 	// 例外の回の作り直し（作成と削除）と新しい親の予定の作成を通し、元の親の予定の部分更新を 429 で拒ませる。
 	fx.google.Failures = []int{0, 0, 0, http.StatusTooManyRequests}
 
-	_, err := fx.changeRule.Do(editorCtx(), inmem.FacilityID, scheduleID, nextID, fx.parentETag(t), &effective, tuesdayRule)
+	_, err := fx.changeRule.Do(editorCtx(), inmem.FacilityID, scheduleID, nextID, fx.parentETag(t), &effective, nil, tuesdayRule)
 	if !errors.Is(err, calendarwrite.ErrGoogleUnavailable) {
 		t.Fatalf("err = %v, want ErrGoogleUnavailable", err)
 	}
@@ -260,7 +260,7 @@ func TestChangeRuleResend(t *testing.T) {
 		t.Errorf("書けなかった元の親の予定の繰り返し = %v", ev.Recurrence)
 	}
 
-	got, err := fx.changeRule.Do(editorCtx(), inmem.FacilityID, scheduleID, nextID, fx.parentETag(t), &effective, tuesdayRule)
+	got, err := fx.changeRule.Do(editorCtx(), inmem.FacilityID, scheduleID, nextID, fx.parentETag(t), &effective, nil, tuesdayRule)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -280,6 +280,36 @@ func TestChangeRuleResend(t *testing.T) {
 	fx.requireDetached(t, mondays[2], singles[0], rs.Visit.ID)
 }
 
+// TestChangeRuleCountsFromFirstWeek は、今日より前の回を開いて隔週の規則に変えると、新しい親の予定の DTSTART が、開いた回の週から
+// 数えた今日以降の最初の回になることを確認する（ADR-0038）。RRULE は WKST=SU で、DTSTART の週から数えるので、Google の回も
+// buddy の回と同じ日になる。
+func TestChangeRuleCountsFromFirstWeek(t *testing.T) {
+	fx := newFixture(t)
+	fx.seedWeekly(t, mondays)
+	// 今日（10-21）より前の 10-19 の回を開いた。10-19 の週の月曜と火曜は今日より前なので、最初の回は 3 週目の 11-02 である
+	opened, effective := mondays[0], civil.Date{Year: 2026, Month: 10, Day: 21}
+	rule := schedule.RuleInput{Frequency: schedule.Weekly, DaysOfWeek: []int{1, 2}, Interval: 2}
+	got, err := fx.changeRule.Do(editorCtx(), inmem.FacilityID, scheduleID, nextID, fx.parentETag(t), &effective, &opened, rule)
+	if err != nil {
+		t.Fatal(err)
+	}
+	first := mondays[2]
+	if got.Date != first {
+		t.Errorf("got.Date = %v, want %v", got.Date, first)
+	}
+	nextEventID, err := calendar.EventIDOf(nextID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	next := fx.google.Event(calendarID, nextEventID)
+	if next == nil || next.Start.DateTime != "2026-11-02T09:00:00" || !slices.Equal(next.Recurrence, []string{"RRULE:FREQ=WEEKLY;INTERVAL=2;BYDAY=MO,TU;WKST=SU"}) {
+		t.Fatalf("新しい親の予定 = %+v", next)
+	}
+	if ev := fx.google.Event(calendarID, eventID(t)); !slices.Equal(ev.Recurrence, []string{"RRULE:FREQ=WEEKLY;INTERVAL=1;BYDAY=MO;WKST=SU;UNTIL=20261020T145959Z"}) {
+		t.Errorf("元の親の予定の繰り返し = %v", ev.Recurrence)
+	}
+}
+
 // TestChangeRuleRejects は、etag と id の無いリクエスト、過去の適用の日、Google で変わった親の予定、buddy の規則に写せない親の予定、
 // 保留の版がある親を、Google に書かずに拒むことを確認する。
 // 置き換えた回の元の日に新しい規則が当たるときは、新しい親の予定の EXDATE にして、その日の回を出さない（ADR-0037）。
@@ -290,7 +320,7 @@ func TestChangeRuleExcludesReplacedDate(t *testing.T) {
 	effective := mondays[1]
 	// 10-26 は第 4 月曜である
 	rule := schedule.RuleInput{Frequency: schedule.Monthly, WeekOfMonth: ptr(4), DayOfWeek: ptr(1)}
-	got, err := fx.changeRule.Do(editorCtx(), inmem.FacilityID, scheduleID, nextID, fx.parentETag(t), &effective, rule)
+	got, err := fx.changeRule.Do(editorCtx(), inmem.FacilityID, scheduleID, nextID, fx.parentETag(t), &effective, nil, rule)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -317,7 +347,7 @@ func TestChangeRuleRejectsEndedPatientBeforeWriting(t *testing.T) {
 	}
 	writes := fx.google.Writes()
 	effective := mondays[1]
-	_, err := fx.changeRule.Do(editorCtx(), inmem.FacilityID, scheduleID, nextID, fx.parentETag(t), &effective, tuesdayRule)
+	_, err := fx.changeRule.Do(editorCtx(), inmem.FacilityID, scheduleID, nextID, fx.parentETag(t), &effective, nil, tuesdayRule)
 	if !errors.Is(err, apperr.ErrInvalidInput) {
 		t.Fatalf("err = %v, want ErrInvalidInput", err)
 	}
@@ -335,7 +365,7 @@ func TestChangeRuleRejects(t *testing.T) {
 	writes := fx.google.Writes()
 	effective := mondays[1]
 	do := func(id, etag string, effective *civil.Date) error {
-		_, err := fx.changeRule.Do(editorCtx(), inmem.FacilityID, scheduleID, id, etag, effective, tuesdayRule)
+		_, err := fx.changeRule.Do(editorCtx(), inmem.FacilityID, scheduleID, id, etag, effective, nil, tuesdayRule)
 		return err
 	}
 

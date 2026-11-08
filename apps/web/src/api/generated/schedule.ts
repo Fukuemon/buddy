@@ -3732,6 +3732,13 @@ export interface operations {
                      */
                     effective_date?: string;
                     /**
+                     * Format: date
+                     * @description 新しい規則の 1 週目を決める日（ADR-0038）。分けるときは、この日を含む週を 1 週目にして毎週の間隔を数え、
+                     *     effective_date 以降で新しい規則が当たる最初の日を最初の日付にする。画面は開いた回の日を送る。
+                     *     元の繰り返しの最初の日付以降、effective_date 以前に限る。省くと effective_date を使う。終了日だけを変えるときは読まない
+                     */
+                    first_week_date?: string;
+                    /**
                      * @description 繰り返しの予定を分けるときの、新しい繰り返しの予定の ID（ULID）。google_primary の事業所で規則を変えるときは必須で、
                      *     Google の予定の ID をこの ID から決める。buddy_primary の事業所では読まない。
                      */

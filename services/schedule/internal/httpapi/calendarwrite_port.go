@@ -23,5 +23,6 @@ type CalendarWriteApp struct {
 	ChangeOccurrence func(ctx context.Context, facilityID, recurringScheduleID string, originalDate civil.Date, in schedule.SlotInput) (scheduleview.Detail, error)
 	// ChangeRule は、繰り返しの予定 recurringScheduleID の規則を、適用の日以降の回について変え、適用の日以降の回を持つ繰り返しの予定を返す（ADR-0037）。
 	// id は分けたときの新しい繰り返しの予定の ID で、etag は画面が読んだ親の予定の etag である。
-	ChangeRule func(ctx context.Context, facilityID, recurringScheduleID, id, etag string, effective *civil.Date, rule schedule.RuleInput) (scheduleview.RecurringDetail, error)
+	// firstWeek は新しい規則の 1 週目を決める日で、nil なら effective を使う（ADR-0038）。
+	ChangeRule func(ctx context.Context, facilityID, recurringScheduleID, id, etag string, effective, firstWeek *civil.Date, rule schedule.RuleInput) (scheduleview.RecurringDetail, error)
 }

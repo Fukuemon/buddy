@@ -394,7 +394,7 @@
 読み上げの名前は「間隔」。  
 初期値は、今の繰り返しが毎週ならその間隔で、毎月なら 1。
 
-- 隔週の 1 週目は、変える範囲の説明の日付を含む週である。週は日曜に始まる。
+- 隔週の 1 週目は、開いた回の日を含む週である。週は日曜に始まる。今日より前の回を開いたときも、開いた回の週から数え、回は今日以降の日にだけ作る。
   - ADR-0038: [繰り返しの規則に、毎週の複数の曜日と間隔を足し、終わりは終了日だけで持つ](../../adr/0038-recurring-rule-scope.md)
 
 **カタログ**: [RecurringRuleFields の Custom](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-recurringrulefields--custom)、[RecurringRuleFields の CustomWeeklyInvalid](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-recurringrulefields--custom-weekly-invalid)
