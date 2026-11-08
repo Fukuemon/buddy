@@ -338,36 +338,42 @@
 
 ## 繰り返し
 
-**概要**: 新しい繰り返しを、開いた回の日から作る 3 つの選択肢か、「カスタム…」から選ぶセレクト。
+**概要**: 新しい繰り返しを、今の規則と開いた回の日から作る選択肢か、「カスタム…」から選ぶセレクト。
 
-**値のソース**: 見出し「繰り返し」と、次の 4 つの選択肢。  
+**値のソース**: 見出し「繰り返し」と、次の選択肢。  
 選択肢の曜日、日、週は、開いた回の日から決める。  
 今日より前の回から開いたときも、開いた回の日から決める。
 
 | 選択肢 | 11月9日（月）の回を開いたとき |
 | --- | --- |
-| 毎週の、開いた回の曜日 | 「毎週 月曜日」 |
+| 今の規則の、曜日の並び。今の規則が複数の曜日の毎週のときだけ出す | 隔週の月曜と木曜なら「隔週 月曜日、木曜日」 |
+| 毎週の、開いた回の曜日 | 「毎週 月曜日」。今の規則が隔週なら「隔週 月曜日」、3 週ごとなら「3 週ごと 月曜日」 |
 | 毎月の、開いた回の日 | 「毎月 9 日」 |
 | 毎月の、開いた回の第何週の曜日 | 「毎月 第 2 月曜日」 |
 | ほかの繰り返し | 「カスタム…」 |
 
 - 開いたときは、今の繰り返しに当たる選択肢を選ぶ。どれにも当たらなければ「カスタム…」を選び、「カスタム（毎週）」か「カスタム（毎月）」の状態で始める。
 - 第何週かは、月の 1 日から 7 日ずつ区切って数える。
+- 毎週の選択肢は、今の規則の間隔で送る。間隔が 1 なら「毎週」、2 なら「隔週」、3 以上なら「3 週ごと」の形で出す。今の規則が毎月なら、間隔は 1 である。
+  - 今の規則の選択肢と間隔の文言は、[RecurringRuleFields の BiweeklyDays](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-recurringrulefields--biweekly-days) にある。
+  - 3 週ごとの文言は、[RecurringRuleFields の EveryThreeWeeks](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-recurringrulefields--every-three-weeks) にある。
+- 複数の曜日と間隔を選ぶ欄は、#892 で足す。それまでは、曜日を 1 つにしても今の規則の間隔を保つ（ADR-0038）。
 
 **カタログ**: [RecurringRuleFields の Weekly](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-recurringrulefields--weekly)、[RecurringRuleFields の Custom](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-recurringrulefields--custom)
 
 **操作**:
 
-- 3 つの選択肢のどれかを選ぶと、その繰り返しにし、繰り返すと、曜日か日の欄を閉じる。
+- 「カスタム…」のほかの選択肢を選ぶと、その繰り返しにし、繰り返すと、曜日か日の欄を閉じる。
 - 「カスタム…」を選ぶと、同じモーダルの中に [繰り返す](#繰り返す) と、[曜日](#曜日) か日の欄を開き、「カスタム（毎週）」か「カスタム（毎月）」の状態にする。
   - 欄の初期値は、その前に選んでいた繰り返しのままにする。
-- 「カスタム…」で選んだ繰り返しが 3 つの選択肢のどれかと同じになっても、「カスタム…」を選んだまま欄を開いておく。
+- 「カスタム…」で選んだ繰り返しがほかの選択肢のどれかと同じになっても、「カスタム…」を選んだまま欄を開いておく。
 
 ## 繰り返す
 
 **概要**: 「カスタム…」で、毎週か毎月かを選ぶセレクト。
 
-**値のソース**: 見出し「繰り返す」と、「毎週」「毎月」。
+**値のソース**: 見出し「繰り返す」と、「毎週」「毎月」。  
+「毎週」は、今の規則の間隔が 2 なら「隔週」、3 以上なら「3 週ごと」の形で出す。
 
 **カタログ**: [RecurringRuleFields の Custom](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-recurringrulefields--custom)、[ScheduleRecurrenceModalContainer の CustomMonthly](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-schedulerecurrencemodalcontainer--custom-monthly)
 
@@ -382,7 +388,8 @@
 **値のソース**: 見出し「曜日」と、「月」「火」「水」「木」「金」「土」「日」の 7 つのボタン。  
 選んだ曜日は主の色で塗る。  
 読み上げの名前は「月曜日」から「日曜日」。  
-初期値は、今の繰り返しが毎週ならその曜日で、毎月なら開いた回の曜日。
+初期値は、今の繰り返しが毎週ならその曜日（複数の曜日なら先頭の曜日）で、毎月なら開いた回の曜日。  
+「カスタム…」を選んだ後は、選んだ 1 つの曜日の繰り返しを送る。
 
 **カタログ**: [RecurringRuleFields の Custom](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-recurringrulefields--custom)
 

@@ -112,3 +112,34 @@ export const Custom: Story = {
     },
   },
 }
+
+/** 隔週の月曜と木曜で、2026-10-22（木曜）の回を開いた形。今の規則の選択肢を、曜日の並びのまま選んで始める。 */
+export const BiweeklyDays: Story = {
+  args: {
+    rule: {
+      frequency: 'weekly',
+      daysOfWeek: [1, 4],
+      interval: 2,
+      dayOfWeek: null,
+      dayOfMonth: null,
+      weekOfMonth: null,
+      endDate: null,
+    },
+    baseDate: '2026-10-22',
+  },
+}
+
+/** 3 週ごとの火曜。選択肢の曜日に、間隔を付けて出す。 */
+export const EveryThreeWeeks: Story = {
+  args: {
+    rule: {
+      frequency: 'weekly',
+      daysOfWeek: [2],
+      interval: 3,
+      dayOfWeek: null,
+      dayOfMonth: null,
+      weekOfMonth: null,
+      endDate: null,
+    },
+  },
+}
