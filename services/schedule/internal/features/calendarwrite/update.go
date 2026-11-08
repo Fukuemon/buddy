@@ -67,8 +67,9 @@ type change struct {
 	detail scheduleview.Detail
 }
 
-// moving は、予定を別のカレンダーに移す変更かを返す。
-func (c change) moving() bool { return c.to.ID != c.from.ID }
+// moving は、予定を別の Google の予定に移す変更かを返す。別のカレンダーに移す変更と、繰り返しの規則の変更で例外の回を
+// 同じカレンダーの単発の予定に作り直す変更（ChangeRule）が当たる。
+func (c change) moving() bool { return c.to.ID != c.from.ID || c.toEventID != c.fromEventID }
 
 // Do は、事業所 facilityID の、一覧での ID が id の単発の予定を in の内容に変え、書いた予定を返す。etag は画面が読んだ予定の etag で、
 // If-Match に付けて Google に書く。書き込みは ADR-0029 の手順と保留の版に従い、Create と同じである。

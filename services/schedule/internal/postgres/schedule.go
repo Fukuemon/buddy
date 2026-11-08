@@ -458,6 +458,46 @@ func (r *RecurringScheduleRepository) AddExclusion(ctx context.Context, recurrin
 	return translate("bump recurring schedule version", r.q(ctx).BumpRecurringScheduleVersion(ctx, recurringScheduleID))
 }
 
+// UpdateRule は、繰り返しの予定 rs.ID の最初の日付と規則を rs の値で上書きし、更新の番号を 1 つ増やす。
+// 値がカラムの制約に合わないときは apperr.ErrInvalidInput のエラーを返す。繰り返しの予定が無くてもエラーにしない。
+func (r *RecurringScheduleRepository) UpdateRule(ctx context.Context, rs schedule.RecurringSchedule) error {
+	params := sqlcgen.UpdateRecurringScheduleRuleParams{
+		ID: rs.ID, Date: rs.Date.Time(), Frequency: string(rs.Rule.Frequency), EndDate: nullDate(rs.Rule.EndDate),
+	}
+	var err error
+	if params.DayOfWeek, err = nullInt16(rs.Rule.DayOfWeek); err != nil {
+		return err
+	}
+	if params.DayOfMonth, err = nullInt16(rs.Rule.DayOfMonth); err != nil {
+		return err
+	}
+	if params.WeekOfMonth, err = nullInt16(rs.Rule.WeekOfMonth); err != nil {
+		return err
+	}
+	return translate("update recurring schedule rule", r.q(ctx).UpdateRecurringScheduleRule(ctx, params))
+}
+
+// RemoveUnreplacedExclusions は、繰り返しの予定 recurringScheduleID の from 以降の除外する日のうち、置き換えた回の単発の予定が無い日を消す。
+func (r *RecurringScheduleRepository) RemoveUnreplacedExclusions(ctx context.Context, recurringScheduleID string, from civil.Date) error {
+	return translate("delete unreplaced recurring schedule exclusions", r.q(ctx).DeleteUnreplacedRecurringScheduleExclusions(ctx,
+		sqlcgen.DeleteUnreplacedRecurringScheduleExclusionsParams{RecurringScheduleID: recurringScheduleID, FromDate: from.Time()}))
+}
+
+// ReplacedDates は、繰り返しの予定 recurringScheduleID の回を置き換えた単発の予定のうち、元の回の日付が from 以降のものの日付を、古い順に返す。
+func (r *RecurringScheduleRepository) ReplacedDates(ctx context.Context, recurringScheduleID string, from civil.Date) ([]civil.Date, error) {
+	rows, err := r.q(ctx).ListReplacedOriginalDates(ctx, sqlcgen.ListReplacedOriginalDatesParams{
+		RecurringScheduleID: &recurringScheduleID, FromDate: ptr(from.Time()),
+	})
+	if err != nil {
+		return nil, translate("list replaced original dates", err)
+	}
+	out := make([]civil.Date, len(rows))
+	for i, d := range rows {
+		out[i] = civil.DateOf(d)
+	}
+	return out, nil
+}
+
 func visitInfoIDs[T any](rows []T, id func(T) *string) []string {
 	var ids []string
 	for _, r := range rows {

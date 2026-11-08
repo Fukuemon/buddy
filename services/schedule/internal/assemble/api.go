@@ -88,6 +88,8 @@ func newApps(r Repositories, accounts *gcal.Accounts, cfg config.API, log *slog.
 				r.calendars, r.records, r.projections, calendarAccounts(accounts), nil, r.tx).Do,
 			ChangeOccurrence: calendarwrite.NewChangeOccurrence(r.facilities, r.projections, r.scheduleTypes, r.staffRefs, r.staff, visitInfos, r.visitInfos,
 				r.calendars, r.records, r.projections, calendarAccounts(accounts), r.ids, log, nil, r.tx).Do,
+			ChangeRule: calendarwrite.NewChangeRule(r.facilities, r.projections, r.scheduleTypes, r.staffRefs, r.staff, visitInfos, r.visitInfos,
+				r.calendars, r.records, r.projections, calendarAccounts(accounts), r.ids, log, nil, r.tx).Do,
 		},
 		Auth: access.NewService(access.Deps{Facilities: r.facilities, Staff: r.staff, Resources: accessResources(r)}),
 	}
@@ -233,6 +235,7 @@ func scheduleApp(
 		Create:           schedule.NewCreate(facilities, schedules, types, staffRefs, locks, visits, nil, exports, tx, ids).Do,
 		CreateRecurring:  schedule.NewCreateRecurring(facilities, types, staffRefs, locks, visits, nil, recurring, exports, tx, ids).Do,
 		ChangeOccurrence: schedule.NewChangeOccurrence(recurring, staffRefs, locks, schedules, types, visits, nil, exports, tx, ids).Do,
+		ChangeRule:       schedule.NewChangeRule(recurring, staffRefs, locks, types, visits, nil, exports, tx, ids).Do,
 		Cancel:           schedule.NewCancel(schedules, staffRefs, locks, exports, tx, ids).Do,
 		Update:           schedule.NewUpdate(schedules, staffRefs, locks, types, visits, nil, exports, tx).Do,
 	}

@@ -61,6 +61,27 @@ ORDER BY
 -- name: AddRecurringScheduleExclusion :exec
 INSERT INTO recurring_schedule_exclusions (recurring_schedule_id, date) VALUES ($1, $2);
 
+-- name: UpdateRecurringScheduleRule :exec
+UPDATE recurring_schedules
+SET date = sqlc.arg(date), frequency = sqlc.arg(frequency), day_of_week = sqlc.narg(day_of_week),
+    day_of_month = sqlc.narg(day_of_month), week_of_month = sqlc.narg(week_of_month), end_date = sqlc.narg(end_date),
+    version = version + 1
+WHERE id = sqlc.arg(id);
+
+-- name: DeleteUnreplacedRecurringScheduleExclusions :exec
+-- 置き換えた回の単発の予定がある日は、回が単発の予定と重ならないように残す。
+DELETE FROM recurring_schedule_exclusions e
+WHERE e.recurring_schedule_id = sqlc.arg(recurring_schedule_id) AND e.date >= sqlc.arg(from_date)
+  AND NOT EXISTS (
+    SELECT 1 FROM schedules s WHERE s.recurring_schedule_id = e.recurring_schedule_id AND s.original_date = e.date
+  );
+
+-- name: ListReplacedOriginalDates :many
+-- 繰り返しの予定の回を置き換えた単発の予定（キャンセルしたものを含む）の、元の回の日付を読む。
+SELECT original_date::date FROM schedules
+WHERE recurring_schedule_id = sqlc.arg(recurring_schedule_id) AND original_date >= sqlc.arg(from_date)
+ORDER BY original_date;
+
 -- name: ListRecurringScheduleExclusions :many
 SELECT recurring_schedule_id, date
 FROM recurring_schedule_exclusions
