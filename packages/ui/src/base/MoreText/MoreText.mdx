@@ -9,25 +9,15 @@ import * as Stories from './MoreText.stories'
 
 「詳しく」で開く補足。常に出す 1 文の下に「詳しく」のボタンを置き、押すと続きの説明を開く。
 
-## 使う場面
+## 規則
 
-- 初めてのときだけ要る手順や説明を、毎回は読ませない
+規則の本文は、デザインシステムの文書の次のセクションにある。
 
-## 使わない場面
-
-- 見出しが何を指すかの短い補い（`HelpToggle` を使う）
-- エラーや注意。常に見える文で出す
-
-## Do
-
-- `summary` には、閉じていても意味が通じる 1 文を渡す
-- 手順は `ol` で番号を付けて並べる
-- 説明を見ながら操作することが多い画面では `defaultOpen` を渡す
-
-## Don't
-
-- 操作に欠かせない説明を、続きの説明に入れる
-- 続きの説明の中に、別の `MoreText` を入れる
+- 使う場面、使わない場面、キーボードの操作: コンポーネントの文書（`packages/ui/design/components.md`）の「コンポーネントの選び方」の `MoreText` の行
+- 使い方の規則と Do と Don't: コンポーネントの文書の「コンポーネントごとの規則」の「`HelpToggle`、`MoreText`」
+- 当たる原則: DESIGN.md の「画面を作るときの原則」の次の ID
+  - `FOCUS-ONE`
+  - `TARGET-SIZE`
 
 ## 状態
 
@@ -38,11 +28,6 @@ import * as Stories from './MoreText.stories'
 ### 開いた状態で始める
 
 <Canvas of={Stories.DefaultOpen} />
-
-## キーボードの操作
-
-- Tab で「詳しく」のボタンに移り、Enter と Space で開閉する
-- ボタンの `aria-expanded` で開閉を、`aria-controls` で続きの説明を伝える
 
 ## props
 

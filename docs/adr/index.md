@@ -46,6 +46,7 @@
 
 - ADR-0012（[デザインシステムのトークンを DADS の基本、buddy の意味、Tailwind のテーマの 3 段にする](0012-design-system.md)）は、ADR-0013 に置換した。
 - ADR-0016（[デザインシステムの文書を、使う側の DESIGN.md と、保守の判断の ADR に分ける](0016-design-system-documents.md)）は、ADR-0020 に置換した。
+- ADR-0015 の Decision の基準と確認の方法の表は、決めたときの記録である。今の基準と確認の方法は、[DESIGN.md の「アクセシビリティ」](https://github.com/Fukuemon/buddy/blob/develop/packages/ui/DESIGN.md#アクセシビリティ)にある。
 
 ### 予定の API の構成
 

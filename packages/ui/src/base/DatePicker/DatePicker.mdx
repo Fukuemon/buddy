@@ -9,25 +9,21 @@ import * as Stories from './DatePicker.stories'
 
 日付を 1 つ入力する欄。ブラウザの `input type="date"` を使い、値は `YYYY-MM-DD` の文字列。React Hook Form の `control` と `name` を受ける。
 
-## 使う場面
+## 規則
 
-- 予定の日付のように、近い日付を 1 つ入力する
+規則の本文は、デザインシステムの文書の次のセクションにある。
 
-## 使わない場面
-
-- 生年月日のように遠い日付
-
-## Do
-
-- `label` に項目の名前を渡す
-
-## Don't
-
-- ラベルを空にする
+- 使う場面、使わない場面、キーボードの操作: コンポーネントの文書（`packages/ui/design/components.md`）の「コンポーネントの選び方」の `DatePicker`、`TimePicker` の行
+- 使い方の規則と Do と Don't: コンポーネントの文書の「コンポーネントごとの規則」の「`DatePicker`、`TimePicker`、`MonthPicker`」
+- 欄の枠と面の状態: コンポーネントの文書の「入力の欄の状態」
+- 当たる原則: DESIGN.md の「画面を作るときの原則」の次の ID
+  - `SPACING-SCALE`
+  - `STATE-NOT-COLOR-ONLY`
+  - `FOCUS-ONE`
 
 ## 状態
 
-フォーカスは枠に `focus-ring` を出す。DADS は年、月、日を 3 つの欄に分けるよう勧めるが、buddy はブラウザのカレンダーから選ぶ。
+フォーカスは枠に `focus-ring` を出す。
 
 ### デフォルト
 
@@ -61,7 +57,7 @@ import * as Stories from './DatePicker.stories'
 
 ### 見出しを隠した形
 
-見出しを欄の外（ラジオボタンの右など）に置くときは `isLabelHidden` を渡す。`label` は読み上げの名前に残し、枠の高さを 44px にして、隣の 44px の要素と中心をそろえる。
+`isLabelHidden` で見出しを隠し、枠の高さを 44px にした例。
 
 <Canvas of={Stories.LabelHidden} />
 
@@ -74,12 +70,6 @@ import * as Stories from './DatePicker.stories'
 枠の色を変えない。
 
 <Canvas of={Stories.DisabledHover} />
-
-## キーボードの操作
-
-- Tab で欄に移る
-- ブラウザの日付の入力欄の操作に従う
-- エラーがあると `aria-invalid` を付け、`aria-describedby` でエラーの文を指す
 
 ## props
 

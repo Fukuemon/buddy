@@ -7,13 +7,20 @@
 
 | ページ | 書くこと | 配置先 |
 | --- | --- | --- |
-| はじめに | 原則、アクセシビリティの基準 | `packages/ui/src/docs/*.mdx` |
+| はじめに | 原則の ID と、アクセシビリティの基準の項目の一覧 | `packages/ui/src/docs/*.mdx` |
 | トークン | 色の階調とセマンティックトークン（`ColorPalette`）、文字（`Typeset`）、余白、角丸、影 | `packages/ui/src/tokens/*.mdx` |
-| コンポーネント | コンポーネントごとの MDX。使う場面、使わない場面、Do と Don't、状態、キーボードの操作 | `packages/ui/src/base/<コンポーネント>/`、`packages/ui/src/case/<コンポーネント>/` |
-| パターン | コンポーネントを組み合わせた形（入力のダイアログの `InputDialog`、確認のダイアログの `ConfirmDialog`） | `packages/ui/src/patterns/` |
+| コンポーネント | コンポーネントごとの MDX。状態の例と、規則を持つデザインシステムの文書のセクションの名前と、当たる原則の ID | `packages/ui/src/base/<コンポーネント>/`、`packages/ui/src/case/<コンポーネント>/` |
+| パターン | コンポーネントを組み合わせた形（入力のダイアログの `InputDialog`、確認のダイアログの `ConfirmDialog`）の例と、規則を持つセクションの名前 | `packages/ui/src/patterns/` |
 | 画面 | apps/web のコンポーネントと画面の story | `apps/web/src/features/<機能>/components/`、`apps/web/src/components/` |
 
 コンポーネントの MDX の「状態」には、デフォルト、hover、フォーカス、無効、エラー、読み込みのうち、そのコンポーネントが持つものを全て story で並べる。
+
+MDX に、デザインシステムの文書の規則の本文を写さない。
+
+- 規則は、原則の ID と、規則を持つファイルとセクションの名前で指す。MDX には URL を書かないので、リンクにしない。
+  - 写した文は、規則を直すたびに合わせ直すことになり、合わせ忘れると 2 つの規則が食い違う。
+- Do と Don't の例を置くときは、描画した例に、当たる原則の ID か規則の見出しだけを添える。
+- 「状態」の例に添える文は、例が何を示すかだけにする。
 
 ## title の規則
 

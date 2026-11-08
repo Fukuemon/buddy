@@ -7,31 +7,16 @@ import * as Stories from './InputDialog.stories'
 
 # InputDialog
 
-入力のダイアログ。`Dialog` に、タイトルのヘッダーと、「キャンセル」と確定のボタンのフッターを組んだ形。フッターで閉じるので、右上に閉じるボタン（×）を置かない。
+入力のダイアログ。`Dialog` に、タイトルのヘッダーと、「キャンセル」と確定のボタンのフッターを組んだ形。
 
-## 使う場面
+## 規則
 
-- 理由やメールアドレスのような、短い入力を 1〜2 項目受けて送る
+規則の本文は、デザインシステムの文書の次のセクションにある。
 
-## 使わない場面
-
-- 予定の作成と編集のような、項目の多い入力（`Modal` を使う）
-- 取り消せない操作の確認（`ConfirmDialog` を使う）
-
-## Do
-
-- 確定のボタンの文字（`submitLabel`）と送っている間の文字（`busyLabel`）は、操作の動詞にする（「保存」「保存しています」）
-- 入力が足りない間は `canSubmit` を false にし、足りない理由を入力欄の近くに出す
-- 送っている間は `isSubmitting` を渡す。どの操作でも閉じなくなる
-- 送れなかったときは `error` に文を渡す
-- 入力を form にするときは `formId` を渡し、確定のボタンをその form の送信のボタンにする
-- タイトルの補いは `titleAddon` に `HelpToggle` を渡す
-- 確定でデータが失われ、何が失われるかを本文で示すとき（職員の役職を変える）は、`submitVariant="danger"` にする
-
-## Don't
-
-- 確定のボタンを 2 つ置く
-- 「キャンセル」、覆い、Escape キーで、入力を保存する
+- 使う場面、使わない場面、使い方の規則、キーボードの操作: コンポーネントの文書（`packages/ui/design/components.md`）の「パターン」の「`InputDialog`」
+- 中で使うコンポーネントの規則: コンポーネントの文書の「コンポーネントごとの規則」の「`Modal`、`Dialog`」と「`Button`」
+- 当たる原則: DESIGN.md の「画面を作るときの原則」の次の ID
+  - `PRIMARY-ACTION-ONE`
 
 ## 状態
 
@@ -54,13 +39,6 @@ import * as Stories from './InputDialog.stories'
 ### タイトルのヘルプ
 
 <Canvas of={Stories.WithTitleAddon} />
-
-## キーボードの操作
-
-- 開くと、`initialFocusRef` の欄にフォーカスが移る。渡さなければ、ヘッダーの最初のボタンに移る
-- Tab と Shift+Tab はダイアログの中の要素に移る
-- Esc で `onClose` を呼ぶ。送っている間は呼ばない
-- 閉じると、開く前にフォーカスがあった要素へ戻る
 
 ## props
 
