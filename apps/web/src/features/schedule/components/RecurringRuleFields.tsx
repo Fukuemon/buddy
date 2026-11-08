@@ -317,7 +317,7 @@ export const RecurringRuleFields = <T extends RecurringRuleFormShape>({
                           fieldState.error === undefined ? undefined : `${id}-days-error`
                         }
                         aria-labelledby={dayOfWeekLabelId}
-                        className="flex gap-1 desktop:gap-2"
+                        className="flex flex-wrap gap-1 desktop:gap-2"
                       >
                         {WEEKDAYS.map((label, i) => {
                           const day = i + 1
