@@ -14,6 +14,7 @@ const meta = {
     staff: storyStaff[0],
     patient: storyPatients[0],
     onEdit: fn(),
+    onCancelSchedule: fn(),
     onClose: fn(),
   },
 } satisfies Meta<typeof ScheduleDetailModal>

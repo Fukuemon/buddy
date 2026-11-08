@@ -53,7 +53,7 @@ apps/web の画面だけが使うアイコンは、`apps/web/src/assets/icons/` 
 
 | コンポーネント | 使う場面 | 使わない場面 | キーボード |
 | --- | --- | --- | --- |
-| [`Button`](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/docs/コンポーネント-base-button--docs) | 操作を 1 つ実行する。`variant="danger"`（塗りの赤）は、確認のダイアログでデータを失う操作を確定するボタンだけに使う | 画面を移る（`Link` に `buttonClassName` を渡す） | Tab で移り、Enter と Space で押す。押せない間は `aria-disabled` にし、フォーカスは受ける |
+| [`Button`](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/docs/コンポーネント-base-button--docs) | 操作を 1 つ実行する。`variant="danger"`（塗りの赤）は、確認のダイアログ（何が失われるかを示して確定する入力のダイアログを含む）でデータを失う操作を確定するボタンだけに使う。その確認のダイアログを開く起点のボタンは `variant="destructive"`（白い面に赤い文字）にする | 画面を移る（`Link` に `buttonClassName` を渡す） | Tab で移り、Enter と Space で押す。押せない間は `aria-disabled` にし、フォーカスは受ける |
 | [`Modal`](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/docs/コンポーネント-base-modal--docs) | 今の画面の上で、予定の詳細や入力を行い、閉じて元の画面に戻る | 完了の通知、ナビゲーション | 開くとタイトルにフォーカスが移る。Tab はダイアログの中だけを回る。Esc で閉じる要求を出す。閉じると、開いたボタンにフォーカスが戻る |
 | [`Dialog`](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/docs/コンポーネント-base-dialog--docs) | 短い入力を 1 つ受けるか、少ない選択肢から操作を 1 つ選び、元の画面に戻る。入力と確認は、パターンの `InputDialog` と `ConfirmDialog` で組む | 項目の多い入力（`Modal` を使う）、完了の通知 | 開くと最初の押せる要素にフォーカスが移る。Esc と覆いで `onClose` を呼び、送っている間は呼ばない。閉じると、開く前の要素にフォーカスが戻る |
 | [`RowTable`](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/docs/コンポーネント-base-rowtable--docs) | 名前と補足の値を持つ対象を並べ、行を押して詳細へ移るか選ぶか、行ごとに操作を置く。幅 768px 未満では 2 行のリストにする | 列を見比べる表（`Table` を使う） | Tab で行の名前のリンクかボタンに移り、Enter で押す。行の操作を置いた行は、操作のボタンに移る |
@@ -114,6 +114,12 @@ DADS から外れる規則は、外れることと理由を、その規則に書
 - 押せる領域は 44×44 CSS px 以上にする。S のボタンとアイコンのボタンは、見た目の外に押せる領域を広げる。
 - ラベルは文字にする。アイコンだけのボタンには、`aria-label` で名前を付ける。
 - 操作の重要度の違いを、色だけで示さない。塗りと枠線の違いでも示す。
+- データを失う操作は、起点のボタンを `variant="destructive"` にして確認のダイアログを開き、確認のダイアログの確定のボタンを `variant="danger"` にする。
+  - 起点のボタンに赤い塗りを使わない。赤い塗りは、確認の手順の最後の確定の 1 か所だけにする。
+  - 起点のボタンを、よく使う安全な操作のボタン（「閉じる」「編集」「完了する」）の隣に並べない。ラベルの違いだけでは押し間違いを防げない。ダイアログの中の配置は、下の `Modal`、`Dialog` の規則にある。
+    - 画面の中で安全な操作と同じ行に置くときは、行の反対の端に離して置く（予定の正本の切り替えの「切り替えをやめる」）。
+  - 入力のダイアログが、何が失われるかを示して確定するとき（職員の役職を変える）は、その確定のボタンを確認の手順の最後とみなし、`variant="danger"` にする。
+  - 出典: [Nielsen Norman Group: Proximity of Consequential Options](https://www.nngroup.com/articles/proximity-consequential-options/)、[GOV.UK Design System: Warning buttons](https://design-system.service.gov.uk/components/button/)
 - 押せない間は `aria-disabled` を付け、押しても実行しない。`Button` は、`disabled` を渡すと `aria-disabled` を付け、クリックと送信を止める。
 - 入力が条件を満たさない間に押せなくするボタンは、ボタンのすぐ近くに、押せるようにする条件を文で書き、`aria-describedby` でボタンに結び付ける。ダイアログの確定のボタンは、`InputDialog` と `ConfirmDialog` の `submitHint` に渡す。
 - 送っている間と、選択肢やデータを読み込む間は、条件の文を書かずに押せなくする。
@@ -129,6 +135,13 @@ DADS から外れる規則は、外れることと理由を、その規則に書
 - フッターに操作のボタン（「キャンセル」、確定のボタン、行でできる操作）を置くときは、右上に閉じるボタン（×）を置かず、フッターのボタンで閉じる。
   - × と「キャンセル」が並ぶと、どちらで閉じても同じ結果になるのかを、利用者が判断できないためである。
   - 閉じるのに使うボタンは、入力があれば「キャンセル」、入力の無い詳細では「閉じる」にし、フッターの左端に置く。
+  - フッターにデータを失う操作の起点のボタンがあるときは、その 1 つだけをフッターの左端に置き、閉じるのに使うボタンを右のまとまりの先頭に置く。
+    - 例は、予定の詳細の「予定をキャンセル」と、確認が必要な予定のダイアログの「buddy の内容で書き直す」である。
+    - 戻せない操作を、閉じるボタンと編集のボタンから離すためである。
+  - 確認のダイアログで、確定のボタンが「キャンセル」と同じく取り消しの意味に読めるとき（「予定をキャンセルする」「やめる」「書き直す」）は、閉じる側のボタンを「戻る」にする。`ConfirmDialog` の `cancelLabel` に渡す。
+    - 「キャンセル」と「予定をキャンセルする」が並ぶと、どちらが予定を取り消すのかを読み違えやすい。「書き直す」も、Google カレンダーでの変更を取り消す操作なので当てる。
+    - 「外す」「退職にする」のように、取り消しの意味に読めない確定には当てず、閉じる側を「キャンセル」のままにする。
+    - 出典: [UX Movement: When Cancel Buttons Should Not Say Cancel](https://uxmovement.com/buttons/when-cancel-buttons-should-not-say-cancel/)
   - `Modal` は `stickyFooter` を渡すと × を出さない。`Dialog` は `DialogHeader` に `onClose` を渡したときだけ × を出す。
   - フッターを置かないモーダルとダイアログ（キャンセルした予定の詳細、読み込み中、読み込みの失敗）だけは、× を置く。
   - Esc と覆いは、フッターの「キャンセル」と同じく閉じる。入力を変えた `Modal` では、どれで閉じるときも破棄してよいかを確認する。

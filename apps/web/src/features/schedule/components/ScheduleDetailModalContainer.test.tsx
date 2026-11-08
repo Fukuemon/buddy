@@ -51,10 +51,17 @@ describe('ScheduleDetailModalContainer', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent('この予定を見る権限がありません。')
   })
 
-  it('Google カレンダーの予定は、buddy で変えると Google カレンダーにも書く案内と、編集とキャンセルのボタンを出す', async () => {
+  it('Google カレンダーの予定は、「Google カレンダー」の印と、書き込みの説明を入れた ? と、編集とキャンセルのボタンを出す', async () => {
     render(<GoogleCalendar />)
-    expect(await screen.findByTestId('schedule-detail-google-calendar')).toHaveTextContent(
-      'Google カレンダーの予定です。buddy で変更かキャンセルすると、Google カレンダーにも書きます。',
+    expect((await screen.findByTestId('schedule-detail-google-calendar')).textContent).toBe(
+      'Google カレンダー',
+    )
+    const helpText = screen.getByTestId('schedule-detail-google-calendar-help-text')
+    expect(helpText).not.toBeVisible()
+    await userEvent.click(screen.getByTestId('schedule-detail-google-calendar-help'))
+    expect(helpText).toBeVisible()
+    expect(helpText).toHaveTextContent(
+      'buddy で変更かキャンセルすると、Google カレンダーにも書きます。',
     )
     expect(screen.getByTestId('schedule-detail-datetime')).toBeInTheDocument()
     expect(screen.getByTestId('schedule-detail-edit')).toBeInTheDocument()
@@ -83,6 +90,18 @@ describe('ScheduleDetailModalContainer', () => {
     )
     expect(screen.queryByTestId('schedule-detail-edit')).not.toBeInTheDocument()
     expect(screen.queryByTestId('schedule-detail-cancel-schedule')).not.toBeInTheDocument()
+  })
+
+  it('キャンセルの確認のダイアログは、閉じる側を「戻る」にし、押すと予定をキャンセルせずに詳細に戻る', async () => {
+    render(<Visit />)
+    await userEvent.click(await screen.findByTestId('schedule-detail-cancel-schedule'))
+    expect(screen.getByTestId('schedule-cancel-cancel').textContent).toBe('戻る')
+    expect(screen.getByTestId('schedule-cancel-submit')).toHaveTextContent('予定をキャンセルする')
+
+    await userEvent.click(screen.getByTestId('schedule-cancel-cancel'))
+    expect(screen.queryByTestId('schedule-cancel-dialog')).not.toBeInTheDocument()
+    expect(screen.getByTestId('schedule-detail-cancel-schedule')).toBeInTheDocument()
+    expect(screen.queryByTestId('schedule-detail-cancel')).not.toBeInTheDocument()
   })
 
   it('予定をキャンセルすると、理由と詳細を開いたときの etag を送り、Google カレンダーの予定は理由を残さないことを示す', async () => {

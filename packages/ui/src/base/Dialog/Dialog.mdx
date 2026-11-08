@@ -25,11 +25,11 @@ import * as Stories from './Dialog.stories'
 
 - 入力と確認のダイアログは、まずパターンの `InputDialog` と `ConfirmDialog` を使い、合わないときだけ `Dialog` で組む
 - `DialogHeader` の `titleId` と、`Dialog` の `labelledBy` に同じ値を渡す
-- フッターのボタンは、「キャンセル」、確定のボタンの順に渡す
+- フッターのボタンは、「キャンセル」、確定のボタンの順に渡す。データを失う操作の起点があるときだけ、それを先頭に渡して左端に置く（下の「操作を並べる」）
 - フッターで閉じる。`DialogHeader` に `onClose` を渡さず、右上に閉じるボタン（×）を出さない
 - 送っている間は、`Dialog` に `canClose={false}` を渡し、フッターの「キャンセル」も押せなくして、どの操作でも閉じないようにする
 - 送れなかったときは、`DialogFooter` の `error` に文を渡す
-- 選ぶ操作を並べるときは、どれも副のボタンにし、左端に「キャンセル」を置く
+- 入力の無い詳細に選べる操作を並べるときは、主のボタンを置かず、閉じるボタンを「閉じる」にする。操作がデータを失う操作の起点なら、`variant="destructive"` と `className="mr-auto"` で左端に 1 つだけ置き、「閉じる」を右に置く
 - フッターを置かないダイアログだけは、`DialogHeader` に `onClose` を渡して × で閉じる
 
 ## Don't

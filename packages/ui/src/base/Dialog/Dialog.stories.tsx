@@ -94,7 +94,10 @@ export const Submitting: Story = {
   ),
 }
 
-/** 選ぶ操作を並べるダイアログ。どちらも主の操作ではないので、副のボタンにする。閉じるのは、左端の「キャンセル」にする。 */
+/**
+ * 入力の無い詳細に、選べる操作を並べるダイアログ。勧める操作が無いので、主のボタンを置かない。
+ * データを失う操作の起点（書き直す）は赤い文字にしてフッターの左端に 1 つだけ置き、「閉じる」を右に置く。
+ */
 export const OperationsOnly: Story = {
   render: (args) => (
     <Dialog {...args}>
@@ -106,14 +109,11 @@ export const OperationsOnly: Story = {
         </p>
       </DialogBody>
       <DialogFooter>
-        <Button onClick={args.onClose} size="S" variant="secondary">
-          キャンセル
-        </Button>
-        <Button size="S" variant="secondary">
-          Google の内容に合わせる
-        </Button>
-        <Button size="S" variant="secondary">
+        <Button className="mr-auto" size="S" variant="destructive">
           buddy の内容で書き直す
+        </Button>
+        <Button onClick={args.onClose} size="S" variant="secondary">
+          閉じる
         </Button>
       </DialogFooter>
     </Dialog>

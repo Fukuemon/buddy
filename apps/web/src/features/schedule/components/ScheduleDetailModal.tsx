@@ -1,5 +1,5 @@
 import type { Patient, Schedule, Staff } from '#/api/types'
-import { ActionMenu, Button, Modal } from '@buddy/ui'
+import { ActionMenu, Button, HelpToggle, Modal, StatusBadge } from '@buddy/ui'
 import { useId } from 'react'
 
 import {
@@ -43,9 +43,10 @@ const SectionHeading = ({ id, children }: { id: string; children: React.ReactNod
  * 予定の詳細をモーダルで出す。
  * 日時を見出しにし、その下に種類と主訪問者（通常の予定では予定者）を、訪問の予定では訪問の情報を、最後にメモをセクションに分けて並べる。メモが空なら、メモのセクションを出さない。
  * 見出しと値は、全てのセクションで同じ 1 列の並びにし、値の列の位置をそろえる。
- * 下端の右に「閉じる」、予定をキャンセルするボタン、編集のボタンをこの順に置く。onCancelSchedule と onEdit を省くと、そのボタンを出さない。
+ * 下端の左端に、予定をキャンセルするボタンを赤い文字で 1 つだけ置き、右に「閉じる」と編集のボタンをこの順にまとめる。onCancelSchedule と onEdit を省くと、そのボタンを出さない。
+ * 予定をキャンセルするボタンは戻せない操作の起点なので、安全な操作から離して置く。
  * キャンセルした予定は、先頭にキャンセルの理由を出し、下端を出さない。下端が無いので、右上の × で閉じる。
- * Google カレンダーの予定（fromGoogleCalendar）は、先頭に、buddy で変えると Google カレンダーにも書く案内を出し、確認が必要な予定なら理由と直し方も出す。
+ * Google カレンダーの予定（fromGoogleCalendar）は、先頭に「Google カレンダー」の印と ? のヘルプを出し、buddy で変えると Google カレンダーにも書くことを ? の中で伝える。確認が必要な予定なら理由と直し方も出す。
  */
 export const ScheduleDetailModal = ({
   schedule,
@@ -67,6 +68,16 @@ export const ScheduleDetailModal = ({
         schedule.cancel === undefined
           ? (requestClose) => (
               <>
+                {onCancelSchedule !== undefined && (
+                  <Button
+                    className="mr-auto"
+                    data-testid="schedule-detail-cancel-schedule"
+                    onClick={onCancelSchedule}
+                    variant="destructive"
+                  >
+                    予定をキャンセル
+                  </Button>
+                )}
                 <Button
                   data-testid="schedule-detail-close"
                   onClick={requestClose}
@@ -74,15 +85,6 @@ export const ScheduleDetailModal = ({
                 >
                   閉じる
                 </Button>
-                {onCancelSchedule !== undefined && (
-                  <Button
-                    data-testid="schedule-detail-cancel-schedule"
-                    onClick={onCancelSchedule}
-                    variant="secondary"
-                  >
-                    予定をキャンセル
-                  </Button>
-                )}
                 {onEdit !== undefined &&
                   (onChangeRecurrence === undefined ? (
                     <Button data-testid="schedule-detail-edit" onClick={onEdit} variant="secondary">
@@ -116,13 +118,14 @@ export const ScheduleDetailModal = ({
     >
       <div className="flex flex-col gap-6 px-5 py-4">
         {schedule.fromGoogleCalendar === true && (
-          <p
-            className="rounded-8 border border-border px-4 py-3"
-            data-testid="schedule-detail-google-calendar"
-          >
-            Google カレンダーの予定です。buddy で変更かキャンセルすると、Google
-            カレンダーにも書きます。
-          </p>
+          <div className="relative flex items-center gap-1">
+            <StatusBadge data-testid="schedule-detail-google-calendar">
+              Google カレンダー
+            </StatusBadge>
+            <HelpToggle data-testid="schedule-detail-google-calendar-help">
+              buddy で変更かキャンセルすると、Google カレンダーにも書きます。
+            </HelpToggle>
+          </div>
         )}
         {schedule.reviewReason !== undefined && (
           <p

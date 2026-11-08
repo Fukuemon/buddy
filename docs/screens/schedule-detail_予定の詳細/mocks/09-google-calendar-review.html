@@ -21,28 +21,34 @@
                 <h2 class="wf-modal__title wf-dialog__title" data-m="3">予定の詳細</h2>
               </div>
               <div class="wf-modal__body">
-                <p class="sd-google" data-m="4" data-testid="schedule-detail-google-calendar">Google カレンダーの予定です。buddy で変更かキャンセルすると、Google カレンダーにも書きます。</p>
-                <p class="sd-review" data-m="5" data-testid="schedule-detail-review-reason"><strong>確認が必要な予定です。</strong>タイトルの利用者が見つかりません。buddy で編集して訪問の情報を入れるか、Google カレンダーでタイトルを直してください。</p>
-                <h3 class="sd-datetime" data-m="6" data-testid="schedule-detail-datetime">2026年10月13日（火） 14:00〜14:59</h3>
+                <div class="wf-title sd-google">
+                  <span class="wf-status" data-m="4" data-testid="schedule-detail-google-calendar">Google カレンダー</span>
+                  <span class="wf-help">
+                    <span class="wf-btn wf-btn--icon wf-help__toggle" aria-label="ヘルプ" data-open="google-calendar-help" data-m="5" data-testid="schedule-detail-google-calendar-help">?</span>
+                    <p class="wf-help__panel" data-panel="google-calendar-help" data-panel-dismiss data-testid="schedule-detail-google-calendar-help-text">buddy で変更かキャンセルすると、Google カレンダーにも書きます。</p>
+                  </span>
+                </div>
+                <p class="sd-review" data-m="6" data-testid="schedule-detail-review-reason"><strong>確認が必要な予定です。</strong>タイトルの利用者が見つかりません。buddy で編集して訪問の情報を入れるか、Google カレンダーでタイトルを直してください。</p>
+                <h3 class="sd-datetime" data-m="7" data-testid="schedule-detail-datetime">2026年10月13日（火） 14:00〜14:59</h3>
                 <dl class="wf-rows sd-rows">
-                  <div class="wf-row" data-m="7">
+                  <div class="wf-row" data-m="8">
                     <dt>種類</dt>
                     <dd>通常</dd>
                   </div>
-                  <div class="wf-row" data-m="8">
+                  <div class="wf-row" data-m="9">
                     <dt>タイトル</dt>
                     <dd>利用者 X 訪看I2</dd>
                   </div>
-                  <div class="wf-row" data-m="9">
+                  <div class="wf-row" data-m="10">
                     <dt>予定者</dt>
                     <dd><span class="wf-text"></span></dd>
                   </div>
                 </dl>
               </div>
               <div class="wf-modal__footer">
-                <span class="wf-btn" data-escape data-m="10" data-testid="schedule-detail-close" data-go="../../schedule-calendar_予定のカレンダー/mocks/09-google-primary.html">閉じる</span>
-                <span class="wf-btn" data-m="11" data-testid="schedule-detail-cancel-schedule" data-go="10-cancel.html">予定をキャンセル</span>
-                <span class="wf-btn" data-m="12" data-testid="schedule-detail-edit" data-go="../../schedule-edit_予定の編集/mocks/16-needs-review.html">編集</span>
+                <span class="wf-btn wf-btn--destructive" data-m="11" data-testid="schedule-detail-cancel-schedule" data-go="10-cancel.html">予定をキャンセル</span>
+                <span class="wf-btn" data-escape data-m="12" data-testid="schedule-detail-close" data-go="../../schedule-calendar_予定のカレンダー/mocks/09-google-primary.html">閉じる</span>
+                <span class="wf-btn" data-m="13" data-testid="schedule-detail-edit" data-go="../../schedule-edit_予定の編集/mocks/16-needs-review.html">編集</span>
               </div>
             </div>
           </div>
