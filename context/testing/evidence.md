@@ -1,14 +1,15 @@
 ---
 type: context
 title: エビデンス
-description: エビデンスを付ける変更、元のファイルの配置先と公開の範囲、撮影の手段（エビデンスの spec と見本）、撮る環境と撮るコマンド、ログインとテストデータ、gh の --attach での添付の仕方、検証シナリオの決まり。検証環境の値は検証環境ができてから決める
+description: エビデンスを付ける変更、元のファイルの配置先と公開の範囲、撮影の手段（エビデンスの spec と見本）、撮る環境と撮るコマンド、ログインとテストデータ、コメントに投稿してから本文に並べる載せ方、検証シナリオの決まり。検証環境の値は検証環境ができてから決める
 status: draft
 ---
 
 # エビデンス
 
 機能の追加と改修で何を確認したかを示す動画と画像の取り決め。  
-観点の決め方、撮り方、pull request の本文への入れ方は、パッケージ verification のスキル attach-evidence にある。
+観点の決め方と撮り方は、パッケージ verification のスキル attach-evidence にある。  
+pull request への載せ方は、スキルの「本文に入れる」と違い、先にコメントに投稿してから本文に並べる。順とコマンドは [Attachment](#attachment) にある。
 
 ## Evidence Scope
 
@@ -20,13 +21,16 @@ status: draft
 
 ## Storage and Visibility
 
-- エビデンスはリポジトリにコミットせず、pull request の本文の「検証とエビデンス」の表に直接入れる。
-  - 入れた動画は、本文の中で再生できる。
-  - コメントには付けない。観点の条件と期待結果とエビデンスを、本文の 1 つの表で読み合わせるためである。
-  - 例外は、スキル attach-evidence がコメントを使うとする、撮り直したときの知らせと、本文が上限を超えたときだけにする。
+- エビデンスはリポジトリにコミットしない。
+- pull request のエビデンスは、先に pull request のコメントに投稿し、利用者が確認してから、本文の「検証とエビデンス」の表に並べる。
+  - コメントは、観点のまとまりごとに 1 つ立てる。このコメントを最初のコメントと呼ぶ。
+  - 最初のコメントと、その後に同じまとまりで足すコメントを、まとめてスレッドと呼ぶ。pull request の会話のコメントには返信の階層が無いので、足すコメントの先頭に、最初のコメントへのリンクを書く。
+  - 本文の表には、スレッドに上げた動画と画像の URL を写す。上げ直さない。上げ直すと、スレッドと本文で別の URL になる。
+  - 利用者が確認する前の動画を、本文に並べない。観点や撮り方を直すと、本文のエビデンスも差し替えになるためである。
+  - 観点の条件と期待結果とエビデンスは、本文の 1 つの表で読み合わせる。spec と実行の出力は、スレッドに置く。
 - Google Drive には置かない。
-- 入れる前の元のファイルは、`.ai-out/evidence/<入れる先>/` に一時的に置く。
-  - `.ai-out/` は Git で追跡しない。本文に入れ終えたら消す。
+- 上げる前の元のファイルは、`.ai-out/evidence/<入れる先>/` に一時的に置く。
+  - `.ai-out/` は Git で追跡しない。本文に並べ終えたら消す。
   - `<入れる先>` は、issue なら `issue-<番号>`、pull request なら `pr-<番号>` にする。
   - 最初に撮ったときの入れる先を使い続ける。改修前と改修後が別のフォルダに分かれないためである。
     - pull request を作る前に撮ったなら、作った後も `issue-<番号>` を使う。
@@ -34,8 +38,8 @@ status: draft
   - 配置先と名前は、kit の `recordPrEvidence` が `EVIDENCE_FOR` と `name` から決める。ファイル名は、スキル capture-browser-evidence の規則ではなく kit の形にする。
     - ファイルは `<入れる先>/<name>.mp4` と `<入れる先>/<name>/` に出る。`<name>` は、spec の `recordPrEvidence` に渡した `name` である。
     - 改修前と改修後を撮ったときは、`<入れる先>/<name>-before.mp4` と `<入れる先>/<name>-after.mp4` に出る。
-  - 本文に入れるのは、`<name>.mp4`（改修前と比べたときは `<name>-before.mp4` と `<name>-after.mp4`）と、`<name>/frames/` の判定のスクリーンショットである。`<name>/` の README と `.records/` は確認に使い、入れない。
-- 本文に入れたファイルは、リポジトリを見られる人が開ける。
+  - 上げるのは、`<name>.mp4`（改修前と比べたときは `<name>-before.mp4` と `<name>-after.mp4`）と、`<name>/frames/` の判定のスクリーンショットである。`<name>/` の README と `.records/` は確認に使い、上げない。
+- 上げたファイルは、リポジトリを見られる人が開ける。
   - リポジトリを public にすると、見られる人が誰にでも広がる。
   - 写すのは、ローカルのシード、テストデータ、仮の名前だけにする。実在の利用者、職員、事業所のデータは、検証環境で撮るときも写さない。
   - ログインの値とトークンを、画面と字幕に写さない。
@@ -53,7 +57,7 @@ status: draft
 - 配置先は `packages/e2e/tests/evidence/<機能>/<振る舞い>.e2e.ts` にする。
   - `<機能>` と `<振る舞い>` は、E2E の spec と同じ名前の付け方（スキル write-e2e-test の「名前」）にする。
   - 1 つの test が 1 つの観点を撮る。テストの名前は、E2E と同じ「{条件}の場合、{期待}であること」にする。
-  - `recordPrEvidence` の `name` は、観点が分かる英小文字、数字、ハイフンにする。本文に入れる動画のファイル名になる。
+  - `recordPrEvidence` の `name` は、観点が分かる英小文字、数字、ハイフンにする。上げる動画のファイル名になる。
   - 本文の表の「確認の方法」には、pull request のテンプレートのとおり、spec のファイル名と `name` を書く（`` `<spec のファイル名>` の `<name>` ``）。
   - 字幕に出すアクターは、`prepare` でログインする職員の名前と役職にする。
   - 過去の pull request の機能も、同じ配置先に機能ごとに足す。同じ spec で、改修のたびに撮り直す。
@@ -167,65 +171,91 @@ portless compose -p $p down -v
 
 ## Attachment
 
-ファイルは、gh の `--attach` で pull request と issue の本文に入れる。  
+ファイルは、gh の `--attach` で pull request のコメントに上げる。  
 `--attach` は gh の 2.99 以降にある。  
-先に `gh pr create --help` に `--attach` があるかを確認し、無ければ `mise which gh` のパスの gh を使う。
+先に `gh pr comment --help` に `--attach` があるかを確認し、無ければ `mise which gh` のパスの gh を使う。
 
-上げるには、gh でログインしたアカウントが、pull request か issue の本文を編集できる権限（リポジトリへの書き込みか、自分が作った pull request と issue）を持つ。
+上げるには、gh でログインしたアカウントが、pull request にコメントを書け、本文を編集できる権限（リポジトリへの書き込みか、自分が作った pull request と issue）を持つ。
 
 上げられるファイルの大きさの上限は、GitHub の文書の [Attaching files](https://docs.github.com/en/get-started/writing-on-github/working-with-advanced-formatting/attaching-files) で確認する。  
 超えるときは、観点を分けて短く撮り直す。  
-本文の文字数の上限は、GitHub の文書の [Repository limits](https://docs.github.com/en/repositories/creating-and-managing-repositories/repository-limits) の Text limits で確認する。
+コメントと本文の文字数の上限は、GitHub の文書の [Repository limits](https://docs.github.com/en/repositories/creating-and-managing-repositories/repository-limits) の Text limits で確認する。
 
-### 表の形
+### 載せる順
 
-- 列は、pull request のテンプレートの「検証とエビデンス」のとおりにする。
-- 改修前と比べるときは、「エビデンス」の列を「改修前」と「改修後」の 2 列にし、同じ行に並べる。
+1. 観点のまとまりごとに、スレッドの下書きを `.ai-out/prs/` のファイルに書く。
+   - 先頭に、観点の表と撮った条件（撮ったコミット、viewport、データ）を置く。表の列は、pull request のテンプレートの「検証とエビデンス」のとおりにする。
+   - 観点ごとに、判定の値と、spec と実行の出力の `<details>` を置く。
+   - エビデンスの参照は `![<名前>](./.ai-out/evidence/<入れる先>/<ファイル>)` にする。
+2. 利用者が下書きを確認してから、最初のコメントを投稿する。
+3. 利用者が、投稿したスレッドを pull request の画面で確認する。
+   - 直す点があれば、同じコメントを書き換える。
+4. 利用者が良いと言ったら、スレッドの動画と画像の URL を、本文の「検証とエビデンス」の表に並べる。
+   - 表の上に、スレッドの最初のコメントへのリンクを置く。
+   - 本文は `gh pr edit <番号> -F <本文>` で書き戻し、`--attach` は渡さない。
 
-### 本文に入れる
+### 最初のコメントを投稿する
 
-- 本文は `.ai-out/prs/` のファイルに書き、エビデンスの参照を `![<名前>](./.ai-out/evidence/<入れる先>/<ファイル>)` にする。
-- リポジトリのルートで流し、`--attach` に本文と同じパスを渡す。
-  - gh が本文の参照を、アップロード先の URL に書き換える。
-  - 作るとき: `gh pr create -B develop -t "<題>" -F <本文> --attach <動画> --attach <画像>`。マージ先は `develop` である。
-  - 作った後に足すとき: `gh pr edit <番号> -F <本文> --attach <足すファイル>`
-  - 撮り直して差し替えるとき: 作った後に足すときと同じ手順で、差し替える観点の参照だけを新しいファイルに書き換える。
-- `-F` は本文を全部置き換える。
-  - 作った後に足すときは、先に `gh pr view <番号> --json body -q .body` で今の本文を取り、入れ済みの URL を残したまま、足すファイルの参照だけを書く。`--attach` には足すファイルだけを渡す。
+- リポジトリのルートで流し、`--attach` に下書きと同じパスを渡す。
+  - `gh pr comment <番号> -F <下書き> --attach <動画> --attach <画像>`
+  - gh が下書きの参照を、上げた先の URL に書き換える。
+  - 表のセルの中の動画の参照は `[<名前>](<URL>)` に書き換わる。
+- `gh pr comment` は、投稿したコメントの URL（`https://github.com/Fukuemon/buddy/pull/<番号>#issuecomment-<ID>`）を標準出力に出す。URL と、末尾の `<ID>` を控える。書き換えと本文のリンクに使う。
+  - コメントの一覧の最後の 1 件から ID を取らない。投稿の間に別のコメントが入ると、別のコメントを書き換える。
+
+- 投稿したコメントを書き換えるときは、取ったコメントの本文を直して、控えた ID で書き戻す。
+  - `gh api -X PATCH repos/Fukuemon/buddy/issues/comments/<ID> -F body=@<直した本文>`
+  - 動画を差し替えるときは、書き換えずに、撮り直したときの手順で新しいコメントを投稿する。
 - 同じファイルを 2 度渡すと失敗する。
-- 本文が参照しないファイルは、本文の末尾に足される。
-- 一部のファイルだけが失敗すると、gh は 0 以外で終わり、上がったファイルだけで本文を作る。
-  - 失敗したファイルを、作った後に足す手順で足す。
-- issue には、`gh issue create` か `gh issue edit` の `--attach` を、同じ形で使う。
-- 本文が上限を超えたら、スキル attach-evidence のとおり、表とスクリーンショットを本文に残し、`<details>` の中身をコメントへ移す。
+- 下書きが参照しないファイルは、コメントの末尾に足される。
+- 一部のファイルだけが失敗すると、gh は 0 以外で終わり、上がったファイルだけでコメントを作る。
+  - 同じコメントを投稿し直さない。失敗したファイルは、スレッドに足すコメントで上げる。
+
+### 本文に並べる
+
+- 今の本文を `gh pr view <番号> --json body -q .body` で `.ai-out/prs/` のファイルに取り、「検証とエビデンス」の表だけを直す。
+  - スレッドの下書きから本文を作り直さない。画面で直した本文が消える。
+- 「エビデンス」の列に、スレッドの動画を `[<name>](<URL>)`、画像を `![<判定の文>](<URL>)` で書く。
+- 改修前と比べるときは、「エビデンス」の列を「改修前」と「改修後」の 2 列にし、同じ行に並べる。
+- 本文が上限を超えたら、表とスクリーンショットを本文に残し、`<details>` の中身はスレッドにだけ置く。
+- issue に不具合の再現と改修前の動きを入れるときは、`gh issue create` か `gh issue edit` の `-F <本文> --attach <ファイル>` で、本文に直接入れる。
+
+### 撮り直したとき
+
+- 撮り直した観点の動画を、スレッドに足すコメントで投稿する。コメントに、撮り直した観点と理由を書く。
+  - コメントは、レビューする人への知らせも兼ねる。本文の書き換えは、レビューする人に通知されない。
+- 利用者が確認してから、本文の表のその観点の URL だけを、足したコメントの動画の URL に書き換える。
+- 本文の表の上のリンクは、最初のコメントを指したままにする。最初のコメントの末尾に、足したコメントへのリンクを書き足し、最初のコメントから撮り直しをたどれるようにする。
 
 ### 入ったことを確認する
 
+スレッドのコメントと本文の、上げた先の URL の数と、書き換わらずに残った参照の数を数える。
+
 ```sh
+gh api repos/Fukuemon/buddy/issues/comments/<ID> --jq .body | grep -o 'github.com/user-attachments/assets/' | wc -l
+gh api repos/Fukuemon/buddy/issues/comments/<ID> --jq .body | grep -c '](\./\.ai-out/'
 gh api repos/Fukuemon/buddy/pulls/<番号> --jq .body | grep -o 'github.com/user-attachments/assets/' | wc -l
 gh api repos/Fukuemon/buddy/pulls/<番号> --jq .body | grep -c '](\./\.ai-out/'
 ```
 
-- 1 つ目の数が、本文に入れたファイルの数の合計と合う。
-- 2 つ目が 0 で、書き換わらずに残った参照が無い。
-- 表のセルの中の動画の参照は `[<名前>](<URL>)` に書き換わる。
-  - pull request の画面にログインして開き、再生できることを確認する。ログインしていない画面では、動画はリンクで出る。
+- コメントの 1 つ目の数が、そのコメントに上げたファイルの数と合う。
+- 本文の 1 つ目の数が、スレッドから並べた URL の数と合う。
+- 2 つ目がどちらも 0 で、書き換わらずに残った参照が無い。
+- pull request の画面にログインして開き、再生できることを確認する。ログインしていない画面では、動画はリンクで出る。
 
 ### コメントの動画を本文に移す
 
-過去の pull request のコメントに付けた動画は、アップロードし直さずに、URL を本文の表へ移す。
+過去の pull request のコメントに付けた動画は、上げ直さずに、URL を本文の表へ移す。
 
 1. エビデンスのコメントを取る。
 
    ```sh
-   gh api repos/Fukuemon/buddy/issues/<番号>/comments --jq '.[] | select(.body | test("user-attachments")) | {id, body}'
+   gh api --paginate repos/Fukuemon/buddy/issues/<番号>/comments --jq '.[] | select(.body | test("user-attachments")) | {id, html_url, body}'
    ```
 
-2. コメントの本文から `https://github.com/user-attachments/assets/<ID>` の URL を取り、観点ごとに本文の表の「エビデンス」の列に `[<name>](<URL>)` で書く。
-3. `gh pr edit <番号> -F <本文>` で本文を置き換える。
-   - `--attach` は渡さない。
-4. 「入ったことを確認する」の 1 つ目の数が、移した URL の数と合うことを確認する。
-5. コメントは消さない。
+2. コメントの本文から `https://github.com/user-attachments/assets/<ID>` の URL を取り、「本文に並べる」の手順で表に書く。
+3. 「入ったことを確認する」の本文の数が、移した URL の数と合うことを確認する。
+4. コメントは消さない。
    - コメントを消したときに、本文の URL が開けるかは未確認である。
 
 差分行のコメントに動画を添える手順は、まだ決めていない。

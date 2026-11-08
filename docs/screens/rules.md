@@ -626,7 +626,7 @@ docs/screens/
 | `data-go="<モック>"` | 指したモックへ移る | 状態を変えるタブと項目、ダイアログを開くボタン、閉じるボタンと背景、送信のボタン、別の画面へのリンク |
 | `data-toggle` | `is-on` を付け外す | チェックボックス、トグル |
 | `data-choice="<組の名前>"` | 押した要素に `is-on` を付け、同じ組のほかの要素から外す | ラジオボタン、チップ |
-| `data-open="<名前>"`、`data-close="<名前>"` | `data-panel="<名前>"` の要素に `is-open` を付け外し、開くボタンの `aria-expanded` を変える | 幅で出し分けるドロワー、メニュー |
+| `data-open="<名前>"`、`data-close="<名前>"` | `data-panel="<名前>"` の要素に `is-open` を付け外し、開くボタンの `aria-expanded` を変える。`data-open` は、開いている間に押すと閉じる | 幅で出し分けるドロワー、メニュー、補足とヘルプ |
 | `data-escape` | Escape キーで押す。見えている要素だけが動く | ダイアログのフッターの「キャンセル」と「閉じる」、フッターの無いモーダルとドロワーの閉じるボタン |
 
 - `data-go` の先は、同じ画面のモックならファイルの名前（`03-day.html`）、別の画面のモックなら `../../<画面のディレクトリ>/mocks/<モック>.html` と書く。
@@ -648,16 +648,20 @@ docs/screens/
   - `checkbox` と `radio` の `aria-checked` を `is-on` に合わせる。
   - role を書いた要素、`tabindex="-1"` の要素、`button` と `a` と `input` には付けない。
 - `interact.js` は、表示を変えた後に `mockRefresh()` を呼び、番号の印を置き直す。
-- `data-panel` に `data-panel-modal` も付けると、開いている間は panel の外の要素の印を出さない。
+- `data-panel` に `data-panel-modal` も付けると、開いて見えている間は panel の外の要素の印を出さない。
+- `data-panel` に `data-panel-dismiss` も付けると、panel と開くボタンの外を押すか、Escape キーを押すと閉じる。
+  - 付けるのは、ヘッダーのアカウントのメニューと、? のヘルプである。
 - デバイスを切り替えると、開いている panel を閉じる。
 - panel を開くと、panel の中の最初のフォーカスできる要素へフォーカスを移す。
   - 閉じると、見えている開くボタンへフォーカスを戻す。
+  - 外を押して閉じたときは、押した要素に移ったフォーカスを残す。
 - 幅 768px 以上で、開閉ではなく形の切り替えになる panel には、`data-panel-wide` を付ける。
   - 付けるのは、サイトのナビゲーションと、予定のカレンダーの左の欄である。
   - 幅 768px 以上で `is-open` がたたんだ状態を表す panel は、値を `collapse` にする。左の欄と、`data-start="rail"` の無いナビゲーションである。
     - `interact.js` は、幅 768px 以上では開くボタンの `aria-expanded` を `is-open` の逆にする。
   - `data-start="rail"` のナビゲーションは、値を `expand` にする。
   - どちらの値でも、幅 768px 以上ではフォーカスを開くボタンに残す。
+  - `data-panel-modal` も付けていても、幅 768px 以上では panel の外の印を隠さない。
 - 属性で書けない操作が要るときは、モックに script を書かず、`interact.js` に属性を足す。
 
 モックの印の位置は、Chromium と Firefox の今のバージョン（CSS の `zoom` を標準の形で扱うもの）で確認する。  

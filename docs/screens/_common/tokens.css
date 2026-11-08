@@ -1,6 +1,6 @@
 /*
  * 生成物。手で直さない。次のコマンドで作り直す。
- * node build-static-tokens.mjs --out docs/screens/_common/tokens.css ./packages/ui/src/tokens/primitive.css ./packages/ui/src/tokens/semantic.css
+ * node scripts/build-static-tokens.mjs --out docs/screens/_common/tokens.css ./packages/ui/src/tokens/primitive.css ./packages/ui/src/tokens/semantic.css
  */
 
 /*
