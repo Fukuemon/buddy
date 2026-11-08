@@ -1,7 +1,14 @@
 import { expect, test, type APIRequestContext, type Page } from '@playwright/test'
 
 import { issueAccessToken } from '../../fixtures/apiReference'
-import { CALENDARPIT_URL, LOGIN_EMAIL, LOGIN_STAFF, OKADA } from '../../fixtures/env'
+import {
+  CALENDARPIT_URL,
+  HAYASHI,
+  LOGIN_EMAIL,
+  LOGIN_STAFF,
+  OKADA,
+  TEAM_MEMBER,
+} from '../../fixtures/env'
 import { EVIDENCE_VARIANTS, recordPrEvidence } from '../../fixtures/evidence'
 import { deleteGoogleEvent, listGoogleEvents } from '../../fixtures/googleCalendar'
 import {
@@ -50,20 +57,22 @@ const openEdit = async (page: Page, staffId: string, title: string) => {
   await expect(page.getByTestId('schedule-form-modal')).toBeVisible()
 }
 
-/** ログインし、ログインした職員の start からの毎週の通常の予定（10:00〜11:00）を予定の API で作り、ID を返す。 */
-const prepareWeekly = (title: string, start: string) => async (page: Page) => {
-  await page.goto('/schedule')
-  await signInAtBroker(page, LOGIN_EMAIL)
-  const token = await issueAccessToken(page.request, LOGIN_EMAIL)
-  const created = await createWeeklyNormalSchedule(page.request, token, STAFF_FORM.facilityId, {
-    staffId: LOGIN_STAFF.id,
-    title,
-    date: start,
-  })
-  expect(created.status()).toBe(201)
-  const { id } = (await created.json()) as { id: string }
-  return { token, id }
-}
+/** ログインし、staff（省くとログインした職員）の start からの毎週の通常の予定（10:00〜11:00）を予定の API で作り、ID を返す。 */
+const prepareWeekly =
+  (title: string, start: string, staff: { id: string } = LOGIN_STAFF) =>
+  async (page: Page) => {
+    await page.goto('/schedule')
+    await signInAtBroker(page, LOGIN_EMAIL)
+    const token = await issueAccessToken(page.request, LOGIN_EMAIL)
+    const created = await createWeeklyNormalSchedule(page.request, token, STAFF_FORM.facilityId, {
+      staffId: staff.id,
+      title,
+      date: start,
+    })
+    expect(created.status()).toBe(201)
+    const { id } = (await created.json()) as { id: string }
+    return { token, id }
+  }
 
 /** calendarpit の calendarId の予定のうち、タイトルが title で、RRULE に rule を含む繰り返しの予定。 */
 const findRecurringGoogleEvent = async (
@@ -148,7 +157,7 @@ test.describe('予定の編集', () => {
       test(`${prefix}繰り返しの予定の回の編集で「この回だけ」の時刻を変えて保存した場合、その回だけが変わること`, async ({
         browser,
       }) => {
-        const title = `定例 ${Date.now()}`
+        const title = `佐藤さんの定例 ${Date.now()}`
         const start = fromNextMonday(0)
         const next = fromNextMonday(7)
         await recordPrEvidence(
@@ -160,15 +169,15 @@ test.describe('予定の編集', () => {
             actor: ACTOR,
             variant,
           },
-          prepareWeekly(title, start),
+          prepareWeekly(title, start, TEAM_MEMBER),
           async ({ page, step, check }) => {
-            await openDay(page, LOGIN_STAFF.id, start)
+            await openDay(page, TEAM_MEMBER.id, start)
             await step(
-              `${start} から毎週月曜 10:00〜11:00 の「${title}」を作ってある。${start} の日の表示を開いている`,
+              `${start} から ${TEAM_MEMBER.name} の毎週月曜 10:00〜11:00 の「${title}」を作ってある。${start} の日の表示を開いている`,
             )
 
             await step('予定を押して詳細を開き、「編集」を押す')
-            await openEdit(page, LOGIN_STAFF.id, title)
+            await openEdit(page, TEAM_MEMBER.id, title)
             if (!isBefore) {
               await expect(page.getByTestId('schedule-edit-scope-occurrence')).toBeChecked()
               await check('変更の範囲は「この回だけ」を選んでいる')
@@ -183,8 +192,8 @@ test.describe('予定の編集', () => {
             await check('予定の詳細に戻り、日時が 14:00〜15:00 になっている')
 
             await step(`次の回の ${next} の日の表示を開き、予定を押して詳細を開く`)
-            await openDay(page, LOGIN_STAFF.id, next)
-            await dayEvent(page, LOGIN_STAFF.id, title).click()
+            await openDay(page, TEAM_MEMBER.id, next)
+            await dayEvent(page, TEAM_MEMBER.id, title).click()
             await expect(page.getByTestId('schedule-detail-modal')).toContainText('10:00')
             await check(`${next} の回は 10:00〜11:00 のまま`)
           },
@@ -199,7 +208,7 @@ test.describe('予定の編集', () => {
       test(`${prefix}1 回だけ変えた回がある繰り返しの予定の規則を変えた場合、変えた回は残り、その元の日に新しい規則の回が出ないこと`, async ({
         browser,
       }) => {
-        const title = `定例 ${Date.now()}`
+        const title = `林さんの定例 ${Date.now()}`
         const start = fromNextMonday(0)
         const effective = fromNextMonday(7)
         const replacedDate = fromNextMonday(14)
@@ -214,14 +223,14 @@ test.describe('予定の編集', () => {
             variant,
           },
           async (page) => {
-            const prepared = await prepareWeekly(title, start)(page)
+            const prepared = await prepareWeekly(title, start, HAYASHI)(page)
             const moved = await replaceOccurrence(
               page.request,
               prepared.token,
               prepared.id,
               replacedDate,
               {
-                staffId: LOGIN_STAFF.id,
+                staffId: HAYASHI.id,
                 title,
                 date: movedTo,
               },
@@ -230,15 +239,15 @@ test.describe('予定の編集', () => {
             return prepared
           },
           async ({ page, step, check }) => {
-            await openDay(page, LOGIN_STAFF.id, movedTo)
-            await expect(dayEvent(page, LOGIN_STAFF.id, title)).toBeVisible()
+            await openDay(page, HAYASHI.id, movedTo)
+            await expect(dayEvent(page, HAYASHI.id, title)).toBeVisible()
             await step(
-              `${start} から毎週月曜の「${title}」を作り、${replacedDate}（月曜）の回を ${movedTo}（水曜）に移してある。${movedTo} に移した回が出ている`,
+              `${start} から ${HAYASHI.name} の毎週月曜の「${title}」を作り、${replacedDate}（月曜）の回を ${movedTo}（水曜）に移してある。${movedTo} に移した回が出ている`,
             )
 
             await step(`${effective}（月曜）の回の編集を開き、「この日以降の全ての回」を押す`)
-            await openDay(page, LOGIN_STAFF.id, effective)
-            await openEdit(page, LOGIN_STAFF.id, title)
+            await openDay(page, HAYASHI.id, effective)
+            await openEdit(page, HAYASHI.id, title)
             await page.getByTestId('schedule-edit-scope-following').check()
 
             await step(
@@ -255,11 +264,11 @@ test.describe('予定の編集', () => {
             await step(
               `新しい規則が当たる ${replacedDate}（第 ${week} 月曜）と、移した先の ${movedTo}（水曜）の日の表示を開く`,
             )
-            await openDay(page, LOGIN_STAFF.id, replacedDate)
-            await expect(dayEvent(page, LOGIN_STAFF.id, title)).toHaveCount(0)
-            await check(`${replacedDate} には、新しい規則の回が出ない`)
-            await openDay(page, LOGIN_STAFF.id, movedTo)
-            await expect(dayEvent(page, LOGIN_STAFF.id, title)).toBeVisible()
+            await openDay(page, HAYASHI.id, replacedDate)
+            await expect(dayEvent(page, HAYASHI.id, title)).toHaveCount(0)
+            await check(`${replacedDate} の ${HAYASHI.name} の列には、新しい規則の回が出ない`)
+            await openDay(page, HAYASHI.id, movedTo)
+            await expect(dayEvent(page, HAYASHI.id, title)).toBeVisible()
             await check(`${movedTo} に移した回は残る`)
           },
         )
