@@ -27,6 +27,7 @@ describe('toRecurringRuleFormValues', () => {
   it('規則が持たない曜日、日、週を、開いた回の日から決める', () => {
     expect(initial).toMatchObject({
       dayOfWeek: 2,
+      weeklyDays: [2],
       dayOfMonth: 20,
       weekOfMonth: 3,
       monthlyBy: 'day',
@@ -57,14 +58,14 @@ describe('createRecurringRuleChangeSchema', () => {
   })
 
   it('規則の空の項目を開いた回の日で埋めた値は、変えていないものとして扱う', () => {
-    expect(messages({ dayOfWeek: 2 })).toEqual(['今の繰り返しから変えてください'])
+    expect(messages({ weeklyDays: [2] })).toEqual(['今の繰り返しから変えてください'])
   })
 
   it('繰り返しを変えるときは、終了日を開いた回の日より前にできない', () => {
-    expect(messages({ dayOfWeek: 3, hasEndDate: true, endDate: '2026-10-19' })).toEqual([
+    expect(messages({ weeklyDays: [3], hasEndDate: true, endDate: '2026-10-19' })).toEqual([
       '繰り返しを変えるときは、終了日を 2026-10-20 以降にしてください',
     ])
-    expect(messages({ dayOfWeek: 3, hasEndDate: true, endDate: '2026-10-20' })).toEqual([])
+    expect(messages({ weeklyDays: [3], hasEndDate: true, endDate: '2026-10-20' })).toEqual([])
   })
 
   it('終了日だけを変えるときは、開いた回の日の前の日まで早められる', () => {
@@ -76,6 +77,23 @@ describe('createRecurringRuleChangeSchema', () => {
 
   it('終了日を決めて日付を入れていなければ、入れることを促す', () => {
     expect(messages({ hasEndDate: true, endDate: '' })).toEqual(['終了日を入力してください'])
+  })
+
+  it('毎週で曜日を 1 つも選ばなければ、選ぶことを促す', () => {
+    expect(messages({ weeklyDays: [] })).toEqual(['曜日を 1 つ以上選んでください'])
+  })
+
+  it('毎週の間隔は 1〜52 の整数だけを受け、空の欄も拒む', () => {
+    const message = '間隔は 1〜52 の週の数で入力してください'
+    expect(messages({ interval: 0 })).toEqual([message])
+    expect(messages({ interval: 53 })).toEqual([message])
+    expect(messages({ interval: 1.5 })).toEqual([message])
+    expect(messages({ interval: Number.NaN })).toEqual([message])
+    expect(messages({ interval: 52 })).toEqual([])
+  })
+
+  it('毎月では、使わない曜日と間隔の欄を確認しない', () => {
+    expect(messages({ frequency: 'monthly', weeklyDays: [], interval: 0 })).toEqual([])
   })
 })
 
@@ -111,8 +129,8 @@ describe('複数の曜日と間隔の毎週の規則', () => {
   const send = (recurrence: Partial<typeof biweekly>) =>
     recurringRuleToSend({ recurrence: { ...biweekly, ...recurrence } }, biweekly, BIWEEKLY)
 
-  it('欄の値は、元の曜日の並びと間隔を持ち、曜日の欄に並びの先頭の曜日を入れる', () => {
-    expect(biweekly).toMatchObject({ dayOfWeek: 1, weeklyDays: [1, 4], interval: 2 })
+  it('欄の値は、元の曜日の並びと間隔を持ち、毎月の曜日には開いた回の曜日を入れる', () => {
+    expect(biweekly).toMatchObject({ dayOfWeek: 4, weeklyDays: [1, 4], interval: 2 })
     expect(toRecurringRule(biweekly)).toMatchObject({ daysOfWeek: [1, 4], interval: 2 })
   })
 
@@ -137,9 +155,17 @@ describe('複数の曜日と間隔の毎週の規則', () => {
     })
   })
 
-  it('曜日の欄を並びの先頭から変えたときは、選んだ曜日と元の間隔を送り、先頭に戻せば元の並びを送る', () => {
-    expect(send({ dayOfWeek: 3 })).toMatchObject({ daysOfWeek: [3], interval: 2 })
-    expect(send({ dayOfWeek: 1 })).toEqual(BIWEEKLY)
+  it('曜日を足したときは、月曜から日曜の順に並べて、元の間隔で送る', () => {
+    expect(send({ weeklyDays: [4, 1, 3] })).toMatchObject({ daysOfWeek: [1, 3, 4], interval: 2 })
+  })
+
+  it('間隔を変えたときは、元の曜日の並びと新しい間隔を送る', () => {
+    expect(send({ interval: 3 })).toEqual({ ...BIWEEKLY, interval: 3 })
+  })
+
+  it('曜日の並びを選んだ順の違いだけで変えても、変えていないものとして扱う', () => {
+    const result = biweeklySchema.safeParse({ recurrence: { ...biweekly, weeklyDays: [4, 1] } })
+    expect(result.success).toBe(false)
   })
 
   it('毎月の規則から毎週に変えたときは、曜日の欄の 1 つの曜日と、間隔 1 を送る', () => {

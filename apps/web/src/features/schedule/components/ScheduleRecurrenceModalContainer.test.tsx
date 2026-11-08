@@ -42,6 +42,47 @@ describe('ScheduleRecurrenceModalContainer', () => {
     expect(screen.getByTestId(`recurring-rule-day-of-week-${weekday}`)).toBeChecked()
   })
 
+  it('「カスタム…」で曜日を足し、間隔を 2 にして保存すると、曜日の並びと間隔を送る', async () => {
+    const { api, history } = apiOf(Weekly.parameters)
+    if (history === undefined) throw new Error('story に履歴が無い')
+    const opened = '/schedule/recurring-occurrence/recurrence'
+    history.push(opened)
+    const changeRule = vi.spyOn(api.schedules, 'changeRule')
+    render(<Weekly />)
+    await userEvent.selectOptions(await screen.findByTestId('recurring-rule-preset'), 'custom')
+    const weekday = isoWeekdayOf(tokyoDateFromToday(1))
+    const other = (weekday % 7) + 1
+    await userEvent.click(screen.getByTestId(`recurring-rule-day-of-week-${other}`))
+    await userEvent.clear(screen.getByTestId('recurring-rule-interval'))
+    await userEvent.type(screen.getByTestId('recurring-rule-interval'), '2')
+    await userEvent.click(screen.getByTestId('schedule-recurrence-submit'))
+
+    await waitFor(() => expect(changeRule).toHaveBeenCalledOnce())
+    expect(changeRule.mock.calls[0]?.[2].rule).toMatchObject({
+      frequency: 'weekly',
+      daysOfWeek: [weekday, other].sort((a, b) => a - b),
+      interval: 2,
+    })
+    // 保存するとカレンダーへ移り、同じ story の後のテストが欄を開けないので、開いた URL に戻す
+    history.push(opened)
+  })
+
+  it('曜日を全て外すか、間隔を 53 にして保存すると、誤りの文を出し、規則の変更を送らない', async () => {
+    const { api } = apiOf(Weekly.parameters)
+    const changeRule = vi.spyOn(api.schedules, 'changeRule')
+    render(<Weekly />)
+    await userEvent.selectOptions(await screen.findByTestId('recurring-rule-preset'), 'custom')
+    const weekday = isoWeekdayOf(tokyoDateFromToday(1))
+    await userEvent.click(screen.getByTestId(`recurring-rule-day-of-week-${weekday}`))
+    await userEvent.clear(screen.getByTestId('recurring-rule-interval'))
+    await userEvent.type(screen.getByTestId('recurring-rule-interval'), '53')
+    await userEvent.click(screen.getByTestId('schedule-recurrence-submit'))
+
+    expect(await screen.findByText('曜日を 1 つ以上選んでください')).toBeInTheDocument()
+    expect(screen.getByText('間隔は 1〜52 の週の数で入力してください')).toBeInTheDocument()
+    expect(changeRule).not.toHaveBeenCalled()
+  })
+
   it('今の規則が選択肢のどれとも違えば、「カスタム…」を開いた形で始める', async () => {
     render(<StartsCustom />)
     expect(await screen.findByTestId('recurring-rule-preset')).toHaveValue('custom')
