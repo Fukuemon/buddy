@@ -170,7 +170,7 @@
   }
 }
 
-/* 間隔の欄。見出しを隠した 44px の数の欄（packages/ui の NumberPicker の isLabelHidden）の右に「週ごと」を置く */
+/* 間隔の欄。44px の数の欄の右に「週ごと」を置き、誤りの文は欄と「週ごと」の下に出す */
 .sr-interval {
   display: flex;
   align-items: center;

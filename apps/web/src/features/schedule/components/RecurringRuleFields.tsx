@@ -8,7 +8,7 @@ import {
   type UseFormReturn,
 } from 'react-hook-form'
 
-import { DatePicker, NumberPicker, Select } from '@buddy/ui'
+import { DatePicker, Select, fieldControlClassName } from '@buddy/ui'
 
 import {
   isoWeekdayOf,
@@ -239,7 +239,7 @@ export const RecurringRuleFields = <T extends RecurringRuleFormShape>({
               control={control}
               name="recurrence.frequency"
               render={({ field }) => (
-                <div className="w-28">
+                <div className="w-36">
                   <Select
                     data-testid="recurring-rule-frequency"
                     id={`${id}-frequency`}
@@ -256,22 +256,41 @@ export const RecurringRuleFields = <T extends RecurringRuleFormShape>({
           </Row>
           {recurrence.frequency === 'weekly' ? (
             <>
-              <Row label="間隔">
-                <div className="flex items-center gap-3">
-                  <div className="w-24">
-                    <NumberPicker
-                      control={control}
-                      data-testid="recurring-rule-interval"
-                      isLabelHidden
-                      isWide
-                      label="間隔"
-                      max={52}
-                      min={1}
-                      name="recurrence.interval"
-                    />
-                  </div>
-                  <span className="self-start leading-11">週ごと</span>
-                </div>
+              <Row htmlFor={`${id}-interval`} label="間隔">
+                <Controller
+                  control={control}
+                  name="recurrence.interval"
+                  render={({ field, fieldState }) => (
+                    <div className="flex flex-col gap-1">
+                      {/* 誤りの文を欄の幅で折り返さず、「週ごと」の下まで使って出すため、NumberPicker の枠を使わない */}
+                      <div className="flex items-center gap-3">
+                        <input
+                          aria-describedby={
+                            fieldState.error === undefined ? undefined : `${id}-interval-error`
+                          }
+                          aria-invalid={fieldState.error === undefined ? undefined : true}
+                          className={clsx(fieldControlClassName, 'h-11 w-24 px-4 text-body')}
+                          data-testid="recurring-rule-interval"
+                          id={`${id}-interval`}
+                          max={52}
+                          min={1}
+                          name={field.name}
+                          onBlur={field.onBlur}
+                          onChange={(event) => field.onChange(event.target.valueAsNumber)}
+                          ref={field.ref}
+                          type="number"
+                          value={Number.isNaN(field.value) ? '' : field.value}
+                        />
+                        <span>週ごと</span>
+                      </div>
+                      {fieldState.error?.message !== undefined && (
+                        <span className="text-caption text-danger" id={`${id}-interval-error`}>
+                          {fieldState.error.message}
+                        </span>
+                      )}
+                    </div>
+                  )}
+                />
               </Row>
               <Row label="曜日" labelId={dayOfWeekLabelId}>
                 <Controller
