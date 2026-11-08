@@ -272,21 +272,15 @@ test.describe('予定の API', () => {
                   token,
                   OKADA.facilityId,
                   fromNextMonday(0),
-                  fromNextMonday(21),
+                  fromNextMonday(20),
                 )
-                const recurring = listed.recurring_schedules.map((rs) => rs.title)
-                const reviewed = listed.schedules
-                  .filter((s) => s.review_reason !== null)
-                  .map((s) => s.title)
-                expect(
-                  recurring.includes(biweekly) &&
-                    recurring.includes(twice) &&
-                    !reviewed.includes(biweekly) &&
-                    !reviewed.includes(twice),
-                ).toBe(true)
+                const reasons = (title: string) =>
+                  listed.schedules.filter((s) => s.title === title).map((s) => s.review_reason)
+                expect(reasons(biweekly)).toEqual([null, null])
+                expect(reasons(twice)).toEqual([null, null, null, null, null, null])
               }).toPass()
               await check(
-                `予定の一覧（listSchedules）で、2 つとも繰り返しの予定（recurring_schedules）に入り、review_reason の付いた予定に無い`,
+                `予定の一覧（listSchedules）の ${fromNextMonday(0)} から 3 週に、「${biweekly}」の回が 2 件、「${twice}」の回が 6 件出て、どれも review_reason が null である`,
               )
               await checkDay(
                 page,
