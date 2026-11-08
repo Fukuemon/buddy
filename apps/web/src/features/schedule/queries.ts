@@ -5,6 +5,7 @@ import type { BuddyApi } from '#/api/BuddyApi'
 import type {
   FacilityId,
   NameSearchParams,
+  RecurringRule,
   RecurringRuleChange,
   Schedule,
   ScheduleInput,
@@ -97,6 +98,21 @@ export const useCreateSchedule = (id: Schedule['id']) => {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (input: ScheduleInput) => api.schedules.create(facilityId, input, id),
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: queryKeys.schedules.all(facilityId) }),
+  })
+}
+
+/**
+ * ID が id の繰り返しの予定を作る。id は useCreateSchedule と同じく、送り直しでも同じ値を渡す。
+ * 成功すると、事業所の予定の取得の結果を捨てて取り直す。
+ */
+export const useCreateRecurringSchedule = (id: string) => {
+  const { api, facilityId } = useBuddyApi()
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ input, rule }: { input: ScheduleInput; rule: RecurringRule }) =>
+      api.schedules.createRecurring(facilityId, input, rule, id),
     onSuccess: () =>
       queryClient.invalidateQueries({ queryKey: queryKeys.schedules.all(facilityId) }),
   })

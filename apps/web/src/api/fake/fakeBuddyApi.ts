@@ -31,6 +31,7 @@ import type {
   TeamInput,
 } from '../types'
 import { MOCK_FACILITY_ID } from '#/mocks/scheduleData'
+import { occurrenceId } from '../http/recurrence'
 import { fromApiSchedule } from '../http/scheduleMapper'
 import { FAKE_VIEWER, createFakeSchedules, fakeTeams } from './fixtures'
 import { createFakePatientApi, createFakePatientRecords } from './fakePatientApi'
@@ -349,6 +350,25 @@ export const createFakeBuddyApi = ({
         else schedules.set(scheduleId, { ...current, cancel: { reason } })
       },
       // フェイクの予定は回を規則から求めないので、適用の日以降の回の規則だけを書き換え、回の日は動かさない
+      // 回を求めず、最初の回だけを、繰り返しの予定を指す予定として置く
+      createRecurring: async (facilityId, input, rule, id) => {
+        assertFacility(facilityId)
+        assertWritable()
+        const date = input.startsAt.slice(0, 10)
+        const first = occurrenceId(id, date)
+        if (!schedules.has(first)) {
+          schedules.set(
+            first,
+            toWritten({
+              ...input,
+              id: first,
+              facilityId,
+              recurrence: { recurringScheduleId: id, rule },
+            }),
+          )
+        }
+        return { id, date }
+      },
       changeRule: async (facilityId, recurringScheduleId, { effectiveDate, rule, id }, etag) => {
         assertFacility(facilityId)
         assertWritable()

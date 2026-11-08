@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
 import { Controller, useWatch, type UseFormReturn } from 'react-hook-form'
 
 import type { Patient, ServiceCodeRecord, Staff } from '#/api/types'
@@ -15,7 +15,14 @@ import { ScheduleDateTimeEdit } from './ScheduleDateTimeEdit'
 import { ScheduleFieldSummaryList, type ScheduleFieldSummaryItem } from './ScheduleFieldSummaryList'
 import { StaffSelectList } from './StaffSelectList'
 
-type FieldId = 'title' | 'date-time' | 'patient' | 'staff' | 'category' | 'description'
+type FieldId =
+  | 'title'
+  | 'date-time'
+  | 'recurrence'
+  | 'patient'
+  | 'staff'
+  | 'category'
+  | 'description'
 
 /** 選ぶ項目で、まだ選んでいないときに出す文。 */
 const SELECT_PLACEHOLDER = '選んでください'
@@ -31,6 +38,8 @@ export type ScheduleFormProps = {
   /** 予定の API のサービスコードの一覧。訪問の予定のサービスコードの選択肢にする。 */
   serviceCodes: readonly ServiceCodeRecord[]
   onSubmit: (values: ScheduleFormValues) => void | Promise<void>
+  /** 渡したときだけ、日時の下に「繰り返し」の項目を出し、押すと field を右に出す。予定の作成が使う。 */
+  recurrence?: { summary: string; error?: string; field: ReactNode }
 }
 
 /**
@@ -48,6 +57,7 @@ export const ScheduleForm = ({
   patients,
   serviceCodes,
   onSubmit,
+  recurrence,
 }: ScheduleFormProps) => {
   const [activeField, setActiveField] = useState<FieldId>('date-time')
   // 誤りの欄は閉じた編集の欄にあることがあるので、左の一覧の最初の誤りの項目へフォーカスを移す
@@ -116,6 +126,16 @@ export const ScheduleForm = ({
         errors.serviceCode?.message ??
         errors.serviceTime?.message,
     },
+    ...(recurrence === undefined
+      ? []
+      : [
+          {
+            id: 'recurrence' as const,
+            label: '繰り返し',
+            content: recurrence.summary,
+            error: recurrence.error,
+          },
+        ]),
     ...(isVisit
       ? [
           {
@@ -179,6 +199,7 @@ export const ScheduleForm = ({
             serviceCodes={serviceCodes}
           />
         )}
+        {visibleField === 'recurrence' && recurrence?.field}
         {visibleField === 'patient' && (
           <Controller
             control={control}

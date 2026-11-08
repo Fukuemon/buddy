@@ -13,6 +13,7 @@ const {
   FromSlot,
   GooglePrimary,
   GooglePrimaryWriteUnknown,
+  NormalFromSlot,
   PatientServiceCodeUnlisted,
   SelfEditOnly,
   Visit,
@@ -191,5 +192,124 @@ describe('ScheduleCreateModalContainer', () => {
     const [first, second] = create.mock.calls.map((call) => call[2])
     expect(first).toMatch(/^[0-7][0-9A-HJKMNP-TV-Z]{25}$/)
     expect(second).toBe(first)
+  })
+
+  describe('繰り返し', () => {
+    const fillTitle = async () => {
+      await userEvent.click(await screen.findByTestId('schedule-field-title'))
+      await userEvent.type(screen.getByTestId('schedule-form-title'), '研修')
+    }
+    const spyApi = () => {
+      const { api } = NormalFromSlot.parameters.appRouter as AppRouterParameters
+      if (api === undefined) throw new Error('story にフェイクの API が無い')
+      return {
+        create: vi.spyOn(api.schedules, 'create'),
+        createRecurring: vi.spyOn(api.schedules, 'createRecurring'),
+      }
+    }
+
+    it('「繰り返しの予定にする」を選ばずに作成すると、単発の予定を作る', async () => {
+      const { create, createRecurring } = spyApi()
+      render(<NormalFromSlot />)
+      expect(await screen.findByTestId('schedule-field-recurrence')).toHaveTextContent(
+        '繰り返さない',
+      )
+      await fillTitle()
+      await userEvent.click(screen.getByTestId('schedule-create-submit'))
+
+      await waitFor(() => expect(create).toHaveBeenCalledOnce())
+      expect(createRecurring).not.toHaveBeenCalled()
+    })
+
+    it('「繰り返しの予定にする」を選んで作成すると、日付の曜日の毎週の繰り返しの予定を作る', async () => {
+      const { create, createRecurring } = spyApi()
+      render(<NormalFromSlot />)
+      await fillTitle()
+      await userEvent.click(screen.getByTestId('schedule-field-recurrence'))
+      await userEvent.click(screen.getByTestId('schedule-form-repeats'))
+      expect(screen.getByTestId('schedule-field-recurrence')).toHaveTextContent('毎週 水曜日')
+      await userEvent.click(screen.getByTestId('schedule-create-submit'))
+
+      await waitFor(() => expect(createRecurring).toHaveBeenCalledOnce())
+      const [, input, rule, id] = createRecurring.mock.calls[0]
+      expect(input.startsAt.slice(0, 10)).toBe('2026-10-21')
+      expect(rule).toEqual({
+        frequency: 'weekly',
+        daysOfWeek: [3],
+        interval: 1,
+        dayOfWeek: null,
+        dayOfMonth: null,
+        weekOfMonth: null,
+        endDate: null,
+      })
+      expect(id).toMatch(/^[0-7][0-9A-HJKMNP-TV-Z]{25}$/)
+      expect(create).not.toHaveBeenCalled()
+    })
+
+    it('カスタムで曜日を足し、間隔を 2 にすると、隔週の複数の曜日の繰り返しの予定を作る', async () => {
+      const { createRecurring } = spyApi()
+      render(<NormalFromSlot />)
+      await fillTitle()
+      await userEvent.click(screen.getByTestId('schedule-field-recurrence'))
+      await userEvent.click(screen.getByTestId('schedule-form-repeats'))
+      await userEvent.selectOptions(screen.getByTestId('recurring-rule-preset'), 'custom')
+      await userEvent.click(screen.getByTestId('recurring-rule-day-of-week-5'))
+      await userEvent.clear(screen.getByTestId('recurring-rule-interval'))
+      await userEvent.type(screen.getByTestId('recurring-rule-interval'), '2')
+      expect(screen.getByTestId('schedule-field-recurrence')).toHaveTextContent(
+        '隔週 水曜日、金曜日',
+      )
+      await userEvent.click(screen.getByTestId('schedule-create-submit'))
+
+      await waitFor(() => expect(createRecurring).toHaveBeenCalledOnce())
+      expect(createRecurring.mock.calls[0][2]).toMatchObject({ daysOfWeek: [3, 5], interval: 2 })
+    })
+
+    it('日付が繰り返しの回に当たらなければ、理由を出して送らない', async () => {
+      const { createRecurring } = spyApi()
+      render(<NormalFromSlot />)
+      await fillTitle()
+      await userEvent.click(screen.getByTestId('schedule-field-recurrence'))
+      await userEvent.click(screen.getByTestId('schedule-form-repeats'))
+      await userEvent.selectOptions(screen.getByTestId('recurring-rule-preset'), 'custom')
+      await userEvent.click(screen.getByTestId('recurring-rule-day-of-week-4'))
+      await userEvent.click(screen.getByTestId('recurring-rule-day-of-week-3'))
+      await userEvent.click(screen.getByTestId('schedule-create-submit'))
+
+      expect(await screen.findByTestId('schedule-field-recurrence')).toHaveTextContent(
+        '日付が繰り返しの回に当たりません。日付か繰り返しを変えてください',
+      )
+      expect(createRecurring).not.toHaveBeenCalled()
+    })
+
+    it('終了日が日付より前なら、理由を出して送らない', async () => {
+      const { createRecurring } = spyApi()
+      render(<NormalFromSlot />)
+      await fillTitle()
+      await userEvent.click(screen.getByTestId('schedule-field-recurrence'))
+      await userEvent.click(screen.getByTestId('schedule-form-repeats'))
+      await userEvent.click(screen.getByTestId('recurring-rule-ends-on'))
+      fireEvent.change(screen.getByTestId('recurring-rule-end-date'), {
+        target: { value: '2026-10-20' },
+      })
+      await userEvent.click(screen.getByTestId('schedule-create-submit'))
+
+      expect(await screen.findByTestId('schedule-field-recurrence')).toHaveTextContent(
+        '終了日は日付以降にしてください',
+      )
+      expect(createRecurring).not.toHaveBeenCalled()
+    })
+
+    it('日付を変えると、日付から作った選択肢の繰り返しを、新しい日付の曜日にする', async () => {
+      render(<NormalFromSlot />)
+      await userEvent.click(await screen.findByTestId('schedule-field-recurrence'))
+      await userEvent.click(screen.getByTestId('schedule-form-repeats'))
+      await userEvent.click(screen.getByTestId('schedule-field-date-time'))
+      fireEvent.change(screen.getByTestId('schedule-form-date'), {
+        target: { value: '2026-10-22' },
+      })
+
+      expect(screen.getByTestId('schedule-field-recurrence')).toHaveTextContent('毎週 木曜日')
+    })
   })
 })
