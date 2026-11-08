@@ -25,7 +25,7 @@ packages/ui のトークンとコンポーネントの使い方と、アクセ�
 | 文書 | 持つ規則 |
 | --- | --- |
 | [トークン](https://github.com/Fukuemon/buddy/blob/develop/packages/ui/design/tokens.md) | トークンの層、セマンティックトークンの使う場面、照合の結果の色、チームの色、文字、角丸、影、ブレークポイント |
-| [コンポーネント](https://github.com/Fukuemon/buddy/blob/develop/packages/ui/design/components.md) | 画面の枠、コンポーネントの選び方、入力の欄の状態、コンポーネントごとの規則と DADS から外れる理由 |
+| [コンポーネント](https://github.com/Fukuemon/buddy/blob/develop/packages/ui/design/components.md) | 画面の枠、コンポーネントの選び方、入力の欄の状態、コンポーネントごとの規則と DADS から外れる理由、パターン |
 | [カタログ](https://github.com/Fukuemon/buddy/blob/develop/packages/ui/design/catalog.md) | Storybook のカタログのページ、title の規則、カタログに載せてよいもの |
 
 ## 知りたいことごとの参照先
@@ -38,6 +38,22 @@ packages/ui のトークンとコンポーネントの使い方と、アクセ�
 | トークンに置き換える前の apps/web の値が、どのトークンになったか | [置き換える前のテーマとトークンの対応表](https://github.com/Fukuemon/buddy/blob/develop/packages/ui/src/tokens/current-theme-map.md) |
 | コンポーネントの props と振る舞い | `src/base/` と `src/case/` のコンポーネントのコードと story |
 | 構成の判断と、却下した案 | [ADR の索引のデザインシステムとドキュメントサイト](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/index.md#デザインシステムとドキュメントサイト) |
+
+## 元にしたデザインシステムとの関係
+
+DADS が使う側に任せる値には buddy の選択を、DADS が変えないとする要件には確認の方法を書く。  
+DADS の指針から外れる規則は、この表に並べない。その規則の隣に、DADS が求めることと外れる理由を書く。
+
+| 項目 | DADS の扱い | buddy |
+| --- | --- | --- |
+| 主の色 | 使う側が、同じ色相の階調からキーカラーを選ぶ。主要な背景色と 4.5:1 以上を保つ色にする | `primary` に light-blue の階調を当てる。どの段を指すかは `src/tokens/semantic.css` にある |
+| 余白の段 | 絶対の値を決めず、使う側が基準の単位と倍率を決める | Tailwind のデフォルトの段（1 段 4px）で書き、ブロックの間を 8px の倍数にする。規則は原則 `SPACING-SCALE` にある |
+| コントラスト | 変えない。WCAG 2.2 の AA を満たす | 確認: 「アクセシビリティ」の文字のコントラストと、文字でないもののコントラストの行 |
+| フォーカスの表示 | 変えない。Yellow-300 と黒の 2 重の表示を、どの場合も変えない | `focus-ring` だけを使う。確認: 原則 `FOCUS-ONE` |
+| 状態の色相と意味の対応 | 変えない。成功は緑、エラーは赤、警告は黄か橙にする。明るさは、コントラストを保つ範囲で使う側が変えてよい | `success` を緑、`danger` を赤、`warning` を橙の階調に当てる。確認: レビューで、`src/tokens/semantic.css` の状態のトークンが同じ色相を指すかを見る |
+
+- 出典: [DADS の色](https://design.digital.go.jp/dads/foundations/color/)
+- 出典: [DADS の余白](https://design.digital.go.jp/dads/foundations/spacing/)
 
 ## 画面を作るときの原則
 
@@ -187,6 +203,32 @@ packages/ui のトークンとコンポーネントの使い方と、アクセ�
 | コミットしていない変更 | なし、またはあり。ありのときは、変えたファイルの一覧（`git status --short` の出力） |
 | デザインシステムの文書のバージョン | この文書と 3 つの文書のどれかを最後に変えたコミットの SHA（`git log -1 --format=%H -- packages/ui/DESIGN.md packages/ui/design`）。どれかにコミットしていない変更があれば、そのことも書く |
 
+## アクセシビリティ
+
+DADS が参照する WCAG 2.2 の AA を基準にし、DADS の指針の値を使う。  
+動きを減らす設定だけは、AA に無い AAA の 2.3.3 を基準にする。  
+基準ごとに、自動で確認する方法を決める。自動で確認できないものは、レビューで見るものを書く。
+
+- 出典: [DADS のアクセシビリティ](https://design.digital.go.jp/dads/guidance/accessibility/)
+- ADR-0015: [アクセシビリティは WCAG 2.2 の AA を基準にし、自動で確認する](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0015-accessibility.md)
+
+| 項目 | 基準 | 確認の方法 |
+| --- | --- | --- |
+| 文字のコントラスト | 4.5:1 以上。面の上の状態の色の文字も含む | 全ての story で Storybook の a11y のアドオン（axe）を動かし、違反を `pnpm --filter @buddy/ui test` の失敗にする。セマンティックトークンの組は `pnpm check:contrast` でも計算する |
+| 文字でないもののコントラスト | 入力欄と押せるものの枠（`border-field`）と、フォーカスの表示が 3:1 以上 | セマンティックトークンの組を `pnpm check:contrast` で計算する。axe は枠の色を確認しないため |
+| フォーカスの見え方 | 全ての操作できる要素で、`:focus-visible` に `focus-ring` を出す | 原則 `FOCUS-ONE` の確認のとおり |
+| ターゲットの大きさ | 押せる領域が 44×44 CSS px 以上 | 原則 `TARGET-SIZE` の確認のとおり |
+| キーボードの操作 | [コンポーネントの文書](https://github.com/Fukuemon/buddy/blob/develop/packages/ui/design/components.md#コンポーネントの選び方)の「コンポーネントの選び方」の表と、コンポーネントごとの規則のとおりに動く | コンポーネントのテスト（`pnpm --filter @buddy/ui test`）で、キーを押した結果を確認する |
+| 入力の誤りの伝え方 | コンポーネントの文書の[「`FormField`、`NumberPicker`、`TextareaField`」](https://github.com/Fukuemon/buddy/blob/develop/packages/ui/design/components.md#formfieldnumberpickertextareafield)の規則のとおりに、欄ごとの誤りの文を欄の説明として伝える | コンポーネントのテスト（`pnpm --filter @buddy/ui test` の `fields.test.tsx`、`FormField.test.tsx`、`useFocusFirstInvalid.test.tsx`）で、誤りの文を欄に結び付けることと、送った後のフォーカスの位置を確認する |
+| 動きを減らす設定 | 原則 `MOTION-REDUCE` のとおり。AAA の 2.3.3 | 原則 `MOTION-REDUCE` の確認のとおり |
+
 ## トークン
 
 トークンの層と、セマンティックトークン、文字、角丸、影、ブレークポイントの使い方は、[トークンの文書](https://github.com/Fukuemon/buddy/blob/develop/packages/ui/design/tokens.md) にある。
+
+## 決まっていない選択
+
+DADS にも、デザインシステムの文書の規則にもない選択を、選択、案、理由で書く。  
+決まったら規則のセクションへ移し、ここから消す。
+
+- ダイアログとドロワーの中から、別のダイアログを開くか: 案は 2 つある。1 つ目は、確認のダイアログ（`ConfirmDialog`）だけを開いてよいとし、ほかのダイアログは開かない。2 つ目は、どのダイアログも開かない。カタログの `Dialog`、`Modal`、`Drawer` のページは、開かないとしていた。一方で、コンポーネントの文書の「`Modal`、`Dialog`」の規則は、フッターのデータを失う操作の起点のボタンから確認のダイアログを開く形を、予定の詳細の「予定をキャンセル」を例にして書いている。今の画面に合うのは 1 つ目である。
