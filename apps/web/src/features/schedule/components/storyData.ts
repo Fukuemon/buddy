@@ -5,7 +5,9 @@ import {
   fakeStaffList,
   fakeTeams,
 } from '#/api/fake/fixtures'
-import type { Viewer } from '#/api/types'
+import type { BuddyApi } from '#/api/BuddyApi'
+import { createFakeBuddyApi } from '#/api/fake/fakeBuddyApi'
+import type { RecurringRule, Viewer } from '#/api/types'
 import { fromApiSchedule } from '#/api/http/scheduleMapper'
 import {
   createMockCalendarSyncs,
@@ -48,3 +50,50 @@ export const selfEditViewer: Viewer = {
 
 /** 予定の権限を持たない、ログインした職員（青木 一郎）。自分の予定だけを見られる。 */
 export const noSchedulePolicyViewer: Viewer = { ...FAKE_VIEWER, schedulePolicies: [] }
+
+const DAY_MS = 24 * 60 * 60 * 1000
+
+/** 今日（Asia/Tokyo）から days 日後の YYYY-MM-DD。 */
+export const tokyoDateFromToday = (days: number) =>
+  new Date(Date.now() + 9 * 60 * 60 * 1000 + days * DAY_MS).toISOString().slice(0, 10)
+
+/** 毎週の、終了日の無い繰り返しの規則。曜日は最初の日付から決まる。 */
+export const WEEKLY_RULE: RecurringRule = {
+  frequency: 'weekly',
+  dayOfWeek: null,
+  dayOfMonth: null,
+  weekOfMonth: null,
+  endDate: null,
+}
+
+/**
+ * 今日から days 日後の、繰り返しの予定の回（訪問の予定の schedule-1 を写したもの）を、どの ID でも読むフェイクの API。
+ * replaced なら、1 回を置き換えた単発の予定にする。規則の変更は、適用の日を最初の日付にした新しい繰り返しの予定を返す。
+ * 予定の詳細、編集、繰り返しの変更は同じ 1 件の取得で読むので、どの story でも同じ回を出す。
+ */
+export const recurringOccurrenceApi = (
+  days: number,
+  { rule = WEEKLY_RULE, replaced = false }: { rule?: RecurringRule; replaced?: boolean } = {},
+): BuddyApi => {
+  const api = createFakeBuddyApi()
+  const date = tokyoDateFromToday(days)
+  return {
+    ...api,
+    schedules: {
+      ...api.schedules,
+      get: async (facilityId, scheduleId) => ({
+        ...(await api.schedules.get(facilityId, 'schedule-1')),
+        id: scheduleId,
+        startsAt: `${date}T09:00:00+09:00`,
+        endsAt: `${date}T09:29:00+09:00`,
+        ...(replaced
+          ? { replacedOccurrence: true as const }
+          : { recurrence: { recurringScheduleId: 'recurring-1', rule } }),
+      }),
+      changeRule: async (_facilityId, _recurringScheduleId, change) => ({
+        id: change.id,
+        date: change.effectiveDate,
+      }),
+    },
+  }
+}

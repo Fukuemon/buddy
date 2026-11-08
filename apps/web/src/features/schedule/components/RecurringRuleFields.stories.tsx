@@ -26,7 +26,7 @@ const FieldsStory = ({ rule, baseDate, endDateError }: FieldsStoryProps) => {
       form.setError('recurrence.endDate', { type: 'custom', message: endDateError })
     }
   }, [form, endDateError])
-  return <RecurringRuleFields form={form} />
+  return <RecurringRuleFields baseDate={baseDate} form={form} />
 }
 
 const meta = {
@@ -81,5 +81,12 @@ export const Invalid: Story = {
       endDate: '2026-10-01',
     },
     endDateError: '繰り返しを変えるときは、終了日を 2026-10-20 以降にしてください',
+  },
+}
+
+/** 選択肢（毎週火曜、毎月 20 日、毎月第 3 火曜）のどれとも違う毎週木曜。「カスタム…」を開いた形で始める。 */
+export const Custom: Story = {
+  args: {
+    rule: { frequency: 'weekly', dayOfWeek: 4, dayOfMonth: null, weekOfMonth: null, endDate: null },
   },
 }

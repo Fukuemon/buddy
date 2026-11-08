@@ -1,5 +1,5 @@
 import type { Patient, Schedule, Staff } from '#/api/types'
-import { Button, Modal } from '@buddy/ui'
+import { ActionMenu, Button, Modal } from '@buddy/ui'
 import { useId } from 'react'
 
 import {
@@ -16,6 +16,11 @@ export type ScheduleDetailModalProps = {
   patient?: Patient
   /** 編集の画面へ移る。省くと編集のボタンを出さない。編集の権限が無い予定で省く。 */
   onEdit?: () => void
+  /**
+   * 渡すと、「編集」を、「この予定を編集」（onEdit）と「繰り返しを変更」（onChangeRecurrence.onSelect）が出るメニューにする。繰り返しの予定の回で渡す。
+   * blockedReason を渡すと、「繰り返しを変更」を押せなくし、その理由を項目の下に出す。onEdit を省いたときは使わない。
+   */
+  onChangeRecurrence?: { onSelect: () => void; blockedReason?: string }
   /** キャンセルのダイアログを開く。省くとキャンセルのボタンを出さない。キャンセルできない予定で省く。 */
   onCancelSchedule?: () => void
   onClose: () => void
@@ -47,6 +52,7 @@ export const ScheduleDetailModal = ({
   staff,
   patient,
   onEdit,
+  onChangeRecurrence,
   onCancelSchedule,
   onClose,
 }: ScheduleDetailModalProps) => {
@@ -77,11 +83,33 @@ export const ScheduleDetailModal = ({
                     予定をキャンセル
                   </Button>
                 )}
-                {onEdit !== undefined && (
-                  <Button data-testid="schedule-detail-edit" onClick={onEdit} variant="secondary">
-                    編集
-                  </Button>
-                )}
+                {onEdit !== undefined &&
+                  (onChangeRecurrence === undefined ? (
+                    <Button data-testid="schedule-detail-edit" onClick={onEdit} variant="secondary">
+                      編集
+                    </Button>
+                  ) : (
+                    <ActionMenu
+                      data-testid="schedule-detail-edit"
+                      items={[
+                        {
+                          label: 'この予定を編集',
+                          onSelect: onEdit,
+                          'data-testid': 'schedule-detail-edit-occurrence',
+                        },
+                        {
+                          label: '繰り返しを変更',
+                          onSelect: onChangeRecurrence.onSelect,
+                          'data-testid': 'schedule-detail-edit-recurrence',
+                          disabled: onChangeRecurrence.blockedReason !== undefined,
+                          description: onChangeRecurrence.blockedReason,
+                        },
+                      ]}
+                      label="編集"
+                      placement="top"
+                      triggerLabel="編集"
+                    />
+                  ))}
               </>
             )
           : undefined

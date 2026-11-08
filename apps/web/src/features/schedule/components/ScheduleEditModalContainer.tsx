@@ -15,9 +15,7 @@ import {
   scheduleLoadErrorMessage,
   scheduleSubmitErrorMessage,
 } from '../lib/errorMessage'
-import { toTokyoDateKey } from '../lib/dateTime'
 import { canAddVisitInfo } from '../lib/reviewFix'
-import { newScheduleId } from '../lib/scheduleId'
 import {
   createScheduleFormValues,
   defaultServiceCode,
@@ -30,18 +28,12 @@ import {
   scheduleQueryOptions,
   serviceCodeListQueryOptions,
   staffListQueryOptions,
-  useChangeRecurringRule,
   useUpdateSchedule,
 } from '../queries'
-import { createRecurringRuleChangeSchema, recurringRuleToSend } from '../schema/recurringRuleChange'
-import { toRecurringRuleFormValues, type RecurringRuleFormShape } from '../schema/recurringRuleForm'
 import { createScheduleFormSchema, type ScheduleFormValues } from '../schema/scheduleForm'
 import { pickCalendarSearch, type ScheduleSearch } from '../schema/scheduleSearch'
-import { RecurringRuleFields } from './RecurringRuleFields'
-import { ScheduleFormModal, type ScheduleEditScope } from './ScheduleFormModal'
+import { ScheduleFormModal } from './ScheduleFormModal'
 import { ScheduleLatestNotice } from './ScheduleLatestNotice'
-
-const RULE_FORM_ID = 'schedule-rule-form'
 
 type ScheduleEditFormProps = {
   schedule: Schedule
@@ -102,27 +94,6 @@ const ScheduleEditForm = ({
     form.reset(next, { keepDefaultValues: true })
   }
 
-  const occurrenceDate = toTokyoDateKey(new Date(schedule.startsAt))
-  const recurrence = schedule.recurrence
-  const [scope, setScope] = useState<ScheduleEditScope>('occurrence')
-  const [ruleInitial] = useState(() => toRecurringRuleFormValues(recurrence?.rule, occurrenceDate))
-  const ruleForm = useForm<RecurringRuleFormShape>({
-    defaultValues: { recurrence: ruleInitial },
-    resolver: zodResolver(createRecurringRuleChangeSchema(ruleInitial, occurrenceDate)),
-  })
-  // 送り直しでも同じ ID を送る。google_primary で元の親に書けずに失敗したとき、新しい親を重ねずにやり直すためである
-  const [newRecurringId] = useState(() => newScheduleId())
-  const changeRule = useChangeRecurringRule(schedule.id)
-  const [isPastOccurrence] = useState(() => occurrenceDate < toTokyoDateKey(new Date()))
-
-  const showLatestIfChanged = async (error: unknown) => {
-    if (!isGoogleEventChanged(error)) return
-    const current = await api.schedules.get(facilityId, schedule.id).catch(() => undefined)
-    if (current === undefined) return
-    setLatest(current)
-    setETag(current.etag ?? null)
-  }
-
   // 繰り返しの回を保存すると、回は新しい単発の予定に置き換わるので、保存した予定の ID の詳細へ戻る。
   // Google カレンダーの予定の詳細はカレンダーの期間の一覧から引くので、保存した日をカレンダーの日にする
   const backToDetail = (scheduleId: Schedule['id'] = schedule.id, date = calendarSearch.date) =>
@@ -132,72 +103,11 @@ const ScheduleEditForm = ({
       search: { ...calendarSearch, date },
     })
 
-  const submitRuleChange = async (values: RecurringRuleFormShape) => {
-    if (recurrence === undefined) return
-    try {
-      const changed = await changeRule.mutateAsync({
-        recurringScheduleId: recurrence.recurringScheduleId,
-        change: {
-          effectiveDate: occurrenceDate,
-          rule: recurringRuleToSend(values, ruleInitial, recurrence.rule),
-          id: newRecurringId,
-        },
-        etag,
-      })
-      // 開いた回は別の繰り返しの予定の回に替わり、その日に回が無くなることもあるので、詳細ではなくカレンダーへ戻る
-      await navigate({
-        to: '/schedule',
-        search: {
-          ...calendarSearch,
-          date: changed.date > occurrenceDate ? changed.date : occurrenceDate,
-        },
-      })
-    } catch (error) {
-      await showLatestIfChanged(error)
-    }
-  }
-
-  const ruleBody = isPastOccurrence ? (
-    <p data-testid="schedule-edit-rule-past">
-      今日より前の回からは、繰り返しを変えられません。今日以降の回を開いて変えてください。
-    </p>
-  ) : (
-    <form
-      className="flex max-w-120 flex-col gap-6"
-      id={RULE_FORM_ID}
-      noValidate
-      onSubmit={ruleForm.handleSubmit(submitRuleChange)}
-    >
-      <p data-testid="schedule-edit-rule-lead">
-        {occurrenceDate} 以降の回の繰り返しだけを変え、時刻、職員、内容は今のままにします。
-      </p>
-      <RecurringRuleFields form={ruleForm} />
-    </form>
-  )
-
-  const following = scope === 'following'
-  const failed = following ? changeRule : updateSchedule
-
   return (
     <ScheduleFormModal
       form={form}
       onClose={() => backToDetail()}
       onKindChange={kindChangeable ? changeKind : undefined}
-      scope={
-        recurrence === undefined
-          ? undefined
-          : {
-              value: scope,
-              onChange: setScope,
-              following: {
-                body: ruleBody,
-                formId: RULE_FORM_ID,
-                isSubmitting: ruleForm.formState.isSubmitting,
-                isDirty: ruleForm.formState.isDirty,
-                canSubmit: !isPastOccurrence,
-              },
-            }
-      }
       notice={
         latest === undefined ? undefined : (
           <ScheduleLatestNotice latest={latest} patients={patients} staffList={staffList} />
@@ -208,14 +118,22 @@ const ScheduleEditForm = ({
           const saved = await updateSchedule.mutateAsync({ input: toScheduleInput(values), etag })
           await backToDetail(saved.id, values.scheduleDate)
         } catch (error) {
-          await showLatestIfChanged(error)
+          if (!isGoogleEventChanged(error)) return
+          const current = await api.schedules.get(facilityId, schedule.id).catch(() => undefined)
+          if (current === undefined) return
+          setLatest(current)
+          setETag(current.etag ?? null)
         }
       }}
       patients={patients}
       serviceCodes={serviceCodes}
       staffCandidates={staffCandidates}
       staffList={staffList}
-      submitError={failed.isError ? scheduleSubmitErrorMessage(failed.error, '更新') : undefined}
+      submitError={
+        updateSchedule.isError
+          ? scheduleSubmitErrorMessage(updateSchedule.error, '更新')
+          : undefined
+      }
       submitLabel="保存"
       submitTestId="schedule-edit-submit"
       cancelTestId="schedule-edit-cancel"

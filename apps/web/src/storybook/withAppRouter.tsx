@@ -35,6 +35,7 @@ export type StoryRouteId =
   | '/schedule/new'
   | '/schedule/$scheduleId/'
   | '/schedule/$scheduleId/edit'
+  | '/schedule/$scheduleId/recurrence'
   | '/receipt/'
   | '/receipt/result'
   | '/schedule_/link'
@@ -116,6 +117,11 @@ const createStoryRouter = (Story: StoryFn, params: AppRouterParameters) => {
     getParentRoute: () => schedule,
     path: '$scheduleId/edit',
     component: atScheduleId('/schedule/$scheduleId/edit'),
+  })
+  const scheduleRecurrence = createRoute({
+    getParentRoute: () => schedule,
+    path: '$scheduleId/recurrence',
+    component: atScheduleId('/schedule/$scheduleId/recurrence'),
   })
   const receipt = createRoute({
     getParentRoute: () => root,
@@ -200,7 +206,7 @@ const createStoryRouter = (Story: StoryFn, params: AppRouterParameters) => {
 
   const router = createRouter({
     routeTree: root.addChildren([
-      schedule.addChildren([scheduleNew, scheduleDetail, scheduleEdit]),
+      schedule.addChildren([scheduleNew, scheduleDetail, scheduleEdit, scheduleRecurrence]),
       receipt,
       receiptResult,
       scheduleLink,

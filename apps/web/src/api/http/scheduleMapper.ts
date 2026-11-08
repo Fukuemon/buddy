@@ -156,6 +156,9 @@ export const fromApiSchedule = (schedule: ApiSchedule): Schedule => {
       recurringScheduleId: schedule.recurring_schedule_id,
       rule: fromApiRecurringRule(schedule.recurring_rule),
     }
+  } else if (schedule.recurring_schedule_id !== null) {
+    // 規則が無く、繰り返しの予定を指す予定は、1 回を置き換えた単発の予定である
+    result.replacedOccurrence = true
   }
   return result
 }
