@@ -401,6 +401,7 @@ describe('createHttpBuddyApi', () => {
       '01M3TC6E9G4N8Q2R5T7V9W1X3Y',
       {
         effectiveDate: '2026-10-20',
+        firstWeekDate: '2026-10-19',
         rule: {
           frequency: 'weekly',
           daysOfWeek: [3],
@@ -420,6 +421,7 @@ describe('createHttpBuddyApi', () => {
         id: '01M3TC6E9G4N8Q2R5T7V9W1X3Y',
         body: {
           effective_date: '2026-10-20',
+          first_week_date: '2026-10-19',
           recurring_rule: {
             frequency: 'weekly',
             days_of_week: [3],

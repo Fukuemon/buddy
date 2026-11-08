@@ -165,6 +165,11 @@ export type RecurringRule = {
 /** 繰り返しの規則の変更。effectiveDate（YYYY-MM-DD）以降の回に rule を当てる（ADR-0037）。 */
 export type RecurringRuleChange = {
   effectiveDate: string
+  /**
+   * 新しい規則の 1 週目を決める日（YYYY-MM-DD）。分けるときは、この日を含む週から毎週の間隔を数える（ADR-0038）。
+   * 画面は開いた回の日を渡す。省くと effectiveDate を使う。
+   */
+  firstWeekDate?: string
   rule: RecurringRule
   /** 繰り返しの予定を分けるときの、新しい繰り返しの予定の ID。送り直しでも同じ値を渡す。 */
   id: string

@@ -85,6 +85,8 @@ const ARGS = {
     id,
     z.object({
       effectiveDate: date,
+      // この項目を送る前の画面からも受けるため、省いてよい
+      firstWeekDate: date.optional(),
       id,
       rule: z.object({
         frequency: z.enum(['weekly', 'monthly']),
