@@ -289,7 +289,6 @@ pnpm check:design   # 色の値、プリミティブトークンの名前、14px
 - ロゴのように値が外で決まる行だけは、同じ行のコメントに `design-system-allow` と理由を書いて外す。
 - 次の 4 つは、agent-harness のパッケージ design-system のテンプレートを写したものである。
   - `scripts/check-contrast.mjs`、`scripts/build-static-tokens.mjs`、`scripts/check-raw-values.mjs`、`scripts/check-utilities.mjs`
-  - `scripts/check-raw-values.mjs` には、違反の行に原則の ID を出す変更を足してある。
   - パッケージを上げたら、スキル setup-design-system の手順で差分を見て取り込む。
 
 デザインシステムへのレビューの指摘は、スキル write-design-system の「指摘を扱う」の手順で、提案として扱う。  

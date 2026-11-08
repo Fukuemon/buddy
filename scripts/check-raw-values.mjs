@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // 画面とコンポーネントのコードに、色の値とプリミティブトークンの変数の名前が直に書かれていないかを確認する。
-// 写した後に、TARGETS、EXCLUDES、BASE_PREFIXES を、自分のリポジトリに合わせて書き換える。
+// コピーした後に、TARGETS、EXCLUDES、BASE_PREFIXES を、自分のリポジトリに合わせて書き換える。
 // 使い方: node check-raw-values.mjs [--prefix <プリミティブトークンの接頭辞>]... [--exclude <パス>]... [ファイルかディレクトリ]...
 //   引数のパスを省くと TARGETS を読む。--prefix と --exclude を渡すと、BASE_PREFIXES と EXCLUDES の代わりに使う。
 //   ディレクトリは、EXTENSIONS の拡張子のファイルを再帰で読む。node_modules と、. で始まるディレクトリは読まない。
@@ -19,7 +19,8 @@ import { extname, join, relative, resolve, sep } from "node:path";
 
 // 画面とコンポーネントのコードの置き場
 const TARGETS = ["./apps/web/src", "./apps/broker/src", "./packages/ui/src"];
-// トークンの層のファイルのように、値とプリミティブトークンの名前を持ってよい置き場
+// 値とプリミティブトークンの名前を持ってよい置き場。トークンの層のファイル、生成物（API のクライアントのように、生成し直して差分を見るもの）、
+// 色の値を並べるトークンのカタログのページの 3 つを並べる。生成物とトークンのカタログのページは、画面のコードではない
 const EXCLUDES = ["./packages/ui/src/tokens", "./apps/web/src/api/generated"];
 // プリミティブトークンの変数の名前の接頭辞
 const BASE_PREFIXES = ["--buddy-primitive-"];
