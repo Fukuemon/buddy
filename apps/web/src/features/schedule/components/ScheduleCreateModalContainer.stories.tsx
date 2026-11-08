@@ -75,6 +75,14 @@ export const FromSlot: Story = {
   parameters: route({ url: '/schedule/new?start=2026-10-21&time=13:00&staffId=staff-2' }),
 }
 
+/** 2026-10-21（水曜日）の 13 時の、通常の予定。繰り返しの選択肢は水曜日と 21 日と第 3 水曜日から作る。 */
+export const NormalFromSlot: Story = {
+  parameters: route({
+    url: '/schedule/new?kind=normal&start=2026-10-21&time=13:00&staffId=staff-2',
+    api: createFakeBuddyApi(),
+  }),
+}
+
 export const ListFailed: Story = { parameters: route({ api: failingBuddyApi() }) }
 
 /** 止めた職員（石川 二葉）がいる事業所。主訪問者の候補に、止めた職員を出さない。 */

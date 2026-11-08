@@ -252,6 +252,19 @@ export const createHttpBuddyApi = ({ baseUrl, fetch }: HttpApiOptions): BuddyApi
           }),
         )
       },
+      createRecurring: async (facilityId, input, rule, id) => {
+        const created = await unwrap(
+          client.POST('/v1/facilities/{facility_id}/schedules/recurring', {
+            params: { path: { facility_id: facilityId } },
+            body: {
+              ...toSlotRequest(input, await listMasters()),
+              recurring_rule: toApiRecurringRule(rule),
+              id,
+            },
+          }),
+        )
+        return { id: created.id, date: created.date }
+      },
       changeRule: async (_facilityId, recurringScheduleId, { effectiveDate, rule, id }, etag) => {
         const body = {
           effective_date: effectiveDate,

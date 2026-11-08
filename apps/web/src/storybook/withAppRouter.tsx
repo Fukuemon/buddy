@@ -287,6 +287,7 @@ const buddyApiOf = (operation: () => Promise<never>): BuddyApi => ({
     create: operation,
     update: operation,
     cancel: operation,
+    createRecurring: operation,
     changeRule: operation,
   },
   staff: {

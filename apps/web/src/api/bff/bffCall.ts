@@ -54,6 +54,15 @@ const patientInput = z.object({
 })
 const calendarId = z.string().min(1).max(1024)
 const date = z.iso.date()
+const recurringRule = z.object({
+  frequency: z.enum(['weekly', 'monthly']),
+  daysOfWeek: z.array(z.number().int().min(1).max(7)).min(1).max(7).nullable(),
+  interval: z.number().int().min(1).max(52).nullable(),
+  dayOfWeek: z.number().int().min(1).max(7).nullable(),
+  dayOfMonth: z.number().int().min(1).max(31).nullable(),
+  weekOfMonth: z.number().int().min(1).max(5).nullable(),
+  endDate: date.nullable(),
+})
 const importRange = z.object({ range_start: date, range_end: date.nullable().optional() })
 const decision = z.object({
   external_event_id: z.string().min(1).max(1024),
@@ -80,22 +89,11 @@ const ARGS = {
   'schedules.create': z.tuple([id, scheduleInput, id]),
   'schedules.update': z.tuple([id, id, scheduleInput, etag.nullable()]),
   'schedules.cancel': z.tuple([id, id, z.string().min(1).max(255), etag.nullable()]),
+  'schedules.createRecurring': z.tuple([id, scheduleInput, recurringRule, id]),
   'schedules.changeRule': z.tuple([
     id,
     id,
-    z.object({
-      effectiveDate: date,
-      id,
-      rule: z.object({
-        frequency: z.enum(['weekly', 'monthly']),
-        daysOfWeek: z.array(z.number().int().min(1).max(7)).min(1).max(7).nullable(),
-        interval: z.number().int().min(1).max(52).nullable(),
-        dayOfWeek: z.number().int().min(1).max(7).nullable(),
-        dayOfMonth: z.number().int().min(1).max(31).nullable(),
-        weekOfMonth: z.number().int().min(1).max(5).nullable(),
-        endDate: date.nullable(),
-      }),
-    }),
+    z.object({ effectiveDate: date, id, rule: recurringRule }),
     etag.nullable(),
   ]),
   'staff.list': z.tuple([id, nameSearch]),

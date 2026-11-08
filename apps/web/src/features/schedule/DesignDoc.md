@@ -75,6 +75,11 @@ web と予定の API の責務と依存は、[buddy Design Doc](https://github.c
 - 予定の作成と予定の編集は、送る前に、BFF が予定の種類、サービスコード、訪問の区分のマスタ（`listScheduleTypes`、`listServiceCodes`、`listVisitCategories`）を読み、画面の値を ID にする。
   - マスタを読めないか、当たる値が無ければ、予定の API を呼ばずに失敗にする。
 - 予定の作成は、画面の主訪問者を、予定の職員（`staff_id`）と訪問の担当（`visit_info.assigned_staff_id`）の両方に送る。
+- 予定の作成で「繰り返しの予定にする」を選ぶと、BFF は繰り返しの予定を作る（`POST /v1/facilities/{facility_id}/schedules/recurring`）。
+  - 予定の日時と訪問の情報は単発の予定と同じに変換し、日付を最初の日付にして、規則（`recurring_rule`）を足して送る。
+  - 予定の API は、最初の日付が規則の回に当たらない規則を 400 で拒む。画面は送る前に同じ条件を確認し、繰り返しの欄に理由を出す（`apps/web/src/features/schedule/schema/scheduleCreateForm.ts`）。
+  - 繰り返しの予定の `id` は、単発の予定の ID とは別に、フォームを開いたときに作る。送り直しでも同じ値を送る。
+  - 規則の欄は、繰り返しの変更と同じ `apps/web/src/features/schedule/components/RecurringRuleFields.tsx` を使う。
 - 予定の編集は、保存の前に今の予定を読み直し、画面が持たない値を今の予定から引き継ぐ（`apps/web/src/api/http/scheduleMapper.ts` の `keepCurrentVisit`）。
   - 読み直せなければ失敗にする。
   - 訪問の予定どうしの保存では、同行者とタイトルを今の予定の値のまま送る。

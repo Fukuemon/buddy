@@ -22,6 +22,7 @@ import type {
   Position,
   ReceiptReport,
   ReceiptCsvError,
+  RecurringRule,
   RecurringRuleChange,
   Schedule,
   ScheduleInput,
@@ -133,6 +134,16 @@ export interface BuddyApi {
       reason: string,
       etag: string | null,
     ): Promise<void>
+    /**
+     * input の日時を最初の回にし、規則 rule で繰り返す、ID が id の繰り返しの予定を作る。作った繰り返しの予定の ID と最初の日付を返す。
+     * input の開始の日付が rule の回に当たらないときは、status が 400 の ApiError を投げる。id の扱いは create と同じである。
+     */
+    createRecurring(
+      facilityId: FacilityId,
+      input: ScheduleInput,
+      rule: RecurringRule,
+      id: string,
+    ): Promise<{ id: string; date: string }>
     /**
      * 繰り返しの予定 recurringScheduleId（Schedule.recurrence.recurringScheduleId）の規則を、change.effectiveDate 以降の回について変える（ADR-0037）。
      * etag は、画面が回を読んだときの etag（親の予定の etag）で、google_primary の事業所では必須である。buddy の予定では null を渡す。
