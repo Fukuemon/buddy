@@ -97,10 +97,11 @@ test.describe('予定の取り込み', () => {
         ).toHaveCount(1)
       })
 
-      await test.step('繰り返しの回を開いて保存すると、その回を置き換えた予定の詳細に戻る', async () => {
+      await test.step('繰り返しの回を開き、「編集」のメニューの「この予定を編集」から保存すると、その回を置き換えた予定の詳細に戻る', async () => {
         await page.getByTestId(/^schedule-event-.+-2026-11-25$/).click()
         await expect(page.getByTestId('schedule-detail-datetime')).toContainText('2026年11月25日')
         await page.getByTestId('schedule-detail-edit').click()
+        await page.getByTestId('schedule-detail-edit-occurrence').click()
         await page.getByTestId('schedule-edit-submit').click()
         await expect(page.getByTestId('schedule-detail-modal')).toBeVisible()
         await expect(page).toHaveURL(/\/schedule\/[0-9A-HJKMNP-TV-Z]{26}\?/)
