@@ -4,9 +4,15 @@ import { userEvent, within } from 'storybook/test'
 
 import { ApiError, type BuddyApi } from '#/api/BuddyApi'
 import { createFakeBuddyApi } from '#/api/fake/fakeBuddyApi'
+import { FAKE_VIEWER } from '#/api/fake/fixtures'
+import { queryKeys } from '#/api/queryKeys'
+import type { ScheduleList } from '#/api/types'
 import { withAppRouter, type AppRouterParameters } from '#/storybook/withAppRouter'
 
+import { getCalendarRange } from '../lib/calendarRange'
+import { toDateKey } from '../lib/dateTime'
 import { isoWeekdayOf } from '../schema/recurringRuleForm'
+import { resolveCalendarView } from '../schema/scheduleSearch'
 import { cutoverBuddyApi, recurringOccurrenceApi, tokyoDateFromToday } from './storyData'
 import { ScheduleRecurrenceModalContainer } from './ScheduleRecurrenceModalContainer'
 
@@ -146,6 +152,38 @@ export const Replaced: Story = {
 export const Cutover: Story = {
   parameters: route({
     api: recurringOccurrenceApi(1, { base: cutoverBuddyApi(), sourceId: 'gcal-schedule-1' }),
+  }),
+}
+
+/**
+ * 切り替えをやめた後に開き直した。予定の一覧の cache には切り替え中の古い結果が残っているが、開いてから読み直した一覧は切り替えていない。
+ * 読み直し終えてから決めるので、欄を出す。
+ */
+export const StaleCutoverCache: Story = {
+  parameters: route({
+    api: recurringOccurrenceApi(1, {
+      base: createFakeBuddyApi({ sourceMode: 'google_primary', calendarSyncs: [] }),
+      sourceId: 'gcal-schedule-1',
+    }),
+    seed: (queryClient) => {
+      const stale: ScheduleList = {
+        schedules: [],
+        needsReview: [],
+        sourceMode: 'google_primary',
+        calendarSyncs: [],
+        cutover: {
+          started_at: '2026-11-01T00:00:00Z',
+          started_by: 'staff-1',
+          started_by_name: '青木 一郎',
+          range_start: '2026-11-01',
+        },
+      }
+      const range = getCalendarRange(resolveCalendarView(undefined), toDateKey(new Date()))
+      queryClient.setQueryData(
+        queryKeys.schedules.list(FAKE_VIEWER.facilityId, { ...range, includeCancelled: false }),
+        stale,
+      )
+    },
   }),
 }
 

@@ -19,6 +19,7 @@ const {
   Past,
   Replaced,
   RuleChangedInGoogle,
+  StaleCutoverCache,
   StartsCustom,
   Weekly,
 } = composeStories(stories)
@@ -260,5 +261,11 @@ describe('ScheduleRecurrenceModalContainer', () => {
     expect(await screen.findByTestId('schedule-recurrence-error')).toHaveTextContent(
       '予定の正本を buddy に切り替えています。',
     )
+  })
+
+  it('予定の一覧の cache に切り替え中の古い結果が残っていても、開いてから読み直した一覧が切り替えていなければ欄を出す', async () => {
+    render(<StaleCutoverCache />)
+    expect(await screen.findByTestId('recurring-rule-preset')).toBeInTheDocument()
+    expect(screen.queryByTestId('schedule-recurrence-cutover')).not.toBeInTheDocument()
   })
 })
