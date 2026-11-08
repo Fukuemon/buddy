@@ -33,7 +33,7 @@ func TestImport(t *testing.T) {
 		t.Fatalf("予定 %d、繰り返し %d、対応 %d", len(e.store.Schedules), len(e.store.Recurring), len(e.store.Links))
 	}
 	rs := recurringOf(t, e, "weekly")
-	if rs.Rule.Frequency != schedule.Weekly || *rs.Rule.DayOfWeek != 1 || rs.Date != (civil.Date{Year: 2026, Month: 11, Day: 2}) {
+	if rs.Rule.Frequency != schedule.Weekly || !slices.Equal(rs.Rule.DaysOfWeek, []int{1}) || rs.Date != (civil.Date{Year: 2026, Month: 11, Day: 2}) {
 		t.Errorf("繰り返し = %+v", rs)
 	}
 	nov := func(d int) civil.Date { return civil.Date{Year: 2026, Month: 11, Day: d} }
@@ -270,7 +270,7 @@ func TestImportExpandedMovedOutOfRange(t *testing.T) {
 	srv := &gcaltest.Server{
 		Calendars: map[string][][]*calendarv3.Event{googleCalID: {{
 			grecurring(gevent("biweekly", "定例", "2026-11-03T16:00:00+09:00", "2026-11-03T17:00:00+09:00"),
-				"RRULE:FREQ=WEEKLY;INTERVAL=2"),
+				"RRULE:FREQ=WEEKLY;INTERVAL=2;BYDAY=TU,SU"),
 			// 11-17 の回を 12-01 に動かした。Instances は今の日時で絞るので、期間の 11 月には返らない
 			gexception("biweekly_1117", "biweekly", "定例", "2026-12-01T16:00:00+09:00", "2026-12-01T17:00:00+09:00", "2026-11-17T16:00:00+09:00"),
 		}}},

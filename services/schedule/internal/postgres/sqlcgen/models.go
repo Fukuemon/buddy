@@ -302,7 +302,7 @@ type RecurringSchedule struct {
 	IsOverTimeWork bool
 	// weekly、monthly
 	Frequency string
-	// 1（月曜）から 7
+	// 1（月曜）から 7。毎月の week_of_month と組で使う。前のバージョンのアプリは毎週の曜日にも書く
 	DayOfWeek *int16
 	// 1 から 31
 	DayOfMonth *int16
@@ -316,6 +316,10 @@ type RecurringSchedule struct {
 	Version int32
 	// 終了が翌日か。全ての回が同じ値を持つ
 	EndsNextDay bool
+	// 毎週の、重ならない 1（月曜）から 7 の曜日を月曜から日曜の順に並べたもの。毎月は NULL。毎週の NULL は day_of_week か最初の日付の曜日として読む
+	DaysOfWeek []int16
+	// 毎週の間隔の週の数。1 が毎週、2 が隔週。日曜に始まる週で、最初の日付を含む週から数える。毎月は 1
+	IntervalWeeks int16
 }
 
 type RecurringScheduleDetail struct {
@@ -350,6 +354,8 @@ type RecurringScheduleDetail struct {
 	UpdatedAt         time.Time
 	Version           int32
 	EndsNextDay       bool
+	DaysOfWeek        []int16
+	IntervalWeeks     int16
 }
 
 // 繰り返しの予定のうち、回にしない日

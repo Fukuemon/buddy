@@ -17,6 +17,7 @@ import (
 	tcpostgres "github.com/testcontainers/testcontainers-go/modules/postgres"
 
 	"github.com/Fukuemon/buddy/services/schedule/db"
+	"github.com/Fukuemon/buddy/services/schedule/internal/civil"
 )
 
 // testImage は、compose と CI と同じ PostgreSQL のイメージである。
@@ -242,7 +243,7 @@ func TestMigrateDownAndUp(t *testing.T) {
 	if err := MigrateUp(cfg); err != nil {
 		t.Fatal(err)
 	}
-	if err := MigrateDown(cfg, 19); err != nil {
+	if err := MigrateDown(cfg, 20); err != nil {
 		t.Fatal(err)
 	}
 	pool, err := Open(ctx, cfg)
@@ -283,8 +284,8 @@ func TestMigrateReceiptCheckPolicy(t *testing.T) {
 	if err := MigrateUp(cfg); err != nil {
 		t.Fatal(err)
 	}
-	// 後に続く職員の訪問するか（000010）、終了が翌日の予定（000011）、事業所の正本のモード（000012）、予定の写し（000013）、切り替え（000014）、予定の写しの取り消しの行（000015）、Google カレンダーに書いた予定の記録（000016）、記録の読み戻し（000017）、予定を移す書き込みと一覧での予定の ID（000018）、繰り返しの回の一覧での予定の ID（000019）のマイグレーションと合わせて戻す
-	if err := MigrateDown(cfg, 11); err != nil {
+	// 後に続く職員の訪問するか（000010）、終了が翌日の予定（000011）、事業所の正本のモード（000012）、予定の写し（000013）、切り替え（000014）、予定の写しの取り消しの行（000015）、Google カレンダーに書いた予定の記録（000016）、記録の読み戻し（000017）、予定を移す書き込みと一覧での予定の ID（000018）、繰り返しの回の一覧での予定の ID（000019）、毎週の複数の曜日と間隔（000020）のマイグレーションと合わせて戻す
+	if err := MigrateDown(cfg, 12); err != nil {
 		t.Fatal(err)
 	}
 	pool, err := Open(ctx, cfg)
@@ -376,7 +377,7 @@ func TestMigrateReceiptCheckPolicy(t *testing.T) {
 	}
 
 	// 戻しても事務の役職は残り、照合の権限だけが消える。
-	if err := MigrateDown(cfg, 11); err != nil {
+	if err := MigrateDown(cfg, 12); err != nil {
 		t.Fatal(err)
 	}
 	if got, want := clerkPolicies(t, pool, facility), []string{"schedule.all.edit", "schedule.all.read"}; !slices.Equal(got, want) {
@@ -416,8 +417,8 @@ func TestMigrateTeamColor(t *testing.T) {
 	if err := MigrateUp(cfg); err != nil {
 		t.Fatal(err)
 	}
-	// 後に続く照合の権限（000009）、職員の訪問するか（000010）、終了が翌日の予定（000011）、事業所の正本のモード（000012）、予定の写し（000013）、切り替え（000014）、予定の写しの取り消しの行（000015）、Google カレンダーに書いた予定の記録（000016）、記録の読み戻し（000017）、予定を移す書き込みと一覧での予定の ID（000018）、繰り返しの回の一覧での予定の ID（000019）のマイグレーションと合わせて戻す
-	if err := MigrateDown(cfg, 12); err != nil {
+	// 後に続く照合の権限（000009）、職員の訪問するか（000010）、終了が翌日の予定（000011）、事業所の正本のモード（000012）、予定の写し（000013）、切り替え（000014）、予定の写しの取り消しの行（000015）、Google カレンダーに書いた予定の記録（000016）、記録の読み戻し（000017）、予定を移す書き込みと一覧での予定の ID（000018）、繰り返しの回の一覧での予定の ID（000019）、毎週の複数の曜日と間隔（000020）のマイグレーションと合わせて戻す
+	if err := MigrateDown(cfg, 13); err != nil {
 		t.Fatal(err)
 	}
 	pool, err := Open(ctx, cfg)
@@ -466,6 +467,100 @@ func TestMigrateTeamColor(t *testing.T) {
 	}
 }
 
+// TestMigrateRecurringWeeklyDays は、毎週の複数の曜日と間隔のマイグレーションが、今ある毎週の行を、今の曜日
+// （値が無ければ最初の日付の曜日）の 1 つの並びと間隔 1 に移し、毎月の行を変えないことを確認する（ADR-0038）。
+// 移した後の行を読んだ規則は、前と同じ日に回を持つ。
+func TestMigrateRecurringWeeklyDays(t *testing.T) {
+	cfg := newDatabase(t, "migrate_recurring_weekly_days")
+	ctx := context.Background()
+	if err := MigrateUp(cfg); err != nil {
+		t.Fatal(err)
+	}
+	if err := MigrateDown(cfg, 1); err != nil {
+		t.Fatal(err)
+	}
+	pool, err := Open(ctx, cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer pool.Close()
+	const (
+		facility = "01M3TF00000000000000000010"
+		dept     = "01M3TF00000000000000000011"
+		team     = "01M3TF00000000000000000012"
+		position = "01M3TF00000000000000000013"
+		staff    = "01M3TF00000000000000000014"
+		normal   = "01M3TC68E05E1N46YCCBT6ZQB2"
+		withDay  = "01M3TF00000000000000000020"
+		noDay    = "01M3TF00000000000000000021"
+		monthly  = "01M3TF00000000000000000022"
+	)
+	// 2026-10-07 は水曜、2026-10-11 は日曜
+	_, err = pool.Exec(ctx, `
+		INSERT INTO facilities (id, name) VALUES ('`+facility+`', '事業所');
+		INSERT INTO positions (id, facility_id, name) VALUES ('`+position+`', '`+facility+`', '看護師');
+		INSERT INTO departments (id, facility_id, name) VALUES ('`+dept+`', '`+facility+`', '看護');
+		INSERT INTO teams (id, facility_id, name, color) VALUES ('`+team+`', '`+facility+`', 'A', 'blue');
+		INSERT INTO users (id, facility_id, username, email, department_id, team_id, position_id) VALUES
+			('`+staff+`', '`+facility+`', '職員', 'staff@example.com', '`+dept+`', '`+team+`', '`+position+`');
+		INSERT INTO recurring_schedules (id, facility_id, staff_id, schedule_type_id, date, start_time, end_time, title,
+		                                 frequency, day_of_week, day_of_month, week_of_month) VALUES
+			('`+withDay+`', '`+facility+`', '`+staff+`', '`+normal+`', '2026-10-07', '09:00', '10:00', '曜日あり', 'weekly', 3, NULL, NULL),
+			('`+noDay+`', '`+facility+`', '`+staff+`', '`+normal+`', '2026-10-11', '09:00', '10:00', '曜日なし', 'weekly', NULL, NULL, NULL),
+			('`+monthly+`', '`+facility+`', '`+staff+`', '`+normal+`', '2026-10-07', '09:00', '10:00', '毎月', 'monthly', 3, NULL, 1);`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := MigrateUp(cfg); err != nil {
+		t.Fatal(err)
+	}
+	for id, want := range map[string]string{withDay: "[3] 1 <nil>", noDay: "[7] 1 <nil>", monthly: "[] 1 3"} {
+		var (
+			days     []int16
+			interval int16
+			dow      *int16
+		)
+		if err := pool.QueryRow(ctx, "SELECT days_of_week, interval_weeks, day_of_week FROM recurring_schedules WHERE id = $1", id).
+			Scan(&days, &interval, &dow); err != nil {
+			t.Fatal(err)
+		}
+		got := fmt.Sprintf("%v %d %v", days, interval, derefInt16(dow))
+		if got != want {
+			t.Errorf("繰り返しの予定 %s の days_of_week、interval_weeks、day_of_week = %s, want %s", id, got, want)
+		}
+	}
+	repo := NewRecurringScheduleRepository(pool)
+	for id, wantDays := range map[string][]int{withDay: {3}, noDay: {7}} {
+		rs, err := repo.GetForUpdate(ctx, id)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !slices.Equal(rs.Rule.DaysOfWeek, wantDays) || rs.Rule.Interval != 1 || rs.Rule.DayOfWeek != nil {
+			t.Errorf("繰り返しの予定 %s の規則 = %+v, want 曜日 %v の毎週", id, rs.Rule, wantDays)
+		}
+		next := civil.DateOf(rs.Date.Time().AddDate(0, 0, 7))
+		if !rs.HasOccurrenceOn(next) || rs.HasOccurrenceOn(civil.DateOf(rs.Date.Time().AddDate(0, 0, 1))) {
+			t.Errorf("繰り返しの予定 %s の回が、移す前の毎週の曜日と違う", id)
+		}
+	}
+	if _, err := pool.Exec(ctx, "UPDATE recurring_schedules SET days_of_week = '{}' WHERE id = $1", withDay); err == nil {
+		t.Error("空の曜日の並びを入れられた")
+	}
+	if _, err := pool.Exec(ctx, "UPDATE recurring_schedules SET interval_weeks = 53 WHERE id = $1", withDay); err == nil {
+		t.Error("53 週の間隔を入れられた")
+	}
+	if _, err := pool.Exec(ctx, "UPDATE recurring_schedules SET interval_weeks = 2 WHERE id = $1", monthly); err == nil {
+		t.Error("毎月の行に間隔を入れられた")
+	}
+}
+
+func derefInt16(v *int16) any {
+	if v == nil {
+		return nil
+	}
+	return *v
+}
+
 // TestMigrateFacilitySourceMode は、正本のモードのマイグレーションが、今ある事業所を buddy_primary にし、
 // 後から足す事業所のデフォルトを google_primary にし、2 つの値のほかを拒むことを確認する（ADR-0029）。
 func TestMigrateFacilitySourceMode(t *testing.T) {
@@ -474,7 +569,7 @@ func TestMigrateFacilitySourceMode(t *testing.T) {
 	if err := MigrateUp(cfg); err != nil {
 		t.Fatal(err)
 	}
-	if err := MigrateDown(cfg, 8); err != nil {
+	if err := MigrateDown(cfg, 9); err != nil {
 		t.Fatal(err)
 	}
 	pool, err := Open(ctx, cfg)

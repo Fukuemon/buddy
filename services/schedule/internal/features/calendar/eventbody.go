@@ -137,7 +137,13 @@ func RecurrenceOf(rs schedule.RecurringSchedule, exdates []civil.Date) []string 
 	var rule string
 	switch {
 	case r.Frequency == schedule.Weekly:
-		rule = "FREQ=WEEKLY;BYDAY=" + weekdayCodes[dow]
+		// 週の始まりを日曜にし、Google が展開する隔週の回を buddy の回と一致させる（ADR-0039）
+		days := r.WithDays(rs.Date).DaysOfWeek
+		codes := make([]string, len(days))
+		for i, d := range days {
+			codes[i] = weekdayCodes[d]
+		}
+		rule = fmt.Sprintf("FREQ=WEEKLY;INTERVAL=%d;BYDAY=%s;WKST=SU", max(r.Interval, 1), strings.Join(codes, ","))
 	case r.WeekOfMonth != nil:
 		rule = fmt.Sprintf("FREQ=MONTHLY;BYDAY=%d%s", *r.WeekOfMonth, weekdayCodes[dow])
 	default:

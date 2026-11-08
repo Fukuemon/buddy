@@ -31,6 +31,8 @@ type SlotInput struct {
 // RuleInput は、繰り返しの規則の入力である。
 type RuleInput struct {
 	Frequency   Frequency
+	DaysOfWeek  []int
+	Interval    int
 	DayOfWeek   *int
 	DayOfMonth  *int
 	WeekOfMonth *int

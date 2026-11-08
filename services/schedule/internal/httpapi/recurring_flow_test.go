@@ -51,7 +51,7 @@ func TestRecurringScheduleGooglePrimary(t *testing.T) {
 		t.Fatal(err)
 	}
 	events := google.Events(calendarAddr)
-	if len(events) != 1 || events[0].Id != parentID || len(events[0].Recurrence) != 1 || !strings.HasPrefix(events[0].Recurrence[0], "RRULE:FREQ=WEEKLY;BYDAY=MO;UNTIL=") {
+	if len(events) != 1 || events[0].Id != parentID || len(events[0].Recurrence) != 1 || !strings.HasPrefix(events[0].Recurrence[0], "RRULE:FREQ=WEEKLY;INTERVAL=1;BYDAY=MO;WKST=SU;UNTIL=") {
 		t.Fatalf("Google の予定 = %+v", events)
 	}
 	recurrence, parentETag := events[0].Recurrence, events[0].Etag
@@ -560,15 +560,15 @@ func TestRecurringRuleChangeGooglePrimary(t *testing.T) {
 
 	target := "/v1/schedules/recurring/" + newID + "/rule"
 	etag := strconv.Quote(google.Event(calendarAddr, parentID).Etag)
-	rule := `"recurring_rule":{"frequency":"weekly","day_of_week":2},"effective_date":"` + days[1].String() + `"`
+	rule := `"recurring_rule":{"frequency":"weekly","days_of_week":[2]},"effective_date":"` + days[1].String() + `"`
 	request(t, h, http.MethodPut, target, `{`+rule+`,"id":"`+nextID+`"}`, http.StatusBadRequest)
 	request(t, h, http.MethodPut, target, `{`+rule+`,"etag":`+etag+`}`, http.StatusBadRequest)
 	got := request(t, h, http.MethodPut, target, `{`+rule+`,"id":"`+nextID+`","etag":`+etag+`}`, http.StatusOK)
-	if got["id"] != nextID || got["date"] != nextDay(days[1]).String() || field(t, got, "recurring_rule", "day_of_week") != float64(2) ||
+	if got["id"] != nextID || got["date"] != nextDay(days[1]).String() || !reflect.DeepEqual(field(t, got, "recurring_rule", "days_of_week"), []any{float64(2)}) ||
 		got["title"] != "カンファレンス" {
 		t.Errorf("規則の変更の応答 = %v", got)
 	}
-	if ev := google.Event(calendarAddr, parentID); len(ev.Recurrence) != 1 || !strings.HasPrefix(ev.Recurrence[0], "RRULE:FREQ=WEEKLY;BYDAY=MO;UNTIL=") {
+	if ev := google.Event(calendarAddr, parentID); len(ev.Recurrence) != 1 || !strings.HasPrefix(ev.Recurrence[0], "RRULE:FREQ=WEEKLY;INTERVAL=1;BYDAY=MO;WKST=SU;UNTIL=") {
 		t.Errorf("元の親の予定の繰り返し = %v", ev.Recurrence)
 	}
 
@@ -599,10 +599,10 @@ func TestRecurringRuleChangeBuddyPrimary(t *testing.T) {
 	rsID, _ := rs["id"].(string)
 	target := "/v1/schedules/recurring/" + rsID + "/rule"
 
-	request(t, h, http.MethodPut, target, `{"recurring_rule":{"frequency":"weekly","day_of_week":2},"effective_date":"2000-01-04"}`, http.StatusBadRequest)
-	got := request(t, h, http.MethodPut, target, `{"recurring_rule":{"frequency":"weekly","day_of_week":2},"effective_date":"2099-01-12"}`, http.StatusOK)
+	request(t, h, http.MethodPut, target, `{"recurring_rule":{"frequency":"weekly","days_of_week":[2]},"effective_date":"2000-01-04"}`, http.StatusBadRequest)
+	got := request(t, h, http.MethodPut, target, `{"recurring_rule":{"frequency":"weekly","days_of_week":[2]},"effective_date":"2099-01-12"}`, http.StatusOK)
 	gotID, _ := got["id"].(string)
-	if gotID == "" || gotID == rsID || got["date"] != "2099-01-13" || field(t, got, "recurring_rule", "day_of_week") != float64(2) || got["title"] != "カンファレンス" {
+	if gotID == "" || gotID == rsID || got["date"] != "2099-01-13" || !reflect.DeepEqual(field(t, got, "recurring_rule", "days_of_week"), []any{float64(2)}) || got["title"] != "カンファレンス" {
 		t.Errorf("規則の変更の応答 = %v", got)
 	}
 	requireSameAsRead(t, h, got, "/v1/schedules/recurring/"+gotID)

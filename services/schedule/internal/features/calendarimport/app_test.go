@@ -74,9 +74,9 @@ func fixture() *gcaltest.Server {
 				"RRULE:FREQ=WEEKLY;BYDAY=MO"),
 			gcancelled("weekly_20261109", "weekly", "2026-11-09T09:00:00+09:00"),
 			gexception("weekly_20261116", "weekly", "【訪看I2】利用者A", "2026-11-16T15:00:00+09:00", "2026-11-16T15:30:00+09:00", "2026-11-16T09:00:00+09:00"),
-			// 隔週は写せないので回ごとにする。
+			// 月曜に始まる週の、日曜を含む隔週は写せないので回ごとにする。
 			grecurring(gevent("biweekly", "定例", "2026-11-03T16:00:00+09:00", "2026-11-03T17:00:00+09:00"),
-				"RRULE:FREQ=WEEKLY;INTERVAL=2"),
+				"RRULE:FREQ=WEEKLY;INTERVAL=2;BYDAY=TU,SU"),
 		}}},
 		Instances: map[string][]*calendarv3.Event{
 			"biweekly": {

@@ -272,7 +272,7 @@ func TestCalendarExportWritesStoredSchedules(t *testing.T) {
 		t.Errorf("訪問の予定 = %q, %q, %v - %v", single.Summary, single.Description, single.Start.DateTime, single.End.DateTime)
 	}
 	weekly := eventOf("aoki@example.com", seedRecurring)
-	if weekly.Summary != "週次の申し送り" || !slices.Equal(weekly.Recurrence, []string{"RRULE:FREQ=WEEKLY;BYDAY=MO"}) ||
+	if weekly.Summary != "週次の申し送り" || !slices.Equal(weekly.Recurrence, []string{"RRULE:FREQ=WEEKLY;INTERVAL=1;BYDAY=MO;WKST=SU"}) ||
 		weekly.Start.DateTime != "2026-10-05T17:30:00" {
 		t.Errorf("繰り返しの予定 = %q, %v, %v", weekly.Summary, weekly.Recurrence, weekly.Start.DateTime)
 	}

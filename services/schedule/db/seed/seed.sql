@@ -95,9 +95,9 @@ INSERT INTO schedules (id, facility_id, staff_id, schedule_type_id, date, start_
      '2026-10-21', '09:30:00', '10:00:00', NULL, NULL, '01M3TC6ACG2Z0J6Y2DFBS8QRR9', NULL, '初回の訪問');
 
 INSERT INTO recurring_schedules (id, facility_id, staff_id, schedule_type_id, date, start_time, end_time,
-                                 visit_info_id, title, description, frequency, day_of_week, day_of_month, week_of_month, end_date) VALUES
+                                 visit_info_id, title, description, frequency, days_of_week, interval_weeks, end_date) VALUES
     ('01M3TC6E9G4N8Q2R5T7V9W1X3Y', '01M3TC5H00QV17BC0J9V3393ZP', '01M3TC5TRG5200KYWTZW6ER3WN', '01M3TC68E05E1N46YCCBT6ZQB2',
-     '2026-10-05', '17:30:00', '18:00:00', NULL, '週次の申し送り', NULL, 'weekly', 1, NULL, NULL, NULL);
+     '2026-10-05', '17:30:00', '18:00:00', NULL, '週次の申し送り', NULL, 'weekly', '{1}', 1, NULL);
 
 -- 2 つ目の事業所。ログインした職員に、自分の事業所の予定だけが出ることを確認するのに使う。
 INSERT INTO facilities (id, name, org_id, source_mode) VALUES

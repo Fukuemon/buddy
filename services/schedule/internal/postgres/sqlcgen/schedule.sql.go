@@ -48,8 +48,8 @@ const createRecurringSchedule = `-- name: CreateRecurringSchedule :exec
 INSERT INTO recurring_schedules (
     id, facility_id, staff_id, schedule_type_id, date, start_time, end_time,
     visit_info_id, title, description,
-    frequency, day_of_week, day_of_month, week_of_month, end_date, ends_next_day
-) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
+    frequency, day_of_week, day_of_month, week_of_month, end_date, ends_next_day, days_of_week, interval_weeks
+) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)
 `
 
 type CreateRecurringScheduleParams struct {
@@ -69,6 +69,8 @@ type CreateRecurringScheduleParams struct {
 	WeekOfMonth    *int16
 	EndDate        *time.Time
 	EndsNextDay    bool
+	DaysOfWeek     []int16
+	IntervalWeeks  int16
 }
 
 // is_over_time_work は開始の時刻から生成するカラムなので書かない。
@@ -90,6 +92,8 @@ func (q *Queries) CreateRecurringSchedule(ctx context.Context, arg CreateRecurri
 		arg.WeekOfMonth,
 		arg.EndDate,
 		arg.EndsNextDay,
+		arg.DaysOfWeek,
+		arg.IntervalWeeks,
 	)
 	return err
 }
@@ -172,7 +176,7 @@ func (q *Queries) DeleteUnreplacedRecurringScheduleExclusions(ctx context.Contex
 }
 
 const getRecurringScheduleDetail = `-- name: GetRecurringScheduleDetail :one
-SELECT id, facility_id, schedule_type_id, schedule_type_code, schedule_type_name, date, start_time, end_time, is_over_time_work, staff_id, staff_name, title, description, frequency, day_of_week, day_of_month, week_of_month, end_date, visit_info_id, patient_id, patient_name, assigned_staff_id, assigned_staff_name, companion_id, companion_name, service_code_id, service_code, created_at, updated_at, version, ends_next_day FROM recurring_schedule_details WHERE id = $1
+SELECT id, facility_id, schedule_type_id, schedule_type_code, schedule_type_name, date, start_time, end_time, is_over_time_work, staff_id, staff_name, title, description, frequency, day_of_week, day_of_month, week_of_month, end_date, visit_info_id, patient_id, patient_name, assigned_staff_id, assigned_staff_name, companion_id, companion_name, service_code_id, service_code, created_at, updated_at, version, ends_next_day, days_of_week, interval_weeks FROM recurring_schedule_details WHERE id = $1
 `
 
 func (q *Queries) GetRecurringScheduleDetail(ctx context.Context, id string) (RecurringScheduleDetail, error) {
@@ -210,6 +214,8 @@ func (q *Queries) GetRecurringScheduleDetail(ctx context.Context, id string) (Re
 		&i.UpdatedAt,
 		&i.Version,
 		&i.EndsNextDay,
+		&i.DaysOfWeek,
+		&i.IntervalWeeks,
 	)
 	return i, err
 }
@@ -339,6 +345,7 @@ const getStoredRecurringSchedule = `-- name: GetStoredRecurringSchedule :one
 SELECT rs.id, rs.facility_id, rs.staff_id, rs.schedule_type_id, rs.date, rs.start_time, rs.end_time, rs.ends_next_day,
        rs.is_over_time_work, rs.visit_info_id, rs.title, rs.description,
        rs.frequency, rs.day_of_week, rs.day_of_month, rs.week_of_month, rs.end_date, rs.version,
+       rs.days_of_week, rs.interval_weeks,
        vi.patient_id, vi.assigned_staff_id, vi.companion_id, vi.service_code_id
 FROM recurring_schedules rs
 LEFT JOIN visit_infos vi ON vi.id = rs.visit_info_id
@@ -364,6 +371,8 @@ type GetStoredRecurringScheduleRow struct {
 	WeekOfMonth     *int16
 	EndDate         *time.Time
 	Version         int32
+	DaysOfWeek      []int16
+	IntervalWeeks   int16
 	PatientID       *string
 	AssignedStaffID *string
 	CompanionID     *string
@@ -393,6 +402,8 @@ func (q *Queries) GetStoredRecurringSchedule(ctx context.Context, id string) (Ge
 		&i.WeekOfMonth,
 		&i.EndDate,
 		&i.Version,
+		&i.DaysOfWeek,
+		&i.IntervalWeeks,
 		&i.PatientID,
 		&i.AssignedStaffID,
 		&i.CompanionID,
@@ -464,7 +475,7 @@ func (q *Queries) GetStoredSchedule(ctx context.Context, id string) (GetStoredSc
 }
 
 const listRecurringScheduleDetailsByFacility = `-- name: ListRecurringScheduleDetailsByFacility :many
-SELECT id, facility_id, schedule_type_id, schedule_type_code, schedule_type_name, date, start_time, end_time, is_over_time_work, staff_id, staff_name, title, description, frequency, day_of_week, day_of_month, week_of_month, end_date, visit_info_id, patient_id, patient_name, assigned_staff_id, assigned_staff_name, companion_id, companion_name, service_code_id, service_code, created_at, updated_at, version, ends_next_day FROM recurring_schedule_details
+SELECT id, facility_id, schedule_type_id, schedule_type_code, schedule_type_name, date, start_time, end_time, is_over_time_work, staff_id, staff_name, title, description, frequency, day_of_week, day_of_month, week_of_month, end_date, visit_info_id, patient_id, patient_name, assigned_staff_id, assigned_staff_name, companion_id, companion_name, service_code_id, service_code, created_at, updated_at, version, ends_next_day, days_of_week, interval_weeks FROM recurring_schedule_details
 WHERE facility_id = $1
   AND ($2::text IS NULL OR schedule_type_name = $2)
 ORDER BY
@@ -526,6 +537,8 @@ func (q *Queries) ListRecurringScheduleDetailsByFacility(ctx context.Context, ar
 			&i.UpdatedAt,
 			&i.Version,
 			&i.EndsNextDay,
+			&i.DaysOfWeek,
+			&i.IntervalWeeks,
 		); err != nil {
 			return nil, err
 		}
@@ -736,18 +749,21 @@ const updateRecurringScheduleRule = `-- name: UpdateRecurringScheduleRule :exec
 UPDATE recurring_schedules
 SET date = $1, frequency = $2, day_of_week = $3,
     day_of_month = $4, week_of_month = $5, end_date = $6,
+    days_of_week = $7, interval_weeks = $8,
     version = version + 1
-WHERE id = $7
+WHERE id = $9
 `
 
 type UpdateRecurringScheduleRuleParams struct {
-	Date        time.Time
-	Frequency   string
-	DayOfWeek   *int16
-	DayOfMonth  *int16
-	WeekOfMonth *int16
-	EndDate     *time.Time
-	ID          string
+	Date          time.Time
+	Frequency     string
+	DayOfWeek     *int16
+	DayOfMonth    *int16
+	WeekOfMonth   *int16
+	EndDate       *time.Time
+	DaysOfWeek    []int16
+	IntervalWeeks int16
+	ID            string
 }
 
 func (q *Queries) UpdateRecurringScheduleRule(ctx context.Context, arg UpdateRecurringScheduleRuleParams) error {
@@ -758,6 +774,8 @@ func (q *Queries) UpdateRecurringScheduleRule(ctx context.Context, arg UpdateRec
 		arg.DayOfMonth,
 		arg.WeekOfMonth,
 		arg.EndDate,
+		arg.DaysOfWeek,
+		arg.IntervalWeeks,
 		arg.ID,
 	)
 	return err

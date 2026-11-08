@@ -77,8 +77,8 @@ func TestProjectionRulesRecurrence(t *testing.T) {
 		len(exclusions) != 1 || exclusions[0] != (civil.Date{Year: 2026, Month: 10, Day: 12}) {
 		t.Errorf("規則 = %+v, 除外する日 = %v", rule, exclusions)
 	}
-	parent.Recurrence = []string{"RRULE:FREQ=WEEKLY;INTERVAL=2"}
+	parent.Recurrence = []string{"RRULE:FREQ=WEEKLY;INTERVAL=2;BYDAY=MO,SU"}
 	if _, _, err := rules.Recurrence(parent); !errors.Is(err, calendar.ErrNeedsExpansion) {
-		t.Errorf("隔週: err = %v, want ErrNeedsExpansion", err)
+		t.Errorf("月曜に始まる週の隔週で日曜を含む曜日: err = %v, want ErrNeedsExpansion", err)
 	}
 }

@@ -1,6 +1,8 @@
 package httpapi
 
 import (
+	"slices"
+
 	"github.com/Fukuemon/buddy/services/schedule/internal/civil"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/schedule"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/scheduleview"
@@ -85,9 +87,22 @@ func toCalendarSyncStatus(c scheduleview.CalendarSync) openapi.CalendarSyncStatu
 	return r
 }
 
+// toRecurringRule は、規則 r を応答の規則にする。毎週の曜日の並びと間隔は、毎週のときだけ返す。
 func toRecurringRule(r schedule.Rule) openapi.RecurringRule {
+	var (
+		days     *[]int
+		interval *int
+	)
+	if r.Frequency == schedule.Weekly {
+		d := slices.Clone(r.DaysOfWeek)
+		days = &d
+		i := max(r.Interval, 1)
+		interval = &i
+	}
 	return openapi.RecurringRule{
 		Frequency:   openapi.RecurringRuleFrequency(r.Frequency),
+		DaysOfWeek:  days,
+		Interval:    interval,
 		DayOfWeek:   r.DayOfWeek,
 		DayOfMonth:  r.DayOfMonth,
 		WeekOfMonth: r.WeekOfMonth,

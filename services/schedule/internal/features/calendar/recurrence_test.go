@@ -28,15 +28,47 @@ func TestRuleFromRecurrence(t *testing.T) {
 	}{
 		{
 			name: "毎週の曜日", lines: []string{"RRULE:FREQ=WEEKLY;BYDAY=TU"}, first: "2026-10-20",
-			want: schedule.Rule{Frequency: schedule.Weekly, DayOfWeek: ptr(tue)},
+			want: schedule.Rule{Frequency: schedule.Weekly, DaysOfWeek: []int{tue}, Interval: 1},
 		},
 		{
 			name: "毎週の INTERVAL=1 と WKST", lines: []string{"RRULE:FREQ=WEEKLY;WKST=SU;INTERVAL=1;BYDAY=TU"}, first: "2026-10-20",
-			want: schedule.Rule{Frequency: schedule.Weekly, DayOfWeek: ptr(tue)},
+			want: schedule.Rule{Frequency: schedule.Weekly, DaysOfWeek: []int{tue}, Interval: 1},
 		},
 		{
 			name: "BYDAY の無い毎週", lines: []string{"RRULE:FREQ=WEEKLY"}, first: "2026-10-20",
-			want: schedule.Rule{Frequency: schedule.Weekly},
+			want: schedule.Rule{Frequency: schedule.Weekly, DaysOfWeek: []int{tue}, Interval: 1},
+		},
+		{
+			name: "隔週", lines: []string{"RRULE:FREQ=WEEKLY;INTERVAL=2;BYDAY=TU"}, first: "2026-10-20",
+			want: schedule.Rule{Frequency: schedule.Weekly, DaysOfWeek: []int{tue}, Interval: 2},
+		},
+		{
+			name: "52 週ごと", lines: []string{"RRULE:FREQ=WEEKLY;INTERVAL=52"}, first: "2026-10-20",
+			want: schedule.Rule{Frequency: schedule.Weekly, DaysOfWeek: []int{tue}, Interval: 52},
+		},
+		{
+			name: "複数の曜日を月曜からの順に並べる", lines: []string{"RRULE:FREQ=WEEKLY;BYDAY=TH,TU"}, first: "2026-10-20",
+			want: schedule.Rule{Frequency: schedule.Weekly, DaysOfWeek: []int{tue, 4}, Interval: 1},
+		},
+		{
+			name: "毎日を 7 つの曜日の毎週にする", lines: []string{"RRULE:FREQ=DAILY;INTERVAL=1;COUNT=3"}, first: "2026-10-20",
+			want: schedule.Rule{Frequency: schedule.Weekly, DaysOfWeek: []int{1, 2, 3, 4, 5, 6, 7}, Interval: 1}, end: "2026-10-22",
+		},
+		{
+			name: "WKST=SU の隔週の日曜を含む複数の曜日", lines: []string{"RRULE:FREQ=WEEKLY;INTERVAL=2;BYDAY=SU,TU;WKST=SU"}, first: "2026-10-20",
+			want: schedule.Rule{Frequency: schedule.Weekly, DaysOfWeek: []int{tue, 7}, Interval: 2},
+		},
+		{
+			name: "WKST の無い隔週の日曜を含まない複数の曜日の COUNT", lines: []string{"RRULE:FREQ=WEEKLY;INTERVAL=2;BYDAY=TU,TH;COUNT=3"}, first: "2026-10-20",
+			want: schedule.Rule{Frequency: schedule.Weekly, DaysOfWeek: []int{tue, 4}, Interval: 2}, end: "2026-11-03",
+		},
+		{
+			name: "WKST=MO の隔週の日曜を含まない複数の曜日", lines: []string{"RRULE:FREQ=WEEKLY;INTERVAL=2;BYDAY=TU,SA;WKST=MO"}, first: "2026-10-20",
+			want: schedule.Rule{Frequency: schedule.Weekly, DaysOfWeek: []int{tue, 6}, Interval: 2},
+		},
+		{
+			name: "WKST=SA の隔週の 1 つの曜日", lines: []string{"RRULE:FREQ=WEEKLY;INTERVAL=2;BYDAY=TU;WKST=SA"}, first: "2026-10-20",
+			want: schedule.Rule{Frequency: schedule.Weekly, DaysOfWeek: []int{tue}, Interval: 2},
 		},
 		{
 			name: "毎月の日", lines: []string{"RRULE:FREQ=MONTHLY;BYMONTHDAY=20"}, first: "2026-10-20",
@@ -62,7 +94,7 @@ func TestRuleFromRecurrence(t *testing.T) {
 		},
 		{
 			name: "毎週の COUNT", lines: []string{"RRULE:FREQ=WEEKLY;BYDAY=TU;COUNT=3"}, first: "2026-10-20",
-			want: schedule.Rule{Frequency: schedule.Weekly, DayOfWeek: ptr(tue)}, end: "2026-11-03",
+			want: schedule.Rule{Frequency: schedule.Weekly, DaysOfWeek: []int{tue}, Interval: 1}, end: "2026-11-03",
 		},
 		{
 			name: "COUNT=1 は最初の日に終わる", lines: []string{"RRULE:FREQ=MONTHLY;BYDAY=3TU;COUNT=1"}, first: "2026-10-20",
@@ -71,31 +103,31 @@ func TestRuleFromRecurrence(t *testing.T) {
 		{
 			name: "UTC の UNTIL を Asia/Tokyo の日付にする", lines: []string{"RRULE:FREQ=WEEKLY;BYDAY=TU;UNTIL=20261231T145959Z"},
 			first: "2026-10-20", start: clock(10, 0),
-			want: schedule.Rule{Frequency: schedule.Weekly, DayOfWeek: ptr(tue)}, end: "2026-12-31",
+			want: schedule.Rule{Frequency: schedule.Weekly, DaysOfWeek: []int{tue}, Interval: 1}, end: "2026-12-31",
 		},
 		{
 			name: "UTC の UNTIL が Asia/Tokyo の翌日の 0 時なら前の日に終わる", lines: []string{"RRULE:FREQ=WEEKLY;BYDAY=TU;UNTIL=20261231T150000Z"},
 			first: "2026-10-20", start: clock(10, 0),
-			want: schedule.Rule{Frequency: schedule.Weekly, DayOfWeek: ptr(tue)}, end: "2026-12-31",
+			want: schedule.Rule{Frequency: schedule.Weekly, DaysOfWeek: []int{tue}, Interval: 1}, end: "2026-12-31",
 		},
 		{
 			name: "UNTIL が回の開始の時刻と同じならその日を含む", lines: []string{"RRULE:FREQ=WEEKLY;BYDAY=TU;UNTIL=20261229T010000Z"},
 			first: "2026-10-20", start: clock(10, 0),
-			want: schedule.Rule{Frequency: schedule.Weekly, DayOfWeek: ptr(tue)}, end: "2026-12-29",
+			want: schedule.Rule{Frequency: schedule.Weekly, DaysOfWeek: []int{tue}, Interval: 1}, end: "2026-12-29",
 		},
 		{
 			name: "UNTIL が回の開始の時刻より前ならその日を含まない", lines: []string{"RRULE:FREQ=WEEKLY;BYDAY=TU;UNTIL=20261229T010000Z"},
 			first: "2026-10-20", start: clock(10, 30),
-			want: schedule.Rule{Frequency: schedule.Weekly, DayOfWeek: ptr(tue)}, end: "2026-12-28",
+			want: schedule.Rule{Frequency: schedule.Weekly, DaysOfWeek: []int{tue}, Interval: 1}, end: "2026-12-28",
 		},
 		{
 			name: "日付の UNTIL", lines: []string{"RRULE:FREQ=WEEKLY;BYDAY=TU;UNTIL=20261229"}, first: "2026-10-20", start: clock(10, 0),
-			want: schedule.Rule{Frequency: schedule.Weekly, DayOfWeek: ptr(tue)}, end: "2026-12-29",
+			want: schedule.Rule{Frequency: schedule.Weekly, DaysOfWeek: []int{tue}, Interval: 1}, end: "2026-12-29",
 		},
 		{
 			name: "タイムゾーンの無い UNTIL は Asia/Tokyo で読む", lines: []string{"RRULE:FREQ=WEEKLY;BYDAY=TU;UNTIL=20261229T235959"},
 			first: "2026-10-20", start: clock(10, 0),
-			want: schedule.Rule{Frequency: schedule.Weekly, DayOfWeek: ptr(tue)}, end: "2026-12-29",
+			want: schedule.Rule{Frequency: schedule.Weekly, DaysOfWeek: []int{tue}, Interval: 1}, end: "2026-12-29",
 		},
 		{
 			name: "EXDATE を Asia/Tokyo の日付にし、並べて重ねない",
@@ -107,13 +139,13 @@ func TestRuleFromRecurrence(t *testing.T) {
 				"EXDATE;TZID=America/New_York:20261123T200000",
 			},
 			first: "2026-10-20", start: clock(10, 0),
-			want:    schedule.Rule{Frequency: schedule.Weekly, DayOfWeek: ptr(tue)},
+			want:    schedule.Rule{Frequency: schedule.Weekly, DaysOfWeek: []int{tue}, Interval: 1},
 			exdates: []string{"2026-10-27", "2026-11-10", "2026-11-17", "2026-11-24"},
 		},
 		{
 			name: "タイムゾーンが空でオフセットが +09:00 の予定", lines: []string{"RRULE:FREQ=WEEKLY;BYDAY=TU"}, first: "2026-10-20",
 			when: &calendar.When{DateTime: "2026-10-20T10:00:00+09:00"},
-			want: schedule.Rule{Frequency: schedule.Weekly, DayOfWeek: ptr(tue)},
+			want: schedule.Rule{Frequency: schedule.Weekly, DaysOfWeek: []int{tue}, Interval: 1},
 		},
 		{
 			name: "Asia/Tokyo 以外のタイムゾーンの予定", lines: []string{"RRULE:FREQ=WEEKLY;BYDAY=TU"}, first: "2026-10-20",
@@ -130,18 +162,24 @@ func TestRuleFromRecurrence(t *testing.T) {
 		{
 			name: "TZID の名前の小文字と値の引用符", lines: []string{"RRULE:FREQ=WEEKLY;BYDAY=TU", `EXDATE;tzid="America/New_York":20261123T200000`},
 			first: "2026-10-20", start: clock(10, 0),
-			want:    schedule.Rule{Frequency: schedule.Weekly, DayOfWeek: ptr(tue)},
+			want:    schedule.Rule{Frequency: schedule.Weekly, DaysOfWeek: []int{tue}, Interval: 1},
 			exdates: []string{"2026-11-24"},
 		},
 		{name: "RRULE の同じキーが 2 回", lines: []string{"RRULE:FREQ=WEEKLY;BYDAY=TU;BYDAY=TH"}, first: "2026-10-20", expand: true},
-		{name: "隔週", lines: []string{"RRULE:FREQ=WEEKLY;INTERVAL=2;BYDAY=TU"}, first: "2026-10-20", expand: true},
-		{name: "複数の曜日", lines: []string{"RRULE:FREQ=WEEKLY;BYDAY=TU,TH"}, first: "2026-10-20", expand: true},
+		{name: "毎日の間隔が 2", lines: []string{"RRULE:FREQ=DAILY;INTERVAL=2"}, first: "2026-10-20", expand: true},
+		{name: "BYDAY の付く毎日", lines: []string{"RRULE:FREQ=DAILY;BYDAY=TU"}, first: "2026-10-20", expand: true},
+		{name: "毎月の間隔が 2", lines: []string{"RRULE:FREQ=MONTHLY;INTERVAL=2;BYMONTHDAY=20"}, first: "2026-10-20", expand: true},
+		{name: "毎週の間隔が 53", lines: []string{"RRULE:FREQ=WEEKLY;INTERVAL=53;BYDAY=TU"}, first: "2026-10-20", expand: true},
+		{name: "読めない INTERVAL", lines: []string{"RRULE:FREQ=WEEKLY;INTERVAL=0;BYDAY=TU"}, first: "2026-10-20", expand: true},
+		{name: "毎週の数字の付く曜日", lines: []string{"RRULE:FREQ=WEEKLY;BYDAY=1TU"}, first: "2026-10-20", expand: true},
+		{name: "WKST の無い隔週の日曜を含む複数の曜日", lines: []string{"RRULE:FREQ=WEEKLY;INTERVAL=2;BYDAY=TU,SU"}, first: "2026-10-20", expand: true},
+		{name: "WKST=MO の隔週の日曜を含む複数の曜日", lines: []string{"RRULE:FREQ=WEEKLY;INTERVAL=2;BYDAY=TU,SU;WKST=MO"}, first: "2026-10-20", expand: true},
+		{name: "WKST=SA の隔週の複数の曜日", lines: []string{"RRULE:FREQ=WEEKLY;INTERVAL=2;BYDAY=TU,TH;WKST=SA"}, first: "2026-10-20", expand: true},
 		{name: "最終週", lines: []string{"RRULE:FREQ=MONTHLY;BYDAY=-1TU"}, first: "2026-10-27", expand: true},
 		{name: "毎月の週の無い曜日", lines: []string{"RRULE:FREQ=MONTHLY;BYDAY=TU"}, first: "2026-10-20", expand: true},
 		{name: "毎月の複数の日", lines: []string{"RRULE:FREQ=MONTHLY;BYMONTHDAY=1,20"}, first: "2026-10-20", expand: true},
 		{name: "月末からの日", lines: []string{"RRULE:FREQ=MONTHLY;BYMONTHDAY=-1"}, first: "2026-10-31", expand: true},
 		{name: "BYSETPOS", lines: []string{"RRULE:FREQ=MONTHLY;BYDAY=TU;BYSETPOS=3"}, first: "2026-10-20", expand: true},
-		{name: "毎日", lines: []string{"RRULE:FREQ=DAILY"}, first: "2026-10-20", expand: true},
 		{name: "毎年", lines: []string{"RRULE:FREQ=YEARLY"}, first: "2026-10-20", expand: true},
 		{name: "RDATE", lines: []string{"RRULE:FREQ=WEEKLY;BYDAY=TU", "RDATE;VALUE=DATE:20261022"}, first: "2026-10-20", expand: true},
 		{name: "RRULE が無い", lines: []string{"EXDATE;VALUE=DATE:20261027"}, first: "2026-10-20", expand: true},
@@ -186,7 +224,7 @@ func TestRuleFromRecurrence(t *testing.T) {
 }
 
 func format(r calendar.Recurrence) string {
-	s := fmt.Sprintf("%s dow=%v dom=%v week=%v", r.Rule.Frequency, deref(r.Rule.DayOfWeek), deref(r.Rule.DayOfMonth), deref(r.Rule.WeekOfMonth))
+	s := fmt.Sprintf("%s days=%v interval=%d dow=%v dom=%v week=%v", r.Rule.Frequency, r.Rule.DaysOfWeek, r.Rule.Interval, deref(r.Rule.DayOfWeek), deref(r.Rule.DayOfMonth), deref(r.Rule.WeekOfMonth))
 	if r.Rule.EndDate != nil {
 		s += " end=" + r.Rule.EndDate.String()
 	}

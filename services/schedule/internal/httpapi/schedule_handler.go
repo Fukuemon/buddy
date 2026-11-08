@@ -199,8 +199,21 @@ func ruleInput(rule openapi.RecurringRule) (schedule.RuleInput, error) {
 		}
 		endDate = &d
 	}
+	var days []int
+	if rule.DaysOfWeek != nil {
+		days = *rule.DaysOfWeek
+		if days == nil {
+			days = []int{}
+		}
+	}
+	var interval int
+	if rule.Interval != nil {
+		interval = *rule.Interval
+	}
 	return schedule.RuleInput{
 		Frequency:   schedule.Frequency(rule.Frequency),
+		DaysOfWeek:  days,
+		Interval:    interval,
 		DayOfWeek:   rule.DayOfWeek,
 		DayOfMonth:  rule.DayOfMonth,
 		WeekOfMonth: rule.WeekOfMonth,
