@@ -420,9 +420,9 @@ gitGraph
 - pull request は 1 つの issue に対応させる。
   - 大きい issue は、関心事ごとに複数の pull request に分ける。
   - 最後にマージする pull request の本文に `Closes #<番号>` を書き、ほかは `Refs #<番号>` を書く。
-- 機能の追加と改修の pull request では、本文の「検証とエビデンス」に、観点ごとのエビデンスの動画を入れる。
+- 機能の追加と改修の pull request では、観点ごとのエビデンスの動画を、先に pull request のコメントに投稿し、確認を受けてから本文の「検証とエビデンス」に並べる。
   - 動作を確認しない変更では、「検証とエビデンス」のセクションを消す。
-  - 対象と格納先は [エビデンス](context/testing/evidence.md) に、撮り方と本文への入れ方はスキル attach-evidence にある。
+  - 対象、格納先、載せる順とコマンドは [エビデンス](context/testing/evidence.md) に、観点の決め方と撮り方はスキル attach-evidence にある。
 - レビューの指摘に対応してから、[Merging and Cleanup](#merging-and-cleanup) の手順でマージする。
   - Codex のボットは、pull request を開いたときにレビューする。
     - もう一度頼むときは、直したコミットを示す返信の末尾に `@codex review` と書く。
