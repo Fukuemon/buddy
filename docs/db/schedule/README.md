@@ -30,7 +30,7 @@
 | [public.visit_infos](public.visit_infos.md)                                     | 8       | 訪問の情報                                                                                                                                                     | BASE TABLE |
 | [public.visit_info_visit_categories](public.visit_info_visit_categories.md)     | 2       | 訪問に付けた区分。1 件の訪問に複数を付けられる                                                                                                                 | BASE TABLE |
 | [public.schedule_types](public.schedule_types.md)                               | 5       | 予定の種類（通常、訪問）。マイグレーションで入れる                                                                                                             | BASE TABLE |
-| [public.recurring_schedules](public.recurring_schedules.md)                     | 20      | 繰り返しの予定と、その規則                                                                                                                                     | BASE TABLE |
+| [public.recurring_schedules](public.recurring_schedules.md)                     | 22      | 繰り返しの予定と、その規則                                                                                                                                     | BASE TABLE |
 | [public.recurring_schedule_exclusions](public.recurring_schedule_exclusions.md) | 2       | 繰り返しの予定のうち、回にしない日                                                                                                                             | BASE TABLE |
 | [public.schedules](public.schedules.md)                                         | 17      | 予定                                                                                                                                                           | BASE TABLE |
 | [public.schedule_cancels](public.schedule_cancels.md)                           | 5       | 予定の取り消し                                                                                                                                                 | BASE TABLE |
@@ -40,7 +40,7 @@
 | [public.import_runs](public.import_runs.md)                                     | 15      | 外部のカレンダーからの取り込みの 1 回ごとの記録                                                                                                                | BASE TABLE |
 | [public.visit_info_details](public.visit_info_details.md)                       | 10      | 訪問の情報と名前を結合したビュー                                                                                                                               | VIEW       |
 | [public.schedule_details](public.schedule_details.md)                           | 30      | 一覧の読み出しに使う、予定と訪問の情報と名前を結合したビュー                                                                                                   | VIEW       |
-| [public.recurring_schedule_details](public.recurring_schedule_details.md)       | 31      | 一覧の読み出しに使う、繰り返しの予定と訪問の情報と名前を結合したビュー                                                                                         | VIEW       |
+| [public.recurring_schedule_details](public.recurring_schedule_details.md)       | 33      | 一覧の読み出しに使う、繰り返しの予定と訪問の情報と名前を結合したビュー                                                                                         | VIEW       |
 | [public.calendar_exports](public.calendar_exports.md)                           | 14      | 予定を外部のカレンダーに書き出す待ち。予定の変更と同じトランザクションで積む                                                                                   | BASE TABLE |
 | [public.calendar_event_projections](public.calendar_event_projections.md)       | 19      | Google カレンダーを予定の正本にする事業所の、Google カレンダーの予定の写し（Projection）。1 つの予定を 1 行にする                                              | BASE TABLE |
 | [public.calendar_cutovers](public.calendar_cutovers.md)                         | 9       | 事業所の予定の正本を Google カレンダーから buddy に切り替える作業の記録（切り替え）。事業所ごとに open は 1 つまで                                             | BASE TABLE |
@@ -261,6 +261,8 @@ erDiagram
   timestamp_with_time_zone updated_at
   integer version
   boolean ends_next_day
+  smallint__ days_of_week
+  smallint interval_weeks
 }
 "public.recurring_schedule_exclusions" {
   text recurring_schedule_id FK
@@ -421,6 +423,8 @@ erDiagram
   timestamp_with_time_zone updated_at
   integer version
   boolean ends_next_day
+  smallint__ days_of_week
+  smallint interval_weeks
 }
 "public.calendar_exports" {
   text id

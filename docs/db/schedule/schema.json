@@ -2987,7 +2987,7 @@
           "name": "day_of_week",
           "type": "smallint",
           "nullable": true,
-          "comment": "1（月曜）から 7"
+          "comment": "1（月曜）から 7。毎月の week_of_month と組で使う。前のバージョンのアプリは毎週の曜日にも書く"
         },
         {
           "name": "day_of_month",
@@ -3032,6 +3032,19 @@
           "nullable": false,
           "default": "false",
           "comment": "終了が翌日か。全ての回が同じ値を持つ"
+        },
+        {
+          "name": "days_of_week",
+          "type": "smallint[]",
+          "nullable": true,
+          "comment": "毎週の、重ならない 1（月曜）から 7 の曜日を月曜から日曜の順に並べたもの。毎月は NULL。毎週の NULL は day_of_week か最初の日付の曜日として読む"
+        },
+        {
+          "name": "interval_weeks",
+          "type": "smallint",
+          "nullable": false,
+          "default": "1",
+          "comment": "毎週の間隔の週の数。1 が毎週、2 が隔週。日曜に始まる週で、最初の日付を含む週から数える。毎月は 1"
         }
       ],
       "indexes": [
@@ -3109,6 +3122,16 @@
           "referenced_table": "",
           "columns": [
             "day_of_week"
+          ]
+        },
+        {
+          "name": "recurring_schedules_days_of_week_check",
+          "type": "CHECK",
+          "def": "CHECK ((((cardinality(days_of_week) \u003e= 1) AND (cardinality(days_of_week) \u003c= 7)) AND (days_of_week \u003c@ ARRAY[(1)::smallint, (2)::smallint, (3)::smallint, (4)::smallint, (5)::smallint, (6)::smallint, (7)::smallint])))",
+          "table": "public.recurring_schedules",
+          "referenced_table": "",
+          "columns": [
+            "days_of_week"
           ]
         },
         {
@@ -3193,6 +3216,26 @@
           ]
         },
         {
+          "name": "recurring_schedules_interval_weeks_check",
+          "type": "CHECK",
+          "def": "CHECK (((interval_weeks \u003e= 1) AND (interval_weeks \u003c= 52)))",
+          "table": "public.recurring_schedules",
+          "referenced_table": "",
+          "columns": [
+            "interval_weeks"
+          ]
+        },
+        {
+          "name": "recurring_schedules_interval_weeks_not_null",
+          "type": "n",
+          "def": "NOT NULL interval_weeks",
+          "table": "public.recurring_schedules",
+          "referenced_table": "",
+          "columns": [
+            "interval_weeks"
+          ]
+        },
+        {
           "name": "recurring_schedules_is_over_time_work_not_null",
           "type": "n",
           "def": "NOT NULL is_over_time_work",
@@ -3200,6 +3243,18 @@
           "referenced_table": "",
           "columns": [
             "is_over_time_work"
+          ]
+        },
+        {
+          "name": "recurring_schedules_monthly_weekly_fields_check",
+          "type": "CHECK",
+          "def": "CHECK (((frequency = 'weekly'::text) OR ((days_of_week IS NULL) AND (interval_weeks = 1))))",
+          "table": "public.recurring_schedules",
+          "referenced_table": "",
+          "columns": [
+            "frequency",
+            "days_of_week",
+            "interval_weeks"
           ]
         },
         {
@@ -5621,9 +5676,19 @@
           "name": "ends_next_day",
           "type": "boolean",
           "nullable": true
+        },
+        {
+          "name": "days_of_week",
+          "type": "smallint[]",
+          "nullable": true
+        },
+        {
+          "name": "interval_weeks",
+          "type": "smallint",
+          "nullable": true
         }
       ],
-      "def": "CREATE VIEW recurring_schedule_details AS (\n SELECT rs.id,\n    rs.facility_id,\n    rs.schedule_type_id,\n    st.code AS schedule_type_code,\n    st.name AS schedule_type_name,\n    rs.date,\n    rs.start_time,\n    rs.end_time,\n    rs.is_over_time_work,\n    rs.staff_id,\n    u.username AS staff_name,\n    rs.title,\n    rs.description,\n    rs.frequency,\n    rs.day_of_week,\n    rs.day_of_month,\n    rs.week_of_month,\n    rs.end_date,\n    rs.visit_info_id,\n    vid.patient_id,\n    vid.patient_name,\n    vid.assigned_staff_id,\n    vid.assigned_staff_name,\n    vid.companion_id,\n    vid.companion_name,\n    vid.service_code_id,\n    vid.service_code,\n    rs.created_at,\n    rs.updated_at,\n    rs.version,\n    rs.ends_next_day\n   FROM (((recurring_schedules rs\n     JOIN schedule_types st ON ((st.id = rs.schedule_type_id)))\n     JOIN users u ON ((u.id = rs.staff_id)))\n     LEFT JOIN visit_info_details vid ON ((vid.id = rs.visit_info_id)))\n)",
+      "def": "CREATE VIEW recurring_schedule_details AS (\n SELECT rs.id,\n    rs.facility_id,\n    rs.schedule_type_id,\n    st.code AS schedule_type_code,\n    st.name AS schedule_type_name,\n    rs.date,\n    rs.start_time,\n    rs.end_time,\n    rs.is_over_time_work,\n    rs.staff_id,\n    u.username AS staff_name,\n    rs.title,\n    rs.description,\n    rs.frequency,\n    rs.day_of_week,\n    rs.day_of_month,\n    rs.week_of_month,\n    rs.end_date,\n    rs.visit_info_id,\n    vid.patient_id,\n    vid.patient_name,\n    vid.assigned_staff_id,\n    vid.assigned_staff_name,\n    vid.companion_id,\n    vid.companion_name,\n    vid.service_code_id,\n    vid.service_code,\n    rs.created_at,\n    rs.updated_at,\n    rs.version,\n    rs.ends_next_day,\n    rs.days_of_week,\n    rs.interval_weeks\n   FROM (((recurring_schedules rs\n     JOIN schedule_types st ON ((st.id = rs.schedule_type_id)))\n     JOIN users u ON ((u.id = rs.staff_id)))\n     LEFT JOIN visit_info_details vid ON ((vid.id = rs.visit_info_id)))\n)",
       "referenced_tables": [
         "public.recurring_schedules",
         "public.schedule_types",

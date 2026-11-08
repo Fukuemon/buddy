@@ -413,10 +413,15 @@ sequenceDiagram
 
 ### 繰り返しの予定
 
-- 繰り返しの予定は、最初の回の日付（`recurring_schedules.date`）と、同じレコードの規則のカラム（`frequency` から `end_date`）で回を決める。
+- 繰り返しの予定は、最初の回の日付（`recurring_schedules.date`）と、同じレコードの規則のカラムで回を決める。
+  - 規則のカラムは、`frequency`、`days_of_week`、`interval_weeks`、`day_of_week`、`day_of_month`、`week_of_month`、`end_date` である。
   - 頻度ごとのカラムの組み合わせは CHECK で確認する。
 - 繰り返しの規則は次の 3 つ。
-  - `weekly`: `day_of_week` の曜日ごと
+  - `weekly`: `days_of_week` の曜日ごと。日曜に始まる週で数え、最初の日付を含む週から `interval_weeks` の倍数だけ後の週に回がある
+    - `days_of_week` は重ならない曜日を月曜から日曜の順に並べ、`interval_weeks` は 1〜52 である。重なりと並びの順は、CHECK ではなくアプリが確認する
+    - `days_of_week` が NULL の行は、前のバージョンのアプリが書いた行で、`day_of_week` か最初の日付の曜日の 1 つの曜日として読む。切り戻した後も、前のバージョンのアプリが毎週の行を書けるためである
+    - API の `RecurringRule` は、毎週の曜日を `days_of_week` で、間隔を `interval` で持つ。`day_of_week` は毎月の `week_of_month` と組でだけ使う
+    - ADR-0038: [繰り返しの規則に、毎週の複数の曜日と間隔を足し、終わりは終了日だけで持つ](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0038-recurring-rule-scope.md)
   - `monthly` で `day_of_month` がある: 毎月のその日。その日がない月は回にしない
   - `monthly` で `week_of_month` と `day_of_week` がある: 毎月の n 回目のその曜日。
     - n は日から `(日 - 1) / 7 + 1` で決め、1 から 5 を受ける。5 回目のない月は回にしない
@@ -443,7 +448,9 @@ sequenceDiagram
 | --- | --- | --- |
 | 分ける（`RuleChangeSplit`） | 最初の日付が適用の日より前 | 元の行の `end_date` を適用の日の前の日にし、新しい行を作る。訪問の情報の行は、元の訪問の情報を写して新しく作る |
 | 書き換える（`RuleChangeInPlace`） | 最初の日付が適用の日以降 | 同じ行の `date` と規則のカラムを書き換え、置き換えた回の無い除外する日を消す |
-| 終了日だけ（`RuleChangeEndDate`） | 規則が終了日のほかに同じ | 同じ行の `end_date` を書き換え、新しい終了日の後の、置き換えた回の無い除外する日を消す |
+| 終了日だけ（`RuleChangeEndDate`） | 規則が終了日のほかに同じ（頻度、間隔、曜日の集まり、日、週が同じ） | 同じ行の `end_date` を書き換え、新しい終了日の後の、置き換えた回の無い除外する日を消す |
+
+- 新しい規則の毎週の間隔は、数え始める日を含む週を 1 週目にして数える。数え始める日は、分けるときは適用の日、書き換えるときは元の最初の日付である。新しい最初の日付は、1 週目から数えて新しい規則が当たる最初の日にする。
 
 - 置き換えた回の単発の予定は、元の繰り返しの予定を指したまま残す。除外する日も、回が単発の予定と重ならないように残す。
   - 分けるときは、適用の日以降の置き換えた回の元の日に新しい規則が当たれば、その日を新しい繰り返しの予定の除外する日に足す（`ReplacedDates`）。その日の訪問は職員が移したので、新しい規則の回を出さない。
