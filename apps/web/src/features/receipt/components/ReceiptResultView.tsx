@@ -1,6 +1,7 @@
 import { Button, buttonClassName } from '@buddy/ui'
 
 import type { ReceiptReport } from '#/api/types'
+import { formatDateKey } from '#/components/dateFormat'
 
 import { warningReasonText } from '../lib/errorMessage'
 import { ReceiptResultRows } from './ReceiptResultRows'
@@ -49,7 +50,7 @@ export const ReceiptResultView = ({
         <ul className="list-disc pl-6 text-body-dense">
           {report.warnings.map((w) => (
             <li key={`${w.calendar_id}-${w.event_id}`}>
-              {w.start.slice(0, 16).replace('T', ' ')}: {warningReasonText(w)}
+              {formatDateKey(w.start.slice(0, 10))} {w.start.slice(11, 16)}: {warningReasonText(w)}
             </li>
           ))}
         </ul>

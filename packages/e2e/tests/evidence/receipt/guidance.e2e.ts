@@ -200,11 +200,11 @@ test.describe('照合', () => {
               await page.getByTestId('receipt-check-submit').click()
               const warnings = page.getByTestId('receipt-warnings')
               await expect(receiptWarningItems(page)).toHaveText([
-                '2026-11-20 10:00: タイトルが「【サービス内容】利用者名」の形になっていません。',
+                '2026年11月20日（金） 10:00: タイトルが「【サービス内容】利用者名」の形になっていません。',
               ])
               await expect(warnings).not.toContainText('の組がない')
               await check(
-                '「照合に使わなかった予定」に「2026-11-20 10:00: タイトルが「【サービス内容】利用者名」の形になっていません。」が出て、API の文（タイトルに【…】の組がない）は出ない',
+                '「照合に使わなかった予定」に「2026年11月20日（金） 10:00: タイトルが「【サービス内容】利用者名」の形になっていません。」が出て、API の文（タイトルに【…】の組がない）は出ない',
               )
             } finally {
               await step('（撮影のため、撮り直しても 1 件になるよう、足した予定を消す）')
