@@ -110,9 +110,13 @@ export function checkPullRequest({ repo, number, title, body, issueTitle }) {
     errors.push(...checkPullRequestTitle(title, issueTitle))
   }
   const warnings = []
-  if (body.includes(`github.com/${repo}/pull/${number}#issuecomment-`)) {
+  // エビデンスはスレッドで確認を受けてから本文の表に並べるので、スレッドへのリンクだけで動画の URL が無ければ、並べ忘れである
+  if (
+    body.includes(`github.com/${repo}/pull/${number}#issuecomment-`) &&
+    !body.includes('github.com/user-attachments/assets/')
+  ) {
     warnings.push(
-      '本文が、この pull request のコメントを指している。エビデンスはコメントではなく「検証とエビデンス」に載せる',
+      '本文が、この pull request のコメントを指しているが、動画の URL が無い。スレッドで確認を受けた動画の URL を「検証とエビデンス」の表に並べる',
     )
   }
   return { errors, warnings }
