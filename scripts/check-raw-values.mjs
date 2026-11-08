@@ -20,7 +20,7 @@ import { extname, join, relative, resolve, sep } from "node:path";
 // 画面とコンポーネントのコードの置き場
 const TARGETS = ["./apps/web/src", "./apps/broker/src", "./packages/ui/src"];
 // 値とプリミティブトークンの名前を持ってよい置き場。トークンの層のファイル、生成物（API のクライアントのように、生成し直して差分を見るもの）、
-// 色の値を並べるトークンのカタログのページの 3 つを並べる。生成物とトークンのカタログのページは、画面のコードではない
+// 色の値を並べるトークンのカタログのページを並べる。生成物とトークンのカタログのページは、画面のコードではない。buddy のトークンのカタログのページは、トークンの層と同じ packages/ui/src/tokens にある
 const EXCLUDES = ["./packages/ui/src/tokens", "./apps/web/src/api/generated"];
 // プリミティブトークンの変数の名前の接頭辞
 const BASE_PREFIXES = ["--buddy-primitive-"];
