@@ -170,8 +170,9 @@ test.describe('予定の編集', () => {
             await expect(page.getByTestId('recurring-rule-day-of-week-1')).toBeChecked()
             await check('同じモーダルの中に、繰り返す（毎週）と曜日の欄が開き、月曜を選んでいる')
 
-            await step('曜日の「火」を押して「保存」を押す')
+            await step('曜日の「火」を押し、「月」を外して「保存」を押す')
             await page.getByTestId('recurring-rule-day-of-week-2').check()
+            await page.getByTestId('recurring-rule-day-of-week-1').uncheck()
             await page.getByTestId('schedule-recurrence-submit').click()
             await expect(page.getByTestId('schedule-recurrence-modal')).toBeHidden()
             await expect(dayEvent(page, LOGIN_STAFF.id, title)).toBeVisible()
