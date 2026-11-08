@@ -1,16 +1,27 @@
 import { composeStories } from '@storybook/react-vite'
-import { render, screen, waitFor } from '@testing-library/react'
+import { focusManager } from '@tanstack/react-query'
+import { act, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vite-plus/test'
 
+import { ApiError } from '#/api/BuddyApi'
+import { MOCK_FACILITY_ID } from '#/mocks/scheduleData'
 import type { AppRouterParameters } from '#/storybook/withAppRouter'
 
 import { isoWeekdayOf } from '../schema/recurringRuleForm'
 import { tokyoDateFromToday } from './storyData'
 import * as stories from './ScheduleRecurrenceModalContainer.stories'
 
-const { OccurrenceGone, Past, Replaced, RuleChangedInGoogle, StartsCustom, Weekly } =
-  composeStories(stories)
+const {
+  Cutover,
+  GooglePrimary,
+  OccurrenceGone,
+  Past,
+  Replaced,
+  RuleChangedInGoogle,
+  StartsCustom,
+  Weekly,
+} = composeStories(stories)
 
 const apiOf = (parameters: { appRouter?: unknown }) => {
   const { api, history } = parameters.appRouter as AppRouterParameters
@@ -208,5 +219,42 @@ describe('ScheduleRecurrenceModalContainer', () => {
     )
     await userEvent.click(screen.getByTestId('schedule-recurrence-submit'))
     expect(changeRule).toHaveBeenCalledOnce()
+  })
+
+  it('予定の正本を切り替えている間に開くと、欄と保存のボタンを出さずに、切り替えていることと閉じるボタンを出す', async () => {
+    render(<Cutover />)
+    expect(await screen.findByTestId('schedule-recurrence-cutover')).toHaveTextContent(
+      '予定の正本を buddy に切り替えています。切り替えが終わるまで、予定を作成、変更、キャンセルできません。',
+    )
+    expect(screen.getByTestId('modal-close')).toBeInTheDocument()
+    expect(screen.queryByTestId('recurring-rule-preset')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('schedule-recurrence-submit')).not.toBeInTheDocument()
+  })
+
+  it('google_primary の事業所で切り替えていなければ欄を出し、開いた後に切り替えが始まっても欄を残し、保存の失敗で知らせる', async () => {
+    const { api } = apiOf(GooglePrimary.parameters)
+    const list = vi.spyOn(api.schedules, 'list')
+    render(<GooglePrimary />)
+    await userEvent.selectOptions(await screen.findByTestId('recurring-rule-preset'), 'monthly-day')
+
+    await api.calendars.startCutover(MOCK_FACILITY_ID)
+    const listed = list.mock.calls.length
+    // 窓に戻ったときの読み直しで、一覧が切り替えを返しても、開いたときの状態のままにする
+    act(() => {
+      focusManager.setFocused(false)
+      focusManager.setFocused(true)
+    })
+    await waitFor(() => expect(list.mock.calls.length).toBeGreaterThan(listed))
+    expect(screen.queryByTestId('schedule-recurrence-cutover')).not.toBeInTheDocument()
+    expect(screen.getByTestId('recurring-rule-preset')).toHaveValue('monthly-day')
+
+    vi.spyOn(api.schedules, 'changeRule').mockRejectedValue(
+      new ApiError(409, '切り替えています', [], 'cutover_open'),
+    )
+    await userEvent.click(screen.getByTestId('schedule-recurrence-submit'))
+    expect(await screen.findByTestId('schedule-recurrence-error')).toHaveTextContent(
+      '予定の正本を buddy に切り替えています。',
+    )
+    act(() => focusManager.setFocused(undefined))
   })
 })

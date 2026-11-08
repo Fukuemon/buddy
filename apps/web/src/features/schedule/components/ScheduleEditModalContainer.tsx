@@ -9,6 +9,7 @@ import { useBuddyApi } from '#/api/useBuddyApi'
 import { Loading, Modal } from '@buddy/ui'
 
 import {
+  SCHEDULE_CUTOVER_OPEN_MESSAGE,
   SCHEDULE_EDIT_FORBIDDEN_MESSAGE,
   SCHEDULE_LOAD_ERROR_MESSAGE,
   isGoogleEventChanged,
@@ -28,6 +29,7 @@ import {
   scheduleQueryOptions,
   serviceCodeListQueryOptions,
   staffListQueryOptions,
+  useCutoverAtOpen,
   useUpdateSchedule,
 } from '../queries'
 import { createScheduleFormSchema, type ScheduleFormValues } from '../schema/scheduleForm'
@@ -151,6 +153,8 @@ const ScheduleEditForm = ({
  * 開いた後に Google カレンダーで予定が変わっていたら（409 の google_event_changed）、入力を残したまま、フォームの上に最新の予定を出し、
  * etag を最新の予定の etag に置き換える。もう一度保存すると、最新の予定を入力の内容にする。
  * buddy の繰り返しの規則に写せない Google カレンダーの予定（recurrence_unsupported）は、フォームを出さずに変えられないことを出す。
+ * 開いた時点で事業所が予定の正本を buddy に切り替えている途中なら、フォームを出さずに切り替えていることを出す（useCutoverAtOpen）。
+ * 詳細は切り替えの間に「編集」を出さないが、URL を直に開いたときのためである。
  * タイトルから訪問の情報を読み取れなかった Google カレンダーの予定（canAddVisitInfo）だけ、予定の種類のタブを出し、訪問にして訪問の情報を足せる。
  */
 export const ScheduleEditModalContainer = ({ scheduleId }: { scheduleId: Schedule['id'] }) => {
@@ -161,6 +165,7 @@ export const ScheduleEditModalContainer = ({ scheduleId }: { scheduleId: Schedul
   const staffQuery = useQuery(staffListQueryOptions(api, facilityId))
   const patientsQuery = useQuery(patientListQueryOptions(api, facilityId))
   const serviceCodesQuery = useQuery(serviceCodeListQueryOptions(api, facilityId))
+  const cutover = useCutoverAtOpen(calendarSearch)
 
   const schedule = scheduleQuery.data
   const staffList = staffQuery.data
@@ -170,13 +175,16 @@ export const ScheduleEditModalContainer = ({ scheduleId }: { scheduleId: Schedul
     schedule === undefined ||
     staffList === undefined ||
     patients === undefined ||
-    serviceCodes === undefined
+    serviceCodes === undefined ||
+    cutover === undefined ||
+    cutover === 'error'
   ) {
     const failed =
       scheduleQuery.isError ||
       staffQuery.isError ||
       patientsQuery.isError ||
-      serviceCodesQuery.isError
+      serviceCodesQuery.isError ||
+      cutover === 'error'
     if (!failed) {
       return (
         <Modal isOpen title="予定の編集">
@@ -238,6 +246,19 @@ export const ScheduleEditModalContainer = ({ scheduleId }: { scheduleId: Schedul
         title="予定の編集"
       >
         <p className="p-5">キャンセルした予定は編集できません。</p>
+      </Modal>
+    )
+  }
+
+  if (cutover) {
+    return (
+      <Modal
+        data-testid="schedule-edit-cutover"
+        isOpen
+        onCloseRequest={() => navigate({ to: '/schedule', search: calendarSearch })}
+        title="予定の編集"
+      >
+        <p className="p-5">{SCHEDULE_CUTOVER_OPEN_MESSAGE}</p>
       </Modal>
     )
   }

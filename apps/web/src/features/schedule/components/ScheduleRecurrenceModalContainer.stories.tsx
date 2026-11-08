@@ -3,10 +3,11 @@ import { createMemoryHistory } from '@tanstack/react-router'
 import { userEvent, within } from 'storybook/test'
 
 import { ApiError, type BuddyApi } from '#/api/BuddyApi'
+import { createFakeBuddyApi } from '#/api/fake/fakeBuddyApi'
 import { withAppRouter, type AppRouterParameters } from '#/storybook/withAppRouter'
 
 import { isoWeekdayOf } from '../schema/recurringRuleForm'
-import { recurringOccurrenceApi, tokyoDateFromToday } from './storyData'
+import { cutoverBuddyApi, recurringOccurrenceApi, tokyoDateFromToday } from './storyData'
 import { ScheduleRecurrenceModalContainer } from './ScheduleRecurrenceModalContainer'
 
 /**
@@ -139,6 +140,23 @@ export const Past: Story = { parameters: route({ api: recurringOccurrenceApi(-1)
 /** 1 回を置き換えた予定（単発の予定として扱う）の繰り返しの変更を URL で開いた。欄を出さずに理由を出す。 */
 export const Replaced: Story = {
   parameters: route({ api: recurringOccurrenceApi(1, { replaced: true }) }),
+}
+
+/** 予定の正本を buddy に切り替えている事業所で、URL を直に開いた。欄と保存のボタンを出さずに、切り替えていることを出す。 */
+export const Cutover: Story = {
+  parameters: route({
+    api: recurringOccurrenceApi(1, { base: cutoverBuddyApi(), sourceId: 'gcal-schedule-1' }),
+  }),
+}
+
+/** google_primary の事業所で、切り替えていないときに開いた。欄を出す。 */
+export const GooglePrimary: Story = {
+  parameters: route({
+    api: recurringOccurrenceApi(1, {
+      base: createFakeBuddyApi({ sourceMode: 'google_primary', calendarSyncs: [] }),
+      sourceId: 'gcal-schedule-1',
+    }),
+  }),
 }
 
 /** 保存したら、Google カレンダーで親の規則が変わって開いた回が無くなっていた。開き直すことを出し、保存を押せなくする。 */

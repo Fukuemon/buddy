@@ -12,6 +12,7 @@ import { fromApiSchedule } from '#/api/http/scheduleMapper'
 import {
   createMockCalendarSyncs,
   createMockProjectionSchedules,
+  MOCK_FACILITY_ID,
   mockServiceCodes,
 } from '#/mocks/scheduleData'
 
@@ -68,23 +69,36 @@ export const WEEKLY_RULE: RecurringRule = {
   endDate: null,
 }
 
+/** 予定の正本を buddy に切り替えている、google_primary の事業所のフェイクの API。 */
+export const cutoverBuddyApi = () => {
+  const api = createFakeBuddyApi({ sourceMode: 'google_primary', calendarSyncs: [] })
+  void api.calendars.startCutover(MOCK_FACILITY_ID)
+  return api
+}
+
 /**
- * 今日から days 日後の、繰り返しの予定の回（訪問の予定の schedule-1 を写したもの）を、どの ID でも読むフェイクの API。
+ * 今日から days 日後の、繰り返しの予定の回（base の予定の sourceId を写したもの）を、どの ID でも読むフェイクの API。
+ * base は、既定では buddy_primary の事業所のフェイクの API で、sourceId は訪問の予定の schedule-1 である。
  * replaced なら、1 回を置き換えた予定にする。画面は単発の予定として扱うので、recurrence を持たない。規則の変更は、適用の日を最初の日付にした新しい繰り返しの予定を返す。
  * 予定の詳細、編集、繰り返しの変更は同じ 1 件の取得で読むので、どの story でも同じ回を出す。
  */
 export const recurringOccurrenceApi = (
   days: number,
-  { rule = WEEKLY_RULE, replaced = false }: { rule?: RecurringRule; replaced?: boolean } = {},
+  {
+    rule = WEEKLY_RULE,
+    replaced = false,
+    base,
+    sourceId = 'schedule-1',
+  }: { rule?: RecurringRule; replaced?: boolean; base?: BuddyApi; sourceId?: string } = {},
 ): BuddyApi => {
-  const api = createFakeBuddyApi()
+  const api = base ?? createFakeBuddyApi()
   const date = tokyoDateFromToday(days)
   return {
     ...api,
     schedules: {
       ...api.schedules,
       get: async (facilityId, scheduleId) => ({
-        ...(await api.schedules.get(facilityId, 'schedule-1')),
+        ...(await api.schedules.get(facilityId, sourceId)),
         id: scheduleId,
         startsAt: `${date}T09:00:00+09:00`,
         endsAt: `${date}T09:29:00+09:00`,

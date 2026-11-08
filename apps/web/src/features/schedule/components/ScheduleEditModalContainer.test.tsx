@@ -10,6 +10,7 @@ import * as stories from './ScheduleEditModalContainer.stories'
 
 const {
   Cancelled,
+  Cutover,
   Forbidden,
   GooglePrimary,
   GooglePrimaryChangedInGoogle,
@@ -209,6 +210,15 @@ describe('ScheduleEditModalContainer', () => {
     expect(await screen.findByTestId('schedule-edit-recurrence-unsupported')).toHaveTextContent(
       'buddy では変更できません',
     )
+    expect(screen.queryByTestId('schedule-edit-submit')).not.toBeInTheDocument()
+  })
+
+  it('予定の正本を切り替えている間に開くと、フォームと保存のボタンを出さずに、切り替えていることと閉じるボタンを出す', async () => {
+    render(<Cutover />)
+    expect(await screen.findByTestId('schedule-edit-cutover')).toHaveTextContent(
+      '予定の正本を buddy に切り替えています。切り替えが終わるまで、予定を作成、変更、キャンセルできません。',
+    )
+    expect(screen.getByTestId('modal-close')).toBeInTheDocument()
     expect(screen.queryByTestId('schedule-edit-submit')).not.toBeInTheDocument()
   })
 })
