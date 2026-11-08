@@ -154,25 +154,26 @@ OpenAPI の項目のうち、送る値は `createSchedule`（`POST /v1/facilitie
 | 5 | 繰り返しの予定にする | `schedule-form-repeats` |
 | 6 | 繰り返し | `recurring-rule-preset` |
 | 8 | カスタムの繰り返す | `recurring-rule-frequency` |
-| 9 | 曜日 | `recurring-rule-day-of-week-{曜日}` |
+| 9 | 間隔 | `recurring-rule-interval` |
+| 10 | 曜日 | `recurring-rule-day-of-week-{曜日}` |
 | 7 | 終了日なし | `recurring-rule-ends-never` |
-| 10 | 終了日なし | `recurring-rule-ends-never` |
+| 11 | 終了日なし | `recurring-rule-ends-never` |
 | 8 | 終了日あり | `recurring-rule-ends-on` |
-| 11 | 終了日あり | `recurring-rule-ends-on` |
+| 12 | 終了日あり | `recurring-rule-ends-on` |
 | 9 | 終了日 | `recurring-rule-end-date` |
-| 12 | 終了日 | `recurring-rule-end-date` |
+| 13 | 終了日 | `recurring-rule-end-date` |
 | 6 | キャンセル | `schedule-new-cancel` |
 | 7 | キャンセル | `schedule-new-cancel` |
 | 9 | キャンセル | `schedule-new-cancel` |
 | 10 | キャンセル | `schedule-new-cancel` |
 | 11 | キャンセル | `schedule-new-cancel` |
-| 13 | キャンセル | `schedule-new-cancel` |
+| 14 | キャンセル | `schedule-new-cancel` |
 | 7 | 作成 | `schedule-create-submit` |
 | 8 | 作成 | `schedule-create-submit` |
 | 10 | 作成 | `schedule-create-submit` |
 | 11 | 作成 | `schedule-create-submit` |
 | 12 | 作成 | `schedule-create-submit` |
-| 14 | 作成 | `schedule-create-submit` |
+| 15 | 作成 | `schedule-create-submit` |
 
 - 番号は、状態ごとの構成要素の表の番号である。同じ要素が状態ごとに違う番号を持つときは、番号ごとに行を分ける。
 - 閉じるの `modal-close` は、packages/ui の `Modal` が付ける。

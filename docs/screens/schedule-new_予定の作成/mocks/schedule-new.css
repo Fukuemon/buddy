@@ -137,6 +137,17 @@
   color: var(--wf-danger);
 }
 
+/* 間隔の欄。44px の数の欄の右に「週ごと」を置き、誤りの文は欄と「週ごと」の下に出す */
+.sn-interval {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.sn-interval__input {
+  width: 6rem;
+}
+
 @container screen (width < 768px) {
   .sn-rule {
     grid-template-columns: minmax(0, 1fr);
