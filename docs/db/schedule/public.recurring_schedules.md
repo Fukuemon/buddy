@@ -88,9 +88,10 @@
 
 ## Triggers
 
-| Name                               | Definition                                                                                                                                   |
-| ---------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| recurring_schedules_set_updated_at | CREATE TRIGGER recurring_schedules_set_updated_at BEFORE UPDATE ON public.recurring_schedules FOR EACH ROW EXECUTE FUNCTION set_updated_at() |
+| Name                                        | Definition                                                                                                                                                                         |
+| ------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| recurring_schedules_set_updated_at          | CREATE TRIGGER recurring_schedules_set_updated_at BEFORE UPDATE ON public.recurring_schedules FOR EACH ROW EXECUTE FUNCTION set_updated_at()                                       |
+| recurring_schedules_clear_stale_weekly_days | CREATE TRIGGER recurring_schedules_clear_stale_weekly_days BEFORE UPDATE ON public.recurring_schedules FOR EACH ROW EXECUTE FUNCTION recurring_schedules_clear_stale_weekly_days() |
 
 ## Relations
 

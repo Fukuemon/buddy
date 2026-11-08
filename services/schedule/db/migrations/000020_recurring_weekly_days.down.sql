@@ -28,6 +28,9 @@ LEFT JOIN visit_info_details vid ON vid.id = rs.visit_info_id;
 
 COMMENT ON VIEW recurring_schedule_details IS '一覧の読み出しに使う、繰り返しの予定と訪問の情報と名前を結合したビュー';
 
+DROP TRIGGER recurring_schedules_clear_stale_weekly_days ON recurring_schedules;
+DROP FUNCTION recurring_schedules_clear_stale_weekly_days();
+
 ALTER TABLE recurring_schedules DROP CONSTRAINT recurring_schedules_monthly_weekly_fields_check;
 ALTER TABLE recurring_schedules DROP CONSTRAINT recurring_schedules_interval_weeks_check;
 ALTER TABLE recurring_schedules DROP CONSTRAINT recurring_schedules_days_of_week_check;

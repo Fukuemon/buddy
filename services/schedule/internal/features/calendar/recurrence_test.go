@@ -171,6 +171,10 @@ func TestRuleFromRecurrence(t *testing.T) {
 		{name: "毎月の間隔が 2", lines: []string{"RRULE:FREQ=MONTHLY;INTERVAL=2;BYMONTHDAY=20"}, first: "2026-10-20", expand: true},
 		{name: "毎週の間隔が 53", lines: []string{"RRULE:FREQ=WEEKLY;INTERVAL=53;BYDAY=TU"}, first: "2026-10-20", expand: true},
 		{name: "読めない INTERVAL", lines: []string{"RRULE:FREQ=WEEKLY;INTERVAL=0;BYDAY=TU"}, first: "2026-10-20", expand: true},
+		{
+			name: "重なる曜日は 1 つにする", lines: []string{"RRULE:FREQ=WEEKLY;BYDAY=TU,TU"}, first: "2026-10-20",
+			want: schedule.Rule{Frequency: schedule.Weekly, DaysOfWeek: []int{tue}, Interval: 1},
+		},
 		{name: "毎週の数字の付く曜日", lines: []string{"RRULE:FREQ=WEEKLY;BYDAY=1TU"}, first: "2026-10-20", expand: true},
 		{name: "WKST の無い隔週の日曜を含む複数の曜日", lines: []string{"RRULE:FREQ=WEEKLY;INTERVAL=2;BYDAY=TU,SU"}, first: "2026-10-20", expand: true},
 		{name: "WKST=MO の隔週の日曜を含む複数の曜日", lines: []string{"RRULE:FREQ=WEEKLY;INTERVAL=2;BYDAY=TU,SU;WKST=MO"}, first: "2026-10-20", expand: true},

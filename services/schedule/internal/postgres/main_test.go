@@ -543,6 +543,23 @@ func TestMigrateRecurringWeeklyDays(t *testing.T) {
 			t.Errorf("繰り返しの予定 %s の回が、移す前の毎週の曜日と違う", id)
 		}
 	}
+	// 切り戻した前のバージョンの規則の書き換え（000019 までの UpdateRecurringScheduleRule と同じ SQL）を流す。
+	// 曜日を変えた毎週の行は day_of_week の曜日で読み、毎月に変えた行は検査の制約に反しない
+	const oldUpdateRule = `UPDATE recurring_schedules SET date = $2, frequency = $3, day_of_week = $4, day_of_month = $5,
+		week_of_month = $6, end_date = NULL, version = version + 1 WHERE id = $1`
+	if _, err := pool.Exec(ctx, oldUpdateRule, withDay, "2026-10-09", "weekly", 5, nil, nil); err != nil {
+		t.Fatalf("前のバージョンで曜日を変えられない: %v", err)
+	}
+	if _, err := pool.Exec(ctx, oldUpdateRule, noDay, "2026-10-12", "monthly", nil, 12, nil); err != nil {
+		t.Fatalf("前のバージョンで毎月に変えられない: %v", err)
+	}
+	if rs, err := repo.GetForUpdate(ctx, withDay); err != nil || !slices.Equal(rs.Rule.DaysOfWeek, []int{5}) || rs.Rule.Interval != 1 {
+		t.Errorf("前のバージョンで金曜に変えた行の規則 = %+v, %v, want 金曜の毎週", rs.Rule, err)
+	}
+	if rs, err := repo.GetForUpdate(ctx, noDay); err != nil || rs.Rule.Frequency != "monthly" || rs.Rule.DaysOfWeek != nil {
+		t.Errorf("前のバージョンで毎月に変えた行の規則 = %+v, %v", rs.Rule, err)
+	}
+
 	if _, err := pool.Exec(ctx, "UPDATE recurring_schedules SET days_of_week = '{}' WHERE id = $1", withDay); err == nil {
 		t.Error("空の曜日の並びを入れられた")
 	}

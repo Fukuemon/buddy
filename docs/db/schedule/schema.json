@@ -3444,6 +3444,10 @@
         {
           "name": "recurring_schedules_set_updated_at",
           "def": "CREATE TRIGGER recurring_schedules_set_updated_at BEFORE UPDATE ON public.recurring_schedules FOR EACH ROW EXECUTE FUNCTION set_updated_at()"
+        },
+        {
+          "name": "recurring_schedules_clear_stale_weekly_days",
+          "def": "CREATE TRIGGER recurring_schedules_clear_stale_weekly_days BEFORE UPDATE ON public.recurring_schedules FOR EACH ROW EXECUTE FUNCTION recurring_schedules_clear_stale_weekly_days()"
         }
       ]
     },
@@ -8113,6 +8117,12 @@
       "name": "public.detached_occurrence_schedule_id",
       "return_type": "text",
       "arguments": "external_calendar_id text, parent_event_id text, original_start_at timestamp with time zone, original_start_date date",
+      "type": "FUNCTION"
+    },
+    {
+      "name": "public.recurring_schedules_clear_stale_weekly_days",
+      "return_type": "trigger",
+      "arguments": "",
       "type": "FUNCTION"
     }
   ],

@@ -1500,7 +1500,7 @@ export interface components {
              */
             days_of_week?: number[] | null;
             /**
-             * @description weekly の間隔の週の数。1 が毎週、2 が隔週である。省くと 1 にする。
+             * @description weekly の間隔の週の数。1 が毎週、2 が隔週である。weekly で省くと 1 にする。monthly には指定できない（1 も 400 になる）。
              *     レスポンスでは、weekly は必ず返し、monthly は null である
              */
             interval?: number | null;

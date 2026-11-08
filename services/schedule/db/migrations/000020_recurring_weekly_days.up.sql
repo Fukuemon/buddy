@@ -22,6 +22,28 @@ ALTER TABLE recurring_schedules ADD CONSTRAINT recurring_schedules_monthly_weekl
     CHECK (frequency = 'weekly' OR (days_of_week IS NULL AND interval_weeks = 1)) NOT VALID;
 ALTER TABLE recurring_schedules VALIDATE CONSTRAINT recurring_schedules_monthly_weekly_fields_check;
 
+-- 前のバージョンのアプリは、規則を書き換えるときに曜日の並びと間隔を書かない。頻度、day_of_week、最初の日付を変えたのに
+-- 曜日の並びと間隔が元のままの書き込みは、前のバージョンの書き込みとみなし、曜日の並びを NULL、間隔を 1 にする。
+-- 残すと、毎月に変えた行が検査の制約に反し、曜日を変えた行が古い曜日の並びで読まれるためである。
+-- このバージョンのアプリは、頻度か最初の日付を変えるときに、必ず曜日の並びか間隔も変える（終了日だけの変更は最初の日付を変えない）。
+CREATE FUNCTION recurring_schedules_clear_stale_weekly_days() RETURNS trigger
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    IF NEW.days_of_week IS NOT DISTINCT FROM OLD.days_of_week AND NEW.interval_weeks = OLD.interval_weeks
+       AND (NEW.frequency, NEW.day_of_week, NEW.date) IS DISTINCT FROM (OLD.frequency, OLD.day_of_week, OLD.date) THEN
+        NEW.days_of_week := NULL;
+        NEW.interval_weeks := 1;
+    END IF;
+    RETURN NEW;
+END
+$$;
+
+COMMENT ON FUNCTION recurring_schedules_clear_stale_weekly_days() IS '前のバージョンのアプリが規則を書き換えたときに、元のままの曜日の並びと間隔を外す';
+
+CREATE TRIGGER recurring_schedules_clear_stale_weekly_days BEFORE UPDATE ON recurring_schedules
+    FOR EACH ROW EXECUTE FUNCTION recurring_schedules_clear_stale_weekly_days();
+
 CREATE OR REPLACE VIEW recurring_schedule_details AS
 SELECT rs.id, rs.facility_id,
        rs.schedule_type_id, st.code AS schedule_type_code, st.name AS schedule_type_name,

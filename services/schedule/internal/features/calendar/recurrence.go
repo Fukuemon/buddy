@@ -184,7 +184,10 @@ func parseRRule(value string) (rule schedule.Rule, until string, count int, err 
 				if !ok {
 					return schedule.Rule{}, "", 0, expansion("毎週の BYDAY=%s は写せない", byday)
 				}
-				rule.DaysOfWeek = append(rule.DaysOfWeek, dow)
+				// RFC 5545 では重なる曜日も 1 つの曜日と同じ回なので、重ねずに写す
+				if !slices.Contains(rule.DaysOfWeek, dow) {
+					rule.DaysOfWeek = append(rule.DaysOfWeek, dow)
+				}
 			}
 		}
 		if !weekStartMatches(parts["WKST"], interval, rule.DaysOfWeek) {

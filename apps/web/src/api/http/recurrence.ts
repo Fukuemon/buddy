@@ -46,7 +46,7 @@ export const occurs = (recurringSchedule: ApiRecurringSchedule, date: string): b
   const day = new Date(dayOf(date)).getUTCDate()
   const firstWeekday = isoWeekday(dayOf(recurringSchedule.date))
   if (rule.frequency === 'weekly') {
-    const days = rule.days_of_week ?? [firstWeekday]
+    const days = rule.days_of_week?.length ? rule.days_of_week : [firstWeekday]
     if (!days.includes(isoWeekday(dayOf(date)))) return false
     const weeks = Math.round(
       (weekStart(dayOf(date)) - weekStart(dayOf(recurringSchedule.date))) / (7 * DAY_MS),

@@ -49,13 +49,14 @@
 
 ## Stored procedures and functions
 
-| Name                                   | ReturnType | Arguments                                                                                                             | Type     |
-| -------------------------------------- | ---------- | --------------------------------------------------------------------------------------------------------------------- | -------- |
-| public.set_updated_at                  | trigger    |                                                                                                                       | FUNCTION |
-| public.projected_schedule_id           | text       | external_calendar_id text, external_event_id text                                                                     | FUNCTION |
-| public.detached_schedule_id            | text       | external_calendar_id text, external_event_id text                                                                     | FUNCTION |
-| public.occurrence_schedule_id          | text       | external_calendar_id text, parent_event_id text, original_start_at timestamp with time zone, original_start_date date | FUNCTION |
-| public.detached_occurrence_schedule_id | text       | external_calendar_id text, parent_event_id text, original_start_at timestamp with time zone, original_start_date date | FUNCTION |
+| Name                                               | ReturnType | Arguments                                                                                                             | Type     |
+| -------------------------------------------------- | ---------- | --------------------------------------------------------------------------------------------------------------------- | -------- |
+| public.set_updated_at                              | trigger    |                                                                                                                       | FUNCTION |
+| public.projected_schedule_id                       | text       | external_calendar_id text, external_event_id text                                                                     | FUNCTION |
+| public.detached_schedule_id                        | text       | external_calendar_id text, external_event_id text                                                                     | FUNCTION |
+| public.occurrence_schedule_id                      | text       | external_calendar_id text, parent_event_id text, original_start_at timestamp with time zone, original_start_date date | FUNCTION |
+| public.detached_occurrence_schedule_id             | text       | external_calendar_id text, parent_event_id text, original_start_at timestamp with time zone, original_start_date date | FUNCTION |
+| public.recurring_schedules_clear_stale_weekly_days | trigger    |                                                                                                                       | FUNCTION |
 
 ## Relations
 
