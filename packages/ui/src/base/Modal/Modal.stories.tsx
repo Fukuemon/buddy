@@ -42,6 +42,23 @@ export const WithCancel: Story = {
   },
 }
 
+/** データを失う操作の起点のボタンを 1 つだけ左端に置き、「閉じる」と編集を右にまとめる。 */
+export const WithDestructiveAction: Story = {
+  args: {
+    stickyFooter: (requestClose) => (
+      <>
+        <Button className="mr-auto" variant="destructive">
+          予定をキャンセル
+        </Button>
+        <Button onClick={requestClose} variant="secondary">
+          閉じる
+        </Button>
+        <Button variant="secondary">編集</Button>
+      </>
+    ),
+  },
+}
+
 /** headerContent は、タイトルの右に置き、ヘッダーの右端に寄せる。 */
 export const WithHeaderContent: Story = {
   args: { headerContent: <Button variant="secondary">切り替え</Button> },

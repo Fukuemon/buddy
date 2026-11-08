@@ -16,7 +16,7 @@ OpenAPI の項目は、`getSchedule`（`GET /v1/schedules/{schedule_id}`）の�
 | 主訪問者、予定者 | 職員の名前 | `Schedule.staffId` を、職員の一覧（`Staff.name`）で引く | `staff_id` を、`listUsers` の `Staff.username` で引く |
 | メモ | メモ | `Schedule.description` | `description` |
 | キャンセルの理由 | 理由 | `Schedule.cancel.reason` | `cancel.reason` |
-| Google カレンダーの案内、キャンセルの説明 | Google カレンダーの予定か | `Schedule.fromGoogleCalendar` | `listSchedules` の `Schedule.source` が `google_calendar` |
+| Google カレンダーの印、Google カレンダーのヘルプ、キャンセルの説明 | Google カレンダーの予定か | `Schedule.fromGoogleCalendar` | `listSchedules` の `Schedule.source` が `google_calendar` |
 | 確認が必要な理由 | 理由と直し方 | `Schedule.reviewReason` | `listSchedules` の `Schedule.review_reason` |
 | キャンセルする予定の日時 | 年月日、曜日、開始と終了の時刻 | `Schedule.startsAt`、`Schedule.endsAt` | `date`、`start_time`、`end_time` |
 | キャンセルの理由の欄 | 理由 | `BuddyApi.schedules.cancel` の `reason` | `cancelSchedule` の本文の `reason` |
@@ -62,7 +62,7 @@ OpenAPI の項目は、`getSchedule`（`GET /v1/schedules/{schedule_id}`）の�
   - 見つからなければ、`SCHEDULE_NOT_FOUND_MESSAGE` を出す。
   - 処理は `apps/web/src/features/schedule/components/ScheduleDetailModalContainer.tsx` にある。
 - `Schedule.source` が `google_calendar` の予定は、web のサーバーが `Schedule.fromGoogleCalendar` を `true` にする。
-  - 画面は案内を出す。予定を編集できる職員には、キャンセルと編集のボタンも出す。
+  - 画面は「Google カレンダー」の印と ? のヘルプを出す。予定を編集できる職員には、キャンセルと編集のボタンも出す。
 - `Schedule.etag` が `null` でない予定は、web のサーバーが `Schedule.etag` に写す。処理は `apps/web/src/api/http/scheduleMapper.ts` にある。
 - `cutover` は、`listSchedules` の `cutover` を `ScheduleList.cutover` にしたものである。`buddy_primary` の事業所では読まない。
 - `review_reason` が `null` でない予定は、web のサーバーが `Schedule.reviewReason` に写す。
@@ -85,7 +85,7 @@ OpenAPI の項目は、`getSchedule`（`GET /v1/schedules/{schedule_id}`）の�
 | 職員が、キャンセルの理由の欄に、前後の空白を除いて 1 文字以上 255 文字以下を入れている | キャンセルの理由の欄の値の前後の空白を除いた長さが 1 以上 255 以下（`ScheduleCancelDialog` が `ConfirmDialog` に渡す `canSubmit`） |
 
 - 判定の処理は、`apps/web/src/features/schedule/components/ScheduleDetailModal.tsx` と `ScheduleDetailModalContainer.tsx` にある。
-  - キャンセルした予定では、`ScheduleDetailModal` が下端（下端の閉じる、予定をキャンセル、編集）を描かない。
+  - キャンセルした予定では、`ScheduleDetailModal` が下端（予定をキャンセル、下端の閉じる、編集）を描かない。
   - 予定をキャンセルできない予定では `onCancelSchedule` を、編集できない予定では `onEdit` を、`ScheduleDetailModalContainer` が渡さない。
   - Google カレンダーの予定でも、ほかの条件に当てはまれば、どちらも渡す。
 - 予定と事業所の状態は、`apps/web/src/features/schedule/lib/scheduleWritable.ts` の `canChangeSchedule` が判定する。
@@ -116,27 +116,28 @@ OpenAPI の項目は、`getSchedule`（`GET /v1/schedules/{schedule_id}`）の�
 | 2 | 予定の詳細のダイアログ | `schedule-detail-modal` |
 | 4 | 閉じる | `modal-close` |
 | 5 | キャンセルの理由 | `schedule-detail-cancel` |
-| 4 | Google カレンダーの案内 | `schedule-detail-google-calendar` |
-| 5 | 確認が必要な理由 | `schedule-detail-review-reason` |
+| 4 | Google カレンダーの印 | `schedule-detail-google-calendar` |
+| 5 | Google カレンダーのヘルプ | `schedule-detail-google-calendar-help` |
+| 6 | 確認が必要な理由 | `schedule-detail-review-reason` |
 | 4 | 日時 | `schedule-detail-datetime` |
-| 5 | 日時 | `schedule-detail-datetime` |
 | 6 | 日時 | `schedule-detail-datetime` |
+| 7 | 日時 | `schedule-detail-datetime` |
 | 7 | 訪問の情報 | `schedule-detail-visit` |
-| 8 | 訪問の情報 | `schedule-detail-visit` |
 | 9 | 訪問の情報 | `schedule-detail-visit` |
 | 11 | メモ | `schedule-detail-memo` |
 | 13 | メモ | `schedule-detail-memo` |
-| 8 | 下端の閉じる | `schedule-detail-close` |
-| 10 | 下端の閉じる | `schedule-detail-close` |
+| 9 | 下端の閉じる | `schedule-detail-close` |
 | 12 | 下端の閉じる | `schedule-detail-close` |
-| 9 | 編集 | `schedule-detail-edit` |
-| 12 | 編集 | `schedule-detail-edit` |
+| 13 | 下端の閉じる | `schedule-detail-close` |
+| 14 | 下端の閉じる | `schedule-detail-close` |
+| 10 | 編集 | `schedule-detail-edit` |
 | 13 | 編集 | `schedule-detail-edit` |
 | 14 | 編集 | `schedule-detail-edit` |
-| 10 | 予定をキャンセル | `schedule-detail-cancel-schedule` |
+| 15 | 編集 | `schedule-detail-edit` |
+| 8 | 予定をキャンセル | `schedule-detail-cancel-schedule` |
 | 11 | 予定をキャンセル | `schedule-detail-cancel-schedule` |
+| 12 | 予定をキャンセル | `schedule-detail-cancel-schedule` |
 | 13 | 予定をキャンセル | `schedule-detail-cancel-schedule` |
-| 14 | 予定をキャンセル | `schedule-detail-cancel-schedule` |
 | 2 | キャンセルのダイアログ | `schedule-cancel-dialog` |
 | 4 | キャンセルする予定の日時 | `schedule-cancel-datetime` |
 | 5 | キャンセルの説明 | `schedule-cancel-description` |
@@ -149,7 +150,9 @@ OpenAPI の項目は、`getSchedule`（`GET /v1/schedules/{schedule_id}`）の�
 
 - 番号は、状態ごとの構成要素の表の番号である。同じ要素が状態ごとに違う番号を持つときは、番号ごとに行を分ける。
 - 閉じるの `modal-close` は、packages/ui の `Modal` が付ける。
-- 訪問の情報の項目の並び（`schedule-detail-visit-fields`）は、構成要素の表に載せないので、この表に載せない。
+- 次の testid は、構成要素の表に載せないので、この表に載せない。
+  - 訪問の情報の項目の並びの `schedule-detail-visit-fields`
+  - Google カレンダーのヘルプの説明の `schedule-detail-google-calendar-help-text`
 
 ## 状態と失敗の要因
 
