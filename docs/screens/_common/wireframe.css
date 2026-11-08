@@ -872,8 +872,9 @@ body {
   color: var(--wf-danger);
 }
 
-/* ダイアログのフッターでは、起点のボタンを 1 つだけ左端に置き、閉じるボタンから離す */
-.wf-dialog__footer > .wf-btn--destructive {
+/* ダイアログとモーダルのフッターでは、起点のボタンを 1 つだけ左端に置き、閉じるボタンから離す（apps/web の mr-auto） */
+.wf-dialog__footer > .wf-btn--destructive,
+.wf-modal__footer > .wf-btn--destructive {
   margin-right: auto;
 }
 

@@ -53,7 +53,7 @@ apps/web の画面だけが使うアイコンは、`apps/web/src/assets/icons/` 
 
 | コンポーネント | 使う場面 | 使わない場面 | キーボード |
 | --- | --- | --- | --- |
-| [`Button`](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/docs/コンポーネント-base-button--docs) | 操作を 1 つ実行する。`variant="danger"`（塗りの赤）は、確認のダイアログでデータを失う操作を確定するボタンだけに使う。その確認のダイアログを開く起点のボタンは `variant="destructive"`（白い面に赤い文字）にする | 画面を移る（`Link` に `buttonClassName` を渡す） | Tab で移り、Enter と Space で押す。押せない間は `aria-disabled` にし、フォーカスは受ける |
+| [`Button`](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/docs/コンポーネント-base-button--docs) | 操作を 1 つ実行する。`variant="danger"`（塗りの赤）は、確認のダイアログ（何が失われるかを示して確定する入力のダイアログを含む）でデータを失う操作を確定するボタンだけに使う。その確認のダイアログを開く起点のボタンは `variant="destructive"`（白い面に赤い文字）にする | 画面を移る（`Link` に `buttonClassName` を渡す） | Tab で移り、Enter と Space で押す。押せない間は `aria-disabled` にし、フォーカスは受ける |
 | [`Modal`](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/docs/コンポーネント-base-modal--docs) | 今の画面の上で、予定の詳細や入力を行い、閉じて元の画面に戻る | 完了の通知、ナビゲーション | 開くとタイトルにフォーカスが移る。Tab はダイアログの中だけを回る。Esc で閉じる要求を出す。閉じると、開いたボタンにフォーカスが戻る |
 | [`Dialog`](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/docs/コンポーネント-base-dialog--docs) | 短い入力を 1 つ受けるか、少ない選択肢から操作を 1 つ選び、元の画面に戻る。入力と確認は、パターンの `InputDialog` と `ConfirmDialog` で組む | 項目の多い入力（`Modal` を使う）、完了の通知 | 開くと最初の押せる要素にフォーカスが移る。Esc と覆いで `onClose` を呼び、送っている間は呼ばない。閉じると、開く前の要素にフォーカスが戻る |
 | [`RowTable`](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/docs/コンポーネント-base-rowtable--docs) | 名前と補足の値を持つ対象を並べ、行を押して詳細へ移るか選ぶか、行ごとに操作を置く。幅 768px 未満では 2 行のリストにする | 列を見比べる表（`Table` を使う） | Tab で行の名前のリンクかボタンに移り、Enter で押す。行の操作を置いた行は、操作のボタンに移る |
@@ -138,8 +138,9 @@ DADS から外れる規則は、外れることと理由を、その規則に書
   - フッターにデータを失う操作の起点のボタンがあるときは、その 1 つだけをフッターの左端に置き、閉じるのに使うボタンを右のまとまりの先頭に置く。
     - 例は、予定の詳細の「予定をキャンセル」と、確認が必要な予定のダイアログの「buddy の内容で書き直す」である。
     - 戻せない操作を、閉じるボタンと編集のボタンから離すためである。
-  - 確認のダイアログで、確定の操作が何かを取り消すかやめる操作のとき（「予定をキャンセルする」「やめる」、Google カレンダーでの変更を消す「書き直す」）は、閉じる側のボタンを「戻る」にする。`ConfirmDialog` の `cancelLabel` に渡す。
-    - 「キャンセル」と「予定をキャンセルする」が並ぶと、どちらが予定を取り消すのかを読み違えやすい。「やめる」と「書き直す」も、「キャンセル」と並ぶと、どちらが取り消すのかを読み違えやすい。
+  - 確認のダイアログで、確定のボタンが「キャンセル」と同じく取り消しの意味に読めるとき（「予定をキャンセルする」「やめる」「書き直す」）は、閉じる側のボタンを「戻る」にする。`ConfirmDialog` の `cancelLabel` に渡す。
+    - 「キャンセル」と「予定をキャンセルする」が並ぶと、どちらが予定を取り消すのかを読み違えやすい。「書き直す」も、Google カレンダーでの変更を取り消す操作なので当てる。
+    - 「外す」「退職にする」のように、取り消しの意味に読めない確定には当てず、閉じる側を「キャンセル」のままにする。
     - 出典: [UX Movement: When Cancel Buttons Should Not Say Cancel](https://uxmovement.com/buttons/when-cancel-buttons-should-not-say-cancel/)
   - `Modal` は `stickyFooter` を渡すと × を出さない。`Dialog` は `DialogHeader` に `onClose` を渡したときだけ × を出す。
   - フッターを置かないモーダルとダイアログ（キャンセルした予定の詳細、読み込み中、読み込みの失敗）だけは、× を置く。
