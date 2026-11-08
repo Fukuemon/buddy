@@ -9,7 +9,7 @@ import { isoWeekdayOf } from '../schema/recurringRuleForm'
 import { tokyoDateFromToday } from './storyData'
 import * as stories from './ScheduleRecurrenceModalContainer.stories'
 
-const { Past, Replaced, StartsCustom, Weekly } = composeStories(stories)
+const { OccurrenceGone, Past, Replaced, StartsCustom, Weekly } = composeStories(stories)
 
 const apiOf = (parameters: { appRouter?: unknown }) => {
   const { api, history } = parameters.appRouter as AppRouterParameters
@@ -133,6 +133,20 @@ describe('ScheduleRecurrenceModalContainer', () => {
     expect(screen.getByLabelText('終了日', { selector: 'input' })).toHaveAttribute(
       'data-testid',
       'recurring-rule-end-date',
+    )
+  })
+
+  it('Google カレンダーで親の規則が変わり、開いた回が無くなっていたら、開き直すことを出し、保存を押せなくする', async () => {
+    render(<OccurrenceGone />)
+    await userEvent.selectOptions(await screen.findByTestId('recurring-rule-preset'), 'monthly-day')
+    await userEvent.click(screen.getByTestId('schedule-recurrence-submit'))
+
+    expect(await screen.findByTestId('schedule-recurrence-error')).toHaveTextContent(
+      '予定のカレンダーから開き直してください。',
+    )
+    expect(screen.getByTestId('schedule-recurrence-submit')).toHaveAttribute(
+      'aria-disabled',
+      'true',
     )
   })
 })

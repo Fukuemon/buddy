@@ -2,11 +2,40 @@ import type { Meta, StoryObj } from '@storybook/react-vite'
 import { createMemoryHistory } from '@tanstack/react-router'
 import { userEvent, within } from 'storybook/test'
 
+import { ApiError, type BuddyApi } from '#/api/BuddyApi'
 import { withAppRouter, type AppRouterParameters } from '#/storybook/withAppRouter'
 
 import { isoWeekdayOf } from '../schema/recurringRuleForm'
 import { recurringOccurrenceApi, tokyoDateFromToday } from './storyData'
 import { ScheduleRecurrenceModalContainer } from './ScheduleRecurrenceModalContainer'
+
+/**
+ * 開いた後に Google カレンダーで親の規則が変わり、開いた回が無くなったフェイクの API。
+ * 規則の変更を 409（google_event_changed）で拒み、2 回目からの読み出しは 404 で拒む。
+ */
+const occurrenceGoneApi = (): BuddyApi => {
+  const api = recurringOccurrenceApi(1)
+  let reads = 0
+  return {
+    ...api,
+    schedules: {
+      ...api.schedules,
+      get: async (facilityId, scheduleId) => {
+        reads += 1
+        if (reads > 1) throw new ApiError(404, '予定が見つかりません')
+        return api.schedules.get(facilityId, scheduleId)
+      },
+      changeRule: async () => {
+        throw new ApiError(
+          409,
+          'Google カレンダーで予定が変わっていました。最新の予定を確認してください',
+          [],
+          'google_event_changed',
+        )
+      },
+    },
+  }
+}
 
 const route = (appRouter: Partial<AppRouterParameters>) => ({
   appRouter: {
@@ -98,4 +127,14 @@ export const Past: Story = { parameters: route({ api: recurringOccurrenceApi(-1)
 /** 1 回を置き換えた予定（単発の予定として扱う）の繰り返しの変更を URL で開いた。欄を出さずに理由を出す。 */
 export const Replaced: Story = {
   parameters: route({ api: recurringOccurrenceApi(1, { replaced: true }) }),
+}
+
+/** 保存したら、Google カレンダーで親の規則が変わって開いた回が無くなっていた。開き直すことを出し、保存を押せなくする。 */
+export const OccurrenceGone: Story = {
+  parameters: route({ api: occurrenceGoneApi() }),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement.ownerDocument.body)
+    await userEvent.selectOptions(await canvas.findByTestId('recurring-rule-preset'), 'monthly-day')
+    await userEvent.click(canvas.getByTestId('schedule-recurrence-submit'))
+  },
 }

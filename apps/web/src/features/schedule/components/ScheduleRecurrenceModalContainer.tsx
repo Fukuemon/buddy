@@ -63,6 +63,7 @@ const RecurrenceForm = ({ schedule, staffList, patients, calendarSearch }: Recur
   // 送り直しでも同じ ID を送る。google_primary で元の親に書けずに失敗したとき、新しい親を重ねずにやり直すためである
   const [newRecurringId] = useState(() => newScheduleId())
   const changeRule = useChangeRecurringRule(schedule.id)
+  const [isGone, setGone] = useState(false)
 
   const backToDetail = () =>
     navigate({
@@ -93,7 +94,12 @@ const RecurrenceForm = ({ schedule, staffList, patients, calendarSearch }: Recur
     } catch (error) {
       if (!isGoogleEventChanged(error)) return
       const latest = await api.schedules.get(facilityId, schedule.id).catch(() => undefined)
-      if (latest !== undefined) setETag(latest.etag ?? null)
+      // Google カレンダーで親の規則が変わると、開いた回が無くなるか別の繰り返しの予定の回になり、etag を取り直せない。保存し直しても同じ競合になるので、開き直させる
+      if (latest?.recurrence?.recurringScheduleId !== recurrence.recurringScheduleId) {
+        setGone(true)
+        return
+      }
+      setETag(latest.etag ?? null)
     }
   }
 
@@ -126,6 +132,7 @@ const RecurrenceForm = ({ schedule, staffList, patients, calendarSearch }: Recur
           </Button>
           <Button
             data-testid="schedule-recurrence-submit"
+            disabled={isGone}
             form={FORM_ID}
             isLoading={form.formState.isSubmitting}
             type="submit"
@@ -161,8 +168,10 @@ const RecurrenceForm = ({ schedule, staffList, patients, calendarSearch }: Recur
         </dl>
         <RecurringRuleFields baseDate={occurrenceDate} form={form} />
         {changeRule.isError && (
-          <p className="text-danger" role="alert">
-            {scheduleSubmitErrorMessage(changeRule.error, '更新')}
+          <p className="text-danger" data-testid="schedule-recurrence-error" role="alert">
+            {isGone
+              ? 'Google カレンダーで繰り返しの予定が変わり、開いた回が無くなりました。予定のカレンダーから開き直してください。'
+              : scheduleSubmitErrorMessage(changeRule.error, '更新')}
           </p>
         )}
       </form>
