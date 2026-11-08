@@ -95,12 +95,19 @@ test.describe('照合の結果', () => {
       // 毎週の予定は、取り消した 11 日の回を除き、18 日は置き換えた回の時刻で出る
       // 件数は、先に流れる取り込みの spec の書き出しで変わるので数えない
       const futaba = receiptResultRow(page, '見本二葉')
-      await expect(futaba).toContainText(['2026-11-04', '2026-11-18', '2026-11-25'])
+      await expect(futaba).toContainText([
+        '2026年11月4日（水）',
+        '2026年11月18日（水）',
+        '2026年11月25日（水）',
+      ])
       await expect(futaba).toContainText(['09:00', '14:00', '09:00'])
-      await expect(futaba.filter({ hasText: '2026-11-11' })).toHaveCount(0)
+      await expect(futaba.filter({ hasText: '2026年11月11日（水）' })).toHaveCount(0)
       // 主訪問者の名前は compose/receipt-calendars.json の staff_name で、シードの職員の名前と同じ
       await expect(futaba.first()).toContainText(LEADER.staff.name)
-      await expect(receiptResultRow(page, '見本一郎')).toContainText(['2026-11-02', '2026-11-16'])
+      await expect(receiptResultRow(page, '見本一郎')).toContainText([
+        '2026年11月2日（月）',
+        '2026年11月16日（月）',
+      ])
     })
 
     test('対象の月の実績と照合した場合、予定と合う実績が整合の行に、開始時間かサービス内容が違う実績が不整合の行に出ること', async ({
@@ -115,8 +122,10 @@ test.describe('照合の結果', () => {
       await showAllReceiptRows(page)
 
       // 11/02 の見本 一郎は、予定の 10:00〜10:30 の訪看I2 と、開始時間、終了時間、提供時間、サービス内容が合う
-      await expect(receiptCategoryRowCells(page, 'match', '2026-11-02', '見本一郎')).toHaveText([
-        '2026-11-02',
+      await expect(
+        receiptCategoryRowCells(page, 'match', '2026年11月2日（月）', '見本一郎'),
+      ).toHaveText([
+        '2026年11月2日（月）',
         '見本一郎',
         mori,
         '',
@@ -132,8 +141,10 @@ test.describe('照合の結果', () => {
       ])
 
       // 11/04 の見本 二葉は、予定が 09:00、実績が 09:15 に始まる
-      await expect(receiptCategoryRowCells(page, 'mismatch', '2026-11-04', '見本二葉')).toHaveText([
-        '2026-11-04',
+      await expect(
+        receiptCategoryRowCells(page, 'mismatch', '2026年11月4日（水）', '見本二葉'),
+      ).toHaveText([
+        '2026年11月4日（水）',
         '見本二葉',
         mori,
         '開始時間が予定と違う終了時間が予定と違う',
@@ -149,8 +160,10 @@ test.describe('照合の結果', () => {
       ])
 
       // 11/18 の見本 二葉は、予定が置き換えた回の 14:00 の訪看I3、実績が同じ時刻の予防訪看I３ である
-      await expect(receiptCategoryRowCells(page, 'mismatch', '2026-11-18', '見本二葉')).toHaveText([
-        '2026-11-18',
+      await expect(
+        receiptCategoryRowCells(page, 'mismatch', '2026年11月18日（水）', '見本二葉'),
+      ).toHaveText([
+        '2026年11月18日（水）',
         '見本二葉',
         mori,
         'サービス内容が予定と違う',

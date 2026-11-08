@@ -125,8 +125,8 @@ test.describe('照合の結果', () => {
             await expect(futaba).toHaveCount(3)
             await expect(futaba.first()).toContainText(LEADER.staff.name)
             await expect(receiptResultRow(page, '見本一郎')).toContainText([
-              '2026-11-02',
-              '2026-11-16',
+              '2026年11月2日（月）',
+              '2026年11月16日（月）',
             ])
             await check('「予定のみ」に、主訪問者が森 健太の、見本一郎と見本二葉の予定の行が出る')
           },
