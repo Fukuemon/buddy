@@ -33,6 +33,7 @@ func TestPlanRuleChange(t *testing.T) {
 		name           string
 		rs             schedule.RecurringSchedule
 		effective      *civil.Date
+		firstWeek      *civil.Date
 		rule           schedule.Rule
 		wantKind       schedule.RuleChangeKind
 		wantKeptEnd    *civil.Date
@@ -63,7 +64,7 @@ func TestPlanRuleChange(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := schedule.PlanRuleChange(tt.rs, tt.effective, tt.rule, date(21))
+			got, err := schedule.PlanRuleChange(tt.rs, tt.effective, tt.firstWeek, tt.rule, date(21))
 			if tt.wantErr {
 				if !errors.Is(err, apperr.ErrInvalidInput) {
 					t.Fatalf("err = %v, want ErrInvalidInput", err)
@@ -110,6 +111,7 @@ func TestPlanRuleChangeInterval(t *testing.T) {
 		name      string
 		rs        schedule.RecurringSchedule
 		effective *civil.Date
+		firstWeek *civil.Date
 		rule      schedule.Rule
 		wantKind  schedule.RuleChangeKind
 		wantFirst civil.Date
@@ -149,7 +151,7 @@ func TestPlanRuleChangeInterval(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := schedule.PlanRuleChange(tt.rs, tt.effective, tt.rule, oct(21))
+			got, err := schedule.PlanRuleChange(tt.rs, tt.effective, tt.firstWeek, tt.rule, oct(21))
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -165,6 +167,71 @@ func TestPlanRuleChangeInterval(t *testing.T) {
 				if got.Next.HasOccurrenceOn(d) {
 					t.Errorf("%s に回がある", d)
 				}
+			}
+		})
+	}
+}
+
+func TestPlanRuleChangeFirstWeek(t *testing.T) {
+	// 今日は 2026-11-08（日曜）。元の規則は 2026-10-05 に始まる隔週の月曜で、11-02 と 11-16 に回がある（#902）
+	date := func(month time.Month, day int) civil.Date { return civil.Date{Year: 2026, Month: month, Day: day} }
+	nov := func(day int) civil.Date { return date(time.November, day) }
+	novp := func(day int) *civil.Date { d := nov(day); return &d }
+	today := nov(8)
+	rs := schedule.RecurringSchedule{ID: "R", Slot: schedule.Slot{Date: date(time.October, 5)}, Rule: schedule.Rule{Frequency: schedule.Weekly, DaysOfWeek: []int{1}, Interval: 2}}
+	mondayThursday := schedule.Rule{Frequency: schedule.Weekly, DaysOfWeek: []int{1, 4}, Interval: 2}
+	tests := []struct {
+		name      string
+		effective *civil.Date
+		firstWeek *civil.Date
+		wantFirst civil.Date
+		occurs    []civil.Date
+		notOccurs []civil.Date
+	}{
+		{
+			name: "今日より前の回の週を 1 週目にして、今日以降の回だけを作る", effective: &today, firstWeek: novp(2), wantFirst: nov(16),
+			occurs: []civil.Date{nov(16), nov(19), nov(30)}, notOccurs: []civil.Date{nov(9), nov(12), nov(23)},
+		},
+		{
+			name: "1 週目を決める日を省くと、適用の日の週を 1 週目にする", effective: &today, wantFirst: nov(9),
+			occurs: []civil.Date{nov(9), nov(12), nov(23)}, notOccurs: []civil.Date{nov(16), nov(19)},
+		},
+		{
+			name: "1 週目を決める日が適用の日と同じなら、省いたときと同じになる", effective: novp(16), firstWeek: novp(16), wantFirst: nov(16),
+			occurs: []civil.Date{nov(19), nov(30)}, notOccurs: []civil.Date{nov(23)},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := schedule.PlanRuleChange(rs, tt.effective, tt.firstWeek, mondayThursday, today)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if got.Kind != schedule.RuleChangeSplit || got.Next.Date != tt.wantFirst {
+				t.Fatalf("Kind = %v, Next.Date = %v, want %v, %v", got.Kind, got.Next.Date, schedule.RuleChangeSplit, tt.wantFirst)
+			}
+			if !equalDate(got.Kept.Rule.EndDate, novp(tt.effective.Day-1)) {
+				t.Errorf("Kept.Rule.EndDate = %v, want 適用の日の前の日", got.Kept.Rule.EndDate)
+			}
+			for _, d := range tt.occurs {
+				if !got.Next.HasOccurrenceOn(d) {
+					t.Errorf("%s に回が無い", d)
+				}
+			}
+			for _, d := range tt.notOccurs {
+				if got.Next.HasOccurrenceOn(d) {
+					t.Errorf("%s に回がある", d)
+				}
+			}
+		})
+	}
+	for name, firstWeek := range map[string]*civil.Date{
+		"1 週目を決める日が適用の日の後":   novp(9),
+		"1 週目を決める日が最初の日付より前": func() *civil.Date { d := date(time.October, 4); return &d }(),
+	} {
+		t.Run(name, func(t *testing.T) {
+			if _, err := schedule.PlanRuleChange(rs, &today, firstWeek, mondayThursday, today); !errors.Is(err, apperr.ErrInvalidInput) {
+				t.Fatalf("err = %v, want ErrInvalidInput", err)
 			}
 		})
 	}

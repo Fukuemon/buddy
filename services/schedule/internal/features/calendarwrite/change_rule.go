@@ -59,7 +59,8 @@ func NewChangeRule(locks FacilityLock, cutovers Cutovers, types Types, staffRefs
 // Do は、事業所 facilityID の、一覧での ID が recurringScheduleID の繰り返しの予定の規則を、effective 以降の回について rule に変え、
 // effective 以降の回を持つ繰り返しの予定を返す。recurringScheduleID は ChangeOccurrence.Do と同じく、記録の主キーか親の一覧での ID である。
 // etag は画面が読んだ親の予定の etag で、親の予定を Google から読み直して比べる。親の予定を buddy の繰り返しの予定に写し、
-// 当て方を schedule.PlanRuleChange で決める。今日は now の Asia/Tokyo の日付である。
+// 当て方を schedule.PlanRuleChange で決める。firstWeek は新しい規則の 1 週目を決める日で、nil なら effective を使う（ADR-0038）。
+// 今日は now の Asia/Tokyo の日付である。
 //
 // 境界の日（分けるときは effective、終了日だけの変更では新しい終了日の翌日）以降の、変えた例外の回は、同じカレンダーの単発の予定に
 // 作り直してから消す（ADR-0037）。手順は、主訪問者を替えるときの移し方（Update.move）と同じで、回の一覧での ID を変えない。取り消した例外の回は変えない。
@@ -74,7 +75,7 @@ func NewChangeRule(locks FacilityLock, cutovers Cutovers, types Types, staffRefs
 //
 // etag が無いか、分けるときに id が無いか ULID でないとき、入力が schedule.PlanRuleChange の規則に合わないときは入力のエラーを返す。
 // 親の予定の規則を buddy の規則に写せないときは apperr.ErrConflict を返す。ほかのエラーは ChangeOccurrence.Do と CreateRecurring.Do と同じである。
-func (r ChangeRule) Do(ctx context.Context, facilityID, recurringScheduleID, id, etag string, effective *civil.Date,
+func (r ChangeRule) Do(ctx context.Context, facilityID, recurringScheduleID, id, etag string, effective, firstWeek *civil.Date,
 	rule schedule.RuleInput) (scheduleview.RecurringDetail, error) {
 	u := r.update
 	if etag == "" {
@@ -122,7 +123,7 @@ func (r ChangeRule) Do(ctx context.Context, facilityID, recurringScheduleID, id,
 	if err != nil {
 		return scheduleview.RecurringDetail{}, err
 	}
-	plan, err := schedule.PlanRuleChange(rs, effective, schedule.Rule(rule), civil.Today(u.now()))
+	plan, err := schedule.PlanRuleChange(rs, effective, firstWeek, schedule.Rule(rule), civil.Today(u.now()))
 	if err != nil {
 		return scheduleview.RecurringDetail{}, err
 	}

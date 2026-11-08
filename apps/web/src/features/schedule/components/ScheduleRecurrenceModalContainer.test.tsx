@@ -135,6 +135,7 @@ describe('ScheduleRecurrenceModalContainer', () => {
     expect(recurringId).toBe('recurring-1')
     expect(change).toMatchObject({
       effectiveDate: opened,
+      firstWeekDate: opened,
       rule: {
         frequency: 'monthly',
         daysOfWeek: null,
@@ -150,7 +151,7 @@ describe('ScheduleRecurrenceModalContainer', () => {
     expect(new URLSearchParams(history.location.search).get('date')).toBe(opened)
   })
 
-  it('今日より前の回では、今日以降の回を変えることを出し、今日を適用の日にして送る', async () => {
+  it('今日より前の回では、今日以降の回を変えることを出し、今日を適用の日に、開いた回の日を 1 週目を決める日にして送る', async () => {
     const { api } = apiOf(Past.parameters)
     const changeRule = vi.spyOn(api.schedules, 'changeRule')
     render(<Past />)
@@ -161,7 +162,10 @@ describe('ScheduleRecurrenceModalContainer', () => {
     await userEvent.click(screen.getByTestId('schedule-recurrence-submit'))
 
     await waitFor(() => expect(changeRule).toHaveBeenCalledOnce())
-    expect(changeRule.mock.calls[0]?.[2].effectiveDate).toBe(tokyoDateFromToday(0))
+    expect(changeRule.mock.calls[0]?.[2]).toMatchObject({
+      effectiveDate: tokyoDateFromToday(0),
+      firstWeekDate: tokyoDateFromToday(-1),
+    })
   })
 
   it('1 回を置き換えた予定は単発の予定として扱い、欄を出さずに変えられない理由を出す', async () => {

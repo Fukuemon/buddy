@@ -30,7 +30,7 @@ func TestSchedulesChangeRuleSplits(t *testing.T) {
 	}
 
 	effective := civil.Date{Year: 2026, Month: 10, Day: 22}
-	next, err := uc.ChangeRule(ctx, rs.ID, &effective, schedule.RuleInput{Frequency: schedule.Weekly, DaysOfWeek: []int{tuesday}})
+	next, err := uc.ChangeRule(ctx, rs.ID, &effective, nil, schedule.RuleInput{Frequency: schedule.Weekly, DaysOfWeek: []int{tuesday}})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -78,7 +78,7 @@ func TestSchedulesChangeRuleSplitExcludesReplacedDate(t *testing.T) {
 	}
 
 	effective := civil.Date{Year: 2026, Month: 10, Day: 22}
-	next, err := uc.ChangeRule(ctx, rs.ID, &effective, schedule.RuleInput{Frequency: schedule.Monthly, WeekOfMonth: &fourth, DayOfWeek: &monday})
+	next, err := uc.ChangeRule(ctx, rs.ID, &effective, nil, schedule.RuleInput{Frequency: schedule.Monthly, WeekOfMonth: &fourth, DayOfWeek: &monday})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -114,7 +114,7 @@ func TestSchedulesChangeRuleInPlace(t *testing.T) {
 	// 毎月の第 2 月曜に変える。取り消した 11-09 は第 2 月曜だが、新しい規則には引き継がない
 	week := 2
 	effective := today
-	got, err := uc.ChangeRule(ctx, rs.ID, &effective, schedule.RuleInput{Frequency: schedule.Monthly, WeekOfMonth: &week, DayOfWeek: &monday})
+	got, err := uc.ChangeRule(ctx, rs.ID, &effective, nil, schedule.RuleInput{Frequency: schedule.Monthly, WeekOfMonth: &week, DayOfWeek: &monday})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -139,7 +139,7 @@ func TestSchedulesChangeRuleEndDate(t *testing.T) {
 	if err := (inmem.RecurringSchedules{Store: s}).AddExclusion(ctx, recurringID, civil.Date{Year: 2026, Month: 11, Day: 2}); err != nil {
 		t.Fatal(err)
 	}
-	got, err := uc.ChangeRule(ctx, recurringID, nil, schedule.RuleInput{Frequency: schedule.Weekly, EndDate: &end})
+	got, err := uc.ChangeRule(ctx, recurringID, nil, nil, schedule.RuleInput{Frequency: schedule.Weekly, EndDate: &end})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -167,7 +167,7 @@ func TestSchedulesChangeRuleErrors(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			uc, _ := newSchedules(inmem.Seeded())
-			_, err := uc.ChangeRule(editorCtx(), tt.recurringID, tt.effective, schedule.RuleInput{Frequency: schedule.Weekly, DaysOfWeek: []int{tuesday}})
+			_, err := uc.ChangeRule(editorCtx(), tt.recurringID, tt.effective, nil, schedule.RuleInput{Frequency: schedule.Weekly, DaysOfWeek: []int{tuesday}})
 			if !errors.Is(err, tt.wantErr) {
 				t.Errorf("err = %v, want %v", err, tt.wantErr)
 			}

@@ -1,9 +1,11 @@
 #!/usr/bin/env node
 // プリミティブトークンとセマンティックトークンの CSS を 1 つのファイルにまとめ、静的なファイル（画面仕様書のモック、文書のサイト）が読むトークンの CSS を作る。
 // 静的な HTML はパッケージの CSS を import で読めないので、@import の行を外して中身を並べる。コメントは残す。外部の URL の @import を外したときは標準エラーに出す。
-// 使い方: node build-static-tokens.mjs [--check] --out <書き出すパス> <CSS のファイルかパッケージのパス>...
+// 使い方: node <スクリプトの置き場>/build-static-tokens.mjs [--check] [--resolve-from <ディレクトリ>] --out <書き出すパス> <CSS のファイルかパッケージのパス>...
 //   プリミティブトークンを先に、セマンティックトークンを後に並べる。パッケージのパス（`@scope/name/dist/tokens.css` の形）は、カレントディレクトリの package.json から解決する
+//   --resolve-from は、パッケージのパスを解決する package.json のディレクトリ。モノレポで、パッケージが下の階層のワークスペース（`packages/ui` など）の依存にだけあるときに渡す
 //   --check は書き出さず、書き出すはずの中身と今のファイルを比べる。CI で生成物のずれを見つけるのに使う
+//   生成物の先頭のコメントには、流したときのスクリプトのパスと引数を、カレントディレクトリからの相対で書く。同じディレクトリで流せば作り直せる
 // 終了コード: 0 は書き出した（--check では一致した）、1 は --check で食い違うかファイルがない、2 は引数の誤りか CSS が読めない、@import が残る
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { createRequire } from "node:module";
@@ -12,12 +14,17 @@ import { dirname, isAbsolute, join, relative, resolve } from "node:path";
 const argv = process.argv.slice(2);
 let check = false;
 let out = "";
+let resolveFrom = "";
 const sources = [];
 for (let i = 0; i < argv.length; i++) {
   if (argv[i] === "--check") check = true;
   else if (argv[i] === "--out") {
     out = argv[++i] ?? "";
     if (out.startsWith("--")) fail(`--out の次には書き出すパスを書く: ${out}`);
+  }
+  else if (argv[i] === "--resolve-from") {
+    resolveFrom = argv[++i] ?? "";
+    if (!resolveFrom || resolveFrom.startsWith("--")) fail(`--resolve-from の次には package.json のあるディレクトリを書く: ${resolveFrom}`);
   }
   else if (argv[i].startsWith("--")) fail(`知らない引数: ${argv[i]}`);
   else sources.push(argv[i]);
@@ -47,9 +54,18 @@ const parts = sources.map((source) => {
 
 // 先頭のコメントのコマンドは、パスの書き方（./ の有無）で --check が食い違わないよう、正規化して書く
 const normalize = (p) => (isAbsolute(p) || p.startsWith(".") ? `./${relative(process.cwd(), resolve(p))}` : p);
+const fromCwd = (p) => relative(process.cwd(), resolve(p)) || ".";
+const command = [
+  "node",
+  fromCwd(process.argv[1]),
+  ...(resolveFrom ? ["--resolve-from", fromCwd(resolveFrom)] : []),
+  "--out",
+  fromCwd(out),
+  ...sources.map(normalize),
+].join(" ");
 const header = `/*
  * 生成物。手で直さない。次のコマンドで作り直す。
- * node build-static-tokens.mjs --out ${relative(process.cwd(), resolve(out))} ${sources.map(normalize).join(" ")}
+ * ${command}
  */
 `;
 const body = `${header}\n${parts.join("\n\n")}\n`;
@@ -72,7 +88,7 @@ if (check) {
 
 function locate(source) {
   if (isAbsolute(source) || source.startsWith(".")) return resolve(source);
-  return createRequire(join(process.cwd(), "package.json")).resolve(source);
+  return createRequire(join(resolve(resolveFrom || "."), "package.json")).resolve(source);
 }
 
 function fail(message) {

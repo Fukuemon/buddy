@@ -93,7 +93,13 @@ const ARGS = {
   'schedules.changeRule': z.tuple([
     id,
     id,
-    z.object({ effectiveDate: date, id, rule: recurringRule }),
+    z.object({
+      effectiveDate: date,
+      // この項目を送る前の画面からも受けるため、省いてよい
+      firstWeekDate: date.optional(),
+      id,
+      rule: recurringRule,
+    }),
     etag.nullable(),
   ]),
   'staff.list': z.tuple([id, nameSearch]),

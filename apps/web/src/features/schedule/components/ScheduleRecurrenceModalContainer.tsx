@@ -89,6 +89,8 @@ const RecurrenceForm = ({ schedule, staffList, patients, calendarSearch }: Recur
         recurringScheduleId: recurrence.recurringScheduleId,
         change: {
           effectiveDate,
+          // 今日より前の回を開いたときも、開いた回の週から隔週の並びを数える（ADR-0038）
+          firstWeekDate: occurrenceDate,
           rule: recurringRuleToSend(values, initial, recurrence.rule),
           id: newRecurringId,
         },

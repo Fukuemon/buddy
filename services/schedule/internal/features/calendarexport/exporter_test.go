@@ -78,7 +78,7 @@ type scheduleOps struct {
 	Create           func(ctx context.Context, facilityID string, in schedule.SlotInput) (schedule.Schedule, error)
 	CreateRecurring  func(ctx context.Context, facilityID string, in schedule.SlotInput, rule schedule.RuleInput) (schedule.RecurringSchedule, error)
 	ChangeOccurrence func(ctx context.Context, recurringScheduleID string, originalDate civil.Date, in schedule.SlotInput) (schedule.Schedule, error)
-	ChangeRule       func(ctx context.Context, recurringScheduleID string, effective *civil.Date, rule schedule.RuleInput) (schedule.RecurringSchedule, error)
+	ChangeRule       func(ctx context.Context, recurringScheduleID string, effective, firstWeek *civil.Date, rule schedule.RuleInput) (schedule.RecurringSchedule, error)
 	Cancel           func(ctx context.Context, scheduleID, reason string) (schedule.Cancellation, error)
 	CancelOccurrence func(ctx context.Context, recurringScheduleID string, originalDate civil.Date, reason string) (schedule.Cancellation, error)
 	Update           func(ctx context.Context, scheduleID string, in schedule.SlotInput) (schedule.Schedule, error)
@@ -550,7 +550,7 @@ func TestExportRecurringRuleChange(t *testing.T) {
 	e.run(t)
 
 	effective := civil.Date{Year: 2026, Month: 11, Day: 10}
-	next, err := e.schedules.ChangeRule(e.ctx, rs.ID, &effective, schedule.RuleInput{Frequency: schedule.Weekly, DaysOfWeek: []int{tuesday}, EndDate: &end})
+	next, err := e.schedules.ChangeRule(e.ctx, rs.ID, &effective, nil, schedule.RuleInput{Frequency: schedule.Weekly, DaysOfWeek: []int{tuesday}, EndDate: &end})
 	if err != nil {
 		t.Fatal(err)
 	}

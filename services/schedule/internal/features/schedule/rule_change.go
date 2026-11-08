@@ -35,10 +35,11 @@ type RuleChange struct {
 }
 
 // PlanRuleChange は、繰り返しの予定 rs の規則を、effective 以降の回について rule に変える変更を決める（ADR-0037）。
-// rule が rs の規則と終了日だけ違うときは、effective を読まない。そのほかのときは effective が必須である。
+// rule が rs の規則と終了日だけ違うときは、effective と firstWeek を読まない。そのほかのときは effective が必須である。
+// firstWeek は、分けるときに新しい規則の 1 週目を決める日で、rs の最初の日付以降、effective 以前に限る。nil なら effective を使う（ADR-0038）。
 // today は Asia/Tokyo の今日である。過去の回を変えないため、effective は今日以降に、終了日だけの変更の終了日は今日の前の日以降に限る。
 // 入力が規則に合わないときは入力のエラーを返す。
-func PlanRuleChange(rs RecurringSchedule, effective *civil.Date, rule Rule, today civil.Date) (RuleChange, error) {
+func PlanRuleChange(rs RecurringSchedule, effective, firstWeek *civil.Date, rule Rule, today civil.Date) (RuleChange, error) {
 	rule, err := NewRule(rule)
 	if err != nil {
 		return RuleChange{}, err
@@ -55,14 +56,21 @@ func PlanRuleChange(rs RecurringSchedule, effective *civil.Date, rule Rule, toda
 	if rs.Rule.EndDate != nil && effective.After(*rs.Rule.EndDate) {
 		return RuleChange{}, apperr.Invalid("適用の日は繰り返しの終了日 %s 以前にします", *rs.Rule.EndDate)
 	}
-	from := *effective
+	if firstWeek != nil && (firstWeek.Before(rs.Date) || firstWeek.After(*effective)) {
+		return RuleChange{}, apperr.Invalid("1 週目を決める日は、繰り返しの最初の日付 %s 以降、適用の日 %s 以前にします", rs.Date, *effective)
+	}
+	// 新しい規則は count を含む週を 1 週目にして数え、from 以降の回だけを持つ
+	from, count := *effective, *effective
+	if firstWeek != nil {
+		count = *firstWeek
+	}
 	kind := RuleChangeSplit
 	if !rs.Date.Before(from) {
 		// 適用の日より前の回が無い。最初の日付より前には回を作らない
-		kind, from = RuleChangeInPlace, rs.Date
+		kind, from, count = RuleChangeInPlace, rs.Date, rs.Date
 	}
-	rule = rule.WithDays(from)
-	first, ok := firstOccurrence(rs.Slot, rule, from)
+	rule = rule.WithDays(count)
+	first, ok := firstOccurrence(rs.Slot, rule, count, from)
 	if !ok {
 		return RuleChange{}, apperr.Invalid("%s 以降に、新しい繰り返しの規則の回がありません", from)
 	}
@@ -132,11 +140,12 @@ func equalInt(a, b *int) bool {
 	return *a == *b
 }
 
-// firstOccurrence は、from 以降で、slot の時刻の繰り返しの予定が rule で最初に回を持つ日を返す。
-// 規則に曜日も日も無いときは、最初の日付から決めるので、from の日を返す。終了日までに回が無ければ false を返す。
-func firstOccurrence(slot Slot, rule Rule, from civil.Date) (civil.Date, bool) {
+// firstOccurrence は、count を最初の日付にした slot の時刻の繰り返しの予定が、rule で from 以降に最初に回を持つ日を返す。
+// count は from 以前の日で、毎週の間隔は count を含む週を 1 週目にして数える。
+// 規則に曜日も日も無いときは、最初の日付から決める。終了日までに回が無ければ false を返す。
+func firstOccurrence(slot Slot, rule Rule, count, from civil.Date) (civil.Date, bool) {
 	s := slot
-	s.Date = from
+	s.Date = count
 	rs := RecurringSchedule{Slot: s, Rule: rule}
 	for i := range maxFirstOccurrenceDays {
 		d := addDays(from, i)

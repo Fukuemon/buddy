@@ -1,16 +1,17 @@
 #!/usr/bin/env node
 // セマンティックトークンの組が、WCAG 2.2 のコントラスト比の基準に届くかを確認する。
-// 写した後に、SOURCES、PREFIX、TEXT_PAIRS、NON_TEXT_PAIRS を、自分のトークンに合わせて書き換える。
-// 使い方: node check-contrast.mjs [--root <ブロック>]... [CSS のファイルかパッケージのパス]...
+// コピーした後に、SOURCES、PREFIX、TEXT_PAIRS、NON_TEXT_PAIRS を、自分のトークンに合わせて書き換える。
+// 使い方: node check-contrast.mjs [--root <ブロック>]... [--resolve-from <ディレクトリ>] [CSS のファイルかパッケージのパス]...
 //   --root は、:root のほかに画面に効く値として読むブロックを、報告に出た形（`[data-theme=dark]`、`@media (prefers-color-scheme: dark) :root`）で渡す。
 //   ダークモードのように条件ごとの値があるときは、条件ごとに --root を替えて流す。--root を渡すと、ほかの条件つきのブロックのセマンティックトークンの宣言は読み飛ばして数を出す
 //   引数を省くと SOURCES を読む。リポジトリの中のファイルは ./ で始める。
 //   パッケージのパス（`@scope/name/dist/tokens.css` の形）は、カレントディレクトリの package.json から解決する
+//   --resolve-from は、パッケージのパスを解決する package.json のディレクトリ。モノレポで、パッケージが下の階層のワークスペース（`packages/ui` など）の依存にだけあるときに渡す
 // 読む値: :root のブロック（`:root, :host` のようなセレクタの並びと、@layer の中を含む）の変数の宣言だけを、画面に効く値として読む。
 //   値は、var() の参照（空白とフォールバックを含む）、#rgb、#rrggbb を受ける。同じ変数の値は、CSS のカスケードの順（!important、@layer の順、後の宣言）で決める。
 //   rgb()、hsl()、色の名前、calc() は色に解決できないと報告する。
 //   :root 以外のブロックと @media などの中の宣言は、PREFIX の変数なら確認できないと報告し、ほかの変数（プリミティブトークン）は読み飛ばして数を出す
-// 終了コード: 0 は全部の組が基準に届いた、1 は届かない組か、色に解決できないトークンか、条件つきのブロックの中のセマンティックトークンの宣言か、CSS にない --root のブロックがある、2 は CSS が読めない
+// 終了コード: 0 は全部の組が基準に届いた、1 は届かない組か、色に解決できないトークンか、条件つきのブロックの中のセマンティックトークンの宣言か、CSS にない --root のブロックがある、2 は CSS が読めないか、--resolve-from の次にディレクトリがない
 import { readFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { isAbsolute, join, resolve } from "node:path";
@@ -74,8 +75,16 @@ const NON_TEXT_PAIRS = [
 const MAX_DEPTH = 10;
 const roots = [];
 const args = [];
+let resolveFrom = ".";
 for (let i = 2; i < process.argv.length; i++) {
   if (process.argv[i] === "--root") roots.push(process.argv[++i] ?? "");
+  else if (process.argv[i] === "--resolve-from") {
+    resolveFrom = process.argv[++i] ?? "";
+    if (!resolveFrom || resolveFrom.startsWith("--")) {
+      console.error(`--resolve-from の次には package.json のあるディレクトリを書く: ${resolveFrom}`);
+      process.exit(2);
+    }
+  }
   else args.push(process.argv[i]);
 }
 const sources = args.length ? args : SOURCES;
@@ -204,7 +213,7 @@ function cascadeRank(layer, important) {
 
 function locate(source) {
   if (isAbsolute(source) || source.startsWith(".")) return resolve(source);
-  return createRequire(join(process.cwd(), "package.json")).resolve(source);
+  return createRequire(join(resolve(resolveFrom), "package.json")).resolve(source);
 }
 
 // var() の参照をたどり、6 桁の 16 進の色にする。参照の先がなければフォールバックを使う
