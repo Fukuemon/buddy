@@ -59,6 +59,12 @@ import * as Stories from './DatePicker.stories'
 
 <Canvas of={Stories.WithErrorFocus} />
 
+### 見出しを隠した形
+
+見出しを欄の外（ラジオボタンの右など）に置くときは `isLabelHidden` を渡す。`label` は読み上げの名前に残し、枠の高さを 44px にして、隣の 44px の要素と中心をそろえる。
+
+<Canvas of={Stories.LabelHidden} />
+
 ### 無効
 
 <Canvas of={Stories.Disabled} />

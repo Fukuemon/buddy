@@ -29,6 +29,9 @@ type Detail struct {
 	// ETag は、Projection の予定と Google カレンダーに書いた予定の、Google の etag である。繰り返しの予定の展開した回では、親の予定の etag である。buddy の予定では空である。
 	// 画面は、予定を変えるか取り消すときに、読んだ etag を送る。
 	ETag string
+	// Rule は、google_primary の事業所で、繰り返しの親を展開した回の、親の繰り返しの規則である。ほかの予定では nil である。
+	// このとき RecurringScheduleID は、親の予定の一覧での ID で、画面はこの 2 つで規則の変更（changeRecurringRule）を送る（ADR-0037）。
+	Rule *schedule.Rule
 }
 
 // Source は、予定の読み元である。

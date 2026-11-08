@@ -16,6 +16,9 @@ const {
   GoogleCalendarRecurrenceUnsupported,
   NotFound,
   ReadOnly,
+  RecurringOccurrence,
+  RecurringPastMenu,
+  RecurringReplaced,
   Visit,
 } = composeStories(stories)
 
@@ -122,5 +125,35 @@ describe('ScheduleDetailModalContainer', () => {
       '利用者の都合',
       '"etag-schedule-3"',
     ])
+  })
+
+  it('単発の予定では、「編集」をメニューにせず、押すと編集の画面へ移るボタンにする', async () => {
+    render(<Visit />)
+    expect(await screen.findByTestId('schedule-detail-edit')).not.toHaveAttribute('aria-haspopup')
+  })
+
+  it('繰り返しの予定の回では、「編集」を押すと「この予定を編集」と「繰り返しを変更」のメニューを出す', async () => {
+    render(<RecurringOccurrence />)
+    await userEvent.click(await screen.findByTestId('schedule-detail-edit'))
+    expect(screen.getByTestId('schedule-detail-edit-occurrence')).toHaveTextContent(
+      'この予定を編集',
+    )
+    expect(screen.getByTestId('schedule-detail-edit-recurrence')).not.toHaveAttribute(
+      'aria-disabled',
+    )
+  })
+
+  it('今日より前の回でも、「繰り返しを変更」を押せる', async () => {
+    render(<RecurringPastMenu />)
+    await userEvent.click(await screen.findByTestId('schedule-detail-edit'))
+    const item = await screen.findByTestId('schedule-detail-edit-recurrence')
+    expect(item).not.toHaveAttribute('aria-disabled')
+    expect(item.textContent).toBe('繰り返しを変更')
+  })
+
+  it('1 回を置き換えた予定は、単発の予定と同じく、メニューにせず「編集」のボタンだけを出す', async () => {
+    render(<RecurringReplaced />)
+    expect(await screen.findByTestId('schedule-detail-edit')).not.toHaveAttribute('aria-haspopup')
+    expect(screen.queryByTestId('schedule-detail-edit-recurrence')).not.toBeInTheDocument()
   })
 })

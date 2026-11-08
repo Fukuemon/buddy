@@ -2,6 +2,7 @@ package scheduleview_test
 
 import (
 	"errors"
+	"maps"
 	"reflect"
 	"regexp"
 	"slices"
@@ -298,6 +299,47 @@ func TestSchedulesListGooglePrimaryExpandsRecurrence(t *testing.T) {
 	}
 	if !slices.Equal(scheduleIDs(again.Schedules), scheduleIDs(list.Schedules)) {
 		t.Errorf("読み直した ID = %v, want %v", scheduleIDs(again.Schedules), scheduleIDs(list.Schedules))
+	}
+}
+
+// TestSchedulesListGooglePrimaryOccurrenceRule は、繰り返しの親を展開した回が、親の一覧での ID と親の規則を持ち、
+// 変えた回（例外の回）と単発の予定は持たないことを確認する。画面は、展開した回から規則の変更を送る（ADR-0037）。
+func TestSchedulesListGooglePrimaryOccurrenceRule(t *testing.T) {
+	s := googleStore()
+	putEvent(s, targetCalendarID, "weekly", "定例", tokyo(10, 5, 9), 60, func(p *scheduleview.Projection) {
+		p.Recurrence = []string{"RRULE:FREQ=WEEKLY;UNTIL=20261231T235959Z"}
+		p.LastEndDate = nil
+	})
+	putEvent(s, targetCalendarID, "weekly_20261019", "定例（変更）", tokyo(10, 20, 11), 60, func(p *scheduleview.Projection) {
+		orig := tokyo(10, 19, 9)
+		p.RecurringEventID, p.OriginalStart = "weekly", scheduleview.ProjectionTime{At: &orig}
+	})
+	putEvent(s, targetCalendarID, "single", "会議", tokyo(10, 7, 13), 60, nil)
+
+	list, err := newSchedules(s).List(editorCtx(), facilityID, october())
+	if err != nil {
+		t.Fatal(err)
+	}
+	parentID := scheduleview.ProjectedScheduleID(targetCalendarID, "weekly")
+	got := map[string]string{}
+	for _, d := range list.Schedules {
+		key := d.Date.String() + " " + *d.Title
+		switch {
+		case d.RecurringScheduleID == nil && d.Rule == nil:
+			got[key] = "なし"
+		case d.RecurringScheduleID != nil && *d.RecurringScheduleID == parentID && d.Rule != nil &&
+			d.Rule.Frequency == schedule.Weekly && d.Rule.EndDate != nil && d.Rule.EndDate.String() == "2026-12-31":
+			got[key] = "親"
+		default:
+			got[key] = "違う"
+		}
+	}
+	want := map[string]string{
+		"2026-10-05 定例": "親", "2026-10-12 定例": "親", "2026-10-26 定例": "親",
+		"2026-10-20 定例（変更）": "なし", "2026-10-07 会議": "なし",
+	}
+	if !maps.Equal(got, want) {
+		t.Errorf("回の親と規則 = %v, want %v", got, want)
 	}
 }
 

@@ -100,6 +100,8 @@ type projectedEvent struct {
 	occurrence civil.Date
 	// unsupported は、buddy の繰り返しの規則に写せない繰り返しの親を、最初の回の 1 件にしたときに true である。
 	unsupported bool
+	// rule は、繰り返しの親を展開した回の、親の繰り返しの規則で、展開した回でなければ nil である。
+	rule *schedule.Rule
 	// left は、展開した回の OccurrenceScheduleID が、ほかの予定を指す記録の主キーと同じときに true である。回を別の職員の
 	// カレンダーに移した後に、元のカレンダーの回を Google から消せずに残ったときに当たる。一覧での ID を DetachedOccurrenceScheduleID にする。
 	left bool
@@ -168,7 +170,7 @@ func expandParent(r ProjectionDetail, rules EventRules, replaced map[civil.Date]
 		occ := first
 		occ.Date = d
 		if startsIn(occ, from, to) {
-			out = append(out, projectedEvent{row: r, reading: occ, occurrence: d})
+			out = append(out, projectedEvent{row: r, reading: occ, occurrence: d, rule: &rule})
 		}
 	}
 	return out

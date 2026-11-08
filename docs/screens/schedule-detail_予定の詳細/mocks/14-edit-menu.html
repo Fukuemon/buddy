@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>schedule-detail 編集のメニュー</title>
+    <link rel="stylesheet" href="../../_common/mock.css" />
+    <link rel="stylesheet" href="../../_common/tokens.css" />
+    <link rel="stylesheet" href="../../_common/wireframe.css" />
+    <link rel="stylesheet" href="schedule-detail.css" />
+  </head>
+  <body data-view="desktop">
+    <div class="stage">
+      <div class="screen">
+        <div class="screen-body">
+          <div class="wf-modal-stage">
+            <div aria-hidden="true" class="wf-bg-calendar"></div>
+            <div class="wf-overlay" data-m="1" tabindex="-1" data-go="../../schedule-calendar_予定のカレンダー/mocks/01-month.html"></div>
+            <div aria-label="予定の詳細" class="wf-modal" data-m="2" data-testid="schedule-detail-modal" role="dialog">
+              <div class="wf-modal__header">
+                <h2 class="wf-modal__title wf-dialog__title" data-m="3">予定の詳細</h2>
+              </div>
+              <div class="wf-modal__body">
+                <h3 class="sd-datetime" data-m="4" data-testid="schedule-detail-datetime">2026年11月9日（月） 09:00〜09:29</h3>
+                <dl class="wf-rows sd-rows">
+                  <div class="wf-row" data-m="5">
+                    <dt>種類</dt>
+                    <dd>訪問</dd>
+                  </div>
+                  <div class="wf-row" data-m="6">
+                    <dt>主訪問者</dt>
+                    <dd><span class="wf-text"></span></dd>
+                  </div>
+                </dl>
+                <section class="sd-section" data-m="7" data-testid="schedule-detail-visit">
+                  <h3 class="sd-section__title">訪問の情報</h3>
+                  <dl class="wf-rows sd-rows" data-testid="schedule-detail-visit-fields">
+                    <div class="wf-row" data-m="8">
+                      <dt>利用者</dt>
+                      <dd><span class="wf-text"></span></dd>
+                    </div>
+                    <div class="wf-row" data-m="9">
+                      <dt>サービスコード</dt>
+                      <dd>訪看I2</dd>
+                    </div>
+                    <div class="wf-row" data-m="10">
+                      <dt>訪問の区分</dt>
+                      <dd>緊急</dd>
+                    </div>
+                  </dl>
+                </section>
+                <section class="sd-section" data-m="11" data-testid="schedule-detail-memo">
+                  <h3 class="sd-section__title">メモ</h3>
+                  <p class="sd-memo"><span class="wf-text wf-text--l"></span></p>
+                </section>
+              </div>
+              <div class="wf-modal__footer">
+                <span class="wf-btn wf-btn--destructive" data-m="12" data-testid="schedule-detail-cancel-schedule" data-go="10-cancel.html">予定をキャンセル</span>
+                <span class="wf-btn" data-m="13" data-testid="schedule-detail-close" data-go="../../schedule-calendar_予定のカレンダー/mocks/01-month.html">閉じる</span>
+                <span class="wf-menu-anchor">
+                  <span class="wf-btn sd-menu-button" aria-haspopup="menu" aria-expanded="true" data-m="14"data-testid="schedule-detail-edit" data-go="13-recurring.html">編集<svg aria-hidden="true" width="16" height="16" viewBox="0 0 16 16"><path d="M4 10l4-4 4 4" fill="none" stroke="currentColor" stroke-width="2"/></svg></span>
+                  <div class="wf-menu sd-menu--top is-open" aria-label="編集" role="menu" data-m="15" data-testid="schedule-detail-edit-list">
+                    <span class="wf-menu__item" role="menuitem" data-m="16" data-testid="schedule-detail-edit-occurrence" data-go="../../schedule-edit_予定の編集/mocks/03-initial.html">この予定を編集</span>
+                    <span class="wf-menu__item" role="menuitem" data-m="17" data-testid="schedule-detail-edit-recurrence" data-go="../../schedule-recurrence_繰り返しの変更/mocks/03-weekly.html">繰り返しを変更</span>
+                  </div>
+                </span>
+              </div>
+              <div class="wf-menu-scrim" tabindex="-1" data-escape data-go="13-recurring.html"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="markers"></div>
+    </div>
+    <script src="../../_common/mock.js"></script>
+    <script src="../../_common/interact.js"></script>
+  </body>
+</html>
