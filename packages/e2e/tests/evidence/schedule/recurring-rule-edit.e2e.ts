@@ -48,13 +48,35 @@ const openDay = async (page: Page, staffId: string, date: string) => {
   await expect(page.getByTestId(`day-grid-staff-${staffId}`)).toBeVisible()
 }
 
-/** 日の表示で title の予定を押して詳細を開き、「編集」を押して予定の編集を開く。 */
-const openEdit = async (page: Page, staffId: string, title: string) => {
+/** 日の表示で title の予定を押して詳細を開き、「編集」を押す。 */
+const openDetailEdit = async (page: Page, staffId: string, title: string) => {
   const event = dayEvent(page, staffId, title)
   await event.scrollIntoViewIfNeeded()
   await event.click()
   await page.getByTestId('schedule-detail-edit').click()
+}
+
+/**
+ * 日の表示で title の予定の詳細を開き、予定の編集を開く。
+ * viaMenu なら、「編集」のメニュー（改修後の繰り返しの予定の回）の「この予定を編集」を選ぶ。改修前は「編集」がボタンなので、viaMenu を false にする。
+ */
+const openEdit = async (page: Page, staffId: string, title: string, viaMenu: boolean) => {
+  await openDetailEdit(page, staffId, title)
+  if (viaMenu) await page.getByTestId('schedule-detail-edit-occurrence').click()
   await expect(page.getByTestId('schedule-form-modal')).toBeVisible()
+}
+
+/** 日の表示で title の予定の詳細を開き、「編集」のメニューの「繰り返しを変更」を選ぶ。 */
+const openRecurrenceChange = async (page: Page, staffId: string, title: string) => {
+  await openDetailEdit(page, staffId, title)
+  await page.getByTestId('schedule-detail-edit-recurrence').click()
+  await expect(page.getByTestId('schedule-recurrence-modal')).toBeVisible()
+}
+
+/** 繰り返しの変更で「カスタム…」を選び、毎週の曜日 day（1 が月曜）を押す。 */
+const chooseWeekday = async (page: Page, day: number) => {
+  await page.getByTestId('recurring-rule-preset').selectOption('custom')
+  await page.getByTestId(`recurring-rule-day-of-week-${day}`).check()
 }
 
 /** ログインし、staff（省くとログインした職員）の start からの毎週の通常の予定（10:00〜11:00）を予定の API で作り、ID を返す。 */
@@ -91,7 +113,7 @@ test.describe('予定の編集', () => {
       const prefix = variant.label ? `${variant.label}: ` : ''
       const isBefore = variant.name === 'before'
 
-      test(`${prefix}buddy で管理する事業所で、毎週月曜の繰り返しの予定の回から「この日以降の全ての回」を毎週火曜にした場合、その日以降が火曜に出て、前の回は変わらないこと`, async ({
+      test(`${prefix}buddy で管理する事業所で、毎週月曜の繰り返しの予定の回から「繰り返しを変更」で毎週火曜にした場合、その日以降が火曜に出て、前の回は変わらないこと`, async ({
         browser,
       }) => {
         const title = `定例 ${Date.now()}`
@@ -103,7 +125,7 @@ test.describe('予定の編集', () => {
           {
             name: 'recurring-rule-edit-buddy-primary',
             title:
-              'buddy で管理する事業所で、毎週月曜の繰り返しの予定の回の編集から「この日以降の全ての回」を毎週火曜にすると、その日以降の回が火曜に出て、その日より前の回は月曜のまま',
+              'buddy で管理する事業所で、毎週月曜の繰り返しの予定の回の「編集」のメニューから「繰り返しを変更」を選び、毎週火曜にすると、その日以降の回が火曜に出て、その日より前の回は月曜のまま',
             actor: ACTOR,
             variant,
           },
@@ -115,31 +137,36 @@ test.describe('予定の編集', () => {
               `${start} から毎週月曜 10:00〜11:00 の「${title}」を作ってある。${effective}（月曜）の日の表示を開いている`,
             )
 
-            await step('予定を押して詳細を開き、「編集」を押す')
-            await openEdit(page, LOGIN_STAFF.id, title)
             if (isBefore) {
-              await expect(page.getByTestId('schedule-edit-scope')).toHaveCount(0)
+              await step('予定を押して詳細を開き、「編集」を押す')
+              await openEdit(page, LOGIN_STAFF.id, title, false)
               await expect(page.getByTestId('schedule-field-date-time')).toBeVisible()
-              await check(
-                '変更の範囲が無く、この回の日時と内容のフォームだけが出る。繰り返しの規則は変えられない',
-              )
+              await check('この回の日時と内容のフォームだけが出る。繰り返しの規則は変えられない')
               return
             }
-            await expect(page.getByTestId('schedule-edit-scope-occurrence')).toBeChecked()
-            await check('フォームの上に変更の範囲が出て、「この回だけ」を選んでいる')
+            await step('予定を押して詳細を開き、「編集」を押す')
+            await openDetailEdit(page, LOGIN_STAFF.id, title)
+            await expect(page.getByTestId('schedule-detail-edit-occurrence')).toBeVisible()
+            await expect(page.getByTestId('schedule-detail-edit-recurrence')).toBeVisible()
+            await check('「編集」の上に「この予定を編集」と「繰り返しを変更」のメニューが開く')
 
-            await step('変更の範囲の「この日以降の全ての回」を押す')
-            await page.getByTestId('schedule-edit-scope-following').check()
-            await expect(page.getByTestId('schedule-edit-rule-lead')).toContainText(effective)
-            await expect(page.getByTestId('recurring-rule-day-of-week-1')).toBeChecked()
+            await step('「繰り返しを変更」を押す')
+            await page.getByTestId('schedule-detail-edit-recurrence').click()
+            await expect(page.getByTestId('schedule-recurrence-lead')).toBeVisible()
+            await expect(page.getByTestId('recurring-rule-preset')).toHaveValue('weekly')
             await check(
-              `項目の一覧の代わりに繰り返しの欄が出て、${effective} 以降を変えることの説明と、今の毎週月曜が出る`,
+              '繰り返しの変更のモーダルが開き、この回以降を変えることの説明と、今の「毎週 月曜日」が出る',
             )
+
+            await step('繰り返しで「カスタム…」を選ぶ')
+            await page.getByTestId('recurring-rule-preset').selectOption('custom')
+            await expect(page.getByTestId('recurring-rule-day-of-week-1')).toBeChecked()
+            await check('同じモーダルの中に、繰り返す（毎週）と曜日の欄が開き、月曜を選んでいる')
 
             await step('曜日の「火」を押して「保存」を押す')
             await page.getByTestId('recurring-rule-day-of-week-2').check()
-            await page.getByTestId('schedule-edit-submit').click()
-            await expect(page.getByTestId('schedule-form-modal')).toBeHidden()
+            await page.getByTestId('schedule-recurrence-submit').click()
+            await expect(page.getByTestId('schedule-recurrence-modal')).toBeHidden()
             await expect(dayEvent(page, LOGIN_STAFF.id, title)).toBeVisible()
             await check(`予定のカレンダーの ${tuesday}（火曜）に戻り、「${title}」が出る`)
 
@@ -154,7 +181,7 @@ test.describe('予定の編集', () => {
         )
       })
 
-      test(`${prefix}繰り返しの予定の回の編集で「この回だけ」の時刻を変えて保存した場合、その回だけが変わること`, async ({
+      test(`${prefix}繰り返しの予定の回で「この予定を編集」から時刻を変えて保存した場合、その回だけが変わること`, async ({
         browser,
       }) => {
         const title = `佐藤さんの定例 ${Date.now()}`
@@ -165,7 +192,7 @@ test.describe('予定の編集', () => {
           {
             name: 'recurring-rule-edit-occurrence-only',
             title:
-              '繰り返しの予定の回の編集で「この回だけ」の開始時間を変えて保存すると、今と同じく、その回だけが変わり、次の回は変わらない',
+              '繰り返しの予定の回の「編集」（改修後はメニューの「この予定を編集」）から開始時間を変えて保存すると、今と同じく、その回だけが変わり、次の回は変わらない',
             actor: ACTOR,
             variant,
           },
@@ -176,12 +203,13 @@ test.describe('予定の編集', () => {
               `${start} から ${TEAM_MEMBER.name} の毎週月曜 10:00〜11:00 の「${title}」を作ってある。${start} の日の表示を開いている`,
             )
 
-            await step('予定を押して詳細を開き、「編集」を押す')
-            await openEdit(page, TEAM_MEMBER.id, title)
-            if (!isBefore) {
-              await expect(page.getByTestId('schedule-edit-scope-occurrence')).toBeChecked()
-              await check('変更の範囲は「この回だけ」を選んでいる')
-            }
+            await step(
+              isBefore
+                ? '予定を押して詳細を開き、「編集」を押す'
+                : '予定を押して詳細を開き、「編集」のメニューの「この予定を編集」を押す',
+            )
+            await openEdit(page, TEAM_MEMBER.id, title, !isBefore)
+            await check('この回の予定の編集が開く')
 
             await step('予定日時の開始時間を 14:00、終了時間を 15:00 にして「保存」を押す')
             await page.getByTestId('schedule-form-start-time').fill('14:00')
@@ -205,7 +233,7 @@ test.describe('予定の編集', () => {
     for (const variant of EVIDENCE_VARIANTS.filter(({ name }) => name !== 'before')) {
       const prefix = variant.label ? `${variant.label}: ` : ''
 
-      test(`${prefix}1 回だけ変えた回がある繰り返しの予定の規則を変えた場合、変えた回は残り、その元の日に新しい規則の回が出ないこと`, async ({
+      test(`${prefix}1 回だけ変えた回は単発の予定として扱い、その繰り返しの予定の規則を変えた場合、変えた回は残り、その元の日に新しい規則の回が出ないこと`, async ({
         browser,
       }) => {
         const title = `林さんの定例 ${Date.now()}`
@@ -218,7 +246,7 @@ test.describe('予定の編集', () => {
           browser,
           {
             name: 'recurring-rule-edit-replaced',
-            title: `1 回だけ水曜に移した回がある毎週月曜の繰り返しの予定を、毎月第 ${week} 月曜に変えると、移した回は残り、移した元の月曜には新しい規則の回が出ない`,
+            title: `1 回だけ水曜に移した回は単発の予定と同じ「編集」のボタンになる。その繰り返しの予定を、毎月第 ${week} 月曜に変えると、移した回は残り、移した元の月曜には新しい規則の回が出ない`,
             actor: ACTOR,
             variant,
           },
@@ -245,20 +273,31 @@ test.describe('予定の編集', () => {
               `${start} から ${HAYASHI.name} の毎週月曜の「${title}」を作り、${replacedDate}（月曜）の回を ${movedTo}（水曜）に移してある。${movedTo} に移した回が出ている`,
             )
 
-            await step(`${effective}（月曜）の回の編集を開き、「この日以降の全ての回」を押す`)
-            await openDay(page, HAYASHI.id, effective)
-            await openEdit(page, HAYASHI.id, title)
-            await page.getByTestId('schedule-edit-scope-following').check()
+            await step('移した回を押して詳細を開く')
+            await dayEvent(page, HAYASHI.id, title).click()
+            await expect(page.getByTestId('schedule-detail-edit')).not.toHaveAttribute(
+              'aria-haspopup',
+            )
+            await check(
+              '移した回は単発の予定として扱い、「編集」はメニューにならず、単発の予定と同じボタンが出る',
+            )
 
             await step(
-              `繰り返しの「毎月」、毎月の決め方の「第何週の曜日」を押し、週を第 ${week}、曜日を月曜にして「保存」を押す`,
+              `${effective}（月曜）の回の詳細を開き、「編集」のメニューの「繰り返しを変更」を押す`,
             )
-            await page.getByTestId('recurring-rule-frequency-monthly').check()
+            await openDay(page, HAYASHI.id, effective)
+            await openRecurrenceChange(page, HAYASHI.id, title)
+
+            await step(
+              `繰り返しで「カスタム…」、繰り返すで「毎月」を選び、「曜日」を押して第 ${week}、月曜日にして「保存」を押す`,
+            )
+            await page.getByTestId('recurring-rule-preset').selectOption('custom')
+            await page.getByTestId('recurring-rule-frequency').selectOption('monthly')
             await page.getByTestId('recurring-rule-monthly-by-weekday').check()
             await page.getByTestId('recurring-rule-week-of-month').selectOption(String(week))
             await page.getByTestId('recurring-rule-monthly-day-of-week').selectOption('1')
-            await page.getByTestId('schedule-edit-submit').click()
-            await expect(page.getByTestId('schedule-form-modal')).toBeHidden()
+            await page.getByTestId('schedule-recurrence-submit').click()
+            await expect(page.getByTestId('schedule-recurrence-modal')).toBeHidden()
             await check('保存でき、予定のカレンダーに戻る')
 
             await step(
@@ -274,18 +313,20 @@ test.describe('予定の編集', () => {
         )
       })
 
-      test(`${prefix}今日より前の回で「この日以降の全ての回」を選んだ場合、変えられないことが分かり、保存を押せないこと`, async ({
+      test(`${prefix}今日より前の回から「繰り返しを変更」で曜日を変えた場合、今日以降の回を変えることが分かり、今日より前の回は変わらないこと`, async ({
         browser,
       }) => {
         const title = `定例 ${Date.now()}`
         const start = daysFromToday(-14)
         const past = daysFromToday(-7)
+        const weekday = new Date(`${start}T00:00:00Z`).getUTCDay() || 7
+        const nextWeekday = (weekday % 7) + 1
         await recordPrEvidence(
           browser,
           {
             name: 'recurring-rule-edit-past',
             title:
-              '今日より前の回の編集で「この日以降の全ての回」を押すと、今日より前の回からは繰り返しを変えられないことを出し、保存を押せない',
+              '今日より前の回の「編集」のメニューから「繰り返しを変更」を選ぶと、今日以降の回を変えることを出し、曜日を変えて保存すると、今日より前の回は変わらない',
             actor: ACTOR,
             variant,
           },
@@ -296,22 +337,30 @@ test.describe('予定の編集', () => {
               `${start} から毎週の「${title}」を作ってある。今日より前の ${past} の日の表示を開いている`,
             )
 
-            await step('予定を押して詳細を開き、「編集」を押して「この日以降の全ての回」を押す')
-            await openEdit(page, LOGIN_STAFF.id, title)
-            await page.getByTestId('schedule-edit-scope-following').check()
-            await expect(page.getByTestId('schedule-edit-rule-past')).toBeVisible()
-            await expect(page.getByTestId('schedule-edit-submit')).toHaveAttribute(
-              'aria-disabled',
-              'true',
+            await step('予定を押して詳細を開き、「編集」のメニューの「繰り返しを変更」を押す')
+            await openRecurrenceChange(page, LOGIN_STAFF.id, title)
+            await expect(page.getByTestId('schedule-recurrence-lead')).toContainText(
+              '今日より前の回は変わりません。',
             )
             await check(
-              '繰り返しの欄の代わりに「今日より前の回からは、繰り返しを変えられません。」が出て、「保存」は押せない',
+              '今日より前の回でも繰り返しの変更が開き、今日以降の回を変え、今日より前の回は変わらないことが出る',
             )
+
+            await step('繰り返しで「カスタム…」を選び、次の曜日を押して「保存」を押す')
+            await chooseWeekday(page, nextWeekday)
+            await page.getByTestId('schedule-recurrence-submit').click()
+            await expect(page.getByTestId('schedule-recurrence-modal')).toBeHidden()
+            await check('保存でき、予定のカレンダーに戻る')
+
+            await step(`今日より前の ${past} の日の表示を開く`)
+            await openDay(page, LOGIN_STAFF.id, past)
+            await expect(dayEvent(page, LOGIN_STAFF.id, title)).toBeVisible()
+            await check(`${past} の回は変わらずに出る`)
           },
         )
       })
 
-      test(`${prefix}Google カレンダーを正本にする事業所で、毎週月曜の繰り返しの予定の回から「この日以降の全ての回」を毎週火曜にした場合、Google カレンダーにも新しい規則が書かれ、画面に新しい回が出ること`, async ({
+      test(`${prefix}Google カレンダーを正本にする事業所で、毎週月曜の繰り返しの予定の回から「繰り返しを変更」で毎週火曜にした場合、Google カレンダーにも新しい規則が書かれ、画面に新しい回が出ること`, async ({
         browser,
         request,
       }) => {
@@ -324,7 +373,7 @@ test.describe('予定の編集', () => {
           {
             name: 'recurring-rule-edit-google-primary',
             title:
-              'Google カレンダーを正本にする事業所で、毎週月曜の繰り返しの予定の回の編集から「この日以降の全ての回」を毎週火曜にすると、calendarpit に火曜の繰り返しの予定ができ、予定のカレンダーが火曜の回を出す',
+              'Google カレンダーを正本にする事業所で、毎週月曜の繰り返しの予定の回の「編集」のメニューから「繰り返しを変更」で毎週火曜にすると、calendarpit に火曜の繰り返しの予定ができ、予定のカレンダーが火曜の回を出す',
             actor: OKADA_ACTOR,
             variant,
           },
@@ -354,13 +403,12 @@ test.describe('予定の編集', () => {
               )
 
               await step(
-                '予定の編集を開き、「この日以降の全ての回」で曜日の「火」を押して「保存」を押す',
+                '「編集」のメニューの「繰り返しを変更」を押し、「カスタム…」で曜日の「火」を押して「保存」を押す',
               )
-              await openEdit(page, OKADA.staff.id, title)
-              await page.getByTestId('schedule-edit-scope-following').check()
-              await page.getByTestId('recurring-rule-day-of-week-2').check()
-              await page.getByTestId('schedule-edit-submit').click()
-              await expect(page.getByTestId('schedule-form-modal')).toBeHidden()
+              await openRecurrenceChange(page, OKADA.staff.id, title)
+              await chooseWeekday(page, 2)
+              await page.getByTestId('schedule-recurrence-submit').click()
+              await expect(page.getByTestId('schedule-recurrence-modal')).toBeHidden()
               await expect(dayEvent(page, OKADA.staff.id, title)).toBeVisible()
               await check(`予定のカレンダーの ${tuesday}（火曜）に戻り、「${title}」が出る`)
 
