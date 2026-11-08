@@ -51,9 +51,9 @@ test.describe('予定のカレンダー', () => {
             await step('提供時間（分）の欄を空にする')
             await page.getByTestId('schedule-form-service-time').click()
             await page.getByTestId('schedule-form-service-time').fill('')
-            await expect(page.getByTestId('schedule-field-date-time')).toContainText('- -（- 分')
+            await expect(page.getByTestId('schedule-field-date-time')).toContainText('〜-（- 分')
             await expect(page.getByTestId('schedule-form-end-time')).toHaveText('終了時間 -')
-            await check('左の訪問日時の要約が「- -（- 分、…）」になり、終了時間が「-」になる')
+            await check('左の訪問日時の要約が「…〜-（- 分、…）」になり、終了時間が「-」になる')
           },
         )
       })
@@ -79,11 +79,15 @@ test.describe('予定のカレンダー', () => {
             await page.getByTestId('schedule-kind-tab-normal').check()
             await page.getByTestId('schedule-field-date-time').click()
             await page.getByTestId('schedule-form-date').fill('2026-10-30')
-            await expect(page.getByTestId('schedule-field-date-time')).toContainText('2026-10-30')
+            await expect(page.getByTestId('schedule-field-date-time')).toContainText(
+              '2026年10月30日（金）',
+            )
 
             await step('予定の種類を訪問に切り替える')
             await page.getByTestId('schedule-kind-tab-visit').check()
-            await expect(page.getByTestId('schedule-field-date-time')).toContainText('2026-10-30')
+            await expect(page.getByTestId('schedule-field-date-time')).toContainText(
+              '2026年10月30日（金）',
+            )
             await check('訪問の予定のフォームに、変えた日付が残る')
 
             // ブラウザの確認のダイアログは録画に映らないので、出た文を字幕に出して「キャンセル」で閉じる
