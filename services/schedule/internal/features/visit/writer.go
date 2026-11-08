@@ -105,6 +105,17 @@ func (w Writer) Create(ctx context.Context, facilityID string, in Input) (string
 	return info.ID, nil
 }
 
+// Copy は、保存した訪問の情報 info と同じ内容の訪問の情報を、新しい ID で保存し、その ID を返す。
+// 参照を確認しない。info は保存したときに確認してあり、休職、退職の職員と利用の終了の利用者のまま写すためである。
+// 予定の訪問の情報は予定ごとに 1 つなので、繰り返しの予定の内容のまま回の予定を作る操作が使う。
+func (w Writer) Copy(ctx context.Context, info Info) (string, error) {
+	info.ID = w.ids.NewID()
+	if err := w.deps.Infos.Create(ctx, info); err != nil {
+		return "", err
+	}
+	return info.ID, nil
+}
+
 // DeleteIfUnused は、どの予定、繰り返しの予定、Google カレンダーに書いた予定の記録（calendar.EventRecord）も指していない
 // 訪問の情報 id を消す。指されているか、無いときは何もしない。
 func (w Writer) DeleteIfUnused(ctx context.Context, id string) error {

@@ -105,6 +105,7 @@ func flowRouterOn(mode organization.SourceMode, accounts calendar.Accounts) (htt
 		ChangeOccurrence: schedule.NewChangeOccurrence(recurring, refs, facilities, schedules, types, visits, nil, nil, tx, ids).Do,
 		ChangeRule:       schedule.NewChangeRule(recurring, refs, facilities, types, visits, nil, nil, tx, ids).Do,
 		Cancel:           schedule.NewCancel(schedules, refs, facilities, nil, tx, ids).Do,
+		CancelOccurrence: schedule.NewCancelOccurrence(recurring, refs, facilities, schedules, types, visits, nil, tx, ids).Do,
 		Update:           schedule.NewUpdate(schedules, refs, facilities, types, visits, nil, nil, tx).Do,
 	}
 	auth := flowAuth{svc: access.NewService(access.Deps{Resources: map[access.Resource]access.FacilityReader{

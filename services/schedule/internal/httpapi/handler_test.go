@@ -88,6 +88,10 @@ func (f *fakeSchedules) Cancel(context.Context, string, string) (schedule.Cancel
 	return schedule.Cancellation{}, f.err
 }
 
+func (f *fakeSchedules) CancelOccurrence(context.Context, string, civil.Date, string) (schedule.Cancellation, error) {
+	return schedule.Cancellation{}, f.err
+}
+
 func (f *fakeSchedules) Update(_ context.Context, _ string, in schedule.SlotInput) (schedule.Schedule, error) {
 	f.lastSlot = in
 	return f.detail.Schedule, f.err
@@ -220,7 +224,7 @@ func (f *fakePatients) List(_ context.Context, _ string, q patient.ListQuery) ([
 func (f *fakeSchedules) app() httpapi.ScheduleApp {
 	return httpapi.ScheduleApp{
 		ListTypes: f.ListTypes, Get: f.Get, GetRecurring: f.GetRecurring, List: f.List, Create: f.Create,
-		CreateRecurring: f.CreateRecurring, ChangeOccurrence: f.ChangeOccurrence, Cancel: f.Cancel, Update: f.Update,
+		CreateRecurring: f.CreateRecurring, ChangeOccurrence: f.ChangeOccurrence, Cancel: f.Cancel, CancelOccurrence: f.CancelOccurrence, Update: f.Update,
 	}
 }
 

@@ -432,12 +432,15 @@ type deps struct {
 	Facilities kernel.Finder[organization.Facility]
 	Staff      schedule.StaffRefs
 	Locks      schedule.FacilityLock
-	Visits     schedule.VisitInfos
-	Schedules  schedule.Repository
-	Recurring  schedule.RecurringRepository
-	Types      schedule.TypeRepository
-	Exports    schedule.Exports
-	Now        func() time.Time
+	Visits     interface {
+		schedule.VisitInfos
+		schedule.VisitCopier
+	}
+	Schedules schedule.Repository
+	Recurring schedule.RecurringRepository
+	Types     schedule.TypeRepository
+	Exports   schedule.Exports
+	Now       func() time.Time
 }
 
 // app は、テストが呼ぶ schedule の操作の Do である。
@@ -448,6 +451,7 @@ type app struct {
 	ChangeOccurrence func(ctx context.Context, recurringScheduleID string, originalDate civil.Date, in schedule.SlotInput) (schedule.Schedule, error)
 	ChangeRule       func(ctx context.Context, recurringScheduleID string, effective *civil.Date, rule schedule.RuleInput) (schedule.RecurringSchedule, error)
 	Cancel           func(ctx context.Context, scheduleID, reason string) (schedule.Cancellation, error)
+	CancelOccurrence func(ctx context.Context, recurringScheduleID string, originalDate civil.Date, reason string) (schedule.Cancellation, error)
 	Update           func(ctx context.Context, scheduleID string, in schedule.SlotInput) (schedule.Schedule, error)
 }
 
@@ -460,6 +464,7 @@ func build(d deps, tx tx.Transactor, ids kernel.IDGenerator) *app {
 		ChangeOccurrence: schedule.NewChangeOccurrence(d.Recurring, d.Staff, d.Locks, d.Schedules, d.Types, d.Visits, d.Now, d.Exports, tx, ids).Do,
 		ChangeRule:       schedule.NewChangeRule(d.Recurring, d.Staff, d.Locks, d.Types, d.Visits, d.Now, d.Exports, tx, ids).Do,
 		Cancel:           schedule.NewCancel(d.Schedules, d.Staff, d.Locks, d.Exports, tx, ids).Do,
+		CancelOccurrence: schedule.NewCancelOccurrence(d.Recurring, d.Staff, d.Locks, d.Schedules, d.Types, d.Visits, d.Exports, tx, ids).Do,
 		Update:           schedule.NewUpdate(d.Schedules, d.Staff, d.Locks, d.Types, d.Visits, d.Now, d.Exports, tx).Do,
 	}
 }

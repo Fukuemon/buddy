@@ -14,7 +14,7 @@ import {
   scheduleSubmitErrorMessage,
 } from '../lib/errorMessage'
 import { canEditScheduleOf } from '../lib/schedulePermission'
-import { canCancelSchedule, canChangeSchedule } from '../lib/scheduleWritable'
+import { canChangeSchedule } from '../lib/scheduleWritable'
 import {
   facilityQueryOptions,
   patientListQueryOptions,
@@ -99,12 +99,11 @@ export const ScheduleDetailModalContainer = ({ scheduleId }: { scheduleId: Sched
   const cutover = sourceMode === 'google_primary' ? (listed?.cutover ?? null) : null
   const isEditor = canEditScheduleOf(viewer, { id: schedule.staffId, teamId: staff?.teamId ?? '' })
   const canEdit = isEditor && canChangeSchedule(schedule, cutover)
-  const canCancel = isEditor && canCancelSchedule(schedule, cutover)
   return (
     <>
       <ScheduleDetailModal
         onCancelSchedule={
-          canCancel
+          canEdit
             ? () => {
                 cancelSchedule.reset()
                 setCancelETag(schedule.etag ?? null)

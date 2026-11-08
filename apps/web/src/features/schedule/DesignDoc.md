@@ -81,7 +81,8 @@ web と予定の API の責務と依存は、[buddy Design Doc](https://github.c
 - 繰り返しの予定の回を保存すると、BFF はその回だけを単発の予定に置き換える（`POST /v1/schedules/recurring/{recurring_schedule_id}/occurrences`）。
   - 画面は、置き換えた予定の ID の詳細へ戻る。
 - 予定のキャンセルは、詳細から開くモーダルで理由を入れ、`POST /v1/schedules/{schedule_id}/cancel` に送る。
-  - BFF が画面で展開した繰り返しの予定の回は、回だけを取り消す API が無いので、キャンセルの操作を出さない。
+  - BFF が画面で展開した `buddy_primary` の繰り返しの予定の回は、回のキャンセルの API に回の日付と理由を送る。
+    - API は `POST /v1/schedules/recurring/{recurring_schedule_id}/occurrences/cancel` である。
 - `google_primary` の事業所では、予定の API が Google カレンダーに書く。
   - 作成は、フォームを開いたときに作った予定の ID（`apps/web/src/features/schedule/lib/scheduleId.ts`）を送る。送り直しでも同じ ID を送る。
   - 変更とキャンセルは、フォームかモーダルを開いたときに読んだ予定の `etag` を送る。

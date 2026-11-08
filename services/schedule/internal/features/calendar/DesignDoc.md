@@ -550,6 +550,10 @@ buddy の繰り返しの規則は、全て RRULE に変換できる。
 取り込んだ Google の例外の回が置き換えた日は、`EXDATE` にしない。  
 `EXDATE` にすると、Google の例外の回が消えるためである。
 
+回のキャンセル（`cancelOccurrence`）は、繰り返しの予定の変更を待ちに積み、その日を親の予定の `EXDATE` にする。  
+Google カレンダーからはその回だけが消え、ほかの回は残る。  
+回をキャンセルした単発の予定は Google の予定と対応を持たないので、待ちに積まない。
+
 #### 衝突とエラー
 
 更新と削除には、予定の対応の etag を `If-Match` に付ける。  
@@ -761,6 +765,7 @@ Projection を読むのは、予定の表示の読み出し（`scheduleview` の
 `httpapi` の予定の作成、変更、取り消しの API は、事業所のモードで `schedule` か `calendarwrite` を呼ぶ。  
 呼び分ける API は、単発の予定の `createSchedule`、`updateSchedule`、`cancelSchedule` の 3 つと、繰り返しの予定の 3 つである。  
 繰り返しの予定の API は、`createRecurringSchedule`、`changeOccurrence`、`changeRecurringRule` である。  
+回のキャンセル（`cancelOccurrence`）は呼び分けず、`google_primary` の事業所では 409（`google_primary`）で拒む。`google_primary` の回は、`cancelSchedule` が一覧の回の ID で取り消す。  
 単発の予定は、`calendarwrite.Create` が作り、`calendarwrite.Update` が変え、`calendarwrite.Cancel` が取り消す。  
 `updateSchedule`、`cancelSchedule`、`getSchedule` のパスは事業所を持たないので、`httpapi` は認証した職員の事業所のモードで呼び分ける。  
 予定がほかの事業所のものなら、認証のミドルウェアが予定の ID から事業所を引いて 403 を返す。

@@ -6,6 +6,7 @@ import { scheduleHttp, server, TEST_SCHEDULE_URL } from '#/test/server'
 import { ApiError } from '../BuddyApi'
 import type { components } from '../generated/schedule'
 import { createHttpBuddyApi } from './httpBuddyApi'
+import { occurrenceId } from './recurrence'
 
 const api = () => createHttpBuddyApi({ baseUrl: TEST_SCHEDULE_URL })
 
@@ -293,6 +294,35 @@ describe('createHttpBuddyApi', () => {
       null,
     )
     expect(replaced.id).toBe('replaced')
+  })
+
+  it('繰り返しの予定の回の ID のキャンセルは、回のキャンセルの API に回の日付と理由を送る', async () => {
+    const sent: unknown[] = []
+    server.use(
+      scheduleHttp.post(
+        '/v1/schedules/recurring/{recurring_schedule_id}/occurrences/cancel',
+        async ({ params, request, response }) => {
+          sent.push({ id: params.recurring_schedule_id, body: await request.json() })
+          return response(201).json({
+            id: 'cancel-1',
+            schedule_id: 'cancelled',
+            reason: '体調不良',
+          })
+        },
+      ),
+    )
+    await api().schedules.cancel(
+      'facility-1',
+      occurrenceId('01M3TC6E9G4N8Q2R5T7V9W1X3Y', '2026-10-20'),
+      '体調不良',
+      null,
+    )
+    expect(sent).toEqual([
+      {
+        id: '01M3TC6E9G4N8Q2R5T7V9W1X3Y',
+        body: { original_date: '2026-10-20', reason: '体調不良' },
+      },
+    ])
   })
 
   it('マスタの ID を引いて予定を作る', async () => {

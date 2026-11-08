@@ -38,6 +38,11 @@ OpenAPI の項目は、`getSchedule`（`GET /v1/schedules/{schedule_id}`）の�
   - `reason` は、理由の前後の空白を除いた値である。
   - `etag` は、キャンセルのダイアログを開いたときに読んでいた予定の `Schedule.etag` である。`buddy_primary` の事業所の予定は `etag` を持たないので、`null` を渡して送らない。
   - `google_primary` の事業所では、予定の API が Google カレンダーの予定を消し、消せたときだけ成功を返す。理由は Google カレンダーに書けないので保存しない。扱いは [ADR-0029](../../adr/0029-google-calendar-sync.md) にある。
+  - `buddy_primary` の事業所の繰り返しの予定の回は、`cancelOccurrence` でキャンセルする。
+    - パスは `POST /v1/schedules/recurring/{recurring_schedule_id}/occurrences/cancel` である。
+    - web のサーバーが、回の ID（`occurrenceId`）を繰り返しの予定の ID と回の日付に分け、`original_date` と `reason` を送る。
+    - 予定の API は、その回を繰り返しの予定と同じ内容のキャンセルした単発の予定にする。予定のカレンダーで「キャンセルした予定を出す」を選ぶと、その予定を出す。
+    - 規則は [予定の管理の Design Doc の繰り返しの予定](../../../services/schedule/DesignDoc.md#繰り返しの予定) にある。
   - 成功すると、予定の 1 件の取得の結果を捨て、事業所の予定の取得の結果を捨てて取り直す。処理は `apps/web/src/features/schedule/queries.ts` の `useCancelSchedule` にある。
 - 確認が必要な理由の直し方の文は、`apps/web/src/features/schedule/lib/reviewFix.ts` の `reviewFixMessage` が `reviewReason` で決める。
 - 画面に出していない同行者、時間外の勤務の印は、`Schedule` の `visit_info.companion_name`、`is_over_time_work` に当たる。
@@ -71,7 +76,6 @@ OpenAPI の項目は、`getSchedule`（`GET /v1/schedules/{schedule_id}`）の�
 | 開いた予定が、キャンセルした予定である | `Schedule.cancel` がある |
 | 事業所が、予定の正本を buddy に切り替えている途中である | `google_primary` の事業所で、`ScheduleList.cutover` が `null` でない（`listSchedules` の `cutover`）。`buddy_primary` の事業所では読まず、`null` として扱う |
 | 開いた予定が、繰り返しの規則を buddy で表せない予定である | `Schedule.reviewReason` が `recurrence_unsupported`（`listSchedules` の `Schedule.review_reason`） |
-| 開いた予定が、予定を buddy で管理する事業所の繰り返しの予定の 1 回である | `Schedule.recurringOccurrence` が `true`。OpenAPI の項目は無く、web のサーバーが回の ID（`occurrenceId`）で読んだ予定に付ける |
 | ログインした職員が、開いた予定の職員の予定を編集できる | `Viewer.schedulePolicies` の `code`、`targetStaffIds`、`targetTeamIds` と、予定の職員の `Schedule.staffId` と、`Schedule.staffId` を職員の一覧で引いた `Staff.teamId` |
 | 開いた予定が、通常の予定である | `Schedule.kind` が `normal` |
 | 開いた予定が、訪問の予定である | `Schedule.kind` が `visit` |
@@ -84,10 +88,9 @@ OpenAPI の項目は、`getSchedule`（`GET /v1/schedules/{schedule_id}`）の�
   - キャンセルした予定では、`ScheduleDetailModal` が下端（下端の閉じる、予定をキャンセル、編集）を描かない。
   - 予定をキャンセルできない予定では `onCancelSchedule` を、編集できない予定では `onEdit` を、`ScheduleDetailModalContainer` が渡さない。
   - Google カレンダーの予定でも、ほかの条件に当てはまれば、どちらも渡す。
-- 予定と事業所の状態は、`apps/web/src/features/schedule/lib/scheduleWritable.ts` の 2 つの関数が判定する。
-  - `canChangeSchedule` は、キャンセルした予定、`cutover` が `null` でない間、`reviewReason` が `recurrence_unsupported` の予定で false を返す。編集のボタンに使う。
-  - `canCancelSchedule` は、`canChangeSchedule` の条件に加えて、`Schedule.recurringOccurrence` の予定で false を返す。予定の API に、buddy の繰り返しの予定の回をキャンセルする操作が無いためである。予定をキャンセルのボタンに使う。
-  - どちらも、職員の権限の `canEditScheduleOf` と合わせて判定する。
+- 予定と事業所の状態は、`apps/web/src/features/schedule/lib/scheduleWritable.ts` の `canChangeSchedule` が判定する。
+  - キャンセルした予定、`cutover` が `null` でない間、`reviewReason` が `recurrence_unsupported` の予定で false を返す。編集と予定をキャンセルのボタンに使う。
+  - 職員の権限の `canEditScheduleOf` と合わせて判定する。
 - 理由の欄の長さの判定は、`apps/web/src/features/schedule/components/ScheduleCancelDialog.tsx` にある。
 - 編集の権限の項目と、OpenAPI の項目の対応は次のとおり。
   - `Viewer.schedulePolicies` の `code`、`targetStaffIds`、`targetTeamIds` は、`getMe` の `policies` の項目に当たる。
@@ -104,7 +107,7 @@ OpenAPI の項目は、`getSchedule`（`GET /v1/schedules/{schedule_id}`）の�
   - 写すのは `apps/web/src/api/http/scheduleMapper.ts` の `fromApiMe` である。
 - 出し分けは表示だけに使う。
   - 編集を拒むのは、予定の API の `updateSchedule` である。
-  - キャンセルを拒むのは、予定の API の `cancelSchedule` である。
+  - キャンセルを拒むのは、予定の API の `cancelSchedule` と `cancelOccurrence` である。
 
 ## 要素の testid
 
@@ -171,6 +174,8 @@ OpenAPI の項目は、`getSchedule`（`GET /v1/schedules/{schedule_id}`）の�
 | キャンセルの失敗 | 「入力の内容では予定をキャンセルできません。内容を直してください。」 | `cancelSchedule` が 400 |
 | キャンセルの失敗 | 「予定をキャンセルできませんでした。」 | `cancelSchedule` が、ここまでのほかの失敗（404、409 `conflict`、500）。API に届かない |
 | キャンセルの送信中 | なし（ログインの画面へ移るまで続く） | `cancelSchedule` が 401 |
+
+- `buddy_primary` の事業所の繰り返しの予定の回のキャンセルでは、表の `cancelSchedule` を `cancelOccurrence` に読み替える。
 
 - 文は `apps/web/src/features/schedule/lib/errorMessage.ts` の `scheduleLoadErrorMessage` が、`ApiError.status` で選ぶ。
 - キャンセルの失敗の文は、同じ `errorMessage.ts` の `scheduleSubmitErrorMessage` が、`ApiError.status` と `ApiError.code` で選ぶ。

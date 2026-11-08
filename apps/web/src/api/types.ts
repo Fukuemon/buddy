@@ -138,11 +138,6 @@ export type Schedule = {
    * 繰り返しの予定の展開した回では、親の予定の etag である。buddy の予定には無い。
    */
   etag?: string
-  /**
-   * buddy_primary の事業所で、画面が繰り返しの予定から展開した回のときだけ true を持つ。
-   * 予定の API に回のキャンセルが無いので、画面はこの回のキャンセルを出さない。
-   */
-  recurringOccurrence?: true
   /** Google カレンダーの予定のうち、buddy の予定に読み替えられず確認が必要な予定のときだけ、その理由を持つ。 */
   reviewReason?: ScheduleReviewReason
 }
@@ -172,7 +167,7 @@ export type ScheduleList = {
 /** 予定の作成と更新で送る値。 */
 export type ScheduleInput = Omit<
   Schedule,
-  'id' | 'facilityId' | 'fromGoogleCalendar' | 'etag' | 'recurringOccurrence' | 'reviewReason'
+  'id' | 'facilityId' | 'fromGoogleCalendar' | 'etag' | 'reviewReason'
 >
 
 /** 予定の一覧の条件。 */
