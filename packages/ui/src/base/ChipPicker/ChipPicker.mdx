@@ -9,24 +9,16 @@ import * as Stories from './ChipPicker.stories'
 
 選んでいるものだけを × 付きのチップで並べ、最後の欄に名前を入れて候補から 1 つずつ足す、複数の選択。
 
-## 使う場面
+## 規則
 
-- 職員の権限の対象の職員のように、多い候補から少しを選ぶ
+規則の本文は、デザインシステムの文書の次のセクションにある。
 
-## 使わない場面
-
-- 1 つだけを選ぶ（`FormField` のセレクトを使う）
-- 候補が数個で、全てを並べて見比べたい（チェックボックスの組を使う）
-
-## Do
-
-- `label` に選んでいるものの名前を、`addAriaLabel` に足す欄の用途を書く
-- 候補が無いときの文を `emptyLabel` に書く
-- 候補を読み終えるまでは `options` に `undefined` を渡す。足す欄を押せなくし、選んでいるもののチップの × は押せるままにする
-
-## Don't
-
-- チップの色だけで状態を伝える
+- 使う場面、使わない場面、キーボードの操作: コンポーネントの文書（`packages/ui/design/components.md`）の「コンポーネントの選び方」の `ChipPicker` の行
+- 使い方の規則と Do と Don't: コンポーネントの文書の「コンポーネントごとの規則」の「`ChipPicker`」
+- 当たる原則: DESIGN.md の「画面を作るときの原則」の次の ID
+  - `STATE-NOT-COLOR-ONLY`
+  - `FOCUS-ONE`
+  - `TARGET-SIZE`
 
 ## 状態
 
@@ -45,13 +37,6 @@ import * as Stories from './ChipPicker.stories'
 ### 無効
 
 <Canvas of={Stories.Disabled} />
-
-## キーボードの操作
-
-- Tab で × と足す欄に移る
-- 足す欄で ↓ を押すと候補を開き、最初の候補に移る。↑ と ↓ で候補を移り、Enter で足す
-- Escape と外を押すと候補を閉じる。Escape は外側のダイアログを閉じない
-- × で外すと、次のチップの × か、足す欄にフォーカスが移る
 
 ## props
 

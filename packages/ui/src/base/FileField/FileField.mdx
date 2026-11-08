@@ -9,22 +9,17 @@ import * as Stories from './FileField.stories'
 
 ファイルを 1 つ選ぶ欄。ブラウザの `input type="file"` を使い、選んだファイルを `onFileChange` に渡す。見出し、補足の文、誤りの文は `FormField` で並べる。
 
-## 使う場面
+## 規則
 
-- 照合の実績の CSV のように、端末に置いたファイルを 1 つ送る
+規則の本文は、デザインシステムの文書の次のセクションにある。
 
-## 使わない場面
-
-- 文や値を入力する（`FormField` か `TextareaField` を使う）
-
-## Do
-
-- `accept` に選べるファイルの種類を渡す
-- 選べるファイルの種類と大きさを `hint` に書く
-
-## Don't
-
-- ラベルを空にする
+- 使う場面、使わない場面、キーボードの操作: コンポーネントの文書（`packages/ui/design/components.md`）の「コンポーネントの選び方」の `FileField` の行
+- 使い方の規則と Do と Don't: コンポーネントの文書の「コンポーネントごとの規則」の「`FileField`」
+- 欄の枠と面の状態: コンポーネントの文書の「入力の欄の状態」
+- 当たる原則: DESIGN.md の「画面を作るときの原則」の次の ID
+  - `STATE-NOT-COLOR-ONLY`
+  - `FOCUS-ONE`
+  - `TARGET-SIZE`
 
 ## 状態
 
@@ -67,11 +62,6 @@ import * as Stories from './FileField.stories'
 枠の色を変えない。
 
 <Canvas of={Stories.DisabledHover} />
-
-## キーボードの操作
-
-- Tab で欄に移る。Enter か Space でファイルを選ぶ画面を開く
-- エラーがあると `aria-invalid` を付け、`aria-describedby` でエラーの文を指す
 
 ## props
 

@@ -9,21 +9,17 @@ import * as Stories from './TextareaField.stories'
 
 見出しつきの複数行の入力。React Hook Form の `control` と `name` を受ける。
 
-## 使う場面
+## 規則
 
-- メモのような複数行の文を入力する
+規則の本文は、デザインシステムの文書の次のセクションにある。
 
-## 使わない場面
-
-- 1 行で足りる名前やタイトル
-
-## Do
-
-- `label` に項目の名前を渡す
-
-## Don't
-
-- 見出しを空にする
+- 使う場面、使わない場面、キーボードの操作: コンポーネントの文書（`packages/ui/design/components.md`）の「コンポーネントの選び方」の `TextareaField` の行
+- 使い方の規則と Do と Don't: コンポーネントの文書の「コンポーネントごとの規則」の「`FormField`、`NumberPicker`、`TextareaField`」
+- 欄の枠と面の状態: コンポーネントの文書の「入力の欄の状態」
+- 当たる原則: DESIGN.md の「画面を作るときの原則」の次の ID
+  - `SPACING-SCALE`
+  - `STATE-NOT-COLOR-ONLY`
+  - `FOCUS-ONE`
 
 ## 状態
 
@@ -66,12 +62,6 @@ import * as Stories from './TextareaField.stories'
 枠の色を変えない。
 
 <Canvas of={Stories.DisabledHover} />
-
-## キーボードの操作
-
-- Tab で欄に移る
-- Enter で改行する
-- エラーがあると `aria-invalid` を付け、`aria-describedby` でエラーの文を指す
 
 ## props
 

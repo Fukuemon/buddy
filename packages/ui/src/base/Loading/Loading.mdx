@@ -9,26 +9,17 @@ import * as Stories from './Loading.stories'
 
 画面全体かダイアログの中身を待つ間に出す、回転するインジケーター。
 
-## 使う場面
+## 規則
 
-- 画面全体かダイアログの中身を待つ
+規則の本文は、デザインシステムの文書の次のセクションにある。
 
-## 使わない場面
-
-- ボタンを押した後の待ち（`Button` の `isLoading` を使う）
-- 画面の一部の待ち
-
-## Do
-
-- 待つ時間が長いときは `description` で何を待つかを書く
-
-## Don't
-
-- 1 つの画面に複数並べる
+- 使う場面、使わない場面、キーボードの操作: コンポーネントの文書（`packages/ui/design/components.md`）の「コンポーネントの選び方」の `Loading` の行
+- 使い方の規則と Do と Don't: コンポーネントの文書の「コンポーネントごとの規則」の「`Loading`」
+- 当たる原則: DESIGN.md の「画面を作るときの原則」の次の ID
+  - `MOTION-TOKEN`
+  - `MOTION-REDUCE`
 
 ## 状態
-
-DADS は回転する表示を画面全体の待ちに限るが、buddy はダイアログの中身の待ちにも使う。
 
 ### デフォルト
 
@@ -37,10 +28,6 @@ DADS は回転する表示を画面全体の待ちに限るが、buddy はダイ
 ### 文つき
 
 <Canvas of={Stories.WithDescription} />
-
-## キーボードの操作
-
-- 操作はない。`aria-live` で待ちを伝える
 
 ## props
 
