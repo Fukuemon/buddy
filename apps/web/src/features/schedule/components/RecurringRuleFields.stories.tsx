@@ -4,7 +4,11 @@ import { useForm } from 'react-hook-form'
 
 import type { RecurringRule } from '#/api/types'
 
-import { toRecurringRuleFormValues, type RecurringRuleFormShape } from '../schema/recurringRuleForm'
+import {
+  toRecurringRuleFormValues,
+  type RecurringRuleFormShape,
+  type RecurringRuleFormValues,
+} from '../schema/recurringRuleForm'
 import { RecurringRuleFields } from './RecurringRuleFields'
 
 type FieldsStoryProps = {
@@ -14,18 +18,28 @@ type FieldsStoryProps = {
   baseDate: string
   /** 渡すと、終了日の欄にこの誤りの文を出す。 */
   endDateError?: string
+  /** 渡すと、rule と baseDate から作った欄の値を、この値で上書きする。 */
+  values?: Partial<RecurringRuleFormValues>
+  /** 渡すと、曜日と間隔の欄にこの誤りの文を出す。 */
+  weeklyErrors?: { weeklyDays?: string; interval?: string }
 }
 
 /** 繰り返しの欄を、rule と baseDate から作った値のフォームで描く。 */
-const FieldsStory = ({ rule, baseDate, endDateError }: FieldsStoryProps) => {
+const FieldsStory = ({ rule, baseDate, endDateError, values, weeklyErrors }: FieldsStoryProps) => {
   const form = useForm<RecurringRuleFormShape>({
-    defaultValues: { recurrence: toRecurringRuleFormValues(rule, baseDate) },
+    defaultValues: { recurrence: { ...toRecurringRuleFormValues(rule, baseDate), ...values } },
   })
   useEffect(() => {
     if (endDateError !== undefined) {
       form.setError('recurrence.endDate', { type: 'custom', message: endDateError })
     }
-  }, [form, endDateError])
+    if (weeklyErrors?.weeklyDays !== undefined) {
+      form.setError('recurrence.weeklyDays', { type: 'custom', message: weeklyErrors.weeklyDays })
+    }
+    if (weeklyErrors?.interval !== undefined) {
+      form.setError('recurrence.interval', { type: 'custom', message: weeklyErrors.interval })
+    }
+  }, [form, endDateError, weeklyErrors])
   return <RecurringRuleFields baseDate={baseDate} form={form} />
 }
 
@@ -126,6 +140,18 @@ export const BiweeklyDays: Story = {
       endDate: null,
     },
     baseDate: '2026-10-22',
+  },
+}
+
+/** 「カスタム…」の毎週で、曜日を 1 つも選ばず、間隔を 0 にして保存を押した形。 */
+export const CustomWeeklyInvalid: Story = {
+  args: {
+    ...Custom.args,
+    values: { weeklyDays: [], interval: 0 },
+    weeklyErrors: {
+      weeklyDays: '曜日を 1 つ以上選んでください',
+      interval: '間隔は 1〜52 の週の数で入力してください',
+    },
   },
 }
 

@@ -73,10 +73,17 @@ const openRecurrenceChange = async (page: Page, staffId: string, title: string) 
   await expect(page.getByTestId('schedule-recurrence-modal')).toBeVisible()
 }
 
-/** 繰り返しの変更で「カスタム…」を選び、毎週の曜日 day（1 が月曜）を押す。 */
+/**
+ * 繰り返しの変更で「カスタム…」を選び、毎週の曜日を day（1 が月曜）の 1 つにする。
+ * 曜日の欄は、改修前（#892 より前）は 1 つを選ぶラジオボタン、改修後は足し外しするチェックボックスなので、ほかに選んだ曜日を外す。
+ */
 const chooseWeekday = async (page: Page, day: number) => {
   await page.getByTestId('recurring-rule-preset').selectOption('custom')
   await page.getByTestId(`recurring-rule-day-of-week-${day}`).check()
+  for (let other = 1; other <= 7; other++) {
+    const box = page.getByTestId(`recurring-rule-day-of-week-${other}`)
+    if (other !== day && (await box.isChecked())) await box.uncheck()
+  }
 }
 
 /** ログインし、staff（省くとログインした職員）の start からの毎週の通常の予定（10:00〜11:00）を予定の API で作り、ID を返す。 */
@@ -163,8 +170,9 @@ test.describe('予定の編集', () => {
             await expect(page.getByTestId('recurring-rule-day-of-week-1')).toBeChecked()
             await check('同じモーダルの中に、繰り返す（毎週）と曜日の欄が開き、月曜を選んでいる')
 
-            await step('曜日の「火」を押して「保存」を押す')
+            await step('曜日の「火」を押し、「月」を外して「保存」を押す')
             await page.getByTestId('recurring-rule-day-of-week-2').check()
+            await page.getByTestId('recurring-rule-day-of-week-1').uncheck()
             await page.getByTestId('schedule-recurrence-submit').click()
             await expect(page.getByTestId('schedule-recurrence-modal')).toBeHidden()
             await expect(dayEvent(page, LOGIN_STAFF.id, title)).toBeVisible()

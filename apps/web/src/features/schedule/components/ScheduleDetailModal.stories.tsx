@@ -32,3 +32,27 @@ export const Normal: Story = {
 export const Cancelled: Story = {
   args: { schedule: cancelled!, staff: storyStaff[3], patient: storyPatients[2] },
 }
+
+/** 隔週の月曜と木曜の、繰り返しの予定のまだ変えていない回。規則を「繰り返し」の行に出し、「編集」をメニューにする。 */
+export const Recurring: Story = {
+  args: {
+    schedule: {
+      ...visit!,
+      startsAt: '2026-11-09T09:00:00+09:00',
+      endsAt: '2026-11-09T09:29:00+09:00',
+      recurrence: {
+        recurringScheduleId: 'recurring-1',
+        rule: {
+          frequency: 'weekly',
+          daysOfWeek: [1, 4],
+          interval: 2,
+          dayOfWeek: null,
+          dayOfMonth: null,
+          weekOfMonth: null,
+          endDate: null,
+        },
+      },
+    },
+    onChangeRecurrence: fn(),
+  },
+}

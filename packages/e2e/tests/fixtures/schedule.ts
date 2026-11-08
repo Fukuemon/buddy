@@ -128,6 +128,29 @@ export const createWeeklyNormalSchedule = async (
   })
 
 /**
+ * 予定の API で、facilityId の事業所に staffId の職員の、毎月の第 weekOfMonth 週の dayOfWeek 曜日（1 が月曜）の通常の予定を作り（createRecurringSchedule）、レスポンスを返す。
+ * endDate（YYYY-MM-DD）を渡すと、その日を含む日までの繰り返しにする。
+ */
+export const createMonthlyWeekdayNormalSchedule = async (
+  request: APIRequestContext,
+  token: string,
+  facilityId: string,
+  schedule: NormalSchedule & { dayOfWeek: number; weekOfMonth: number; endDate?: string },
+) =>
+  request.post(`${SCHEDULE_URL}/v1/facilities/${facilityId}/schedules/recurring`, {
+    headers: { Authorization: `Bearer ${token}` },
+    data: {
+      ...(await normalSlot(request, token, schedule)),
+      recurring_rule: {
+        frequency: 'monthly',
+        day_of_week: schedule.dayOfWeek,
+        week_of_month: schedule.weekOfMonth,
+        ...(schedule.endDate === undefined ? {} : { end_date: schedule.endDate }),
+      },
+    },
+  })
+
+/**
  * 予定の API で、繰り返しの予定 recurringScheduleId の originalDate の回を、schedule.date の 10:00〜11:00 の通常の予定に置き換え（changeOccurrence）、
  * レスポンスを返す。buddy_primary の事業所で使う。
  */
