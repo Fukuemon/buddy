@@ -420,7 +420,7 @@ Google カレンダーの予定では、日時の見出しの上に、Google カ
 | --- | --- |
 | タイトルの利用者かサービス内容が、buddy の訪問の情報と違う | 「buddy で保存し直すと、Google カレンダーのタイトルを buddy の訪問の情報に合わせて書き直します。」 |
 | 繰り返しの規則を buddy で表せない | 「Google カレンダーで繰り返しの規則を直してください。」 |
-| ほかの理由 | 「Google カレンダーでタイトルを直してください。」 |
+| 訪問の情報を読み取れなかった（タイトルの利用者が見つからない、同じ名前の利用者が 2 人以上いる、サービス内容が見つからない、タイトルを読めない） | 「buddy で編集して訪問の情報を入れるか、Google カレンダーでタイトルを直してください。」 |
 
 **カタログ**: [ScheduleDetailModalContainer の GoogleCalendarNeedsReview](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-scheduledetailmodalcontainer--google-calendar-needs-review)。  
 繰り返しの規則を buddy で表せない予定は [ScheduleDetailModalContainer の GoogleCalendarRecurrenceUnsupported](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-scheduledetailmodalcontainer--google-calendar-recurrence-unsupported)
