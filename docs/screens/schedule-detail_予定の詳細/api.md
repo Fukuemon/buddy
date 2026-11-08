@@ -14,6 +14,7 @@ OpenAPI の項目は、`getSchedule`（`GET /v1/schedules/{schedule_id}`）の�
 | サービスコード | サービスコード | `Schedule.visit.serviceCode` | `visit_info.service_code` |
 | 訪問の区分 | 夜勤、緊急、入院 | `Schedule.visit.categories` | `visit_info.visit_categories[].name` |
 | 主訪問者、予定者 | 職員の名前 | `Schedule.staffId` を、職員の一覧（`Staff.name`）で引く | `staff_id` を、`listUsers` の `Staff.username` で引く |
+| 繰り返し | 毎週の間隔と曜日、毎月の日にちか第何週の曜日、終了日 | `Schedule.recurrence.rule` | `recurring_rule` の `frequency`、`days_of_week`、`interval`、`day_of_month`、`day_of_week`、`week_of_month`、`end_date` |
 | メモ | メモ | `Schedule.description` | `description` |
 | キャンセルの理由 | 理由 | `Schedule.cancel.reason` | `cancel.reason` |
 | Google カレンダーの印、Google カレンダーのヘルプ、キャンセルの説明 | Google カレンダーの予定か | `Schedule.fromGoogleCalendar` | `listSchedules` の `Schedule.source` が `google_calendar` |
@@ -25,6 +26,10 @@ OpenAPI の項目は、`getSchedule`（`GET /v1/schedules/{schedule_id}`）の�
 
 - 種類の文言は `SCHEDULE_KIND_LABEL`、訪問の区分の文言は `SCHEDULE_CATEGORY_LABEL` で決める。
   - どちらも `apps/web/src/features/schedule/constants/scheduleLabels.ts` にある。
+- 繰り返しの文言は、`apps/web/src/features/schedule/lib/recurringRuleLabel.ts` の `recurringRuleLabel` で決める。
+  - 毎週の間隔の文言は、繰り返しの変更と同じ `weeklyIntervalLabel` で決める。
+  - 規則が持たない曜日、日、週は、開いた回の日から決める。
+    - 回は規則に当たる日にだけあるので、最初の日付から決める予定の API と同じ値になる。
 - 予定を取るのは web の `BuddyApi.schedules.get` で、事業所の ID と予定の ID を受ける。
   - OpenAPI の `getSchedule` はパスに事業所を持たない。
   - web のサーバー（BFF、`apps/web/src/api/http/httpBuddyApi.ts`）は、レスポンスの `facility_id` がログインした職員の事業所と違えば、status が 403 の `ApiError` にする。
@@ -80,6 +85,7 @@ OpenAPI の項目は、`getSchedule`（`GET /v1/schedules/{schedule_id}`）の�
 | 開いた予定が、通常の予定である | `Schedule.kind` が `normal` |
 | 開いた予定が、訪問の予定である | `Schedule.kind` が `visit` |
 | 開いた予定に、訪問の情報がある | `Schedule.visit` がある |
+| 開いた予定が、繰り返しの予定のまだ変えていない回である | `Schedule.recurrence` がある |
 | 開いた予定に、メモがある | `Schedule.description` が空の文字列でない |
 | 職員が、キャンセルを送っている途中である | `cancelSchedule` を呼ぶ mutation（`useCancelSchedule`）の `isPending` が `true`（`ScheduleCancelDialog` の `isSubmitting`） |
 | 職員が、キャンセルの理由の欄に、前後の空白を除いて 1 文字以上 255 文字以下を入れている | キャンセルの理由の欄の値の前後の空白を除いた長さが 1 以上 255 以下（`ScheduleCancelDialog` が `ConfirmDialog` に渡す `canSubmit`） |
@@ -126,9 +132,12 @@ OpenAPI の項目は、`getSchedule`（`GET /v1/schedules/{schedule_id}`）の�
 | 4 | 日時 | `schedule-detail-datetime` |
 | 6 | 日時 | `schedule-detail-datetime` |
 | 7 | 日時 | `schedule-detail-datetime` |
+| 7 | 繰り返し | `schedule-detail-recurrence` |
 | 7 | 訪問の情報 | `schedule-detail-visit` |
+| 8 | 訪問の情報 | `schedule-detail-visit` |
 | 9 | 訪問の情報 | `schedule-detail-visit` |
 | 11 | メモ | `schedule-detail-memo` |
+| 12 | メモ | `schedule-detail-memo` |
 | 13 | メモ | `schedule-detail-memo` |
 | 9 | 下端の閉じる | `schedule-detail-close` |
 | 12 | 下端の閉じる | `schedule-detail-close` |
@@ -142,9 +151,9 @@ OpenAPI の項目は、`getSchedule`（`GET /v1/schedules/{schedule_id}`）の�
 | 11 | 予定をキャンセル | `schedule-detail-cancel-schedule` |
 | 12 | 予定をキャンセル | `schedule-detail-cancel-schedule` |
 | 13 | 予定をキャンセル | `schedule-detail-cancel-schedule` |
-| 15 | 編集のメニュー | `schedule-detail-edit-list` |
-| 16 | この予定を編集 | `schedule-detail-edit-occurrence` |
-| 17 | 繰り返しを変更 | `schedule-detail-edit-recurrence` |
+| 16 | 編集のメニュー | `schedule-detail-edit-list` |
+| 17 | この予定を編集 | `schedule-detail-edit-occurrence` |
+| 18 | 繰り返しを変更 | `schedule-detail-edit-recurrence` |
 | 2 | キャンセルのダイアログ | `schedule-cancel-dialog` |
 | 4 | キャンセルする予定の日時 | `schedule-cancel-datetime` |
 | 5 | キャンセルの説明 | `schedule-cancel-description` |

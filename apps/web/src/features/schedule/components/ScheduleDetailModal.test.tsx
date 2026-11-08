@@ -6,7 +6,7 @@ import { describe, expect, it } from 'vite-plus/test'
 
 import * as stories from './ScheduleDetailModal.stories'
 
-const { Visit, Normal, Cancelled } = composeStories(stories)
+const { Visit, Normal, Cancelled, Recurring } = composeStories(stories)
 
 describe('ScheduleDetailModal', () => {
   it('訪問の予定は利用者とサービスコードを出す', () => {
@@ -71,5 +71,44 @@ describe('ScheduleDetailModal', () => {
     expect(screen.queryByTestId('schedule-detail-edit')).not.toBeInTheDocument()
     await userEvent.click(screen.getByTestId('modal-close'))
     expect(onClose).toHaveBeenCalledOnce()
+  })
+
+  it('繰り返しの予定のまだ変えていない回は、「繰り返し」の行に規則を出す', () => {
+    render(<Recurring />)
+    expect(screen.getByTestId('schedule-detail-recurrence')).toHaveTextContent(
+      '繰り返し隔週 月曜日、木曜日',
+    )
+  })
+
+  it('終了日のある毎月の規則は、終了日を後ろに付けて出す', () => {
+    const schedule = Recurring.args.schedule!
+    render(
+      <Recurring
+        schedule={{
+          ...schedule,
+          recurrence: {
+            recurringScheduleId: 'recurring-1',
+            rule: {
+              frequency: 'monthly',
+              daysOfWeek: null,
+              interval: null,
+              dayOfWeek: 1,
+              dayOfMonth: null,
+              weekOfMonth: 2,
+              endDate: '2027-03-31',
+            },
+          },
+        }}
+      />,
+    )
+    expect(screen.getByTestId('schedule-detail-recurrence')).toHaveTextContent(
+      '毎月 第 2 月曜日（2027年3月31日まで）',
+    )
+  })
+
+  it('単発の予定と、1 回を置き換えた予定（recurrence を持たない予定）は、「繰り返し」の行を出さない', () => {
+    render(<Visit />)
+    expect(screen.queryByTestId('schedule-detail-recurrence')).not.toBeInTheDocument()
+    expect(screen.queryByText('繰り返し')).not.toBeInTheDocument()
   })
 })

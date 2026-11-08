@@ -7,7 +7,8 @@ import {
   SCHEDULE_KIND_LABEL,
   SCHEDULE_REVIEW_REASON_LABEL,
 } from '../constants/scheduleLabels'
-import { formatDateTimeRange } from '../lib/dateTime'
+import { formatDateTimeRange, toTokyoDateKey } from '../lib/dateTime'
+import { recurringRuleLabel } from '../lib/recurringRuleLabel'
 import { reviewFixMessage } from '../lib/reviewFix'
 
 export type ScheduleDetailModalProps = {
@@ -26,8 +27,16 @@ export type ScheduleDetailModalProps = {
   onClose: () => void
 }
 
-const Row = ({ label, children }: { label: string; children: React.ReactNode }) => (
-  <div className="grid grid-cols-[8rem_minmax(0,1fr)] gap-4 py-2">
+const Row = ({
+  label,
+  children,
+  testId,
+}: {
+  label: string
+  children: React.ReactNode
+  testId?: string
+}) => (
+  <div className="grid grid-cols-[8rem_minmax(0,1fr)] gap-4 py-2" data-testid={testId}>
     <dt className="text-caption text-text-secondary">{label}</dt>
     <dd className="whitespace-pre-wrap">{children}</dd>
   </div>
@@ -41,7 +50,7 @@ const SectionHeading = ({ id, children }: { id: string; children: React.ReactNod
 
 /**
  * 予定の詳細をモーダルで出す。
- * 日時を見出しにし、その下に種類と主訪問者（通常の予定では予定者）を、訪問の予定では訪問の情報を、最後にメモをセクションに分けて並べる。メモが空なら、メモのセクションを出さない。
+ * 日時を見出しにし、その下に種類と主訪問者（通常の予定では予定者）を、繰り返しの予定のまだ変えていない回（recurrence を持つ予定）では繰り返しの規則を、訪問の予定では訪問の情報を、最後にメモをセクションに分けて並べる。メモが空なら、メモのセクションを出さない。
  * 見出しと値は、全てのセクションで同じ 1 列の並びにし、値の列の位置をそろえる。
  * 下端の左端に、予定をキャンセルするボタンを赤い文字で 1 つだけ置き、右に「閉じる」と編集のボタンをこの順にまとめる。onCancelSchedule と onEdit を省くと、そのボタンを出さない。
  * 予定をキャンセルするボタンは戻せない操作の起点なので、安全な操作から離して置く。
@@ -156,6 +165,14 @@ export const ScheduleDetailModal = ({
             <Row label={schedule.kind === 'visit' ? '主訪問者' : '予定者'}>
               {staff?.name ?? '職員不明'}
             </Row>
+            {schedule.recurrence !== undefined && (
+              <Row label="繰り返し" testId="schedule-detail-recurrence">
+                {recurringRuleLabel(
+                  schedule.recurrence.rule,
+                  toTokyoDateKey(new Date(schedule.startsAt)),
+                )}
+              </Row>
+            )}
           </dl>
         </section>
         {schedule.visit !== undefined && (
