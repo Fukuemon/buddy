@@ -867,6 +867,16 @@ body {
   color: var(--wf-surface);
 }
 
+/* データを失う操作の確認のダイアログを開く起点のボタン（apps/web の Button の destructive）。白い面に赤い文字で出す */
+.wf-btn--destructive {
+  color: var(--wf-danger);
+}
+
+/* ダイアログのフッターでは、起点のボタンを 1 つだけ左端に置き、閉じるボタンから離す */
+.wf-dialog__footer > .wf-btn--destructive {
+  margin-right: auto;
+}
+
 /* タイトル、説明の文、リンクを縦に積む、画面の全体の知らせ（権限が無いときなど） */
 .wf-message {
   display: grid;
