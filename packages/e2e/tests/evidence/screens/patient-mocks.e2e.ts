@@ -122,7 +122,7 @@ test.describe('利用者の管理の画面仕様書のモック', () => {
           await expect(page).toHaveURL(/02-ended\.html/)
           await expect(page.getByTestId('patient-list-count')).toHaveText('2 人')
           await expect(page.getByTestId('patient-list-ended-on-{利用者の id}').first()).toHaveText(
-            '2026/08/31 に利用の終了',
+            '2026年8月31日（月）に利用の終了',
           )
           await check(
             '利用の終了の利用者（02-ended.html）が「2 人」出て、「利用の終了にした日」のカラムに日付が出る',
@@ -449,13 +449,13 @@ test.describe('利用者の管理の画面仕様書のモック', () => {
         },
         async ({ page, check }) => {
           await expect(page.getByTestId('patient-detail-status')).toHaveText(
-            '利用の終了（2026/09/30）',
+            '利用の終了（2026年9月30日（水））',
           )
           await expect(page.getByTestId('patient-detail-status-text')).toHaveText(
             '予定の利用者に選べません。',
           )
           await check(
-            '利用の終了の利用者（06-ended.html）に、「利用の終了（2026/09/30）」と「利用: 予定の利用者に選べません。」が出る',
+            '利用の終了の利用者（06-ended.html）に、「利用の終了（2026年9月30日（水））」と「利用: 予定の利用者に選べません。」が出る',
           )
         },
       )

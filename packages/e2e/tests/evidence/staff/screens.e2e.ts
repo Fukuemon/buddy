@@ -388,7 +388,7 @@ test.describe('職員の管理', () => {
         async ({ page, step, check }, { id, scheduleId }) => {
           await page.goto(`/staff/${id}`)
           await expect(page.getByTestId('staff-detail-menu')).toBeVisible()
-          await step('撮影の前に登録し、2030/01/09 の予定を作った職員の詳細を開いている')
+          await step('撮影の前に登録し、2030年1月9日（水）の予定を作った職員の詳細を開いている')
 
           await step('「…」から「休職にする」を押す')
           await page.getByTestId('staff-detail-menu').click()
@@ -396,7 +396,7 @@ test.describe('職員の管理', () => {
           const dialog = page.getByTestId('staff-leave-dialog')
           await expect(
             dialog.getByTestId(`staff-leave-assignment-schedule-${scheduleId}`),
-          ).toContainText('2030/01/09')
+          ).toContainText('2030年1月9日（水）')
           await check('確認のダイアログに、今日以降に残る予定が出る')
 
           await step('「休職にする」を押して確定する')
@@ -451,7 +451,7 @@ test.describe('職員の管理', () => {
         async ({ page, step, check }, { id, name, scheduleId }) => {
           await page.goto(`/staff/${id}`)
           await expect(page.getByTestId('staff-detail-menu')).toBeVisible()
-          await step('撮影の前に登録し、2030/01/09 の予定を作った職員の詳細を開いている')
+          await step('撮影の前に登録し、2030年1月9日（水）の予定を作った職員の詳細を開いている')
 
           await step('「…」から「退職にする」を押す')
           await page.getByTestId('staff-detail-menu').click()

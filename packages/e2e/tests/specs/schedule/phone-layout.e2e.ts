@@ -37,7 +37,7 @@ test.describe('予定のカレンダー', () => {
       const row = agenda
         .getByTestId(/^schedule-event-/)
         .filter({ hasText: OFFICE_A_SCHEDULE.title })
-      await expect(row).toContainText('10:00 - 11:00')
+      await expect(row).toContainText('10:00〜11:00')
       await expect(row).toContainText(LOGIN_STAFF.name)
     })
 

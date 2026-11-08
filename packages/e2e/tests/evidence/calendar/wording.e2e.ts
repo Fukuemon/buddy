@@ -58,7 +58,7 @@ test.describe('カレンダーの連携と取り込みの文言', () => {
             ? page.getByTestId('calendar-review-reason-export-2')
             : page.getByTestId('calendar-review-dialog-reason')
           if (!isBefore) {
-            await step('青木 一郎の 2026/11/02（月）14:00〜16:00 の行を押す')
+            await step('青木 一郎の 2026年11月2日（月） 14:00〜16:00 の行を押す')
             await page.getByTestId('calendar-review-row-schedule-schedule-5').click()
           }
           await expect(reason).toContainText(`職員に${expected.ask}てください`)

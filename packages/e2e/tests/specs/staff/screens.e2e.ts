@@ -175,7 +175,7 @@ test.describe('職員の詳細', () => {
       const dialog = page.getByTestId('staff-leave-dialog')
       await expect(
         dialog.getByTestId(`staff-leave-assignment-schedule-${scheduleId}`),
-      ).toContainText('2030/01/08')
+      ).toContainText('2030年1月8日（火）')
       await dialog.getByTestId('staff-leave-submit').click()
 
       await expect(dialog).toHaveCount(0)

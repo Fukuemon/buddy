@@ -133,10 +133,10 @@ test.describe('予定のカレンダー', () => {
             await page.getByTestId('schedule-form-service-time').fill('90')
             await expect(page.getByTestId('schedule-form-end-time')).toHaveText('終了時間 翌 00:30')
             await expect(page.getByTestId('schedule-field-date-time')).toContainText(
-              '23:00 - 翌 00:30（90 分、医）',
+              '23:00〜翌 00:30（90 分、医）',
             )
             await check(
-              '終了時間が「終了時間 翌 00:30」と出て、訪問日時の要約も「23:00 - 翌 00:30」になる',
+              '終了時間が「終了時間 翌 00:30」と出て、訪問日時の要約も「23:00〜翌 00:30」になる',
             )
           },
         )
