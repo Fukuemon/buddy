@@ -1,6 +1,7 @@
 import { expect, test, type Page } from '@playwright/test'
 
-import { ISHIDA } from '../../fixtures/env'
+import { issueAccessToken } from '../../fixtures/apiReference'
+import { ISHIDA, SCHEDULE_URL } from '../../fixtures/env'
 import { EVIDENCE_VARIANTS, recordPrEvidence } from '../../fixtures/evidence'
 import { createGoogleEvent } from '../../fixtures/googleCalendar'
 import { signInAtBroker } from '../../screens/login'
@@ -33,7 +34,7 @@ const setCutover = async (page: Page, open: boolean) => {
 
 /**
  * 録画の外の準備。石田でログインし、石田の Google カレンダーに明日から毎週の繰り返しの予定を作り、同期が写した明日の回の ID を返す。
- * 回の ID は、日の表示で回を押して開いた予定の詳細の URL から読む。その後に、切り替えを open の状態にする。
+ * 回の ID は、予定の一覧（listSchedules）から読む。その後に、切り替えを open の状態にする。
  */
 const prepare = (open: boolean) => async (page: Page) => {
   const title = `週の定例 ${Date.now()}`
@@ -49,18 +50,22 @@ const prepare = (open: boolean) => async (page: Page) => {
     end: '11:00',
     recurrence: ['RRULE:FREQ=WEEKLY'],
   })
-  const event = page
-    .getByTestId(`day-grid-staff-${ISHIDA.staff.id}`)
-    .getByTestId(/^schedule-event-/)
-    .filter({ hasText: title })
-  // 同期は別の処理が読むので、日の表示に出るまで開き直す
+  const token = await issueAccessToken(page.request, ISHIDA.email)
+  let scheduleId = ''
+  // 同期は別の処理が読むので、予定の一覧に回が出るまで読み直す
   await expect(async () => {
-    await page.goto(`/schedule?view=day&date=${date}`)
-    await expect(event).toBeVisible()
+    const res = await page.request.get(
+      `${SCHEDULE_URL}/v1/facilities/${ISHIDA.facilityId}/schedules`,
+      {
+        headers: { Authorization: `Bearer ${token}` },
+        params: { date_from: date, date_to: daysFromToday(2) },
+      },
+    )
+    expect(res.ok()).toBe(true)
+    const listed = (await res.json()) as { schedules: { id: string; title: string | null }[] }
+    scheduleId = listed.schedules.find((s) => s.title === title)?.id ?? ''
+    expect(scheduleId).not.toBe('')
   }).toPass()
-  await event.click()
-  await page.waitForURL(/\/schedule\/[^/?]+(\?|$)/)
-  const scheduleId = new URL(page.url()).pathname.split('/')[2] ?? ''
   await setCutover(page, open)
   return { scheduleId, date, title }
 }
