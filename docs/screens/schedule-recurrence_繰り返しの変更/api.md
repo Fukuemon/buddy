@@ -30,7 +30,7 @@
 | （画面に出さない） | 新しい繰り返しの予定の ID | 画面を開いたときに作った ID | `changeRecurringRule` の本文の `id` |
 
 - 画面は、`buddy_primary` と `google_primary` のどちらの事業所でも `getSchedule` で予定を読む。
-- `buddy_primary` の繰り返しの予定の回は、web のサーバーが `getRecurringSchedule` で繰り返しの予定を取り、`recurring_schedule_id` と `recurring_rule` を持つ回の形にする。処理は `apps/web/src/api/http/recurrence.ts` の `occurrenceOf` にある。
+  - `buddy_primary` の繰り返しの予定の回は、web のサーバーが `getRecurringSchedule` で繰り返しの予定を取り、`recurring_schedule_id` と `recurring_rule` を持つ回の形にする。処理は `apps/web/src/api/http/recurrence.ts` の `occurrenceOf` にある。
   - `google_primary` の繰り返しの回は、予定の API が `getSchedule` に親の ID と規則を返す。
   - web のサーバーは、`recurring_schedule_id` と `recurring_rule` の両方がある予定だけに `Schedule.recurrence` を付ける。処理は `apps/web/src/api/http/scheduleMapper.ts` の `fromApiSchedule` にある。
   - 1 回だけ変えた回は、単発の予定として返るので `Schedule.recurrence` を持たない。
@@ -41,7 +41,7 @@
   - 最初に読み終えた値を保ち、開いた後に一覧を読み直して `cutover` が変わっても、状態を変えない。開いた後の切り替えは、保存が 409 `cutover_open` で拒まれて知らせ、入力を消さないためである。
   - 処理は `apps/web/src/features/schedule/queries.ts` の `useCutoverAtOpen` にある。
 - 繰り返しの選択肢は、`apps/web/src/features/schedule/components/RecurringRuleFields.tsx` の `presetsOf` が開いた回の日から作る。
-- 欄の初期値は、`recurring_rule` の空の項目を開いた回の日から埋めて作る。処理は `apps/web/src/features/schedule/schema/recurringRuleForm.ts` の `toRecurringRuleFormValues` にある。
+  - 欄の初期値は、`recurring_rule` の空の項目を開いた回の日から埋めて作る。処理は `apps/web/src/features/schedule/schema/recurringRuleForm.ts` の `toRecurringRuleFormValues` にある。
 - 保存の流れは次のとおり。
   - `effective_date` は、開いた回の日と今日の遅い方である。今日は画面を開いたときに決める。予定の API が今日より前の `effective_date` を拒むためである（ADR-0037）。
   - `etag` は開いたときの `Schedule.etag`（`google_primary` では親の予定の etag）で、`null` なら送らない。409 `google_event_changed` の後は、`getSchedule` で読み直した予定の `etag` に置き換える。読み直せないか、別の繰り返しの予定の回か、規則が変わっていたら、置き換えずに開き直すことを出す。開いたときの規則から作った入力のまま送ると、Google カレンダーで変えた規則を知らずに消すためである。
@@ -60,7 +60,7 @@
 | 職員が、日で「曜日」を選んでいる | フォームの値の `recurrence.monthlyBy` が `weekday` |
 | 職員が、終了日で「あり」を選んでいる | フォームの値の `recurrence.hasEndDate` が `true` |
 | 事業所が、予定の正本を buddy に切り替えている途中である | `useCutoverAtOpen` が `true`。`google_primary` の事業所で、画面を開いたときの `ScheduleList.cutover` が `null` でない（`listSchedules` の `cutover`）。`buddy_primary` の事業所では読まず、`false` にする |
-| 職員が、保存を送っている途中である | react-hook-form の `formState.isSubmitting`が `true`（保存のボタンの `isLoading` に渡す）。`changeRecurringRule` を呼んでから予定のカレンダーへ移るまでと、409 `google_event_changed` の後に `getSchedule` で読み直し終えるまでを含む |
+| 職員が、保存を送っている途中である | react-hook-form の `formState.isSubmitting` が `true`（保存のボタンの `isLoading` に渡す）。`changeRecurringRule` を呼んでから予定のカレンダーへ移るまでと、409 `google_event_changed` の後に `getSchedule` で読み直し終えるまでを含む |
 
 - 押せなくする判定は、`apps/web/src/features/schedule/components/RecurringRuleFields.tsx` の `disabled` にある。
 - 保存のボタンは packages/ui の `Button` で、`isLoading` の間は押しても `onClick` と送信を止める。
@@ -68,7 +68,7 @@
   - 権限が無い: `apps/web/src/features/schedule/lib/schedulePermission.ts` の `canEditScheduleOf` が `false`
   - 繰り返しを変えられない予定: `Schedule.cancel` がある。または `Schedule.recurrence` が無い
   - 予定の正本を切り替えている: `apps/web/src/features/schedule/queries.ts` の `useCutoverAtOpen` が `true`
-- 今日より前の回から開いた: `Schedule.startsAt` の Asia/Tokyo の日付が、画面を開いたときの Asia/Tokyo の今日より前
+  - 今日より前の回から開いた: `Schedule.startsAt` の Asia/Tokyo の日付が、画面を開いたときの Asia/Tokyo の今日より前
   - カスタム: フォームの値の `recurrence` が、開いた回の日から作る 3 つの選択肢のどれとも同じでない。または「カスタム…」を選んだ
 
 ## 要素の testid

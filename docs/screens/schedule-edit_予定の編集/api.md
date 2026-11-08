@@ -37,7 +37,7 @@
 | （画面に出さない） | 保存で送る予定の etag | `Schedule.etag` | `getSchedule` の `etag`。送るのは `updateSchedule` の本文の `etag` |
 
 - 画面は、`buddy_primary` と `google_primary` のどちらの事業所でも `getSchedule` で予定を読み、同じフォームを出す。
-- 処理は `apps/web/src/features/schedule/components/ScheduleEditModalContainer.tsx` にある。
+  - 処理は `apps/web/src/features/schedule/components/ScheduleEditModalContainer.tsx` にある。
 - `review_reason` が `recurrence_unsupported` の予定は、フォームを出さずに、変えられないことの文を出す。
   - 判定は、権限の判定の後、キャンセルした予定の判定の前に行う。
 - 予定の正本を切り替えているかは、予定の詳細と同じく、`getFacility`（`GET /v1/facilities/{facility_id}`）の `source_mode` と、`listSchedules` の `cutover` で読む。
@@ -121,7 +121,7 @@
 | 開いた予定が、予定を Google カレンダーで管理する事業所の予定である | `Schedule.fromGoogleCalendar` が `true` |
 | 開いた予定が、訪問の情報を読み取れなかった確認が必要な予定である | `Schedule.reviewReason` が `patient_not_found`、`patient_ambiguous`、`service_code_not_found`、`title_unreadable` のどれか |
 | 事業所が、予定の正本を buddy に切り替えている途中である | `useCutoverAtOpen` が `true`。`google_primary` の事業所で、画面を開いたときの `ScheduleList.cutover` が `null` でない（`listSchedules` の `cutover`）。`buddy_primary` の事業所では読まず、`false` にする |
-| 職員が、保存を送っている途中である | react-hook-form の `formState.isSubmitting`が `true`（`ScheduleFormModal` が保存のボタンの `isLoading` に渡す）。`updateSchedule` を呼んでから、予定の詳細へ移るまでと、409 `google_event_changed` の後に `getSchedule` で読み直し終えるまでを含む |
+| 職員が、保存を送っている途中である | react-hook-form の `formState.isSubmitting` が `true`（`ScheduleFormModal` が保存のボタンの `isLoading` に渡す）。`updateSchedule` を呼んでから、予定の詳細へ移るまでと、409 `google_event_changed` の後に `getSchedule` で読み直し終えるまでを含む |
 
 - 予定の種類を変えられる予定かは、`apps/web/src/features/schedule/lib/reviewFix.ts` の `canAddVisitInfo` が決める。
 - 保存のボタンは packages/ui の `Button` で、`isLoading` の間は押しても `onClick` と送信を止める。
@@ -198,7 +198,7 @@
   - 「権限が無い」の状態のモーダルの `schedule-edit-forbidden`
   - 「繰り返しの規則を buddy で表せない」の状態のモーダルの `schedule-edit-recurrence-unsupported`
   - 「予定の正本を切り替えている」の状態のモーダルの `schedule-edit-cutover`
-- キャンセルした予定のモーダルの `schedule-edit-cancelled`。この状態はモックを持たない
+  - キャンセルした予定のモーダルの `schedule-edit-cancelled`。この状態はモックを持たない
 - 読み込み中の表示、読み込みの失敗の文、権限が無いことの説明、繰り返しの規則を変えられないことの文、切り替えていることの文、保存の失敗の文は、testid を持たない。
 
 ## 状態と失敗の要因
