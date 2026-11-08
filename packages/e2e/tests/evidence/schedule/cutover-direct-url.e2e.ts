@@ -124,7 +124,7 @@ test.describe('予定の正本を切り替えている間に、予定を変え�
           await other.close()
           await step('この画面で「保存」を押す')
           await page.getByTestId('schedule-recurrence-submit').click()
-          await expect(page.getByTestId('schedule-recurrence-error')).toHaveText(CUTOVER_MESSAGE)
+          await expect(page.getByTestId('schedule-recurrence-modal')).toContainText(CUTOVER_MESSAGE)
           await expect(preset).toHaveValue('monthly-day')
           await check(`入力を残したまま、規則の欄の下に「${CUTOVER_MESSAGE}」が出る`)
         },
@@ -155,7 +155,9 @@ test.describe('予定の正本を切り替えている間に、予定を変え�
             await step('繰り返しを「毎月」の日にちの選択肢に変えて「保存」を押す')
             await page.getByTestId('recurring-rule-preset').selectOption('monthly-day')
             await page.getByTestId('schedule-recurrence-submit').click()
-            await expect(page.getByTestId('schedule-recurrence-error')).toHaveText(CUTOVER_MESSAGE)
+            await expect(page.getByTestId('schedule-recurrence-modal')).toContainText(
+              CUTOVER_MESSAGE,
+            )
             await check(`保存して初めて「${CUTOVER_MESSAGE}」が出る`)
             return
           }
