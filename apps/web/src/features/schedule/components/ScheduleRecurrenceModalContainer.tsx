@@ -56,7 +56,8 @@ type RecurrenceFormProps = {
 const RecurrenceForm = ({ schedule, staffList, patients, calendarSearch }: RecurrenceFormProps) => {
   const navigate = useNavigate()
   const { api, facilityId } = useBuddyApi()
-  const { recurrence } = schedule
+  // 開いたときの繰り返しに固定する。予定を取り直すと schedule は最新に替わるが、入力は開いたときの規則から作ったままなので、送る規則と 409 の後の比較は開いたときの規則で行う
+  const [recurrence] = useState(schedule.recurrence)
   const occurrenceDate = toTokyoDateKey(new Date(schedule.startsAt))
   // 予定の API は今日より前の日から当てないので（ADR-0037）、今日より前の回を開いたときは今日から当てる
   const [today] = useState(() => toTokyoDateKey(new Date()))
