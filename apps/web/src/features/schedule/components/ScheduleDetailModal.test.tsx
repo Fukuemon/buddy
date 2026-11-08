@@ -42,6 +42,18 @@ describe('ScheduleDetailModal', () => {
     expect(onClose).toHaveBeenCalledOnce()
   })
 
+  it('予定をキャンセルするボタンは、赤い文字の destructive にして下端の先頭に置き、「閉じる」と編集をその後に並べる', async () => {
+    const onCancelSchedule = fn()
+    render(<Normal onCancelSchedule={onCancelSchedule} />)
+    const cancel = screen.getByTestId('schedule-detail-cancel-schedule')
+    const close = screen.getByTestId('schedule-detail-close')
+    expect(cancel).toHaveClass('text-danger')
+    expect(cancel).toHaveClass('mr-auto')
+    expect(cancel.compareDocumentPosition(close) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    await userEvent.click(cancel)
+    expect(onCancelSchedule).toHaveBeenCalledOnce()
+  })
+
   it('メモが空の予定は、メモの見出しごと出さない', () => {
     render(<Normal schedule={{ ...Normal.args.schedule!, description: '' }} />)
     expect(screen.queryByRole('region', { name: 'メモ' })).not.toBeInTheDocument()
