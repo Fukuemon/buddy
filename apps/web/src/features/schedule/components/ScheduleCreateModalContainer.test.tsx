@@ -246,6 +246,25 @@ describe('ScheduleCreateModalContainer', () => {
       expect(create).not.toHaveBeenCalled()
     })
 
+    it('カスタムで曜日を足し、間隔を 2 にすると、隔週の複数の曜日の繰り返しの予定を作る', async () => {
+      const { createRecurring } = spyApi()
+      render(<NormalFromSlot />)
+      await fillTitle()
+      await userEvent.click(screen.getByTestId('schedule-field-recurrence'))
+      await userEvent.click(screen.getByTestId('schedule-form-repeats'))
+      await userEvent.selectOptions(screen.getByTestId('recurring-rule-preset'), 'custom')
+      await userEvent.click(screen.getByTestId('recurring-rule-day-of-week-5'))
+      await userEvent.clear(screen.getByTestId('recurring-rule-interval'))
+      await userEvent.type(screen.getByTestId('recurring-rule-interval'), '2')
+      expect(screen.getByTestId('schedule-field-recurrence')).toHaveTextContent(
+        '隔週 水曜日、金曜日',
+      )
+      await userEvent.click(screen.getByTestId('schedule-create-submit'))
+
+      await waitFor(() => expect(createRecurring).toHaveBeenCalledOnce())
+      expect(createRecurring.mock.calls[0][2]).toMatchObject({ daysOfWeek: [3, 5], interval: 2 })
+    })
+
     it('日付が繰り返しの回に当たらなければ、理由を出して送らない', async () => {
       const { createRecurring } = spyApi()
       render(<NormalFromSlot />)
@@ -254,6 +273,7 @@ describe('ScheduleCreateModalContainer', () => {
       await userEvent.click(screen.getByTestId('schedule-form-repeats'))
       await userEvent.selectOptions(screen.getByTestId('recurring-rule-preset'), 'custom')
       await userEvent.click(screen.getByTestId('recurring-rule-day-of-week-4'))
+      await userEvent.click(screen.getByTestId('recurring-rule-day-of-week-3'))
       await userEvent.click(screen.getByTestId('schedule-create-submit'))
 
       expect(await screen.findByTestId('schedule-field-recurrence')).toHaveTextContent(

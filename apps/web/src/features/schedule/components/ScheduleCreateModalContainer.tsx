@@ -20,6 +20,7 @@ import {
   defaultServiceCode,
   toScheduleInput,
 } from '../lib/scheduleFormMapper'
+import { recurringRuleLabel } from '../lib/recurringRuleLabel'
 import { newScheduleId } from '../lib/scheduleId'
 import { editableStaff } from '../lib/schedulePermission'
 import {
@@ -29,12 +30,10 @@ import {
   useCreateRecurringSchedule,
   useCreateSchedule,
 } from '../queries'
-import { toRecurringRule } from '../schema/recurringRuleForm'
+import { toRecurringRule, toRecurringRuleFormValues } from '../schema/recurringRuleForm'
 import {
-  createRecurrenceFormValues,
   createScheduleCreateFormSchema,
   followScheduleDate,
-  recurrenceSummary,
   type ScheduleCreateFormValues,
 } from '../schema/scheduleCreateForm'
 import type { ScheduleFormValues } from '../schema/scheduleForm'
@@ -100,7 +99,7 @@ const ScheduleCreateForm = ({
   const defaultsOf = (values: Parameters<typeof createScheduleFormValues>[0]) => ({
     ...createScheduleFormValues(values),
     repeats: false,
-    recurrence: createRecurrenceFormValues(values.date),
+    recurrence: toRecurringRuleFormValues(undefined, values.date),
   })
   const form = useForm<ScheduleCreateFormValues>({
     defaultValues: defaultsOf({ kind: search.kind, ...initial }),
@@ -132,6 +131,7 @@ const ScheduleCreateForm = ({
 
   const repeats = useWatch({ control: form.control, name: 'repeats' })
   const recurrence = useWatch({ control: form.control, name: 'recurrence' })
+  const scheduleDate = useWatch({ control: form.control, name: 'scheduleDate' })
   const recurrenceErrors = form.formState.errors.recurrence
   const submitting = repeats ? createRecurringSchedule : createSchedule
 
@@ -165,10 +165,13 @@ const ScheduleCreateForm = ({
       onSubmit={submit}
       patients={patients}
       recurrence={{
-        summary: recurrenceSummary(repeats, recurrence),
+        summary: repeats
+          ? recurringRuleLabel(toRecurringRule(recurrence), scheduleDate)
+          : '繰り返さない',
         error:
           recurrenceErrors?.frequency?.message ??
-          recurrenceErrors?.dayOfWeek?.message ??
+          recurrenceErrors?.weeklyDays?.message ??
+          recurrenceErrors?.interval?.message ??
           recurrenceErrors?.endDate?.message,
         field: <ScheduleRecurrenceEdit form={form} />,
       }}

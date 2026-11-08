@@ -2,12 +2,10 @@ import { describe, expect, it } from 'vite-plus/test'
 
 import type { RecurringRule } from '#/api/types'
 
-import {
-  createRecurrenceFormValues,
-  followScheduleDate,
-  recurrenceSummary,
-  startsOn,
-} from './scheduleCreateForm'
+import { toRecurringRuleFormValues } from './recurringRuleForm'
+import { followScheduleDate, startsOn } from './scheduleCreateForm'
+
+const createRecurrenceFormValues = (date: string) => toRecurringRuleFormValues(undefined, date)
 
 const rule = (patch: Partial<RecurringRule>): RecurringRule => ({
   frequency: 'weekly',
@@ -42,27 +40,6 @@ describe('startsOn', () => {
   })
 })
 
-describe('recurrenceSummary', () => {
-  const values = createRecurrenceFormValues('2026-11-09')
-
-  it('繰り返さないときは「繰り返さない」にする', () => {
-    expect(recurrenceSummary(false, values)).toBe('繰り返さない')
-  })
-
-  it('毎週は間隔と曜日を、終了日は年月日で書く', () => {
-    expect(recurrenceSummary(true, { ...values, hasEndDate: true, endDate: '2027-03-31' })).toBe(
-      '毎週 月曜日（2027年3月31日まで）',
-    )
-  })
-
-  it('毎月の日と、毎月の第何週の曜日を書く', () => {
-    expect(recurrenceSummary(true, { ...values, frequency: 'monthly' })).toBe('毎月 9 日')
-    expect(recurrenceSummary(true, { ...values, frequency: 'monthly', monthlyBy: 'weekday' })).toBe(
-      '毎月 第 2 月曜日',
-    )
-  })
-})
-
 describe('followScheduleDate', () => {
   it('前の日付の曜日の毎週なら、新しい日付の曜日にし、終了日の初期の日もそろえる', () => {
     const followed = followScheduleDate(
@@ -70,7 +47,7 @@ describe('followScheduleDate', () => {
       '2026-11-09',
       '2026-11-12',
     )
-    expect(followed).toMatchObject({ dayOfWeek: 4, weeklyDays: [4], endDate: '2026-11-12' })
+    expect(followed).toMatchObject({ weeklyDays: [4], endDate: '2026-11-12' })
   })
 
   it('カスタムで選んだ別の曜日と、決めた終了日は変えない', () => {

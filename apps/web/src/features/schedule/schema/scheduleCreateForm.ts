@@ -6,9 +6,7 @@ import {
   isoWeekdayOf,
   recurringRuleFormSchema,
   toRecurringRule,
-  toRecurringRuleFormValues,
   weekOfMonthOf,
-  weeklyIntervalLabel,
   type RecurringRuleFormValues,
 } from './recurringRuleForm'
 import { createScheduleFormSchema, type ScheduleFormValues } from './scheduleForm'
@@ -34,30 +32,6 @@ export const startsOn = (rule: RecurringRule, date: string) => {
   return true
 }
 
-const WEEKDAY_LABELS = ['月曜日', '火曜日', '水曜日', '木曜日', '金曜日', '土曜日', '日曜日']
-
-/** 項目の一覧の「繰り返し」の要約。「毎週 月曜日」「毎月 16 日」「毎月 第 3 月曜日」の形で、終了日があれば「（2027年3月31日まで）」を付ける。 */
-export const recurrenceSummary = (repeats: boolean, values: RecurringRuleFormValues) => {
-  if (!repeats) return '繰り返さない'
-  const rule = toRecurringRule(values)
-  const weekday = (day: number | null) => WEEKDAY_LABELS[(day ?? 1) - 1]
-  const repetition =
-    rule.frequency === 'weekly'
-      ? `${weeklyIntervalLabel(rule.interval ?? 1)} ${(rule.daysOfWeek ?? []).map(weekday).join('、')}`
-      : rule.dayOfMonth !== null
-        ? `毎月 ${rule.dayOfMonth} 日`
-        : `毎月 第 ${rule.weekOfMonth} ${weekday(rule.dayOfWeek)}`
-  if (rule.endDate === null) return repetition
-  const [year, month, day] = rule.endDate.split('-').map(Number)
-  return `${repetition}（${year}年${month}月${day}日まで）`
-}
-
-/** 予定の作成の繰り返しの欄の初期値。date（YYYY-MM-DD）の曜日の毎週で、終了日を持たない。 */
-export const createRecurrenceFormValues = (date: string): RecurringRuleFormValues => ({
-  ...toRecurringRuleFormValues(undefined, date),
-  weeklyDays: [isoWeekdayOf(date)],
-})
-
 /**
  * 日付を from から to に変えたときの繰り返しの欄の値。from から作る選択肢（毎週の曜日、毎月の日、毎月の第何週の曜日）と同じ規則なら、
  * to から作る同じ選択肢にする。カスタムで選んだ別の規則は変えない。
@@ -80,7 +54,7 @@ const followRepetition = (
   const rule = toRecurringRule(values)
   if (rule.frequency === 'weekly') {
     if (String(rule.daysOfWeek) !== String([isoWeekdayOf(from)])) return values
-    return { ...values, dayOfWeek: isoWeekdayOf(to), weeklyDays: [isoWeekdayOf(to)] }
+    return { ...values, weeklyDays: [isoWeekdayOf(to)] }
   }
   if (rule.dayOfMonth !== null) {
     if (rule.dayOfMonth !== Number(from.slice(8, 10))) return values
