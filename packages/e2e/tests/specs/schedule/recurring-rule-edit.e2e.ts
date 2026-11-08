@@ -79,7 +79,8 @@ test.describe('予定の編集', () => {
       const title = `E2E の過去の定例 ${Date.now()}`
       const start = daysFromToday(-14)
       const past = daysFromToday(-7)
-      const nextWeekday = (isoWeekdayOf(start) % 7) + 1
+      const startWeekday = isoWeekdayOf(start)
+      const nextWeekday = (startWeekday % 7) + 1
       const token = await issueAccessToken(request, LOGIN_EMAIL)
       const created = await createWeeklyNormalSchedule(request, token, STAFF_FORM.facilityId, {
         staffId: LOGIN_STAFF.id,
@@ -96,7 +97,7 @@ test.describe('予定の編集', () => {
       )
       await page.getByTestId('recurring-rule-preset').selectOption('custom')
       await page.getByTestId(`recurring-rule-day-of-week-${nextWeekday}`).check()
-      await page.getByTestId(`recurring-rule-day-of-week-${isoWeekdayOf(start)}`).uncheck()
+      await page.getByTestId(`recurring-rule-day-of-week-${startWeekday}`).uncheck()
       await page.getByTestId('schedule-recurrence-submit').click()
 
       await expect(page.getByTestId('schedule-recurrence-modal')).toBeHidden()
