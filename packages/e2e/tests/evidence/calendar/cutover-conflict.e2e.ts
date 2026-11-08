@@ -143,7 +143,7 @@ test.describe('予定の正本の切り替えで、ほかの画面で先に操�
           const dialog = await cancelAfterOtherTabCanceled(page, step)
           if (!isBefore) {
             await expect(dialog).toContainText(NOT_OPEN_MESSAGE)
-            await step('失敗の文を読み、確認の「キャンセル」を押す')
+            await step('失敗の文を読み、確認の「戻る」を押す')
             await dialog.getByTestId('calendar-cutover-cancel-confirm-cancel').click()
             await step(
               'ほかのタブからこのタブに戻る（撮影のため、戻ったときの出来事を送り、画面に読み直させる）',

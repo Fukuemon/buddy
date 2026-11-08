@@ -83,8 +83,17 @@ describe('Dialog', () => {
   it('ヘッダーに onClose を渡さないと、閉じるボタンを出さない', () => {
     render(<Default />)
     expect(screen.queryByRole('button', { name: '閉じる' })).toBeNull()
+  })
+
+  it('操作を並べるダイアログは、× を置かず、データを失う操作の起点を先頭に、フッターの「閉じる」をその後に置く', () => {
     render(<OperationsOnly />)
-    expect(screen.queryByRole('button', { name: '閉じる' })).toBeNull()
+    const closeButtons = screen.getAllByRole('button', { name: '閉じる' })
+    expect(closeButtons).toHaveLength(1)
+    const rewrite = screen.getByRole('button', { name: 'buddy の内容で書き直す' })
+    expect(rewrite).toHaveClass('text-danger')
+    expect(
+      rewrite.compareDocumentPosition(closeButtons[0]!) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy()
   })
 
   it('ヘッダーの閉じるボタンで onClose を呼ぶ', async () => {

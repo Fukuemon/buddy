@@ -1,9 +1,9 @@
 import { clsx } from 'clsx'
-import type { ComponentPropsWithoutRef, MouseEvent } from 'react'
+import type { ComponentPropsWithRef, MouseEvent } from 'react'
 
 /**
- * ボタンの見た目の種類。danger は、確認のダイアログでデータを失う操作を確定するボタンで、赤い面にする。
- * destructive は、確認のダイアログを開く前の削除のボタンで、赤い文字にする。
+ * ボタンの見た目の種類。danger は、確認のダイアログ（何が失われるかを示して確定する入力のダイアログを含む）でデータを失う操作を確定するボタンで、赤い面にする。
+ * destructive は、データを失う操作の確認のダイアログを開く起点のボタンで、赤い文字にする。
  */
 export type ButtonVariant = 'primary' | 'secondary' | 'destructive' | 'danger'
 /** ボタンの高さ。S は 40px（押せる領域は 44px）、M は 48px、L は 56px。 */
@@ -48,7 +48,7 @@ export const buttonClassName = ({
     isWide && 'w-full',
   )
 
-export type ButtonProps = ComponentPropsWithoutRef<'button'> &
+export type ButtonProps = ComponentPropsWithRef<'button'> &
   ButtonStyleOptions & {
     /** true の間は子の上に回転するインジケーターを重ね、クリックを無視する。子の文はボタンの名前として残す。 */
     isLoading?: boolean
