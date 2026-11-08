@@ -328,7 +328,12 @@ describe('createHttpBuddyApi', () => {
   it('繰り返しの予定の回は、繰り返しの予定の ID と規則を持ち、置き換えた予定と google_primary の単発の予定は持たない', async () => {
     const rs: components['schemas']['RecurringSchedule'] = {
       ...schedule('01M3TC6E9G4N8Q2R5T7V9W1X3Y', { date: '2026-10-06' }),
-      recurring_rule: { frequency: 'weekly', day_of_week: 2, end_date: '2026-12-31' },
+      recurring_rule: {
+        frequency: 'weekly',
+        days_of_week: [2],
+        interval: 1,
+        end_date: '2026-12-31',
+      },
       exclusion_dates: [],
     }
     server.use(
@@ -353,7 +358,9 @@ describe('createHttpBuddyApi', () => {
       recurringScheduleId: rs.id,
       rule: {
         frequency: 'weekly',
-        dayOfWeek: 2,
+        daysOfWeek: [2],
+        interval: 1,
+        dayOfWeek: null,
         dayOfMonth: null,
         weekOfMonth: null,
         endDate: '2026-12-31',
@@ -364,6 +371,8 @@ describe('createHttpBuddyApi', () => {
       recurringScheduleId: '01M3TC6E9G4N8Q2R5T7V9W1X40',
       rule: {
         frequency: 'monthly',
+        daysOfWeek: null,
+        interval: null,
         dayOfWeek: null,
         dayOfMonth: 20,
         weekOfMonth: null,
@@ -381,7 +390,7 @@ describe('createHttpBuddyApi', () => {
           sent.push({ id: params.recurring_schedule_id, body: await request.json() })
           return response(200).json({
             ...schedule('01M3TC6E9G4N8Q2R5T7V9W1X41', { date: '2026-10-21' }),
-            recurring_rule: { frequency: 'weekly', day_of_week: 3 },
+            recurring_rule: { frequency: 'weekly', days_of_week: [3], interval: 1 },
             exclusion_dates: [],
           })
         },
@@ -394,7 +403,9 @@ describe('createHttpBuddyApi', () => {
         effectiveDate: '2026-10-20',
         rule: {
           frequency: 'weekly',
-          dayOfWeek: 3,
+          daysOfWeek: [3],
+          interval: 1,
+          dayOfWeek: null,
           dayOfMonth: null,
           weekOfMonth: null,
           endDate: null,
@@ -411,7 +422,9 @@ describe('createHttpBuddyApi', () => {
           effective_date: '2026-10-20',
           recurring_rule: {
             frequency: 'weekly',
-            day_of_week: 3,
+            days_of_week: [3],
+            interval: 1,
+            day_of_week: null,
             day_of_month: null,
             week_of_month: null,
             end_date: null,

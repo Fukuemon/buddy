@@ -97,7 +97,9 @@ export const StartsCustom: Story = {
       // 明日の曜日の次の曜日にし、選択肢の「毎週 <明日の曜日>」と違う規則にする
       rule: {
         frequency: 'weekly',
-        dayOfWeek: isoWeekdayOf(tokyoDateFromToday(2)),
+        daysOfWeek: [isoWeekdayOf(tokyoDateFromToday(2))],
+        interval: 1,
+        dayOfWeek: null,
         dayOfMonth: null,
         weekOfMonth: null,
         endDate: null,
@@ -112,6 +114,8 @@ export const WithEndDate: Story = {
     api: recurringOccurrenceApi(1, {
       rule: {
         frequency: 'weekly',
+        daysOfWeek: null,
+        interval: 1,
         dayOfWeek: null,
         dayOfMonth: null,
         weekOfMonth: null,

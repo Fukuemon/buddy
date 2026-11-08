@@ -88,6 +88,8 @@ const ARGS = {
       id,
       rule: z.object({
         frequency: z.enum(['weekly', 'monthly']),
+        daysOfWeek: z.array(z.number().int().min(1).max(7)).min(1).max(7).nullable(),
+        interval: z.number().int().min(1).max(52).nullable(),
         dayOfWeek: z.number().int().min(1).max(7).nullable(),
         dayOfMonth: z.number().int().min(1).max(31).nullable(),
         weekOfMonth: z.number().int().min(1).max(5).nullable(),

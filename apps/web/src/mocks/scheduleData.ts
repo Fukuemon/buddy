@@ -615,7 +615,9 @@ export const createMockImportPreview = (
       reason: 'patient_ambiguous',
       recurrence: {
         frequency: 'weekly',
-        day_of_week: 3,
+        days_of_week: [3],
+        interval: 1,
+        day_of_week: null,
         day_of_month: null,
         week_of_month: null,
         end_date: null,
@@ -712,7 +714,7 @@ export const createMockImportResult = (
 }
 
 /**
- * 予定の正本の切り替えの間のプレビューの結果。期間は終わりを持たず、隔週の繰り返しの予定を、規則を buddy に写せない確認が必要な予定にする。
+ * 予定の正本の切り替えの間のプレビューの結果。期間は終わりを持たず、2 日ごとの繰り返しの予定を、規則を buddy に写せない確認が必要な予定にする。
  * 取り込んだ後に Google で変わった予定が 1 件ある。
  */
 export const createMockCutoverPreview = (rangeStart: string): Schemas['ImportPreview'] => {

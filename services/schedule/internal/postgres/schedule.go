@@ -288,16 +288,12 @@ func (r *RecurringScheduleRepository) Create(ctx context.Context, rs schedule.Re
 		Frequency:      string(rs.Rule.Frequency),
 		EndDate:        nullDate(rs.Rule.EndDate),
 	}
-	var err error
-	if params.DayOfWeek, err = nullInt16(rs.Rule.DayOfWeek); err != nil {
+	c, err := ruleColumnsOf(rs.Rule)
+	if err != nil {
 		return err
 	}
-	if params.DayOfMonth, err = nullInt16(rs.Rule.DayOfMonth); err != nil {
-		return err
-	}
-	if params.WeekOfMonth, err = nullInt16(rs.Rule.WeekOfMonth); err != nil {
-		return err
-	}
+	params.DayOfWeek, params.DayOfMonth, params.WeekOfMonth = c.dayOfWeek, c.dayOfMonth, c.weekOfMonth
+	params.DaysOfWeek, params.IntervalWeeks = c.daysOfWeek, c.intervalWeeks
 	return translate("create recurring schedule", r.q(ctx).CreateRecurringSchedule(ctx, params))
 }
 
@@ -335,13 +331,10 @@ func (r *RecurringScheduleRepository) GetForUpdate(ctx context.Context, id strin
 				Description:    s.Description,
 				IsOverTimeWork: s.IsOverTimeWork,
 			},
-			Rule: schedule.Rule{
-				Frequency:   schedule.Frequency(s.Frequency),
-				DayOfWeek:   intPtr(s.DayOfWeek),
-				DayOfMonth:  intPtr(s.DayOfMonth),
-				WeekOfMonth: intPtr(s.WeekOfMonth),
-				EndDate:     datePtr(s.EndDate),
-			},
+			Rule: ruleColumns{
+				dayOfWeek: s.DayOfWeek, dayOfMonth: s.DayOfMonth, weekOfMonth: s.WeekOfMonth,
+				daysOfWeek: s.DaysOfWeek, intervalWeeks: s.IntervalWeeks,
+			}.rule(s.Frequency, datePtr(s.EndDate), civil.DateOf(s.Date)),
 		},
 		Visit:   v,
 		Version: int(s.Version),
@@ -421,13 +414,10 @@ func (r *RecurringScheduleRepository) recurringDetails(ctx context.Context, rows
 					Description:    s.Description,
 					IsOverTimeWork: s.IsOverTimeWork,
 				},
-				Rule: schedule.Rule{
-					Frequency:   schedule.Frequency(s.Frequency),
-					DayOfWeek:   intPtr(s.DayOfWeek),
-					DayOfMonth:  intPtr(s.DayOfMonth),
-					WeekOfMonth: intPtr(s.WeekOfMonth),
-					EndDate:     datePtr(s.EndDate),
-				},
+				Rule: ruleColumns{
+					dayOfWeek: s.DayOfWeek, dayOfMonth: s.DayOfMonth, weekOfMonth: s.WeekOfMonth,
+					daysOfWeek: s.DaysOfWeek, intervalWeeks: s.IntervalWeeks,
+				}.rule(s.Frequency, datePtr(s.EndDate), civil.DateOf(s.Date)),
 			},
 			TypeName:  schedule.TypeName(s.ScheduleTypeName),
 			StaffName: s.StaffName,
@@ -464,17 +454,81 @@ func (r *RecurringScheduleRepository) UpdateRule(ctx context.Context, rs schedul
 	params := sqlcgen.UpdateRecurringScheduleRuleParams{
 		ID: rs.ID, Date: rs.Date.Time(), Frequency: string(rs.Rule.Frequency), EndDate: nullDate(rs.Rule.EndDate),
 	}
-	var err error
-	if params.DayOfWeek, err = nullInt16(rs.Rule.DayOfWeek); err != nil {
+	c, err := ruleColumnsOf(rs.Rule)
+	if err != nil {
 		return err
 	}
-	if params.DayOfMonth, err = nullInt16(rs.Rule.DayOfMonth); err != nil {
-		return err
-	}
-	if params.WeekOfMonth, err = nullInt16(rs.Rule.WeekOfMonth); err != nil {
-		return err
-	}
+	params.DayOfWeek, params.DayOfMonth, params.WeekOfMonth = c.dayOfWeek, c.dayOfMonth, c.weekOfMonth
+	params.DaysOfWeek, params.IntervalWeeks = c.daysOfWeek, c.intervalWeeks
 	return translate("update recurring schedule rule", r.q(ctx).UpdateRecurringScheduleRule(ctx, params))
+}
+
+// ruleColumns は、繰り返しの予定の行の、繰り返しの規則の列である。
+type ruleColumns struct {
+	dayOfWeek, dayOfMonth, weekOfMonth *int16
+	daysOfWeek                         []int16
+	intervalWeeks                      int16
+}
+
+// ruleColumnsOf は、規則 r を行の列にする。毎週の曜日は days_of_week に、間隔は interval_weeks に書き、day_of_week には書かない。
+// 曜日の並びの無い毎週の規則は、days_of_week を NULL にし、読むときに最初の日付の曜日にする。
+// 毎月の interval_weeks は 1 である。値がカラムの型に収まらないときは apperr.ErrInvalidInput のエラーを返す。
+func ruleColumnsOf(r schedule.Rule) (ruleColumns, error) {
+	c := ruleColumns{intervalWeeks: 1}
+	var err error
+	if c.dayOfWeek, err = nullInt16(r.DayOfWeek); err != nil {
+		return ruleColumns{}, err
+	}
+	if c.dayOfMonth, err = nullInt16(r.DayOfMonth); err != nil {
+		return ruleColumns{}, err
+	}
+	if c.weekOfMonth, err = nullInt16(r.WeekOfMonth); err != nil {
+		return ruleColumns{}, err
+	}
+	if r.Frequency != schedule.Weekly {
+		return c, nil
+	}
+	if len(r.DaysOfWeek) > 0 {
+		c.daysOfWeek = make([]int16, len(r.DaysOfWeek))
+	}
+	for i, d := range r.DaysOfWeek {
+		v, err := nullInt16(&d)
+		if err != nil {
+			return ruleColumns{}, err
+		}
+		c.daysOfWeek[i] = *v
+	}
+	interval := max(r.Interval, 1)
+	v, err := nullInt16(&interval)
+	if err != nil {
+		return ruleColumns{}, err
+	}
+	c.intervalWeeks = *v
+	return c, nil
+}
+
+// rule は、行の列を、頻度 frequency と終了日 end の規則にする。
+// 毎週の days_of_week が NULL の行は、前のバージョンが書いた行で、day_of_week の曜日か、それも無ければ最初の日付 first の曜日の 1 つの並びにする。
+func (c ruleColumns) rule(frequency string, end *civil.Date, first civil.Date) schedule.Rule {
+	r := schedule.Rule{
+		Frequency: schedule.Frequency(frequency), DayOfWeek: intPtr(c.dayOfWeek), DayOfMonth: intPtr(c.dayOfMonth),
+		WeekOfMonth: intPtr(c.weekOfMonth), EndDate: end,
+	}
+	if r.Frequency != schedule.Weekly {
+		return r
+	}
+	r.Interval = max(int(c.intervalWeeks), 1)
+	switch {
+	case len(c.daysOfWeek) > 0:
+		r.DaysOfWeek = make([]int, len(c.daysOfWeek))
+		for i, d := range c.daysOfWeek {
+			r.DaysOfWeek[i] = int(d)
+		}
+	case r.DayOfWeek != nil:
+		r.DaysOfWeek = []int{*r.DayOfWeek}
+	}
+	r.DayOfWeek = nil
+	return r.WithDays(first)
 }
 
 // RemoveUnreplacedExclusions は、繰り返しの予定 recurringScheduleID の from 以降の除外する日のうち、置き換えた回の単発の予定が無い日を消す。

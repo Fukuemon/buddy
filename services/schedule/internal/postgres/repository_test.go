@@ -891,7 +891,7 @@ func TestRecurringScheduleUpdateRule(t *testing.T) {
 			Date: civil.Date{Year: 2026, Month: 11, Day: 2}, StartTime: civil.Time{Hour: 13}, EndTime: civil.Time{Hour: 14},
 			Title: ptr("定例"),
 		},
-		Rule: schedule.Rule{Frequency: schedule.Weekly, DayOfWeek: ptr(1)},
+		Rule: schedule.Rule{Frequency: schedule.Weekly, DaysOfWeek: []int{1}},
 	}
 	if err := r.Create(ctx, rs); err != nil {
 		t.Fatal(err)
@@ -920,7 +920,7 @@ func TestRecurringScheduleUpdateRule(t *testing.T) {
 
 	changed := rs
 	changed.Date = civil.Date{Year: 2026, Month: 11, Day: 3}
-	changed.Rule = schedule.Rule{Frequency: schedule.Weekly, DayOfWeek: ptr(2), EndDate: &civil.Date{Year: 2027, Month: 3, Day: 30}}
+	changed.Rule = schedule.Rule{Frequency: schedule.Weekly, DaysOfWeek: []int{2}, Interval: 1, EndDate: &civil.Date{Year: 2027, Month: 3, Day: 30}}
 	if err := r.UpdateRule(ctx, changed); err != nil {
 		t.Fatal(err)
 	}

@@ -188,7 +188,7 @@ func TestPreviewCalendarImport(t *testing.T) {
 		ReviewItems: []calendarimport.ReviewItem{{
 			ExternalEventID: "weekly", Date: d, StartTime: civil.Time{Hour: 10}, EndTime: civil.Time{Hour: 10, Minute: 30},
 			Service: "訪看I2", Client: "利用者B", Reason: calendarimport.ReviewPatientAmbiguous,
-			Recurrence: &schedule.Rule{Frequency: schedule.Weekly, DayOfWeek: &day},
+			Recurrence: &schedule.Rule{Frequency: schedule.Weekly, DaysOfWeek: []int{day}},
 			Candidates: []calendarimport.PatientRef{{ID: "PB1", Name: "利用者B", AssignedStaffName: "職員A"}},
 		}},
 		SkippedItems: []calendarimport.Skipped{{Date: &d, AllDay: true, Reason: calendar.SkipAllDay}},
@@ -202,7 +202,7 @@ func TestPreviewCalendarImport(t *testing.T) {
 		t.Errorf("Range = %+v", f.lastRange)
 	}
 	review := body["needs_review"].([]any)[0].(map[string]any)
-	if review["recurrence"].(map[string]any)["day_of_week"] != float64(2) || review["client_name"] != "利用者B" {
+	if fmt.Sprint(review["recurrence"].(map[string]any)["days_of_week"]) != "[2]" || review["client_name"] != "利用者B" {
 		t.Errorf("needs_review = %v", review)
 	}
 	skipped := body["skipped"].([]any)[0].(map[string]any)

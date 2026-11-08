@@ -1493,14 +1493,26 @@ export interface components {
             last_error: "unreadable" | "unavailable" | "apply" | null;
         };
         /**
-         * @description weekly は day_of_week だけを、monthly は day_of_month だけか、week_of_month と day_of_week の組を指定できる。
+         * @description weekly は days_of_week と interval だけを、monthly は day_of_month だけか、week_of_month と day_of_week の組を指定できる。
          *     指定しない項目は、最初の日付の曜日や日から決める。
          *     最初の日付が規則の回に当たらない組み合わせ（火曜の最初の日付に毎週の月曜など）は、入力のエラーにする。
+         *     weekly の回は、日曜に始まる週で数え、最初の日付を含む週を 1 週目として、1 週目から interval の倍数だけ後の週の days_of_week の曜日にある（ADR-0038）。
+         *     繰り返しの終わりは end_date だけで持ち、回数は持たない。
          */
         RecurringRule: {
             /** @enum {string} */
             frequency: "weekly" | "monthly";
-            /** @description 1 が月曜、7 が日曜 */
+            /**
+             * @description weekly の曜日。1 が月曜、7 が日曜で、重ならない 1 つ以上の曜日を指定する。省くと最初の日付の曜日の 1 つにする。
+             *     レスポンスでは、weekly は月曜から日曜の順に並べて必ず返し、monthly は null である
+             */
+            days_of_week?: number[] | null;
+            /**
+             * @description weekly の間隔の週の数。1 が毎週、2 が隔週である。weekly で省くと 1 にする。monthly には指定できない（1 も 400 になる）。
+             *     レスポンスでは、weekly は必ず返し、monthly は null である
+             */
+            interval?: number | null;
+            /** @description monthly の week_of_month の週の曜日。1 が月曜、7 が日曜。weekly には指定できない */
             day_of_week?: number | null;
             day_of_month?: number | null;
             week_of_month?: number | null;

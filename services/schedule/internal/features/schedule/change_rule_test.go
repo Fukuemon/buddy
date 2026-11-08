@@ -20,7 +20,7 @@ func TestSchedulesChangeRuleSplits(t *testing.T) {
 	monday, tuesday := 1, 2
 	in := visitSlot(validVisit())
 	in.Date = civil.Date{Year: 2026, Month: 10, Day: 5}
-	rs, err := uc.CreateRecurring(ctx, facilityID, in, schedule.RuleInput{Frequency: schedule.Weekly, DayOfWeek: &monday})
+	rs, err := uc.CreateRecurring(ctx, facilityID, in, schedule.RuleInput{Frequency: schedule.Weekly, DaysOfWeek: []int{monday}})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -30,16 +30,16 @@ func TestSchedulesChangeRuleSplits(t *testing.T) {
 	}
 
 	effective := civil.Date{Year: 2026, Month: 10, Day: 22}
-	next, err := uc.ChangeRule(ctx, rs.ID, &effective, schedule.RuleInput{Frequency: schedule.Weekly, DayOfWeek: &tuesday})
+	next, err := uc.ChangeRule(ctx, rs.ID, &effective, schedule.RuleInput{Frequency: schedule.Weekly, DaysOfWeek: []int{tuesday}})
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	kept := s.Recurring[rs.ID]
-	if want := (civil.Date{Year: 2026, Month: 10, Day: 21}); kept.Rule.EndDate == nil || *kept.Rule.EndDate != want || *kept.Rule.DayOfWeek != monday {
+	if want := (civil.Date{Year: 2026, Month: 10, Day: 21}); kept.Rule.EndDate == nil || *kept.Rule.EndDate != want || !slices.Equal(kept.Rule.DaysOfWeek, []int{monday}) {
 		t.Errorf("元の繰り返しの予定の規則 = %+v, want 終了日 %v の毎週月曜", kept.Rule, want)
 	}
-	if next.ID == rs.ID || next.Date != (civil.Date{Year: 2026, Month: 10, Day: 27}) || *next.Rule.DayOfWeek != tuesday || next.Rule.EndDate != nil {
+	if next.ID == rs.ID || next.Date != (civil.Date{Year: 2026, Month: 10, Day: 27}) || !slices.Equal(next.Rule.DaysOfWeek, []int{tuesday}) || next.Rule.EndDate != nil {
 		t.Errorf("新しい繰り返しの予定 = %+v", next)
 	}
 	if next.StaffID != rs.StaffID || next.StartTime != rs.StartTime || next.EndTime != rs.EndTime || next.TypeID != rs.TypeID {
@@ -65,7 +65,7 @@ func TestSchedulesChangeRuleSplitExcludesReplacedDate(t *testing.T) {
 	monday, fourth := 1, 4
 	in := normalSlot()
 	in.Date = civil.Date{Year: 2026, Month: 10, Day: 5}
-	rs, err := uc.CreateRecurring(ctx, facilityID, in, schedule.RuleInput{Frequency: schedule.Weekly, DayOfWeek: &monday})
+	rs, err := uc.CreateRecurring(ctx, facilityID, in, schedule.RuleInput{Frequency: schedule.Weekly, DaysOfWeek: []int{monday}})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -99,7 +99,7 @@ func TestSchedulesChangeRuleInPlace(t *testing.T) {
 	monday := 1
 	in := normalSlot()
 	in.Date = civil.Date{Year: 2026, Month: 11, Day: 2}
-	rs, err := uc.CreateRecurring(ctx, facilityID, in, schedule.RuleInput{Frequency: schedule.Weekly, DayOfWeek: &monday})
+	rs, err := uc.CreateRecurring(ctx, facilityID, in, schedule.RuleInput{Frequency: schedule.Weekly, DaysOfWeek: []int{monday}})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -167,7 +167,7 @@ func TestSchedulesChangeRuleErrors(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			uc, _ := newSchedules(inmem.Seeded())
-			_, err := uc.ChangeRule(editorCtx(), tt.recurringID, tt.effective, schedule.RuleInput{Frequency: schedule.Weekly, DayOfWeek: &tuesday})
+			_, err := uc.ChangeRule(editorCtx(), tt.recurringID, tt.effective, schedule.RuleInput{Frequency: schedule.Weekly, DaysOfWeek: []int{tuesday}})
 			if !errors.Is(err, tt.wantErr) {
 				t.Errorf("err = %v, want %v", err, tt.wantErr)
 			}

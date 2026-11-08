@@ -37,8 +37,8 @@ ORDER BY
 INSERT INTO recurring_schedules (
     id, facility_id, staff_id, schedule_type_id, date, start_time, end_time,
     visit_info_id, title, description,
-    frequency, day_of_week, day_of_month, week_of_month, end_date, ends_next_day
-) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16);
+    frequency, day_of_week, day_of_month, week_of_month, end_date, ends_next_day, days_of_week, interval_weeks
+) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18);
 
 -- name: GetRecurringScheduleDetail :one
 SELECT * FROM recurring_schedule_details WHERE id = $1;
@@ -65,6 +65,7 @@ INSERT INTO recurring_schedule_exclusions (recurring_schedule_id, date) VALUES (
 UPDATE recurring_schedules
 SET date = sqlc.arg(date), frequency = sqlc.arg(frequency), day_of_week = sqlc.narg(day_of_week),
     day_of_month = sqlc.narg(day_of_month), week_of_month = sqlc.narg(week_of_month), end_date = sqlc.narg(end_date),
+    days_of_week = sqlc.narg(days_of_week), interval_weeks = sqlc.arg(interval_weeks),
     version = version + 1
 WHERE id = sqlc.arg(id);
 
@@ -129,6 +130,7 @@ WHERE s.id = $1;
 SELECT rs.id, rs.facility_id, rs.staff_id, rs.schedule_type_id, rs.date, rs.start_time, rs.end_time, rs.ends_next_day,
        rs.is_over_time_work, rs.visit_info_id, rs.title, rs.description,
        rs.frequency, rs.day_of_week, rs.day_of_month, rs.week_of_month, rs.end_date, rs.version,
+       rs.days_of_week, rs.interval_weeks,
        vi.patient_id, vi.assigned_staff_id, vi.companion_id, vi.service_code_id
 FROM recurring_schedules rs
 LEFT JOIN visit_infos vi ON vi.id = rs.visit_info_id

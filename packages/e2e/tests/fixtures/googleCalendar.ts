@@ -103,17 +103,27 @@ export const createGoogleCalendar = async (request: APIRequestContext, calendarI
 /**
  * 日時を持つ予定を作る。職員が Google カレンダーで予定を足したときの代わりで、作った予定を返す。
  * endDate を渡すと、その日の end に終わる予定にする。渡さなければ date の end に終わる。
+ * recurrence（RRULE と EXDATE の行）を渡すと、Asia/Tokyo の繰り返しの予定にする。
  */
 export const createGoogleEvent = async (
   request: APIRequestContext,
   calendarId: string,
-  event: { summary: string; date: string; start: string; end: string; endDate?: string },
+  event: {
+    summary: string
+    date: string
+    start: string
+    end: string
+    endDate?: string
+    recurrence?: string[]
+  },
 ) => {
+  const timeZone = event.recurrence === undefined ? {} : { timeZone: 'Asia/Tokyo' }
   const res = await request.post(eventsUrl(calendarId), {
     data: {
       summary: event.summary,
-      start: { dateTime: `${event.date}T${event.start}:00+09:00` },
-      end: { dateTime: `${event.endDate ?? event.date}T${event.end}:00+09:00` },
+      start: { dateTime: `${event.date}T${event.start}:00+09:00`, ...timeZone },
+      end: { dateTime: `${event.endDate ?? event.date}T${event.end}:00+09:00`, ...timeZone },
+      ...(event.recurrence === undefined ? {} : { recurrence: event.recurrence }),
     },
   })
   await ensureOk(res, '予定を作れない')

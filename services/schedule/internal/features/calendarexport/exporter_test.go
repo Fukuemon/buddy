@@ -473,7 +473,7 @@ func TestExportRecurringWithReplacedOccurrence(t *testing.T) {
 	}
 	e.run(t)
 	ev := e.srv.Event(googleCalID, eventID(t, rs.ID))
-	if ev == nil || len(ev.Recurrence) != 1 || ev.Recurrence[0] != "RRULE:FREQ=WEEKLY;BYDAY=MO;UNTIL=20261231T145959Z" {
+	if ev == nil || len(ev.Recurrence) != 1 || ev.Recurrence[0] != "RRULE:FREQ=WEEKLY;INTERVAL=1;BYDAY=MO;WKST=SU;UNTIL=20261231T145959Z" {
 		t.Fatalf("繰り返しの予定 = %+v", ev)
 	}
 
@@ -535,7 +535,7 @@ func TestExportRecurringRuleChange(t *testing.T) {
 	rs, err := e.schedules.CreateRecurring(e.ctx, inmem.FacilityID, schedule.SlotInput{
 		TypeID: inmem.NormalTypeID, Date: civil.Date{Year: 2026, Month: 11, Day: 2},
 		StartTime: civil.Time{Hour: 9}, EndTime: civil.Time{Hour: 10}, StaffID: inmem.StaffID, Title: &title,
-	}, schedule.RuleInput{Frequency: schedule.Weekly, DayOfWeek: &monday, EndDate: &end})
+	}, schedule.RuleInput{Frequency: schedule.Weekly, DaysOfWeek: []int{monday}, EndDate: &end})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -550,7 +550,7 @@ func TestExportRecurringRuleChange(t *testing.T) {
 	e.run(t)
 
 	effective := civil.Date{Year: 2026, Month: 11, Day: 10}
-	next, err := e.schedules.ChangeRule(e.ctx, rs.ID, &effective, schedule.RuleInput{Frequency: schedule.Weekly, DayOfWeek: &tuesday, EndDate: &end})
+	next, err := e.schedules.ChangeRule(e.ctx, rs.ID, &effective, schedule.RuleInput{Frequency: schedule.Weekly, DaysOfWeek: []int{tuesday}, EndDate: &end})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -561,11 +561,11 @@ func TestExportRecurringRuleChange(t *testing.T) {
 	}
 	e.run(t)
 
-	if ev := e.srv.Event(googleCalID, eventID(t, rs.ID)); ev == nil || ev.Recurrence[0] != "RRULE:FREQ=WEEKLY;BYDAY=MO;UNTIL=20261109T145959Z" {
+	if ev := e.srv.Event(googleCalID, eventID(t, rs.ID)); ev == nil || ev.Recurrence[0] != "RRULE:FREQ=WEEKLY;INTERVAL=1;BYDAY=MO;WKST=SU;UNTIL=20261109T145959Z" {
 		t.Errorf("元の繰り返しの予定 = %+v, want 11-09 までの毎週月曜", ev)
 	}
 	ev := e.srv.Event(googleCalID, eventID(t, next.ID))
-	if ev == nil || ev.Recurrence[0] != "RRULE:FREQ=WEEKLY;BYDAY=TU;UNTIL=20261231T145959Z" || ev.Start.DateTime != "2026-11-10T09:00:00" {
+	if ev == nil || ev.Recurrence[0] != "RRULE:FREQ=WEEKLY;INTERVAL=1;BYDAY=TU;WKST=SU;UNTIL=20261231T145959Z" || ev.Start.DateTime != "2026-11-10T09:00:00" {
 		t.Errorf("新しい繰り返しの予定 = %+v, want 11-10 からの毎週火曜", ev)
 	}
 	if single := e.srv.Event(googleCalID, eventID(t, occ.ID)); single == nil || single.Start.DateTime != "2026-11-16T14:00:00" {

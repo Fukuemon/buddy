@@ -13,6 +13,14 @@ export type RecurringRuleFormValues = {
   frequency: RecurringRule['frequency']
   /** 毎週と、毎月の第何週の曜日の曜日。1 が月曜、7 が日曜。 */
   dayOfWeek: number
+  /**
+   * 毎週の曜日の並び。欄には出さず、先頭が dayOfWeek と同じときだけ、この並びを送る。違えば dayOfWeek の 1 つを送る。
+   * 開いたときは元の規則の並びを持ち、繰り返しの欄が曜日を 1 つ選ばせるときに、選んだ曜日の 1 つの並びにする。
+   * 複数の曜日を選ぶ欄が無い間（#892 まで）に、規則の変更で元の曜日を落とさないためである。
+   */
+  weeklyDays: number[]
+  /** 毎週の間隔の週の数。欄には出さず、元の規則の間隔を、曜日を変えてもそのまま送る（ADR-0038）。 */
+  interval: number
   monthlyBy: MonthlyBy
   dayOfMonth: number
   weekOfMonth: number
@@ -42,7 +50,11 @@ export const toRecurringRuleFormValues = (
   baseDate: string,
 ): RecurringRuleFormValues => ({
   frequency: rule?.frequency ?? 'weekly',
-  dayOfWeek: rule?.dayOfWeek ?? isoWeekdayOf(baseDate),
+  dayOfWeek:
+    (rule?.frequency === 'weekly' ? rule.daysOfWeek?.[0] : rule?.dayOfWeek) ??
+    isoWeekdayOf(baseDate),
+  weeklyDays: rule?.frequency === 'weekly' ? (rule.daysOfWeek ?? []) : [],
+  interval: rule?.frequency === 'weekly' ? (rule.interval ?? 1) : 1,
   monthlyBy: rule?.frequency === 'monthly' && rule.weekOfMonth !== null ? 'weekday' : 'day',
   dayOfMonth: rule?.dayOfMonth ?? dayOf(baseDate).getUTCDate(),
   weekOfMonth: rule?.weekOfMonth ?? weekOfMonthOf(baseDate),
@@ -50,13 +62,26 @@ export const toRecurringRuleFormValues = (
   endDate: rule?.endDate ?? baseDate,
 })
 
+/** 毎週の繰り返しで送る曜日の並び。weeklyDays の先頭が dayOfWeek と同じならその並び、違えば dayOfWeek の 1 つである。 */
+export const weeklyDaysOf = (values: RecurringRuleFormValues): number[] =>
+  values.weeklyDays[0] === values.dayOfWeek ? values.weeklyDays : [values.dayOfWeek]
+
+/** 毎週の間隔の文言。1 は「毎週」、2 は「隔週」、3 以上は「3 週ごと」の形である。 */
+export const weeklyIntervalLabel = (interval: number) => {
+  if (interval === 1) return '毎週'
+  if (interval === 2) return '隔週'
+  return `${interval} 週ごと`
+}
+
 /** 繰り返しの欄の値を、頻度と決め方で使う項目だけを持つ規則にする。 */
 export const toRecurringRule = (values: RecurringRuleFormValues): RecurringRule => {
   const endDate = values.hasEndDate ? values.endDate : null
   if (values.frequency === 'weekly') {
     return {
       frequency: 'weekly',
-      dayOfWeek: values.dayOfWeek,
+      daysOfWeek: weeklyDaysOf(values),
+      interval: values.interval,
+      dayOfWeek: null,
       dayOfMonth: null,
       weekOfMonth: null,
       endDate,
@@ -65,6 +90,8 @@ export const toRecurringRule = (values: RecurringRuleFormValues): RecurringRule 
   if (values.monthlyBy === 'day') {
     return {
       frequency: 'monthly',
+      daysOfWeek: null,
+      interval: null,
       dayOfWeek: null,
       dayOfMonth: values.dayOfMonth,
       weekOfMonth: null,
@@ -73,6 +100,8 @@ export const toRecurringRule = (values: RecurringRuleFormValues): RecurringRule 
   }
   return {
     frequency: 'monthly',
+    daysOfWeek: null,
+    interval: null,
     dayOfWeek: values.dayOfWeek,
     dayOfMonth: null,
     weekOfMonth: values.weekOfMonth,
@@ -86,6 +115,8 @@ export const sameRepetition = (a: RecurringRuleFormValues, b: RecurringRuleFormV
   const y = toRecurringRule(b)
   return (
     x.frequency === y.frequency &&
+    String(x.daysOfWeek) === String(y.daysOfWeek) &&
+    x.interval === y.interval &&
     x.dayOfWeek === y.dayOfWeek &&
     x.dayOfMonth === y.dayOfMonth &&
     x.weekOfMonth === y.weekOfMonth
@@ -97,6 +128,8 @@ export const recurringRuleFormSchema = z
   .object({
     frequency: z.enum(['weekly', 'monthly']),
     dayOfWeek: z.number().int().min(1).max(7),
+    weeklyDays: z.array(z.number().int().min(1).max(7)),
+    interval: z.number().int().min(1).max(52),
     monthlyBy: z.enum(['day', 'weekday']),
     dayOfMonth: z.number().int().min(1).max(31),
     weekOfMonth: z.number().int().min(1).max(5),

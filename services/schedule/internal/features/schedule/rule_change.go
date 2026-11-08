@@ -1,6 +1,8 @@
 package schedule
 
 import (
+	"slices"
+
 	"github.com/Fukuemon/buddy/services/schedule/internal/apperr"
 	"github.com/Fukuemon/buddy/services/schedule/internal/civil"
 )
@@ -59,6 +61,7 @@ func PlanRuleChange(rs RecurringSchedule, effective *civil.Date, rule Rule, toda
 		// 適用の日より前の回が無い。最初の日付より前には回を作らない
 		kind, from = RuleChangeInPlace, rs.Date
 	}
+	rule = rule.WithDays(from)
 	first, ok := firstOccurrence(rs.Slot, rule, from)
 	if !ok {
 		return RuleChange{}, apperr.Invalid("%s 以降に、新しい繰り返しの規則の回がありません", from)
@@ -104,20 +107,22 @@ func planEndDateChange(rs RecurringSchedule, end *civil.Date, today civil.Date) 
 
 // resolved は、規則 r の曜日か日が無いときに、最初の日付 first から決まる値を入れた規則を返す。値で書いた規則と比べるためである。
 func resolved(r Rule, first civil.Date) Rule {
-	switch {
-	case r.Frequency == Weekly && r.DayOfWeek == nil:
-		wd := isoWeekday(first)
-		r.DayOfWeek = &wd
-	case r.Frequency == Monthly && r.DayOfMonth == nil && r.WeekOfMonth == nil:
+	r = r.WithDays(first)
+	if r.Frequency == Weekly {
+		r.Interval = max(r.Interval, 1)
+	}
+	if r.Frequency == Monthly && r.DayOfMonth == nil && r.WeekOfMonth == nil {
 		day := first.Day
 		r.DayOfMonth = &day
 	}
 	return r
 }
 
-// sameRepetition は、a と b が終了日のほかに同じ規則かを返す。
+// sameRepetition は、a と b が終了日のほかに同じ規則か（頻度、間隔、曜日の集まり、日、週が同じか）を返す。
+// 曜日の並びは、NewRule が月曜から日曜の順に並べたものである。
 func sameRepetition(a, b Rule) bool {
-	return a.Frequency == b.Frequency && equalInt(a.DayOfWeek, b.DayOfWeek) && equalInt(a.DayOfMonth, b.DayOfMonth) && equalInt(a.WeekOfMonth, b.WeekOfMonth)
+	return a.Frequency == b.Frequency && a.Interval == b.Interval && slices.Equal(a.DaysOfWeek, b.DaysOfWeek) &&
+		equalInt(a.DayOfWeek, b.DayOfWeek) && equalInt(a.DayOfMonth, b.DayOfMonth) && equalInt(a.WeekOfMonth, b.WeekOfMonth)
 }
 
 func equalInt(a, b *int) bool {

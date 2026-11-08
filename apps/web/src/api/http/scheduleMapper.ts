@@ -163,6 +163,8 @@ export const fromApiSchedule = (schedule: ApiSchedule): Schedule => {
 /** API の繰り返しの規則を、画面の繰り返しの規則にする。 */
 export const fromApiRecurringRule = (rule: Schemas['RecurringRule']): RecurringRule => ({
   frequency: rule.frequency,
+  daysOfWeek: rule.days_of_week ?? null,
+  interval: rule.interval ?? null,
   dayOfWeek: rule.day_of_week ?? null,
   dayOfMonth: rule.day_of_month ?? null,
   weekOfMonth: rule.week_of_month ?? null,
@@ -172,6 +174,8 @@ export const fromApiRecurringRule = (rule: Schemas['RecurringRule']): RecurringR
 /** 画面の繰り返しの規則を、API の繰り返しの規則にする。 */
 export const toApiRecurringRule = (rule: RecurringRule): Schemas['RecurringRule'] => ({
   frequency: rule.frequency,
+  days_of_week: rule.daysOfWeek,
+  interval: rule.interval,
   day_of_week: rule.dayOfWeek,
   day_of_month: rule.dayOfMonth,
   week_of_month: rule.weekOfMonth,

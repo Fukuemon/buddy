@@ -35,6 +35,8 @@ const FORM_ID = 'schedule-recurrence-form'
 /** 2 つの規則が、同じ回と終了日を決めるか。 */
 const sameRule = (a: RecurringRule, b: RecurringRule) =>
   a.frequency === b.frequency &&
+  String(a.daysOfWeek) === String(b.daysOfWeek) &&
+  a.interval === b.interval &&
   a.dayOfWeek === b.dayOfWeek &&
   a.dayOfMonth === b.dayOfMonth &&
   a.weekOfMonth === b.weekOfMonth &&

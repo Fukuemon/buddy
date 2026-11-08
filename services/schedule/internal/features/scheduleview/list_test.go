@@ -387,7 +387,7 @@ var ulidPattern = regexp.MustCompile(`^[0-7][0-9A-HJKMNP-TV-Z]{25}$`)
 func TestSchedulesListGooglePrimaryReviewReasons(t *testing.T) {
 	s := googleStore()
 	putEvent(s, targetCalendarID, "biweekly", "隔週の会議", tokyo(9, 7, 10), 60, func(p *scheduleview.Projection) {
-		p.Recurrence = []string{"RRULE:FREQ=WEEKLY;INTERVAL=2"}
+		p.Recurrence = []string{"RRULE:FREQ=WEEKLY;INTERVAL=2;BYDAY=MO,SU"}
 		p.LastEndDate = nil
 	})
 	putEvent(s, targetCalendarID, "visit", "【"+visitCode+"】"+patientName, tokyo(10, 20, 9), 60, nil)

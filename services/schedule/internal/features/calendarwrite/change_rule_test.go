@@ -26,7 +26,7 @@ const nextID = "01M3TC5H00QV17BC0J9V3393ZS"
 var mondays = []civil.Date{{Year: 2026, Month: 10, Day: 19}, {Year: 2026, Month: 10, Day: 26}, {Year: 2026, Month: 11, Day: 2}, {Year: 2026, Month: 11, Day: 9}}
 
 // tuesdayRule は、毎週火曜の繰り返しの規則である。
-var tuesdayRule = schedule.RuleInput{Frequency: schedule.Weekly, DayOfWeek: ptr(2)}
+var tuesdayRule = schedule.RuleInput{Frequency: schedule.Weekly, DaysOfWeek: []int{2}}
 
 // seedWeekly は、dates[0] に始まる毎週の訪問の繰り返しの予定を作り、Google のフェイクに、親の予定から dates の回を持たせる。
 // 回は seedRecurring と同じく、親の予定の ID と回の開始の UTC の時刻を ID にし、親の予定の内容を引き継ぐ。
@@ -129,13 +129,13 @@ func TestChangeRuleSplits(t *testing.T) {
 		t.Fatal(err)
 	}
 	tuesday := civil.Date{Year: 2026, Month: 10, Day: 27}
-	if got.ID != nextID || got.Date != tuesday || got.Rule.DayOfWeek == nil || *got.Rule.DayOfWeek != 2 || got.Rule.EndDate != nil ||
+	if got.ID != nextID || got.Date != tuesday || !slices.Equal(got.Rule.DaysOfWeek, []int{2}) || got.Rule.EndDate != nil ||
 		got.StartTime != (civil.Time{Hour: 9}) || got.StaffID != inmem.StaffID || got.Visit == nil || got.Visit.ID == rs.Visit.ID ||
 		got.Visit.PatientID != inmem.PatientID || got.Version != 1 {
 		t.Errorf("got = %+v, visit = %+v", got, got.Visit)
 	}
 	old := fx.google.Event(calendarID, eventID(t))
-	if want := []string{"RRULE:FREQ=WEEKLY;BYDAY=MO;UNTIL=20261025T145959Z"}; !slices.Equal(old.Recurrence, want) || old.Status != "confirmed" ||
+	if want := []string{"RRULE:FREQ=WEEKLY;INTERVAL=1;BYDAY=MO;WKST=SU;UNTIL=20261025T145959Z"}; !slices.Equal(old.Recurrence, want) || old.Status != "confirmed" ||
 		old.ExtendedProperties.Private[calendar.PropScheduleID] != scheduleID {
 		t.Errorf("元の親の予定 = %+v, want 繰り返し %v", old, want)
 	}
@@ -144,7 +144,7 @@ func TestChangeRuleSplits(t *testing.T) {
 		t.Fatal(err)
 	}
 	next := fx.google.Event(calendarID, nextEventID)
-	if next == nil || !slices.Equal(next.Recurrence, []string{"RRULE:FREQ=WEEKLY;BYDAY=TU"}) || next.Start.DateTime != "2026-10-27T09:00:00" ||
+	if next == nil || !slices.Equal(next.Recurrence, []string{"RRULE:FREQ=WEEKLY;INTERVAL=1;BYDAY=TU;WKST=SU"}) || next.Start.DateTime != "2026-10-27T09:00:00" ||
 		next.Summary != old.Summary || next.ExtendedProperties.Private[calendar.PropScheduleID] != nextID {
 		t.Fatalf("新しい親の予定 = %+v", next)
 	}
@@ -199,7 +199,7 @@ func TestChangeRuleInPlace(t *testing.T) {
 	if _, ok := fx.store.Infos[rs.Visit.ID]; ok {
 		t.Error("元の親の訪問の情報が残った")
 	}
-	if parents := fx.parents(); len(parents) != 1 || !slices.Equal(parents[0].Recurrence, []string{"RRULE:FREQ=WEEKLY;BYDAY=TU"}) {
+	if parents := fx.parents(); len(parents) != 1 || !slices.Equal(parents[0].Recurrence, []string{"RRULE:FREQ=WEEKLY;INTERVAL=1;BYDAY=TU;WKST=SU"}) {
 		t.Errorf("親の予定 = %+v, want 新しい親の 1 件", parents)
 	}
 	singles := fx.singles()
@@ -219,7 +219,7 @@ func TestChangeRuleEndDate(t *testing.T) {
 	end := civil.Date{Year: 2026, Month: 11, Day: 8}
 
 	got, err := fx.changeRule.Do(editorCtx(), inmem.FacilityID, scheduleID, "", fx.parentETag(t), nil,
-		schedule.RuleInput{Frequency: schedule.Weekly, DayOfWeek: ptr(1), EndDate: &end})
+		schedule.RuleInput{Frequency: schedule.Weekly, DaysOfWeek: []int{1}, EndDate: &end})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -228,7 +228,7 @@ func TestChangeRuleEndDate(t *testing.T) {
 		t.Errorf("got = %+v", got)
 	}
 	parents := fx.parents()
-	if want := []string{"RRULE:FREQ=WEEKLY;BYDAY=MO;UNTIL=20261108T145959Z"}; len(parents) != 1 || parents[0].Id != eventID(t) ||
+	if want := []string{"RRULE:FREQ=WEEKLY;INTERVAL=1;BYDAY=MO;WKST=SU;UNTIL=20261108T145959Z"}; len(parents) != 1 || parents[0].Id != eventID(t) ||
 		!slices.Equal(parents[0].Recurrence, want) || parents[0].Start.DateTime != "2026-10-19T09:00:00" {
 		t.Errorf("親の予定 = %+v, want 繰り返し %v の 1 件", parents, want)
 	}
@@ -256,7 +256,7 @@ func TestChangeRuleResend(t *testing.T) {
 	if !errors.Is(err, calendarwrite.ErrGoogleUnavailable) {
 		t.Fatalf("err = %v, want ErrGoogleUnavailable", err)
 	}
-	if ev := fx.google.Event(calendarID, eventID(t)); !slices.Equal(ev.Recurrence, []string{"RRULE:FREQ=WEEKLY;BYDAY=MO"}) {
+	if ev := fx.google.Event(calendarID, eventID(t)); !slices.Equal(ev.Recurrence, []string{"RRULE:FREQ=WEEKLY;INTERVAL=1;BYDAY=MO;WKST=SU"}) {
 		t.Errorf("書けなかった元の親の予定の繰り返し = %v", ev.Recurrence)
 	}
 
@@ -270,7 +270,7 @@ func TestChangeRuleResend(t *testing.T) {
 	if parents := fx.parents(); len(parents) != 2 {
 		t.Errorf("親の予定 = %d 件, want 元と新しい親の 2 件", len(parents))
 	}
-	if ev := fx.google.Event(calendarID, eventID(t)); !slices.Equal(ev.Recurrence, []string{"RRULE:FREQ=WEEKLY;BYDAY=MO;UNTIL=20261025T145959Z"}) {
+	if ev := fx.google.Event(calendarID, eventID(t)); !slices.Equal(ev.Recurrence, []string{"RRULE:FREQ=WEEKLY;INTERVAL=1;BYDAY=MO;WKST=SU;UNTIL=20261025T145959Z"}) {
 		t.Errorf("元の親の予定の繰り返し = %v", ev.Recurrence)
 	}
 	singles := fx.singles()
@@ -352,7 +352,7 @@ func TestChangeRuleRejects(t *testing.T) {
 	if err := do(nextID, `"old"`, &effective); !isConflict(err, calendarwrite.CodeEventChanged) {
 		t.Errorf("etag が違う: err = %v", err)
 	}
-	fx.google.Edit(calendarID, eventID(t), func(ev *calendarv3.Event) { ev.Recurrence = []string{"RRULE:FREQ=DAILY"} })
+	fx.google.Edit(calendarID, eventID(t), func(ev *calendarv3.Event) { ev.Recurrence = []string{"RRULE:FREQ=DAILY;INTERVAL=2"} })
 	if err := do(nextID, fx.parentETag(t), &effective); !errors.Is(err, apperr.ErrConflict) || isConflict(err, calendarwrite.CodeEventChanged) {
 		t.Errorf("規則に写せない親: err = %v", err)
 	}

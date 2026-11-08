@@ -16,7 +16,7 @@
 | [public.visit_infos](public.visit_infos.md)                                 | 8       | 訪問の情報                                                   | BASE TABLE |
 | [public.visit_info_visit_categories](public.visit_info_visit_categories.md) | 2       | 訪問に付けた区分。1 件の訪問に複数を付けられる               | BASE TABLE |
 | [public.schedule_types](public.schedule_types.md)                           | 5       | 予定の種類（通常、訪問）。マイグレーションで入れる           | BASE TABLE |
-| [public.recurring_schedules](public.recurring_schedules.md)                 | 20      | 繰り返しの予定と、その規則                                   | BASE TABLE |
+| [public.recurring_schedules](public.recurring_schedules.md)                 | 22      | 繰り返しの予定と、その規則                                   | BASE TABLE |
 | [public.schedules](public.schedules.md)                                     | 17      | 予定                                                         | BASE TABLE |
 | [public.schedule_cancels](public.schedule_cancels.md)                       | 5       | 予定の取り消し                                               | BASE TABLE |
 | [public.visit_info_details](public.visit_info_details.md)                   | 10      | 訪問の情報と名前を結合したビュー                             | VIEW       |
@@ -142,6 +142,8 @@ erDiagram
   timestamp_with_time_zone updated_at
   integer version
   boolean ends_next_day
+  smallint__ days_of_week
+  smallint interval_weeks
 }
 "public.schedules" {
   text id

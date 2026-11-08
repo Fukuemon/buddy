@@ -70,6 +70,8 @@ describe('ScheduleRecurrenceModalContainer', () => {
     await waitFor(() => expect(changeRule).toHaveBeenCalledOnce())
     expect(changeRule.mock.calls[0]?.[2].rule).toEqual({
       frequency: 'weekly',
+      daysOfWeek: null,
+      interval: 1,
       dayOfWeek: null,
       dayOfMonth: null,
       weekOfMonth: null,
@@ -94,6 +96,8 @@ describe('ScheduleRecurrenceModalContainer', () => {
       effectiveDate: opened,
       rule: {
         frequency: 'monthly',
+        daysOfWeek: null,
+        interval: null,
         dayOfWeek: null,
         dayOfMonth: Number(opened.slice(8, 10)),
         weekOfMonth: null,

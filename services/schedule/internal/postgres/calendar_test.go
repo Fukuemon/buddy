@@ -166,7 +166,7 @@ func TestCalendarImportInOneTransaction(t *testing.T) {
 	moved := ev("weekly_1116", "【訪看I2】見本一郎", "2026-11-16T15:00:00+09:00", "2026-11-16T15:30:00+09:00")
 	moved.RecurringEventId, moved.OriginalStartTime = "weekly", &calendarv3.EventDateTime{DateTime: "2026-11-16T09:00:00+09:00"}
 	biweekly := ev("biweekly", "定例", "2026-11-03T16:00:00+09:00", "2026-11-03T17:00:00+09:00")
-	biweekly.Recurrence = []string{"RRULE:FREQ=WEEKLY;INTERVAL=2"}
+	biweekly.Recurrence = []string{"RRULE:FREQ=WEEKLY;INTERVAL=2;BYDAY=TU,SU"}
 	srv := &gcaltest.Server{
 		Calendars: map[string][][]*calendarv3.Event{"mori@example.com": {{
 			ev("single", "【訪看Ⅰ2】見本 二葉", "2026-11-04T10:00:00+09:00", "2026-11-04T10:30:00+09:00"),

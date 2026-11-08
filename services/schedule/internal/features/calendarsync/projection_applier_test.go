@@ -347,11 +347,11 @@ func TestSyncProjectionKeepsRetainedPeriod(t *testing.T) {
 		gevent("old", "終わった予定", "2020-01-06T10:00:00+09:00", "2020-01-06T11:00:00+09:00"),
 		weeklyEvent("oldweekly", "終わった繰り返し", "2020-01-06T09:00:00+09:00", "2020-01-06T09:30:00+09:00",
 			"RRULE:FREQ=WEEKLY;BYDAY=MO;UNTIL=20200131T145959Z"),
-		// 隔週は buddy の規則に写せないので、UNTIL で終わる日を決める
+		// 月曜に始まる週の、日曜を含む隔週は buddy の規則に写せないので、UNTIL で終わる日を決める
 		weeklyEvent("oldbiweekly", "終わった隔週", "2020-01-06T09:00:00+09:00", "2020-01-06T09:30:00+09:00",
-			"RRULE:FREQ=WEEKLY;INTERVAL=2;BYDAY=MO;UNTIL=20200131T145959Z"),
+			"RRULE:FREQ=WEEKLY;INTERVAL=2;BYDAY=MO,SU;UNTIL=20200131T145959Z"),
 		weeklyEvent("forever", "終わらない繰り返し", "2020-01-06T09:00:00+09:00", "2020-01-06T09:30:00+09:00", "RRULE:FREQ=WEEKLY;BYDAY=MO"),
-		weeklyEvent("count", "回数の隔週", "2020-01-06T09:00:00+09:00", "2020-01-06T09:30:00+09:00", "RRULE:FREQ=WEEKLY;INTERVAL=2;COUNT=3"),
+		weeklyEvent("count", "回数の、月曜に始まる週の日曜を含む隔週", "2020-01-06T09:00:00+09:00", "2020-01-06T09:30:00+09:00", "RRULE:FREQ=WEEKLY;INTERVAL=2;BYDAY=MO,SU;COUNT=3"),
 		gcancelled("forever_20200113T000000Z", "forever", "2020-01-13T09:00:00+09:00"),
 		gevent("future", "先の予定", "2099-11-04T10:00:00+09:00", "2099-11-04T11:00:00+09:00"),
 	} {

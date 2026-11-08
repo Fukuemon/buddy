@@ -31,17 +31,29 @@ export const previousDate = (date: string) => dateOf(dayOf(date) - DAY_MS)
 /** 月曜を 1、日曜を 7 とする曜日。 */
 const isoWeekday = (time: number) => new Date(time).getUTCDay() || 7
 
+/** time を含む日曜に始まる週の、日曜の時刻。 */
+const weekStart = (time: number) => time - new Date(time).getUTCDay() * DAY_MS
+
 /**
  * 繰り返しの予定が date（YYYY-MM-DD）に回を持つかを返す。除外した日は考えない。
  * 規則は予定の API の繰り返しの規則（DesignDoc の繰り返しの予定）と同じにする。
+ * 毎週の回は、日曜に始まる週で数え、最初の日付を含む週から interval の倍数だけ後の週の、days_of_week の曜日にある（ADR-0038）。
  */
 export const occurs = (recurringSchedule: ApiRecurringSchedule, date: string): boolean => {
   const { recurring_rule: rule } = recurringSchedule
   if (date < recurringSchedule.date) return false
   if (rule.end_date != null && date > rule.end_date) return false
   const day = new Date(dayOf(date)).getUTCDate()
-  const weekday = rule.day_of_week ?? isoWeekday(dayOf(recurringSchedule.date))
-  if (rule.frequency === 'weekly') return isoWeekday(dayOf(date)) === weekday
+  const firstWeekday = isoWeekday(dayOf(recurringSchedule.date))
+  if (rule.frequency === 'weekly') {
+    const days = rule.days_of_week?.length ? rule.days_of_week : [firstWeekday]
+    if (!days.includes(isoWeekday(dayOf(date)))) return false
+    const weeks = Math.round(
+      (weekStart(dayOf(date)) - weekStart(dayOf(recurringSchedule.date))) / (7 * DAY_MS),
+    )
+    return weeks % (rule.interval ?? 1) === 0
+  }
+  const weekday = rule.day_of_week ?? firstWeekday
   if (rule.day_of_month != null) return day === rule.day_of_month
   if (rule.week_of_month != null)
     return (

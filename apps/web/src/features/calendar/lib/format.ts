@@ -18,11 +18,21 @@ const formatTime = (time: string) => time.slice(0, 5)
 export const formatReviewDateTime = (item: ImportReviewItem) =>
   `${formatDateWithWeekday(item.date)}${formatTime(item.start_time)}〜${item.ends_next_day ? '翌 ' : ''}${formatTime(item.end_time)}`
 
-/** 繰り返しの規則を「毎週水曜日の繰り返し」の形にする。読めない規則は「繰り返し」にする。 */
+/** 曜日（1 が月曜、7 が日曜）を「水曜日」の形にする。 */
+const weekdayName = (day: number) => `${WEEKDAYS[day % 7]}曜日`
+
+/**
+ * 繰り返しの規則を「毎週水曜日の繰り返し」「毎週月曜日、木曜日の繰り返し」「隔週火曜日の繰り返し」「3 週ごとの火曜日の繰り返し」の形にする。
+ * 読めない規則は「繰り返し」にする。
+ */
 export const formatRecurrence = (rule: NonNullable<ImportReviewItem['recurrence']>) => {
-  // day_of_week は 1 が月曜、7 が日曜
-  const weekday = rule.day_of_week == null ? undefined : `${WEEKDAYS[rule.day_of_week % 7]}曜日`
-  if (rule.frequency === 'weekly' && weekday !== undefined) return `毎週${weekday}の繰り返し`
+  const weekday = rule.day_of_week == null ? undefined : weekdayName(rule.day_of_week)
+  if (rule.frequency === 'weekly' && rule.days_of_week != null && rule.days_of_week.length > 0) {
+    const days = rule.days_of_week.map(weekdayName).join('、')
+    const interval = rule.interval ?? 1
+    if (interval === 1) return `毎週${days}の繰り返し`
+    return interval === 2 ? `隔週${days}の繰り返し` : `${interval} 週ごとの${days}の繰り返し`
+  }
   if (rule.frequency === 'monthly' && rule.day_of_month != null)
     return `毎月 ${rule.day_of_month} 日の繰り返し`
   if (rule.frequency === 'monthly' && rule.week_of_month != null && weekday !== undefined)

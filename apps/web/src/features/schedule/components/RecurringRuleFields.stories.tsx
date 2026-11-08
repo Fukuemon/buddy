@@ -35,7 +35,9 @@ const meta = {
   args: {
     rule: {
       frequency: 'weekly',
-      dayOfWeek: 2,
+      daysOfWeek: [2],
+      interval: 1,
+      dayOfWeek: null,
       dayOfMonth: null,
       weekOfMonth: null,
       endDate: '2027-03-31',
@@ -55,6 +57,8 @@ export const MonthlyDay: Story = {
   args: {
     rule: {
       frequency: 'monthly',
+      daysOfWeek: null,
+      interval: null,
       dayOfWeek: null,
       dayOfMonth: 20,
       weekOfMonth: null,
@@ -66,7 +70,15 @@ export const MonthlyDay: Story = {
 /** 毎月第 3 火曜の、終了日の無い繰り返し。 */
 export const MonthlyWeekday: Story = {
   args: {
-    rule: { frequency: 'monthly', dayOfWeek: 2, dayOfMonth: null, weekOfMonth: 3, endDate: null },
+    rule: {
+      frequency: 'monthly',
+      daysOfWeek: null,
+      interval: null,
+      dayOfWeek: 2,
+      dayOfMonth: null,
+      weekOfMonth: 3,
+      endDate: null,
+    },
   },
 }
 
@@ -75,7 +87,9 @@ export const Invalid: Story = {
   args: {
     rule: {
       frequency: 'weekly',
-      dayOfWeek: 2,
+      daysOfWeek: [2],
+      interval: 1,
+      dayOfWeek: null,
       dayOfMonth: null,
       weekOfMonth: null,
       endDate: '2026-10-01',
@@ -87,6 +101,45 @@ export const Invalid: Story = {
 /** 選択肢（毎週火曜、毎月 20 日、毎月第 3 火曜）のどれとも違う毎週木曜。「カスタム…」を開いた形で始める。 */
 export const Custom: Story = {
   args: {
-    rule: { frequency: 'weekly', dayOfWeek: 4, dayOfMonth: null, weekOfMonth: null, endDate: null },
+    rule: {
+      frequency: 'weekly',
+      daysOfWeek: [4],
+      interval: 1,
+      dayOfWeek: null,
+      dayOfMonth: null,
+      weekOfMonth: null,
+      endDate: null,
+    },
+  },
+}
+
+/** 隔週の月曜と木曜で、2026-10-22（木曜）の回を開いた形。今の規則の選択肢を、曜日の並びのまま選んで始める。 */
+export const BiweeklyDays: Story = {
+  args: {
+    rule: {
+      frequency: 'weekly',
+      daysOfWeek: [1, 4],
+      interval: 2,
+      dayOfWeek: null,
+      dayOfMonth: null,
+      weekOfMonth: null,
+      endDate: null,
+    },
+    baseDate: '2026-10-22',
+  },
+}
+
+/** 3 週ごとの火曜。選択肢の曜日に、間隔を付けて出す。 */
+export const EveryThreeWeeks: Story = {
+  args: {
+    rule: {
+      frequency: 'weekly',
+      daysOfWeek: [2],
+      interval: 3,
+      dayOfWeek: null,
+      dayOfMonth: null,
+      weekOfMonth: null,
+      endDate: null,
+    },
   },
 }

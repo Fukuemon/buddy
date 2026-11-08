@@ -198,7 +198,7 @@ func TestSchedulesRejectInactiveStaff(t *testing.T) {
 		},
 		"繰り返しの予定の作成": func(uc *app, ctx context.Context, in schedule.SlotInput, stopCompanion func()) error {
 			stopCompanion()
-			_, err := uc.CreateRecurring(ctx, facilityID, in, schedule.RuleInput{Frequency: schedule.Weekly, DayOfWeek: ptr(1)})
+			_, err := uc.CreateRecurring(ctx, facilityID, in, schedule.RuleInput{Frequency: schedule.Weekly, DaysOfWeek: []int{1}})
 			return err
 		},
 		"回の置き換え": func(uc *app, ctx context.Context, in schedule.SlotInput, stopCompanion func()) error {

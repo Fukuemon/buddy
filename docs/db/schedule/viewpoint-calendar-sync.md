@@ -11,7 +11,7 @@
 | [public.facilities](public.facilities.md)                                 | 7       | 訪問看護の事業所                                                                                                                                               | BASE TABLE |
 | [public.users](public.users.md)                                           | 15      | 職員                                                                                                                                                           | BASE TABLE |
 | [public.visit_infos](public.visit_infos.md)                               | 8       | 訪問の情報                                                                                                                                                     | BASE TABLE |
-| [public.recurring_schedules](public.recurring_schedules.md)               | 20      | 繰り返しの予定と、その規則                                                                                                                                     | BASE TABLE |
+| [public.recurring_schedules](public.recurring_schedules.md)               | 22      | 繰り返しの予定と、その規則                                                                                                                                     | BASE TABLE |
 | [public.schedules](public.schedules.md)                                   | 17      | 予定                                                                                                                                                           | BASE TABLE |
 | [public.external_calendars](public.external_calendars.md)                 | 8       | 取り込む外部のカレンダーと、その持ち主の職員。外していないものは職員ごとに 1 つ                                                                                | BASE TABLE |
 | [public.calendar_sync_states](public.calendar_sync_states.md)             | 10      | 外部のカレンダーごとの同期の状態                                                                                                                               | BASE TABLE |
@@ -119,6 +119,8 @@ erDiagram
   timestamp_with_time_zone updated_at
   integer version
   boolean ends_next_day
+  smallint__ days_of_week
+  smallint interval_weeks
 }
 "public.schedules" {
   text id

@@ -150,7 +150,11 @@ export type Schedule = {
 /** 繰り返しの規則。予定の API の RecurringRule と同じ組み合わせで、null の項目は最初の日付の曜日や日から決まる。 */
 export type RecurringRule = {
   frequency: 'weekly' | 'monthly'
-  /** 1 が月曜、7 が日曜。 */
+  /** 毎週の、重ならない曜日を月曜から日曜の順に並べたもの。1 が月曜、7 が日曜。毎月は null。 */
+  daysOfWeek: number[] | null
+  /** 毎週の間隔の週の数。1 が毎週、2 が隔週。毎月は null。 */
+  interval: number | null
+  /** 毎月の第何週の曜日の曜日。1 が月曜、7 が日曜。毎週は null。 */
   dayOfWeek: number | null
   dayOfMonth: number | null
   weekOfMonth: number | null

@@ -24,7 +24,7 @@ import (
 var weekly = schedule.RuleInput{Frequency: schedule.Weekly}
 
 // weeklyRecurrence は、weekly の規則を Google に書いた繰り返しの規則である。
-var weeklyRecurrence = []string{"RRULE:FREQ=WEEKLY;BYDAY=TH"}
+var weeklyRecurrence = []string{"RRULE:FREQ=WEEKLY;INTERVAL=1;BYDAY=TH;WKST=SU"}
 
 // occurrenceDates は、Google のフェイクに持たせる繰り返しの予定の回の日付である。
 var occurrenceDates = []civil.Date{{Year: 2026, Month: 10, Day: 22}, {Year: 2026, Month: 10, Day: 29}, {Year: 2026, Month: 11, Day: 5}}
@@ -95,7 +95,7 @@ func TestCreateRecurringVisit(t *testing.T) {
 func TestCreateRecurringRejects(t *testing.T) {
 	fx := newFixture(t)
 	day := 1
-	_, err := fx.createRecurring.Do(editorCtx(), inmem.FacilityID, scheduleID, visitSlot(), schedule.RuleInput{Frequency: schedule.Weekly, DayOfWeek: &day})
+	_, err := fx.createRecurring.Do(editorCtx(), inmem.FacilityID, scheduleID, visitSlot(), schedule.RuleInput{Frequency: schedule.Weekly, DaysOfWeek: []int{day}})
 	if !errors.Is(err, apperr.ErrInvalidInput) {
 		t.Errorf("最初の日付が回に当たらない: err = %v", err)
 	}

@@ -60,6 +60,8 @@ export const tokyoDateFromToday = (days: number) =>
 /** 毎週の、終了日の無い繰り返しの規則。曜日は最初の日付から決まる。 */
 export const WEEKLY_RULE: RecurringRule = {
   frequency: 'weekly',
+  daysOfWeek: null,
+  interval: 1,
   dayOfWeek: null,
   dayOfMonth: null,
   weekOfMonth: null,
