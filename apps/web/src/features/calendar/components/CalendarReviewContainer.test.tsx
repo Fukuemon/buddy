@@ -38,7 +38,7 @@ describe('CalendarReviewContainer', () => {
     )
   })
 
-  it('行を押すと、予定と理由と、その予定で選べる操作をダイアログに出し、× を置かずにキャンセルで閉じる', async () => {
+  it('行を押すと、予定と理由と、その予定で選べる操作をダイアログに出し、× を置かずに閉じるで閉じる', async () => {
     render(<Default />)
     const dialog = await openRow('calendar-review-row-schedule-schedule-1')
     expect(within(dialog).getByTestId('calendar-review-dialog-datetime')).toHaveTextContent(
@@ -48,7 +48,9 @@ describe('CalendarReviewContainer', () => {
     expect(within(dialog).getByTestId('calendar-review-rewrite-export-1')).toBeInTheDocument()
 
     expect(within(dialog).queryByTestId('calendar-review-close')).toBeNull()
-    await userEvent.click(within(dialog).getByTestId('calendar-review-cancel'))
+    const close = within(dialog).getByTestId('calendar-review-cancel')
+    expect(close).toHaveTextContent('閉じる')
+    await userEvent.click(close)
     expect(screen.queryByTestId('calendar-review-dialog')).toBeNull()
   })
 
@@ -102,11 +104,24 @@ describe('CalendarReviewContainer', () => {
     expect(dialog).not.toHaveTextContent('消された予定は作り直します。')
   })
 
-  it('確認のダイアログでキャンセルすると、書き直さずに予定の確認のダイアログに戻る', async () => {
+  it('書き直すボタンは、赤い文字の destructive にしてフッターの先頭に置き、閉じるをその後に並べる', async () => {
+    render(<Default />)
+    const dialog = await openRow('calendar-review-row-schedule-schedule-1')
+    const rewrite = within(dialog).getByTestId('calendar-review-rewrite-export-1')
+    const close = within(dialog).getByTestId('calendar-review-cancel')
+    expect(rewrite).toHaveClass('text-danger')
+    expect(rewrite).toHaveClass('mr-auto')
+    expect(rewrite.compareDocumentPosition(close) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  })
+
+  it('書き直しの確認のダイアログで戻るを押すと、書き直さずに予定の確認のダイアログに戻る', async () => {
     render(<Default />)
     const detail = await openRow('calendar-review-row-schedule-schedule-5')
     await userEvent.click(within(detail).getByTestId('calendar-review-rewrite-export-2'))
-    await userEvent.click(screen.getByTestId('calendar-rewrite-cancel'))
+    const back = screen.getByTestId('calendar-rewrite-cancel')
+    expect(back).toHaveTextContent('戻る')
+    expect(screen.getByTestId('calendar-rewrite-submit')).toHaveClass('bg-danger')
+    await userEvent.click(back)
     expect(screen.queryByTestId('calendar-rewrite-dialog')).toBeNull()
     expect(screen.getByTestId('calendar-review-dialog')).toBeInTheDocument()
     expect(screen.getByTestId('calendar-review-row-schedule-schedule-5')).toBeInTheDocument()

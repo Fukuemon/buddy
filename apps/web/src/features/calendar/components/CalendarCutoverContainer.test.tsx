@@ -50,9 +50,14 @@ describe('CalendarCutoverContainer', () => {
 
   it('やめると、確認のダイアログで確定してから、始める前の状態に戻す', async () => {
     render(<Open />)
-    await userEvent.click(await screen.findByTestId('calendar-cutover-cancel'))
+    const cancel = await screen.findByTestId('calendar-cutover-cancel')
+    expect(cancel).toHaveClass('text-danger')
+    await userEvent.click(cancel)
     const dialog = await screen.findByTestId('calendar-cutover-cancel-confirm-dialog')
     expect(dialog).toHaveTextContent('この切り替えで取り込んだ予定を、buddy から消します')
+    expect(within(dialog).getByTestId('calendar-cutover-cancel-confirm-cancel')).toHaveTextContent(
+      '戻る',
+    )
     await userEvent.click(within(dialog).getByTestId('calendar-cutover-cancel-confirm-submit'))
     expect(await screen.findByTestId('calendar-cutover-start')).toBeInTheDocument()
     expect(screen.queryByTestId('calendar-cutover-cancel-confirm-dialog')).toBeNull()

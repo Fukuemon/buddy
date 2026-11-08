@@ -176,6 +176,7 @@ describe('StaffDetailContainer', () => {
     await userEvent.click(
       await within(dialog).findByTestId('staff-position-option-position-manager'),
     )
+    expect(within(dialog).getByTestId('staff-position-submit')).toHaveClass('bg-danger')
     await userEvent.click(within(dialog).getByTestId('staff-position-submit'))
 
     expect(await screen.findByTestId('staff-detail-position-name')).toHaveTextContent(
@@ -246,6 +247,7 @@ describe('StaffDetailContainer', () => {
       await userEvent.click(screen.getByTestId('staff-detail-retire'))
       const dialog = screen.getByTestId('staff-retire-dialog')
       await within(dialog).findByText('石川 二葉 を退職にしますか')
+      expect(within(dialog).getByTestId('staff-retire-submit')).toHaveClass('bg-danger')
       await userEvent.click(within(dialog).getByTestId('staff-retire-submit'))
 
       expect(await screen.findByTestId('staff-detail-status')).toHaveTextContent('退職')
