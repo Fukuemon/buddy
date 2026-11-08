@@ -131,6 +131,14 @@ export const GooglePrimaryChangedInGoogle: Story = {
   parameters: route({ url: '/schedule/gcal-schedule-1/edit', api: changedInGoogleApi() }),
 }
 
+/** タイトルの利用者が見つからない、確認が必要な Google カレンダーの予定。予定の種類のタブを出し、訪問にして訪問の情報を足せる。 */
+export const GooglePrimaryNeedsReview: Story = {
+  parameters: route({
+    url: '/schedule/gcal-review-1/edit',
+    api: createFakeBuddyApi({ sourceMode: 'google_primary' }),
+  }),
+}
+
 /** 繰り返しの規則を buddy で表せない Google カレンダーの予定。フォームを出さずに、変えられないことを出す。 */
 export const GooglePrimaryRecurrenceUnsupported: Story = {
   parameters: route({
