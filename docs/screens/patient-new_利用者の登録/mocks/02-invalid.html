@@ -116,20 +116,19 @@
               <div class="wf-dialog" role="dialog" aria-modal="true" aria-labelledby="patient-new-title" data-testid="patient-new-dialog">
                 <div class="wf-dialog__header">
                   <h2 class="wf-dialog__title" id="patient-new-title" data-m="2">利用者を登録</h2>
-                  <span class="wf-btn wf-btn--icon" aria-label="閉じる" data-escape data-m="3" data-testid="patient-new-close" data-go="../../patient-list_利用者の一覧/mocks/01-list.html"><svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><path d="M5 5l10 10M15 5 5 15" fill="none" stroke="currentColor" stroke-width="1.8" /></svg></span>
                 </div>
                 <div class="wf-dialog__body">
                   <div class="wf-field">
                     <span class="wf-label">名前</span>
-                    <div class="wf-input wf-field__input wf-input--invalid" data-m="4" data-testid="patient-new-name"></div>
-                    <p class="wf-error" data-m="11" role="alert" data-testid="patient-new-error-{項目}">名前を入れてください</p>
+                    <div class="wf-input wf-field__input wf-input--invalid" data-m="3" data-testid="patient-new-name"></div>
+                    <p class="wf-error" data-m="10" role="alert" data-testid="patient-new-error-{項目}">名前を入れてください</p>
                   </div>
                   <div class="wf-field">
                     <span class="wf-label">サービス</span>
-                    <div class="wf-input wf-field__input pt-select wf-input--invalid" data-m="5" data-testid="patient-new-service"><span class="pt-muted">選んでください</span></div>
+                    <div class="wf-input wf-field__input pt-select wf-input--invalid" data-m="4" data-testid="patient-new-service"><span class="pt-muted">選んでください</span></div>
                     <p class="wf-error" role="alert" data-testid="patient-new-error-{項目}">サービスを選んでください</p>
                   </div>
-                  <fieldset class="pt-fieldset" data-m="6" data-testid="patient-new-time">
+                  <fieldset class="pt-fieldset" data-m="5" data-testid="patient-new-time">
                     <legend class="wf-label">希望の時間帯</legend>
                     <div class="pt-radios">
                       <span class="wf-radio" data-choice="patient-new-time" data-testid="patient-new-time-morning">午前</span>
@@ -137,7 +136,7 @@
                     </div>
                     <p class="wf-error" role="alert" data-testid="patient-new-error-{項目}">希望の時間帯を選んでください</p>
                   </fieldset>
-                  <fieldset class="pt-fieldset" data-m="7" data-testid="patient-new-gender">
+                  <fieldset class="pt-fieldset" data-m="6" data-testid="patient-new-gender">
                     <legend class="wf-label">希望する担当の性別</legend>
                     <div class="pt-radios">
                       <span class="wf-radio" data-choice="patient-new-gender" data-testid="patient-new-gender-male">男性</span>
@@ -146,13 +145,13 @@
                   </fieldset>
                   <div class="wf-field">
                     <span class="wf-label">担当の職員</span>
-                    <div class="wf-input wf-field__input pt-select" data-m="8" data-testid="patient-new-staff">佐藤 美咲</div>
+                    <div class="wf-input wf-field__input pt-select" data-m="7" data-testid="patient-new-staff">佐藤 美咲</div>
                     <span class="wf-hint">休職と退職の職員と、訪問しない職員は選べません。</span>
                   </div>
                 </div>
                 <div class="wf-dialog__footer">
-                  <span class="wf-btn" data-m="9" data-testid="patient-new-cancel" data-go="../../patient-list_利用者の一覧/mocks/01-list.html">キャンセル</span>
-                  <span class="wf-btn wf-btn--primary" data-m="10" data-testid="patient-new-submit">登録</span>
+                  <span class="wf-btn" data-escape data-m="8" data-testid="patient-new-cancel" data-go="../../patient-list_利用者の一覧/mocks/01-list.html">キャンセル</span>
+                  <span class="wf-btn wf-btn--primary" data-m="9" data-testid="patient-new-submit">登録</span>
                 </div>
               </div>
             </div>

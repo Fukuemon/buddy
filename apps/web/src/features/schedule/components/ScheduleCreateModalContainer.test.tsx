@@ -33,7 +33,7 @@ describe('ScheduleCreateModalContainer', () => {
     })
     await userEvent.click(screen.getByTestId('schedule-kind-tab-normal'))
     expect(screen.getByTestId('schedule-form-date')).toHaveValue('2000-01-01')
-    await userEvent.click(screen.getByTestId('modal-close'))
+    await userEvent.click(screen.getByTestId('schedule-new-cancel'))
 
     expect(confirm).toHaveBeenCalledOnce()
   })
@@ -58,7 +58,7 @@ describe('ScheduleCreateModalContainer', () => {
     fireEvent.change(date, { target: { value: '2000-01-01' } })
     fireEvent.change(date, { target: { value: opened } })
     await userEvent.click(screen.getByTestId('schedule-kind-tab-normal'))
-    await userEvent.click(screen.getByTestId('modal-close'))
+    await userEvent.click(screen.getByTestId('schedule-new-cancel'))
 
     expect(confirm).not.toHaveBeenCalled()
   })
@@ -68,7 +68,7 @@ describe('ScheduleCreateModalContainer', () => {
     render(<Visit />)
 
     await userEvent.click(await screen.findByTestId('schedule-kind-tab-normal'))
-    await userEvent.click(screen.getByTestId('modal-close'))
+    await userEvent.click(screen.getByTestId('schedule-new-cancel'))
 
     expect(confirm).not.toHaveBeenCalled()
   })
@@ -156,7 +156,7 @@ describe('ScheduleCreateModalContainer', () => {
     await waitFor(() =>
       expect(screen.getByTestId('schedule-field-staff')).toHaveTextContent('選んでください'),
     )
-    await userEvent.click(screen.getByTestId('modal-close'))
+    await userEvent.click(screen.getByTestId('schedule-new-cancel'))
     expect(confirm).not.toHaveBeenCalled()
   })
 

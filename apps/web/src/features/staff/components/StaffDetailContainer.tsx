@@ -40,7 +40,7 @@ import {
   useUpdateStaff,
   type PolicySaveFailure,
 } from '../queries'
-import { StaffDetailView, type StaffDetailViewState } from './StaffDetailView'
+import { StaffDetailView, type StaffDetailTab, type StaffDetailViewState } from './StaffDetailView'
 import { StaffLeaveDialog } from './StaffLeaveDialog'
 import { StaffPoliciesDialog } from './StaffPoliciesDialog'
 import { StaffPositionDialog } from './StaffPositionDialog'
@@ -57,6 +57,7 @@ const StaffDetailContent = ({ staffId, viewerId }: { staffId: Staff['id']; viewe
   const { api, facilityId } = useBuddyApi()
   const queryClient = useQueryClient()
   const [open, setOpen] = useState<Open>(null)
+  const [tab, setTab] = useState<StaffDetailTab>('profile')
   const [refusedAssignments, setRefusedAssignments] = useState<StaffAssignments>()
   /** 権限の保存で変えられなかった変更と、送った変更の全てを変えられなかったか。 */
   const [policyFailure, setPolicyFailure] = useState<{
@@ -100,6 +101,11 @@ const StaffDetailContent = ({ staffId, viewerId }: { staffId: Staff['id']; viewe
     setOpen(next)
   }
   const close = () => openDialog(null)
+  /** 在籍とプロフィールを変えた後は、変わった結果を見せるためにプロフィールのタブに戻す。 */
+  const closeToProfile = () => {
+    close()
+    setTab('profile')
+  }
 
   const targetNames = new Map<string, string>([
     ...(staffList.data ?? []).map((s) => [s.id, s.name] as const),
@@ -144,7 +150,8 @@ const StaffDetailContent = ({ staffId, viewerId }: { staffId: Staff['id']; viewe
         onChangePosition={() => openDialog('position')}
         onEdit={() => openDialog('profile')}
         onLeave={() => openDialog('leave')}
-        onReinstate={() => reinstate.mutateAsync()}
+        onReinstate={() => reinstate.mutateAsync(undefined, { onSuccess: () => setTab('profile') })}
+        onTabChange={setTab}
         onRetire={() => openDialog('retire')}
         onRefetch={() => refetchFailedQueries([detail])}
         onRetry={() =>
@@ -160,6 +167,7 @@ const StaffDetailContent = ({ staffId, viewerId }: { staffId: Staff['id']; viewe
           reinstate.isError ? reinstateErrorMessage(reinstate.error) : undefined
         }
         state={state}
+        tab={tab}
         targetNames={targetNames}
       />
       {staff !== undefined && open === 'profile' && (
@@ -177,7 +185,7 @@ const StaffDetailContent = ({ staffId, viewerId }: { staffId: Staff['id']; viewe
           onSubmit={(input) =>
             update.mutate(input, {
               onSuccess: (result) =>
-                'updated' in result ? close() : setRefusedAssignments(result.assignments),
+                'updated' in result ? closeToProfile() : setRefusedAssignments(result.assignments),
             })
           }
           refusedAssignments={refusedAssignments}
@@ -230,7 +238,7 @@ const StaffDetailContent = ({ staffId, viewerId }: { staffId: Staff['id']; viewe
           errorMessage={startLeave.isError ? leaveErrorMessage(startLeave.error) : undefined}
           isSubmitting={startLeave.isPending}
           onCancel={close}
-          onSubmit={(returnDate) => startLeave.mutate(returnDate, { onSuccess: close })}
+          onSubmit={(returnDate) => startLeave.mutate(returnDate, { onSuccess: closeToProfile })}
           staff={staff}
         />
       )}
@@ -244,7 +252,7 @@ const StaffDetailContent = ({ staffId, viewerId }: { staffId: Staff['id']; viewe
           onSubmit={() =>
             retire.mutate(undefined, {
               onSuccess: (result) =>
-                'retired' in result ? close() : setRefusedAssignments(result.assignments),
+                'retired' in result ? closeToProfile() : setRefusedAssignments(result.assignments),
             })
           }
           staff={staff}

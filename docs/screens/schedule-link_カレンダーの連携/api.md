@@ -46,7 +46,7 @@ web は `BuddyApi.calendars`（`apps/web/src/api/BuddyApi.ts`）で API を呼�
 | 職員が、外す操作を送っている途中である | `useUnlinkCalendar` の mutation の `isPending` が `true`（`CalendarUnlinkDialog` の `isSubmitting`） |
 
 - `CalendarCheckStatus` は、`CalendarLinkContainer.tsx` が、確認の途中、確認か結び付けの失敗、今の入力での確認の成功の順に決める。
-- 送っている間は、ダイアログの閉じる、キャンセル、確定のボタンと入力の欄に `disabled` を付け、覆いと Escape キーでも閉じない。packages/ui の `InputDialog`、`ConfirmDialog`、`Dialog` が決める。
+- 送っている間は、ダイアログのキャンセルと確定のボタンと入力の欄に `disabled` を付け、覆いと Escape キーでも閉じない。packages/ui の `InputDialog`、`ConfirmDialog`、`Dialog` が決める。
 
 ## 要素の testid
 
@@ -73,14 +73,13 @@ web は `BuddyApi.calendars`（`apps/web/src/api/BuddyApi.ts`）で API を呼�
 | 14 | メニュー | `site-nav-toggle` |
 | 15 | 予定の正本の切り替え | `calendar-link-cutover` |
 | 2 | 結び付けるダイアログ | `calendar-link-dialog` |
-| 3 | 閉じる | `calendar-link-dialog-close` |
-| 4 | 職員の名前 | `calendar-link-staff` |
-| 5 | カレンダーの ID のヘルプ | `schedule-link-calendar-id-help` |
-| 6 | カレンダーの ID の入力 | `calendar-link-input` |
-| 7 | 読めるか確認する | `calendar-link-check` |
-| 8 | キャンセル | `calendar-link-cancel` |
-| 9 | ダイアログの結び付ける | `calendar-link-submit` |
-| 10 | 確認の結果 | `calendar-link-check-result` |
+| 3 | 職員の名前 | `calendar-link-staff` |
+| 4 | カレンダーの ID のヘルプ | `schedule-link-calendar-id-help` |
+| 5 | カレンダーの ID の入力 | `calendar-link-input` |
+| 6 | 読めるか確認する | `calendar-link-check` |
+| 7 | キャンセル | `calendar-link-cancel` |
+| 8 | ダイアログの結び付ける | `calendar-link-submit` |
+| 9 | 確認の結果 | `calendar-link-check-result` |
 | 2 | 外すダイアログ | `calendar-unlink-dialog` |
 | 4 | キャンセル | `calendar-unlink-cancel` |
 | 5 | ダイアログの外す | `calendar-unlink-submit` |

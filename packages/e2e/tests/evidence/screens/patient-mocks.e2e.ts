@@ -223,7 +223,7 @@ test.describe('利用者の管理の画面仕様書のモック', () => {
       )
     })
 
-    test(`${prefix}利用者の一覧で利用者を登録を押した場合、選ぶ欄が未選択の登録のダイアログが開き、閉じるで一覧へ戻ること`, async ({
+    test(`${prefix}利用者の一覧で利用者を登録を押した場合、選ぶ欄が未選択で × の無い登録のダイアログが開き、Escape で一覧へ戻ること`, async ({
       browser,
     }) => {
       await recordMock(
@@ -231,7 +231,8 @@ test.describe('利用者の管理の画面仕様書のモック', () => {
         variant,
         {
           name: 'patient-new',
-          title: '利用者を登録を押すと、選ぶ欄が未選択の入力のダイアログが開き、閉じるで一覧へ戻る',
+          title:
+            '利用者を登録を押すと、選ぶ欄が未選択で × の無い入力のダイアログが開き、Escape で一覧へ戻る',
           file: `${LIST}/01-list.html`,
         },
         async ({ page, step, check }) => {
@@ -240,12 +241,13 @@ test.describe('利用者の管理の画面仕様書のモック', () => {
           await expect(page).toHaveURL(/patient-new_.+\/01-initial\.html/)
           await expect(page.getByTestId('patient-new-service')).toHaveText('選んでください')
           await expect(page.getByTestId('patient-new-staff')).toHaveText('選んでください')
+          await expect(page.getByTestId('patient-new-cancel')).toHaveText('キャンセル')
           await check(
-            '登録のダイアログ（01-initial.html）が開き、サービスと担当の職員が「選んでください」で、希望は選んでいない',
+            '登録のダイアログ（01-initial.html）が開き、サービスと担当の職員が「選んでください」で、希望は選んでいない。右上に × が無く、フッターに「キャンセル」がある',
           )
 
-          await step('× を押す')
-          await page.getByTestId('patient-new-close').click()
+          await step('Escape キーを押す')
+          await page.keyboard.press('Escape')
           await expect(page).toHaveURL(/patient-list_.+\/01-list\.html/)
           await check('一覧（01-list.html）へ戻る')
         },
@@ -347,7 +349,7 @@ test.describe('利用者の管理の画面仕様書のモック', () => {
       )
     })
 
-    test(`${prefix}利用者の詳細のモックで編集を押した場合、利用者の編集のダイアログが開き、閉じるで戻ること`, async ({
+    test(`${prefix}利用者の詳細のモックで編集を押した場合、利用者の編集のダイアログが開き、キャンセルで戻ること`, async ({
       browser,
     }) => {
       await recordMock(
@@ -355,7 +357,7 @@ test.describe('利用者の管理の画面仕様書のモック', () => {
         variant,
         {
           name: 'patient-detail-edit',
-          title: '編集を押すと利用者の編集のダイアログが開き、× で詳細へ戻る',
+          title: '編集を押すと利用者の編集のダイアログが開き、フッターのキャンセルで詳細へ戻る',
           file: `${DETAIL}/01-detail.html`,
         },
         async ({ page, step, check }) => {
@@ -369,8 +371,8 @@ test.describe('利用者の管理の画面仕様書のモック', () => {
             '利用者の編集のダイアログ（03-edit.html）に、名前、サービス、希望、担当の職員の欄と、担当の職員の注意が出る',
           )
 
-          await step('× を押す')
-          await page.getByTestId('patient-detail-edit-close').click()
+          await step('フッターの「キャンセル」を押す')
+          await page.getByTestId('patient-detail-edit-cancel').click()
           await expect(page).toHaveURL(/01-detail\.html/)
           await check('詳細（01-detail.html）へ戻る')
         },

@@ -26,14 +26,16 @@ import * as Stories from './Dialog.stories'
 - 入力と確認のダイアログは、まずパターンの `InputDialog` と `ConfirmDialog` を使い、合わないときだけ `Dialog` で組む
 - `DialogHeader` の `titleId` と、`Dialog` の `labelledBy` に同じ値を渡す
 - フッターのボタンは、「キャンセル」、確定のボタンの順に渡す
-- 送っている間は、`Dialog` に `canClose={false}`、`DialogHeader` に `isCloseDisabled` を渡し、どの操作でも閉じないようにする
+- フッターで閉じる。`DialogHeader` に `onClose` を渡さず、右上に閉じるボタン（×）を出さない
+- 送っている間は、`Dialog` に `canClose={false}` を渡し、フッターの「キャンセル」も押せなくして、どの操作でも閉じないようにする
 - 送れなかったときは、`DialogFooter` の `error` に文を渡す
-- 選ぶ操作だけを並べるときは、どれも副のボタンにし、閉じるのは × に任せる
+- 選ぶ操作を並べるときは、どれも副のボタンにし、左端に「キャンセル」を置く
+- フッターを置かないダイアログだけは、`DialogHeader` に `onClose` を渡して × で閉じる
 
 ## Don't
 
 - ダイアログの中から別のダイアログを開く
-- 確認のダイアログ（`role="alertdialog"`）に × を置く
+- フッターに操作のボタンを置いたダイアログに × を置く。× と「キャンセル」のどちらで閉じても同じかを判断できない
 - 主のボタンを 2 つ並べる
 
 ## 状態
@@ -50,9 +52,13 @@ import * as Stories from './Dialog.stories'
 
 <Canvas of={Stories.Submitting} />
 
-### 操作だけを並べる
+### 操作を並べる
 
 <Canvas of={Stories.OperationsOnly} />
+
+### フッターを置かない
+
+<Canvas of={Stories.WithCloseButton} />
 
 ## キーボードの操作
 
