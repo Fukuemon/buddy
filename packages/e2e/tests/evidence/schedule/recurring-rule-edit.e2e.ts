@@ -1,0 +1,393 @@
+import { expect, test, type APIRequestContext, type Page } from '@playwright/test'
+
+import { issueAccessToken } from '../../fixtures/apiReference'
+import { CALENDARPIT_URL, LOGIN_EMAIL, LOGIN_STAFF, OKADA } from '../../fixtures/env'
+import { EVIDENCE_VARIANTS, recordPrEvidence } from '../../fixtures/evidence'
+import { deleteGoogleEvent, listGoogleEvents } from '../../fixtures/googleCalendar'
+import {
+  createWeeklyNormalSchedule,
+  newScheduleId,
+  replaceOccurrence,
+} from '../../fixtures/schedule'
+import { STAFF_FORM } from '../../fixtures/staff'
+import { signInAtBroker } from '../../screens/login'
+import { calendarpitEvent } from '../../selectors/calendarpit'
+
+const ACTOR = `${LOGIN_STAFF.name}（マネージャー）`
+const OKADA_ACTOR = `${OKADA.staff.name}（Google カレンダーを正本にする事業所のマネージャー）`
+
+/** 今日の Asia/Tokyo の日付から days 日後の日付（YYYY-MM-DD）。 */
+const daysFromToday = (days: number) =>
+  new Date(Date.now() + 9 * 60 * 60 * 1000 + days * 24 * 60 * 60 * 1000).toISOString().slice(0, 10)
+
+/** 明日以降で最初の月曜の日付から、days 日後の日付（YYYY-MM-DD）。 */
+const fromNextMonday = (days: number) => {
+  const today = new Date(`${daysFromToday(0)}T00:00:00Z`).getUTCDay()
+  return daysFromToday(((8 - today) % 7 || 7) + days)
+}
+
+/** YYYY-MM-DD の、月の 1 日から 7 日ずつ区切った第何週か。 */
+const weekOfMonth = (date: string) => Math.floor((Number(date.slice(8, 10)) - 1) / 7) + 1
+
+/** 日の表示の staffId の列の、title の予定。 */
+const dayEvent = (page: Page, staffId: string, title: string) =>
+  page
+    .getByTestId(`day-grid-staff-${staffId}`)
+    .getByTestId(/^schedule-event-/)
+    .filter({ hasText: title })
+
+const openDay = async (page: Page, staffId: string, date: string) => {
+  await page.goto(`/schedule?view=day&date=${date}`)
+  await expect(page.getByTestId(`day-grid-staff-${staffId}`)).toBeVisible()
+}
+
+/** 日の表示で title の予定を押して詳細を開き、「編集」を押して予定の編集を開く。 */
+const openEdit = async (page: Page, staffId: string, title: string) => {
+  const event = dayEvent(page, staffId, title)
+  await event.scrollIntoViewIfNeeded()
+  await event.click()
+  await page.getByTestId('schedule-detail-edit').click()
+  await expect(page.getByTestId('schedule-form-modal')).toBeVisible()
+}
+
+/** ログインし、ログインした職員の start からの毎週の通常の予定（10:00〜11:00）を予定の API で作り、ID を返す。 */
+const prepareWeekly = (title: string, start: string) => async (page: Page) => {
+  await page.goto('/schedule')
+  await signInAtBroker(page, LOGIN_EMAIL)
+  const token = await issueAccessToken(page.request, LOGIN_EMAIL)
+  const created = await createWeeklyNormalSchedule(page.request, token, STAFF_FORM.facilityId, {
+    staffId: LOGIN_STAFF.id,
+    title,
+    date: start,
+  })
+  expect(created.status()).toBe(201)
+  const { id } = (await created.json()) as { id: string }
+  return { token, id }
+}
+
+/** calendarpit の calendarId の予定のうち、タイトルが title で、RRULE に rule を含む繰り返しの予定。 */
+const findRecurringGoogleEvent = async (
+  request: APIRequestContext,
+  calendarId: string,
+  title: string,
+  rule: string,
+) =>
+  (await listGoogleEvents(request, calendarId)).find(
+    (event) => event.summary === title && event.recurrence?.some((line) => line.includes(rule)),
+  )
+
+test.describe('予定の編集', () => {
+  test.describe('繰り返しの予定の規則の変更', () => {
+    for (const variant of EVIDENCE_VARIANTS) {
+      const prefix = variant.label ? `${variant.label}: ` : ''
+      const isBefore = variant.name === 'before'
+
+      test(`${prefix}buddy で管理する事業所で、毎週月曜の繰り返しの予定の回から「この日以降の全ての回」を毎週火曜にした場合、その日以降が火曜に出て、前の回は変わらないこと`, async ({
+        browser,
+      }) => {
+        const title = `定例 ${Date.now()}`
+        const start = fromNextMonday(0)
+        const effective = fromNextMonday(7)
+        const tuesday = fromNextMonday(8)
+        await recordPrEvidence(
+          browser,
+          {
+            name: 'recurring-rule-edit-buddy-primary',
+            title:
+              'buddy で管理する事業所で、毎週月曜の繰り返しの予定の回の編集から「この日以降の全ての回」を毎週火曜にすると、その日以降の回が火曜に出て、その日より前の回は月曜のまま',
+            actor: ACTOR,
+            variant,
+          },
+          prepareWeekly(title, start),
+          async ({ page, step, check }) => {
+            await openDay(page, LOGIN_STAFF.id, effective)
+            await expect(dayEvent(page, LOGIN_STAFF.id, title)).toBeVisible()
+            await step(
+              `${start} から毎週月曜 10:00〜11:00 の「${title}」を作ってある。${effective}（月曜）の日の表示を開いている`,
+            )
+
+            await step('予定を押して詳細を開き、「編集」を押す')
+            await openEdit(page, LOGIN_STAFF.id, title)
+            if (isBefore) {
+              await expect(page.getByTestId('schedule-edit-scope')).toHaveCount(0)
+              await expect(page.getByTestId('schedule-field-date-time')).toBeVisible()
+              await check(
+                '変更の範囲が無く、この回の日時と内容のフォームだけが出る。繰り返しの規則は変えられない',
+              )
+              return
+            }
+            await expect(page.getByTestId('schedule-edit-scope-occurrence')).toBeChecked()
+            await check('フォームの上に変更の範囲が出て、「この回だけ」を選んでいる')
+
+            await step('変更の範囲の「この日以降の全ての回」を押す')
+            await page.getByTestId('schedule-edit-scope-following').check()
+            await expect(page.getByTestId('schedule-edit-rule-lead')).toContainText(effective)
+            await expect(page.getByTestId('recurring-rule-day-of-week-1')).toBeChecked()
+            await check(
+              `項目の一覧の代わりに繰り返しの欄が出て、${effective} 以降を変えることの説明と、今の毎週月曜が出る`,
+            )
+
+            await step('曜日の「火」を押して「保存」を押す')
+            await page.getByTestId('recurring-rule-day-of-week-2').check()
+            await page.getByTestId('schedule-edit-submit').click()
+            await expect(page.getByTestId('schedule-form-modal')).toBeHidden()
+            await expect(dayEvent(page, LOGIN_STAFF.id, title)).toBeVisible()
+            await check(`予定のカレンダーの ${tuesday}（火曜）に戻り、「${title}」が出る`)
+
+            await step(`${effective}（月曜）と、前の回の ${start}（月曜）の日の表示を開く`)
+            await openDay(page, LOGIN_STAFF.id, effective)
+            await expect(dayEvent(page, LOGIN_STAFF.id, title)).toHaveCount(0)
+            await check(`${effective}（月曜）には「${title}」が出ない`)
+            await openDay(page, LOGIN_STAFF.id, start)
+            await expect(dayEvent(page, LOGIN_STAFF.id, title)).toBeVisible()
+            await check(`${start}（月曜）の回は変わらずに出る`)
+          },
+        )
+      })
+
+      test(`${prefix}繰り返しの予定の回の編集で「この回だけ」の時刻を変えて保存した場合、その回だけが変わること`, async ({
+        browser,
+      }) => {
+        const title = `定例 ${Date.now()}`
+        const start = fromNextMonday(0)
+        const next = fromNextMonday(7)
+        await recordPrEvidence(
+          browser,
+          {
+            name: 'recurring-rule-edit-occurrence-only',
+            title:
+              '繰り返しの予定の回の編集で「この回だけ」の開始時間を変えて保存すると、今と同じく、その回だけが変わり、次の回は変わらない',
+            actor: ACTOR,
+            variant,
+          },
+          prepareWeekly(title, start),
+          async ({ page, step, check }) => {
+            await openDay(page, LOGIN_STAFF.id, start)
+            await step(
+              `${start} から毎週月曜 10:00〜11:00 の「${title}」を作ってある。${start} の日の表示を開いている`,
+            )
+
+            await step('予定を押して詳細を開き、「編集」を押す')
+            await openEdit(page, LOGIN_STAFF.id, title)
+            if (!isBefore) {
+              await expect(page.getByTestId('schedule-edit-scope-occurrence')).toBeChecked()
+              await check('変更の範囲は「この回だけ」を選んでいる')
+            }
+
+            await step('予定日時の開始時間を 14:00、終了時間を 15:00 にして「保存」を押す')
+            await page.getByTestId('schedule-form-start-time').fill('14:00')
+            await page.getByTestId('schedule-form-end-time').fill('15:00')
+            await page.getByTestId('schedule-edit-submit').click()
+            await expect(page.getByTestId('schedule-form-modal')).toBeHidden()
+            await expect(page.getByTestId('schedule-detail-modal')).toContainText('14:00')
+            await check('予定の詳細に戻り、日時が 14:00〜15:00 になっている')
+
+            await step(`次の回の ${next} の日の表示を開き、予定を押して詳細を開く`)
+            await openDay(page, LOGIN_STAFF.id, next)
+            await dayEvent(page, LOGIN_STAFF.id, title).click()
+            await expect(page.getByTestId('schedule-detail-modal')).toContainText('10:00')
+            await check(`${next} の回は 10:00〜11:00 のまま`)
+          },
+        )
+      })
+    }
+
+    // 改修前は規則を変えられないので、改修後だけを撮る
+    for (const variant of EVIDENCE_VARIANTS.filter(({ name }) => name !== 'before')) {
+      const prefix = variant.label ? `${variant.label}: ` : ''
+
+      test(`${prefix}1 回だけ変えた回がある繰り返しの予定の規則を変えた場合、変えた回は残り、その元の日に新しい規則の回が出ないこと`, async ({
+        browser,
+      }) => {
+        const title = `定例 ${Date.now()}`
+        const start = fromNextMonday(0)
+        const effective = fromNextMonday(7)
+        const replacedDate = fromNextMonday(14)
+        const movedTo = fromNextMonday(16)
+        const week = weekOfMonth(replacedDate)
+        await recordPrEvidence(
+          browser,
+          {
+            name: 'recurring-rule-edit-replaced',
+            title: `1 回だけ水曜に移した回がある毎週月曜の繰り返しの予定を、毎月第 ${week} 月曜に変えると、移した回は残り、移した元の月曜には新しい規則の回が出ない`,
+            actor: ACTOR,
+            variant,
+          },
+          async (page) => {
+            const prepared = await prepareWeekly(title, start)(page)
+            const moved = await replaceOccurrence(
+              page.request,
+              prepared.token,
+              prepared.id,
+              replacedDate,
+              {
+                staffId: LOGIN_STAFF.id,
+                title,
+                date: movedTo,
+              },
+            )
+            expect(moved.status()).toBe(201)
+            return prepared
+          },
+          async ({ page, step, check }) => {
+            await openDay(page, LOGIN_STAFF.id, movedTo)
+            await expect(dayEvent(page, LOGIN_STAFF.id, title)).toBeVisible()
+            await step(
+              `${start} から毎週月曜の「${title}」を作り、${replacedDate}（月曜）の回を ${movedTo}（水曜）に移してある。${movedTo} に移した回が出ている`,
+            )
+
+            await step(`${effective}（月曜）の回の編集を開き、「この日以降の全ての回」を押す`)
+            await openDay(page, LOGIN_STAFF.id, effective)
+            await openEdit(page, LOGIN_STAFF.id, title)
+            await page.getByTestId('schedule-edit-scope-following').check()
+
+            await step(
+              `繰り返しの「毎月」、毎月の決め方の「第何週の曜日」を押し、週を第 ${week}、曜日を月曜にして「保存」を押す`,
+            )
+            await page.getByTestId('recurring-rule-frequency-monthly').check()
+            await page.getByTestId('recurring-rule-monthly-by-weekday').check()
+            await page.getByTestId('recurring-rule-week-of-month').selectOption(String(week))
+            await page.getByTestId('recurring-rule-monthly-day-of-week').selectOption('1')
+            await page.getByTestId('schedule-edit-submit').click()
+            await expect(page.getByTestId('schedule-form-modal')).toBeHidden()
+            await check('保存でき、予定のカレンダーに戻る')
+
+            await step(
+              `新しい規則が当たる ${replacedDate}（第 ${week} 月曜）と、移した先の ${movedTo}（水曜）の日の表示を開く`,
+            )
+            await openDay(page, LOGIN_STAFF.id, replacedDate)
+            await expect(dayEvent(page, LOGIN_STAFF.id, title)).toHaveCount(0)
+            await check(`${replacedDate} には、新しい規則の回が出ない`)
+            await openDay(page, LOGIN_STAFF.id, movedTo)
+            await expect(dayEvent(page, LOGIN_STAFF.id, title)).toBeVisible()
+            await check(`${movedTo} に移した回は残る`)
+          },
+        )
+      })
+
+      test(`${prefix}今日より前の回で「この日以降の全ての回」を選んだ場合、変えられないことが分かり、保存を押せないこと`, async ({
+        browser,
+      }) => {
+        const title = `定例 ${Date.now()}`
+        const start = daysFromToday(-14)
+        const past = daysFromToday(-7)
+        await recordPrEvidence(
+          browser,
+          {
+            name: 'recurring-rule-edit-past',
+            title:
+              '今日より前の回の編集で「この日以降の全ての回」を押すと、今日より前の回からは繰り返しを変えられないことを出し、保存を押せない',
+            actor: ACTOR,
+            variant,
+          },
+          prepareWeekly(title, start),
+          async ({ page, step, check }) => {
+            await openDay(page, LOGIN_STAFF.id, past)
+            await step(
+              `${start} から毎週の「${title}」を作ってある。今日より前の ${past} の日の表示を開いている`,
+            )
+
+            await step('予定を押して詳細を開き、「編集」を押して「この日以降の全ての回」を押す')
+            await openEdit(page, LOGIN_STAFF.id, title)
+            await page.getByTestId('schedule-edit-scope-following').check()
+            await expect(page.getByTestId('schedule-edit-rule-past')).toBeVisible()
+            await expect(page.getByTestId('schedule-edit-submit')).toHaveAttribute(
+              'aria-disabled',
+              'true',
+            )
+            await check(
+              '繰り返しの欄の代わりに「今日より前の回からは、繰り返しを変えられません。」が出て、「保存」は押せない',
+            )
+          },
+        )
+      })
+
+      test(`${prefix}Google カレンダーを正本にする事業所で、毎週月曜の繰り返しの予定の回から「この日以降の全ての回」を毎週火曜にした場合、Google カレンダーにも新しい規則が書かれ、画面に新しい回が出ること`, async ({
+        browser,
+        request,
+      }) => {
+        const title = `定例 ${Date.now()}`
+        const start = fromNextMonday(0)
+        const effective = fromNextMonday(7)
+        const tuesday = fromNextMonday(8)
+        await recordPrEvidence(
+          browser,
+          {
+            name: 'recurring-rule-edit-google-primary',
+            title:
+              'Google カレンダーを正本にする事業所で、毎週月曜の繰り返しの予定の回の編集から「この日以降の全ての回」を毎週火曜にすると、calendarpit に火曜の繰り返しの予定ができ、予定のカレンダーが火曜の回を出す',
+            actor: OKADA_ACTOR,
+            variant,
+          },
+          async (page) => {
+            await page.goto('/schedule')
+            await signInAtBroker(page, OKADA.email)
+            const token = await issueAccessToken(page.request, OKADA.email)
+            const created = await createWeeklyNormalSchedule(
+              page.request,
+              token,
+              OKADA.facilityId,
+              {
+                id: newScheduleId(),
+                staffId: OKADA.staff.id,
+                title,
+                date: start,
+              },
+            )
+            expect(created.status()).toBe(201)
+          },
+          async ({ page, step, check }) => {
+            try {
+              await openDay(page, OKADA.staff.id, effective)
+              await expect(dayEvent(page, OKADA.staff.id, title)).toBeVisible()
+              await step(
+                `${start} から毎週月曜の「${title}」を ${OKADA.staff.name} の Google カレンダーに作ってある。${effective}（月曜）の日の表示を開いている`,
+              )
+
+              await step(
+                '予定の編集を開き、「この日以降の全ての回」で曜日の「火」を押して「保存」を押す',
+              )
+              await openEdit(page, OKADA.staff.id, title)
+              await page.getByTestId('schedule-edit-scope-following').check()
+              await page.getByTestId('recurring-rule-day-of-week-2').check()
+              await page.getByTestId('schedule-edit-submit').click()
+              await expect(page.getByTestId('schedule-form-modal')).toBeHidden()
+              await expect(dayEvent(page, OKADA.staff.id, title)).toBeVisible()
+              await check(`予定のカレンダーの ${tuesday}（火曜）に戻り、「${title}」が出る`)
+
+              await expect
+                .poll(
+                  async () =>
+                    (await findRecurringGoogleEvent(
+                      request,
+                      OKADA.calendarId,
+                      title,
+                      'BYDAY=TU',
+                    )) !== undefined,
+                )
+                .toBe(true)
+              await step(
+                `Google カレンダーの代わりの calendarpit の管理の画面で、${OKADA.calendarId} の ${tuesday} を開く`,
+              )
+              await page.goto(
+                `${CALENDARPIT_URL}/?calendar=${encodeURIComponent(OKADA.calendarId)}&date=${tuesday}`,
+              )
+              await expect(calendarpitEvent(page, title)).toBeVisible()
+              await check(`${OKADA.calendarId} の ${tuesday}（火曜）に「${title}」が出る`)
+
+              await step(`予定のカレンダーで ${effective}（月曜）の日の表示を開く`)
+              await openDay(page, OKADA.staff.id, effective)
+              await expect(dayEvent(page, OKADA.staff.id, title)).toHaveCount(0)
+              await check(`${effective}（月曜）には「${title}」が出ない`)
+            } finally {
+              for (const event of await listGoogleEvents(request, OKADA.calendarId)) {
+                if (event.summary === title)
+                  await deleteGoogleEvent(request, OKADA.calendarId, event.id)
+              }
+            }
+          },
+        )
+      })
+    }
+  })
+})
