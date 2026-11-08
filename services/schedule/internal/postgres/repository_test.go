@@ -879,6 +879,66 @@ func TestRecurringScheduleAndExclusion(t *testing.T) {
 	}
 }
 
+// TestRecurringScheduleUpdateRule は、規則の書き換えが最初の日付、規則、更新の番号を変え、
+// 除外する日の削除が、置き換えた回の単発の予定がある日と、from より前の日を残すことを確認する（ADR-0037）。
+func TestRecurringScheduleUpdateRule(t *testing.T) {
+	ctx := txContext(t)
+	r := NewRecurringScheduleRepository(testDB)
+	rs := schedule.RecurringSchedule{
+		ID: "01M3TD00000000000000000051",
+		Slot: schedule.Slot{
+			FacilityID: seedFacility, StaffID: seedMori, TypeID: seedNormalType,
+			Date: civil.Date{Year: 2026, Month: 11, Day: 2}, StartTime: civil.Time{Hour: 13}, EndTime: civil.Time{Hour: 14},
+			Title: ptr("定例"),
+		},
+		Rule: schedule.Rule{Frequency: schedule.Weekly, DayOfWeek: ptr(1)},
+	}
+	if err := r.Create(ctx, rs); err != nil {
+		t.Fatal(err)
+	}
+	before, replacedDay, cancelledDay := civil.Date{Year: 2026, Month: 11, Day: 2}, civil.Date{Year: 2026, Month: 11, Day: 9}, civil.Date{Year: 2026, Month: 11, Day: 16}
+	for _, d := range []civil.Date{before, replacedDay, cancelledDay} {
+		if err := r.AddExclusion(ctx, rs.ID, d); err != nil {
+			t.Fatal(err)
+		}
+	}
+	replaced := schedule.Schedule{ID: "01M3TD000000000000000000E2", Slot: rs.Slot, RecurringScheduleID: &rs.ID, OriginalDate: &replacedDay}
+	replaced.Date = replacedDay
+	if err := NewScheduleRepository(testDB).Create(ctx, replaced); err != nil {
+		t.Fatal(err)
+	}
+	v0, err := r.Get(ctx, rs.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got, err := r.ReplacedDates(ctx, rs.ID, before); err != nil || !reflect.DeepEqual(got, []civil.Date{replacedDay}) {
+		t.Errorf("ReplacedDates = %v, %v, want [%v]", got, err, replacedDay)
+	}
+	if got, err := r.ReplacedDates(ctx, rs.ID, cancelledDay); err != nil || len(got) != 0 {
+		t.Errorf("%v 以降の ReplacedDates = %v, %v, want 無し", cancelledDay, got, err)
+	}
+
+	changed := rs
+	changed.Date = civil.Date{Year: 2026, Month: 11, Day: 3}
+	changed.Rule = schedule.Rule{Frequency: schedule.Weekly, DayOfWeek: ptr(2), EndDate: &civil.Date{Year: 2027, Month: 3, Day: 30}}
+	if err := r.UpdateRule(ctx, changed); err != nil {
+		t.Fatal(err)
+	}
+	if err := r.RemoveUnreplacedExclusions(ctx, rs.ID, replacedDay); err != nil {
+		t.Fatal(err)
+	}
+	got, err := r.Get(ctx, rs.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.Date != changed.Date || !reflect.DeepEqual(got.Rule, changed.Rule) || got.Version != v0.Version+1 || *got.Title != "定例" {
+		t.Errorf("書き換えた繰り返しの予定 = %+v, want 最初の日付 %v、規則 %+v、番号 %d", got, changed.Date, changed.Rule, v0.Version+1)
+	}
+	if want := []civil.Date{before, replacedDay}; !reflect.DeepEqual(got.ExclusionDates, want) {
+		t.Errorf("ExclusionDates = %v, want %v", got.ExclusionDates, want)
+	}
+}
+
 func TestScheduleCancel(t *testing.T) {
 	ctx := txContext(t)
 	r := NewScheduleRepository(testDB)

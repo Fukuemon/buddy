@@ -763,6 +763,34 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/schedules/recurring/{recurring_schedule_id}/rule": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * 繰り返しの予定の規則を、適用の日以降の回について変える
+         * @description 規則を、effective_date 以降の回にだけ当てる（ADR-0037）。今日より前の回は変えない。
+         *     元の繰り返しの予定に effective_date より前の回があれば、元の繰り返しの予定の終了日を effective_date の前の日にし、
+         *     effective_date 以降で新しい規則が当たる最初の日を最初の日付にした、新しい繰り返しの予定を作る。時刻、職員、訪問の情報は元の繰り返しの予定から写す。
+         *     effective_date より前の回が無ければ、分けずに規則と最初の日付を書き換える。終了日だけを変えるときも、分けずに終了日を書き換える。
+         *     適用の日以降（終了日だけの変更では新しい終了日の後）の置き換えた回は、単発の予定として残し、取り消した回は新しい規則に引き継がない。
+         *     google_primary の事業所では、recurring_schedule_id は changeOccurrence と同じ繰り返しの予定の id で、
+         *     変えた例外の回を同じカレンダーの単発の予定に作り直してから、親の予定の RRULE を書く。
+         *     google_primary の事業所では、effective_date より前の回が無いときも、新しい親の予定を id で作って元の親の予定を消すので、id が変わる。
+         *     応答は、effective_date 以降の回を持つ繰り返しの予定である。分けたときは新しい繰り返しの予定で、id が変わる。
+         */
+        put: operations["changeRecurringRule"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/schedules/recurring/{recurring_schedule_id}/occurrences": {
         parameters: {
             query?: never;
@@ -3663,6 +3691,69 @@ export interface operations {
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
             500: components["responses"]["InternalError"];
+        };
+    };
+    changeRecurringRule: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                recurring_schedule_id: components["parameters"]["RecurringScheduleID"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    recurring_rule: components["schemas"]["RecurringRule"];
+                    /**
+                     * Format: date
+                     * @description 適用の日。今日（Asia/Tokyo）以降に限る。規則の終了日のほかの項目を変えるときは必須で、終了日だけを変えるときは読まない
+                     */
+                    effective_date?: string;
+                    /**
+                     * @description 繰り返しの予定を分けるときの、新しい繰り返しの予定の ID（ULID）。google_primary の事業所で規則を変えるときは必須で、
+                     *     Google の予定の ID をこの ID から決める。buddy_primary の事業所では読まない。
+                     */
+                    id?: components["schemas"]["ID"];
+                    /** @description 画面が読んだ親の予定の etag。google_primary の事業所では必須で、buddy_primary の事業所では読まない */
+                    etag?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description effective_date 以降の回を持つ繰り返しの予定 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecurringSchedule"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            /** @description 事業所が予定を書けない。google_primary の事業所では、updateSchedule の 409 と同じ code も返す。 */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            500: components["responses"]["InternalError"];
+            /** @description google_primary の事業所で、Google カレンダーに書けない。code は createSchedule の 503 と同じである */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
         };
     };
     changeOccurrence: {

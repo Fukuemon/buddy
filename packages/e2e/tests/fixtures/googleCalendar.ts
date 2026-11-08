@@ -9,6 +9,7 @@ export type GoogleEvent = {
   status?: string
   start?: { dateTime?: string; timeZone?: string }
   end?: { dateTime?: string; timeZone?: string }
+  /** 繰り返しの予定の RRULE と EXDATE の行。単発の予定は持たない。 */
   recurrence?: string[]
   extendedProperties?: { private?: Record<string, string> }
 }

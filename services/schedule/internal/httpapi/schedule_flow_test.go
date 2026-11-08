@@ -103,6 +103,7 @@ func flowRouterOn(mode organization.SourceMode, accounts calendar.Accounts) (htt
 		Create:           schedule.NewCreate(facilities, schedules, types, refs, facilities, visits, nil, nil, tx, ids).Do,
 		CreateRecurring:  schedule.NewCreateRecurring(facilities, types, refs, facilities, visits, nil, recurring, nil, tx, ids).Do,
 		ChangeOccurrence: schedule.NewChangeOccurrence(recurring, refs, facilities, schedules, types, visits, nil, nil, tx, ids).Do,
+		ChangeRule:       schedule.NewChangeRule(recurring, refs, facilities, types, visits, nil, nil, tx, ids).Do,
 		Cancel:           schedule.NewCancel(schedules, refs, facilities, nil, tx, ids).Do,
 		CancelOccurrence: schedule.NewCancelOccurrence(recurring, refs, facilities, schedules, types, visits, nil, tx, ids).Do,
 		Update:           schedule.NewUpdate(schedules, refs, facilities, types, visits, nil, nil, tx).Do,
@@ -120,6 +121,8 @@ func flowRouterOn(mode organization.SourceMode, accounts calendar.Accounts) (htt
 		CreateRecurring: calendarwrite.NewCreateRecurring(facilities, projections, types, refs, inmem.Staff{Store: s},
 			visits, inmem.VisitInfos{Store: s}, calendars, records, projections, accounts, nil, tx).Do,
 		ChangeOccurrence: calendarwrite.NewChangeOccurrence(facilities, projections, types, refs, inmem.Staff{Store: s},
+			visits, inmem.VisitInfos{Store: s}, calendars, records, projections, accounts, ids, slog.New(slog.DiscardHandler), nil, tx).Do,
+		ChangeRule: calendarwrite.NewChangeRule(facilities, projections, types, refs, inmem.Staff{Store: s},
 			visits, inmem.VisitInfos{Store: s}, calendars, records, projections, accounts, ids, slog.New(slog.DiscardHandler), nil, tx).Do,
 	}
 	org := httpapi.OrganizationApp{GetFacility: organization.NewGetFacility(facilities).Do}
