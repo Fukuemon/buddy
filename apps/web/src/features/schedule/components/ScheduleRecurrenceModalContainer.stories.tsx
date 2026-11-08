@@ -80,7 +80,7 @@ export const Weekly: Story = {
   }),
 }
 
-/** 繰り返しの選択で「カスタム…」を選んだ。同じモーダルの中に、繰り返す（毎週）と曜日の欄を開く。 */
+/** 繰り返しの選択で「カスタム…」を選んだ。同じモーダルの中に、頻度（毎週）と曜日の欄を開く。 */
 export const CustomWeekly: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement.ownerDocument.body)

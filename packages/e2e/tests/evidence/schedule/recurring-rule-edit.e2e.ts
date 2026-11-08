@@ -168,7 +168,7 @@ test.describe('予定の編集', () => {
             await step('繰り返しで「カスタム…」を選ぶ')
             await page.getByTestId('recurring-rule-preset').selectOption('custom')
             await expect(page.getByTestId('recurring-rule-day-of-week-1')).toBeChecked()
-            await check('同じモーダルの中に、繰り返す（毎週）と曜日の欄が開き、月曜を選んでいる')
+            await check('同じモーダルの中に、頻度（毎週）と曜日の欄が開き、月曜を選んでいる')
 
             await step('曜日の「火」を押し、「月」を外して「保存」を押す')
             await page.getByTestId('recurring-rule-day-of-week-2').check()
@@ -297,7 +297,7 @@ test.describe('予定の編集', () => {
             await openRecurrenceChange(page, HAYASHI.id, title)
 
             await step(
-              `繰り返しで「カスタム…」、繰り返すで「毎月」を選び、「曜日」を押して第 ${week}、月曜日にして「保存」を押す`,
+              `繰り返しで「カスタム…」、頻度で「毎月」を選び、「曜日」を押して第 ${week}、月曜日にして「保存」を押す`,
             )
             await page.getByTestId('recurring-rule-preset').selectOption('custom')
             await page.getByTestId('recurring-rule-frequency').selectOption('monthly')

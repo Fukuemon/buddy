@@ -159,8 +159,8 @@ export type RecurringRuleFieldsProps<T extends RecurringRuleFormShape> = {
  * 繰り返しの欄。繰り返しを、baseDate から作った 3 つの選択肢か「カスタム…」から選び、終了日を「なし」か「あり」から選び、「あり」の右の日付の欄で終了日を入れる。
  * 開いた規則が複数の曜日の毎週のときは、先頭に今の規則の選択肢（「隔週 月曜日、木曜日」の形）を足す。
  * 選択肢の文言は、予定の詳細の繰り返しと同じ repetitionLabel で作る。
- * 毎週の選択肢と「繰り返す」の毎週は、間隔の値を「隔週」「3 週ごと」の形で出し、曜日を変えてもその間隔で送る（ADR-0038）。
- * 「カスタム…」を選ぶと、同じ欄の中に、繰り返す（毎週、毎月）と、毎週では間隔（1〜52 の週の数）と曜日（1 つ以上）の欄を、毎月では日の欄を開く。
+ * 毎週の選択肢と「頻度」の毎週は、間隔の値を「隔週」「3 週ごと」の形で出し、曜日を変えてもその間隔で送る（ADR-0038）。
+ * 「カスタム…」を選ぶと、同じ欄の中に、頻度（毎週、毎月）と、毎週では間隔（1〜52 の週の数）と曜日（1 つ以上）の欄を、毎月では日の欄を開く。
  * 値がどの選択肢とも違うときも、開いた形で始める。
  * 予定の編集の「繰り返しを変更」と、予定の作成の繰り返しで使う。値の検証は、使う側の resolver が行う。
  * 選択肢や頻度を替えても、使わない欄の値は残す。testid は `recurring-rule-` で始める。
@@ -245,7 +245,7 @@ export const RecurringRuleFields = <T extends RecurringRuleFormShape>({
       </Row>
       {preset === 'custom' && (
         <>
-          <Row htmlFor={`${id}-frequency`} label="繰り返す">
+          <Row htmlFor={`${id}-frequency`} label="頻度">
             <Controller
               control={control}
               name="recurrence.frequency"

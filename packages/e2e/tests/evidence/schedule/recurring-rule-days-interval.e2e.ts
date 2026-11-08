@@ -154,7 +154,7 @@ test.describe('繰り返しの変更', () => {
               await expect(page.getByTestId('recurring-rule-day-of-week-4')).toBeChecked()
               await expect(page.getByTestId('recurring-rule-interval')).toHaveValue('2')
             }
-            await check('繰り返す、間隔、曜日の欄と、選んでいる曜日')
+            await check('頻度、間隔、曜日の欄と、選んでいる曜日')
             await step('曜日の「金」を押す')
             await page.getByTestId('recurring-rule-day-of-week-5').click()
             await expect(page.getByTestId('recurring-rule-day-of-week-5')).toBeChecked()
@@ -232,7 +232,7 @@ test.describe('繰り返しの変更', () => {
             await step('「繰り返しを変更」の「カスタム…」で、間隔に 2 を入れる')
             await fillInterval(page, '2')
             await expect(page.getByTestId('recurring-rule-frequency')).toContainText('隔週')
-            await check('間隔が 2 になり、繰り返すが「隔週」になる')
+            await check('間隔が 2 になり、頻度が「隔週」になる')
             await step('「保存」を押す')
             await page.getByTestId('schedule-recurrence-submit').click()
             await expect(page.getByTestId('schedule-recurrence-modal')).toBeHidden()
