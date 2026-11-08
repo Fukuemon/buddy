@@ -1,7 +1,7 @@
 import { expect, test, type APIRequestContext, type Page } from '@playwright/test'
 
 import { issueAccessToken } from '../../fixtures/apiReference'
-import { CALENDARPIT_URL, LOGIN_EMAIL, LOGIN_STAFF, OKADA } from '../../fixtures/env'
+import { CALENDARPIT_URL, HAYASHI, LOGIN_EMAIL, LOGIN_STAFF, OKADA } from '../../fixtures/env'
 import { EVIDENCE_VARIANTS, recordPrEvidence } from '../../fixtures/evidence'
 import { deleteGoogleEvent, listGoogleEvents } from '../../fixtures/googleCalendar'
 import { createWeeklyNormalSchedule, newScheduleId } from '../../fixtures/schedule'
@@ -207,19 +207,19 @@ test.describe('繰り返しの変更', () => {
             actor: ACTOR,
             variant,
           },
-          prepareMonday(title, start, 1, LOGIN_EMAIL, LOGIN_STAFF, STAFF_FORM.facilityId),
+          prepareMonday(title, start, 1, LOGIN_EMAIL, HAYASHI, STAFF_FORM.facilityId),
           async ({ page, step, check }) => {
-            await openDay(page, LOGIN_STAFF.id, opened)
+            await openDay(page, HAYASHI.id, opened)
             await step(
-              `${start} から毎週月曜 10:00〜11:00 の「${title}」を作ってある。${opened}（月曜）の回を開く`,
+              `${start} から毎週月曜 10:00〜11:00 の ${HAYASHI.name} の「${title}」を作ってある。${opened}（月曜）の回を開く`,
             )
-            await changeToMondayThursday(page, step, LOGIN_STAFF.id, title, '2')
+            await changeToMondayThursday(page, step, HAYASHI.id, title, '2')
 
-            await checkDay(page, check, LOGIN_STAFF.id, opened, title, true, '月曜')
-            await checkDay(page, check, LOGIN_STAFF.id, fromNextMonday(10), title, true, '木曜')
-            await checkDay(page, check, LOGIN_STAFF.id, fromNextMonday(14), title, false, '月曜')
-            await checkDay(page, check, LOGIN_STAFF.id, fromNextMonday(17), title, false, '木曜')
-            await checkDay(page, check, LOGIN_STAFF.id, fromNextMonday(21), title, true, '月曜')
+            await checkDay(page, check, HAYASHI.id, opened, title, true, '月曜')
+            await checkDay(page, check, HAYASHI.id, fromNextMonday(10), title, true, '木曜')
+            await checkDay(page, check, HAYASHI.id, fromNextMonday(14), title, false, '月曜')
+            await checkDay(page, check, HAYASHI.id, fromNextMonday(17), title, false, '木曜')
+            await checkDay(page, check, HAYASHI.id, fromNextMonday(21), title, true, '月曜')
           },
         )
       })
