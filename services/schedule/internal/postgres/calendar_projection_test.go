@@ -466,6 +466,9 @@ func TestCalendarProjectionRepositoryListByFacility(t *testing.T) {
 // TestProjectedScheduleIDMatchesGo は、DB の関数 projected_schedule_id と detached_schedule_id が、scheduleview.ProjectedScheduleID と
 // scheduleview.DetachedScheduleID と同じ値を返すことを確認する。
 func TestProjectedScheduleIDMatchesGo(t *testing.T) {
+	if testDB == nil {
+		t.Skip("PostgreSQL を使うテストは -short では動かさない")
+	}
 	ctx := context.Background()
 	for _, in := range [][2]string{
 		{seedOkadaCalendar, "single"},
@@ -489,6 +492,9 @@ func TestProjectedScheduleIDMatchesGo(t *testing.T) {
 // TestOccurrenceScheduleIDMatchesGo は、DB の関数 occurrence_schedule_id が、元の開始の時刻（Asia/Tokyo の日付）と終日の元の日付のどちらでも、
 // scheduleview.OccurrenceScheduleID と同じ値を返し、元の開始が無ければ NULL を返すことを確認する。
 func TestOccurrenceScheduleIDMatchesGo(t *testing.T) {
+	if testDB == nil {
+		t.Skip("PostgreSQL を使うテストは -short では動かさない")
+	}
 	ctx := context.Background()
 	day := civil.Date{Year: 2026, Month: 10, Day: 29}
 	at := time.Date(2026, 10, 29, 0, 30, 0, 0, calendar.Tokyo)
