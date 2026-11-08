@@ -369,14 +369,14 @@ test.describe('繰り返しの変更', () => {
                 )
                 .toEqual(expected)
               await step(
-                `Google カレンダーの代わりの calendarpit の管理の画面で、${OKADA.calendarId} の ${fromNextMonday(10)} を開く`,
+                `Google カレンダーの代わりの calendarpit の管理の画面で、${OKADA.calendarId} の ${effective}（新しい規則の最初の回）を開く`,
               )
               await page.goto(
-                `${CALENDARPIT_URL}/?calendar=${encodeURIComponent(OKADA.calendarId)}&date=${fromNextMonday(10)}`,
+                `${CALENDARPIT_URL}/?calendar=${encodeURIComponent(OKADA.calendarId)}&date=${effective}`,
               )
               await expect(calendarpitEvent(page, title)).toBeVisible()
               await check(
-                `calendarpit の ${fromNextMonday(10)}（木曜）に「${title}」が出る。${effective} から 4 週の回は ${expected.join('、')} で、buddy と同じ`,
+                `calendarpit の ${effective}（月曜）に「${title}」が出る。calendarpit の Calendar API が返す ${effective} から 4 週の回は ${expected.join('、')} で、buddy と同じ`,
               )
             } finally {
               for (const event of await listGoogleEvents(request, OKADA.calendarId)) {
