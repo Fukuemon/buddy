@@ -76,7 +76,7 @@ export const CalendarImportReviewItem = ({
         <span className="text-label">{reasonLabel(item)}</span>
         {isUnsupported && (
           <span className="text-caption text-text-secondary">
-            隔週や複数の曜日のような規則は、buddy の繰り返しにできません。Google
+            毎月の最終の曜日や 2 日ごとのような規則は、buddy の繰り返しにできません。Google
             カレンダーで規則を直してから取り込み直すか、取り込まないを選んでください
           </span>
         )}
