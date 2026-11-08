@@ -59,6 +59,10 @@ func toSchedule(d scheduleview.Detail) openapi.Schedule {
 		c := toCancel(*d.Cancel)
 		r.Cancel = &c
 	}
+	if d.Rule != nil {
+		rule := toRecurringRule(*d.Rule)
+		r.RecurringRule = &rule
+	}
 	if d.Source == scheduleview.SourceGoogleCalendar {
 		r.Source = openapi.GoogleCalendar
 	}

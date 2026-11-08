@@ -827,6 +827,8 @@ buddy で作った予定を作った後に一覧から開いて変えられ、�
   - 変えていない回を移した後に元の回を消せなかったときは、展開した回の `OccurrenceScheduleID` を主キーに持つ記録が、移した予定を指す。この展開した回にも、`DetachedOccurrenceScheduleID` を ID にする。記録で決めるので、読む日付の範囲に移した予定が入らなくても、ID は変わらない。
   - `DetachedScheduleID` と同じく、Google の予定の ID に使われない文字（0x01）と固定の語を親の予定の ID に足して作る。DB の関数 `detached_occurrence_schedule_id` が同じ値を返し、式の索引で引く。
 - 展開した回の `etag` は、親の予定の `etag` にする。Projection は回ごとの行を持たないためである。
+- 展開した回の `recurring_schedule_id` は親の予定の一覧での ID にし、`recurring_rule` には親の規則を入れる。画面が回から規則の変更（`changeRecurringRule`）を送るためである。`getRecurringSchedule` は `google_primary` の事業所で 404 を返す。
+  - 変えた例外の回と、別の職員へ移した後に残った回（`DetachedOccurrenceScheduleID` の回）には付けない。画面は、この 2 つから規則を変えない。
 
 1 件の読み出し（`scheduleview.GetProjected`）は、ID が記録の主キーなら記録が指す行を引く。  
 記録の主キーでなければ、記録の無い行を、一覧と同じ規則で決めた ID で引く。  
