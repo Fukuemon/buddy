@@ -7,6 +7,8 @@ import type {
   Staff,
 } from '#/api/types'
 
+import { formatDateKey } from '#/components/dateFormat'
+
 import type { ScheduleFormValues } from '../schema/scheduleForm'
 import {
   addDaysToDateKey,
@@ -128,6 +130,12 @@ export const visitEndOfInput = (startTime?: string, serviceTime?: number) =>
   isTimeKey(startTime) && Number.isFinite(serviceTime)
     ? endOfDuration(startTime, serviceTime as number)
     : undefined
+
+/** 要約の日付。`YYYY-MM-DD` なら `2026年11月9日（月）` の形にし、入力の途中の値はそのまま返す。 */
+export const formatScheduleDate = (scheduleDate?: string) =>
+  scheduleDate !== undefined && /^\d{4}-\d{2}-\d{2}$/.test(scheduleDate)
+    ? formatDateKey(scheduleDate)
+    : (scheduleDate ?? '')
 
 /** 終了の時刻を、翌日なら「翌 00:30」、当日なら「00:30」の形にする。 */
 export const formatEndTime = ({ endTime, endsNextDay }: ScheduleEnd) =>

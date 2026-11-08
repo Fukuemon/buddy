@@ -24,7 +24,7 @@ describe('CalendarReviewContainer', () => {
     render(<Default />)
     const row = await screen.findByTestId('calendar-review-row-schedule-schedule-1')
     expect(within(row).getByTestId('calendar-review-datetime-export-1')).toHaveTextContent(
-      '2026/11/04（水）09:00〜09:29',
+      '2026年11月4日（水） 09:00〜09:29',
     )
     expect(row).toHaveTextContent('青木 一郎')
     expect(within(row).getByTestId('calendar-review-reason-export-1')).toHaveTextContent(
@@ -34,7 +34,7 @@ describe('CalendarReviewContainer', () => {
     expect(screen.getByTestId('calendar-review-table')).not.toHaveTextContent('加藤 春子')
     const recurring = screen.getByTestId('calendar-review-row-recurring-recurring-1')
     expect(within(recurring).getByTestId('calendar-review-datetime-export-3')).toHaveTextContent(
-      '2026/11/03（火）から毎回 10:00〜11:00',
+      '2026年11月3日（火）から毎回 10:00〜11:00',
     )
   })
 
@@ -42,7 +42,7 @@ describe('CalendarReviewContainer', () => {
     render(<Default />)
     const dialog = await openRow('calendar-review-row-schedule-schedule-1')
     expect(within(dialog).getByTestId('calendar-review-dialog-datetime')).toHaveTextContent(
-      '2026/11/04（水）09:00〜09:29',
+      '2026年11月4日（水） 09:00〜09:29',
     )
     expect(within(dialog).getByTestId('calendar-review-open-export-1')).toBeInTheDocument()
     expect(within(dialog).getByTestId('calendar-review-rewrite-export-1')).toBeInTheDocument()
@@ -85,7 +85,7 @@ describe('CalendarReviewContainer', () => {
     await userEvent.click(within(detail).getByTestId('calendar-review-rewrite-export-1'))
     const dialog = screen.getByTestId('calendar-rewrite-dialog')
     expect(within(dialog).getByTestId('calendar-rewrite-target')).toHaveTextContent(
-      '2026/11/04（水）09:00〜09:29、青木 一郎',
+      '2026年11月4日（水） 09:00〜09:29、青木 一郎',
     )
     await userEvent.click(within(dialog).getByTestId('calendar-rewrite-submit'))
 

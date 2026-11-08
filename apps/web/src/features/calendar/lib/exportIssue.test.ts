@@ -124,7 +124,7 @@ describe('formatExportIssueDateTime', () => {
         start_time: '10:00',
         end_time: '11:00',
       }),
-    ).toBe('2026/11/04（水）10:00〜11:00')
+    ).toBe('2026年11月4日（水） 10:00〜11:00')
   })
   it('終了が翌日の予定は、終了の時刻に「翌」を付ける', () => {
     expect(
@@ -135,6 +135,6 @@ describe('formatExportIssueDateTime', () => {
         end_time: '01:00',
         ends_next_day: true,
       }),
-    ).toBe('2026/11/04（水）22:00〜翌 01:00')
+    ).toBe('2026年11月4日（水） 22:00〜翌 01:00')
   })
 })

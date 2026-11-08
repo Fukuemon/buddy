@@ -6,9 +6,10 @@ import { useForm } from 'react-hook-form'
 
 import type { Patient, RecurringRule, Schedule, Staff } from '#/api/types'
 import { useBuddyApi } from '#/api/useBuddyApi'
+import { formatDateKey } from '#/components/dateFormat'
 import { Button, Loading, Modal } from '@buddy/ui'
 
-import { WEEKDAYS, nextDayPrefix, toTimeKey, toTokyoDateKey } from '../lib/dateTime'
+import { formatScheduleTimeRange, toTokyoDateKey } from '../lib/dateTime'
 import {
   SCHEDULE_CUTOVER_OPEN_MESSAGE,
   SCHEDULE_EDIT_FORBIDDEN_MESSAGE,
@@ -44,11 +45,8 @@ const sameRule = (a: RecurringRule, b: RecurringRule) =>
   a.weekOfMonth === b.weekOfMonth &&
   a.endDate === b.endDate
 
-/** YYYY-MM-DD を `11月16日（月）` の形にする。 */
-const formatMonthDay = (date: string) => {
-  const day = new Date(Date.parse(`${date}T00:00:00Z`))
-  return `${day.getUTCMonth() + 1}月${day.getUTCDate()}日（${WEEKDAYS[day.getUTCDay()]}）`
-}
+/** YYYY-MM-DD を `11月16日（月）` の形にする。モーダルが変える回の年は、予定の詳細で分かるので省く。 */
+const formatMonthDay = (date: string) => formatDateKey(date, { withYear: false })
 
 type RecurrenceFormProps = {
   schedule: Schedule & { recurrence: NonNullable<Schedule['recurrence']> }
@@ -127,7 +125,7 @@ const RecurrenceForm = ({ schedule, staffList, patients, calendarSearch }: Recur
   const staff = staffList.find((s) => s.id === schedule.staffId)
   const patient = patients.find((p) => p.id === schedule.visit?.patientId)
   const summary: [string, string][] = [
-    ['時刻', `${toTimeKey(start)}〜${nextDayPrefix(start, end)}${toTimeKey(end)}`],
+    ['時刻', formatScheduleTimeRange(start, end)],
     ...(schedule.kind === 'visit'
       ? ([['利用者', patient?.name ?? '利用者不明']] as [string, string][])
       : ([['タイトル', schedule.title]] as [string, string][])),

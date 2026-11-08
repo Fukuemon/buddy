@@ -69,13 +69,13 @@ const statusOf = (staff: StaffRecord, status: StaffListFilter['status']) => {
       <span data-testid={`staff-list-leave-return-${staff.id}`}>
         {staff.leave_return_date === null
           ? '戻る予定の日なし'
-          : `${formatDate(staff.leave_return_date)} に戻る予定`}
+          : `${formatDate(staff.leave_return_date)}に戻る予定`}
       </span>
     )
   if (status === 'retired')
     return (
       <span data-testid={`staff-list-retired-on-${staff.id}`}>
-        {staff.retired_at === null ? '退職' : `${formatDateTimeAsDate(staff.retired_at)} に退職`}
+        {staff.retired_at === null ? '退職' : `${formatDateTimeAsDate(staff.retired_at)}に退職`}
       </span>
     )
   if (status === 'all')

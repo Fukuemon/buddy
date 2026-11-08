@@ -20,7 +20,7 @@ describe('CalendarCutoverContainer', () => {
     expect(screen.getByTestId('calendar-cutover-calendar-staff-2')).toHaveTextContent('石川 二葉')
     await userEvent.click(screen.getByTestId('calendar-cutover-start'))
     expect(await screen.findByTestId('calendar-cutover-open')).toHaveTextContent(
-      '取り込みの期間: 2026/11/01〜',
+      '取り込みの期間: 2026年11月1日（日）〜',
     )
     expect(screen.getByTestId('calendar-cutover-import-staff-1')).toHaveTextContent(
       'まだ取り込んでいない',

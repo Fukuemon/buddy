@@ -35,11 +35,11 @@ describe('StaffListContainer', () => {
     const status = await screen.findByTestId('staff-list-filter-status')
     await userEvent.selectOptions(status, '状態: 休職')
     expect(screen.getByTestId('staff-list-leave-return-staff-2')).toHaveTextContent(
-      '2027/04/01 に戻る予定',
+      '2027年4月1日（木）に戻る予定',
     )
     await userEvent.selectOptions(status, '状態: 退職')
     expect(screen.getByTestId('staff-list-retired-on-staff-4')).toHaveTextContent(
-      '2026/09/30 に退職',
+      '2026年9月30日（水）に退職',
     )
     expect(rowIds()).toEqual(['staff-list-row-staff-4'])
   })
@@ -52,7 +52,7 @@ describe('StaffListContainer', () => {
     )
     expect(screen.getByTestId('staff-list-count')).toHaveTextContent('4 人')
     expect(screen.getByTestId('staff-list-status-staff-2')).toHaveTextContent(
-      '休職（2027/04/01 に戻る予定）',
+      '休職（2027年4月1日（木）に戻る予定）',
     )
     expect(screen.queryByTestId('staff-list-status-staff-1')).toBeNull()
   })

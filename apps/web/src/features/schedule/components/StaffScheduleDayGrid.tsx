@@ -3,7 +3,7 @@ import { useEffect, useRef, type CSSProperties } from 'react'
 
 import type { Staff } from '#/api/types'
 
-import { addMinutesToTimeKey, nextDayPrefix, toDateKey, toTimeKey } from '../lib/dateTime'
+import { addMinutesToTimeKey, formatScheduleTimeRange, toDateKey } from '../lib/dateTime'
 import type { ScheduleCalendarEvent } from '../lib/toCalendarEvents'
 import { CancelledMark } from './CancelledMark'
 import { NeedsReviewMark } from './NeedsReviewMark'
@@ -174,8 +174,7 @@ export const StaffScheduleDayGrid = ({
                               <NeedsReviewMark scheduleId={event.id} />
                             </span>
                           )}
-                          {toTimeKey(start)}-{nextDayPrefix(start, end)}
-                          {toTimeKey(end)}
+                          {formatScheduleTimeRange(start, end)}
                         </span>{' '}
                         <span className="font-bold">{event.title}</span>
                       </span>

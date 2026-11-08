@@ -40,13 +40,13 @@ describe('PatientListContainer', () => {
     expect(rowIds()).toEqual(['patient-list-row-patient-ended'])
     expect(screen.getByRole('columnheader', { name: '利用の終了にした日' })).toBeInTheDocument()
     expect(screen.getByTestId('patient-list-ended-on-patient-ended')).toHaveTextContent(
-      '2026/10/01 に利用の終了',
+      '2026年10月1日（木）に利用の終了',
     )
 
     await userEvent.selectOptions(status, '状態: すべて')
     expect(screen.getByTestId('patient-list-count')).toHaveTextContent('5 人')
     expect(screen.getByTestId('patient-list-status-patient-ended')).toHaveTextContent(
-      '利用の終了（2026/10/01）',
+      '利用の終了（2026年10月1日（木））',
     )
     expect(screen.queryByTestId('patient-list-status-patient-1')).toBeNull()
   })

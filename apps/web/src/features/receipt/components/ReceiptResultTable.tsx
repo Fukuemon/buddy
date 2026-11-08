@@ -3,6 +3,7 @@ import { clsx } from 'clsx'
 import { useLayoutEffect, useRef } from 'react'
 
 import type { ReceiptRow } from '#/api/types'
+import { formatDateKey } from '#/components/dateFormat'
 
 import {
   cellMarks,
@@ -82,7 +83,7 @@ const MarkedValueCell = ({ row, cell }: { row: ReceiptRow; cell: MarkedCell }) =
 /** 結果の 1 行。訪問日、利用者名、主訪問者、確認すること、予定と実績の値の順に並べる。 */
 const ResultRow = ({ row }: { row: ReceiptRow }) => (
   <Table.Row>
-    <Table.Cell>{row.date}</Table.Cell>
+    <Table.Cell>{formatDateKey(row.date)}</Table.Cell>
     <Table.Cell>{row.client}</Table.Cell>
     <Table.Cell>{row.staff}</Table.Cell>
     <FindingsCell row={row} />
