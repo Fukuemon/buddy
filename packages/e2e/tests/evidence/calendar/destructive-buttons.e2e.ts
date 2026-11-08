@@ -7,9 +7,19 @@ const REVIEW_URL = storyUrl('画面-calendar-calendarreviewdialog--default')
 const REWRITE_URL = storyUrl('画面-calendar-calendarrewritedialog--default')
 const CUTOVER_URL = storyUrl('画面-calendar-calendarcutovercontainer--open')
 
-const open = (url: string, testId: string) => async (page: Page) => {
-  await page.goto(url)
-  await expect(page.getByTestId(testId)).toBeVisible()
+const openReview = async (page: Page) => {
+  await page.goto(REVIEW_URL)
+  await expect(page.getByTestId('calendar-review-dialog')).toBeVisible()
+}
+
+const openRewrite = async (page: Page) => {
+  await page.goto(REWRITE_URL)
+  await expect(page.getByTestId('calendar-rewrite-dialog')).toBeVisible()
+}
+
+const openCutover = async (page: Page) => {
+  await page.goto(CUTOVER_URL)
+  await expect(page.getByTestId('calendar-cutover-open')).toBeVisible()
 }
 
 /** 2 つのボタンの、左のボタンの右端から右のボタンの左端までの距離。 */
@@ -37,9 +47,9 @@ test.describe('予定の正本と確認が必要な予定', () => {
             actor: ACTOR,
             variant,
           },
-          open(REVIEW_URL, 'calendar-review-dialog'),
+          openReview,
           async ({ page, step, check }) => {
-            await open(REVIEW_URL, 'calendar-review-dialog')(page)
+            await openReview(page)
             await step(
               '確認が必要な予定のダイアログ（Storybook の CalendarReviewDialog の Default）を開いている',
             )
@@ -75,9 +85,9 @@ test.describe('予定の正本と確認が必要な予定', () => {
             actor: ACTOR,
             variant,
           },
-          open(REWRITE_URL, 'calendar-rewrite-dialog'),
+          openRewrite,
           async ({ page, step, check }) => {
-            await open(REWRITE_URL, 'calendar-rewrite-dialog')(page)
+            await openRewrite(page)
             await step(
               '書き直しの確認のダイアログ（Storybook の CalendarRewriteDialog の Default）を開いている',
             )
@@ -107,9 +117,9 @@ test.describe('予定の正本と確認が必要な予定', () => {
             actor: ACTOR,
             variant,
           },
-          open(CUTOVER_URL, 'calendar-cutover-open'),
+          openCutover,
           async ({ page, step, check }) => {
-            await open(CUTOVER_URL, 'calendar-cutover-open')(page)
+            await openCutover(page)
             await step(
               '切り替え中の画面（Storybook の CalendarCutoverContainer の Open）を開いている',
             )
@@ -126,9 +136,7 @@ test.describe('予定の正本と確認が必要な予定', () => {
             } else {
               await expect(cancel).toHaveClass(/text-danger/)
               await expect.poll(() => gapBetween(complete, cancel)).toBeGreaterThan(100)
-              await check(
-                '「切り替えをやめる」が赤い文字で、「完了する」から離れた行の右端にある',
-              )
+              await check('「切り替えをやめる」が赤い文字で、「完了する」から離れた行の右端にある')
             }
           },
         )
@@ -145,9 +153,9 @@ test.describe('予定の正本と確認が必要な予定', () => {
             actor: ACTOR,
             variant,
           },
-          open(CUTOVER_URL, 'calendar-cutover-open'),
+          openCutover,
           async ({ page, step, check }) => {
-            await open(CUTOVER_URL, 'calendar-cutover-open')(page)
+            await openCutover(page)
             await step('切り替え中の画面を開いている')
             await step('「切り替えをやめる」を押す')
             await page.getByTestId('calendar-cutover-cancel').click()
@@ -155,9 +163,9 @@ test.describe('予定の正本と確認が必要な予定', () => {
             await expect(dialog.getByTestId('calendar-cutover-cancel-confirm-submit')).toHaveText(
               'やめる',
             )
-            await expect(
-              dialog.getByTestId('calendar-cutover-cancel-confirm-submit'),
-            ).toHaveClass(/bg-danger/)
+            await expect(dialog.getByTestId('calendar-cutover-cancel-confirm-submit')).toHaveClass(
+              /bg-danger/,
+            )
             if (isBefore) {
               await expect(dialog.getByTestId('calendar-cutover-cancel-confirm-cancel')).toHaveText(
                 'キャンセル',

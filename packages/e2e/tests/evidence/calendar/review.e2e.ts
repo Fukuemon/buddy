@@ -286,7 +286,7 @@ test.describe('確認が必要な予定', () => {
           {
             name: 'calendar-review-cancelled-rewrite',
             title:
-              'buddy でキャンセルした単発の予定のダイアログで「buddy の内容で書き直す」を押すと、Google カレンダーの予定を消すことが分かるダイアログが出て、「キャンセル」で予定のダイアログに戻る',
+              'buddy でキャンセルした単発の予定のダイアログで「buddy の内容で書き直す」を押すと、Google カレンダーの予定を消すことが分かるダイアログが出て、「戻る」で予定のダイアログに戻る',
             actor: 'ログインなし（Storybook の story）',
             variant,
           },
@@ -317,7 +317,7 @@ test.describe('確認が必要な予定', () => {
               '予定のダイアログに替わって書き直すダイアログが出て、「buddy でキャンセルした予定なので、Google カレンダーの予定を消します。…」の注意が出て、「消された予定は作り直します。」が出ない。「書き直す」は赤い',
             )
 
-            await step('書き直さずに「キャンセル」を押す')
+            await step('書き直さずに「戻る」を押す')
             await dialog(page).getByTestId('calendar-rewrite-cancel').click()
             await expect(dialog(page)).toBeHidden()
             await expect(
