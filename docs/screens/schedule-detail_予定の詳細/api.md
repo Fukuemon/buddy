@@ -29,6 +29,7 @@ OpenAPI の項目は、`getSchedule`（`GET /v1/schedules/{schedule_id}`）の�
 - 繰り返しの文言は、`apps/web/src/features/schedule/lib/recurringRuleLabel.ts` の `recurringRuleLabel` で決める。
   - 毎週の間隔の文言は、繰り返しの変更と同じ `weeklyIntervalLabel` で決める。
   - 規則が持たない曜日、日、週は、開いた回の日から決める。
+    - 回は規則に当たる日にだけあるので、最初の日付から決める予定の API と同じ値になる。
 - 予定を取るのは web の `BuddyApi.schedules.get` で、事業所の ID と予定の ID を受ける。
   - OpenAPI の `getSchedule` はパスに事業所を持たない。
   - web のサーバー（BFF、`apps/web/src/api/http/httpBuddyApi.ts`）は、レスポンスの `facility_id` がログインした職員の事業所と違えば、status が 403 の `ApiError` にする。

@@ -35,6 +35,16 @@ describe('recurringRuleLabel', () => {
     expect(recurringRuleLabel(weekly(null, 1), '2026-11-09')).toBe('毎週 月曜日')
   })
 
+  it('間隔を持たない毎週の規則は、「毎週」にする', () => {
+    expect(recurringRuleLabel({ ...weekly([2], 1), interval: null }, '2026-11-10')).toBe(
+      '毎週 火曜日',
+    )
+  })
+
+  it('日にちも週も持たない毎月の規則は、回の日の日にちにする', () => {
+    expect(recurringRuleLabel(monthly({}), '2026-11-09')).toBe('毎月 9 日')
+  })
+
   it('毎月の規則は、日にちか、第何週の曜日にする', () => {
     expect(recurringRuleLabel(monthly({ dayOfMonth: 9 }), '2026-11-09')).toBe('毎月 9 日')
     expect(recurringRuleLabel(monthly({ dayOfWeek: 1, weekOfMonth: 2 }), '2026-11-09')).toBe(
