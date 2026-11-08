@@ -12,6 +12,11 @@ export type DialogSubmitProps = {
   /** 確定のボタンの文字と、送っている間の文字。操作の動詞にする。 */
   submitLabel: string
   busyLabel: string
+  /**
+   * 閉じる側のボタンの文字。省くと「キャンセル」にする。
+   * 確定の文字に「キャンセル」が入る確認（「予定をキャンセルする」）では「戻る」を渡し、同じ語のボタンを並べない。
+   */
+  cancelLabel?: string
   /** データを失う操作の確定は danger にする。 */
   submitVariant?: ButtonVariant
   /** false の間は、確定のボタンを押せない。 */
@@ -27,13 +32,14 @@ export type DialogSubmitProps = {
   error?: { message: ReactNode; testId: string; isBlock?: boolean }
 }
 
-/** フッターの「キャンセル」と確定のボタン。 */
+/** フッターの閉じる側のボタン（デフォルトは「キャンセル」）と確定のボタン。 */
 export const SubmitButtons = ({
   testIdPrefix,
   submitTestId = `${testIdPrefix}-submit`,
   submitLabel,
   busyLabel,
   submitVariant = 'primary',
+  cancelLabel = 'キャンセル',
   canSubmit,
   submitHint,
   isSubmitting,
@@ -65,7 +71,7 @@ export const SubmitButtons = ({
         size="S"
         variant="secondary"
       >
-        キャンセル
+        {cancelLabel}
       </Button>
       <Button
         aria-describedby={showsHint ? hintId : undefined}
