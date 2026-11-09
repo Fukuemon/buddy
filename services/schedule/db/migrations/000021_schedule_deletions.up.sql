@@ -11,13 +11,14 @@ CREATE TABLE schedule_deletions (
     deleted_at            timestamptz      NOT NULL DEFAULT now(),
     CONSTRAINT schedule_deletions_pkey PRIMARY KEY (id),
     CONSTRAINT schedule_deletions_schedule_key UNIQUE (facility_id, schedule_id),
-    CONSTRAINT schedule_deletions_occurrence_key UNIQUE (recurring_schedule_id, date),
     CONSTRAINT schedule_deletions_target_check CHECK (num_nonnulls(schedule_id, recurring_schedule_id) = 1),
     CONSTRAINT schedule_deletions_facility_fkey FOREIGN KEY (facility_id) REFERENCES facilities (id),
     CONSTRAINT schedule_deletions_recurring_schedule_fkey FOREIGN KEY (facility_id, recurring_schedule_id) REFERENCES recurring_schedules (facility_id, id),
     CONSTRAINT schedule_deletions_staff_fkey FOREIGN KEY (facility_id, staff_id) REFERENCES users (facility_id, id),
     CONSTRAINT schedule_deletions_deleted_by_fkey FOREIGN KEY (facility_id, deleted_by) REFERENCES users (facility_id, id)
 );
+-- 同じ回の日は、規則を変えた後に新しい規則の回として出て、もう一度削除できる（ADR-0040 の 8）。一意にしない。
+CREATE INDEX schedule_deletions_recurring_schedule_idx ON schedule_deletions (facility_id, recurring_schedule_id, date) WHERE recurring_schedule_id IS NOT NULL;
 CREATE INDEX schedule_deletions_staff_idx ON schedule_deletions (facility_id, staff_id);
 CREATE INDEX schedule_deletions_deleted_by_idx ON schedule_deletions (facility_id, deleted_by);
 

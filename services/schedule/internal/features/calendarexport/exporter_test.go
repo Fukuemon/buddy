@@ -134,7 +134,7 @@ func newExportEnv(t *testing.T) exportEnv {
 	exporter := calendarexport.NewExporter(calendarexport.ExporterDeps{
 		Facilities: inmem.Facilities{Store: s},
 		Exports:    exports, Calendars: inmem.Calendars{Store: s}, Writers: writerOf(gcal.NewWriter(gcaltest.Start(t, srv)), writers),
-		Schedules: inmem.Schedules{Store: s}, Recurring: inmem.RecurringSchedules{Store: s},
+		Schedules: inmem.Schedules{Store: s}, Recurring: inmem.RecurringSchedules{Store: s}, Deletions: inmem.Schedules{Store: s},
 	}, ids, slog.New(slog.NewJSONHandler(logs, &slog.HandlerOptions{Level: slog.LevelDebug})))
 	return exportEnv{store: s, ctx: ctx, uc: uc, srv: srv, schedules: sched, exporter: exporter, writers: writers, logs: logs}
 }

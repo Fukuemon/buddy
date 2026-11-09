@@ -2,6 +2,7 @@ package calendarexport_test
 
 import (
 	"errors"
+	"net/http"
 	"testing"
 
 	calendarv3 "google.golang.org/api/calendar/v3"
@@ -52,15 +53,70 @@ func TestExportDelete(t *testing.T) {
 	}
 }
 
-// Google の予定の対応が無い予定を削除しても、書き出しの待ちを積まない。
+// 書き出しが Google の予定を作った後、予定の対応を書く前に削除しても、予定の ID から決めた Google の予定を消す。
+// 一度も書き出していない予定の削除は、Google に予定が無い（404）ので、消せたものとして終える。
 func TestExportDeleteWithoutLink(t *testing.T) {
 	e := newExportEnv(t)
+	written := e.create(t, "カンファレンス")
+	e.run(t)
+	l, err := inmem.Calendars{Store: e.store}.LinkBySchedule(t.Context(), written.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	delete(e.store.Links, l.ID)
+	never := e.create(t, "未書き出し")
+	delete(e.store.Exports, e.export(t, never.ID).ID)
+	for _, id := range []string{written.ID, never.ID} {
+		if err := e.schedules.Delete(e.ctx, id); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if n := e.run(t); n != 2 {
+		t.Errorf("書いた待ち = %d, want 削除の 2 件", n)
+	}
+	if ev := e.srv.Event(googleCalID, eventID(t, written.ID)); ev.Status != "cancelled" {
+		t.Errorf("対応の無い Google の予定の状態 = %s, want cancelled", ev.Status)
+	}
+	for _, id := range []string{written.ID, never.ID} {
+		if x := e.deletedExport(t, id); x.Status != calendar.ExportSucceeded {
+			t.Errorf("%s の待ちの状態 = %s, want succeeded", id, x.Status)
+		}
+	}
+}
+
+// Google で既に消されていた（410）予定の削除は、消せたものとして予定の対応を消す。
+func TestExportDeleteGoneInGoogle(t *testing.T) {
+	e := newExportEnv(t)
 	d := e.create(t, "カンファレンス")
+	e.run(t)
 	if err := e.schedules.Delete(e.ctx, d.ID); err != nil {
 		t.Fatal(err)
 	}
-	if len(e.store.Exports) != 0 {
-		t.Errorf("書き出しの待ち = %+v, want 積まない", e.store.Exports)
+	e.srv.Failures = []int{http.StatusGone}
+	e.run(t)
+	if x := e.deletedExport(t, d.ID); x.Status != calendar.ExportSucceeded {
+		t.Errorf("待ちの状態 = %s, want succeeded", x.Status)
+	}
+	if _, err := (inmem.Calendars{Store: e.store}).LinkByDeletedSchedule(t.Context(), d.ID); !errors.Is(err, apperr.ErrNotFound) {
+		t.Errorf("対応のエラー = %v, want ErrNotFound", err)
+	}
+}
+
+// 予定の職員がカレンダーを結び付けておらず、予定の対応のカレンダーも外したときは、削除の待ちを積まない。
+func TestExportDeleteSkipsDisabledCalendar(t *testing.T) {
+	e := newExportEnv(t)
+	d := e.create(t, "カンファレンス")
+	e.run(t)
+	if err := (inmem.Calendars{Store: e.store}).Disable(t.Context(), calID); err != nil {
+		t.Fatal(err)
+	}
+	if err := e.schedules.Delete(e.ctx, d.ID); err != nil {
+		t.Fatal(err)
+	}
+	for _, x := range e.store.Exports {
+		if x.DeletedScheduleID == d.ID {
+			t.Errorf("削除の待ち = %+v, want 積まない", x)
+		}
 	}
 }
 

@@ -81,8 +81,11 @@ func TestScheduleDeleteInDB(t *testing.T) {
 		t.Errorf("監査の記録 = %+v, want %+v", got, d)
 	}
 	if err := schedules.Delete(ctx, schedule.Deletion{ID: "01M3TD000000000000000000D2", FacilityID: seedFacility, ScheduleID: seedVisitSchedule,
-		Date: cur.Date, StaffID: cur.StaffID, DeletedBy: seedMori}); err == nil {
-		t.Error("削除した予定を 2 度削除できた")
+		Date: cur.Date, StaffID: cur.StaffID, DeletedBy: seedMori}); !errors.Is(err, apperr.ErrConflict) {
+		t.Errorf("削除した予定の 2 度目の削除: err = %v, want ErrConflict", err)
+	}
+	if staffID, err := schedules.StaffOfDeleted(ctx, seedVisitSchedule); err != nil || staffID != cur.StaffID {
+		t.Errorf("StaffOfDeleted = %q, %v, want %s", staffID, err, cur.StaffID)
 	}
 }
 
@@ -106,5 +109,13 @@ func TestRecurringDeleteOccurrenceInDB(t *testing.T) {
 	d.ID = "01M3TD000000000000000000D4"
 	if err := r.DeleteOccurrence(ctx, d); !errors.Is(err, apperr.ErrConflict) {
 		t.Errorf("2 度目の回の削除: err = %v, want ErrConflict", err)
+	}
+	// 規則を書き換えると削除した日の除外が消え、新しい規則の回として同じ日をもう一度削除できる（ADR-0040 の 8）
+	if err := r.RemoveUnreplacedExclusions(ctx, seedRecurring, day); err != nil {
+		t.Fatal(err)
+	}
+	d.ID = "01M3TD000000000000000000D5"
+	if err := r.DeleteOccurrence(ctx, d); err != nil {
+		t.Errorf("規則を変えた後の同じ日の回の削除: err = %v", err)
 	}
 }

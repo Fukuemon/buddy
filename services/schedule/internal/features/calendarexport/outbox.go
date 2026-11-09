@@ -35,25 +35,12 @@ func (o *Outbox) ScheduleChanged(ctx context.Context, facilityID, staffID, sched
 }
 
 // ScheduleDeleted は、削除した単発の予定 scheduleID の外部の予定を消す待ちを積む（ADR-0040）。
-// 消す外部の予定があるのは予定の対応があるときだけなので、対応が無いときと、対応のカレンダーを外したときは積まない。
-// 外部の予定は対応のカレンダーから消すので、staffID は読まない。
-func (o *Outbox) ScheduleDeleted(ctx context.Context, facilityID, _, scheduleID string) error {
-	f, err := o.facilities.Get(ctx, facilityID)
-	if err != nil || !f.IsBuddyPrimary() {
-		return err
-	}
-	l, err := o.calendars.LinkByDeletedSchedule(ctx, scheduleID)
-	if errors.Is(err, apperr.ErrNotFound) {
-		return nil
-	}
-	if err != nil {
-		return err
-	}
-	c, err := o.calendars.Get(ctx, l.ExternalCalendarID)
-	if err != nil || c.DisabledAt != nil {
-		return err
-	}
-	return o.exports.Enqueue(ctx, o.ids.NewID(), calendar.Target{FacilityID: facilityID, DeletedScheduleID: scheduleID})
+// 積む条件は ScheduleChanged と同じで、予定の職員 staffID が外していないカレンダーを結び付けているときと、予定の対応のカレンダーを外していないときである。
+// 予定の対応が無くても積むのは、書き出しが最初の作成を書いている間に削除すると、対応を書く前の外部の予定が残るためである。
+func (o *Outbox) ScheduleDeleted(ctx context.Context, facilityID, staffID, scheduleID string) error {
+	return o.enqueue(ctx, staffID, calendar.Target{FacilityID: facilityID, DeletedScheduleID: scheduleID}, func(ctx context.Context) (calendar.EventLink, error) {
+		return o.calendars.LinkByDeletedSchedule(ctx, scheduleID)
+	})
 }
 
 // RecurringChanged は、繰り返しの予定 recurringScheduleID の変更を積む。

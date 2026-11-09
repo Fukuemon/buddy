@@ -7423,10 +7423,11 @@
           ]
         },
         {
-          "name": "schedule_deletions_occurrence_key",
-          "def": "CREATE UNIQUE INDEX schedule_deletions_occurrence_key ON public.schedule_deletions USING btree (recurring_schedule_id, date)",
+          "name": "schedule_deletions_recurring_schedule_idx",
+          "def": "CREATE INDEX schedule_deletions_recurring_schedule_idx ON public.schedule_deletions USING btree (facility_id, recurring_schedule_id, date) WHERE (recurring_schedule_id IS NOT NULL)",
           "table": "public.schedule_deletions",
           "columns": [
+            "facility_id",
             "recurring_schedule_id",
             "date"
           ]
@@ -7609,17 +7610,6 @@
           "columns": [
             "facility_id",
             "schedule_id"
-          ]
-        },
-        {
-          "name": "schedule_deletions_occurrence_key",
-          "type": "UNIQUE",
-          "def": "UNIQUE (recurring_schedule_id, date)",
-          "table": "public.schedule_deletions",
-          "referenced_table": "",
-          "columns": [
-            "recurring_schedule_id",
-            "date"
           ]
         }
       ]

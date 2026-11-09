@@ -215,6 +215,17 @@ func (q *Queries) DeleteUnreplacedRecurringScheduleExclusions(ctx context.Contex
 	return err
 }
 
+const getDeletedScheduleStaffID = `-- name: GetDeletedScheduleStaffID :one
+SELECT staff_id FROM schedule_deletions WHERE schedule_id = $1
+`
+
+func (q *Queries) GetDeletedScheduleStaffID(ctx context.Context, scheduleID *string) (string, error) {
+	row := q.db.QueryRow(ctx, getDeletedScheduleStaffID, scheduleID)
+	var staff_id string
+	err := row.Scan(&staff_id)
+	return staff_id, err
+}
+
 const getRecurringScheduleDetail = `-- name: GetRecurringScheduleDetail :one
 SELECT id, facility_id, schedule_type_id, schedule_type_code, schedule_type_name, date, start_time, end_time, is_over_time_work, staff_id, staff_name, title, description, frequency, day_of_week, day_of_month, week_of_month, end_date, visit_info_id, patient_id, patient_name, assigned_staff_id, assigned_staff_name, companion_id, companion_name, service_code_id, service_code, created_at, updated_at, version, ends_next_day, days_of_week, interval_weeks FROM recurring_schedule_details WHERE id = $1
 `

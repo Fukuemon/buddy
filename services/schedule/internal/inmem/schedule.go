@@ -118,6 +118,16 @@ func (s Schedules) Delete(_ context.Context, d schedule.Deletion) error {
 	return nil
 }
 
+// StaffOfDeleted は、calendarexport.DeletedSchedules を実装する。
+func (s Schedules) StaffOfDeleted(_ context.Context, scheduleID string) (string, error) {
+	for _, d := range s.Deletions {
+		if d.ScheduleID == scheduleID {
+			return d.StaffID, nil
+		}
+	}
+	return "", apperr.ErrNotFound
+}
+
 // ReplacementOf は、繰り返しの予定の d の回を置き換えた単発の予定を、名前を結合しない書き込みのモデルで返す。
 func (s Schedules) ReplacementOf(ctx context.Context, recurringScheduleID string, d civil.Date) (schedule.Stored, error) {
 	for id, sc := range s.Schedules {

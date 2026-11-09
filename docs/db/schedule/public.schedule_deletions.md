@@ -42,17 +42,16 @@
 | schedule_deletions_recurring_schedule_fkey | FOREIGN KEY | FOREIGN KEY (facility_id, recurring_schedule_id) REFERENCES recurring_schedules(facility_id, id) |
 | schedule_deletions_pkey                    | PRIMARY KEY | PRIMARY KEY (id)                                                                                 |
 | schedule_deletions_schedule_key            | UNIQUE      | UNIQUE (facility_id, schedule_id)                                                                |
-| schedule_deletions_occurrence_key          | UNIQUE      | UNIQUE (recurring_schedule_id, date)                                                             |
 
 ## Indexes
 
-| Name                              | Definition                                                                                                                   |
-| --------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| schedule_deletions_pkey           | CREATE UNIQUE INDEX schedule_deletions_pkey ON public.schedule_deletions USING btree (id)                                    |
-| schedule_deletions_schedule_key   | CREATE UNIQUE INDEX schedule_deletions_schedule_key ON public.schedule_deletions USING btree (facility_id, schedule_id)      |
-| schedule_deletions_occurrence_key | CREATE UNIQUE INDEX schedule_deletions_occurrence_key ON public.schedule_deletions USING btree (recurring_schedule_id, date) |
-| schedule_deletions_staff_idx      | CREATE INDEX schedule_deletions_staff_idx ON public.schedule_deletions USING btree (facility_id, staff_id)                   |
-| schedule_deletions_deleted_by_idx | CREATE INDEX schedule_deletions_deleted_by_idx ON public.schedule_deletions USING btree (facility_id, deleted_by)            |
+| Name                                      | Definition                                                                                                                                                                           |
+| ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| schedule_deletions_pkey                   | CREATE UNIQUE INDEX schedule_deletions_pkey ON public.schedule_deletions USING btree (id)                                                                                            |
+| schedule_deletions_schedule_key           | CREATE UNIQUE INDEX schedule_deletions_schedule_key ON public.schedule_deletions USING btree (facility_id, schedule_id)                                                              |
+| schedule_deletions_recurring_schedule_idx | CREATE INDEX schedule_deletions_recurring_schedule_idx ON public.schedule_deletions USING btree (facility_id, recurring_schedule_id, date) WHERE (recurring_schedule_id IS NOT NULL) |
+| schedule_deletions_staff_idx              | CREATE INDEX schedule_deletions_staff_idx ON public.schedule_deletions USING btree (facility_id, staff_id)                                                                           |
+| schedule_deletions_deleted_by_idx         | CREATE INDEX schedule_deletions_deleted_by_idx ON public.schedule_deletions USING btree (facility_id, deleted_by)                                                                    |
 
 ## Relations
 

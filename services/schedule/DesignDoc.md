@@ -623,7 +623,7 @@ Google カレンダーの取り込みの確定、同期の予定ごとのトラ�
 1. `schedule_deletions` に、操作した職員、予定の ID、開始の日、予定の職員を書く。時刻は DB が決める。
 2. 予定の対応（`external_event_links`）を、`schedule_id` から `deleted_schedule_id` に付け替える。
 3. 予定の行を消し、訪問の情報の行を消す。終わっていない書き出しの待ちは、外部キーの `ON DELETE CASCADE` で消える。
-4. 予定の対応があれば、削除した予定の書き出しの待ち（`calendar_exports.deleted_schedule_id`）を積む。
+4. 削除した予定の書き出しの待ち（`calendar_exports.deleted_schedule_id`）を、予定の変更と同じ条件で積む。
 
 予定の行に削除済みの印を付けて残さないのは、一覧、照合、取り込みの読み取りに、削除済みを外す条件を足さずに済むためである。  
 予定の対応を付け替えて残すのは、予定の行と一緒に消すと、書き出しが Google の予定を消せないためである。書き出しは、Google の予定を消してから予定の対応を消す（[Google カレンダーとの連携の Design Doc の書き出し](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/internal/features/calendar/DesignDoc.md#google-カレンダーへの書き出し)）。  

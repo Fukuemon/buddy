@@ -19,7 +19,8 @@ status: stable
 - web の import は、同じ機能か同じディレクトリの中では相対のパスで書き、それをまたぐときは `#/` のエイリアスで書く。
   - tsconfig の `@/` は使わない。
 - Go のテストのためのフェイクは、`<パッケージ>test` のパッケージに置く（`oidctest`、`gcaltest`）。
-- API の operationId は、lowerCamel の「動詞と名詞」にする。動詞は `get`、`list`、`create`、`update`、`cancel`、`change`、`add`、`remove`、`start`、`end`、`resume`、`retire`、`reinstate` から選ぶ。
+- API の operationId は、lowerCamel の「動詞と名詞」にする。動詞は `get`、`list`、`create`、`update`、`cancel`、`delete`、`change`、`add`、`remove`、`start`、`end`、`resume`、`retire`、`reinstate` から選ぶ。
+  - `delete` は、行を消して戻せない操作に使い、理由を残す取り消しの `cancel` と分ける（`deleteSchedule`、ADR-0040）。
   - `add` と `remove` は、職員に権限を足す、外すのように、リソースの結び付きを足して外す操作に使う（`addUserPolicy`、`removeUserPolicy`）。
 - API のパスは `/v1` の下の複数形の snake_case にする。
   - 事業所に属する一覧と作成は `/v1/facilities/{facility_id}/<リソース>`、1 件は `/v1/<リソース>/{<リソース>_id}` に置く。
@@ -45,7 +46,7 @@ API の操作を呼ぶ関数とリポジトリのメソッドは、operationId �
 
 | 操作 | 動詞 | 例 | 書き込みか読み取りか |
 | --- | --- | --- | --- |
-| 保存された状態を変える | operationId の動詞（`create`、`update`、`cancel`、`change`、`add`、`remove`、`start`、`end`、`resume`、`retire`、`reinstate`） | `CreateTeam`、`Retire` | 書き込み |
+| 保存された状態を変える | operationId の動詞（`create`、`update`、`cancel`、`delete`、`change`、`add`、`remove`、`start`、`end`、`resume`、`retire`、`reinstate`） | `CreateTeam`、`Retire` | 書き込み |
 | ID で 1 件を取る | `get` | `GetFacility`、`getSchedule` | 読み取り |
 | 一覧を取る | `list` | `ListDepartments`、`listRecords` | 読み取り |
 | ID 以外の値で探し、見つからないことがある | `find` | `FindByEmail`、`findCalendar` | 読み取り |

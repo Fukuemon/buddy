@@ -110,6 +110,3 @@ DO UPDATE SET
     attempts = CASE WHEN calendar_exports.status = 'failed' THEN 0 ELSE calendar_exports.attempts END,
     error_code = CASE WHEN calendar_exports.status = 'failed' THEN NULL ELSE calendar_exports.error_code END,
     next_attempt_at = CASE WHEN calendar_exports.status = 'conflict' THEN calendar_exports.next_attempt_at ELSE now() END;
-
--- name: GetOpenDeletedScheduleExport :one
-SELECT * FROM calendar_exports WHERE deleted_schedule_id = $1 AND status <> 'succeeded';

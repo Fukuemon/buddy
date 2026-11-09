@@ -177,3 +177,6 @@ UPDATE external_event_links SET deleted_schedule_id = schedule_id, schedule_id =
 -- name: DeleteSchedule :one
 -- 書き出しの待ちは外部キーの ON DELETE CASCADE で消える。
 DELETE FROM schedules WHERE id = $1 RETURNING visit_info_id;
+
+-- name: GetDeletedScheduleStaffID :one
+SELECT staff_id FROM schedule_deletions WHERE schedule_id = $1;

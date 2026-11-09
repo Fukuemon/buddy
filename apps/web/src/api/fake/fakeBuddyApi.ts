@@ -364,6 +364,7 @@ export const createFakeBuddyApi = ({
         if (current.cancel !== undefined) {
           throw new ApiError(409, 'キャンセル済みの予定は削除できません', [], 'conflict')
         }
+        // 本物の API は Asia/Tokyo の今日と比べる。フェイクは端末の時刻帯の今日と比べる
         if (current.startsAt.slice(0, 10) < localDate(baseDate)) {
           throw new ApiError(400, '今日より前の予定は削除できません', [], 'invalid_input')
         }

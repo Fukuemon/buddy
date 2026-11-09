@@ -1,4 +1,4 @@
--- 削除した予定の対応と待ちは、指す予定が無いので消す。
+-- 削除した予定の対応と待ちは、指す予定が無いので消す。まだ書き出していない削除は、Google の予定が消されないまま残る。
 DELETE FROM calendar_exports WHERE deleted_schedule_id IS NOT NULL;
 DELETE FROM external_event_links WHERE deleted_schedule_id IS NOT NULL;
 

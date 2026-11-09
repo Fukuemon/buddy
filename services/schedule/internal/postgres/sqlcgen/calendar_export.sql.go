@@ -225,33 +225,6 @@ func (q *Queries) GetCalendarExportFacilityID(ctx context.Context, id string) (s
 	return facility_id, err
 }
 
-const getOpenDeletedScheduleExport = `-- name: GetOpenDeletedScheduleExport :one
-SELECT id, facility_id, schedule_id, recurring_schedule_id, status, revision, attempts, next_attempt_at, locked_until, overwrite, error_code, finished_at, created_at, updated_at, deleted_schedule_id FROM calendar_exports WHERE deleted_schedule_id = $1 AND status <> 'succeeded'
-`
-
-func (q *Queries) GetOpenDeletedScheduleExport(ctx context.Context, deletedScheduleID *string) (CalendarExport, error) {
-	row := q.db.QueryRow(ctx, getOpenDeletedScheduleExport, deletedScheduleID)
-	var i CalendarExport
-	err := row.Scan(
-		&i.ID,
-		&i.FacilityID,
-		&i.ScheduleID,
-		&i.RecurringScheduleID,
-		&i.Status,
-		&i.Revision,
-		&i.Attempts,
-		&i.NextAttemptAt,
-		&i.LockedUntil,
-		&i.Overwrite,
-		&i.ErrorCode,
-		&i.FinishedAt,
-		&i.CreatedAt,
-		&i.UpdatedAt,
-		&i.DeletedScheduleID,
-	)
-	return i, err
-}
-
 const getOpenRecurringScheduleExport = `-- name: GetOpenRecurringScheduleExport :one
 SELECT id, facility_id, schedule_id, recurring_schedule_id, status, revision, attempts, next_attempt_at, locked_until, overwrite, error_code, finished_at, created_at, updated_at, deleted_schedule_id FROM calendar_exports WHERE recurring_schedule_id = $1 AND status <> 'succeeded'
 `

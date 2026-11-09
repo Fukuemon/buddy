@@ -241,3 +241,61 @@ func TestSchedulesDeleteOccurrenceThenChangeRule(t *testing.T) {
 		}
 	})
 }
+
+// 回をキャンセルした単発の予定も、キャンセル済みなので削除できない。キャンセルした日の回の削除も、除外済みなので拒む（ADR-0040）。
+func TestSchedulesDeleteCancelledOccurrence(t *testing.T) {
+	s := inmem.Seeded()
+	uc, _ := newSchedules(s)
+	ctx := editorCtx()
+	next := civil.Date{Year: 2026, Month: 10, Day: 27}
+	rs, err := uc.CreateRecurring(ctx, facilityID, normalSlot(), schedule.RuleInput{Frequency: schedule.Weekly})
+	if err != nil {
+		t.Fatal(err)
+	}
+	c, err := uc.CancelOccurrence(ctx, rs.ID, next, "休み")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := uc.Delete(ctx, c.ScheduleID); !errors.Is(err, apperr.ErrConflict) {
+		t.Errorf("回をキャンセルした予定の削除: err = %v, want ErrConflict", err)
+	}
+	if err := uc.DeleteOccurrence(ctx, rs.ID, next); !errors.Is(err, apperr.ErrConflict) {
+		t.Errorf("キャンセルした日の回の削除: err = %v, want ErrConflict", err)
+	}
+	if len(s.Deletions) != 0 {
+		t.Errorf("監査の記録 = %v, want 残さない", s.Deletions)
+	}
+}
+
+// 置き換えた回を削除した後に規則を変えると、元の日に新しい規則の回が当たれば回を出す（ADR-0040）。
+// 終了日だけの変更は新しい終了日の後の除外する日だけを扱うので、ここでは確かめない（繰り返しの予定の context）。
+func TestSchedulesDeleteReplacedThenChangeRule(t *testing.T) {
+	tuesday, wednesday := 2, 3
+	next := civil.Date{Year: 2026, Month: 10, Day: 27}
+	for name, rule := range map[string]schedule.RuleInput{
+		"規則を書き換える": {Frequency: schedule.Weekly, DaysOfWeek: []int{tuesday, wednesday}},
+	} {
+		t.Run(name, func(t *testing.T) {
+			s := inmem.Seeded()
+			uc, _ := newSchedules(s)
+			ctx := editorCtx()
+			rs, err := uc.CreateRecurring(ctx, facilityID, futureSlot(normalSlot(), next), schedule.RuleInput{Frequency: schedule.Weekly})
+			if err != nil {
+				t.Fatal(err)
+			}
+			replaced, err := uc.ChangeOccurrence(ctx, rs.ID, next, futureSlot(normalSlot(), next))
+			if err != nil {
+				t.Fatal(err)
+			}
+			if err := uc.Delete(ctx, replaced.ID); err != nil {
+				t.Fatal(err)
+			}
+			if _, err := uc.ChangeRule(ctx, rs.ID, &next, nil, rule); err != nil {
+				t.Fatal(err)
+			}
+			if got := s.Recurring[rs.ID].ExclusionDates; slices.Contains(got, next) {
+				t.Errorf("除外する日 = %v, want %s を引き継がない", got, next)
+			}
+		})
+	}
+}

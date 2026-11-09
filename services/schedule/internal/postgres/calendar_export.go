@@ -174,8 +174,6 @@ func (r *CalendarExportRepository) Open(ctx context.Context, t calendar.Target) 
 		err error
 	)
 	switch {
-	case t.DeletedScheduleID != "":
-		e, err = r.q(ctx).GetOpenDeletedScheduleExport(ctx, &t.DeletedScheduleID)
 	case t.ScheduleID != "":
 		e, err = r.q(ctx).GetOpenScheduleExport(ctx, &t.ScheduleID)
 	default:

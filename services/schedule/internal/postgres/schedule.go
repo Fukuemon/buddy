@@ -263,7 +263,7 @@ func (r *ScheduleRepository) CreateCancel(ctx context.Context, c schedule.Cancel
 }
 
 // Delete は、監査の記録 d を書き、予定の対応を監査の記録に付け替えてから、予定 d.ScheduleID の行と訪問の情報を消す。
-// 予定が無いときは apperr.ErrNotFound を返す。
+// 呼び出し側が、同じトランザクションの GetForUpdate で予定があることを確かめてから呼ぶ。削除した予定をもう一度渡すと、監査の記録の一意の制約で apperr.ErrConflict を返す。
 func (r *ScheduleRepository) Delete(ctx context.Context, d schedule.Deletion) error {
 	if err := createDeletion(ctx, r.q(ctx), d); err != nil {
 		return err
@@ -281,9 +281,15 @@ func (r *ScheduleRepository) Delete(ctx context.Context, d schedule.Deletion) er
 	return translate("delete visit info", r.q(ctx).DeleteUnusedVisitInfo(ctx, *visitInfoID))
 }
 
+// StaffOfDeleted は、calendarexport.DeletedSchedules を実装する。
+func (r *ScheduleRepository) StaffOfDeleted(ctx context.Context, scheduleID string) (string, error) {
+	id, err := r.q(ctx).GetDeletedScheduleStaffID(ctx, &scheduleID)
+	return id, translate("get deleted schedule staff", err)
+}
+
 func createDeletion(ctx context.Context, q *sqlcgen.Queries, d schedule.Deletion) error {
 	return translate("create schedule deletion", q.CreateScheduleDeletion(ctx, sqlcgen.CreateScheduleDeletionParams{
-		ID: d.ID, FacilityID: d.FacilityID, ScheduleID: nonEmpty(d.ScheduleID), RecurringScheduleID: nonEmpty(d.RecurringScheduleID),
+		ID: d.ID, FacilityID: d.FacilityID, ScheduleID: optional(d.ScheduleID), RecurringScheduleID: optional(d.RecurringScheduleID),
 		Date: d.Date.Time(), StaffID: d.StaffID, DeletedBy: d.DeletedBy,
 	}))
 }
