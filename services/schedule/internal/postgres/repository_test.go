@@ -589,7 +589,7 @@ func TestPatientSchedules(t *testing.T) {
 	got, err := rd.From(ctx, seedFacility, seedPatient, from)
 	if err != nil || len(got.Schedules) != 1 || got.Schedules[0].ID != seedVisitSchedule || got.Schedules[0].StartTime != (civil.Time{Hour: 9, Minute: 30}) ||
 		len(got.RecurringSchedules) != 0 {
-		t.Errorf("当日から = %+v, %v, want 訪問の予定 1 件", got, err)
+		t.Fatalf("当日から = %+v, %v, want 訪問の予定 1 件", got, err)
 	}
 	if got, err := rd.From(ctx, seedFacility, seedPatient, civil.Date{Year: 2026, Month: 10, Day: 22}); err != nil || !got.IsEmpty() {
 		t.Errorf("翌日から = %+v, %v, want なし", got, err)
@@ -604,11 +604,32 @@ func TestPatientSchedules(t *testing.T) {
 	if got, err := rd.From(ctx, seedFacility, seedPatient, from); err != nil || len(got.Schedules) != 1 || !got.Schedules[0].EndsNextDay {
 		t.Errorf("翌日に終わる予定 = %+v, %v, want EndsNextDay が true（#923）", got, err)
 	}
+	info := visit.Info{
+		ID: "01M3TD000000000000000000J0", FacilityID: seedFacility, PatientID: seedPatient, AssignedStaffID: seedMori,
+		ServiceCodeID: seedServiceCode,
+	}
+	if err := NewVisitInfoRepository(testDB).Create(ctx, info); err != nil {
+		t.Fatal(err)
+	}
+	rs := schedule.RecurringSchedule{
+		ID: "01M3TD000000000000000000J1",
+		Slot: schedule.Slot{
+			FacilityID: seedFacility, StaffID: seedMori, TypeID: seedVisitType, Date: from,
+			StartTime: civil.Time{Hour: 22}, EndTime: civil.Time{Hour: 1}, EndsNextDay: true, VisitInfoID: &info.ID,
+		},
+		Rule: schedule.Rule{Frequency: schedule.Weekly},
+	}
+	if err := NewRecurringScheduleRepository(testDB).Create(ctx, rs); err != nil {
+		t.Fatal(err)
+	}
+	if got, err := rd.From(ctx, seedFacility, seedPatient, from); err != nil || len(got.RecurringSchedules) != 1 || !got.RecurringSchedules[0].EndsNextDay {
+		t.Errorf("翌日に終わる繰り返しの予定 = %+v, %v, want EndsNextDay が true（#923）", got.RecurringSchedules, err)
+	}
 	if err := NewScheduleRepository(testDB).CreateCancel(ctx, schedule.Cancellation{ID: "01M3TD00000000000000000033", ScheduleID: seedVisitSchedule, Reason: "中止"}); err != nil {
 		t.Fatal(err)
 	}
-	if got, err := rd.From(ctx, seedFacility, seedPatient, from); err != nil || !got.IsEmpty() {
-		t.Errorf("キャンセルの後 = %+v, %v, want なし", got, err)
+	if got, err := rd.From(ctx, seedFacility, seedPatient, from); err != nil || len(got.Schedules) != 0 {
+		t.Errorf("キャンセルの後の単発の予定 = %+v, %v, want なし", got.Schedules, err)
 	}
 }
 

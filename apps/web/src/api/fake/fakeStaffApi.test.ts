@@ -79,6 +79,17 @@ describe('createFakeStaffApi', () => {
     expect(refused).toEqual({ assignments: remaining })
   })
 
+  it('残る予定は、翌日に終わる予定だけ ends_next_day を true で返す', async () => {
+    const api = createFakeBuddyApi({ baseDate })
+    const { schedules } = await api.staff.remainingAssignments(MOCK_FACILITY_ID, 'staff-2')
+    expect(schedules.find((s) => s.id === 'schedule-7')).toMatchObject({
+      start_time: '22:00',
+      end_time: '01:00',
+      ends_next_day: true,
+    })
+    expect(schedules.filter((s) => s.ends_next_day).map((s) => s.id)).toEqual(['schedule-7'])
+  })
+
   it('部署とチームの名前を変えると、職員の一覧と詳細の部署とチームの名前も変わる', async () => {
     const api = createFakeBuddyApi({ baseDate })
     const [record] = await api.staff.listRecords(MOCK_FACILITY_ID)
