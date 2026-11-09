@@ -62,8 +62,14 @@ const id = async (res: Awaited<ReturnType<APIRequestContext['post']>>) => {
   return ((await res.json()) as { id: string }).id
 }
 
+/** 前の送信のクライアントが開いていれば、ページを開き直して閉じる。開いたままだと、次の操作のボタンを押せない。 */
+const closeApiClient = async (page: Page) => {
+  if (await apiClient(page).dialog.isVisible()) await page.goto('about:blank')
+}
+
 /** API の参照のページで、予定 scheduleId の削除（deleteSchedule）を送り、応答に status が出るのを待つ。 */
 const sendDelete = async (page: Page, token: string, scheduleId: string, status: string) => {
+  await closeApiClient(page)
   await openApiClient(page, 'schedule', {
     tag: 'schedule',
     method: 'delete',
@@ -83,6 +89,7 @@ const sendDeleteOccurrence = async (
   date: string,
   status: string,
 ) => {
+  await closeApiClient(page)
   await openApiClient(page, 'schedule', {
     tag: 'schedule',
     method: 'post',
@@ -448,6 +455,7 @@ test.describe('予定の API の予定の削除', () => {
             `API で毎週月曜の「${title}」を作った。API の参照のページで、${target} の回のキャンセル（cancelOccurrence）を送る`,
           )
           const cancel = async (who: string, recurringId: string, status: string) => {
+            await closeApiClient(page)
             await openApiClient(page, 'schedule', {
               tag: 'schedule',
               method: 'post',
