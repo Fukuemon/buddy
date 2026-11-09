@@ -21,6 +21,9 @@ type AllDayEvent struct {
 	EndDate   civil.Date
 	// Title は、Google のタイトルを buddy の予定のタイトルの長さに切ったものである。空のことがある。
 	Title string
+	// ReviewReason は、確認が必要な理由で、無ければ空である。buddy の繰り返しの規則に写せない繰り返しの終日の予定は、
+	// 最初の回の 1 件にして ReviewRecurrenceUnsupported を付ける（#972）。
+	ReviewReason ReviewReason
 }
 
 // UnlistedEventCount は、職員の、一覧に出せない予定（EventUnlisted）の件数である。予定の中身は出さない（#672）。
