@@ -1,16 +1,20 @@
 import { expect, test } from '@playwright/test'
 
-import { BASE_URL, LOGIN_STAFF } from '../../fixtures/env'
+import { BASE_URL, LOGIN_STAFF, LOGIN_STATE } from '../../fixtures/env'
+import { createNormalSchedule } from '../../fixtures/schedule'
 import {
   issueManagerToken,
   leaveStaff,
   newStaff,
   registerStaff,
+  registerStaffId,
   reinstateStaff,
+  STAFF_FORM,
 } from '../../fixtures/staff'
 import { SUSPENSION_TEST, SUSPENSION_WAIT } from '../../fixtures/timeouts'
 import { enterEmailAtBroker, signInAtBroker } from '../../screens/login'
 import { brokerLogin } from '../../selectors/idp'
+import { REMAINING_SCHEDULE_DATE } from './dates'
 
 test.use({ storageState: { cookies: [], origins: [] } })
 
@@ -107,6 +111,55 @@ test.describe('予定のカレンダー', () => {
         code: 'conflict',
         message: '自分を休職か退職にすることはできません',
       })
+    })
+  })
+})
+
+test.describe('職員の詳細', () => {
+  // ファイルの既定はログインしていない状態なので、職員の管理の画面はマネージャーでログインした状態で開く
+  test.use({ storageState: LOGIN_STATE })
+
+  test.describe('休職と復職', () => {
+    test('職員を休職にした場合、その日以降の予定が一覧で出て、確定すると職員の状態が休職になること', async ({
+      page,
+      request,
+    }) => {
+      const manager = await issueManagerToken(request)
+      const id = await registerStaffId(request, manager, newStaff('leave-screen'))
+      const created = await createNormalSchedule(request, manager, STAFF_FORM.facilityId, {
+        staffId: id,
+        title: `E2E の休職の会議 ${Date.now()}`,
+        date: REMAINING_SCHEDULE_DATE,
+      })
+      const scheduleId = ((await created.json()) as { id: string }).id
+
+      await page.goto(`/staff/${id}`)
+      await page.getByTestId('staff-detail-menu').click()
+      await page.getByTestId('staff-detail-leave').click()
+      const dialog = page.getByTestId('staff-leave-dialog')
+      await expect(
+        dialog.getByTestId(`staff-leave-assignment-schedule-${scheduleId}`),
+      ).toContainText('2030年1月8日（火）')
+      await dialog.getByTestId('staff-leave-submit').click()
+
+      await expect(dialog).toHaveCount(0)
+      await expect(page.getByTestId('staff-detail-status')).toHaveText('休職')
+    })
+
+    test('休職の職員を復職にした場合、休職の印が消えて有効に戻ること', async ({
+      page,
+      request,
+    }) => {
+      const manager = await issueManagerToken(request)
+      const id = await registerStaffId(request, manager, newStaff('reinstate-screen'))
+      expect((await leaveStaff(request, manager, id)).status()).toBe(200)
+
+      await page.goto(`/staff/${id}`)
+      await expect(page.getByTestId('staff-detail-status')).toHaveText('休職')
+      await page.getByTestId('staff-detail-menu').click()
+      await page.getByTestId('staff-detail-reinstate').click()
+
+      await expect(page.getByTestId('staff-detail-status')).toHaveCount(0)
     })
   })
 })
