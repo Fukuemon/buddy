@@ -273,13 +273,17 @@ gh api repos/Fukuemon/buddy/pulls/<番号> --jq .body | grep -c '](\./\.ai-out/'
 検証シナリオは、検証環境ができてから使う。  
 決まっている値は次のとおり。
 
+- 検証の設計と検証シナリオのファイルは、`docs/verification/<要求の番号>-<主題>/` に置く。`<要求の番号>` は、検証する要求の issue の番号である。
+  - buddy は public なので、置くのは公開してよい中身だけにする。
+  - 実在の利用者、職員、事業所の名前とデータを書かない。例の値は、ローカルのシードとテストデータの値にする。
+  - 検証環境の URL、ログインの値、トークンを書かない。
 - 検証シナリオの spec は、見本の `packages/e2e/templates/verification-scenario.e2e.ts` を写して書く。
   - `Scenario` の `id` は、シナリオの `@scenario-id` にする。
   - `Scenario` の `issue`、`actor`、`no`、`title` は、配置先のフォルダの名前（`<issue>/<アクター>/S<n>_<シナリオ名>/`）になる。検証シナリオの pull request のエビデンスの名前と同じにする。
   - 例の列と値は、シナリオアウトラインの例の表と、検証シナリオの pull request のチェックの「<列>=<値>」から、文言を変えずに写す。
   - 改修前と違ってよい差（シナリオの備考）は、`<root>/<issue>/differences.ts` に写し、その要求の spec から import する。そのスクリーンショットだけの差は `check` の 2 つ目の引数に、どのスクリーンショットにも映りうる差は `Scenario` の `differences` に渡す。
   - 撮る日の違う 2 回目は、1 回目の実施日を渡して同じ配置先にそろえる。
-- エビデンスの一覧は、要求ごとの README にする。
+- エビデンスの一覧は、要求ごとの README にし、`docs/verification/<要求の番号>-<主題>/README.md` に置く。
   - 撮るシナリオ、spec を置かないシナリオ、撮影のための操作と、spec とシナリオの対応を書く。
 - 実施の結果を記録する場所は、検証シナリオの pull request である。
   - シナリオごとの配置先の mp4 を添付する。隠しフォルダの `.records/` は添付しない。
@@ -289,6 +293,6 @@ gh api repos/Fukuemon/buddy/pulls/<番号> --jq .body | grep -c '](\./\.ai-out/'
 
 次の値は、検証環境ができてから決める。
 
-- 検証シナリオのファイルと pull request の配置先と、検証シナリオのエビデンスの spec の配置先（`<root>`）
+- 検証シナリオのエビデンスの spec の配置先（`<root>`）
 - 検証環境で撮るときの URL、環境の呼び名、ログインの手順、認証コードを書くファイル
 - 改修前と改修後の web を 1 つの backend につないで起動し、`EVIDENCE_BEFORE_URL` で 1 回で両方を撮るときの起動のしかた
