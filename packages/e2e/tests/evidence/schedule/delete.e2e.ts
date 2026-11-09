@@ -138,6 +138,7 @@ test.describe('予定の API の予定の削除', () => {
           ),
         ),
         async ({ page, step, check }, { token, data: scheduleId }) => {
+          await routeApiReference(page)
           await step(`API で ${HAYASHI.name} の ${date} に「${title}」を作った`)
           await checkDay(page, check, date, title, true, '削除の前')
           await step('API の参照のページで、予定の削除（deleteSchedule）を送る')
@@ -167,6 +168,7 @@ test.describe('予定の API の予定の削除', () => {
           ),
         ),
         async ({ page, step, check }, { token, data: recurringId }) => {
+          await routeApiReference(page)
           await step(
             `API で ${HAYASHI.name} の ${fromNextMonday(0)} から毎週月曜の「${title}」を作った`,
           )
@@ -204,6 +206,7 @@ test.describe('予定の API の予定の削除', () => {
           )
         }),
         async ({ page, step, check }, { token, data: replacedId }) => {
+          await routeApiReference(page)
           await step(`API で毎週月曜の「${title}」を作り、${target} の回を「${moved}」に置き換えた`)
           await checkDay(page, check, target, moved, true, '削除の前')
           await step('API の参照のページで、置き換えた予定の削除（deleteSchedule）を送る')
@@ -250,6 +253,7 @@ test.describe('予定の API の予定の削除', () => {
           return { pastId, cancelledId, okada: await issueAccessToken(page.request, OKADA.email) }
         }),
         async ({ page, step, check }, { token, data }) => {
+          await routeApiReference(page)
           await step(
             `API で ${yesterday} の「${past}」と、${tomorrow} の「${cancelled}」を作り、後者をキャンセルした`,
           )
@@ -306,6 +310,7 @@ test.describe('予定の API の予定の削除', () => {
           return { recurringId, okada: await issueAccessToken(page.request, OKADA.email) }
         }),
         async ({ page, step, check }, { token, data }) => {
+          await routeApiReference(page)
           await step(
             `API で ${daysFromToday(-1)} から毎週の「${title}」を作り、${daysFromToday(6)} の回を削除し、${daysFromToday(13)} の回をキャンセルした`,
           )
@@ -361,6 +366,7 @@ test.describe('予定の API の予定の削除', () => {
           return { singleId, recurringId, movedId }
         }),
         async ({ page, step, check }, { token, data }) => {
+          await routeApiReference(page)
           const titles = () => listGoogleEvents(request, HAYASHI.calendarId)
           try {
             await step(
@@ -427,6 +433,7 @@ test.describe('予定の API の予定の削除', () => {
           okada: await issueAccessToken(page.request, OKADA.email),
         })),
         async ({ page, step, check }, { token, data }) => {
+          await routeApiReference(page)
           await step(
             `API で毎週月曜の「${title}」を作った。API の参照のページで、${target} の回のキャンセル（cancelOccurrence）を送る`,
           )
