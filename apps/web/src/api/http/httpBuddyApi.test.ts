@@ -731,7 +731,15 @@ describe('createHttpBuddyApi の職員の管理', () => {
     ...overrides,
   })
   const assignments = {
-    schedules: [{ id: 'schedule-1', date: '2026-11-02', start_time: '09:00', end_time: '10:00' }],
+    schedules: [
+      {
+        id: 'schedule-1',
+        date: '2026-11-02',
+        start_time: '09:00',
+        end_time: '10:00',
+        ends_next_day: false,
+      },
+    ],
     recurring_schedules: [],
     patients: [],
   }
@@ -829,7 +837,15 @@ describe('createHttpBuddyApi の利用者の管理', () => {
     ...overrides,
   })
   const remaining = {
-    schedules: [{ id: 'schedule-1', date: '2026-11-02', start_time: '09:00', end_time: '09:29' }],
+    schedules: [
+      {
+        id: 'schedule-1',
+        date: '2026-11-02',
+        start_time: '09:00',
+        end_time: '09:29',
+        ends_next_day: false,
+      },
+    ],
     recurring_schedules: [],
   }
 

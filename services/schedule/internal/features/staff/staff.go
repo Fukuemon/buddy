@@ -266,21 +266,24 @@ type ListQuery struct {
 	Sort       kernel.Sort
 }
 
-// AssignedSchedule は、職員に割り振った単発の予定である。
+// AssignedSchedule は、職員に割り振った単発の予定である。EndsNextDay が true なら、Date の翌日の EndTime に終わる。
 type AssignedSchedule struct {
-	ID        string
-	Date      civil.Date
-	StartTime civil.Time
-	EndTime   civil.Time
+	ID          string
+	Date        civil.Date
+	StartTime   civil.Time
+	EndTime     civil.Time
+	EndsNextDay bool
 }
 
 // AssignedRecurring は、職員に割り振った繰り返しの予定である。Date は最初の回の日付で、EndDate は終了日である。
+// EndsNextDay が true なら、各回は始まる日の翌日の EndTime に終わる。
 type AssignedRecurring struct {
-	ID        string
-	Date      civil.Date
-	EndDate   *civil.Date
-	StartTime civil.Time
-	EndTime   civil.Time
+	ID          string
+	Date        civil.Date
+	EndDate     *civil.Date
+	StartTime   civil.Time
+	EndTime     civil.Time
+	EndsNextDay bool
 }
 
 // AssignedPatient は、職員が主に担当する利用者である。

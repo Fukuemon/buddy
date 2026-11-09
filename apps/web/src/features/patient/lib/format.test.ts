@@ -9,6 +9,7 @@ import {
   editStaffOptions,
   endedLabel,
   formatRemainingRecurring,
+  formatRemainingSchedule,
 } from './format'
 
 const staffList: StaffRecord[] = [
@@ -70,7 +71,40 @@ describe('format', () => {
         end_date: null,
         start_time: '09:00',
         end_time: '09:29',
+        ends_next_day: false,
       }),
     ).toBe('2026年11月2日（月）から終了日なし、09:00〜09:29')
+  })
+
+  it('翌日に終わる繰り返しの予定は、終了の時刻に「翌」を付ける', () => {
+    expect(
+      formatRemainingRecurring({
+        id: 'r-1',
+        date: '2026-11-02',
+        end_date: '2027-03-31',
+        start_time: '22:00',
+        end_time: '01:00',
+        ends_next_day: true,
+      }),
+    ).toBe('2026年11月2日（月）から2027年3月31日（水）まで、22:00〜翌 01:00')
+  })
+
+  it('翌日に終わる単発の予定は、終了の時刻に「翌」を付け、同じ日に終わる予定は付けない', () => {
+    const schedule = {
+      id: 's-1',
+      date: '2026-11-02',
+      start_time: '22:00',
+      end_time: '01:00',
+      ends_next_day: true,
+    }
+    expect(formatRemainingSchedule(schedule)).toBe('2026年11月2日（月） 22:00〜翌 01:00')
+    expect(
+      formatRemainingSchedule({
+        ...schedule,
+        start_time: '09:00',
+        end_time: '09:29',
+        ends_next_day: false,
+      }),
+    ).toBe('2026年11月2日（月） 09:00〜09:29')
   })
 })

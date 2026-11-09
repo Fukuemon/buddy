@@ -576,7 +576,7 @@ paths:
                 code: staff_has_assignments
                 message: "予定か担当の利用者が残る職員は、訪問しない職員にできません。別の職員に割り振り直してください"
                 assignments:
-                  schedules: [{ id: 01M3TC5H00QV17BC0J9V3393ZP, date: "2026-11-02", start_time: "09:00", end_time: "10:00" }]
+                  schedules: [{ id: 01M3TC5H00QV17BC0J9V3393ZP, date: "2026-11-02", start_time: "09:00", end_time: "10:00", ends_next_day: false }]
                   recurring_schedules: []
                   patients: []
         "500": { $ref: "#/components/responses/InternalError" }
@@ -748,7 +748,7 @@ paths:
                 code: staff_has_assignments
                 message: "予定か担当の利用者が残る職員は退職にできません。別の職員に割り振り直してください"
                 assignments:
-                  schedules: [{ id: 01M3TC5H00QV17BC0J9V3393ZP, date: "2026-11-02", start_time: "09:00", end_time: "10:00" }]
+                  schedules: [{ id: 01M3TC5H00QV17BC0J9V3393ZP, date: "2026-11-02", start_time: "09:00", end_time: "10:00", ends_next_day: false }]
                   recurring_schedules: []
                   patients: []
         "500": { $ref: "#/components/responses/InternalError" }
@@ -1022,7 +1022,7 @@ paths:
                 code: patient_has_schedules
                 message: "その日以降の予定か繰り返しの予定が残る利用者は、利用の終了にできません。予定をキャンセルするか、繰り返しを終えてください"
                 schedules:
-                  schedules: [{ id: 01M3TC5H00QV17BC0J9V3393ZP, date: "2026-11-02", start_time: "09:00", end_time: "10:00" }]
+                  schedules: [{ id: 01M3TC5H00QV17BC0J9V3393ZP, date: "2026-11-02", start_time: "09:00", end_time: "10:00", ends_next_day: false }]
                   recurring_schedules: []
         "500": { $ref: "#/components/responses/InternalError" }
 
@@ -2423,18 +2423,21 @@ components:
           description: その日以降のキャンセルしていない単発の予定。日時の順
           items:
             type: object
-            required: [id, date, start_time, end_time]
+            required: [id, date, start_time, end_time, ends_next_day]
             properties:
               id: { $ref: "#/components/schemas/ID" }
               date: { $ref: "#/components/schemas/Date" }
               start_time: { $ref: "#/components/schemas/Time" }
               end_time: { $ref: "#/components/schemas/Time" }
+              ends_next_day:
+                type: boolean
+                description: date の翌日の end_time に終わる予定のとき true
         recurring_schedules:
           type: array
           description: その日以降に終わる繰り返しの予定。終了日の無い繰り返しを含める。最初の回の日時の順
           items:
             type: object
-            required: [id, date, end_date, start_time, end_time]
+            required: [id, date, end_date, start_time, end_time, ends_next_day]
             properties:
               id: { $ref: "#/components/schemas/ID" }
               date:
@@ -2447,6 +2450,9 @@ components:
                 description: 終了日。終了日が無ければ null
               start_time: { $ref: "#/components/schemas/Time" }
               end_time: { $ref: "#/components/schemas/Time" }
+              ends_next_day:
+                type: boolean
+                description: 全ての回が、回の日付の翌日の end_time に終わるとき true
         patients:
           type: array
           description: 職員が主に担当する利用中の利用者。利用の終了の利用者は含めない（ADR-0005）。名前の順
@@ -2546,18 +2552,21 @@ components:
           description: その日以降のキャンセルしていない単発の予定。日時の順
           items:
             type: object
-            required: [id, date, start_time, end_time]
+            required: [id, date, start_time, end_time, ends_next_day]
             properties:
               id: { $ref: "#/components/schemas/ID" }
               date: { $ref: "#/components/schemas/Date" }
               start_time: { $ref: "#/components/schemas/Time" }
               end_time: { $ref: "#/components/schemas/Time" }
+              ends_next_day:
+                type: boolean
+                description: date の翌日の end_time に終わる予定のとき true
         recurring_schedules:
           type: array
           description: その日以降に終わる繰り返しの予定。終了日の無い繰り返しを含める。最初の回の日時の順
           items:
             type: object
-            required: [id, date, end_date, start_time, end_time]
+            required: [id, date, end_date, start_time, end_time, ends_next_day]
             properties:
               id: { $ref: "#/components/schemas/ID" }
               date:
@@ -2570,6 +2579,9 @@ components:
                 description: 終了日。終了日が無ければ null
               start_time: { $ref: "#/components/schemas/Time" }
               end_time: { $ref: "#/components/schemas/Time" }
+              ends_next_day:
+                type: boolean
+                description: 全ての回が、回の日付の翌日の end_time に終わるとき true
     EndServiceConflict:
       allOf:
         - $ref: "#/components/schemas/Error"

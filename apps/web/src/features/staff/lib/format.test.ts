@@ -1,6 +1,14 @@
 import { describe, expect, it } from 'vite-plus/test'
 
-import { employmentText, formatRemainingRecurring, policyTargetText, statusLabel } from './format'
+import {
+  employmentText,
+  formatRemainingRecurring,
+  formatRemainingRecurringParts,
+  formatRemainingSchedule,
+  formatRemainingScheduleParts,
+  policyTargetText,
+  statusLabel,
+} from './format'
 
 const active = {
   status: 'active',
@@ -45,6 +53,7 @@ describe('formatRemainingRecurring', () => {
       end_date: null,
       start_time: '10:00',
       end_time: '11:00',
+      ends_next_day: false,
     }
     expect(formatRemainingRecurring(recurring)).toBe(
       '2026年10月6日（火）から終了日なし、10:00〜11:00',
@@ -52,6 +61,71 @@ describe('formatRemainingRecurring', () => {
     expect(formatRemainingRecurring({ ...recurring, end_date: '2027-03-31' })).toBe(
       '2026年10月6日（火）から2027年3月31日（水）まで、10:00〜11:00',
     )
+  })
+
+  it('翌日に終わる繰り返しは、終了の時刻に「翌」を付ける', () => {
+    expect(
+      formatRemainingRecurring({
+        id: 'r',
+        date: '2026-10-06',
+        end_date: null,
+        start_time: '22:00',
+        end_time: '01:00',
+        ends_next_day: true,
+      }),
+    ).toBe('2026年10月6日（火）から終了日なし、22:00〜翌 01:00')
+  })
+})
+
+describe('formatRemainingSchedule', () => {
+  const schedule = {
+    id: 's',
+    date: '2026-11-02',
+    start_time: '22:00',
+    end_time: '01:00',
+    ends_next_day: true,
+  }
+
+  it('翌日に終わる予定は、終了の時刻に「翌」を付ける', () => {
+    expect(formatRemainingSchedule(schedule)).toBe('2026年11月2日（月） 22:00〜翌 01:00')
+  })
+
+  it('同じ日に終わる予定は、「翌」を付けない', () => {
+    expect(
+      formatRemainingSchedule({
+        ...schedule,
+        start_time: '09:00',
+        end_time: '10:00',
+        ends_next_day: false,
+      }),
+    ).toBe('2026年11月2日（月） 09:00〜10:00')
+  })
+})
+
+describe('formatRemainingScheduleParts と formatRemainingRecurringParts', () => {
+  it('画面が時刻の範囲の中で折り返さないよう、時刻の範囲を「翌」と終了の時刻まで 1 つにして返す', () => {
+    expect(
+      formatRemainingScheduleParts({
+        id: 's',
+        date: '2026-11-02',
+        start_time: '22:00',
+        end_time: '01:00',
+        ends_next_day: true,
+      }),
+    ).toEqual({ date: '2026年11月2日（月）', time: '22:00〜翌 01:00' })
+    expect(
+      formatRemainingRecurringParts({
+        id: 'r',
+        date: '2026-10-06',
+        end_date: '2027-03-31',
+        start_time: '22:00',
+        end_time: '01:00',
+        ends_next_day: true,
+      }),
+    ).toEqual({
+      period: '2026年10月6日（火）から2027年3月31日（水）まで、',
+      time: '22:00〜翌 01:00',
+    })
   })
 })
 

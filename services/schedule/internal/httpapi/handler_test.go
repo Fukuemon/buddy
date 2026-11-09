@@ -605,6 +605,8 @@ func TestGetUserRemainingAssignments(t *testing.T) {
 	st := &fakeStaff{assignments: staff.Assignments{
 		Schedules: []staff.AssignedSchedule{{ID: "01M3TC5H00QV17BC0J9V3393ZP", Date: civil.Date{Year: 2026, Month: 11, Day: 2},
 			StartTime: civil.Time{Hour: 9}, EndTime: civil.Time{Hour: 10}}},
+		RecurringSchedules: []staff.AssignedRecurring{{ID: "01M3TC5H00QV17BC0J9V3393ZR", Date: civil.Date{Year: 2026, Month: 11, Day: 3},
+			StartTime: civil.Time{Hour: 22}, EndTime: civil.Time{Hour: 1}, EndsNextDay: true}},
 		Patients: []staff.AssignedPatient{{ID: "01M3TC5H00QV17BC0J9V3393ZQ", Name: "山田 花子"}},
 	}}
 	rec, body := do(t, newRouter(&fakeSchedules{}, st, &fakePatients{}), http.MethodGet, "/v1/users/"+staffID+"/remaining_assignments", "")
@@ -612,8 +614,11 @@ func TestGetUserRemainingAssignments(t *testing.T) {
 		t.Fatalf("status = %d, 職員 = %s, body = %v", rec.Code, st.lastStopped, body)
 	}
 	scheds, recs, pats := body["schedules"].([]any), body["recurring_schedules"].([]any), body["patients"].([]any)
-	if len(scheds) != 1 || scheds[0].(map[string]any)["date"] != "2026-11-02" || len(recs) != 0 || len(pats) != 1 {
-		t.Errorf("body = %v, want 予定 1 件と利用者 1 人と空の繰り返し", body)
+	if len(scheds) != 1 || scheds[0].(map[string]any)["date"] != "2026-11-02" || len(recs) != 1 || len(pats) != 1 {
+		t.Fatalf("body = %v, want 予定 1 件と繰り返し 1 件と利用者 1 人", body)
+	}
+	if scheds[0].(map[string]any)["ends_next_day"] != false || recs[0].(map[string]any)["ends_next_day"] != true {
+		t.Errorf("ends_next_day = %v, %v, want 単発は false、翌日に終わる繰り返しは true（#923）", scheds[0], recs[0])
 	}
 	forbidden := newRouter(&fakeSchedules{}, &fakeStaff{err: apperr.ErrForbidden}, &fakePatients{})
 	if rec, body := do(t, forbidden, http.MethodGet, "/v1/users/"+staffID+"/remaining_assignments", ""); rec.Code != http.StatusForbidden || body["code"] != "forbidden" {
@@ -787,12 +792,16 @@ func TestGetPatient(t *testing.T) {
 func TestGetPatientRemainingSchedules(t *testing.T) {
 	rem := patient.Remaining{
 		Schedules:          []patient.RemainingSchedule{{ID: scheduleID, Date: civil.Date{Year: 2026, Month: 11, Day: 2}, StartTime: civil.Time{Hour: 9}, EndTime: civil.Time{Hour: 10}}},
-		RecurringSchedules: []patient.RemainingRecurring{{ID: patientID, Date: civil.Date{Year: 2026, Month: 9, Day: 1}, StartTime: civil.Time{Hour: 13}, EndTime: civil.Time{Hour: 14}}},
+		RecurringSchedules: []patient.RemainingRecurring{{ID: patientID, Date: civil.Date{Year: 2026, Month: 9, Day: 1}, StartTime: civil.Time{Hour: 22}, EndTime: civil.Time{Hour: 1}, EndsNextDay: true}},
 	}
 	p := &fakePatients{remaining: rem}
 	rec, body := do(t, newRouter(nil, &fakeStaff{}, p), http.MethodGet, "/v1/patients/"+patientID+"/remaining_schedules", "")
 	if rec.Code != http.StatusOK || p.lastID != patientID {
 		t.Fatalf("status = %d, id = %s, body = %v", rec.Code, p.lastID, body)
+	}
+	scheds, recs := body["schedules"].([]any), body["recurring_schedules"].([]any)
+	if scheds[0].(map[string]any)["ends_next_day"] != false || recs[0].(map[string]any)["ends_next_day"] != true {
+		t.Errorf("ends_next_day = %v, %v, want 単発は false、翌日に終わる繰り返しは true（#923）", scheds[0], recs[0])
 	}
 	_, conflict := do(t, newRouter(nil, &fakeStaff{}, &fakePatients{err: &patient.ScheduledError{Remaining: rem}}), http.MethodPost, "/v1/patients/"+patientID+"/end_service", "")
 	if !reflect.DeepEqual(body, conflict["schedules"]) {

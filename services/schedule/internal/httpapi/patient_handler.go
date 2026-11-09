@@ -133,11 +133,11 @@ func (s server) ResumePatientService(ctx context.Context, req openapi.ResumePati
 func toPatientSchedules(r patient.Remaining) openapi.PatientSchedules {
 	return openapi.PatientSchedules{
 		Schedules: mapSlice(r.Schedules, func(s patient.RemainingSchedule) openapi.PatientSchedules_Schedules {
-			return openapi.PatientSchedules_Schedules{Id: s.ID, Date: s.Date.String(), StartTime: s.StartTime.String(), EndTime: s.EndTime.String()}
+			return openapi.PatientSchedules_Schedules{Id: s.ID, Date: s.Date.String(), StartTime: s.StartTime.String(), EndTime: s.EndTime.String(), EndsNextDay: s.EndsNextDay}
 		}),
 		RecurringSchedules: mapSlice(r.RecurringSchedules, func(r patient.RemainingRecurring) openapi.PatientSchedules_RecurringSchedules {
 			return openapi.PatientSchedules_RecurringSchedules{
-				Id: r.ID, Date: r.Date.String(), EndDate: stringPtr(r.EndDate), StartTime: r.StartTime.String(), EndTime: r.EndTime.String(),
+				Id: r.ID, Date: r.Date.String(), EndDate: stringPtr(r.EndDate), StartTime: r.StartTime.String(), EndTime: r.EndTime.String(), EndsNextDay: r.EndsNextDay,
 			}
 		}),
 	}
