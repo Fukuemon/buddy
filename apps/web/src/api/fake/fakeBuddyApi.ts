@@ -34,7 +34,7 @@ import type {
 } from '../types'
 import { MOCK_FACILITY_ID } from '#/mocks/scheduleData'
 import { occurrenceId } from '../http/recurrence'
-import { fromApiSchedule } from '../http/scheduleMapper'
+import { fromApiAllDayEvent, fromApiSchedule } from '../http/scheduleMapper'
 import { FAKE_VIEWER, createFakeSchedules, fakeTeams } from './fixtures'
 import { createFakePatientApi, createFakePatientRecords } from './fakePatientApi'
 import { createFakeStaffApi, localDate } from './fakeStaffApi'
@@ -335,14 +335,15 @@ export const createFakeBuddyApi = ({
                     (event) =>
                       isSelectedStaff(event.staff_id) && overlaps(event.start_date, event.end_date),
                   )
-                  .map((event) => ({
-                    id: event.id,
-                    staffId: event.staff_id,
-                    staffName: event.staff_name,
-                    startDate: event.start_date,
-                    endDate: event.end_date,
-                    title: event.title,
-                  }))
+                  .map(fromApiAllDayEvent)
+              : [],
+          needsReviewAllDayEvents:
+            mode === 'google_primary'
+              ? allDayEvents
+                  .filter(
+                    (event) => isSelectedStaff(event.staff_id) && event.review_reason !== null,
+                  )
+                  .map(fromApiAllDayEvent)
               : [],
           unlistedEventCounts: [...unlistedByStaff]
             .map(([staffId, count]) => ({ staffId, count }))

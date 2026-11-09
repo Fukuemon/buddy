@@ -26,7 +26,7 @@
 - [buddy Design Doc](../docs/design/DesignDoc.md) — web、予定の API、calendar-worker、照合の API、ID ブローカーの責務と依存、業務の領域とコンテナの対応、コンテナの間の通信、デプロイの要件（draft）
 - [E2E のテストのコードの設計](../packages/e2e/DesignDoc.md) — buddy の E2E のテストのコードの、層の依存の向き、配置先の決め方、エビデンスの spec の流れ、禁止する書き方、失敗の読み方、テストの関数と待ちの組み立て。図で示す（draft）
 - [buddy のデザインシステム](../packages/ui/DESIGN.md) — packages/ui のトークンとコンポーネントの使い方。画面を作るときの原則と手順と、packages/ui/design/ の 3 つの文書（色と文字のトークン、コンポーネントの選び方と DADS を元にしたコンポーネントごとの規則、Storybook のカタログの組み方）
-- [予定の画面](../apps/web/src/features/schedule/DesignDoc.md) — 予定のカレンダー、予定の詳細、予定の作成、予定の編集の画面が、BFF を通して予定の API を読み書きする流れ。呼び出し、ログインが切れたとき、読み込み、予定の一覧の期間と職員の絞り込み、保存
+- [予定の画面](../apps/web/src/features/schedule/DesignDoc.md) — 予定のカレンダー、予定の詳細、予定の作成、予定の編集の画面が、BFF を通して予定の API を読み書きする流れ。呼び出し、ログインが切れたとき、読み込み、予定の一覧の期間と職員の絞り込み、保存、削除
 - [ID ブローカー](../services/broker/DesignDoc.md) — Ory Hydra の login and consent app として動くブローカーの責務、Hydra との分担、ログイン、職員の登録、休職、復職、退職、ログアウトの流れ、ローカル環境の構成（draft）
 - [レセプトの照合](../services/receipt/DesignDoc.md) — 照合の API のパッケージの構成、予定のデータソース、入力の CSV のカラム、正規化、予定と実績の対の作り方、判定の規則、サービスごとの許容範囲、結果の JSON と画面の表示、元の実装との違い（draft）
 - [予定の管理](../services/schedule/DesignDoc.md) — 予定の API のコードの構成、テーブルの構成（ER）、認証から事業所の確認までの流れ、繰り返しの予定、予定の変更とキャンセル

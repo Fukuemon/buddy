@@ -7,7 +7,7 @@ import {
 } from '#/api/fake/fixtures'
 import type { BuddyApi } from '#/api/BuddyApi'
 import { createFakeBuddyApi } from '#/api/fake/fakeBuddyApi'
-import type { RecurringRule, Viewer } from '#/api/types'
+import type { AllDayEvent, RecurringRule, Viewer } from '#/api/types'
 import { fromApiSchedule } from '#/api/http/scheduleMapper'
 import {
   createMockAllDayEvents,
@@ -54,6 +54,19 @@ export const storyAllDayEvents = toCalendarAllDayEvents(
   })),
   storyStaff,
 )
+
+/** google_primary の事業所の、確認が必要な終日の予定。青木 一郎の、繰り返しの規則を buddy で表せない 2026-10-05 の「当番」である。 */
+export const storyNeedsReviewAllDayEvents: AllDayEvent[] = [
+  {
+    id: 'gcal-allday-unsupported',
+    staffId: 'staff-1',
+    staffName: '青木 一郎',
+    startDate: '2026-10-05',
+    endDate: '2026-10-05',
+    title: '当番',
+    reviewReason: 'recurrence_unsupported',
+  },
+]
 
 /** google_primary の事業所の、カレンダーに出せない予定の件数。青木 一郎に 2 件、上田 三奈に 1 件ある。 */
 export const storyUnlistedEventCounts = [

@@ -1,7 +1,7 @@
 ---
 type: feature-design
 title: 予定の画面
-description: 予定のカレンダー、予定の詳細、予定の作成、予定の編集の画面が、BFF を通して予定の API を読み書きする流れ。呼び出し、ログインが切れたとき、読み込み、予定の一覧の期間と職員の絞り込み、保存
+description: 予定のカレンダー、予定の詳細、予定の作成、予定の編集の画面が、BFF を通して予定の API を読み書きする流れ。呼び出し、ログインが切れたとき、読み込み、予定の一覧の期間と職員の絞り込み、保存、削除
 status: stable
 governs:
   - apps/web/src/features/schedule
@@ -99,6 +99,13 @@ web と予定の API の責務と依存は、[buddy Design Doc](https://github.c
 - 予定のキャンセルは、詳細から開くモーダルで理由を入れ、`POST /v1/schedules/{schedule_id}/cancel` に送る。
   - BFF が画面で展開した `buddy_primary` の繰り返しの予定の回は、回のキャンセルの API に回の日付と理由を送る。
     - API は `POST /v1/schedules/recurring/{recurring_schedule_id}/occurrences/cancel` である。
+- 誤って入れた予定の削除は、詳細から開く確認のダイアログの後に、BFF の `schedules.delete` で送る（ADR-0040）。理由は送らない。
+  - BFF は、単発の予定を `DELETE /v1/schedules/{schedule_id}` に、画面で展開した繰り返しの予定の回を回の削除の API に回の日付で送る。
+    - API は `POST /v1/schedules/recurring/{recurring_schedule_id}/occurrences/delete` である。
+  - 画面は、変更とキャンセルができる予定のうち、`buddy_primary` の事業所の、開始の日が今日以降の予定にだけ削除の操作を出す。
+    - 開始の日と、詳細を開いたときの今日は、Asia/Tokyo の日付で比べる（`apps/web/src/features/schedule/lib/scheduleWritable.ts` の `canDeleteSchedule`）。
+    - 予定の API が、`google_primary` の事業所と今日より前の予定の削除を拒むためである。
+  - 削除の失敗の文は `apps/web/src/features/schedule/lib/errorMessage.ts` の `scheduleDeleteErrorMessage` が決める。
 - `google_primary` の事業所では、予定の API が Google カレンダーに書く。
   - 作成は、フォームを開いたときに作った予定の ID（`apps/web/src/features/schedule/lib/scheduleId.ts`）を送る。送り直しでも同じ ID を送る。
   - 変更とキャンセルは、フォームかモーダルを開いたときに読んだ予定の `etag` を送る。
@@ -110,7 +117,7 @@ web と予定の API の責務と依存は、[buddy Design Doc](https://github.c
   - 文は `apps/web/src/features/schedule/lib/errorMessage.ts` の `scheduleSubmitErrorMessage` が決める。
   - `google_primary` の code は、予定の API が、buddy を予定の正本にしていない事業所の予定を buddy の予定として書くのを拒んだことを表す。
   - 予定の API の 400 は合わない項目を返さないので、項目には示さない。
-- 保存とキャンセルに成功すると、事業所の予定の読み込みの結果を捨てて読み直す。
+- 保存、キャンセル、削除に成功すると、事業所の予定の読み込みの結果を捨てて読み直す。
 
 ## Interface
 

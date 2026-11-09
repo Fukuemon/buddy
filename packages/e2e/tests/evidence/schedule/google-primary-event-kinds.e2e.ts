@@ -86,6 +86,7 @@ test.describe('予定のカレンダー', () => {
   test.describe('Google カレンダーを正本にする事業所の、取り込めない予定の扱い', () => {
     for (const variant of EVIDENCE_VARIANTS) {
       const label = variant.label ? `${variant.label}: ` : ''
+      const isBefore = variant.name === 'before'
 
       test(`${label}繰り返しの予定の回を変えたか取り消した場合と、buddy の規則に写せない繰り返しの予定がある場合、回が格子に出て、写せない予定は確認が必要な予定に出ること`, async ({
         browser,
@@ -255,6 +256,7 @@ test.describe('予定のカレンダー', () => {
               await step('もし 次の週を開く')
               await openWeek(page, second)
               await expect(allDayLabel(page, weeklyTitle)).toHaveCount(2)
+              await expect(needsReviewNotice(page)).toHaveCount(0)
               await check(
                 `ならば 「終日」の行の ${dayLabel(addDays(second, 2))} と ${dayLabel(addDays(second, 4))} に「${weeklyTitle}」が出る`,
               )
@@ -443,7 +445,7 @@ test.describe('予定のカレンダー', () => {
         }
       })
 
-      test(`${label}buddy の規則に写せない繰り返しの終日の予定がある場合、回の日に出るか、確認が必要な予定に出ること`, async ({
+      test(`${label}buddy の規則に写せない繰り返しの終日の予定がある場合、最初の回が「終日」の行に出て、どの週でも確認が必要な予定に理由と一緒に出ること`, async ({
         browser,
         request,
       }) => {
@@ -478,18 +480,35 @@ test.describe('予定のカレンダー', () => {
               })
             },
             async ({ page, step, check }) => {
+              const reviewItem = needsReviewNotice(page)
+                .getByTestId(/^schedule-calendar-needs-review-all-day-/)
+                .filter({ hasText: dayLabel(monday) })
+                .filter({ hasText: REASON.recurrenceUnsupported })
+              const expectReviewed = async () => {
+                if (isBefore) {
+                  await expect(needsReviewNotice(page)).toHaveCount(0)
+                  return
+                }
+                await expect(reviewItem).toHaveCount(1)
+                await reviewItem.scrollIntoViewIfNeeded()
+              }
+
               await openWeek(page, first)
               await step(
                 `前提 ${OKADA.staff.name} の Google カレンダーに、${dayLabel(monday)} から 1 日おきに 5 回の終日の「${title}」がある（回は ${[0, 2, 4, 6, 8].map((d) => dayLabel(addDays(monday, d))).join('、')}）\nもし 1 つ目の週を週の表示で開く`,
               )
+              await expect(allDayLabel(page, title)).toHaveCount(1)
+              await expectReviewed()
               await check(
-                `ならば 「終日」の行の回の日に「${title}」が出るか、通知の欄の確認が必要な予定に「${REASON.recurrenceUnsupported}」と出る`,
+                `ならば 「終日」の行の ${dayLabel(monday)} にだけ「${title}」が出て、通知の欄の確認が必要な予定に ${dayLabel(monday)} と「${REASON.recurrenceUnsupported}」が出る`,
               )
 
               await step('もし 次の週を開く')
               await openWeek(page, second)
+              await expect(allDayLabel(page, title)).toHaveCount(0)
+              await expectReviewed()
               await check(
-                `ならば 「終日」の行の ${dayLabel(addDays(monday, 6))} と ${dayLabel(addDays(monday, 8))} に「${title}」が出るか、通知の欄の確認が必要な予定に「${REASON.recurrenceUnsupported}」と出る`,
+                `ならば 「終日」の行に「${title}」が出ず、通知の欄の確認が必要な予定に ${dayLabel(monday)} と「${REASON.recurrenceUnsupported}」が出る`,
               )
             },
           )
