@@ -21,6 +21,12 @@ if (typeof HTMLDialogElement !== 'undefined' && !('showModal' in HTMLDialogEleme
   })
 }
 
+// jsdom はデフォルトのスタイルシートを、テストのファイルごとに、最初に計算済みのスタイルを求めたときに解析する。
+// モーダルを開いたときの focus でこの解析が走ると、負荷の高い端末では最初のテストの findBy の待ちを超えるので、先に解析させる（#965）
+if (typeof document !== 'undefined') {
+  getComputedStyle(document.body).getPropertyValue('display')
+}
+
 // handler の無いリクエストはテストの不備なので、素通しせずに失敗させる
 beforeAll(() => server.listen({ onUnhandledFrame: 'error' }))
 
