@@ -67,6 +67,7 @@ WHERE id = $1 AND status IN ('conflict', 'failed');
 
 -- name: ListCalendarExportIssues :many
 -- 予定のタイトルと利用者名は読まない。
+-- 削除した予定の待ちは、予定の時刻を持たないので出さない。職員の結合で外れる（ADR-0040）。
 SELECT e.*,
        (sc.id IS NOT NULL)::boolean AS cancelled,
        u.id AS staff_id, u.username AS staff_name,
@@ -99,3 +100,16 @@ WHERE status = 'pending';
 -- name: GetCalendarExportFacilityID :one
 -- access がパスの ID のリソースの事業所を確認するときに、事業所だけを読む。
 SELECT facility_id FROM calendar_exports WHERE id = $1;
+
+-- name: EnqueueDeletedScheduleExport :exec
+INSERT INTO calendar_exports (id, facility_id, deleted_schedule_id) VALUES ($1, $2, $3)
+ON CONFLICT (deleted_schedule_id) WHERE status <> 'succeeded' AND deleted_schedule_id IS NOT NULL
+DO UPDATE SET
+    revision = calendar_exports.revision + 1,
+    status = CASE WHEN calendar_exports.status = 'failed' THEN 'pending' ELSE calendar_exports.status END,
+    attempts = CASE WHEN calendar_exports.status = 'failed' THEN 0 ELSE calendar_exports.attempts END,
+    error_code = CASE WHEN calendar_exports.status = 'failed' THEN NULL ELSE calendar_exports.error_code END,
+    next_attempt_at = CASE WHEN calendar_exports.status = 'conflict' THEN calendar_exports.next_attempt_at ELSE now() END;
+
+-- name: GetOpenDeletedScheduleExport :one
+SELECT * FROM calendar_exports WHERE deleted_schedule_id = $1 AND status <> 'succeeded';

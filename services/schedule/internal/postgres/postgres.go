@@ -172,6 +172,14 @@ func translate(op string, err error) error {
 
 func ptr[T any](v T) *T { return &v }
 
+// nonEmpty は、s が空なら nil を、空でなければ s を指すポインタを返す。
+func nonEmpty(s string) *string {
+	if s == "" {
+		return nil
+	}
+	return &s
+}
+
 // optional は、空の文字列を NULL にする。
 func optional(s string) *string {
 	if s == "" {

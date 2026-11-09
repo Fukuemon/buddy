@@ -8,4 +8,6 @@ import "context"
 type Exports interface {
 	ScheduleChanged(ctx context.Context, facilityID, staffID, scheduleID string) error
 	RecurringChanged(ctx context.Context, facilityID, staffID, recurringScheduleID string) error
+	// ScheduleDeleted は、削除した単発の予定 scheduleID の外部の予定を消す待ちを積む。予定の行を消した後に呼ぶ（ADR-0040）。
+	ScheduleDeleted(ctx context.Context, facilityID, staffID, scheduleID string) error
 }

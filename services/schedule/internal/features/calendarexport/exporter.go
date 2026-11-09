@@ -155,6 +155,9 @@ func (x *Exporter) export(ctx context.Context, e calendar.Export) error {
 	if !f.IsBuddyPrimary() {
 		return errNotBuddyPrimary
 	}
+	if e.DeletedScheduleID != "" {
+		return x.exportDeletion(ctx, e)
+	}
 	if e.ScheduleID != "" {
 		return x.exportSchedule(ctx, e)
 	}
@@ -180,6 +183,27 @@ func (x *Exporter) exportSchedule(ctx context.Context, e calendar.Export) error 
 		body = &b
 	}
 	return x.sync(ctx, e, item{staffID: d.StaffID, id: d.ID, version: d.Version, link: link, body: body, scheduleID: &d.ID})
+}
+
+// exportDeletion は、削除した単発の予定の外部の予定を消し、予定の対応を消す（ADR-0040）。予定の対応が無いときと、対応のカレンダーを外したときは何もしない。
+// buddy が正本なので、外部で予定が変わっていても etag を比べずに消す。外部で既に消されていれば（410）、消せたものとして扱う。
+func (x *Exporter) exportDeletion(ctx context.Context, e calendar.Export) error {
+	link, err := optionalLink(x.deps.Calendars.LinkByDeletedSchedule(ctx, e.DeletedScheduleID))
+	if err != nil || link == nil {
+		return err
+	}
+	lc, err := x.deps.Calendars.Get(ctx, link.ExternalCalendarID)
+	if err != nil || lc.DisabledAt != nil {
+		return err
+	}
+	w, err := x.deps.Writers(ctx, lc.FacilityID)
+	if err != nil {
+		return err
+	}
+	if err := w.Delete(ctx, lc.CalendarID, link.ExternalEventID, ""); err != nil && !errors.Is(err, calendar.ErrEventGone) {
+		return err
+	}
+	return x.deps.Calendars.DeleteLink(ctx, link.ID)
 }
 
 // exportRecurring は、繰り返しの予定を、規則と除外する日の RRULE と EXDATE で書く。

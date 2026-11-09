@@ -156,6 +156,46 @@ func (q *Queries) CreateScheduleCancel(ctx context.Context, arg CreateScheduleCa
 	return err
 }
 
+const createScheduleDeletion = `-- name: CreateScheduleDeletion :exec
+INSERT INTO schedule_deletions (id, facility_id, schedule_id, recurring_schedule_id, date, staff_id, deleted_by)
+VALUES ($1, $2, $3, $4, $5, $6, $7)
+`
+
+type CreateScheduleDeletionParams struct {
+	ID                  string
+	FacilityID          string
+	ScheduleID          *string
+	RecurringScheduleID *string
+	Date                time.Time
+	StaffID             string
+	DeletedBy           string
+}
+
+func (q *Queries) CreateScheduleDeletion(ctx context.Context, arg CreateScheduleDeletionParams) error {
+	_, err := q.db.Exec(ctx, createScheduleDeletion,
+		arg.ID,
+		arg.FacilityID,
+		arg.ScheduleID,
+		arg.RecurringScheduleID,
+		arg.Date,
+		arg.StaffID,
+		arg.DeletedBy,
+	)
+	return err
+}
+
+const deleteSchedule = `-- name: DeleteSchedule :one
+DELETE FROM schedules WHERE id = $1 RETURNING visit_info_id
+`
+
+// 書き出しの待ちは外部キーの ON DELETE CASCADE で消える。
+func (q *Queries) DeleteSchedule(ctx context.Context, id string) (*string, error) {
+	row := q.db.QueryRow(ctx, deleteSchedule, id)
+	var visit_info_id *string
+	err := row.Scan(&visit_info_id)
+	return visit_info_id, err
+}
+
 const deleteUnreplacedRecurringScheduleExclusions = `-- name: DeleteUnreplacedRecurringScheduleExclusions :exec
 DELETE FROM recurring_schedule_exclusions e
 WHERE e.recurring_schedule_id = $1 AND e.date >= $2
@@ -743,6 +783,16 @@ func (q *Queries) LockSchedule(ctx context.Context, id string) (string, error) {
 	var id_2 string
 	err := row.Scan(&id_2)
 	return id_2, err
+}
+
+const moveExternalEventLinkToDeletion = `-- name: MoveExternalEventLinkToDeletion :exec
+UPDATE external_event_links SET deleted_schedule_id = schedule_id, schedule_id = NULL WHERE schedule_id = $1
+`
+
+// 予定の行を消すと予定の対応も消えるので、書き出しが外部の予定を消すまで、削除の監査の記録を指す対応にする（ADR-0040）。
+func (q *Queries) MoveExternalEventLinkToDeletion(ctx context.Context, scheduleID *string) error {
+	_, err := q.db.Exec(ctx, moveExternalEventLinkToDeletion, scheduleID)
+	return err
 }
 
 const updateRecurringScheduleRule = `-- name: UpdateRecurringScheduleRule :exec

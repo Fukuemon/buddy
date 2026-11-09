@@ -262,6 +262,32 @@ func (r *ScheduleRepository) CreateCancel(ctx context.Context, c schedule.Cancel
 	return translate("bump schedule version", r.q(ctx).BumpScheduleVersion(ctx, c.ScheduleID))
 }
 
+// Delete は、監査の記録 d を書き、予定の対応を監査の記録に付け替えてから、予定 d.ScheduleID の行と訪問の情報を消す。
+// 予定が無いときは apperr.ErrNotFound を返す。
+func (r *ScheduleRepository) Delete(ctx context.Context, d schedule.Deletion) error {
+	if err := createDeletion(ctx, r.q(ctx), d); err != nil {
+		return err
+	}
+	if err := r.q(ctx).MoveExternalEventLinkToDeletion(ctx, &d.ScheduleID); err != nil {
+		return translate("move external event link to deletion", err)
+	}
+	visitInfoID, err := r.q(ctx).DeleteSchedule(ctx, d.ScheduleID)
+	if err != nil {
+		return translate("delete schedule", err)
+	}
+	if visitInfoID == nil {
+		return nil
+	}
+	return translate("delete visit info", r.q(ctx).DeleteUnusedVisitInfo(ctx, *visitInfoID))
+}
+
+func createDeletion(ctx context.Context, q *sqlcgen.Queries, d schedule.Deletion) error {
+	return translate("create schedule deletion", q.CreateScheduleDeletion(ctx, sqlcgen.CreateScheduleDeletionParams{
+		ID: d.ID, FacilityID: d.FacilityID, ScheduleID: nonEmpty(d.ScheduleID), RecurringScheduleID: nonEmpty(d.RecurringScheduleID),
+		Date: d.Date.Time(), StaffID: d.StaffID, DeletedBy: d.DeletedBy,
+	}))
+}
+
 // RecurringScheduleRepository は、schedule.RecurringRepository と scheduleview.RecurringSchedules を実装する。
 type RecurringScheduleRepository struct{ conn }
 
@@ -446,6 +472,15 @@ func (r *RecurringScheduleRepository) AddExclusion(ctx context.Context, recurrin
 		return translate("add recurring schedule exclusion", err)
 	}
 	return translate("bump recurring schedule version", r.q(ctx).BumpRecurringScheduleVersion(ctx, recurringScheduleID))
+}
+
+// DeleteOccurrence は、繰り返しの予定 d.RecurringScheduleID の除外する日に d.Date を足し、監査の記録 d を書く。
+// 同じ日付をすでに除外しているときは apperr.ErrConflict を返す。
+func (r *RecurringScheduleRepository) DeleteOccurrence(ctx context.Context, d schedule.Deletion) error {
+	if err := r.AddExclusion(ctx, d.RecurringScheduleID, d.Date); err != nil {
+		return err
+	}
+	return createDeletion(ctx, r.q(ctx), d)
 }
 
 // UpdateRule は、繰り返しの予定 rs.ID の最初の日付と規則を rs の値で上書きし、更新の番号を 1 つ増やす。

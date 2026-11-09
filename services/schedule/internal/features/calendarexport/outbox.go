@@ -34,6 +34,28 @@ func (o *Outbox) ScheduleChanged(ctx context.Context, facilityID, staffID, sched
 	})
 }
 
+// ScheduleDeleted は、削除した単発の予定 scheduleID の外部の予定を消す待ちを積む（ADR-0040）。
+// 消す外部の予定があるのは予定の対応があるときだけなので、対応が無いときと、対応のカレンダーを外したときは積まない。
+// 外部の予定は対応のカレンダーから消すので、staffID は読まない。
+func (o *Outbox) ScheduleDeleted(ctx context.Context, facilityID, _, scheduleID string) error {
+	f, err := o.facilities.Get(ctx, facilityID)
+	if err != nil || !f.IsBuddyPrimary() {
+		return err
+	}
+	l, err := o.calendars.LinkByDeletedSchedule(ctx, scheduleID)
+	if errors.Is(err, apperr.ErrNotFound) {
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+	c, err := o.calendars.Get(ctx, l.ExternalCalendarID)
+	if err != nil || c.DisabledAt != nil {
+		return err
+	}
+	return o.exports.Enqueue(ctx, o.ids.NewID(), calendar.Target{FacilityID: facilityID, DeletedScheduleID: scheduleID})
+}
+
 // RecurringChanged は、繰り返しの予定 recurringScheduleID の変更を積む。
 func (o *Outbox) RecurringChanged(ctx context.Context, facilityID, staffID, recurringScheduleID string) error {
 	return o.enqueue(ctx, staffID, calendar.Target{FacilityID: facilityID, RecurringScheduleID: recurringScheduleID}, func(ctx context.Context) (calendar.EventLink, error) {

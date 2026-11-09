@@ -171,6 +171,11 @@ func (s Calendars) LinkBySchedule(_ context.Context, scheduleID string) (calenda
 	return s.linkBy(func(l calendar.EventLink) *string { return l.ScheduleID }, scheduleID)
 }
 
+// LinkByDeletedSchedule は、calendarexport.ExportCalendars の LinkByDeletedSchedule を実装する。
+func (s Calendars) LinkByDeletedSchedule(_ context.Context, scheduleID string) (calendar.EventLink, error) {
+	return s.linkBy(func(l calendar.EventLink) *string { return l.DeletedScheduleID }, scheduleID)
+}
+
 // LinkByRecurringSchedule は、calendarexport.ExportCalendars の LinkByRecurringSchedule を実装する。
 func (s Calendars) LinkByRecurringSchedule(_ context.Context, recurringScheduleID string) (calendar.EventLink, error) {
 	return s.linkBy(func(l calendar.EventLink) *string { return l.RecurringScheduleID }, recurringScheduleID)

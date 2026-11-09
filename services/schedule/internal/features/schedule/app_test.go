@@ -453,6 +453,8 @@ type app struct {
 	Cancel           func(ctx context.Context, scheduleID, reason string) (schedule.Cancellation, error)
 	CancelOccurrence func(ctx context.Context, recurringScheduleID string, originalDate civil.Date, reason string) (schedule.Cancellation, error)
 	Update           func(ctx context.Context, scheduleID string, in schedule.SlotInput) (schedule.Schedule, error)
+	Delete           func(ctx context.Context, scheduleID string) error
+	DeleteOccurrence func(ctx context.Context, recurringScheduleID string, originalDate civil.Date) error
 }
 
 // build は、d の依存で schedule の全ての操作の型を作る。
@@ -466,5 +468,7 @@ func build(d deps, tx tx.Transactor, ids kernel.IDGenerator) *app {
 		Cancel:           schedule.NewCancel(d.Schedules, d.Staff, d.Locks, d.Exports, tx, ids).Do,
 		CancelOccurrence: schedule.NewCancelOccurrence(d.Recurring, d.Staff, d.Locks, d.Schedules, d.Types, d.Visits, d.Exports, tx, ids).Do,
 		Update:           schedule.NewUpdate(d.Schedules, d.Staff, d.Locks, d.Types, d.Visits, d.Now, d.Exports, tx).Do,
+		Delete:           schedule.NewDelete(d.Schedules, d.Staff, d.Locks, d.Now, d.Exports, tx, ids).Do,
+		DeleteOccurrence: schedule.NewDeleteOccurrence(d.Recurring, d.Staff, d.Locks, d.Now, d.Exports, tx, ids).Do,
 	}
 }

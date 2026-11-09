@@ -46,7 +46,12 @@ func (r recordedExports) RecurringChanged(context.Context, string, string, strin
 	return nil
 }
 
-// Google カレンダーを予定の正本にする事業所では、予定を書く 5 つの操作が 409 で拒まれ、予定も書き出しの待ちも書かない（ADR-0026）。
+func (r recordedExports) ScheduleDeleted(context.Context, string, string, string) error {
+	*r.n++
+	return nil
+}
+
+// Google カレンダーを予定の正本にする事業所では、予定を書く 7 つの操作が 409 で拒まれ、予定も書き出しの待ちも書かない（ADR-0026）。
 func TestSchedulesRejectGooglePrimary(t *testing.T) {
 	s := inmem.Seeded()
 	var queued int
@@ -75,6 +80,8 @@ func TestSchedulesRejectGooglePrimary(t *testing.T) {
 		"回の置き換え": func() error { _, err := uc.ChangeOccurrence(ctx, recurringID, occurrence, normalSlot()); return err },
 		"変更":     func() error { _, err := uc.Update(ctx, created.ID, normalSlot()); return err },
 		"キャンセル":  func() error { _, err := uc.Cancel(ctx, created.ID, "体調不良"); return err },
+		"削除":     func() error { return uc.Delete(ctx, created.ID) },
+		"回の削除":   func() error { return uc.DeleteOccurrence(ctx, recurringID, occurrence) },
 	} {
 		var ce *apperr.ConflictError
 		if err := do(); !errors.As(err, &ce) || ce.Code != schedule.CodeGooglePrimary {
@@ -85,8 +92,8 @@ func TestSchedulesRejectGooglePrimary(t *testing.T) {
 		t.Errorf("予定 %d → %d、繰り返しの予定 %d → %d、書き出しの待ち %d → %d, want 変わらない",
 			schedules, len(s.Schedules), recurring, len(s.Recurring), before, queued)
 	}
-	if len(s.Cancels) != 0 || len(s.Recurring[recurringID].ExclusionDates) != 0 {
-		t.Errorf("キャンセル %v、除外する日 %v, want 書かない", s.Cancels, s.Recurring[recurringID].ExclusionDates)
+	if len(s.Cancels) != 0 || len(s.Recurring[recurringID].ExclusionDates) != 0 || len(s.Deletions) != 0 {
+		t.Errorf("キャンセル %v、除外する日 %v、削除 %v, want 書かない", s.Cancels, s.Recurring[recurringID].ExclusionDates, s.Deletions)
 	}
 	if got := s.Schedules[created.ID]; got.Date != normalSlot().Date || *got.Title != "カンファレンス" {
 		t.Errorf("変えられない予定 = %+v", got.Slot)

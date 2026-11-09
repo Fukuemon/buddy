@@ -43,7 +43,7 @@ WHERE id IN (
     LIMIT $2
     FOR UPDATE SKIP LOCKED
 )
-RETURNING id, facility_id, schedule_id, recurring_schedule_id, status, revision, attempts, next_attempt_at, locked_until, overwrite, error_code, finished_at, created_at, updated_at
+RETURNING id, facility_id, schedule_id, recurring_schedule_id, status, revision, attempts, next_attempt_at, locked_until, overwrite, error_code, finished_at, created_at, updated_at, deleted_schedule_id
 `
 
 type ClaimCalendarExportsParams struct {
@@ -76,6 +76,7 @@ func (q *Queries) ClaimCalendarExports(ctx context.Context, arg ClaimCalendarExp
 			&i.FinishedAt,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.DeletedScheduleID,
 		); err != nil {
 			return nil, err
 		}
@@ -85,6 +86,28 @@ func (q *Queries) ClaimCalendarExports(ctx context.Context, arg ClaimCalendarExp
 		return nil, err
 	}
 	return items, nil
+}
+
+const enqueueDeletedScheduleExport = `-- name: EnqueueDeletedScheduleExport :exec
+INSERT INTO calendar_exports (id, facility_id, deleted_schedule_id) VALUES ($1, $2, $3)
+ON CONFLICT (deleted_schedule_id) WHERE status <> 'succeeded' AND deleted_schedule_id IS NOT NULL
+DO UPDATE SET
+    revision = calendar_exports.revision + 1,
+    status = CASE WHEN calendar_exports.status = 'failed' THEN 'pending' ELSE calendar_exports.status END,
+    attempts = CASE WHEN calendar_exports.status = 'failed' THEN 0 ELSE calendar_exports.attempts END,
+    error_code = CASE WHEN calendar_exports.status = 'failed' THEN NULL ELSE calendar_exports.error_code END,
+    next_attempt_at = CASE WHEN calendar_exports.status = 'conflict' THEN calendar_exports.next_attempt_at ELSE now() END
+`
+
+type EnqueueDeletedScheduleExportParams struct {
+	ID                string
+	FacilityID        string
+	DeletedScheduleID *string
+}
+
+func (q *Queries) EnqueueDeletedScheduleExport(ctx context.Context, arg EnqueueDeletedScheduleExportParams) error {
+	_, err := q.db.Exec(ctx, enqueueDeletedScheduleExport, arg.ID, arg.FacilityID, arg.DeletedScheduleID)
+	return err
 }
 
 const enqueueRecurringScheduleExport = `-- name: EnqueueRecurringScheduleExport :exec
@@ -164,7 +187,7 @@ func (q *Queries) FailCalendarExport(ctx context.Context, arg FailCalendarExport
 }
 
 const getCalendarExport = `-- name: GetCalendarExport :one
-SELECT id, facility_id, schedule_id, recurring_schedule_id, status, revision, attempts, next_attempt_at, locked_until, overwrite, error_code, finished_at, created_at, updated_at FROM calendar_exports WHERE id = $1
+SELECT id, facility_id, schedule_id, recurring_schedule_id, status, revision, attempts, next_attempt_at, locked_until, overwrite, error_code, finished_at, created_at, updated_at, deleted_schedule_id FROM calendar_exports WHERE id = $1
 `
 
 func (q *Queries) GetCalendarExport(ctx context.Context, id string) (CalendarExport, error) {
@@ -185,6 +208,7 @@ func (q *Queries) GetCalendarExport(ctx context.Context, id string) (CalendarExp
 		&i.FinishedAt,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.DeletedScheduleID,
 	)
 	return i, err
 }
@@ -201,8 +225,35 @@ func (q *Queries) GetCalendarExportFacilityID(ctx context.Context, id string) (s
 	return facility_id, err
 }
 
+const getOpenDeletedScheduleExport = `-- name: GetOpenDeletedScheduleExport :one
+SELECT id, facility_id, schedule_id, recurring_schedule_id, status, revision, attempts, next_attempt_at, locked_until, overwrite, error_code, finished_at, created_at, updated_at, deleted_schedule_id FROM calendar_exports WHERE deleted_schedule_id = $1 AND status <> 'succeeded'
+`
+
+func (q *Queries) GetOpenDeletedScheduleExport(ctx context.Context, deletedScheduleID *string) (CalendarExport, error) {
+	row := q.db.QueryRow(ctx, getOpenDeletedScheduleExport, deletedScheduleID)
+	var i CalendarExport
+	err := row.Scan(
+		&i.ID,
+		&i.FacilityID,
+		&i.ScheduleID,
+		&i.RecurringScheduleID,
+		&i.Status,
+		&i.Revision,
+		&i.Attempts,
+		&i.NextAttemptAt,
+		&i.LockedUntil,
+		&i.Overwrite,
+		&i.ErrorCode,
+		&i.FinishedAt,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.DeletedScheduleID,
+	)
+	return i, err
+}
+
 const getOpenRecurringScheduleExport = `-- name: GetOpenRecurringScheduleExport :one
-SELECT id, facility_id, schedule_id, recurring_schedule_id, status, revision, attempts, next_attempt_at, locked_until, overwrite, error_code, finished_at, created_at, updated_at FROM calendar_exports WHERE recurring_schedule_id = $1 AND status <> 'succeeded'
+SELECT id, facility_id, schedule_id, recurring_schedule_id, status, revision, attempts, next_attempt_at, locked_until, overwrite, error_code, finished_at, created_at, updated_at, deleted_schedule_id FROM calendar_exports WHERE recurring_schedule_id = $1 AND status <> 'succeeded'
 `
 
 func (q *Queries) GetOpenRecurringScheduleExport(ctx context.Context, recurringScheduleID *string) (CalendarExport, error) {
@@ -223,12 +274,13 @@ func (q *Queries) GetOpenRecurringScheduleExport(ctx context.Context, recurringS
 		&i.FinishedAt,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.DeletedScheduleID,
 	)
 	return i, err
 }
 
 const getOpenScheduleExport = `-- name: GetOpenScheduleExport :one
-SELECT id, facility_id, schedule_id, recurring_schedule_id, status, revision, attempts, next_attempt_at, locked_until, overwrite, error_code, finished_at, created_at, updated_at FROM calendar_exports WHERE schedule_id = $1 AND status <> 'succeeded'
+SELECT id, facility_id, schedule_id, recurring_schedule_id, status, revision, attempts, next_attempt_at, locked_until, overwrite, error_code, finished_at, created_at, updated_at, deleted_schedule_id FROM calendar_exports WHERE schedule_id = $1 AND status <> 'succeeded'
 `
 
 func (q *Queries) GetOpenScheduleExport(ctx context.Context, scheduleID *string) (CalendarExport, error) {
@@ -249,12 +301,13 @@ func (q *Queries) GetOpenScheduleExport(ctx context.Context, scheduleID *string)
 		&i.FinishedAt,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.DeletedScheduleID,
 	)
 	return i, err
 }
 
 const listCalendarExportIssues = `-- name: ListCalendarExportIssues :many
-SELECT e.id, e.facility_id, e.schedule_id, e.recurring_schedule_id, e.status, e.revision, e.attempts, e.next_attempt_at, e.locked_until, e.overwrite, e.error_code, e.finished_at, e.created_at, e.updated_at,
+SELECT e.id, e.facility_id, e.schedule_id, e.recurring_schedule_id, e.status, e.revision, e.attempts, e.next_attempt_at, e.locked_until, e.overwrite, e.error_code, e.finished_at, e.created_at, e.updated_at, e.deleted_schedule_id,
        (sc.id IS NOT NULL)::boolean AS cancelled,
        u.id AS staff_id, u.username AS staff_name,
        COALESCE(s.date, rs.date)::date AS date,
@@ -285,6 +338,7 @@ type ListCalendarExportIssuesRow struct {
 	FinishedAt          *time.Time
 	CreatedAt           time.Time
 	UpdatedAt           time.Time
+	DeletedScheduleID   *string
 	Cancelled           bool
 	StaffID             string
 	StaffName           string
@@ -295,6 +349,7 @@ type ListCalendarExportIssuesRow struct {
 }
 
 // 予定のタイトルと利用者名は読まない。
+// 削除した予定の待ちは、予定の時刻を持たないので出さない。職員の結合で外れる（ADR-0040）。
 func (q *Queries) ListCalendarExportIssues(ctx context.Context, facilityID string) ([]ListCalendarExportIssuesRow, error) {
 	rows, err := q.db.Query(ctx, listCalendarExportIssues, facilityID)
 	if err != nil {
@@ -319,6 +374,7 @@ func (q *Queries) ListCalendarExportIssues(ctx context.Context, facilityID strin
 			&i.FinishedAt,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.DeletedScheduleID,
 			&i.Cancelled,
 			&i.StaffID,
 			&i.StaffName,
