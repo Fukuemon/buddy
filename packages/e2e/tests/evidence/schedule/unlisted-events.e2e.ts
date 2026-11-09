@@ -110,6 +110,8 @@ test.describe('予定のカレンダー', () => {
               await expectOneUnlisted(page)
               await expect(timedEvent(page, title)).toHaveCount(0)
               await expect(calendarAllDayRowLabel(page)).toHaveCount(0)
+              // 予定の 10:00〜11:00 と、対照で動かす先の 11:00〜12:00 が、どちらの判定の画像にも映るようにする
+              await calendarTimeLabel(page, '11:00:00').scrollIntoViewIfNeeded()
               await check(
                 `通知の欄に「カレンダーに出せない予定が 1 件あります」「${OKADA.staff.name}: 1 件」と Google カレンダーで確認する案内が出る。時刻の格子と「終日」の行には何も出ない`,
               )
@@ -125,7 +127,7 @@ test.describe('予定のカレンダー', () => {
                 await expect(timedEvent(page, title)).toBeVisible()
               }).toPass()
               await expect(unlistedNotice(page)).toHaveCount(0)
-              await timedEvent(page, title).scrollIntoViewIfNeeded()
+              await calendarTimeLabel(page, '11:00:00').scrollIntoViewIfNeeded()
               await check(
                 `終了を読める時刻に戻すと、${dayLabel(date)} の 11:00〜12:00 の格子に「${title}」が出て、件数の通知が消える`,
               )
