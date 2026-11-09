@@ -55,29 +55,80 @@ export const detailDateTime = (event: GoogleEvent | undefined) => {
  * 通常の予定の値。日付と職員とタイトルと時刻のほかは、どの予定も同じにする。
  * start と end（HH:mm）を省くと 10:00〜11:00 にする。同じ職員の同じ時刻の予定は日の表示で重なって押せないので、1 本の spec で何件も作るときに時刻をずらす。
  */
-type NormalSchedule = { staffId: string; title: string; date: string; start?: string; end?: string }
+type NormalSchedule = {
+  staffId: string
+  title: string
+  date: string
+  start?: string
+  end?: string
+  /** メモ。省くと空にする。 */
+  description?: string
+}
+
+/** name の予定の種類か、code のサービスコードの ID を、token の職員で一覧（path）から引く。 */
+const masterId = async (request: APIRequestContext, token: string, path: string, name: string) => {
+  const res = await request.get(`${SCHEDULE_URL}${path}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  })
+  if (!res.ok()) throw new Error(`${path} を取れない: ${res.status()}`)
+  const found = ((await res.json()) as { id: string; name?: string; code?: string }[]).find(
+    (master) => (master.name ?? master.code)?.normalize('NFKC') === name.normalize('NFKC'),
+  )
+  if (found === undefined) throw new Error(`${path} に ${name} が無い`)
+  return found.id
+}
 
 /**
  * token の職員で、予定の API の本文に入れる通常の予定の値を作る。
  * 予定の種類の ID は、予定の種類の一覧（listScheduleTypes）から「通常」を引く。
  */
-const normalSlot = async (request: APIRequestContext, token: string, schedule: NormalSchedule) => {
-  const res = await request.get(`${SCHEDULE_URL}/v1/schedule_types`, {
+const normalSlot = async (request: APIRequestContext, token: string, schedule: NormalSchedule) => ({
+  schedule_type_id: await masterId(request, token, '/v1/schedule_types', '通常'),
+  date: schedule.date,
+  start_time: schedule.start ?? '10:00',
+  end_time: schedule.end ?? '11:00',
+  staff_id: schedule.staffId,
+  title: schedule.title,
+  ...(schedule.description === undefined ? {} : { description: schedule.description }),
+})
+
+/**
+ * 予定の API で、facilityId の事業所に、staffId の職員を主訪問者にした patientId の利用者の訪問の予定を 1 件作り（createSchedule）、レスポンスを返す。
+ * サービスコードは serviceCode（例: 訪看I3）にし、訪問の区分は付けない。
+ */
+export const createVisitSchedule = async (
+  request: APIRequestContext,
+  token: string,
+  facilityId: string,
+  visit: {
+    staffId: string
+    patientId: string
+    serviceCode: string
+    date: string
+    start: string
+    end: string
+  },
+) =>
+  request.post(`${SCHEDULE_URL}/v1/facilities/${facilityId}/schedules`, {
     headers: { Authorization: `Bearer ${token}` },
+    data: {
+      schedule_type_id: await masterId(request, token, '/v1/schedule_types', '訪問'),
+      date: visit.date,
+      start_time: visit.start,
+      end_time: visit.end,
+      staff_id: visit.staffId,
+      visit_info: {
+        patient_id: visit.patientId,
+        assigned_staff_id: visit.staffId,
+        service_code_id: await masterId(
+          request,
+          token,
+          '/v1/visit_infos/service_codes',
+          visit.serviceCode,
+        ),
+      },
+    },
   })
-  if (!res.ok()) throw new Error(`予定の種類の一覧を取れない: ${res.status()}`)
-  const types = (await res.json()) as { id: string; name: string }[]
-  const normal = types.find(({ name }) => name === '通常')
-  if (normal === undefined) throw new Error('予定の種類に「通常」が無い')
-  return {
-    schedule_type_id: normal.id,
-    date: schedule.date,
-    start_time: schedule.start ?? '10:00',
-    end_time: schedule.end ?? '11:00',
-    staff_id: schedule.staffId,
-    title: schedule.title,
-  }
-}
 
 /** 予定の API で、facilityId の事業所に staffId の職員の通常の予定を 1 件作り（createSchedule）、レスポンスを返す。 */
 export const createNormalSchedule = async (
