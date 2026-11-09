@@ -18,7 +18,7 @@ const signInManager = async (page: Page) => {
 const prepareBlueTeam = async (page: Page) => {
   await signInManager(page)
   const teamName = newUnitName('色')
-  const teamId = await createTeam(page.request, await issueManagerToken(page.request), {
+  const teamId = await createTeam(page.request, await issueManagerToken(), {
     name: teamName,
     color: 'blue',
   })

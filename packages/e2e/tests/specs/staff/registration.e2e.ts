@@ -115,7 +115,7 @@ test.describe('職員の一覧', () => {
       request,
     }) => {
       const staff = newStaff('screen')
-      const positions = await listPositions(request, await issueManagerToken(request))
+      const positions = await listPositions(request, await issueManagerToken())
       const member = positions.find((p) => p.id === STAFF_FORM.positionId)
       expect(member).toBeDefined()
 

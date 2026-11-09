@@ -60,7 +60,7 @@ const createCancelledSchedule = (title: string) => async (page: Page) => {
   await page.getByTestId('schedule-create-submit').click()
   await expect(page.getByTestId('schedule-form-modal')).toBeHidden()
 
-  const token = await issueManagerToken(page.request)
+  const token = await issueManagerToken()
   const schedule = await findSchedule(page.request, token, STAFF_FORM.facilityId, {
     date: today(),
     title,

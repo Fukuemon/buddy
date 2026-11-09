@@ -22,7 +22,7 @@ const CLERK_POSITION = '01M69C7BTRKYP0EQD62TQ2KARJ'
 const asManager = async <T>(fn: (api: APIRequestContext, token: string) => Promise<T>) => {
   const api = await request.newContext()
   try {
-    return await fn(api, await issueManagerToken(api))
+    return await fn(api, await issueManagerToken())
   } finally {
     await api.dispose()
   }

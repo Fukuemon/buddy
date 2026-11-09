@@ -14,15 +14,10 @@ const MANAGER = `${LOGIN_STAFF.name}（マネージャー、職員の管理の�
 
 /** マネージャーで、担当を青木 陽菜にした利用者を登録し、名前と ID を返す。 */
 const registerPatientOf = async (request: APIRequestContext, name: string) => {
-  const res = await registerPatient(
-    request,
-    await issueManagerToken(request),
-    STAFF_FORM.facilityId,
-    {
-      name,
-      assignedStaffId: LOGIN_STAFF.id,
-    },
-  )
+  const res = await registerPatient(request, await issueManagerToken(), STAFF_FORM.facilityId, {
+    name,
+    assignedStaffId: LOGIN_STAFF.id,
+  })
   expect(res.status()).toBe(201)
   return { name, id: ((await res.json()) as { id: string }).id }
 }
@@ -92,7 +87,7 @@ test.describe('利用者の一覧', () => {
           const name = `${NEW_PATIENT} 候補`
           const res = await registerPatient(
             request,
-            await issueManagerToken(request),
+            await issueManagerToken(),
             STAFF_FORM.facilityId,
             { name, assignedStaffId: LOGIN_STAFF.id },
           )
@@ -366,11 +361,7 @@ test.describe('利用者の一覧', () => {
             await page.goto('/patients')
             await signInAtBroker(page, LOGIN_EMAIL)
             const patient = await registerPatientOf(request, shot.patient)
-            const ended = await endPatientService(
-              request,
-              await issueManagerToken(request),
-              patient.id,
-            )
+            const ended = await endPatientService(request, await issueManagerToken(), patient.id)
             expect(ended.status()).toBe(200)
             return patient
           },

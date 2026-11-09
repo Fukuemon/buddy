@@ -22,7 +22,7 @@ const MISSING_SCHEDULE_ID = '01M3TC6BBRBQM0QK0S43P56AFZ'
 const asManager = async <T>(fn: (api: APIRequestContext, token: string) => Promise<T>) => {
   const api = await request.newContext()
   try {
-    return await fn(api, await issueManagerToken(api))
+    return await fn(api, await issueManagerToken())
   } finally {
     await api.dispose()
   }

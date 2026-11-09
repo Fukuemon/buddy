@@ -25,7 +25,7 @@ test.describe('予定のカレンダー', () => {
       request,
     }) => {
       const staff = newStaff('retired')
-      const manager = await issueManagerToken(request)
+      const manager = await issueManagerToken()
       const registered = await registerStaff(request, manager, staff)
       expect(registered.status()).toBe(201)
       const { id } = (await registered.json()) as { id: string }
@@ -46,7 +46,7 @@ test.describe('予定のカレンダー', () => {
       request,
     }) => {
       const staff = newStaff('rehired')
-      const manager = await issueManagerToken(request)
+      const manager = await issueManagerToken()
       const first = await registerStaff(request, manager, staff)
       expect(first.status()).toBe(201)
       const { id } = (await first.json()) as { id: string }
@@ -63,7 +63,7 @@ test.describe('予定のカレンダー', () => {
       request,
     }) => {
       const staff = newStaff('assigned')
-      const manager = await issueManagerToken(request)
+      const manager = await issueManagerToken()
       const registered = await registerStaff(request, manager, staff)
       expect(registered.status()).toBe(201)
       const { id } = (await registered.json()) as { id: string }
@@ -99,7 +99,7 @@ test.describe('職員の詳細', () => {
       page,
       request,
     }) => {
-      const manager = await issueManagerToken(request)
+      const manager = await issueManagerToken()
       const staff = newStaff('retire-screen')
       const id = await registerStaffId(request, manager, staff)
       const created = await createNormalSchedule(request, manager, STAFF_FORM.facilityId, {
