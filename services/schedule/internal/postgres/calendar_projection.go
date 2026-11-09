@@ -33,7 +33,7 @@ func (r *CalendarProjectionRepository) Put(ctx context.Context, p scheduleview.P
 		Status: string(p.Status), Title: p.Title,
 		StartAt: p.Start.At, StartDate: nullDate(p.Start.Date), EndAt: p.End.At, EndDate: nullDate(p.End.Date),
 		TimeZone: optional(p.TimeZone), Recurrence: nonNil(p.Recurrence), Etag: p.ETag, GoogleUpdatedAt: p.GoogleUpdatedAt,
-		LastEndDate: nullDate(p.LastEndDate),
+		LastEndDate: nullDate(p.LastEndDate), TimeUnreadable: p.TimeUnreadable,
 	})
 	return translate("put calendar event projection", err)
 }
@@ -149,7 +149,7 @@ func projectionDetailOf(row sqlcgen.ListCalendarEventProjectionsByFacilityRow, c
 			Start:    scheduleview.ProjectionTime{At: row.StartAt, Date: datePtr(row.StartDate)},
 			End:      scheduleview.ProjectionTime{At: row.EndAt, Date: datePtr(row.EndDate)},
 			TimeZone: deref(row.TimeZone), Recurrence: row.Recurrence, ETag: row.Etag, GoogleUpdatedAt: row.GoogleUpdatedAt,
-			LastEndDate: datePtr(row.LastEndDate), ProjectedAt: row.ProjectedAt,
+			LastEndDate: datePtr(row.LastEndDate), ProjectedAt: row.ProjectedAt, TimeUnreadable: row.TimeUnreadable,
 		},
 		StaffName:  row.StaffName,
 		ScheduleID: row.ScheduleID,

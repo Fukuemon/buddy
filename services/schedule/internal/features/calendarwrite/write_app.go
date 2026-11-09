@@ -168,7 +168,7 @@ func project(ctx context.Context, projections Projections, today civil.Date, cal
 	}
 	p, err := calendar.ProjectionOf(cal, ev)
 	if err != nil {
-		// shortcut: 日時を読めない予定は写さず、同期（calendarsync）が写すか消すのに任せる。Google が日時の無い予定を返したら直す
+		// shortcut: 例外の回の元の開始を読めない予定は写さず、同期（calendarsync）が消すのに任せる。Google が元の開始の無い回を返したら直す
 		return nil
 	}
 	return projections.Put(ctx, p)

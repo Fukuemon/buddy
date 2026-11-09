@@ -114,4 +114,10 @@ type Listing struct {
 	CalendarSyncs      []CalendarSync
 	// Cutover は、google_primary の事業所の open の切り替えで、無ければ nil である。画面は「切り替え中」を出す（ADR-0031）。
 	Cutover *OpenCutover
+	// AllDayEvents は、google_primary の事業所で、期間に重なる見てよい職員の終日の予定である。buddy_primary の事業所と、
+	// 予定の種類で絞ったときは空である（#672）。
+	AllDayEvents []AllDayEvent
+	// UnlistedCounts は、google_primary の事業所で、期間に重なる見てよい職員の、一覧に出せない予定の職員ごとの件数である。
+	// buddy_primary の事業所と、予定の種類で絞ったときは空である（#672）。
+	UnlistedCounts []UnlistedCount
 }

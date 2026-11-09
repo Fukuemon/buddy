@@ -27,9 +27,6 @@ func TestProjectionRulesRead(t *testing.T) {
 	rules := calendar.ProjectionRules{}
 	at := time.Date(2026, 10, 20, 9, 0, 0, 0, calendar.Tokyo)
 	day := civil.Date{Year: 2026, Month: 10, Day: 20}
-	allDay := projection("休み", at, 0)
-	next := civil.Date{Year: 2026, Month: 10, Day: 21}
-	allDay.Start, allDay.End = scheduleview.ProjectionTime{Date: &day}, scheduleview.ProjectionTime{Date: &next}
 	tests := []struct {
 		name string
 		p    scheduleview.Projection
@@ -39,8 +36,6 @@ func TestProjectionRulesRead(t *testing.T) {
 		{"通常の予定", projection("カンファレンス", at, 60), scheduleview.EventNormal},
 		{"訪問のタイトルを読めない予定", projection("【訪看I2】", at, 60), scheduleview.EventUnreadableTitle},
 		{"タイトルが空白だけの予定", projection("　", at, 60), scheduleview.EventUnreadableTitle},
-		{"終日の予定", allDay, scheduleview.EventSkipped},
-		{"日をまたぐ予定", projection("出張", at, 48*60), scheduleview.EventSkipped},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -48,15 +43,55 @@ func TestProjectionRulesRead(t *testing.T) {
 			if got.Kind != tt.want {
 				t.Fatalf("Kind = %v, want %v", got.Kind, tt.want)
 			}
-			if tt.want == scheduleview.EventSkipped {
-				return
-			}
 			if got.Date != day || got.StartTime != (civil.Time{Hour: 9}) || got.EndTime != (civil.Time{Hour: 10}) || got.Title != tt.p.Title {
 				t.Errorf("= %+v", got)
 			}
 			if tt.want == scheduleview.EventVisit &&
 				(got.ServiceKey != rules.ServiceKey("訪看I2") || got.ClientKey != rules.ClientKey("山田 花子")) {
 				t.Errorf("ServiceKey = %q, ClientKey = %q", got.ServiceKey, got.ClientKey)
+			}
+		})
+	}
+}
+
+// TestProjectionRulesReadCalendarOnly は、終日の予定を EventAllDay に、buddy の予定に読み替えられない予定を EventUnlisted にし、
+// 予定がかかる最初の日と最後の日を Date と LastDate に入れることを確認する（#672）。
+func TestProjectionRulesReadCalendarOnly(t *testing.T) {
+	rules := calendar.ProjectionRules{}
+	d := func(day int) civil.Date { return civil.Date{Year: 2026, Month: 10, Day: day} }
+	dates := func(start, end civil.Date) scheduleview.Projection {
+		p := projection("休み", time.Now(), 0)
+		p.Start, p.End = scheduleview.ProjectionTime{Date: &start}, scheduleview.ProjectionTime{Date: &end}
+		return p
+	}
+	at := time.Date(2026, 10, 20, 9, 0, 0, 0, calendar.Tokyo)
+	startOnly := projection("会議", at, 60)
+	startOnly.End, startOnly.TimeUnreadable = scheduleview.ProjectionTime{}, true
+	endOnly := projection("会議", at, 60)
+	endOnly.Start, endOnly.TimeUnreadable = scheduleview.ProjectionTime{}, true
+	neither := projection("会議", at, 60)
+	neither.Start, neither.End, neither.TimeUnreadable = scheduleview.ProjectionTime{}, scheduleview.ProjectionTime{}, true
+	tests := []struct {
+		name        string
+		p           scheduleview.Projection
+		want        scheduleview.EventKind
+		first, last civil.Date
+	}{
+		{"1 日の終日の予定", dates(d(20), d(21)), scheduleview.EventAllDay, d(20), d(20)},
+		{"3 日の終日の予定", dates(d(20), d(23)), scheduleview.EventAllDay, d(20), d(22)},
+		{"2 日にわたる予定", projection("出張", at, 48*60), scheduleview.EventUnlisted, d(20), d(22)},
+		{"翌々日の 0:00 に終わる予定", projection("出張", time.Date(2026, 10, 20, 0, 0, 0, 0, calendar.Tokyo), 48*60), scheduleview.EventUnlisted, d(20), d(21)},
+		{"24 時間の予定", projection("当直", at, 24*60), scheduleview.EventUnlisted, d(20), d(21)},
+		{"長さが 0 の予定", projection("メモ", at, 0), scheduleview.EventUnlisted, d(20), d(20)},
+		{"終了を読めない予定", startOnly, scheduleview.EventUnlisted, d(20), d(20)},
+		{"開始を読めない予定", endOnly, scheduleview.EventUnlisted, d(20), d(20)},
+		{"開始も終了も読めない予定", neither, scheduleview.EventUnlisted, civil.Date{}, civil.Date{}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := rules.Read(tt.p)
+			if got.Kind != tt.want || got.Date != tt.first || got.LastDate != tt.last {
+				t.Errorf("= %v %v〜%v, want %v %v〜%v", got.Kind, got.Date, got.LastDate, tt.want, tt.first, tt.last)
 			}
 		})
 	}

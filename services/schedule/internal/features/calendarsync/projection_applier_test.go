@@ -304,16 +304,38 @@ func TestSyncStopsProjectingWhenModeChanged(t *testing.T) {
 	}
 }
 
-// TestSyncSkipsUnreadableEventAndProjectsOthers は、日時を読めない予定を写さずに前の行を消し、ほかの予定を写して同期を成功にすることと、
+// TestSyncProjectsUnreadableTime は、開始か終了の日時を読めない予定を、読めた方の日時だけを持つ TimeUnreadable の行に写し、
+// 終わる日を読めた方の日にすることと、どちらも読めない予定は終わる日を持たないことを確認する（#672）。
+func TestSyncProjectsUnreadableTime(t *testing.T) {
+	e := newProjectionEnv(t)
+	e.srv.Put(googleCalID, gevent("start", "担当者会議", "日時ではない", "2099-11-04T11:00:00+09:00"))
+	e.srv.Put(googleCalID, gevent("both", "研修", "日時ではない", "日時ではない"))
+	e.sync(t)
+
+	start := e.mustRow(t, "start")
+	end := time.Date(2099, 11, 4, 11, 0, 0, 0, calendar.Tokyo)
+	if !start.TimeUnreadable || start.Start != (scheduleview.ProjectionTime{}) || start.End.At == nil || !start.End.At.Equal(end) {
+		t.Errorf("開始を読めない予定の行 = %+v", start)
+	}
+	if start.LastEndDate == nil || *start.LastEndDate != (civil.Date{Year: 2099, Month: 11, Day: 4}) {
+		t.Errorf("開始を読めない予定の終わる日 = %v, want 2099-11-04", start.LastEndDate)
+	}
+	both := e.mustRow(t, "both")
+	if !both.TimeUnreadable || both.Start != (scheduleview.ProjectionTime{}) || both.End != (scheduleview.ProjectionTime{}) || both.LastEndDate != nil {
+		t.Errorf("開始も終了も読めない予定の行 = %+v", both)
+	}
+}
+
+// TestSyncSkipsUnreadableEventAndProjectsOthers は、例外の回の元の開始を読めない予定を写さずに前の行を消し、ほかの予定を写して同期を成功にすることと、
 // ログに予定のタイトルと利用者名を書かず、事業所、カレンダー、Google の予定の ID を書くことを確認する。
 func TestSyncSkipsUnreadableEventAndProjectsOthers(t *testing.T) {
 	e := newProjectionEnv(t)
-	bad := gevent("bad", "【訪看I2】利用者A", "2099-11-04T10:00:00+09:00", "2099-11-04T11:00:00+09:00")
+	bad := gexception("bad", "parent", "【訪看I2】利用者A", "2099-11-04T10:00:00+09:00", "2099-11-04T11:00:00+09:00", "2099-11-04T10:00:00+09:00")
 	e.srv.Put(googleCalID, bad)
 	e.sync(t)
 	e.mustRow(t, "bad")
 
-	e.srv.Edit(googleCalID, "bad", func(ev *calendarv3.Event) { ev.Start.DateTime = "日時ではない" })
+	e.srv.Edit(googleCalID, "bad", func(ev *calendarv3.Event) { ev.OriginalStartTime.DateTime = "日時ではない" })
 	e.srv.Put(googleCalID, gevent("good", "【訪看I2】利用者B", "2099-11-05T10:00:00+09:00", "2099-11-05T11:00:00+09:00"))
 	logs := &bytes.Buffer{}
 	syncer := newProjectionSyncer(t, e.syncEnv, inmem.Facilities{Store: e.store},

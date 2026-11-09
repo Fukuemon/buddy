@@ -39,6 +39,7 @@ func (s Projections) CancelOccurrences(_ context.Context, externalCalendarID, pa
 			continue
 		}
 		p.Status, p.Title, p.Start, p.End, p.TimeZone = scheduleview.ProjectionCancelled, "", scheduleview.ProjectionTime{}, scheduleview.ProjectionTime{}, ""
+		p.TimeUnreadable = false
 		p.ProjectedAt = time.Now()
 		s.Projections[k] = p
 	}

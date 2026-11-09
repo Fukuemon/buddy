@@ -78,6 +78,8 @@ func (s List) Do(ctx context.Context, facilityID string, q ListQuery) (Listing, 
 		RecurringSchedules: filter(recurring, func(d RecurringDetail) bool { return readable(d.StaffID) }),
 		SourceMode:         f.SourceMode,
 		CalendarSyncs:      []CalendarSync{},
+		AllDayEvents:       []AllDayEvent{},
+		UnlistedCounts:     []UnlistedCount{},
 	}, nil
 }
 
@@ -122,6 +124,10 @@ func (s List) listProjected(ctx context.Context, f organization.Facility, q List
 		}
 	}
 	sortDetails(details, q.Sort)
+	only := calendarOnly{allDay: []AllDayEvent{}, unlisted: []UnlistedCount{}}
+	if q.TypeName == nil {
+		only = collectCalendarOnly(rows, s.projected.Rules, from, to)
+	}
 	syncs, err := s.projected.Syncs.ListSyncsByFacility(ctx, f.ID)
 	if err != nil {
 		return Listing{}, err
@@ -138,6 +144,8 @@ func (s List) listProjected(ctx context.Context, f organization.Facility, q List
 		SourceMode:         f.SourceMode,
 		CalendarSyncs:      filter(syncs, func(c CalendarSync) bool { return readable(c.StaffID) }),
 		Cutover:            cutover,
+		AllDayEvents:       only.allDay,
+		UnlistedCounts:     only.unlisted,
 	}, nil
 }
 
