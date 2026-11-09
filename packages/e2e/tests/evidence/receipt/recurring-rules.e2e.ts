@@ -23,7 +23,7 @@ const MORI_CALENDAR = 'kenta.mori@example.com'
 const END_DATE = '2027-01-31'
 const MONTHS = ['2026-12', '2027-01'] as const
 
-/** 確かめる繰り返しの規則。最初の日付は規則の回に当たる日にし、終了日は END_DATE にする。 */
+/** 確認する繰り返しの規則。最初の日付は規則の回に当たる日にし、終了日は END_DATE にする。 */
 const RULES = [
   {
     key: 'weekly-mon-thu',
