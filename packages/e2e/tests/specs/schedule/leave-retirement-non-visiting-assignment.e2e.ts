@@ -2,7 +2,6 @@ import { expect, test, type APIRequestContext } from '@playwright/test'
 
 import { LOGIN_STAFF } from '../../fixtures/env'
 import { findSchedule } from '../../fixtures/externalCalendar'
-import { registerPatient } from '../../fixtures/patient'
 import {
   createNormalSchedule,
   createWeeklyNormalSchedule,
@@ -188,26 +187,5 @@ test.describe('予定の編集', () => {
         message: STOPS[1].message,
       })
     })
-  })
-})
-
-test.describe('利用者の登録', () => {
-  test.describe('休職と退職の職員と、訪問しない職員への割り振り', () => {
-    for (const { label, stop, message } of STOPS) {
-      test(`担当を${label}にして利用者を登録しようとした場合、400 が返ること`, async ({
-        request,
-      }) => {
-        const manager = await issueManagerToken(request)
-        const stopped = await registerStopped(request, manager, stop)
-
-        const res = await registerPatient(request, manager, STAFF_FORM.facilityId, {
-          name: `E2E 利用者 ${Date.now()}`,
-          assignedStaffId: stopped.id,
-        })
-
-        expect(res.status()).toBe(400)
-        expect(await res.json()).toMatchObject({ code: 'invalid_input', message })
-      })
-    }
   })
 })

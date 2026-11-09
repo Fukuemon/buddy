@@ -445,56 +445,21 @@ linters:
           deny:
             - pkg: github.com/Fukuemon/buddy/services/schedule/internal/postgres
               desc: config は DB のアダプタを import しない。cmd が値をアダプタの設定にコピーする
-        cmd-api:
-          files:
-            - "**/cmd/api/**"
-            - "!$test"
-          deny:
-            - pkg: github.com/Fukuemon/buddy/services/schedule/internal/features
-              desc: cmd/api は機能とアダプタを assemble で組み立て、直接 import しない
-            - pkg: github.com/Fukuemon/buddy/services/schedule/internal/httpapi
-              desc: cmd/api は機能とアダプタを assemble で組み立て、直接 import しない
-            - pkg: github.com/Fukuemon/buddy/services/schedule/internal/postgres
-              desc: cmd/api は機能とアダプタを assemble で組み立て、直接 import しない
-            - pkg: github.com/Fukuemon/buddy/services/schedule/internal/gcal
-              desc: cmd/api は機能とアダプタを assemble で組み立て、直接 import しない
-            - pkg: github.com/Fukuemon/buddy/services/schedule/internal/broker
-              desc: cmd/api は機能とアダプタを assemble で組み立て、直接 import しない
-            - pkg: github.com/Fukuemon/buddy/services/schedule/internal/ulid
-              desc: cmd/api は機能とアダプタを assemble で組み立て、直接 import しない
-            - pkg: github.com/Fukuemon/buddy/services/schedule/internal/access
-              desc: cmd/api は機能とアダプタを assemble で組み立て、直接 import しない
-            - pkg: github.com/Fukuemon/buddy/services/schedule/internal/principal
-              desc: cmd/api は機能とアダプタを assemble で組み立て、直接 import しない
+            - pkg: github.com/Fukuemon/buddy/packages/go/oidc
+              desc: config は OIDC の検証のパッケージを import しない。cmd/api が値を oidc.Config にコピーする
         cmd-calendar-worker:
           files:
             - "**/cmd/calendar-worker/**"
             - "!$test"
           deny:
-            - pkg: github.com/Fukuemon/buddy/services/schedule/internal/features
-              desc: cmd/calendar-worker は機能とアダプタを assemble で組み立て、直接 import しない
             - pkg: github.com/Fukuemon/buddy/services/schedule/internal/httpapi
-              desc: cmd/calendar-worker は機能とアダプタを assemble で組み立て、直接 import しない
-            - pkg: github.com/Fukuemon/buddy/services/schedule/internal/postgres
-              desc: cmd/calendar-worker は機能とアダプタを assemble で組み立て、直接 import しない
-            - pkg: github.com/Fukuemon/buddy/services/schedule/internal/gcal
-              desc: cmd/calendar-worker は機能とアダプタを assemble で組み立て、直接 import しない
+              desc: cmd/calendar-worker は HTTP の層を持たない。HTTP の層は cmd/api だけが組み立てる
             - pkg: github.com/Fukuemon/buddy/services/schedule/internal/broker
-              desc: cmd/calendar-worker は機能とアダプタを assemble で組み立て、直接 import しない
-            - pkg: github.com/Fukuemon/buddy/services/schedule/internal/ulid
-              desc: cmd/calendar-worker は機能とアダプタを assemble で組み立て、直接 import しない
+              desc: cmd/calendar-worker は ID ブローカーを呼ばない。ブローカーは cmd/api だけが組み立てる
             - pkg: github.com/Fukuemon/buddy/services/schedule/internal/access
-              desc: cmd/calendar-worker は機能とアダプタを assemble で組み立て、直接 import しない
-            - pkg: github.com/Fukuemon/buddy/services/schedule/internal/principal
-              desc: cmd/calendar-worker は機能とアダプタを assemble で組み立て、直接 import しない
-        assemble:
-          files:
-            - "$all"
-            - "!**/cmd/**"
-            - "!$test"
-          deny:
-            - pkg: github.com/Fukuemon/buddy/services/schedule/internal/assemble
-              desc: assemble を import するのは cmd だけにする
+              desc: cmd/calendar-worker はリクエストを認可しない。認可は cmd/api だけが組み立てる
+            - pkg: github.com/Fukuemon/buddy/packages/go/oidc
+              desc: cmd/calendar-worker は access token を検証しない。OIDC の検証は cmd/api だけが組み立てる
         inmem:
           files:
             - "$all"

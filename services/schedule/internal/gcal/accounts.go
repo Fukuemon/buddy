@@ -33,6 +33,39 @@ func NewAccounts(clients Clients, orgOf OrgOf) *Accounts {
 	return &Accounts{clients: clients, orgOf: orgOf}
 }
 
+// Config は、Open が Google カレンダーの認証の情報を作る設定である。cmd が config.Calendar の値を写す。
+type Config struct {
+	// ServiceAccountsFile は、組織の ID とサービスアカウントの対応（JSON）のパスである。形は gcalauth.LoadAccounts にある。
+	ServiceAccountsFile string
+	// Endpoint は、Calendar API の代わりに呼ぶ URL で、ローカル環境の calendarpit に向けるときだけ持つ。
+	Endpoint string
+	// Writable は、予定を Google カレンダーに書くかである。true ならスコープを calendar.events に、false なら calendar.readonly にする。
+	Writable bool
+}
+
+// Open は、事業所の組織のサービスアカウントで Google カレンダーを読み書きする Accounts を返す。orgOf で事業所の組織を引く。
+// cfg の ServiceAccountsFile が空なら nil を返す。認証は Application Default Credentials で読み、事業所のアカウントになりすます。
+// ローカル環境の calendarpit に向けるときは、GOOGLE_APPLICATION_CREDENTIALS の認証情報をなりすまさずに使い、無ければ認証をしない。
+// サービスアカウントの対応のファイルを読めないとき、認証の情報を作れないときは、エラーを返す。
+func Open(ctx context.Context, cfg Config, orgOf OrgOf) (*Accounts, error) {
+	if cfg.ServiceAccountsFile == "" {
+		return nil, nil
+	}
+	accounts, err := gcalauth.LoadAccounts(cfg.ServiceAccountsFile)
+	if err != nil {
+		return nil, err
+	}
+	scope := calendarv3.CalendarReadonlyScope
+	if cfg.Writable {
+		scope = calendarv3.CalendarEventsScope
+	}
+	clients, err := gcalauth.New(ctx, gcalauth.Config{Accounts: accounts, Scope: scope, Endpoint: cfg.Endpoint})
+	if err != nil {
+		return nil, err
+	}
+	return NewAccounts(clients, orgOf), nil
+}
+
 // ServiceAccount は、事業所 facilityID のサービスアカウントのメールアドレスを返す。
 // 事業所が無いか、組織に結び付いていないか、組織にサービスアカウントの対応が無いときは calendar.ErrNotConfigured を返す。
 func (a *Accounts) ServiceAccount(ctx context.Context, facilityID string) (string, error) {

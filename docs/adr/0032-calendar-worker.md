@@ -12,7 +12,7 @@ Cloud Run のようなリクエストで動く環境では、スケールゼロ�
 
 決定に関わる事実は次のとおり。
 
-- 組み立ては `internal/assemble` にあり、`cmd/api` とほかの実行単位が共有する。設定は `config.LoadAPI` と `config.LoadWorker` に分かれ、`LoadWorker` は OIDC とブローカーの値を読まない。
+- 組み立ては各 `cmd` にあり、`cmd/calendar-worker` は書き出しと同期に使う機能のパッケージとアダプタだけを組み立てる。設定は `config.LoadAPI` と `config.LoadWorker` に分かれ、`LoadWorker` は OIDC とブローカーの値を読まない。
   - ADR-0021: [予定の API を機能ごとのパッケージに分ける](0021-schedule-api-packages.md)
 - 書き出しの待ちと同期の状態は、`FOR UPDATE SKIP LOCKED` とリースで取る（Claim）。取った処理が終わらずにリースが切れると、別の処理が取り直す。書き出しは 1 回に 5 件、リース 2 分、同期は 1 回に 5 件、リース 6 分である。
 - 書き出しは、buddy の予定の ID から Google の予定の ID を決め（`EventIDOf`）、作り直しの 409 を同じ予定とみなす。外部への書き込みが成功した後に DB の更新が失敗し、書き出しの待ちを取り直しても、同じ予定を 2 つ作らない。
@@ -33,21 +33,20 @@ flowchart TB
         api["cmd/api（HTTP のサーバー）"]
         subgraph worker["cmd/calendar-worker"]
             main["main.go: 役割、--once、--max-duration、停止の合図、終了のコード"]
+            assembly["worker.go: Exporter と Syncer の組み立て"]
             loop["loop.go: 常駐（resident）と 1 回（drain）の繰り返し"]
         end
-        assemble["internal/assemble"]
         exporter["calendarexport の Exporter.ExportDue"]
         syncer["calendarsync の Syncer.SyncDue"]
     end
     db[("PostgreSQL（書き出しの待ちと同期の状態の Claim とリース）")]
     gcal["Google Calendar API"]
-    api --> assemble
-    main --> assemble
+    main --> assembly
     main --> loop
     loop -->|export| exporter
     loop -->|sync| syncer
-    assemble --> exporter
-    assemble --> syncer
+    assembly --> exporter
+    assembly --> syncer
     exporter --> db
     syncer --> db
     exporter --> gcal

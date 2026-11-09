@@ -19,7 +19,7 @@ import (
 	"github.com/Fukuemon/buddy/services/schedule/internal/inmem"
 )
 
-// このファイルのテストは、組み立て（assemble）と同じく google_primary の事業所にだけ ProjectionApplier を渡した同期の処理で、
+// このファイルのテストは、組み立て（cmd/calendar-worker）と同じく google_primary の事業所にだけ ProjectionApplier を渡した同期の処理で、
 // Google カレンダーの予定を Projection に写すことと、buddy_primary の事業所のカレンダーを読まないことを確認する（ADR-0029）。
 // 予定の日付は、保持する期間（前々月の初日から）に、テストを流す日によらず入るよう、先の年にする。
 

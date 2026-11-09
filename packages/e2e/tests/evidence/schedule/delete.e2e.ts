@@ -11,7 +11,7 @@ import {
   replaceOccurrence,
 } from '../../fixtures/schedule'
 import { STAFF_FORM } from '../../fixtures/staff'
-import { openApiClient } from '../../screens/apiReference'
+import { openApiClient, openApiReference } from '../../screens/apiReference'
 import { signInAtBroker } from '../../screens/login'
 import { apiClient } from '../../selectors/apiReference'
 import { linkStaffCalendar, unlinkStaffCalendar } from '../../setup/calendar'
@@ -43,7 +43,7 @@ const prepare =
     const token = await issueAccessToken(page.request, LOGIN_EMAIL)
     const data = await setup(page, token)
     await routeApiReference(page)
-    await page.goto('http://localhost:8000/api/schedule.html')
+    await openApiReference(page, 'schedule')
     return { token, data }
   }
 

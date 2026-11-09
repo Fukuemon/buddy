@@ -57,7 +57,7 @@ type Applier interface {
 	Settle(ctx context.Context, c calendar.ExternalCalendar, full bool, eventIDs []string) error
 }
 
-// Appliers は、事業所の正本のモードごとの Applier である。組み立て（assemble）が決めて Syncer に渡す（ADR-0021）。
+// Appliers は、事業所の正本のモードごとの Applier である。組み立て（cmd/calendar-worker）が決めて Syncer に渡す（ADR-0021）。
 // Applier の無いモードの事業所のカレンダーは、同期で読まない。
 type Appliers map[organization.SourceMode]Applier
 
