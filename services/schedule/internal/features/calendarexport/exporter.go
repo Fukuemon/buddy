@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"log/slog"
+	"slices"
 	"time"
 
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendar"
@@ -194,16 +195,24 @@ func (x *Exporter) exportSchedule(ctx context.Context, e calendar.Export) error 
 }
 
 // exportDeletion は、削除した単発の予定の外部の予定を消し、予定の対応を消す（ADR-0040）。対応のカレンダーを外したときは何もしない。
-// 予定の対応が無いときは、予定の職員の今のカレンダーから、予定の ID から決めた ID の外部の予定を消す。
-// 書き出しが最初の作成か職員の替わった予定を書いている間に削除すると、対応の無い外部の予定が残るためである。
+// 待ちが外部の予定を作ろうとしたカレンダー（WritingCalendarID）からも、予定の ID から決めた ID の外部の予定を消す。
+// 書き出しが作成を書いている間に削除すると、待ちは削除の待ちに付け替わり、作った外部の予定は対応を持たないためである（#964）。
+// 予定の対応が無いときは、予定の職員の今のカレンダーからも消す。作ろうとしたカレンダーを書く前に積んだ待ちのためである。
 // buddy が正本なので、外部で予定が変わっていても etag を比べずに消す。外部で既に消されていれば（410）、消せたものとして扱う。
 func (x *Exporter) exportDeletion(ctx context.Context, e calendar.Export) error {
 	link, err := optionalLink(x.deps.Calendars.LinkByDeletedSchedule(ctx, e.DeletedScheduleID))
 	if err != nil {
 		return err
 	}
+	var linked []string
+	if link != nil {
+		linked = append(linked, link.ExternalCalendarID)
+	}
+	if err := x.clearWriting(ctx, e, e.DeletedScheduleID, linked...); err != nil {
+		return err
+	}
 	if link == nil {
-		return x.deleteUnlinked(ctx, e.DeletedScheduleID)
+		return x.deleteUnlinked(ctx, e.DeletedScheduleID, e.WritingCalendarID)
 	}
 	lc, err := x.deps.Calendars.Get(ctx, link.ExternalCalendarID)
 	if err != nil || lc.DisabledAt != nil {
@@ -220,8 +229,8 @@ func (x *Exporter) exportDeletion(ctx context.Context, e calendar.Export) error 
 }
 
 // deleteUnlinked は、削除した単発の予定 scheduleID の職員の、外していないカレンダーから、予定の ID から決めた ID の外部の予定を消す。
-// 外部の予定が無いか既に消されていれば（404、410）、消せたものとして扱う。職員にカレンダーが無ければ何もしない。
-func (x *Exporter) deleteUnlinked(ctx context.Context, scheduleID string) error {
+// 職員にカレンダーが無いときと、そのカレンダーが既に消した cleared のときは何もしない。
+func (x *Exporter) deleteUnlinked(ctx context.Context, scheduleID, cleared string) error {
 	if x.deps.Deletions == nil {
 		return nil
 	}
@@ -230,13 +239,33 @@ func (x *Exporter) deleteUnlinked(ctx context.Context, scheduleID string) error 
 		return err
 	}
 	cal, err := x.deps.Calendars.ActiveByStaff(ctx, staffID)
-	if errors.Is(err, apperr.ErrNotFound) {
+	if errors.Is(err, apperr.ErrNotFound) || (err == nil && cal.ID == cleared) {
 		return nil
 	}
 	if err != nil {
 		return err
 	}
-	eventID, err := calendar.EventIDOf(scheduleID)
+	return x.deleteByID(ctx, cal, scheduleID)
+}
+
+// clearWriting は、待ち e が外部の予定を作ろうとしたカレンダーから、予定 id から決めた ID の外部の予定を消す。
+// 作った後で予定の対応を書けずに止まったか、作っている間に予定が変わり、対応の無いまま残った外部の予定を消すためである（#964）。
+// keep のカレンダーと外したカレンダーでは消さない。keep は、予定の対応で消すか更新するカレンダーと、これから外部の予定を作るカレンダーである。
+func (x *Exporter) clearWriting(ctx context.Context, e calendar.Export, id string, keep ...string) error {
+	if e.WritingCalendarID == "" || slices.Contains(keep, e.WritingCalendarID) {
+		return nil
+	}
+	wc, err := x.deps.Calendars.Get(ctx, e.WritingCalendarID)
+	if err != nil || wc.DisabledAt != nil {
+		return err
+	}
+	return x.deleteByID(ctx, wc, id)
+}
+
+// deleteByID は、カレンダー cal から、予定 id から決めた ID の外部の予定を消す。
+// 外部の予定が無いか既に消されていれば（404、410）、消せたものとして扱う。
+func (x *Exporter) deleteByID(ctx context.Context, cal calendar.ExternalCalendar, id string) error {
+	eventID, err := calendar.EventIDOf(id)
 	if err != nil {
 		return err
 	}
@@ -329,6 +358,16 @@ func (x *Exporter) sync(ctx context.Context, e calendar.Export, it item) error {
 	if err != nil && !errors.Is(err, apperr.ErrNotFound) {
 		return err
 	}
+	var keep []string
+	if it.link != nil {
+		keep = append(keep, it.link.ExternalCalendarID)
+	}
+	if it.body != nil && hasCal {
+		keep = append(keep, cal.ID)
+	}
+	if err := x.clearWriting(ctx, e, it.id, keep...); err != nil {
+		return err
+	}
 	if it.link != nil {
 		lc, err := x.deps.Calendars.Get(ctx, it.link.ExternalCalendarID)
 		if err != nil {
@@ -374,6 +413,10 @@ func (x *Exporter) sync(ctx context.Context, e calendar.Export, it item) error {
 	}
 	w, err := x.deps.Writers(ctx, cal.FacilityID)
 	if err != nil {
+		return err
+	}
+	// 作った後で止まっても、次に書くときにこのカレンダーの予定を見つけられるよう、作る前に書く。
+	if err := x.deps.Exports.MarkWriting(ctx, e, cal.ID); err != nil {
 		return err
 	}
 	created, err := w.Insert(ctx, cal.CalendarID, eventID, *it.body)

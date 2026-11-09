@@ -18,6 +18,9 @@ type ExportRepository interface {
 	// Finish は、待ち e を書いた結果 r を書く。書いている間に e が積み直されていれば、結果によらず待ちを pending に戻して数え直す。
 	// e を取った後にほかの処理が同じ待ちを取り直していれば（lease が切れたとき）、何も書かない。
 	Finish(ctx context.Context, e calendar.Export, r calendar.ExportResult) error
+	// MarkWriting は、待ち e が外部の予定を作るカレンダー calendarID を、作る前に書く。結果を書いた待ちでは空に戻す。
+	// e を取った後にほかの処理が同じ待ちを取り直していれば、何も書かずにエラーを返す。
+	MarkWriting(ctx context.Context, e calendar.Export, calendarID string) error
 	Get(ctx context.Context, id string) (calendar.Export, error)
 	// ListIssues は、事業所の確認が必要な待ち（conflict と failed）を、新しく変わった順に返す。
 	ListIssues(ctx context.Context, facilityID string) ([]calendar.ExportIssue, error)

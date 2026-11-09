@@ -175,7 +175,7 @@ VALUES (sqlc.arg(id), sqlc.arg(facility_id), sqlc.narg(schedule_id), sqlc.narg(r
 UPDATE external_event_links SET deleted_schedule_id = schedule_id, schedule_id = NULL WHERE schedule_id = $1;
 
 -- name: DeleteSchedule :one
--- 書き出しの待ちは外部キーの ON DELETE CASCADE で消える。
+-- 終わっていない書き出しの待ちは、先に MoveScheduleExportToDeletion で削除の待ちに付け替える。終わった待ちは外部キーの ON DELETE CASCADE で消える。
 DELETE FROM schedules WHERE id = $1 RETURNING visit_info_id;
 
 -- name: GetDeletedScheduleStaffID :one

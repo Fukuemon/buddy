@@ -37,7 +37,7 @@ RETURNING *;
 
 -- name: SucceedCalendarExport :execrows
 UPDATE calendar_exports
-SET status = 'succeeded', error_code = NULL, locked_until = NULL, overwrite = false, finished_at = now()
+SET status = 'succeeded', error_code = NULL, locked_until = NULL, overwrite = false, writing_calendar_id = NULL, finished_at = now()
 WHERE id = sqlc.arg(id) AND revision = sqlc.arg(revision) AND attempts = sqlc.arg(attempts);
 
 -- name: FailCalendarExport :execrows
@@ -110,3 +110,17 @@ DO UPDATE SET
     attempts = CASE WHEN calendar_exports.status = 'failed' THEN 0 ELSE calendar_exports.attempts END,
     error_code = CASE WHEN calendar_exports.status = 'failed' THEN NULL ELSE calendar_exports.error_code END,
     next_attempt_at = CASE WHEN calendar_exports.status = 'conflict' THEN calendar_exports.next_attempt_at ELSE now() END;
+
+-- name: MoveScheduleExportToDeletion :exec
+-- 予定の行を消す前に、終わっていない待ちを削除の待ちに付け替える（#964）。予定の行を消すと、待ちは ON DELETE CASCADE で消えるためである。
+-- 付け替えた待ちは、書いている処理の lease が解けるまで取られないので、作っている途中の外部の予定を、作り終えた後に消せる。
+-- 削除は外部の変更より優先するので、確認が必要な待ちも pending に戻す。書いている処理の結果は、revision の違いで捨てられる。
+UPDATE calendar_exports
+SET deleted_schedule_id = schedule_id, schedule_id = NULL, revision = revision + 1, status = 'pending',
+    attempts = CASE WHEN status = 'pending' THEN attempts ELSE 0 END, error_code = NULL, next_attempt_at = now()
+WHERE schedule_id = $1 AND status <> 'succeeded';
+
+-- name: MarkCalendarExportWriting :execrows
+-- 外部の予定を作る前に、作る先のカレンダーを書く。取ったときの attempts と比べ、取り直された待ちは変えない。
+UPDATE calendar_exports SET writing_calendar_id = sqlc.arg(writing_calendar_id)
+WHERE id = sqlc.arg(id) AND attempts = sqlc.arg(attempts);

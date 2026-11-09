@@ -2,6 +2,7 @@ package postgres
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -32,14 +33,15 @@ func toExport(e sqlcgen.CalendarExport) calendar.Export {
 			RecurringScheduleID: deref(e.RecurringScheduleID),
 			DeletedScheduleID:   deref(e.DeletedScheduleID),
 		},
-		Status:        calendar.ExportStatus(e.Status),
-		Revision:      int(e.Revision),
-		Attempts:      int(e.Attempts),
-		Overwrite:     e.Overwrite,
-		NextAttemptAt: e.NextAttemptAt,
-		LockedUntil:   e.LockedUntil,
-		CreatedAt:     e.CreatedAt,
-		UpdatedAt:     e.UpdatedAt,
+		Status:            calendar.ExportStatus(e.Status),
+		Revision:          int(e.Revision),
+		Attempts:          int(e.Attempts),
+		Overwrite:         e.Overwrite,
+		WritingCalendarID: deref(e.WritingCalendarID),
+		NextAttemptAt:     e.NextAttemptAt,
+		LockedUntil:       e.LockedUntil,
+		CreatedAt:         e.CreatedAt,
+		UpdatedAt:         e.UpdatedAt,
 	}
 	if e.ErrorCode != nil {
 		c := calendar.ExportErrorCode(*e.ErrorCode)
@@ -114,6 +116,22 @@ func (r *CalendarExportRepository) Finish(ctx context.Context, e calendar.Export
 		return nil
 	}
 	return translate("release calendar export", r.q(ctx).ReleaseCalendarExport(ctx, sqlcgen.ReleaseCalendarExportParams{ID: e.ID, Attempts: attempts}))
+}
+
+// MarkWriting は、待ち e が外部の予定を作るカレンダー calendarID を書く。e を取った後にほかの処理が取り直していれば、apperr.ErrConflict を返す。
+func (r *CalendarExportRepository) MarkWriting(ctx context.Context, e calendar.Export, calendarID string) error {
+	attempts, err := int32Of(e.Attempts)
+	if err != nil {
+		return err
+	}
+	n, err := r.q(ctx).MarkCalendarExportWriting(ctx, sqlcgen.MarkCalendarExportWritingParams{ID: e.ID, Attempts: attempts, WritingCalendarID: &calendarID})
+	if err != nil {
+		return translate("mark calendar export writing", err)
+	}
+	if n == 0 {
+		return fmt.Errorf("mark calendar export writing: 待ち %s はほかの処理が取り直した: %w", e.ID, apperr.ErrConflict)
+	}
+	return nil
 }
 
 // Get は、ID が id の待ちを返す。無いときは apperr.ErrNotFound を返す。

@@ -14,7 +14,7 @@ import (
 )
 
 // TestScheduleDeleteInDB は、単発の予定の削除が、監査の記録を書き、予定の対応を監査の記録に付け替えてから、
-// 予定の行と訪問の情報を消すことを確認する。予定の書き出しの待ちは外部キーで消え、削除の待ちは積める（ADR-0040）。
+// 予定の行と訪問の情報を消すことを確認する（ADR-0040）。終わっていない書き出しの待ちは削除の待ちに付け替わり、終わった待ちは外部キーで消える（#964）。
 func TestScheduleDeleteInDB(t *testing.T) {
 	ctx := txContext(t)
 	schedules, calendars, exports := NewScheduleRepository(testDB), NewCalendarRepository(testDB), NewCalendarExportRepository(testDB)
@@ -23,6 +23,7 @@ func TestScheduleDeleteInDB(t *testing.T) {
 		linkID   = "01M3TD000000000000000000K1"
 		exportID = "01M3TD000000000000000000X5"
 		deleteID = "01M3TD000000000000000000X6"
+		doneID   = "01M3TD000000000000000000X7"
 		auditID  = "01M3TD000000000000000000D1"
 	)
 	cur, err := schedules.Get(ctx, seedVisitSchedule)
@@ -40,6 +41,15 @@ func TestScheduleDeleteInDB(t *testing.T) {
 	if err := exports.Enqueue(ctx, exportID, calendar.Target{FacilityID: seedFacility, ScheduleID: seedVisitSchedule}); err != nil {
 		t.Fatal(err)
 	}
+	tx := ctx.Value(txKey{}).(pgx.Tx)
+	// 終わっていない待ちは、外部で変わっていた確認が必要な待ちにし、終わった待ちを別に足す
+	if _, err := tx.Exec(ctx, `UPDATE calendar_exports SET status = 'conflict', error_code = 'precondition_failed', attempts = 3, writing_calendar_id = $2 WHERE id = $1`, exportID, calID); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := tx.Exec(ctx, `INSERT INTO calendar_exports (id, facility_id, schedule_id, status, finished_at) VALUES ($1, $2, $3, 'succeeded', now())`,
+		doneID, seedFacility, seedVisitSchedule); err != nil {
+		t.Fatal(err)
+	}
 
 	d := schedule.Deletion{ID: auditID, FacilityID: seedFacility, ScheduleID: seedVisitSchedule, Date: cur.Date, StaffID: cur.StaffID, DeletedBy: seedMori}
 	if err := schedules.Delete(ctx, d); err != nil {
@@ -52,17 +62,24 @@ func TestScheduleDeleteInDB(t *testing.T) {
 	if err != nil || l.ID != linkID || l.ScheduleID != nil {
 		t.Errorf("削除した予定の対応 = %+v, %v, want 監査の記録を指して残る", l, err)
 	}
-	if _, err := exports.Get(ctx, exportID); !errors.Is(err, apperr.ErrNotFound) {
-		t.Errorf("削除した予定の書き出しの待ち: err = %v, want 消える", err)
+	moved, err := exports.Get(ctx, exportID)
+	if err != nil || moved.DeletedScheduleID != seedVisitSchedule || moved.ScheduleID != "" || moved.Status != calendar.ExportPending ||
+		moved.Attempts != 0 || moved.ErrorCode != nil || moved.Revision != 2 || moved.WritingCalendarID != calID {
+		t.Errorf("終わっていない待ち = %+v, %v, want 作ろうとしたカレンダーを持ったまま、pending の削除の待ちに付け替わる", moved, err)
+	}
+	if _, err := exports.Get(ctx, doneID); !errors.Is(err, apperr.ErrNotFound) {
+		t.Errorf("終わった書き出しの待ち: err = %v, want 外部キーで消える", err)
 	}
 	if err := exports.Enqueue(ctx, deleteID, calendar.Target{FacilityID: seedFacility, DeletedScheduleID: seedVisitSchedule}); err != nil {
 		t.Fatal(err)
 	}
-	if e, err := exports.Get(ctx, deleteID); err != nil || e.DeletedScheduleID != seedVisitSchedule || e.ScheduleID != "" {
-		t.Errorf("削除の待ち = %+v, %v", e, err)
+	if e, err := exports.Get(ctx, exportID); err != nil || e.Revision != 3 {
+		t.Errorf("削除の待ちを積んだ後の待ち = %+v, %v, want 付け替えた待ちに積み直す", e, err)
+	}
+	if _, err := exports.Get(ctx, deleteID); !errors.Is(err, apperr.ErrNotFound) {
+		t.Errorf("削除の待ちを別に足した: err = %v", err)
 	}
 
-	tx := ctx.Value(txKey{}).(pgx.Tx)
 	var infos int
 	if err := tx.QueryRow(ctx, "SELECT COUNT(*) FROM visit_infos WHERE id = $1", infoID).Scan(&infos); err != nil {
 		t.Fatal(err)

@@ -62,9 +62,12 @@ type Export struct {
 	// Attempts は、書こうとした回数である。
 	Attempts int
 	// Overwrite は、外部の予定の etag を比べずに、buddy の内容で書き直すかである。
-	Overwrite     bool
-	ErrorCode     *ExportErrorCode
-	NextAttemptAt time.Time
+	Overwrite bool
+	// WritingCalendarID は、外部の予定を作ろうとしたカレンダーの ID で、作る前に書く。作った後で予定の対応を書けずに止まったときと、
+	// 作っている間に予定を削除したときに、対応の無い外部の予定を次に書くときに消すために使う。書き終えた待ちと、作ろうとしていない待ちでは空である。
+	WritingCalendarID string
+	ErrorCode         *ExportErrorCode
+	NextAttemptAt     time.Time
 	// LockedUntil は、書いている処理が待ちを持つ期限で、取られていなければ nil である。
 	LockedUntil *time.Time
 	// CreatedAt は、待ちを足した時刻である。終わっていない待ちに積み直しても変わらない。
