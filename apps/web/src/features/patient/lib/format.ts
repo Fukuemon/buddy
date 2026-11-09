@@ -63,17 +63,23 @@ export const editStaffOptions = (
 export const activeStaffOptions = (staff: readonly StaffRecord[]) =>
   staff.filter(isActiveStaffRecord).sort((a, b) => a.username.localeCompare(b.username, 'ja'))
 
-/** 残る単発の予定 1 件の、`2026年11月2日（月） 09:00〜09:29` の形の日時。 */
+/** 残る単発の予定 1 件の、`2026年11月2日（月） 09:00〜09:29` の形の日時。翌日に終わる予定は `22:00〜翌 01:00` にする。 */
 export const formatRemainingSchedule = (schedule: PatientSchedules['schedules'][number]) =>
-  `${formatDate(schedule.date)} ${formatTimeRange(schedule.start_time, schedule.end_time)}`
+  `${formatDate(schedule.date)} ${formatTimeRange(schedule.start_time, schedule.end_time, schedule.ends_next_day ? 'nextDay' : 'sameDay')}`
 
-/** 残る繰り返しの予定 1 件の、最初の回の日付、終了日、時間。職員の詳細の残る繰り返しの予定と同じ形にする。 */
+/** 残る繰り返しの予定 1 件の、最初の回の日付、終了日、時間。翌日に終わる繰り返しは `22:00〜翌 01:00` にする。職員の詳細の残る繰り返しの予定と同じ形にする。 */
 export const formatRemainingRecurring = (
   recurring: PatientSchedules['recurring_schedules'][number],
-) =>
-  recurring.end_date === null
-    ? `${formatDate(recurring.date)}から終了日なし、${formatTimeRange(recurring.start_time, recurring.end_time)}`
-    : `${formatDate(recurring.date)}から${formatDate(recurring.end_date)}まで、${formatTimeRange(recurring.start_time, recurring.end_time)}`
+) => {
+  const time = formatTimeRange(
+    recurring.start_time,
+    recurring.end_time,
+    recurring.ends_next_day ? 'nextDay' : 'sameDay',
+  )
+  return recurring.end_date === null
+    ? `${formatDate(recurring.date)}から終了日なし、${time}`
+    : `${formatDate(recurring.date)}から${formatDate(recurring.end_date)}まで、${time}`
+}
 
 /** 残る予定と繰り返しの予定が 1 つも無いか。 */
 export const hasNoSchedules = (schedules: PatientSchedules) =>

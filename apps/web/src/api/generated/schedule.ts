@@ -1248,6 +1248,8 @@ export interface components {
                 date: components["schemas"]["Date"];
                 start_time: components["schemas"]["Time"];
                 end_time: components["schemas"]["Time"];
+                /** @description date の翌日の end_time に終わる予定のとき true */
+                ends_next_day: boolean;
             }[];
             /** @description その日以降に終わる繰り返しの予定。終了日の無い繰り返しを含める。最初の回の日時の順 */
             recurring_schedules: {
@@ -1261,6 +1263,8 @@ export interface components {
                 end_date: string | null;
                 start_time: components["schemas"]["Time"];
                 end_time: components["schemas"]["Time"];
+                /** @description 全ての回が、回の日付の翌日の end_time に終わるとき true */
+                ends_next_day: boolean;
             }[];
             /** @description 職員が主に担当する利用中の利用者。利用の終了の利用者は含めない（ADR-0005）。名前の順 */
             patients: {
@@ -1323,6 +1327,8 @@ export interface components {
                 date: components["schemas"]["Date"];
                 start_time: components["schemas"]["Time"];
                 end_time: components["schemas"]["Time"];
+                /** @description date の翌日の end_time に終わる予定のとき true */
+                ends_next_day: boolean;
             }[];
             /** @description その日以降に終わる繰り返しの予定。終了日の無い繰り返しを含める。最初の回の日時の順 */
             recurring_schedules: {
@@ -1336,6 +1342,8 @@ export interface components {
                 end_date: string | null;
                 start_time: components["schemas"]["Time"];
                 end_time: components["schemas"]["Time"];
+                /** @description 全ての回が、回の日付の翌日の end_time に終わるとき true */
+                ends_next_day: boolean;
             }[];
         };
         EndServiceConflict: components["schemas"]["Error"] & {
@@ -2669,7 +2677,8 @@ export interface operations {
                      *             "id": "01M3TC5H00QV17BC0J9V3393ZP",
                      *             "date": "2026-11-02",
                      *             "start_time": "09:00",
-                     *             "end_time": "10:00"
+                     *             "end_time": "10:00",
+                     *             "ends_next_day": false
                      *           }
                      *         ],
                      *         "recurring_schedules": [],
@@ -2895,7 +2904,8 @@ export interface operations {
                      *             "id": "01M3TC5H00QV17BC0J9V3393ZP",
                      *             "date": "2026-11-02",
                      *             "start_time": "09:00",
-                     *             "end_time": "10:00"
+                     *             "end_time": "10:00",
+                     *             "ends_next_day": false
                      *           }
                      *         ],
                      *         "recurring_schedules": [],
@@ -3231,7 +3241,8 @@ export interface operations {
                      *             "id": "01M3TC5H00QV17BC0J9V3393ZP",
                      *             "date": "2026-11-02",
                      *             "start_time": "09:00",
-                     *             "end_time": "10:00"
+                     *             "end_time": "10:00",
+                     *             "ends_next_day": false
                      *           }
                      *         ],
                      *         "recurring_schedules": []
