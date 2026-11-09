@@ -8,7 +8,10 @@ export type CalendarCutoverCancelDialogProps = {
   onCancel: () => void
 }
 
-/** 予定の正本の切り替えをやめる前に、取り込んだ予定が消え、Google カレンダーを正本にしたままになることを示して確認するダイアログ。 */
+/**
+ * 予定の正本の切り替えをやめる前に、取り込んだ予定が消え、Google カレンダーを正本にしたままになることを示して確認するダイアログ。
+ * 閉じる側のボタンは、「キャンセル」と確定の「やめる」がどちらも取り消しに読めるので「戻る」にする。
+ */
 export const CalendarCutoverCancelDialog = ({
   isSubmitting,
   errorMessage,
@@ -18,6 +21,7 @@ export const CalendarCutoverCancelDialog = ({
   <ConfirmDialog
     busyLabel="やめています"
     canSubmit
+    cancelLabel="戻る"
     error={
       errorMessage === undefined
         ? undefined

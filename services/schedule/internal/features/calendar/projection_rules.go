@@ -11,14 +11,18 @@ import (
 )
 
 // ProjectionRules は、scheduleview.EventRules を実装する。Projection の予定を、取り込みと同じ規則（Classify と RuleFromRecurrence）で
-// buddy の予定に読み替える。scheduleview は calendar を import できないので、組み立ての場所がこの値を渡す（ADR-0035）。
+// buddy の予定に読み替える。scheduleview は calendar を import できないので、組み立ての場所がこの値を渡す（ADR-0029、ADR-0026）。
 type ProjectionRules struct{}
 
 var _ scheduleview.EventRules = ProjectionRules{}
 
 // Read は、確定の予定 p を Classify で読み替える。タイトルを読めない予定は、日時を読めていれば EventUnreadableTitle にし、
-// ほかの取り込まない予定は EventSkipped にする。
+// 終日の予定は EventAllDay にし、2 日以上にわたる予定、24 時間以上の予定、日時を読めない予定（Projection.TimeUnreadable）、
+// 長さが 0 以下の予定は EventUnlisted にする。どちらも、かかる最後の日を LastDate に入れる。取り消した予定は EventSkipped にする。
 func (ProjectionRules) Read(p scheduleview.Projection) scheduleview.EventReading {
+	if p.TimeUnreadable {
+		return unreadableReading(p)
+	}
 	c := Classify(eventOfProjection(p))
 	r := scheduleview.EventReading{
 		Date: c.Date, StartTime: c.StartTime, EndTime: c.EndTime, EndsNextDay: c.EndsNextDay, Title: NormalTitle(p.Title),
@@ -29,12 +33,54 @@ func (ProjectionRules) Read(p scheduleview.Projection) scheduleview.EventReading
 	case KindNormal:
 		r.Kind = scheduleview.EventNormal
 	default:
-		r.Kind = scheduleview.EventSkipped
-		if c.SkipReason == SkipUnreadableTitle {
+		switch c.SkipReason {
+		case SkipUnreadableTitle:
 			r.Kind = scheduleview.EventUnreadableTitle
+		case SkipCancelled:
+			r.Kind = scheduleview.EventSkipped
+		case SkipAllDay:
+			r.Kind, r.LastDate = scheduleview.EventAllDay, allDayLastDate(p)
+		default:
+			r.Kind, r.LastDate = scheduleview.EventUnlisted, timedLastDate(p, c.Date)
 		}
 	}
 	return r
+}
+
+// unreadableReading は、日時を読めない予定 p を、読めた方の日付の EventUnlisted にする。
+func unreadableReading(p scheduleview.Projection) scheduleview.EventReading {
+	r := scheduleview.EventReading{Kind: scheduleview.EventUnlisted, Title: NormalTitle(p.Title)}
+	for _, t := range []scheduleview.ProjectionTime{p.Start, p.End} {
+		if t.At != nil || t.Date != nil {
+			r.Date = dayOf(t)
+			r.LastDate = r.Date
+			break
+		}
+	}
+	return r
+}
+
+// allDayLastDate は、終日の予定 p がかかる最後の日を返す。Google の終日の予定の終了は、終わる日の翌日である。
+// 終了が無いか開始の日より後でないときは、開始の日を返す。
+func allDayLastDate(p scheduleview.Projection) civil.Date {
+	start := *p.Start.Date
+	if p.End.Date == nil || !p.End.Date.After(start) {
+		return start
+	}
+	return civil.DateOf(p.End.Date.Time().AddDate(0, 0, -1))
+}
+
+// timedLastDate は、時刻のある予定 p が Asia/Tokyo でかかる最後の日を返す。翌日の 0:00 ちょうどに終わる予定は、前の日までにかかる。
+// 終了が開始の日 date より前のとき（長さが 0 以下の予定）と、終了を読めないときは date を返す。
+func timedLastDate(p scheduleview.Projection, date civil.Date) civil.Date {
+	if p.End.At == nil {
+		return date
+	}
+	last := civil.DateOf(p.End.At.In(Tokyo).Add(-time.Nanosecond))
+	if last.Before(date) {
+		return date
+	}
+	return last
 }
 
 // Recurrence は、繰り返しの親の予定 p を RuleFromRecurrence で buddy の繰り返しの規則と除外する日に写す。

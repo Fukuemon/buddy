@@ -2,7 +2,7 @@ import { expect, test } from '@playwright/test'
 
 import { FACILITY_SERVICE_ACCOUNT, LEADER, LOGIN_EMAIL, LOGIN_STAFF } from '../../fixtures/env'
 import { EVIDENCE_VARIANTS, recordPrEvidence } from '../../fixtures/evidence'
-import { unlinkStaffCalendar } from '../../screens/calendar'
+import { unlinkStaffCalendar } from '../../setup/calendar'
 import { signInAtBroker } from '../../screens/login'
 
 const MORI = LEADER.staff

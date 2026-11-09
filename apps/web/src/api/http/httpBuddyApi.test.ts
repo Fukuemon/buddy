@@ -6,6 +6,7 @@ import { scheduleHttp, server, TEST_SCHEDULE_URL } from '#/test/server'
 import { ApiError } from '../BuddyApi'
 import type { components } from '../generated/schedule'
 import { createHttpBuddyApi } from './httpBuddyApi'
+import { occurrenceId } from './recurrence'
 
 const api = () => createHttpBuddyApi({ baseUrl: TEST_SCHEDULE_URL })
 
@@ -68,6 +69,8 @@ const BUDDY_PRIMARY_LIST = {
   source_mode: 'buddy_primary' as const,
   calendar_syncs: [],
   cutover: null,
+  all_day_events: [],
+  unlisted_event_counts: [],
 }
 
 describe('createHttpBuddyApi', () => {
@@ -128,7 +131,45 @@ describe('createHttpBuddyApi', () => {
           recurring_schedules: [],
           source_mode: 'google_primary',
           calendar_syncs: [sync('staff-1'), sync('staff-2')],
-          cutover: { started_at: '2026-10-05T00:00:00Z', range_start: '2026-10-01' },
+          cutover: {
+            started_at: '2026-10-05T00:00:00Z',
+            started_by: 'manager-1',
+            started_by_name: '管理 花子',
+            range_start: '2026-10-01',
+          },
+          all_day_events: [
+            {
+              id: 'allday-1',
+              staff_id: 'staff-1',
+              staff_name: '青木 一郎',
+              start_date: '2026-10-20',
+              end_date: '2026-10-21',
+              title: '休み',
+              review_reason: null,
+            },
+            {
+              id: 'allday-2',
+              staff_id: 'staff-2',
+              staff_name: '石川 二葉',
+              start_date: '2026-10-20',
+              end_date: '2026-10-20',
+              title: '研修',
+              review_reason: null,
+            },
+            {
+              id: 'allday-unsupported',
+              staff_id: 'staff-1',
+              staff_name: '青木 一郎',
+              start_date: '2026-10-05',
+              end_date: '2026-10-05',
+              title: '当番',
+              review_reason: 'recurrence_unsupported',
+            },
+          ],
+          unlisted_event_counts: [
+            { staff_id: 'staff-1', count: 2 },
+            { staff_id: 'staff-2', count: 1 },
+          ],
         }),
       ),
     )
@@ -147,7 +188,35 @@ describe('createHttpBuddyApi', () => {
       ['recurrence', 'recurrence_unsupported'],
     ])
     expect(list.calendarSyncs.map((s) => s.staff_id)).toEqual(['staff-1'])
-    expect(list.cutover).toEqual({ started_at: '2026-10-05T00:00:00Z', range_start: '2026-10-01' })
+    const unsupportedAllDay = {
+      id: 'allday-unsupported',
+      staffId: 'staff-1',
+      staffName: '青木 一郎',
+      startDate: '2026-10-05',
+      endDate: '2026-10-05',
+      title: '当番',
+      reviewReason: 'recurrence_unsupported',
+    }
+    expect(list.allDayEvents).toEqual([
+      {
+        id: 'allday-1',
+        staffId: 'staff-1',
+        staffName: '青木 一郎',
+        startDate: '2026-10-20',
+        endDate: '2026-10-21',
+        title: '休み',
+      },
+      unsupportedAllDay,
+    ])
+    // 期間の外の最初の回の日付でも、確認が必要な終日の予定に入る
+    expect(list.needsReviewAllDayEvents).toEqual([unsupportedAllDay])
+    expect(list.unlistedEventCounts).toEqual([{ staffId: 'staff-1', count: 2 }])
+    expect(list.cutover).toEqual({
+      started_at: '2026-10-05T00:00:00Z',
+      started_by: 'manager-1',
+      started_by_name: '管理 花子',
+      range_start: '2026-10-01',
+    })
   })
 
   it('事業所を読み、予定の正本を返す', async () => {
@@ -272,12 +341,199 @@ describe('createHttpBuddyApi', () => {
     ).rejects.toMatchObject({
       status: 404,
     })
-    const replaced = await api().schedules.update('facility-1', listed.schedules[1].id, {
-      ...occurrence,
-      startsAt: '2026-10-20T10:00:00+09:00',
-      endsAt: '2026-10-20T11:00:00+09:00',
-    })
+    const replaced = await api().schedules.update(
+      'facility-1',
+      listed.schedules[1].id,
+      {
+        ...occurrence,
+        startsAt: '2026-10-20T10:00:00+09:00',
+        endsAt: '2026-10-20T11:00:00+09:00',
+      },
+      null,
+    )
     expect(replaced.id).toBe('replaced')
+  })
+
+  it('繰り返しの予定の回の ID のキャンセルは、回のキャンセルの API に回の日付と理由を送る', async () => {
+    const sent: unknown[] = []
+    server.use(
+      scheduleHttp.post(
+        '/v1/schedules/recurring/{recurring_schedule_id}/occurrences/cancel',
+        async ({ params, request, response }) => {
+          sent.push({ id: params.recurring_schedule_id, body: await request.json() })
+          return response(201).json({
+            id: 'cancel-1',
+            schedule_id: 'cancelled',
+            reason: '体調不良',
+          })
+        },
+      ),
+    )
+    await api().schedules.cancel(
+      'facility-1',
+      occurrenceId('01M3TC6E9G4N8Q2R5T7V9W1X3Y', '2026-10-20'),
+      '体調不良',
+      null,
+    )
+    expect(sent).toEqual([
+      {
+        id: '01M3TC6E9G4N8Q2R5T7V9W1X3Y',
+        body: { original_date: '2026-10-20', reason: '体調不良' },
+      },
+    ])
+  })
+
+  it('単発の予定の削除は予定の削除の API を、回の ID の削除は回の削除の API を呼ぶ', async () => {
+    const sent: unknown[] = []
+    server.use(
+      scheduleHttp.delete('/v1/schedules/{schedule_id}', ({ params, response }) => {
+        sent.push({ id: params.schedule_id })
+        return response(204).empty()
+      }),
+      scheduleHttp.post(
+        '/v1/schedules/recurring/{recurring_schedule_id}/occurrences/delete',
+        async ({ params, request, response }) => {
+          sent.push({ id: params.recurring_schedule_id, body: await request.json() })
+          return response(204).empty()
+        },
+      ),
+    )
+    await api().schedules.delete('facility-1', '01M3TC6E9G4N8Q2R5T7V9W1X3Z')
+    await api().schedules.delete(
+      'facility-1',
+      occurrenceId('01M3TC6E9G4N8Q2R5T7V9W1X3Y', '2026-10-20'),
+    )
+    expect(sent).toEqual([
+      { id: '01M3TC6E9G4N8Q2R5T7V9W1X3Z' },
+      { id: '01M3TC6E9G4N8Q2R5T7V9W1X3Y', body: { original_date: '2026-10-20' } },
+    ])
+  })
+
+  it('予定の削除を拒まれると、状態と code を持つ ApiError を投げる', async () => {
+    server.use(
+      scheduleHttp.delete('/v1/schedules/{schedule_id}', ({ response }) =>
+        response(409).json({
+          code: 'google_primary',
+          message: 'Google カレンダーで管理しています',
+        }),
+      ),
+    )
+    await expect(
+      api().schedules.delete('facility-1', '01M3TC6E9G4N8Q2R5T7V9W1X3Z'),
+    ).rejects.toMatchObject({ status: 409, code: 'google_primary' })
+  })
+
+  it('繰り返しの予定の回は、繰り返しの予定の ID と規則を持ち、置き換えた予定と google_primary の単発の予定は持たない', async () => {
+    const rs: components['schemas']['RecurringSchedule'] = {
+      ...schedule('01M3TC6E9G4N8Q2R5T7V9W1X3Y', { date: '2026-10-06' }),
+      recurring_rule: {
+        frequency: 'weekly',
+        days_of_week: [2],
+        interval: 1,
+        end_date: '2026-12-31',
+      },
+      exclusion_dates: [],
+    }
+    server.use(
+      scheduleHttp.get('/v1/schedules/recurring/{recurring_schedule_id}', ({ response }) =>
+        response(200).json(rs),
+      ),
+      scheduleHttp.get('/v1/schedules/{schedule_id}', ({ params, response }) =>
+        response(200).json(
+          params.schedule_id === 'gcal-occurrence'
+            ? schedule('gcal-occurrence', {
+                source: 'google_calendar',
+                etag: '"parent"',
+                recurring_schedule_id: '01M3TC6E9G4N8Q2R5T7V9W1X40',
+                recurring_rule: { frequency: 'monthly', day_of_month: 20 },
+              })
+            : schedule('replaced', { recurring_schedule_id: rs.id }),
+        ),
+      ),
+    )
+    const occurrence = await api().schedules.get('facility-1', occurrenceId(rs.id, '2026-10-20'))
+    expect(occurrence.recurrence).toEqual({
+      recurringScheduleId: rs.id,
+      rule: {
+        frequency: 'weekly',
+        daysOfWeek: [2],
+        interval: 1,
+        dayOfWeek: null,
+        dayOfMonth: null,
+        weekOfMonth: null,
+        endDate: '2026-12-31',
+      },
+    })
+    expect((await api().schedules.get('facility-1', 'replaced')).recurrence).toBeUndefined()
+    expect((await api().schedules.get('facility-1', 'gcal-occurrence')).recurrence).toEqual({
+      recurringScheduleId: '01M3TC6E9G4N8Q2R5T7V9W1X40',
+      rule: {
+        frequency: 'monthly',
+        daysOfWeek: null,
+        interval: null,
+        dayOfWeek: null,
+        dayOfMonth: 20,
+        weekOfMonth: null,
+        endDate: null,
+      },
+    })
+  })
+
+  it('規則の変更は、適用の日、規則、新しい ID と、読んだ etag を送り、変えた後の繰り返しの予定の ID と最初の日付を返す', async () => {
+    const sent: unknown[] = []
+    server.use(
+      scheduleHttp.put(
+        '/v1/schedules/recurring/{recurring_schedule_id}/rule',
+        async ({ params, request, response }) => {
+          sent.push({ id: params.recurring_schedule_id, body: await request.json() })
+          return response(200).json({
+            ...schedule('01M3TC6E9G4N8Q2R5T7V9W1X41', { date: '2026-10-21' }),
+            recurring_rule: { frequency: 'weekly', days_of_week: [3], interval: 1 },
+            exclusion_dates: [],
+          })
+        },
+      ),
+    )
+    const changed = await api().schedules.changeRule(
+      'facility-1',
+      '01M3TC6E9G4N8Q2R5T7V9W1X3Y',
+      {
+        effectiveDate: '2026-10-20',
+        firstWeekDate: '2026-10-19',
+        rule: {
+          frequency: 'weekly',
+          daysOfWeek: [3],
+          interval: 1,
+          dayOfWeek: null,
+          dayOfMonth: null,
+          weekOfMonth: null,
+          endDate: null,
+        },
+        id: '01M3TC6E9G4N8Q2R5T7V9W1X41',
+      },
+      '"parent"',
+    )
+    expect(changed).toEqual({ id: '01M3TC6E9G4N8Q2R5T7V9W1X41', date: '2026-10-21' })
+    expect(sent).toEqual([
+      {
+        id: '01M3TC6E9G4N8Q2R5T7V9W1X3Y',
+        body: {
+          effective_date: '2026-10-20',
+          first_week_date: '2026-10-19',
+          recurring_rule: {
+            frequency: 'weekly',
+            days_of_week: [3],
+            interval: 1,
+            day_of_week: null,
+            day_of_month: null,
+            week_of_month: null,
+            end_date: null,
+          },
+          id: '01M3TC6E9G4N8Q2R5T7V9W1X41',
+          etag: '"parent"',
+        },
+      },
+    ])
   })
 
   it('マスタの ID を引いて予定を作る', async () => {
@@ -285,19 +541,25 @@ describe('createHttpBuddyApi', () => {
       ...masters([{ id: 'type-normal', name: '通常' }]),
       scheduleHttp.post('/v1/facilities/{facility_id}/schedules', async ({ request, response }) => {
         const sentBodies = await request.json()
-        return sentBodies.schedule_type_id === 'type-normal' && sentBodies.date === '2026-10-20'
+        return sentBodies.schedule_type_id === 'type-normal' &&
+          sentBodies.date === '2026-10-20' &&
+          sentBodies.id === '01M3TC6CX4Y3D0KCGJ5A9N0WQZ'
           ? response(201).json(schedule('created', { start_time: '15:00', end_time: '16:00' }))
           : response(400).json(invalid('種類か日付が違う'))
       }),
     )
-    const created = await api().schedules.create('facility-1', {
-      kind: 'normal',
-      title: '研修',
-      staffId: 'staff-1',
-      startsAt: '2026-10-20T15:00:00+09:00',
-      endsAt: '2026-10-20T16:00:00+09:00',
-      description: '',
-    })
+    const created = await api().schedules.create(
+      'facility-1',
+      {
+        kind: 'normal',
+        title: '研修',
+        staffId: 'staff-1',
+        startsAt: '2026-10-20T15:00:00+09:00',
+        endsAt: '2026-10-20T16:00:00+09:00',
+        description: '',
+      },
+      '01M3TC6CX4Y3D0KCGJ5A9N0WQZ',
+    )
     expect(created).toMatchObject({ id: 'created', startsAt: '2026-10-20T15:00:00+09:00' })
   })
 
@@ -411,8 +673,8 @@ describe('createHttpBuddyApi', () => {
       }),
     )
     await expect(api().patients.list('facility-1', { name: 'B' })).resolves.toEqual([
-      { id: 'patient-2', name: '利用者 B' },
-      { id: 'patient-3', name: '利用者 B2', ended: true },
+      { id: 'patient-2', name: '利用者 B', serviceCode: '訪看I2' },
+      { id: 'patient-3', name: '利用者 B2', serviceCode: '訪看I2', ended: true },
     ])
   })
 
@@ -424,19 +686,26 @@ describe('createHttpBuddyApi', () => {
       ),
       scheduleHttp.put('/v1/schedules/{schedule_id}', async ({ request, response }) => {
         const sentBodies = await request.json()
-        return sentBodies.schedule_type_id === 'type-normal' && sentBodies.title === '研修'
+        return sentBodies.schedule_type_id === 'type-normal' &&
+          sentBodies.title === '研修' &&
+          sentBodies.etag === '"read"'
           ? response(200).json(schedule('target', { title: '研修' }))
           : response(400).json(invalid('種類かタイトルが違う'))
       }),
     )
-    const updated = await api().schedules.update('facility-1', 'target', {
-      kind: 'normal',
-      title: '研修',
-      staffId: 'staff-1',
-      startsAt: '2026-10-20T09:00:00+09:00',
-      endsAt: '2026-10-20T10:00:00+09:00',
-      description: '',
-    })
+    const updated = await api().schedules.update(
+      'facility-1',
+      'target',
+      {
+        kind: 'normal',
+        title: '研修',
+        staffId: 'staff-1',
+        startsAt: '2026-10-20T09:00:00+09:00',
+        endsAt: '2026-10-20T10:00:00+09:00',
+        description: '',
+      },
+      '"read"',
+    )
     expect(updated).toMatchObject({ id: 'target', title: '研修' })
   })
 
@@ -485,13 +754,14 @@ describe('createHttpBuddyApi', () => {
       description: '',
       visit: { patientId: 'patient-1', serviceCode: '訪看I2' as const, categories: [] },
     }
-    await expect(api().schedules.update('facility-1', 'visit', input)).resolves.toMatchObject({
-      id: 'visit',
-    })
-    await expect(api().schedules.update('facility-1', 'cancelled', input)).rejects.toHaveProperty(
-      'status',
-      409,
+    await expect(api().schedules.update('facility-1', 'visit', input, null)).resolves.toMatchObject(
+      {
+        id: 'visit',
+      },
     )
+    await expect(
+      api().schedules.update('facility-1', 'cancelled', input, null),
+    ).rejects.toHaveProperty('status', 409)
   })
 
   it('失敗の状態と、ほかの事業所の予定で ApiError を投げる', async () => {
@@ -532,22 +802,6 @@ describe('createHttpBuddyApi', () => {
       /@example\.iam/,
     )
   })
-
-  it('確認が必要な書き出しを Google の内容で解き、合わせられない書き出しは code で投げる', async () => {
-    const authorized = authorizedApi()
-    await expect(
-      authorized.calendars.acceptExport('facility-1', 'export-1'),
-    ).resolves.toMatchObject({
-      id: 'export-1',
-      status: 'succeeded',
-    })
-    await expect(authorized.calendars.acceptExport('facility-1', 'export-2')).rejects.toMatchObject(
-      {
-        status: 409,
-        code: 'export_not_acceptable',
-      },
-    )
-  })
 })
 
 describe('createHttpBuddyApi の職員の管理', () => {
@@ -575,7 +829,15 @@ describe('createHttpBuddyApi の職員の管理', () => {
     ...overrides,
   })
   const assignments = {
-    schedules: [{ id: 'schedule-1', date: '2026-11-02', start_time: '09:00', end_time: '10:00' }],
+    schedules: [
+      {
+        id: 'schedule-1',
+        date: '2026-11-02',
+        start_time: '09:00',
+        end_time: '10:00',
+        ends_next_day: false,
+      },
+    ],
     recurring_schedules: [],
     patients: [],
   }
@@ -673,7 +935,15 @@ describe('createHttpBuddyApi の利用者の管理', () => {
     ...overrides,
   })
   const remaining = {
-    schedules: [{ id: 'schedule-1', date: '2026-11-02', start_time: '09:00', end_time: '09:29' }],
+    schedules: [
+      {
+        id: 'schedule-1',
+        date: '2026-11-02',
+        start_time: '09:00',
+        end_time: '09:29',
+        ends_next_day: false,
+      },
+    ],
     recurring_schedules: [],
   }
 

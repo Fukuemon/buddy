@@ -53,7 +53,7 @@ type CalendarEventProjection struct {
 	// 例外の回が元の規則で始まるはずだった日時。終日の予定は original_start_date に持つ
 	OriginalStartAt   *time.Time
 	OriginalStartDate *time.Time
-	// confirmed、cancelled。cancelled は繰り返しの予定の取り消した回で、取り消した単発の予定と親の予定は行を消す
+	// confirmed、cancelled。cancelled は Google で取り消した予定で、単発の予定と親の予定も行に残す。予定の表示の読み出しは返さない
 	Status string
 	// Google の予定のタイトル。利用者名を含むが、表示と照合に要るので持つ。取り消した回は空
 	Title string
@@ -68,12 +68,45 @@ type CalendarEventProjection struct {
 	// 繰り返しの親の予定の RRULE、EXDATE、RDATE の行
 	Recurrence []string
 	Etag       string
-	// Google で予定を最後に変えた時刻
+	// Google で予定を最後に変えた時刻。行を書き直すのは、書く予定の時刻がこの時刻より新しいときだけにする
 	GoogleUpdatedAt *time.Time
-	// Asia/Tokyo で予定が終わる日。繰り返しは最後の回、取り消した回は元の開始の日。終わりの無い繰り返しと、最後の回を決められない繰り返しは NULL。保持する期間より前に終わった行を消すのに使う
+	// Asia/Tokyo で予定が終わる日。繰り返しは最後の回、取り消した回は元の開始の日、取り消した単発の予定と親の予定は取り消しを写した日。終わりの無い繰り返しと、最後の回を決められない繰り返しは NULL。保持する期間より前に終わった行を消すのに使う
 	LastEndDate *time.Time
 	// 同期が行を書いた時刻
 	ProjectedAt time.Time
+	// 開始か終了の日時を読めない予定のとき true。読めた方の日時か日付だけを持つ。予定のカレンダーは、出せない予定の件数に数える
+	TimeUnreadable bool
+}
+
+// google_primary の事業所で、予定の API が Google カレンダーに書いた予定の、訪問の情報と書き込みの保留の版（ADR-0029）。通常の予定も保留の版を持つために行を作る
+type CalendarEventRecord struct {
+	// buddy の予定の ID。画面が作成のリクエストに付ける。Google の予定の ID はこの ID から決める
+	ScheduleID string
+	FacilityID string
+	// 予定を書いた、結び付けたカレンダー
+	ExternalCalendarID string
+	// Google の予定の ID
+	ExternalEventID string
+	// Google が受けた版の訪問の情報。通常の予定と、まだ版を確定していない行は NULL
+	VisitInfoID *string
+	// Google が受けたと分かった最後の版。0 は、まだ受けたと分かっていない。0 の行は保留の版を持つ
+	Version int32
+	// 書き込みの保留の版。Google の予定の extendedProperties.private の buddyVersion に置く。保留が無ければ NULL で、保留の状態、訪問の情報、書く期限も NULL
+	PendingVersion *int32
+	// writing（書いている途中）、unknown（Google が受けたかが分からない）
+	PendingState *string
+	// 保留の版の訪問の情報。版を確定すると visit_info_id に移す
+	PendingVisitInfoID *string
+	// 書く期限。保留の版を書いた時刻に、Google を呼ぶ時間の上限と余裕を足した時刻
+	PendingDeadline *time.Time
+	CreatedAt       time.Time
+	UpdatedAt       time.Time
+	// 同期が保留の版を読み戻す間、ほかの Worker に記録を渡さない期限。読み戻せなかった記録は、この時刻の後に取り直す。保留の版を解いても NULL に戻さない
+	PendingLockedUntil *time.Time
+	// 保留の版が予定を別のカレンダーに移す書き込みのときの、移す先のカレンダー。移さない書き込みと、保留が無い行は NULL。版を確定すると external_calendar_id に移す
+	PendingExternalCalendarID *string
+	// 移す先のカレンダーに作る Google の予定の ID。pending_external_calendar_id と一緒に NULL になる
+	PendingExternalEventID *string
 }
 
 // 予定を外部のカレンダーに書き出す待ち。予定の変更と同じトランザクションで積む
@@ -99,6 +132,8 @@ type CalendarExport struct {
 	FinishedAt *time.Time
 	CreatedAt  time.Time
 	UpdatedAt  time.Time
+	// 削除した単発の予定の ID。外部の予定を消す待ち（ADR-0040）
+	DeletedScheduleID *string
 }
 
 // 外部のカレンダーごとの同期の状態
@@ -163,6 +198,8 @@ type ExternalEventLink struct {
 	SyncedVersion *int32
 	// 切り替えの取り込みで作った対応のとき、その切り替え。切り替えをやめると、この対応と予定を消す
 	CutoverID *string
+	// 削除した単発の予定の ID。書き出しが外部の予定を消すまで対応を残す（ADR-0040）
+	DeletedScheduleID *string
 }
 
 // 訪問看護の事業所
@@ -271,7 +308,7 @@ type RecurringSchedule struct {
 	IsOverTimeWork bool
 	// weekly、monthly
 	Frequency string
-	// 1（月曜）から 7
+	// 1（月曜）から 7。毎月の week_of_month と組で使う。前のバージョンのアプリは毎週の曜日にも書く
 	DayOfWeek *int16
 	// 1 から 31
 	DayOfMonth *int16
@@ -285,6 +322,10 @@ type RecurringSchedule struct {
 	Version int32
 	// 終了が翌日か。全ての回が同じ値を持つ
 	EndsNextDay bool
+	// 毎週の、重ならない 1（月曜）から 7 の曜日を月曜から日曜の順に並べたもの。毎月は NULL。毎週の NULL は day_of_week か最初の日付の曜日として読む
+	DaysOfWeek []int16
+	// 毎週の間隔の週の数。1 が毎週、2 が隔週。日曜に始まる週で、最初の日付を含む週から数える。毎月は 1
+	IntervalWeeks int16
 }
 
 type RecurringScheduleDetail struct {
@@ -319,6 +360,8 @@ type RecurringScheduleDetail struct {
 	UpdatedAt         time.Time
 	Version           int32
 	EndsNextDay       bool
+	DaysOfWeek        []int16
+	IntervalWeeks     int16
 }
 
 // 繰り返しの予定のうち、回にしない日
@@ -361,6 +404,24 @@ type ScheduleCancel struct {
 	Reason     string
 	CreatedAt  time.Time
 	UpdatedAt  time.Time
+}
+
+// 誤って入れた予定を削除した監査の記録（ADR-0040）。画面に出さない。消した時点の内容（訪問の情報と利用者）は持たない
+type ScheduleDeletion struct {
+	ID         string
+	FacilityID string
+	// 削除した単発の予定の ID。回の削除では NULL
+	ScheduleID *string
+	// 回を削除した繰り返しの予定。単発の予定の削除では NULL
+	RecurringScheduleID *string
+	// 単発の予定の開始の日か、削除した回の日
+	Date time.Time
+	// 削除した予定の職員
+	StaffID string
+	// 削除した職員
+	DeletedBy string
+	// 削除した時刻
+	DeletedAt time.Time
 }
 
 type ScheduleDetail struct {

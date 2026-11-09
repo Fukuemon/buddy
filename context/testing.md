@@ -19,13 +19,14 @@ status: stable
 | 照合の互換のテスト | Go の照合が、元の Python の実装と同じ結果を返す | `services/receipt/internal/check/parity_test.go` と `testdata/parity/` | `go test ./...`。期待値の作り直しは `tools/parity/run.sh` |
 | web の単体とコンポーネントのテスト | 変換、表示の規則（照合の印と CSV）、コンポーネントの操作 | 対象の隣の `*.test.ts(x)`。コンポーネントは story を `composeStories` で使う | `pnpm --filter @buddy/web test`（jsdom） |
 | デザインシステムのテスト | 押せる領域とフォーカスの移り方、story の描画とアクセシビリティ | `packages/ui/src` の `*.test.tsx` と story | `pnpm --filter @buddy/ui test`（ブラウザ） |
-| トークンのコントラスト | 意味のトークンの組が WCAG 2.2 のコントラスト比の基準に届く | `scripts/check-contrast.mjs` | `pnpm check:contrast` |
-| 画面のコードの書き方 | 画面とコンポーネントのコードに、色の値、DADS の変数の名前、14px より小さい文字、`focus-ring` 以外のフォーカスの表示、余白の任意値がない | `scripts/check-raw-values.mjs`、`scripts/check-utilities.mjs` | `pnpm check:design` |
+| トークンのコントラスト | セマンティックトークンの組が WCAG 2.2 のコントラスト比の基準に届く | `scripts/check-contrast.mjs` | `pnpm check:contrast` |
+| 画面のコードの書き方 | 画面とコンポーネントのコードに、色の値、プリミティブトークンの名前、14px より小さい文字、`focus-ring` 以外のフォーカスの表示、余白の任意値がない | `scripts/check-raw-values.mjs`、`scripts/check-utilities.mjs` | `pnpm check:design` |
 | E2E | ログインから画面の操作までの流れが、compose の全体で動く | `packages/e2e/tests/` | `pnpm e2e`（[E2E のテスト](testing/e2e.md)） |
+| 描画した画面の横方向のオーバーフロー | 主な画面を幅 390、767、768、1280px で開いたとき、ページの全体が横にはみ出さない（DESIGN.md の `LAYOUT-OVERFLOW`）。撮った画像はレビューで見る | `packages/e2e/tests/specs/site/layout-overflow.e2e.ts` | `pnpm e2e`。CI の `e2e` のジョブで流れる |
 | 生成物のそろい | `openapi.yaml` と SQL から生成したコードが最新である | `scripts/check-generated.sh` | `pnpm check:generated` |
 | テーブル定義書のそろい | マイグレーションを適用した PostgreSQL から作ったテーブル定義書と ER 図の元が、コミットした `docs/db/` と同じである。全てのテーブルがどれかの viewpoint に入る | `scripts/build-db-docs.sh` | `pnpm generate:db-docs`（Docker が要る）。CI の `db-docs` は、生成した後に `docs/db/` の差分を確認する |
 | OpenAPI の定義の lint | 各 API の `openapi.yaml` が Redocly CLI の `recommended-strict` の規則に合う | `redocly.yaml`、`.redocly.lint-ignore.yaml` | `pnpm lint:openapi` |
-| 画面仕様書の点検 | 画面仕様書の名前と構造、モックの `data-testid`、E2E が使う testid、カタログの欄の story がそろう | `scripts/check-screens.mjs` | `pnpm check:screens` |
+| 画面仕様書の点検 | 画面仕様書の名前と構造、モックの `data-testid`、E2E が使う testid、カタログの欄の story、表示と活性の条件の文と `api.md` の条件の対応、`api.md` の要素の testid とモックがそろう | `scripts/check-screens.mjs`。条件と testid の表の照合の仕方は `scripts/screen-conditions.mjs` と、隣のテスト | `pnpm check:screens`、`node --test scripts/screen-conditions.test.mjs` |
 
 ## Runtime Requirements
 
@@ -52,7 +53,7 @@ E2E の Google Calendar API の置き換えでの、calendarpit の使い方は�
 
 - 予定の API は、calendarpit の予定を読み書きする。
   - 最初の予定は `compose/calendarpit/fixture.json` にある。
-  - 書いた予定と token は volume に残り、`docker compose down -v` で消える。
+  - 書いた予定と token は volume に残り、`portless compose down -v` で消える。
   - 予定は calendarpit の管理の画面で見る。
 - E2E は、calendarpit の管理の API で予定を読んで直す。
   - 中継の `gcalhold` が、Google の変更を予定の API に渡さないようにする。

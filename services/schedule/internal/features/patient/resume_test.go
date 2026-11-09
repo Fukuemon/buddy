@@ -10,7 +10,7 @@ import (
 	"github.com/Fukuemon/buddy/services/schedule/internal/inmem"
 )
 
-// 利用の再開は、担当の職員を書き換えて利用中に戻す。休職か退職の職員は入力のエラーで拒む（ADR-0021）。
+// 利用の再開は、担当の職員を書き換えて利用中に戻す。休職か退職の職員は入力のエラーで拒む（ADR-0005）。
 func TestPatientResume(t *testing.T) {
 	ctx := context.Background()
 	for _, status := range []staff.Status{staff.StatusOnLeave, staff.StatusRetired} {

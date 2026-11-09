@@ -21,6 +21,8 @@ import (
 const (
 	PropScheduleID          = "buddyScheduleId"
 	PropRecurringScheduleID = "buddyRecurringScheduleId"
+	// PropVersion は、予定の API が google_primary の事業所で書いた予定の、書き込みの保留の版のキーである（ADR-0029）。
+	PropVersion = "buddyVersion"
 )
 
 // EventBody は、外部のカレンダーに書く予定の内容である。
@@ -51,6 +53,9 @@ var (
 	ErrEventExists = errors.New("外部のカレンダーに同じ ID の予定があります")
 	// ErrUnwritable は、サービスアカウントがカレンダーに予定を書けないことを表す。
 	ErrUnwritable = errors.New("カレンダーに予定を書けません。予定の変更の権限で共有されているかを確認してください")
+	// ErrOutcomeUnknown は、外部が書き込みを受けたかが分からないこと（5xx、通信のエラー、時間切れ）を表す。外部が書いた後に、
+	// 応答だけが失われたことがある。外部が拒んだことが確かな一時的なエラー（429 と、件数の上限による 403）は ErrUnavailable である（ADR-0029）。
+	ErrOutcomeUnknown = errors.New("外部のカレンダーが予定を書いたかを確認できませんでした")
 )
 
 var eventIDEncoding = base32.HexEncoding.WithPadding(base32.NoPadding)
@@ -102,7 +107,7 @@ func summary(v *visit.Detail, title *string) string {
 	return ""
 }
 
-// endDate は、予定の枠 s の終わる日を返す。終了が翌日の予定は、予定の日付の翌日に終わる（ADR-0023）。
+// endDate は、予定の枠 s の終わる日を返す。終了が翌日の予定は、予定の日付の翌日に終わる（ADR-0033）。
 // 繰り返しの予定では、最初の回の終わる日である。
 func endDate(s schedule.Slot) civil.Date {
 	if s.EndsNextDay {
@@ -132,7 +137,13 @@ func RecurrenceOf(rs schedule.RecurringSchedule, exdates []civil.Date) []string 
 	var rule string
 	switch {
 	case r.Frequency == schedule.Weekly:
-		rule = "FREQ=WEEKLY;BYDAY=" + weekdayCodes[dow]
+		// 週の始まりを日曜にし、Google が展開する隔週の回を buddy の回と一致させる（ADR-0039）
+		days := r.WithDays(rs.Date).DaysOfWeek
+		codes := make([]string, len(days))
+		for i, d := range days {
+			codes[i] = weekdayCodes[d]
+		}
+		rule = fmt.Sprintf("FREQ=WEEKLY;INTERVAL=%d;BYDAY=%s;WKST=SU", max(r.Interval, 1), strings.Join(codes, ","))
 	case r.WeekOfMonth != nil:
 		rule = fmt.Sprintf("FREQ=MONTHLY;BYDAY=%d%s", *r.WeekOfMonth, weekdayCodes[dow])
 	default:

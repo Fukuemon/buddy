@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"sync/atomic"
 	"testing"
 )
@@ -85,5 +86,71 @@ func TestFailedReads(t *testing.T) {
 				t.Fatalf("code = %d, passed = %d, want %d", rec.Code, passed, tt.wantCode)
 			}
 		})
+	}
+}
+
+// TestBrokenEnds は、壊すタイトルの予定の取得の応答で終了の日時を読めない値にし、ほかの予定、ほかのリクエスト、壊していないときは変えないことを確認する。
+func TestBrokenEnds(t *testing.T) {
+	const list = `{"items":[{"id":"a","summary":"壊す","end":{"dateTime":"2026-11-10T11:00:00+09:00"}},{"id":"b","summary":"残す","end":{"date":"2026-11-11"}}]}`
+	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Length", "999")
+		if strings.HasSuffix(r.URL.Path, "/events/a") {
+			_, _ = w.Write([]byte(`{"id":"a","summary":"壊す","end":{"date":"2026-11-11"}}`))
+			return
+		}
+		_, _ = w.Write([]byte(list))
+	})
+	broken := &brokenSummaries{titles: map[string]bool{}}
+	h := brokenEnds(broken, next)
+	get := func(method, target string) string {
+		rec := httptest.NewRecorder()
+		h.ServeHTTP(rec, httptest.NewRequest(method, target, nil))
+		return rec.Body.String()
+	}
+	ends := func(body string) map[string]any {
+		var doc struct {
+			Items []struct {
+				ID  string         `json:"id"`
+				End map[string]any `json:"end"`
+			} `json:"items"`
+			ID  string         `json:"id"`
+			End map[string]any `json:"end"`
+		}
+		if err := json.Unmarshal([]byte(body), &doc); err != nil {
+			t.Fatal(err)
+		}
+		out := map[string]any{}
+		for _, it := range doc.Items {
+			out[it.ID] = it.End
+		}
+		if doc.ID != "" {
+			out[doc.ID] = doc.End
+		}
+		return out
+	}
+	const events = "/calendar/v3/calendars/staff%40example.com/events"
+	if got := get(http.MethodGet, events); got != list {
+		t.Errorf("壊していないときの一覧 = %s", got)
+	}
+
+	broken.set("壊す", true)
+	got := ends(get(http.MethodGet, events))
+	if got["a"].(map[string]any)["dateTime"] != unreadableDateTime || got["b"].(map[string]any)["date"] != "2026-11-11" {
+		t.Errorf("一覧の終了 = %v", got)
+	}
+	one := ends(get(http.MethodGet, events+"/a"))["a"].(map[string]any)
+	if one["dateTime"] != unreadableDateTime || one["date"] != nil {
+		t.Errorf("1 件の取得の終了 = %v", one)
+	}
+	if body := get(http.MethodPost, events); body != list {
+		t.Errorf("書き込みの応答を変えた: %s", body)
+	}
+	if body := get(http.MethodGet, events+"/a/instances"); body != list {
+		t.Errorf("回の取得の応答を変えた: %s", body)
+	}
+
+	broken.set("壊す", false)
+	if got := get(http.MethodGet, events); got != list {
+		t.Errorf("戻した後の一覧 = %s", got)
 	}
 }

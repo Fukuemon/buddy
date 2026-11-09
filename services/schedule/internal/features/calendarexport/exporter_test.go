@@ -78,8 +78,12 @@ type scheduleOps struct {
 	Create           func(ctx context.Context, facilityID string, in schedule.SlotInput) (schedule.Schedule, error)
 	CreateRecurring  func(ctx context.Context, facilityID string, in schedule.SlotInput, rule schedule.RuleInput) (schedule.RecurringSchedule, error)
 	ChangeOccurrence func(ctx context.Context, recurringScheduleID string, originalDate civil.Date, in schedule.SlotInput) (schedule.Schedule, error)
+	ChangeRule       func(ctx context.Context, recurringScheduleID string, effective, firstWeek *civil.Date, rule schedule.RuleInput) (schedule.RecurringSchedule, error)
 	Cancel           func(ctx context.Context, scheduleID, reason string) (schedule.Cancellation, error)
+	CancelOccurrence func(ctx context.Context, recurringScheduleID string, originalDate civil.Date, reason string) (schedule.Cancellation, error)
 	Update           func(ctx context.Context, scheduleID string, in schedule.SlotInput) (schedule.Schedule, error)
+	Delete           func(ctx context.Context, scheduleID string) error
+	DeleteOccurrence func(ctx context.Context, recurringScheduleID string, originalDate civil.Date) error
 }
 
 // writerOf は、事業所によらず w で書く calendar.WriterFor を返し、引かれた事業所を used に足す。
@@ -88,6 +92,11 @@ func writerOf(w calendar.EventWriter, used *[]string) calendar.WriterFor {
 		*used = append(*used, facilityID)
 		return w, nil
 	}
+}
+
+// exportToday は、書き出しのテストの今日（2026-11-04）の時刻を返す。規則の変更と削除は、今日より前の予定を変えないためである。
+func exportToday() time.Time {
+	return civil.Date{Year: 2026, Month: 11, Day: 4}.Time().Add(9 * time.Hour)
 }
 
 func newExportEnv(t *testing.T) exportEnv {
@@ -114,14 +123,18 @@ func newExportEnv(t *testing.T) exportEnv {
 		Create:           schedule.NewCreate(facilities, schedules, types, refs, facilities, nil, nil, outbox, tx, ids).Do,
 		CreateRecurring:  schedule.NewCreateRecurring(facilities, types, refs, facilities, nil, nil, recurring, outbox, tx, ids).Do,
 		ChangeOccurrence: schedule.NewChangeOccurrence(recurring, refs, facilities, schedules, types, nil, nil, outbox, tx, ids).Do,
+		ChangeRule:       schedule.NewChangeRule(recurring, refs, facilities, types, nil, exportToday, outbox, tx, ids).Do,
 		Cancel:           schedule.NewCancel(schedules, refs, facilities, outbox, tx, ids).Do,
+		CancelOccurrence: schedule.NewCancelOccurrence(recurring, refs, facilities, schedules, types, nil, outbox, tx, ids).Do,
 		Update:           schedule.NewUpdate(schedules, refs, facilities, types, nil, nil, outbox, tx).Do,
+		Delete:           schedule.NewDelete(schedules, refs, facilities, exportToday, outbox, tx, ids).Do,
+		DeleteOccurrence: schedule.NewDeleteOccurrence(recurring, refs, facilities, exportToday, outbox, tx, ids).Do,
 	}
 	writers, logs := &[]string{}, &bytes.Buffer{}
 	exporter := calendarexport.NewExporter(calendarexport.ExporterDeps{
 		Facilities: inmem.Facilities{Store: s},
 		Exports:    exports, Calendars: inmem.Calendars{Store: s}, Writers: writerOf(gcal.NewWriter(gcaltest.Start(t, srv)), writers),
-		Schedules: inmem.Schedules{Store: s}, Recurring: inmem.RecurringSchedules{Store: s},
+		Schedules: inmem.Schedules{Store: s}, Recurring: inmem.RecurringSchedules{Store: s}, Deletions: inmem.Schedules{Store: s},
 	}, ids, slog.New(slog.NewJSONHandler(logs, &slog.HandlerOptions{Level: slog.LevelDebug})))
 	return exportEnv{store: s, ctx: ctx, uc: uc, srv: srv, schedules: sched, exporter: exporter, writers: writers, logs: logs}
 }
@@ -333,6 +346,8 @@ func TestExportRecreatesEventDeletedInGoogle(t *testing.T) {
 	}
 }
 
+// TestExportRetriesTransientErrors は、503（書いたかが分からない calendar.ErrOutcomeUnknown）と 429（拒まれた calendar.ErrUnavailable）の
+// どちらの待ちも、書き直す時刻を持って書き直すことを確認する。
 func TestExportRetriesTransientErrors(t *testing.T) {
 	e := newExportEnv(t)
 	e.srv.Failures = []int{http.StatusServiceUnavailable, http.StatusTooManyRequests}
@@ -466,7 +481,7 @@ func TestExportRecurringWithReplacedOccurrence(t *testing.T) {
 	}
 	e.run(t)
 	ev := e.srv.Event(googleCalID, eventID(t, rs.ID))
-	if ev == nil || len(ev.Recurrence) != 1 || ev.Recurrence[0] != "RRULE:FREQ=WEEKLY;BYDAY=MO;UNTIL=20261231T145959Z" {
+	if ev == nil || len(ev.Recurrence) != 1 || ev.Recurrence[0] != "RRULE:FREQ=WEEKLY;INTERVAL=1;BYDAY=MO;WKST=SU;UNTIL=20261231T145959Z" {
 		t.Fatalf("繰り返しの予定 = %+v", ev)
 	}
 
@@ -485,6 +500,84 @@ func TestExportRecurringWithReplacedOccurrence(t *testing.T) {
 	}
 	if single := e.srv.Event(googleCalID, eventID(t, occ.ID)); single == nil || single.Start.DateTime != "2026-11-09T14:00:00" {
 		t.Errorf("置き換えた回 = %+v", single)
+	}
+}
+
+// TestExportRecurringWithCancelledOccurrence は、繰り返しの予定の 1 回をキャンセルすると、書き出しがその日を親の予定の EXDATE にし、
+// キャンセルした回の単発の予定を Google カレンダーに作らないことを確認する。
+func TestExportRecurringWithCancelledOccurrence(t *testing.T) {
+	e := newExportEnv(t)
+	title := "定例"
+	rs, err := e.schedules.CreateRecurring(e.ctx, inmem.FacilityID, schedule.SlotInput{
+		TypeID: inmem.NormalTypeID, Date: civil.Date{Year: 2026, Month: 11, Day: 2},
+		StartTime: civil.Time{Hour: 9}, EndTime: civil.Time{Hour: 10}, StaffID: inmem.StaffID, Title: &title,
+	}, schedule.RuleInput{Frequency: schedule.Weekly})
+	if err != nil {
+		t.Fatal(err)
+	}
+	e.run(t)
+
+	c, err := e.schedules.CancelOccurrence(e.ctx, rs.ID, civil.Date{Year: 2026, Month: 11, Day: 9}, "休み")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if n := e.run(t); n != 1 {
+		t.Errorf("書いた待ち = %d, want 繰り返しの予定の 1 件", n)
+	}
+	ev := e.srv.Event(googleCalID, eventID(t, rs.ID))
+	if len(ev.Recurrence) != 2 || ev.Recurrence[1] != "EXDATE;TZID=Asia/Tokyo:20261109T090000" {
+		t.Errorf("回をキャンセルした後の繰り返し = %v", ev.Recurrence)
+	}
+	if single := e.srv.Event(googleCalID, eventID(t, c.ScheduleID)); single != nil {
+		t.Errorf("キャンセルした回の単発の予定 = %+v, want 作らない", single)
+	}
+}
+
+// 繰り返しの予定の規則を適用の日以降について変えると、書き出しは、元の繰り返しの予定の RRULE を適用の日の前の日で終え、
+// 新しい規則の繰り返しの予定を Google に作る。適用の日以降の置き換えた回の単発の予定は残る（ADR-0037）。
+func TestExportRecurringRuleChange(t *testing.T) {
+	e := newExportEnv(t)
+	title := "定例"
+	end := civil.Date{Year: 2026, Month: 12, Day: 31}
+	monday, tuesday := 1, 2
+	rs, err := e.schedules.CreateRecurring(e.ctx, inmem.FacilityID, schedule.SlotInput{
+		TypeID: inmem.NormalTypeID, Date: civil.Date{Year: 2026, Month: 11, Day: 2},
+		StartTime: civil.Time{Hour: 9}, EndTime: civil.Time{Hour: 10}, StaffID: inmem.StaffID, Title: &title,
+	}, schedule.RuleInput{Frequency: schedule.Weekly, DaysOfWeek: []int{monday}, EndDate: &end})
+	if err != nil {
+		t.Fatal(err)
+	}
+	moved := "定例（11/16 は午後）"
+	occ, err := e.schedules.ChangeOccurrence(e.ctx, rs.ID, civil.Date{Year: 2026, Month: 11, Day: 16}, schedule.SlotInput{
+		TypeID: inmem.NormalTypeID, Date: civil.Date{Year: 2026, Month: 11, Day: 16},
+		StartTime: civil.Time{Hour: 14}, EndTime: civil.Time{Hour: 15}, StaffID: inmem.StaffID, Title: &moved,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	e.run(t)
+
+	effective := civil.Date{Year: 2026, Month: 11, Day: 10}
+	next, err := e.schedules.ChangeRule(e.ctx, rs.ID, &effective, nil, schedule.RuleInput{Frequency: schedule.Weekly, DaysOfWeek: []int{tuesday}, EndDate: &end})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, id := range []string{rs.ID, next.ID} {
+		if x := e.export(t, id); x.Status != calendar.ExportPending {
+			t.Errorf("繰り返しの予定 %s の書き出しの待ち = %+v, want 待ち", id, x)
+		}
+	}
+	e.run(t)
+
+	if ev := e.srv.Event(googleCalID, eventID(t, rs.ID)); ev == nil || ev.Recurrence[0] != "RRULE:FREQ=WEEKLY;INTERVAL=1;BYDAY=MO;WKST=SU;UNTIL=20261109T145959Z" {
+		t.Errorf("元の繰り返しの予定 = %+v, want 11-09 までの毎週月曜", ev)
+	}
+	ev := e.srv.Event(googleCalID, eventID(t, next.ID))
+	if ev == nil || ev.Recurrence[0] != "RRULE:FREQ=WEEKLY;INTERVAL=1;BYDAY=TU;WKST=SU;UNTIL=20261231T145959Z" || ev.Start.DateTime != "2026-11-10T09:00:00" {
+		t.Errorf("新しい繰り返しの予定 = %+v, want 11-10 からの毎週火曜", ev)
+	}
+	if single := e.srv.Event(googleCalID, eventID(t, occ.ID)); single == nil || single.Start.DateTime != "2026-11-16T14:00:00" {
+		t.Errorf("置き換えた回 = %+v, want 残る", single)
 	}
 }
 
@@ -814,7 +907,7 @@ func TestExportLogsRequeuedOnShutdown(t *testing.T) {
 }
 
 // 取った待ちの事業所が buddy を予定の正本にしていなければ、書かずに確認が必要な待ち（conflict、not_buddy_primary）にして保留にする。
-// 保留にした待ちは、要約の held_count に数え、書いていない待ちの滞留（pending）には数えない（ADR-0035）。
+// 保留にした待ちは、要約の held_count に数え、書いていない待ちの滞留（pending）には数えない（ADR-0029）。
 func TestExportHoldsNotBuddyPrimary(t *testing.T) {
 	e := newExportEnv(t)
 	d := e.create(t, "カンファレンス")

@@ -1,6 +1,6 @@
 # @buddy/ui
 
-buddy のデザインシステム。DADS のトークンを元にした意味のトークンと、Base と Case のコンポーネントを持つ。  
+buddy のデザインシステム。DADS の値を元にしたプリミティブトークンとセマンティックトークンと、Base と Case のコンポーネントを持つ。  
 apps/web は `@buddy/ui` を `workspace:*` で読み、ビルドせずに TypeScript のまま使う。
 
 ## Running
@@ -24,11 +24,12 @@ pnpm --filter @buddy/ui exec playwright install chromium
 | コマンド | 確認すること |
 | --- | --- |
 | `pnpm --filter @buddy/ui test` | Vitest の 2 つの project（ブラウザでのコンポーネント、story の描画とアクセシビリティ）が通る |
-| `pnpm check:contrast`（ルートで実行する） | 意味のトークンの組が、WCAG 2.2 のコントラスト比の基準に届く |
+| `pnpm check:contrast`（ルートで実行する） | セマンティックトークンの組が、WCAG 2.2 のコントラスト比の基準に届く |
 | `pnpm --filter @buddy/ui check` | 整形と lint（Vite+） |
 | `pnpm --filter @buddy/ui typecheck` | `tsc` の型のチェック |
 
 ## Documentation
 
-- [DESIGN.md](DESIGN.md): トークンとコンポーネントの使い方、カタログの組み方
-- [ADR-0004](../../docs/adr/0004-design-system.md): トークンの段の分け方とコンポーネントの配置先の判断
+- [DESIGN.md](DESIGN.md): 画面を作るときの原則と手順。トークン、コンポーネント、カタログの規則は [design/](design/) の 3 つの文書にある
+- [ADR-0013](../../docs/adr/0013-design-system-primitive-tokens.md): トークンの層の分け方の判断
+- [ADR-0014](../../docs/adr/0014-ui-components.md): コンポーネントの配置先の判断

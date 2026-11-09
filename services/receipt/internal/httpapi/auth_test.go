@@ -161,7 +161,7 @@ func TestChecksWithIssuer(t *testing.T) {
 	}
 }
 
-// TestChecksPermission は、照合の権限を持たない職員を 403 で拒み、権限を確認できないときに 502 を返すことを確認する（ADR-0022）。
+// TestChecksPermission は、照合の権限を持たない職員を 403 で拒み、権限を確認できないときに 502 を返すことを確認する（ADR-0007）。
 func TestChecksPermission(t *testing.T) {
 	tests := []struct {
 		name     string

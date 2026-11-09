@@ -29,7 +29,7 @@ const signInManager = async (page: Page) => {
 const prepareStaff = (label: string) => async (page: Page) => {
   await signInManager(page)
   const staff = newStaff(label)
-  const id = await registerStaffId(page.request, await issueManagerToken(page.request), staff)
+  const id = await registerStaffId(page.request, await issueManagerToken(), staff)
   return { id, name: staff.name }
 }
 
@@ -38,7 +38,7 @@ const prepareStaffWithSchedule = (label: string) => async (page: Page) => {
   const staff = await prepareStaff(label)(page)
   const res = await createNormalSchedule(
     page.request,
-    await issueManagerToken(page.request),
+    await issueManagerToken(),
     STAFF_FORM.facilityId,
     { staffId: staff.id, title: `見本の会議 ${Date.now()}`, date: FUTURE_DATE },
   )
@@ -64,9 +64,9 @@ test.describe('職員の管理', () => {
         },
         async (page) => {
           await signInManager(page)
-          const member = (
-            await listPositions(page.request, await issueManagerToken(page.request))
-          ).find((p) => p.id === STAFF_FORM.positionId)
+          const member = (await listPositions(page.request, await issueManagerToken())).find(
+            (p) => p.id === STAFF_FORM.positionId,
+          )
           return { member }
         },
         async ({ page, step, check }, { member }) => {
@@ -111,7 +111,7 @@ test.describe('職員の管理', () => {
         },
         async (page) => {
           await signInManager(page)
-          const token = await issueManagerToken(page.request)
+          const token = await issueManagerToken()
           const id = await registerStaffId(page.request, token, newStaff('on-leave'))
           await leaveStaff(page.request, token, id)
           return { id }
@@ -171,7 +171,7 @@ test.describe('職員の管理', () => {
         },
         async (page) => {
           const staff = await prepareStaff('edit')(page)
-          const token = await issueManagerToken(page.request)
+          const token = await issueManagerToken()
           const team = (await listUnits(page.request, token, 'teams')).find(
             (t) => t.id !== STAFF_FORM.teamId,
           )
@@ -218,9 +218,7 @@ test.describe('職員の管理', () => {
         },
         async (page) => {
           const staff = await prepareStaff('position')(page)
-          const other = (
-            await listPositions(page.request, await issueManagerToken(page.request))
-          ).find(
+          const other = (await listPositions(page.request, await issueManagerToken())).find(
             (p) =>
               p.id !== STAFF_FORM.positionId && !p.policies.some((q) => q.code === 'staff.manage'),
           )
@@ -388,7 +386,7 @@ test.describe('職員の管理', () => {
         async ({ page, step, check }, { id, scheduleId }) => {
           await page.goto(`/staff/${id}`)
           await expect(page.getByTestId('staff-detail-menu')).toBeVisible()
-          await step('撮影の前に登録し、2030/01/09 の予定を作った職員の詳細を開いている')
+          await step('撮影の前に登録し、2030年1月9日（水）の予定を作った職員の詳細を開いている')
 
           await step('「…」から「休職にする」を押す')
           await page.getByTestId('staff-detail-menu').click()
@@ -396,7 +394,7 @@ test.describe('職員の管理', () => {
           const dialog = page.getByTestId('staff-leave-dialog')
           await expect(
             dialog.getByTestId(`staff-leave-assignment-schedule-${scheduleId}`),
-          ).toContainText('2030/01/09')
+          ).toContainText('2030年1月9日（水）')
           await check('確認のダイアログに、今日以降に残る予定が出る')
 
           await step('「休職にする」を押して確定する')
@@ -418,7 +416,7 @@ test.describe('職員の管理', () => {
         },
         async (page) => {
           const staff = await prepareStaff('reinstate')(page)
-          await leaveStaff(page.request, await issueManagerToken(page.request), staff.id)
+          await leaveStaff(page.request, await issueManagerToken(), staff.id)
           return staff
         },
         async ({ page, step, check }, { id }) => {
@@ -451,7 +449,7 @@ test.describe('職員の管理', () => {
         async ({ page, step, check }, { id, name, scheduleId }) => {
           await page.goto(`/staff/${id}`)
           await expect(page.getByTestId('staff-detail-menu')).toBeVisible()
-          await step('撮影の前に登録し、2030/01/09 の予定を作った職員の詳細を開いている')
+          await step('撮影の前に登録し、2030年1月9日（水）の予定を作った職員の詳細を開いている')
 
           await step('「…」から「退職にする」を押す')
           await page.getByTestId('staff-detail-menu').click()
@@ -484,7 +482,7 @@ test.describe('職員の管理', () => {
         async (page) => {
           const id = await registerStaffId(
             page.request,
-            await issueManagerToken(page.request),
+            await issueManagerToken(),
             newStaff('hidden'),
           )
           await page.goto('/staff')

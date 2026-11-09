@@ -77,7 +77,9 @@ compose で起動する手順は、[CONTRIBUTING.md](../../CONTRIBUTING.md#runni
 
 次の手順は、compose のブローカーを止め、ローカルで `go run` で起動する。  
 ブローカーの DB は、compose の PostgreSQL の `broker` のデータベースを使う。  
-ブローカーの DB は、Hydra と予定の API の DB とは分ける。
+ブローカーの DB は、Hydra と予定の API の DB とは分ける。  
+compose は、[CONTRIBUTING.md](../../CONTRIBUTING.md#portless-を通さずに起動する) の「portless を通さずに起動する」の環境変数を入れたシェルで起動する。  
+Hydra がブローカーの画面を `http://localhost:8100` へリダイレクトし、Hydra の admin API が `127.0.0.1:4445` で待ち受けるためである。
 
 ```sh
 docker compose up -d --wait hydra idp broker-seed
@@ -137,5 +139,5 @@ Docker が無い環境では、`go test -short ./...` で `internal/postgres` �
 ## Documentation
 
 - [DesignDoc.md](DesignDoc.md): ブローカーの責務、Hydra との分担、ログイン、職員の登録、休職、復職、退職、ログアウトの流れ
-- ADR-0016: [OIDC のブローカーを、Ory Hydra と、自作の login and consent app で作る](../../docs/adr/0016-id-broker-hydra.md)
-- ADR-0017: [職員の身元をブローカーが持ち、権限と業務のデータは予定の API が持つ](../../docs/adr/0017-identity-boundary.md)
+- ADR-0002: [OIDC のブローカーを、Ory Hydra と、自作の login and consent app で作る](../../docs/adr/0002-id-broker-hydra.md)
+- ADR-0001: [認証を OIDC のブローカーと BFF のサーバー側のセッションにし、職員の身元をブローカーが、権限と業務のデータを予定の API が持つ](../../docs/adr/0001-auth.md)

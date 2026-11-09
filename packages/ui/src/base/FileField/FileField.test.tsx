@@ -28,7 +28,9 @@ describe('FileField', () => {
   it('誤りがあれば aria-invalid を付け、誤りの文を欄に結び付ける', () => {
     render(<WithError />)
     expect(screen.getByLabelText('実績の CSV')).toHaveAttribute('aria-invalid', 'true')
-    expect(screen.getByRole('alert')).toHaveTextContent('CSV のファイルを選んでください')
+    expect(screen.getByLabelText('実績の CSV')).toHaveAccessibleDescription(
+      /CSV のファイルを選んでください/,
+    )
   })
 
   it('欄は 44 px 以上の高さで描く', () => {

@@ -11,7 +11,7 @@ import {
 import { EVIDENCE_VARIANTS, recordPrEvidence } from '../../fixtures/evidence'
 import { findSchedule } from '../../fixtures/externalCalendar'
 import { issueManagerToken, STAFF_FORM } from '../../fixtures/staff'
-import { linkStaffCalendar, unlinkStaffCalendar } from '../../screens/calendar'
+import { linkStaffCalendar, unlinkStaffCalendar } from '../../setup/calendar'
 import { signInAtBroker } from '../../screens/login'
 import { receiptCategoryRowCells } from '../../selectors/receipt'
 
@@ -60,7 +60,7 @@ const createCancelledSchedule = (title: string) => async (page: Page) => {
   await page.getByTestId('schedule-create-submit').click()
   await expect(page.getByTestId('schedule-form-modal')).toBeHidden()
 
-  const token = await issueManagerToken(page.request)
+  const token = await issueManagerToken()
   const schedule = await findSchedule(page.request, token, STAFF_FORM.facilityId, {
     date: today(),
     title,
@@ -110,7 +110,7 @@ test.describe('重ねない表現', () => {
           await expect(label).toHaveText('予定のみ（1 件）')
           const cells = receiptCategoryRowCells(page, 'schedule_only', '', '')
           // 実績の側の 5 セル（サービス内容_実績から加算まで）は、読み上げの「データなし」だけを持つ
-          for (const index of [7, 8, 9, 10, 11]) {
+          for (const index of [8, 9, 10, 11, 12]) {
             await expect(cells.nth(index)).toHaveText('データなし')
           }
           await check(

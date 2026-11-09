@@ -24,7 +24,7 @@ import (
 	"github.com/Fukuemon/buddy/services/schedule/internal/ulid"
 )
 
-// このファイルのテストは、書き出しと同期の処理を別のプロセスで並べて動かすときの、Claim とリースの動作を確認する（ADR-0036）。
+// このファイルのテストは、書き出しと同期の処理を別のプロセスで並べて動かすときの、Claim とリースの動作を確認する（ADR-0032）。
 // 処理ごとに別の接続で取り合うので、ロールバックする txContext ではなく、テストごとに作ったデータベースに書いて確定する。
 
 const workerCalendar = "mori@example.com"
@@ -427,7 +427,7 @@ func TestCalendarSyncFinishesAfterShutdown(t *testing.T) {
 			return nil, ctx.Err()
 		},
 	}, calendarsync.Appliers{
-		organization.SourceGooglePrimary: calendarsync.NewProjectionApplier(NewCalendarProjectionRepository(pool), log),
+		organization.SourceGooglePrimary: calendarsync.NewProjectionApplier(NewCalendarProjectionRepository(pool), NewCalendarEventRecordRepository(pool), NewVisitInfoRepository(pool), log),
 	}, NewTransactor(pool), time.Hour, log)
 	if n, err := syncer.SyncDue(ctx); err != nil || n != 2 {
 		t.Fatalf("SyncDue = %d, %v", n, err)

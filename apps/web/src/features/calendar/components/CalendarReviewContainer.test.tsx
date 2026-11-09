@@ -1,11 +1,13 @@
-import { composeStories } from '@storybook/react-vite'
+import { composeStories, composeStory } from '@storybook/react-vite'
 import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vite-plus/test'
 
+import { refocusWindow } from '#/test/refocusWindow'
+
 import * as stories from './CalendarReviewContainer.stories'
 
-const { AcceptFailed, Default, Empty, GooglePrimary, LoadError } = composeStories(stories)
+const { Default, Empty, LoadError } = composeStories(stories)
 
 /**
  * 一覧の行を押し、予定の確認のダイアログを開く。
@@ -22,7 +24,7 @@ describe('CalendarReviewContainer', () => {
     render(<Default />)
     const row = await screen.findByTestId('calendar-review-row-schedule-schedule-1')
     expect(within(row).getByTestId('calendar-review-datetime-export-1')).toHaveTextContent(
-      '2026/11/04（水）09:00〜09:29',
+      '2026年11月4日（水） 09:00〜09:29',
     )
     expect(row).toHaveTextContent('青木 一郎')
     expect(within(row).getByTestId('calendar-review-reason-export-1')).toHaveTextContent(
@@ -32,63 +34,49 @@ describe('CalendarReviewContainer', () => {
     expect(screen.getByTestId('calendar-review-table')).not.toHaveTextContent('加藤 春子')
     const recurring = screen.getByTestId('calendar-review-row-recurring-recurring-1')
     expect(within(recurring).getByTestId('calendar-review-datetime-export-3')).toHaveTextContent(
-      '2026/11/03（火）から毎回 10:00〜11:00',
+      '2026年11月3日（火）から毎回 10:00〜11:00',
     )
   })
 
-  it('行を押すと、予定と理由と、その予定で選べる操作をダイアログに出す', async () => {
-    render(<GooglePrimary />)
+  it('行を押すと、予定と理由と、その予定で選べる操作をダイアログに出し、× を置かずに閉じるで閉じる', async () => {
+    render(<Default />)
     const dialog = await openRow('calendar-review-row-schedule-schedule-1')
     expect(within(dialog).getByTestId('calendar-review-dialog-datetime')).toHaveTextContent(
-      '2026/11/04（水）09:00〜09:29',
+      '2026年11月4日（水） 09:00〜09:29',
     )
     expect(within(dialog).getByTestId('calendar-review-open-export-1')).toBeInTheDocument()
-    const accept = within(dialog).getByTestId('calendar-review-accept-export-1')
-    const rewrite = within(dialog).getByTestId('calendar-review-rewrite-export-1')
-    expect(accept.compareDocumentPosition(rewrite) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    expect(within(dialog).getByTestId('calendar-review-rewrite-export-1')).toBeInTheDocument()
 
-    await userEvent.click(within(dialog).getByTestId('calendar-review-close'))
+    expect(within(dialog).queryByTestId('calendar-review-close')).toBeNull()
+    const close = within(dialog).getByTestId('calendar-review-cancel')
+    expect(close).toHaveTextContent('閉じる')
+    await userEvent.click(close)
     expect(screen.queryByTestId('calendar-review-dialog')).toBeNull()
   })
 
-  it('Google の内容に合わせるは、合わせられる予定にだけ出す', async () => {
+  it('buddy でキャンセルした予定は、書き直すと Google カレンダーの予定を消すことを示す', async () => {
     render(<Default />)
     const dialog = await openRow('calendar-review-row-schedule-schedule-4')
-    expect(within(dialog).queryByTestId('calendar-review-accept-export-5')).toBeNull()
     expect(within(dialog).getByTestId('calendar-review-rewrite-export-5')).toBeInTheDocument()
     expect(within(dialog).getByTestId('calendar-review-dialog-reason')).toHaveTextContent(
       'buddy でキャンセルした予定が、Google カレンダーで変わっていました。書き直すと Google カレンダーの予定を消すので、消してよいかを職員に確認してください。',
     )
   })
 
-  it('buddy_primary の事業所では、合わせられる予定にも Google の内容に合わせるを出さない', async () => {
+  it('両方で変わった予定にも、buddy の内容で書き直すだけを出し、Google の内容に合わせるを出さない', async () => {
     render(<Default />)
     const dialog = await openRow('calendar-review-row-schedule-schedule-1')
-    expect(within(dialog).queryByTestId('calendar-review-accept-export-1')).toBeNull()
-    expect(within(dialog).getByTestId('calendar-review-rewrite-export-1')).toBeInTheDocument()
+    expect(within(dialog).getByTestId('calendar-review-rewrite-export-1')).toHaveTextContent(
+      'buddy の内容で書き直す',
+    )
+    expect(dialog).not.toHaveTextContent('Google の内容に合わせる')
   })
 
-  it('繰り返しの予定には、予定を開くを出さない', async () => {
+  it('繰り返しの予定には、予定を開くを出さず、開いたときのフォーカスを書き直すでなく閉じるに置く', async () => {
     render(<Default />)
     const dialog = await openRow('calendar-review-row-recurring-recurring-1')
     expect(within(dialog).queryByTestId('calendar-review-open-export-3')).toBeNull()
-  })
-
-  it('確認してから Google の内容に合わせると、一覧から消える', async () => {
-    render(<GooglePrimary />)
-    const detail = await openRow('calendar-review-row-schedule-schedule-1')
-    await userEvent.click(within(detail).getByTestId('calendar-review-accept-export-1'))
-    const dialog = screen.getByTestId('calendar-accept-dialog')
-    expect(screen.queryByTestId('calendar-review-dialog')).toBeNull()
-    expect(within(dialog).getByTestId('calendar-accept-target')).toHaveTextContent(
-      '2026/11/04（水）09:00〜09:29、青木 一郎',
-    )
-    expect(dialog).toHaveTextContent('buddy で変えたタイトルと日時は消えます。')
-    await userEvent.click(within(dialog).getByTestId('calendar-accept-submit'))
-
-    expect(await screen.findByTestId('calendar-review-row-schedule-schedule-5')).toBeInTheDocument()
-    expect(screen.queryByTestId('calendar-review-row-schedule-schedule-1')).toBeNull()
-    expect(screen.queryByTestId('calendar-accept-dialog')).toBeNull()
+    expect(within(dialog).getByTestId('calendar-review-cancel')).toHaveFocus()
   })
 
   it('確認してから buddy の内容で書き直すと、一覧から消える', async () => {
@@ -97,7 +85,7 @@ describe('CalendarReviewContainer', () => {
     await userEvent.click(within(detail).getByTestId('calendar-review-rewrite-export-1'))
     const dialog = screen.getByTestId('calendar-rewrite-dialog')
     expect(within(dialog).getByTestId('calendar-rewrite-target')).toHaveTextContent(
-      '2026/11/04（水）09:00〜09:29、青木 一郎',
+      '2026年11月4日（水） 09:00〜09:29、青木 一郎',
     )
     await userEvent.click(within(dialog).getByTestId('calendar-rewrite-submit'))
 
@@ -117,26 +105,27 @@ describe('CalendarReviewContainer', () => {
     expect(dialog).not.toHaveTextContent('消された予定は作り直します。')
   })
 
-  it('確認のダイアログでキャンセルすると、書き直さずに予定の確認のダイアログに戻る', async () => {
+  it('書き直すボタンは、赤い文字の destructive にしてフッターの先頭に置き、閉じるをその後に並べる', async () => {
+    render(<Default />)
+    const dialog = await openRow('calendar-review-row-schedule-schedule-1')
+    const rewrite = within(dialog).getByTestId('calendar-review-rewrite-export-1')
+    const close = within(dialog).getByTestId('calendar-review-cancel')
+    expect(rewrite).toHaveClass('text-danger')
+    expect(rewrite).toHaveClass('mr-auto')
+    expect(rewrite.compareDocumentPosition(close) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  })
+
+  it('書き直しの確認のダイアログで戻るを押すと、書き直さずに予定の確認のダイアログに戻る', async () => {
     render(<Default />)
     const detail = await openRow('calendar-review-row-schedule-schedule-5')
     await userEvent.click(within(detail).getByTestId('calendar-review-rewrite-export-2'))
-    await userEvent.click(screen.getByTestId('calendar-rewrite-cancel'))
+    const back = screen.getByTestId('calendar-rewrite-cancel')
+    expect(back).toHaveTextContent('戻る')
+    expect(screen.getByTestId('calendar-rewrite-submit')).toHaveClass('bg-danger')
+    await userEvent.click(back)
     expect(screen.queryByTestId('calendar-rewrite-dialog')).toBeNull()
     expect(screen.getByTestId('calendar-review-dialog')).toBeInTheDocument()
     expect(screen.getByTestId('calendar-review-row-schedule-schedule-5')).toBeInTheDocument()
-  })
-
-  it('Google の内容に合わせられなければ、ダイアログを開いたまま理由を出す', async () => {
-    render(<AcceptFailed />)
-    const detail = await openRow('calendar-review-row-schedule-schedule-1')
-    await userEvent.click(within(detail).getByTestId('calendar-review-accept-export-1'))
-    await userEvent.click(screen.getByTestId('calendar-accept-submit'))
-    expect(await screen.findByTestId('calendar-accept-error')).toHaveTextContent(
-      'Google カレンダーの予定を、buddy の予定として取り込めません。',
-    )
-    expect(screen.getByTestId('calendar-accept-dialog')).toBeInTheDocument()
-    expect(screen.getByTestId('calendar-accept-submit')).not.toHaveAttribute('aria-disabled')
   })
 
   it('確認が必要な予定が無ければ、そう示す', async () => {
@@ -152,5 +141,31 @@ describe('CalendarReviewContainer', () => {
       '確認が必要な予定を読み込めませんでした。',
     )
     expect(screen.getByTestId('calendar-review-retry')).toBeInTheDocument()
+  })
+})
+
+describe('確認が必要な予定の読み直し', () => {
+  it('読み終えた後に読み直して確認が必要な予定を読めなければ、表示を残して失敗の文を出し、読み直すで読めたら消す', async () => {
+    const Story = composeStory(
+      {
+        ...stories.RefetchError,
+        parameters: {
+          ...stories.default.parameters,
+          appRouter: { ...stories.default.parameters.appRouter, api: stories.refetchFailingApi() },
+        },
+      },
+      stories.default,
+    )
+    render(<Story />)
+    await screen.findByTestId('calendar-review-table')
+
+    refocusWindow()
+    expect(await screen.findByTestId('refetch-error')).toHaveTextContent(
+      '最新の情報を読み込めませんでした。',
+    )
+    expect(screen.getByTestId('calendar-review-table')).toBeInTheDocument()
+
+    await userEvent.click(screen.getByTestId('refetch-retry'))
+    await expect.poll(() => screen.queryByTestId('refetch-error')).toBeNull()
   })
 })

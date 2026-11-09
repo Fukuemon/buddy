@@ -218,7 +218,7 @@ func TestStaffCreateWithBroker(t *testing.T) {
 	})
 }
 
-// 職員の登録は、訪問しない職員を受け取る。役職からは決めない（ADR-0022）。
+// 職員の登録は、訪問しない職員を受け取る。役職からは決めない（ADR-0006）。
 func TestStaffCreateNonVisiting(t *testing.T) {
 	s := inmem.Seeded()
 	s.Departments["DEP"] = organization.Department{ID: "DEP", FacilityID: facilityID}

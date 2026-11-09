@@ -29,7 +29,13 @@ SELECT * FROM visit_categories WHERE id = ANY (sqlc.arg(ids)::text[]) ORDER BY n
 DELETE FROM visit_infos vi
 WHERE vi.id = $1
   AND NOT EXISTS (SELECT 1 FROM schedules s WHERE s.visit_info_id = vi.id)
-  AND NOT EXISTS (SELECT 1 FROM recurring_schedules rs WHERE rs.visit_info_id = vi.id);
+  AND NOT EXISTS (SELECT 1 FROM recurring_schedules rs WHERE rs.visit_info_id = vi.id)
+  AND NOT EXISTS (
+    SELECT 1 FROM calendar_event_records r WHERE r.visit_info_id = vi.id OR r.pending_visit_info_id = vi.id
+  );
+
+-- name: GetVisitInfoDetail :one
+SELECT * FROM visit_info_details WHERE id = $1;
 
 -- name: ListVisitInfoCategoryIDs :many
 SELECT visit_category_id FROM visit_info_visit_categories WHERE visit_info_id = $1 ORDER BY visit_category_id;

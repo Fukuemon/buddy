@@ -69,6 +69,22 @@ func TestDrain(t *testing.T) {
 	})
 }
 
+// TestSequence は、同期の役割の 1 回が、同期と読み戻しを順に呼び、取った数を足し、片方が失敗しても残りを呼ぶことを確認する。
+func TestSequence(t *testing.T) {
+	var calls []string
+	due := sequence(func(context.Context) (int, error) {
+		calls = append(calls, "sync")
+		return 0, errors.New("claim")
+	}, func(context.Context) (int, error) {
+		calls = append(calls, "readback")
+		return 2, nil
+	})
+	n, err := due(t.Context())
+	if n != 2 || err == nil || !slices.Equal(calls, []string{"sync", "readback"}) {
+		t.Errorf("sequence = %d, %v, 呼んだ順 %v", n, err, calls)
+	}
+}
+
 func TestPollInterval(t *testing.T) {
 	for _, tc := range []struct {
 		name string

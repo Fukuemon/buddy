@@ -6,26 +6,27 @@
 
 ## Columns
 
-| Name                  | Type                     | Default | Nullable | Children | Parents                                                                                                                                                                                                               | Comment                                                                                      |
-| --------------------- | ------------------------ | ------- | -------- | -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
-| id                    | text                     |         | false    |          |                                                                                                                                                                                                                       |                                                                                              |
-| facility_id           | text                     |         | false    |          | [public.recurring_schedules](public.recurring_schedules.md) [public.schedules](public.schedules.md) [public.external_calendars](public.external_calendars.md) [public.calendar_cutovers](public.calendar_cutovers.md) |                                                                                              |
-| external_calendar_id  | text                     |         | false    |          | [public.external_calendars](public.external_calendars.md)                                                                                                                                                             |                                                                                              |
-| external_event_id     | varchar(1024)            |         | false    |          |                                                                                                                                                                                                                       |                                                                                              |
-| recurring_event_id    | varchar(1024)            |         | true     |          |                                                                                                                                                                                                                       | 繰り返しの 1 回のとき、外部の繰り返しの予定の ID                                             |
-| etag                  | text                     |         | false    |          |                                                                                                                                                                                                                       | 最後に同期した時点の外部の予定の etag                                                        |
-| schedule_id           | text                     |         | true     |          | [public.schedules](public.schedules.md)                                                                                                                                                                               |                                                                                              |
-| recurring_schedule_id | text                     |         | true     |          | [public.recurring_schedules](public.recurring_schedules.md)                                                                                                                                                           |                                                                                              |
-| created_at            | timestamp with time zone | now()   | false    |          |                                                                                                                                                                                                                       |                                                                                              |
-| updated_at            | timestamp with time zone | now()   | false    |          |                                                                                                                                                                                                                       |                                                                                              |
-| synced_version        | integer                  |         | true     |          |                                                                                                                                                                                                                       | 最後に外部の予定と同じにした時点の、buddy の予定の更新の番号。この列を足す前の行は NULL      |
-| cutover_id            | text                     |         | true     |          | [public.calendar_cutovers](public.calendar_cutovers.md)                                                                                                                                                               | 切り替えの取り込みで作った対応のとき、その切り替え。切り替えをやめると、この対応と予定を消す |
+| Name                  | Type                     | Default | Nullable | Children | Parents                                                                                                                                                                                                                                                                         | Comment                                                                                      |
+| --------------------- | ------------------------ | ------- | -------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| id                    | text                     |         | false    |          |                                                                                                                                                                                                                                                                                 |                                                                                              |
+| facility_id           | text                     |         | false    |          | [public.recurring_schedules](public.recurring_schedules.md) [public.schedules](public.schedules.md) [public.external_calendars](public.external_calendars.md) [public.calendar_cutovers](public.calendar_cutovers.md) [public.schedule_deletions](public.schedule_deletions.md) |                                                                                              |
+| external_calendar_id  | text                     |         | false    |          | [public.external_calendars](public.external_calendars.md)                                                                                                                                                                                                                       |                                                                                              |
+| external_event_id     | varchar(1024)            |         | false    |          |                                                                                                                                                                                                                                                                                 |                                                                                              |
+| recurring_event_id    | varchar(1024)            |         | true     |          |                                                                                                                                                                                                                                                                                 | 繰り返しの 1 回のとき、外部の繰り返しの予定の ID                                             |
+| etag                  | text                     |         | false    |          |                                                                                                                                                                                                                                                                                 | 最後に同期した時点の外部の予定の etag                                                        |
+| schedule_id           | text                     |         | true     |          | [public.schedules](public.schedules.md)                                                                                                                                                                                                                                         |                                                                                              |
+| recurring_schedule_id | text                     |         | true     |          | [public.recurring_schedules](public.recurring_schedules.md)                                                                                                                                                                                                                     |                                                                                              |
+| created_at            | timestamp with time zone | now()   | false    |          |                                                                                                                                                                                                                                                                                 |                                                                                              |
+| updated_at            | timestamp with time zone | now()   | false    |          |                                                                                                                                                                                                                                                                                 |                                                                                              |
+| synced_version        | integer                  |         | true     |          |                                                                                                                                                                                                                                                                                 | 最後に外部の予定と同じにした時点の、buddy の予定の更新の番号。この列を足す前の行は NULL      |
+| cutover_id            | text                     |         | true     |          | [public.calendar_cutovers](public.calendar_cutovers.md)                                                                                                                                                                                                                         | 切り替えの取り込みで作った対応のとき、その切り替え。切り替えをやめると、この対応と予定を消す |
+| deleted_schedule_id   | text                     |         | true     |          | [public.schedule_deletions](public.schedule_deletions.md)                                                                                                                                                                                                                       | 削除した単発の予定の ID。書き出しが外部の予定を消すまで対応を残す（ADR-0040）                |
 
 ## Viewpoints
 
-| Name                                                               | Definition                                                                                                                                                                                                                                                                                                                                                               |
-| ------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| [外部のカレンダーの取り込みと書き出し](viewpoint-calendar-sync.md) | 職員の外部のカレンダーと同期の状態、外部の予定と予定の対応、取り込みの記録、書き出しの待ち、Google カレンダーの予定の写し（Projection）。書き出しは、予定の正本のモードが buddy_primary の事業所に限る。同期は google_primary の事業所のカレンダーだけを読み、予定の写しに書く。切り替えは、google_primary の事業所の予定を取り込み、完了で事業所を buddy_primary にする |
+| Name                                                               | Definition                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| ------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| [外部のカレンダーの取り込みと書き出し](viewpoint-calendar-sync.md) | 職員の外部のカレンダーと同期の状態、外部の予定と予定の対応、取り込みの記録、書き出しの待ち、Google カレンダーの予定の写し（Projection）。書き出しは、予定の正本のモードが buddy_primary の事業所に限る。同期は google_primary の事業所のカレンダーだけを読み、予定の写しに書く。google_primary の事業所で buddy から Google カレンダーに書いた予定は、訪問の情報と書き込みの保留の版を記録に持つ。切り替えは、google_primary の事業所の予定を取り込み、完了で事業所を buddy_primary にする |
 
 ## Constraints
 
@@ -39,7 +40,7 @@
 | external_event_links_id_check                      | CHECK       | CHECK ((id ~ '^[0-7][0-9A-HJKMNP-TV-Z]{25}$'::text))                                                               |
 | external_event_links_id_not_null                   | n           | NOT NULL id                                                                                                        |
 | external_event_links_synced_version_check          | CHECK       | CHECK ((synced_version >= 1))                                                                                      |
-| external_event_links_target_check                  | CHECK       | CHECK ((num_nonnulls(schedule_id, recurring_schedule_id) = 1))                                                     |
+| external_event_links_target_check                  | CHECK       | CHECK ((num_nonnulls(schedule_id, recurring_schedule_id, deleted_schedule_id) = 1))                                |
 | external_event_links_updated_at_not_null           | n           | NOT NULL updated_at                                                                                                |
 | external_event_links_recurring_schedule_fkey       | FOREIGN KEY | FOREIGN KEY (facility_id, recurring_schedule_id) REFERENCES recurring_schedules(facility_id, id) ON DELETE CASCADE |
 | external_event_links_schedule_fkey                 | FOREIGN KEY | FOREIGN KEY (facility_id, schedule_id) REFERENCES schedules(facility_id, id) ON DELETE CASCADE                     |
@@ -49,6 +50,8 @@
 | external_event_links_schedule_key                  | UNIQUE      | UNIQUE (schedule_id)                                                                                               |
 | external_event_links_recurring_schedule_key        | UNIQUE      | UNIQUE (recurring_schedule_id)                                                                                     |
 | external_event_links_cutover_fkey                  | FOREIGN KEY | FOREIGN KEY (facility_id, cutover_id) REFERENCES calendar_cutovers(facility_id, id)                                |
+| external_event_links_deleted_schedule_fkey         | FOREIGN KEY | FOREIGN KEY (facility_id, deleted_schedule_id) REFERENCES schedule_deletions(facility_id, schedule_id)             |
+| external_event_links_deleted_schedule_key          | UNIQUE      | UNIQUE (deleted_schedule_id)                                                                                       |
 
 ## Indexes
 
@@ -62,6 +65,7 @@
 | external_event_links_facility_schedule_idx           | CREATE INDEX external_event_links_facility_schedule_idx ON public.external_event_links USING btree (facility_id, schedule_id) WHERE (schedule_id IS NOT NULL)                               |
 | external_event_links_facility_recurring_schedule_idx | CREATE INDEX external_event_links_facility_recurring_schedule_idx ON public.external_event_links USING btree (facility_id, recurring_schedule_id) WHERE (recurring_schedule_id IS NOT NULL) |
 | external_event_links_cutover_idx                     | CREATE INDEX external_event_links_cutover_idx ON public.external_event_links USING btree (facility_id, cutover_id) WHERE (cutover_id IS NOT NULL)                                           |
+| external_event_links_deleted_schedule_key            | CREATE UNIQUE INDEX external_event_links_deleted_schedule_key ON public.external_event_links USING btree (deleted_schedule_id)                                                              |
 
 ## Triggers
 
@@ -78,6 +82,7 @@ erDiagram
 "public.external_event_links" }o--|| "public.schedules" : "FOREIGN KEY (facility_id, schedule_id) REFERENCES schedules(facility_id, id) ON DELETE CASCADE"
 "public.external_event_links" }o--|| "public.external_calendars" : "FOREIGN KEY (facility_id, external_calendar_id) REFERENCES external_calendars(facility_id, id) ON DELETE CASCADE"
 "public.external_event_links" }o--|| "public.calendar_cutovers" : "FOREIGN KEY (facility_id, cutover_id) REFERENCES calendar_cutovers(facility_id, id)"
+"public.external_event_links" }o--|| "public.schedule_deletions" : "FOREIGN KEY (facility_id, deleted_schedule_id) REFERENCES schedule_deletions(facility_id, schedule_id)"
 
 "public.external_event_links" {
   text id
@@ -92,6 +97,7 @@ erDiagram
   timestamp_with_time_zone updated_at
   integer synced_version
   text cutover_id FK
+  text deleted_schedule_id FK
 }
 "public.recurring_schedules" {
   text id
@@ -114,6 +120,8 @@ erDiagram
   timestamp_with_time_zone updated_at
   integer version
   boolean ends_next_day
+  smallint__ days_of_week
+  smallint interval_weeks
 }
 "public.schedules" {
   text id
@@ -154,6 +162,16 @@ erDiagram
   timestamp_with_time_zone finished_at
   timestamp_with_time_zone created_at
   timestamp_with_time_zone updated_at
+}
+"public.schedule_deletions" {
+  text id
+  text facility_id FK
+  text schedule_id
+  text recurring_schedule_id FK
+  date date
+  text staff_id FK
+  text deleted_by FK
+  timestamp_with_time_zone deleted_at
 }
 ```
 

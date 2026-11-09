@@ -18,7 +18,7 @@ const signInManager = async (page: Page) => {
 const prepareStaff = (label: string) => async (page: Page) => {
   await signInManager(page)
   const staff = newStaff(label)
-  const id = await registerStaffId(page.request, await issueManagerToken(page.request), staff)
+  const id = await registerStaffId(page.request, await issueManagerToken(), staff)
   return { id, name: staff.name }
 }
 

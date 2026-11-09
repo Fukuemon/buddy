@@ -2,13 +2,23 @@ import { RowTable, RowTableRow } from '@buddy/ui'
 
 import type { CalendarExportIssue } from '#/api/types'
 
-import { exportIssueReason, formatExportIssueDateTime } from '../lib/exportIssue'
+import { exportIssueReason, formatExportIssueDateTimeParts } from '../lib/exportIssue'
 import { formatDateTime } from '../lib/format'
 
 export type CalendarReviewTableProps = {
   issues: readonly CalendarExportIssue[]
   /** 行を押したときに呼ぶ。予定の確認のダイアログを開く。 */
   onSelect: (exportId: CalendarExportIssue['id']) => void
+}
+
+/** 予定の日時。PC の幅で折り返すときも、時刻の範囲（`22:00〜翌 01:00` を含む）は 1 行に保つ。 */
+const DateTimeText = ({ issue }: { issue: CalendarExportIssue }) => {
+  const { date, time } = formatExportIssueDateTimeParts(issue)
+  return (
+    <>
+      {date} <span className="whitespace-nowrap">{time}</span>
+    </>
+  )
 }
 
 /**
@@ -50,8 +60,12 @@ export const CalendarReviewTable = ({ issues, onSelect }: CalendarReviewTablePro
           { header: '最後に変わった日時', value: formatDateTime(issue.updated_at), isNoWrap: true },
         ]}
         name={
-          <span data-testid={`calendar-review-datetime-${issue.id}`}>
-            {formatExportIssueDateTime(issue)}
+          // RowTable の名前の列は PC の幅で中身より狭くなりうるので、繰り返しの長い日時を隣の列に重ねずに折り返す
+          <span
+            className="desktop:whitespace-normal"
+            data-testid={`calendar-review-datetime-${issue.id}`}
+          >
+            <DateTimeText issue={issue} />
           </span>
         }
         onSelect={() => onSelect(issue.id)}

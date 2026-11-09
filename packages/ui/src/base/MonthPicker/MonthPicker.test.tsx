@@ -20,7 +20,7 @@ describe('MonthPicker', () => {
     render(<WithError />)
     const input = screen.getByLabelText('対象の月')
     expect(input).toHaveAttribute('aria-invalid', 'true')
-    expect(screen.getByRole('alert')).toHaveTextContent('対象の月を選んでください')
+    expect(input).toHaveAccessibleDescription(/対象の月を選んでください/)
   })
 
   it('欄は 44 px 以上の高さで描く', () => {

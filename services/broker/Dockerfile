@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1
-# ビルドの文脈はリポジトリの直下である。go.mod の replace が ../../packages/go を指すため（ADR-0007）。
+# ビルドの文脈はリポジトリの直下である。go.mod の replace が ../../packages/go を指すため（ADR-0010）。
 # 例: docker build -f services/broker/Dockerfile -t broker:local .
 
 FROM golang:1.27 AS build

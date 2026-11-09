@@ -22,6 +22,8 @@ import type {
   Position,
   ReceiptReport,
   ReceiptCsvError,
+  RecurringRule,
+  RecurringRuleChange,
   Schedule,
   ScheduleInput,
   ScheduleList,
@@ -90,20 +92,76 @@ export interface BuddyApi {
     get(facilityId: FacilityId): Promise<Facility>
   }
   /**
-   * 予定。google_primary の事業所では、list は同期が写した Google カレンダーの予定（fromGoogleCalendar が true）を返し、
-   * get は status が 404 の、create と update は status が 409 で code が google_primary の ApiError を投げる。
+   * ログインした職員の自分の情報。どの操作も権限を求めない。
+   * facilityId はログインした職員の事業所で、ほかの事業所を指すと status が 403 の ApiError を投げる。
+   */
+  me: {
+    /** ログインした職員と、持っている権限を返す。 */
+    get(facilityId: FacilityId): Promise<StaffDetail>
+    /** ログインした職員に結び付いた、外していないカレンダーを、最後の取り込みを付けて返す。結び付いていなければ null を返す。 */
+    externalCalendar(facilityId: FacilityId): Promise<ExternalCalendar | null>
+  }
+  /**
+   * 予定。google_primary の事業所では、list と get は同期が写した Google カレンダーの予定（fromGoogleCalendar が true、etag を持つ）を返し、
+   * create、update、cancel は Google カレンダーに書き、書けたときだけ成功する（ADR-0029）。
+   * 書けないときは、予定の API の code（google_event_changed、google_write_pending、cutover_open など）を持つ ApiError を投げる。
    */
   schedules: {
     list(facilityId: FacilityId, params: ScheduleListParams): Promise<ScheduleList>
     /** 予定がなければ status が 404 の ApiError を投げる。 */
     get(facilityId: FacilityId, scheduleId: Schedule['id']): Promise<Schedule>
-    create(facilityId: FacilityId, input: ScheduleInput): Promise<Schedule>
-    /** 予定がなければ status が 404 の ApiError を投げる。 */
+    /**
+     * 画面が決めた ID が id の予定を作る。google_primary の事業所で送り直すときは、同じ id を渡すと Google の予定は 1 つのままになる。
+     */
+    create(facilityId: FacilityId, input: ScheduleInput, id: Schedule['id']): Promise<Schedule>
+    /**
+     * 予定を input の内容にする。etag は、画面が予定を読んだときの etag で、google_primary の事業所では必須である。buddy の予定では null を渡す。
+     * 予定がなければ status が 404 の ApiError を投げる。
+     */
     update(
       facilityId: FacilityId,
       scheduleId: Schedule['id'],
       input: ScheduleInput,
+      etag: string | null,
     ): Promise<Schedule>
+    /**
+     * 予定を理由 reason でキャンセルする。etag は update と同じである。google_primary の事業所では、理由は Google カレンダーに書けないので保存しない。
+     * 予定がなければ status が 404 の、キャンセル済みなら status が 409 の ApiError を投げる。
+     */
+    cancel(
+      facilityId: FacilityId,
+      scheduleId: Schedule['id'],
+      reason: string,
+      etag: string | null,
+    ): Promise<void>
+    /**
+     * 誤って入れた予定を削除する（ADR-0040）。キャンセルと違い、理由を持たず、削除した予定は一覧と取得に出ない。
+     * 回の ID を受けると、繰り返しの予定のその回を削除する。削除できるのは buddy_primary の事業所の、開始の日が今日以降の有効な予定だけである。
+     * 予定がなければ status が 404 の、今日より前の予定なら status が 400 の、キャンセル済みなら status が 409 の、
+     * google_primary の事業所なら status が 409 で code が google_primary の ApiError を投げる。
+     */
+    delete(facilityId: FacilityId, scheduleId: Schedule['id']): Promise<void>
+    /**
+     * input の日時を最初の回にし、規則 rule で繰り返す、ID が id の繰り返しの予定を作る。作った繰り返しの予定の ID と最初の日付を返す。
+     * input の開始の日付が rule の回に当たらないときは、status が 400 の ApiError を投げる。id の扱いは create と同じである。
+     */
+    createRecurring(
+      facilityId: FacilityId,
+      input: ScheduleInput,
+      rule: RecurringRule,
+      id: string,
+    ): Promise<{ id: string; date: string }>
+    /**
+     * 繰り返しの予定 recurringScheduleId（Schedule.recurrence.recurringScheduleId）の規則を、change.effectiveDate 以降の回について変える（ADR-0037）。
+     * etag は、画面が回を読んだときの etag（親の予定の etag）で、google_primary の事業所では必須である。buddy の予定では null を渡す。
+     * 変えた後の、effectiveDate 以降の回を持つ繰り返しの予定の ID と最初の日付を返す。分けたときは新しい繰り返しの予定である。
+     */
+    changeRule(
+      facilityId: FacilityId,
+      recurringScheduleId: string,
+      change: RecurringRuleChange,
+      etag: string | null,
+    ): Promise<{ id: string; date: string }>
   }
   /**
    * 職員。list のほかは職員の管理の画面が使う。
@@ -276,11 +334,6 @@ export interface BuddyApi {
      * 確認が必要な書き出しでなければ、code が export_not_in_review の ApiError を投げる。
      */
     retryExport(facilityId: FacilityId, exportId: CalendarExport['id']): Promise<CalendarExport>
-    /**
-     * 確認が必要な書き出しの予定を、Google カレンダーの今の内容に合わせ、書き出しを終える。
-     * acceptable が false の書き出しでは、code が export_not_acceptable の ApiError を投げる。
-     */
-    acceptExport(facilityId: FacilityId, exportId: CalendarExport['id']): Promise<CalendarExport>
     /** 予定の正本の切り替えの状況を返す。open の切り替えが無ければ cutover は null で、カレンダーの last_import は null である。 */
     cutoverStatus(facilityId: FacilityId): Promise<CalendarCutoverState>
     /**

@@ -1,6 +1,8 @@
 import type { CalendarCutoverCalendar, CalendarCutoverUnmet } from '#/api/types'
 
-import { formatDateTime, formatDateWithWeekday } from './format'
+import { formatDateKey, formatTimeRange } from '#/components/dateFormat'
+
+import { formatDateTime } from './format'
 
 /** 完了の確認を満たさない理由の文言。満たさない一覧の理由の列に出す。 */
 export const UNMET_REASON_LABEL: Record<CalendarCutoverUnmet['reason'], string> = {
@@ -22,21 +24,21 @@ export const UNMET_REASON_ACTION: Record<CalendarCutoverUnmet['reason'], string>
   deleted: '取り込み直すと、buddy の写しを消します',
 }
 
-/** 満たさない予定の日時を「2026/11/04（水）10:00〜11:00」の形にする。日時の無いカレンダーの理由と消えた予定は「—」にする。 */
+/** 満たさない予定の日時を「2026年11月4日（水） 10:00〜11:00」の形にする。日時の無いカレンダーの理由と消えた予定は「—」にする。 */
 export const formatUnmetDateTime = (item: CalendarCutoverUnmet) => {
   if (item.date === null) return '—'
-  const date = formatDateWithWeekday(item.date)
+  const date = formatDateKey(item.date)
   if (item.start_time === null || item.end_time === null) return date
-  return `${date}${item.start_time}〜${item.ends_next_day ? '翌 ' : ''}${item.end_time}`
+  return `${date} ${formatTimeRange(item.start_time, item.end_time, item.ends_next_day ? 'nextDay' : 'sameDay')}`
 }
 
-/** カレンダーのこの切り替えの最後の取り込みを「2026/10/20 15:42」の形にする。取り込んでいなければ「まだ取り込んでいない」。 */
+/** カレンダーのこの切り替えの最後の取り込みを「2026年10月20日（火） 15:42」の形にする。取り込んでいなければ「まだ取り込んでいない」。 */
 export const formatCutoverImport = (calendar: CalendarCutoverCalendar) =>
   calendar.last_import === null
     ? 'まだ取り込んでいない'
     : formatDateTime(calendar.last_import.finished_at ?? calendar.last_import.started_at)
 
-/** カレンダーの最後の同期を「2026/10/20 15:42」の形にする。失敗していれば「（失敗）」を、同期していなければ「まだ同期していない」にする。 */
+/** カレンダーの最後の同期を「2026年10月20日（火） 15:42」の形にする。失敗していれば「（失敗）」を、同期していなければ「まだ同期していない」にする。 */
 export const formatCutoverSync = (calendar: CalendarCutoverCalendar) => {
   const at =
     calendar.last_succeeded_at === null

@@ -22,6 +22,7 @@
               <span class="wf-site-account" aria-label="アカウント（青木 陽菜）" data-open="viewer-menu" data-testid="viewer-menu-open"><span class="wf-site-avatar" aria-hidden="true">青</span><span class="wf-site-account__name">青木 陽菜</span></span>
               <div class="wf-site-viewer-menu" data-panel="viewer-menu" data-panel-dismiss>
                 <span class="wf-text wf-text--s">青木 陽菜</span>
+                <span class="wf-btn wf-btn--text" data-testid="viewer-profile" data-go="../../account-profile_自分の情報/mocks/02-manager.html">自分の情報</span>
                 <span class="wf-btn" data-testid="viewer-logout">ログアウト</span>
               </div>
             </div>
@@ -115,25 +116,24 @@
               <div class="wf-dialog" role="dialog" aria-modal="true" aria-labelledby="patient-new-title" data-testid="patient-new-dialog">
                 <div class="wf-dialog__header">
                   <h2 class="wf-dialog__title" id="patient-new-title" data-m="2">利用者を登録</h2>
-                  <span class="wf-btn wf-btn--icon" aria-label="閉じる" data-escape data-m="3" data-testid="patient-new-close" data-go="../../patient-list_利用者の一覧/mocks/01-list.html"><svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><path d="M5 5l10 10M15 5 5 15" fill="none" stroke="currentColor" stroke-width="1.8" /></svg></span>
                 </div>
                 <div class="wf-dialog__body">
                   <div class="wf-field">
                     <span class="wf-label">名前</span>
-                    <div class="wf-input wf-field__input" data-m="4" data-testid="patient-new-name">見本 五月</div>
+                    <div class="wf-input wf-field__input" data-m="3" data-testid="patient-new-name">見本 五月</div>
                   </div>
                   <div class="wf-field">
                     <span class="wf-label">サービス</span>
-                    <div class="wf-input wf-field__input pt-select" data-m="5" data-testid="patient-new-service">訪看I3（30〜59 分）</div>
+                    <div class="wf-input wf-field__input pt-select" data-m="4" data-testid="patient-new-service">訪看I3（30〜59 分）</div>
                   </div>
-                  <fieldset class="pt-fieldset" data-m="6" data-testid="patient-new-time">
+                  <fieldset class="pt-fieldset" data-m="5" data-testid="patient-new-time">
                     <legend class="wf-label">希望の時間帯</legend>
                     <div class="pt-radios">
                       <span class="wf-radio is-on" data-choice="patient-new-time" data-testid="patient-new-time-morning">午前</span>
                       <span class="wf-radio" data-choice="patient-new-time" data-testid="patient-new-time-afternoon">午後</span>
                     </div>
                   </fieldset>
-                  <fieldset class="pt-fieldset" data-m="7" data-testid="patient-new-gender">
+                  <fieldset class="pt-fieldset" data-m="6" data-testid="patient-new-gender">
                     <legend class="wf-label">希望する担当の性別</legend>
                     <div class="pt-radios">
                       <span class="wf-radio" data-choice="patient-new-gender" data-testid="patient-new-gender-male">男性</span>
@@ -142,14 +142,14 @@
                   </fieldset>
                   <div class="wf-field">
                     <span class="wf-label">担当の職員</span>
-                    <div class="wf-input wf-field__input pt-select" data-m="8" data-testid="patient-new-staff">林 さくら</div>
+                    <div class="wf-input wf-field__input pt-select" data-m="7" data-testid="patient-new-staff">林 さくら</div>
                     <span class="wf-hint">休職と退職の職員と、訪問しない職員は選べません。</span>
                   </div>
                 </div>
                 <div class="wf-dialog__footer">
-                  <p class="wf-alert" role="alert" data-m="11" data-testid="patient-new-submit-error">選んだ担当の職員は、休職か退職になりました。別の職員を選んでください。</p>
-                  <span class="wf-btn" data-m="9" data-testid="patient-new-cancel" data-go="../../patient-list_利用者の一覧/mocks/01-list.html">キャンセル</span>
-                  <span class="wf-btn wf-btn--primary" data-m="10" data-testid="patient-new-submit">登録</span>
+                  <p class="wf-alert" role="alert" data-m="10" data-testid="patient-new-submit-error">選んだ担当の職員は、休職か退職になりました。別の職員を選んでください。</p>
+                  <span class="wf-btn" data-escape data-m="8" data-testid="patient-new-cancel" data-go="../../patient-list_利用者の一覧/mocks/01-list.html">キャンセル</span>
+                  <span class="wf-btn wf-btn--primary" data-m="9" data-testid="patient-new-submit">登録</span>
                 </div>
               </div>
             </div>

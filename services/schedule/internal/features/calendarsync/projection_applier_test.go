@@ -19,8 +19,8 @@ import (
 	"github.com/Fukuemon/buddy/services/schedule/internal/inmem"
 )
 
-// このファイルのテストは、組み立て（assemble）と同じく google_primary の事業所にだけ ProjectionApplier を渡した同期の処理で、
-// Google カレンダーの予定を Projection に写すことと、buddy_primary の事業所のカレンダーを読まないことを確認する（ADR-0035）。
+// このファイルのテストは、組み立て（cmd/calendar-worker）と同じく google_primary の事業所にだけ ProjectionApplier を渡した同期の処理で、
+// Google カレンダーの予定を Projection に写すことと、buddy_primary の事業所のカレンダーを読まないことを確認する（ADR-0029）。
 // 予定の日付は、保持する期間（前々月の初日から）に、テストを流す日によらず入るよう、先の年にする。
 
 // projectionEnv は、Store の事業所 inmem.FacilityID を google_primary にし、同期の処理を newProjectionSyncer で作った syncEnv である。
@@ -34,7 +34,7 @@ type projectionEnv struct {
 func newProjectionSyncer(t *testing.T, e syncEnv, locks calendarsync.FacilityLock, log *slog.Logger) *calendarsync.Syncer {
 	t.Helper()
 	return calendarsync.NewSyncer(syncerDeps(e.store, gcal.NewReader(gcaltest.Start(t, e.srv)), e.sources, locks), calendarsync.Appliers{
-		organization.SourceGooglePrimary: calendarsync.NewProjectionApplier(inmem.Projections{Store: e.store}, log),
+		organization.SourceGooglePrimary: calendarsync.NewProjectionApplier(inmem.Projections{Store: e.store}, inmem.CalendarEventRecords{Store: e.store}, inmem.VisitInfos{Store: e.store}, log),
 	}, &inmem.Tx{}, time.Minute, log)
 }
 
@@ -160,17 +160,26 @@ func TestSyncProjectsGooglePrimaryEvents(t *testing.T) {
 		t.Errorf("2 回目の同期の後の行の数 = %d, want 5", n)
 	}
 
-	// 職員が Google カレンダーで、単発の予定と繰り返しの予定を消した
+	// 職員が Google カレンダーで、単発の予定と繰り返しの予定を消した。行は消さず、取り消しの状態にする
+	before := e.mustRow(t, "single")
 	e.srv.Delete(googleCalID, "single")
 	e.srv.Delete(googleCalID, "weekly")
 	e.sync(t)
-	if _, ok := e.row("single"); ok {
-		t.Error("消した予定の行が残っている")
-	}
-	for _, id := range []string{"weekly", "weekly_20991109T000000Z", "weekly_20991116T000000Z"} {
-		if _, ok := e.row(id); ok {
-			t.Errorf("消した繰り返しの予定の行 %s が残っている", id)
+	today := civil.Today(time.Now())
+	for _, id := range []string{"single", "weekly"} {
+		got := e.mustRow(t, id)
+		if got.Status != scheduleview.ProjectionCancelled || got.Title != "" || got.Start.At != nil || len(got.Recurrence) != 0 ||
+			!sameDate(got.LastEndDate, &today) || got.ETag != e.srv.Event(googleCalID, id).Etag {
+			t.Errorf("消した予定の行 %s = %+v, want 取り消しの状態で、終わる日は今日", id, got)
 		}
+	}
+	// 取り消した親の例外の回は、取り消した回の行にし、元の開始と終わる日は残す
+	if got := e.mustRow(t, "weekly_20991109T000000Z"); got.Status != scheduleview.ProjectionCancelled || got.Title != "" || got.Start.At != nil ||
+		!sameInstant(got.OriginalStart.At, instant(t, "2099-11-09T09:00:00+09:00")) || !sameDate(got.LastEndDate, dateOf(2099, 11, 9)) {
+		t.Errorf("取り消した親の動かした回の行 = %+v, want 取り消した回", got)
+	}
+	if got := e.mustRow(t, "single"); got.GoogleUpdatedAt == nil || !got.GoogleUpdatedAt.After(*before.GoogleUpdatedAt) {
+		t.Errorf("消した予定の更新の時刻 = %v, want 消す前の %v より後", got.GoogleUpdatedAt, before.GoogleUpdatedAt)
 	}
 	if _, ok := e.row("allday"); !ok {
 		t.Error("消していない予定の行を消した")
@@ -295,16 +304,38 @@ func TestSyncStopsProjectingWhenModeChanged(t *testing.T) {
 	}
 }
 
-// TestSyncSkipsUnreadableEventAndProjectsOthers は、日時を読めない予定を写さずに前の行を消し、ほかの予定を写して同期を成功にすることと、
+// TestSyncProjectsUnreadableTime は、開始か終了の日時を読めない予定を、読めた方の日時だけを持つ TimeUnreadable の行に写し、
+// 終わる日を読めた方の日にすることと、どちらも読めない予定は終わる日を持たないことを確認する（#672）。
+func TestSyncProjectsUnreadableTime(t *testing.T) {
+	e := newProjectionEnv(t)
+	e.srv.Put(googleCalID, gevent("start", "担当者会議", "日時ではない", "2099-11-04T11:00:00+09:00"))
+	e.srv.Put(googleCalID, gevent("both", "研修", "日時ではない", "日時ではない"))
+	e.sync(t)
+
+	start := e.mustRow(t, "start")
+	end := time.Date(2099, 11, 4, 11, 0, 0, 0, calendar.Tokyo)
+	if !start.TimeUnreadable || start.Start != (scheduleview.ProjectionTime{}) || start.End.At == nil || !start.End.At.Equal(end) {
+		t.Errorf("開始を読めない予定の行 = %+v", start)
+	}
+	if start.LastEndDate == nil || *start.LastEndDate != (civil.Date{Year: 2099, Month: 11, Day: 4}) {
+		t.Errorf("開始を読めない予定の終わる日 = %v, want 2099-11-04", start.LastEndDate)
+	}
+	both := e.mustRow(t, "both")
+	if !both.TimeUnreadable || both.Start != (scheduleview.ProjectionTime{}) || both.End != (scheduleview.ProjectionTime{}) || both.LastEndDate != nil {
+		t.Errorf("開始も終了も読めない予定の行 = %+v", both)
+	}
+}
+
+// TestSyncSkipsUnreadableEventAndProjectsOthers は、例外の回の元の開始を読めない予定を写さずに前の行を消し、ほかの予定を写して同期を成功にすることと、
 // ログに予定のタイトルと利用者名を書かず、事業所、カレンダー、Google の予定の ID を書くことを確認する。
 func TestSyncSkipsUnreadableEventAndProjectsOthers(t *testing.T) {
 	e := newProjectionEnv(t)
-	bad := gevent("bad", "【訪看I2】利用者A", "2099-11-04T10:00:00+09:00", "2099-11-04T11:00:00+09:00")
+	bad := gexception("bad", "parent", "【訪看I2】利用者A", "2099-11-04T10:00:00+09:00", "2099-11-04T11:00:00+09:00", "2099-11-04T10:00:00+09:00")
 	e.srv.Put(googleCalID, bad)
 	e.sync(t)
 	e.mustRow(t, "bad")
 
-	e.srv.Edit(googleCalID, "bad", func(ev *calendarv3.Event) { ev.Start.DateTime = "日時ではない" })
+	e.srv.Edit(googleCalID, "bad", func(ev *calendarv3.Event) { ev.OriginalStartTime.DateTime = "日時ではない" })
 	e.srv.Put(googleCalID, gevent("good", "【訪看I2】利用者B", "2099-11-05T10:00:00+09:00", "2099-11-05T11:00:00+09:00"))
 	logs := &bytes.Buffer{}
 	syncer := newProjectionSyncer(t, e.syncEnv, inmem.Facilities{Store: e.store},
@@ -338,11 +369,11 @@ func TestSyncProjectionKeepsRetainedPeriod(t *testing.T) {
 		gevent("old", "終わった予定", "2020-01-06T10:00:00+09:00", "2020-01-06T11:00:00+09:00"),
 		weeklyEvent("oldweekly", "終わった繰り返し", "2020-01-06T09:00:00+09:00", "2020-01-06T09:30:00+09:00",
 			"RRULE:FREQ=WEEKLY;BYDAY=MO;UNTIL=20200131T145959Z"),
-		// 隔週は buddy の規則に写せないので、UNTIL で終わる日を決める
+		// 月曜に始まる週の、日曜を含む隔週は buddy の規則に写せないので、UNTIL で終わる日を決める
 		weeklyEvent("oldbiweekly", "終わった隔週", "2020-01-06T09:00:00+09:00", "2020-01-06T09:30:00+09:00",
-			"RRULE:FREQ=WEEKLY;INTERVAL=2;BYDAY=MO;UNTIL=20200131T145959Z"),
+			"RRULE:FREQ=WEEKLY;INTERVAL=2;BYDAY=MO,SU;UNTIL=20200131T145959Z"),
 		weeklyEvent("forever", "終わらない繰り返し", "2020-01-06T09:00:00+09:00", "2020-01-06T09:30:00+09:00", "RRULE:FREQ=WEEKLY;BYDAY=MO"),
-		weeklyEvent("count", "回数の隔週", "2020-01-06T09:00:00+09:00", "2020-01-06T09:30:00+09:00", "RRULE:FREQ=WEEKLY;INTERVAL=2;COUNT=3"),
+		weeklyEvent("count", "回数の、月曜に始まる週の日曜を含む隔週", "2020-01-06T09:00:00+09:00", "2020-01-06T09:30:00+09:00", "RRULE:FREQ=WEEKLY;INTERVAL=2;BYDAY=MO,SU;COUNT=3"),
 		gcancelled("forever_20200113T000000Z", "forever", "2020-01-13T09:00:00+09:00"),
 		gevent("future", "先の予定", "2099-11-04T10:00:00+09:00", "2099-11-04T11:00:00+09:00"),
 	} {
@@ -408,5 +439,44 @@ func TestSyncProjectionKeepsRetainedOccurrences(t *testing.T) {
 	e.sync(t)
 	for _, id := range []string{"rdate", "forever_20991109T000000Z"} {
 		e.mustRow(t, id)
+	}
+}
+
+// changesSource は、読むたびに changes の先頭を 1 つずつ返す EventSource である。読まれた時刻を calledAt に足す。
+type changesSource struct {
+	calendar.EventSource
+	changes  []calendar.Changes
+	calledAt []time.Time
+}
+
+func (s *changesSource) Changes(context.Context, string, string) (calendar.Changes, error) {
+	s.calledAt = append(s.calledAt, time.Now())
+	c := s.changes[0]
+	s.changes = s.changes[1:]
+	return c, nil
+}
+
+// TestSyncProjectsCancellationWithoutUpdated は、Google が更新の時刻を返さなかった取り消しも、更新の時刻のある行に写し、
+// 行の更新の時刻を、当てた時刻でなく、読み始めた時刻より前にすることを確認する。Google は、取り消した予定に ID のほかを返さないことがある。
+func TestSyncProjectsCancellationWithoutUpdated(t *testing.T) {
+	e := newProjectionEnv(t)
+	confirmed := calendar.Event{
+		ID: "single", Status: "confirmed", Summary: "担当者会議", ETag: `"1"`, Updated: "2026-11-01T08:00:00Z",
+		Start: calendar.When{DateTime: "2099-11-04T13:00:00+09:00"}, End: calendar.When{DateTime: "2099-11-04T14:00:00+09:00"},
+	}
+	src := &changesSource{changes: []calendar.Changes{
+		{Events: []calendar.Event{confirmed}, NextSyncToken: "t1"},
+		{Events: []calendar.Event{{ID: "single", Status: calendar.StatusCancelled}}, NextSyncToken: "t2"},
+	}}
+	syncer := newSyncer(e.store, src, &[]string{}, inmem.Facilities{Store: e.store})
+	for range 2 {
+		if _, err := syncer.SyncDue(t.Context()); err != nil {
+			t.Fatal(err)
+		}
+	}
+	got := e.mustRow(t, "single")
+	if got.Status != scheduleview.ProjectionCancelled || got.GoogleUpdatedAt == nil || !got.GoogleUpdatedAt.After(instant(t, confirmed.Updated)) ||
+		got.GoogleUpdatedAt.After(src.calledAt[1]) {
+		t.Errorf("更新の時刻の無い取り消しの行 = %+v, want 取り消しで、更新の時刻は読み始めた時刻（%v より前）", got, src.calledAt[1])
 	}
 }

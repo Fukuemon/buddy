@@ -48,10 +48,28 @@ func (r *VisitInfoRepository) Create(ctx context.Context, i visit.Info) error {
 	return nil
 }
 
-// DeleteIfUnused は、予定と繰り返しの予定のどれも指していない訪問の情報 id を、区分の結び付きごと消す。
+// DeleteIfUnused は、予定、繰り返しの予定、Google カレンダーに書いた予定の記録のどれも指していない訪問の情報 id を、区分の結び付きごと消す。
 // 指されているか、無いときは何もせず、エラーも返さない。
 func (r *VisitInfoRepository) DeleteIfUnused(ctx context.Context, id string) error {
 	return translate("delete visit info", r.q(ctx).DeleteUnusedVisitInfo(ctx, id))
+}
+
+// GetDetail は、calendarwrite.VisitDetails の GetDetail を実装する。訪問の情報 id を、名前と区分を付けて返す。
+func (r *VisitInfoRepository) GetDetail(ctx context.Context, id string) (visit.Detail, error) {
+	row, err := r.q(ctx).GetVisitInfoDetail(ctx, id)
+	if err != nil {
+		return visit.Detail{}, translate("get visit info detail", err)
+	}
+	categories, err := r.visitCategories(ctx, []string{id})
+	if err != nil {
+		return visit.Detail{}, err
+	}
+	d := visitDetailColumns{
+		VisitInfoID: &row.ID, PatientID: &row.PatientID, PatientName: &row.PatientName,
+		AssignedStaffID: &row.AssignedStaffID, AssignedStaffName: &row.AssignedStaffName,
+		CompanionID: row.CompanionID, CompanionName: row.CompanionName, ServiceCodeID: &row.ServiceCodeID, ServiceCode: &row.ServiceCode,
+	}.detail(categories)
+	return *d, nil
 }
 
 // List は、すべての訪問の区分を名前、ID の順に返す。

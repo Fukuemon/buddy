@@ -1,5 +1,5 @@
 // ドキュメントサイトと Storybook のカタログを出す Worker。中身は scripts/build-docs-site.mjs が並べた静的なファイルだけで、スクリプトを持たない。
-// Worker は Cloudflare Access で守らず、誰でも開ける（ADR-0020）。名前を変えるときは、先に README.md の手順で Worker とトークンを用意する。
+// Worker は Cloudflare Access で守らず、誰でも開ける。名前を変えるときは、先に README.md の手順で Worker とトークンを用意する。
 import { defineConfig } from 'cf/config'
 
 export default defineConfig({

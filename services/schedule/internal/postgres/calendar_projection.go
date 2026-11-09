@@ -10,6 +10,7 @@ import (
 	"github.com/Fukuemon/buddy/services/schedule/internal/civil"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendarsync"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/scheduleview"
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/visit"
 	"github.com/Fukuemon/buddy/services/schedule/internal/postgres/sqlcgen"
 )
 
@@ -24,7 +25,7 @@ func NewCalendarProjectionRepository(pool *pgxpool.Pool) *CalendarProjectionRepo
 
 var _ calendarsync.Projections = (*CalendarProjectionRepository)(nil)
 
-// Put は、p の行を足すか、同じカレンダーと Google の予定の ID の行を p にする。写した時刻は DB の今の時刻にする。
+// Put は、calendarsync.Projections の Put を実装する。写した時刻は DB の今の時刻にする。
 func (r *CalendarProjectionRepository) Put(ctx context.Context, p scheduleview.Projection) error {
 	err := r.q(ctx).PutCalendarEventProjection(ctx, sqlcgen.PutCalendarEventProjectionParams{
 		ExternalCalendarID: p.ExternalCalendarID, ExternalEventID: p.EventID, FacilityID: p.FacilityID, StaffID: p.StaffID,
@@ -32,9 +33,17 @@ func (r *CalendarProjectionRepository) Put(ctx context.Context, p scheduleview.P
 		Status: string(p.Status), Title: p.Title,
 		StartAt: p.Start.At, StartDate: nullDate(p.Start.Date), EndAt: p.End.At, EndDate: nullDate(p.End.Date),
 		TimeZone: optional(p.TimeZone), Recurrence: nonNil(p.Recurrence), Etag: p.ETag, GoogleUpdatedAt: p.GoogleUpdatedAt,
-		LastEndDate: nullDate(p.LastEndDate),
+		LastEndDate: nullDate(p.LastEndDate), TimeUnreadable: p.TimeUnreadable,
 	})
 	return translate("put calendar event projection", err)
+}
+
+// CancelOccurrences は、calendarsync.Projections の CancelOccurrences を実装する。
+func (r *CalendarProjectionRepository) CancelOccurrences(ctx context.Context, externalCalendarID, parentEventID string) error {
+	err := r.q(ctx).CancelCalendarEventProjectionOccurrences(ctx, sqlcgen.CancelCalendarEventProjectionOccurrencesParams{
+		ExternalCalendarID: externalCalendarID, ParentEventID: &parentEventID,
+	})
+	return translate("cancel calendar event projection occurrences", err)
 }
 
 // Delete は、カレンダー externalCalendarID の予定 eventID の行と、その予定を親にする例外の回の行を消す。行が無くてもエラーにしない。
@@ -74,23 +83,83 @@ func (r *CalendarProjectionRepository) ListByFacility(ctx context.Context, facil
 	if err != nil {
 		return nil, translate("list calendar event projections", err)
 	}
-	out := make([]scheduleview.ProjectionDetail, len(rows))
-	for i, row := range rows {
-		out[i] = scheduleview.ProjectionDetail{
-			Projection: scheduleview.Projection{
-				ExternalCalendarID: row.ExternalCalendarID, EventID: row.ExternalEventID, FacilityID: row.FacilityID, StaffID: row.StaffID,
-				RecurringEventID: deref(row.RecurringEventID),
-				OriginalStart:    scheduleview.ProjectionTime{At: row.OriginalStartAt, Date: datePtr(row.OriginalStartDate)},
-				Status:           scheduleview.ProjectionStatus(row.Status), Title: row.Title,
-				Start:    scheduleview.ProjectionTime{At: row.StartAt, Date: datePtr(row.StartDate)},
-				End:      scheduleview.ProjectionTime{At: row.EndAt, Date: datePtr(row.EndDate)},
-				TimeZone: deref(row.TimeZone), Recurrence: row.Recurrence, ETag: row.Etag, GoogleUpdatedAt: row.GoogleUpdatedAt,
-				LastEndDate: datePtr(row.LastEndDate), ProjectedAt: row.ProjectedAt,
-			},
-			StaffName: row.StaffName,
+	return r.projectionDetails(ctx, rows)
+}
+
+// ListRecordedEvents は、scheduleview.RecordedEvents の ListRecordedEvents を実装する。
+func (r *CalendarProjectionRepository) ListRecordedEvents(ctx context.Context, facilityID string, ids []string) (map[string]scheduleview.RecordedEvent, error) {
+	rows, err := r.q(ctx).ListConfirmedCalendarEventRecords(ctx, sqlcgen.ListConfirmedCalendarEventRecordsParams{FacilityID: facilityID, ScheduleIds: ids})
+	if err != nil {
+		return nil, translate("list confirmed calendar event records", err)
+	}
+	out := make(map[string]scheduleview.RecordedEvent, len(rows))
+	for _, row := range rows {
+		out[row.ScheduleID] = scheduleview.RecordedEvent{
+			ExternalCalendarID: row.ExternalCalendarID, ExternalEventID: row.ExternalEventID, RecurringEventID: row.RecurringEventID,
 		}
 	}
 	return out, nil
+}
+
+// GetBySchedule は、scheduleview.Projections の GetBySchedule を実装する。記録の予定の ID で引き、無ければ記録の無い行を一覧での ID で引く。
+func (r *CalendarProjectionRepository) GetBySchedule(ctx context.Context, facilityID, id string) (scheduleview.ProjectionDetail, error) {
+	var row sqlcgen.ListCalendarEventProjectionsByFacilityRow
+	byRecord, err := r.q(ctx).GetCalendarEventProjectionByRecord(ctx, sqlcgen.GetCalendarEventProjectionByRecordParams{ScheduleID: id, FacilityID: facilityID})
+	switch {
+	case err == nil:
+		row = sqlcgen.ListCalendarEventProjectionsByFacilityRow(byRecord)
+	case !errors.Is(err, pgx.ErrNoRows):
+		return scheduleview.ProjectionDetail{}, translate("get calendar event projection by record", err)
+	default:
+		byID, err := r.q(ctx).GetCalendarEventProjectionByListID(ctx, sqlcgen.GetCalendarEventProjectionByListIDParams{ScheduleID: id, FacilityID: facilityID})
+		if err != nil {
+			return scheduleview.ProjectionDetail{}, translate("get calendar event projection by list id", err)
+		}
+		row = sqlcgen.ListCalendarEventProjectionsByFacilityRow(byID)
+	}
+	out, err := r.projectionDetails(ctx, []sqlcgen.ListCalendarEventProjectionsByFacilityRow{row})
+	if err != nil {
+		return scheduleview.ProjectionDetail{}, err
+	}
+	return out[0], nil
+}
+
+// projectionDetails は、Projection の行に、記録の訪問の情報の区分を 1 回の問い合わせでまとめて引いて付ける。
+func (r *CalendarProjectionRepository) projectionDetails(ctx context.Context, rows []sqlcgen.ListCalendarEventProjectionsByFacilityRow) ([]scheduleview.ProjectionDetail, error) {
+	cats, err := r.visitCategories(ctx, visitInfoIDs(rows, func(row sqlcgen.ListCalendarEventProjectionsByFacilityRow) *string { return row.VisitInfoID }))
+	if err != nil {
+		return nil, err
+	}
+	out := make([]scheduleview.ProjectionDetail, len(rows))
+	for i, row := range rows {
+		out[i] = projectionDetailOf(row, cats)
+	}
+	return out, nil
+}
+
+// projectionDetailOf は、Projection の行を、職員の名前、一覧での予定の ID、記録の訪問の情報を付けた行にする。
+// 訪問の情報の区分は categories から引く。
+func projectionDetailOf(row sqlcgen.ListCalendarEventProjectionsByFacilityRow, categories map[string][]visit.Category) scheduleview.ProjectionDetail {
+	return scheduleview.ProjectionDetail{
+		Projection: scheduleview.Projection{
+			ExternalCalendarID: row.ExternalCalendarID, EventID: row.ExternalEventID, FacilityID: row.FacilityID, StaffID: row.StaffID,
+			RecurringEventID: deref(row.RecurringEventID),
+			OriginalStart:    scheduleview.ProjectionTime{At: row.OriginalStartAt, Date: datePtr(row.OriginalStartDate)},
+			Status:           scheduleview.ProjectionStatus(row.Status), Title: row.Title,
+			Start:    scheduleview.ProjectionTime{At: row.StartAt, Date: datePtr(row.StartDate)},
+			End:      scheduleview.ProjectionTime{At: row.EndAt, Date: datePtr(row.EndDate)},
+			TimeZone: deref(row.TimeZone), Recurrence: row.Recurrence, ETag: row.Etag, GoogleUpdatedAt: row.GoogleUpdatedAt,
+			LastEndDate: datePtr(row.LastEndDate), ProjectedAt: row.ProjectedAt, TimeUnreadable: row.TimeUnreadable,
+		},
+		StaffName:  row.StaffName,
+		ScheduleID: row.ScheduleID,
+		Visit: visitDetailColumns{
+			VisitInfoID: row.VisitInfoID, PatientID: row.PatientID, PatientName: row.PatientName,
+			AssignedStaffID: row.AssignedStaffID, AssignedStaffName: row.AssignedStaffName,
+			CompanionID: row.CompanionID, CompanionName: row.CompanionName,
+			ServiceCodeID: row.ServiceCodeID, ServiceCode: row.ServiceCode,
+		}.detail(categories),
+	}
 }
 
 // ListSyncsByFacility は、scheduleview.CalendarSyncs の ListSyncsByFacility を実装する。
@@ -118,12 +187,14 @@ var _ scheduleview.Cutovers = (*CalendarProjectionRepository)(nil)
 
 // FindOpenCutover は、scheduleview.Cutovers の FindOpenCutover を実装する。open の切り替えが無ければ nil を返す。
 func (r *CalendarProjectionRepository) FindOpenCutover(ctx context.Context, facilityID string) (*scheduleview.OpenCutover, error) {
-	c, err := r.q(ctx).FindOpenCalendarCutover(ctx, facilityID)
+	c, err := r.q(ctx).FindOpenCalendarCutoverWithStarter(ctx, facilityID)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, nil
 	}
 	if err != nil {
 		return nil, translate("find open calendar cutover", err)
 	}
-	return &scheduleview.OpenCutover{StartedAt: c.StartedAt, RangeStart: civil.DateOf(c.RangeStart)}, nil
+	return &scheduleview.OpenCutover{
+		StartedAt: c.StartedAt, StartedBy: c.StartedBy, StartedByName: c.StartedByName, RangeStart: civil.DateOf(c.RangeStart),
+	}, nil
 }

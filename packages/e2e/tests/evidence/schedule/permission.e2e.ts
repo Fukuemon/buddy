@@ -1,10 +1,11 @@
 import { expect, test } from '@playwright/test'
 
-import { prepareApiReference, routeApiReference } from '../../fixtures/apiReference'
+import { issueAccessToken, routeApiReference } from '../../fixtures/apiReference'
 import { LEADER, LOGIN_EMAIL, LOGIN_STAFF } from '../../fixtures/env'
 import { EVIDENCE_VARIANTS, recordPrEvidence } from '../../fixtures/evidence'
 import { signInAtBroker } from '../../screens/login'
-import { fillApiToken, fillApiVariable, openApiClient } from '../../screens/apiReference'
+import { openApiClient, openApiReference } from '../../screens/apiReference'
+import { fillApiToken, fillApiVariable } from '../../widgets/apiClient/actions/apiClient'
 import { apiClient } from '../../selectors/apiReference'
 
 /** シードの、青木の 2026-10-20 10:00 の予定「カンファレンス」。チーム B のリーダーの森は見てよくない。 */
@@ -105,7 +106,11 @@ test.describe('予定のカレンダー', () => {
             actor: `${LEADER.staff.name}（チーム B のリーダー）`,
             variant,
           },
-          prepareApiReference('schedule', LEADER.email),
+          async (page) => {
+            await routeApiReference(page)
+            await openApiReference(page, 'schedule')
+            return issueAccessToken(page.request, LEADER.email)
+          },
           async ({ page, step, check }, token) => {
             await routeApiReference(page)
             await openApiClient(page, 'schedule', {

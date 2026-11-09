@@ -1,0 +1,2 @@
+DROP INDEX calendar_event_records_pending_deadline_idx;
+ALTER TABLE calendar_event_records DROP COLUMN pending_locked_until;

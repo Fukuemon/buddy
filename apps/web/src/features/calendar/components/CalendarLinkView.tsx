@@ -5,6 +5,7 @@ import type { Staff } from '#/api/types'
 import { NOT_CONFIGURED_MESSAGE } from '../lib/errorMessage'
 import { CalendarLinkTable, type CalendarLinkRow } from './CalendarLinkTable'
 import { CalendarShareGuide } from './CalendarShareGuide'
+import { RefetchErrorMessage } from '#/components/page/RefetchErrorMessage'
 
 /** カレンダーの連携の画面の状態。serviceAccount は、事業所の Google カレンダーの設定（サービスアカウント）が無ければ null である。 */
 export type CalendarLinkViewState =
@@ -15,6 +16,10 @@ export type CalendarLinkViewState =
 export type CalendarLinkViewProps = {
   state: CalendarLinkViewState
   onRetry: () => void
+  /** 読み終えた後に読み直して、データを読めなかったか。 */
+  refetchFailed?: boolean
+  /** 読み終えた後に読めなかったデータだけを読み直す。 */
+  onRefetch?: () => void
   onLink: (staffId: Staff['id']) => void
   onUnlink: (staffId: Staff['id']) => void
   onImport: (staffId: Staff['id']) => void
@@ -26,6 +31,8 @@ export type CalendarLinkViewProps = {
 export const CalendarLinkView = ({
   state,
   onRetry,
+  refetchFailed,
+  onRefetch,
   onLink,
   onUnlink,
   onImport,
@@ -43,6 +50,9 @@ export const CalendarLinkView = ({
       </a>
     </div>
     <p className="max-w-3xl text-body">職員ごとに Google カレンダーを結び付けます。</p>
+    {refetchFailed === true && onRefetch !== undefined && (
+      <RefetchErrorMessage onRetry={onRefetch} />
+    )}
     {state.status === 'loading' && (
       <div data-testid="calendar-link-loading">
         <Loading description="読み込んでいます" />

@@ -37,6 +37,12 @@ describe('ChipPicker', () => {
     expect(screen.getByRole('textbox', { name: '対象の職員を選ぶ' })).toHaveFocus()
   })
 
+  it('候補を読み終えるまでは、足す欄を押せず、チップの × は押せる', async () => {
+    render(<Default options={undefined} />)
+    expect(screen.getByRole('textbox', { name: '対象の職員を選ぶ' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 's1 を外す' })).toBeEnabled()
+  })
+
   it('× で外すと、次のチップの × にフォーカスを移す', async () => {
     const onChange = fn()
     render(<AllSelected onChange={onChange} />)

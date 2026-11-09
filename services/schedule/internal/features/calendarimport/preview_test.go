@@ -86,7 +86,7 @@ func TestPreviewCountsSeriesOnlyMovedOut(t *testing.T) {
 	srv := &gcaltest.Server{
 		Calendars: map[string][][]*calendarv3.Event{googleCalID: {{
 			grecurring(gevent("biweekly", "定例", "2026-11-17T16:00:00+09:00", "2026-11-17T17:00:00+09:00"),
-				"RRULE:FREQ=WEEKLY;INTERVAL=2;COUNT=1"),
+				"RRULE:FREQ=WEEKLY;INTERVAL=2;BYDAY=TU,SU;COUNT=1"),
 			gexception("biweekly_1117", "biweekly", "定例", "2026-12-01T16:00:00+09:00", "2026-12-01T17:00:00+09:00", "2026-11-17T16:00:00+09:00"),
 		}}},
 		Instances: map[string][]*calendarv3.Event{"biweekly": {}},

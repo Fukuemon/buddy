@@ -12,7 +12,7 @@ import (
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/schedule"
 )
 
-// Exports は、calendarsync.ExportRepository と calendarexport.ExportRepository のメモリ上の実装である。時刻は time.Now で比べる。
+// Exports は、calendarexport.ExportRepository のメモリ上の実装である。時刻は time.Now で比べる。
 type Exports struct{ *Store }
 
 // open は、t の終わっていない待ちを返す。
@@ -25,7 +25,7 @@ func (s Exports) open(t calendar.Target) (calendar.Export, bool) {
 	return calendar.Export{}, false
 }
 
-// Enqueue は、calendarsync.ExportRepository と calendarexport.ExportRepository の Enqueue を実装する。
+// Enqueue は、calendarexport.ExportRepository の Enqueue を実装する。
 func (s Exports) Enqueue(_ context.Context, id string, t calendar.Target) error {
 	e, ok := s.open(t)
 	if !ok {
@@ -83,7 +83,7 @@ func (s Exports) Finish(_ context.Context, e calendar.Export, r calendar.ExportR
 	return nil
 }
 
-// Get は、calendarsync.ExportRepository と calendarexport.ExportRepository の Get を実装する。
+// Get は、calendarexport.ExportRepository の Get を実装する。
 func (s Exports) Get(_ context.Context, id string) (calendar.Export, error) {
 	return get(s.Exports, id)
 }
@@ -111,7 +111,7 @@ func (s Exports) ListIssues(_ context.Context, facilityID string) ([]calendar.Ex
 	return out, nil
 }
 
-// Retry は、calendarsync.ExportRepository と calendarexport.ExportRepository の Retry を実装する。
+// Retry は、calendarexport.ExportRepository の Retry を実装する。
 func (s Exports) Retry(_ context.Context, id string) error {
 	e, err := get(s.Exports, id)
 	if err != nil {
@@ -125,39 +125,12 @@ func (s Exports) Retry(_ context.Context, id string) error {
 	return nil
 }
 
-// Open は、calendarsync.ExportRepository の Open を実装する。
+// Open は、t の終わっていない待ちを返す。無いときは apperr.ErrNotFound を返す。
 func (s Exports) Open(_ context.Context, t calendar.Target) (calendar.Export, error) {
 	if e, ok := s.open(t); ok {
 		return e, nil
 	}
 	return calendar.Export{}, apperr.ErrNotFound
-}
-
-// Hold は、calendarsync.ExportRepository の Hold を実装する。
-func (s Exports) Hold(_ context.Context, id string, t calendar.Target, code calendar.ExportErrorCode) error {
-	e, ok := s.open(t)
-	if !ok {
-		now := time.Now()
-		e = calendar.Export{ID: id, Target: t, NextAttemptAt: now, CreatedAt: now}
-	}
-	e.Revision++
-	e.Status, e.ErrorCode, e.Overwrite, e.LockedUntil = calendar.ExportConflict, &code, false, nil
-	s.Exports[e.ID] = e
-	return nil
-}
-
-// Resolve は、calendarsync.ExportRepository の Resolve を実装する。
-func (s Exports) Resolve(_ context.Context, id string, revision int) error {
-	e, err := get(s.Exports, id)
-	if err != nil {
-		return err
-	}
-	if !e.IsInReview() || e.Revision != revision {
-		return apperr.ErrConflict
-	}
-	e.Status, e.ErrorCode, e.Overwrite = calendar.ExportSucceeded, nil, false
-	s.Exports[id] = e
-	return nil
 }
 
 // Backlog は、calendarexport.ExportRepository の Backlog を実装する。

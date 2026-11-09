@@ -30,12 +30,14 @@ func staffBlocked(ctx context.Context, staffRefs calendar.StaffRefs, c calendar.
 	return "", nil
 }
 
-// planDeps は、外部の予定を読み替えるときに読む、buddy の予定の対応、利用者、繰り返しの予定、サービスコードである。
+// planDeps は、外部の予定を読み替えるときに読む、buddy の予定の対応、利用者、繰り返しの予定、サービスコードと、
+// 切り替えの取り込みで読む予定の API の記録の訪問の情報である。
 type planDeps struct {
 	calendars          Calendars
 	patients           calendar.Patients
 	recurringSchedules kernel.Finder[scheduleview.RecurringDetail]
 	serviceCodes       calendar.ServiceCodes
+	records            CutoverRepository
 }
 
 // planMode は、読み替えの規則の分かれ目である。
@@ -90,7 +92,11 @@ func planRead(ctx context.Context, d planDeps, src calendar.EventSource, c calen
 	for _, l := range links {
 		in.links[l.ExternalEventID] = l
 	}
-	if !mode.cutover {
+	if mode.cutover {
+		if in.recordVisits, err = d.records.ListRecordVisits(ctx, c.ID); err != nil {
+			return plan{}, nil, err
+		}
+	} else {
 		for _, id := range parentsToExpand(events, in.links) {
 			instances, err := src.Instances(ctx, c.CalendarID, id, rng.TimeMin(), rng.TimeMax())
 			if err != nil {

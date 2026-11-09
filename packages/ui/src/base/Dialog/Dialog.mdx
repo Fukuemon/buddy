@@ -9,32 +9,15 @@ import * as Stories from './Dialog.stories'
 
 画面の上に重ねて出す、小さい確認と入力のダイアログ。`<dialog>` の `showModal()` で開き、後ろの画面を操作できなくする。中身は `DialogHeader`、`DialogBody`、`DialogFooter` で組む。
 
-## 使う場面
+## 規則
 
-- 理由のような短い入力を 1 つ受けて、元の画面に戻る
-- どちらの内容に合わせるかのような、少ない選択肢から操作を 1 つ選ぶ
-- 入力のダイアログと確認のダイアログのパターン（`InputDialog`、`ConfirmDialog`）の中身
+規則の本文は、デザインシステムの文書の次のセクションにある。
 
-## 使わない場面
-
-- 予定の作成と編集のような、項目の多い入力（`Modal` を使う）
-- 完了の通知
-- ナビゲーション
-
-## Do
-
-- 入力と確認のダイアログは、まずパターンの `InputDialog` と `ConfirmDialog` を使い、合わないときだけ `Dialog` で組む
-- `DialogHeader` の `titleId` と、`Dialog` の `labelledBy` に同じ値を渡す
-- フッターのボタンは、「キャンセル」、確定のボタンの順に渡す
-- 送っている間は、`Dialog` に `canClose={false}`、`DialogHeader` に `isCloseDisabled` を渡し、どの操作でも閉じないようにする
-- 送れなかったときは、`DialogFooter` の `error` に文を渡す
-- 選ぶ操作だけを並べるときは、どれも副のボタンにし、閉じるのは × に任せる
-
-## Don't
-
-- ダイアログの中から別のダイアログを開く
-- 確認のダイアログ（`role="alertdialog"`）に × を置く
-- 主のボタンを 2 つ並べる
+- 使う場面、使わない場面、キーボードの操作: コンポーネントの文書（`packages/ui/design/components.md`）の「コンポーネントの選び方」の `Dialog` の行
+- 使い方の規則と Do と Don't: コンポーネントの文書の「コンポーネントごとの規則」の「`Modal`、`Dialog`」
+- 当たる原則: DESIGN.md の「画面を作るときの原則」の次の ID
+  - `PRIMARY-ACTION-ONE`
+  - `FOCUS-ONE`
 
 ## 状態
 
@@ -50,16 +33,13 @@ import * as Stories from './Dialog.stories'
 
 <Canvas of={Stories.Submitting} />
 
-### 操作だけを並べる
+### 操作を並べる
 
 <Canvas of={Stories.OperationsOnly} />
 
-## キーボードの操作
+### フッターを置かない
 
-- 開くと、`initialFocusRef` の要素にフォーカスが移る。渡さなければ、ダイアログの中の最初の押せる要素に移る
-- Tab と Shift+Tab はダイアログの中の要素に移る
-- Esc で `onClose` を呼ぶ。`canClose` が false の間は呼ばない
-- 閉じる（外す）と、開く前にフォーカスがあった要素へ戻る
+<Canvas of={Stories.WithCloseButton} />
 
 ## props
 

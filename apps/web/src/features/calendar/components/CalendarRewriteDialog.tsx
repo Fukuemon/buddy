@@ -14,7 +14,7 @@ export type CalendarRewriteDialogProps = {
 
 /**
  * Google カレンダーの予定を buddy の内容で書き直す前に、Google カレンダーでの変更が消えることを示して確認するダイアログ。
- * Google カレンダーでの変更が消えるので、確定のボタンを赤にする。
+ * Google カレンダーでの変更が消えるので、確定のボタンを赤にする。閉じる側のボタンは「戻る」にする。「キャンセル」は、Google カレンダーでの変更を取り消す書き直しと読み違えやすい。
  */
 export const CalendarRewriteDialog = ({
   target,
@@ -27,6 +27,7 @@ export const CalendarRewriteDialog = ({
   <ConfirmDialog
     busyLabel="書き直す"
     canSubmit
+    cancelLabel="戻る"
     error={
       errorMessage === undefined
         ? undefined

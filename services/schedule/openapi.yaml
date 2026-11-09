@@ -11,15 +11,18 @@ info:
     - エラーは Error の形で返す。`code` は invalid_input、unauthenticated、forbidden、not_found、conflict、internal と、
       外部のカレンダーの操作の calendar_unreadable、calendar_unavailable、calendar_not_configured と、
       409 の原因を分ける calendar_taken、calendar_already_linked、staff_has_calendar、import_running、import_preview_changed、export_not_in_review、
-      export_not_acceptable、external_change_unappliable、google_primary、staff_has_assignments、patient_has_schedules と、
-      予定の正本の切り替えの cutover_open、cutover_not_google_primary、cutover_sync_not_ready、cutover_not_open、cutover_incomplete のいずれかである。
+      google_primary、staff_has_assignments、patient_has_schedules と、
+      予定の正本の切り替えの cutover_open、cutover_not_google_primary、cutover_sync_not_ready、cutover_not_open、cutover_incomplete と、
+      google_primary の事業所で Google カレンダーに予定を書く calendar_not_linked、google_write_pending、google_event_changed、google_event_not_found、
+      google_calendar_unwritable、google_event_rejected、google_write_unknown、google_unavailable のいずれかである。
     - `/v1` は全て、Hydra が発行した access token（JWT）を `Authorization: Bearer` で求める。
       トークンがないか検証に失敗したときは 401 を、トークンの組織と職員の事業所が、パスの指す事業所と違うときは 403 を返す。
     - 読めないクエリ（例は `;` を含むもの）は 400 を返す。
 security:
   - bearerAuth: []
 servers:
-  - url: http://localhost:8080
+  # main の checkout のローカル環境の compose の schedule（portless のホスト名）
+  - url: https://schedule.buddy.localhost
 tags:
   - name: health
     description: 死活と準備の確認
@@ -573,7 +576,7 @@ paths:
                 code: staff_has_assignments
                 message: "予定か担当の利用者が残る職員は、訪問しない職員にできません。別の職員に割り振り直してください"
                 assignments:
-                  schedules: [{ id: 01M3TC5H00QV17BC0J9V3393ZP, date: "2026-11-02", start_time: "09:00", end_time: "10:00" }]
+                  schedules: [{ id: 01M3TC5H00QV17BC0J9V3393ZP, date: "2026-11-02", start_time: "09:00", end_time: "10:00", ends_next_day: false }]
                   recurring_schedules: []
                   patients: []
         "500": { $ref: "#/components/responses/InternalError" }
@@ -745,7 +748,7 @@ paths:
                 code: staff_has_assignments
                 message: "予定か担当の利用者が残る職員は退職にできません。別の職員に割り振り直してください"
                 assignments:
-                  schedules: [{ id: 01M3TC5H00QV17BC0J9V3393ZP, date: "2026-11-02", start_time: "09:00", end_time: "10:00" }]
+                  schedules: [{ id: 01M3TC5H00QV17BC0J9V3393ZP, date: "2026-11-02", start_time: "09:00", end_time: "10:00", ends_next_day: false }]
                   recurring_schedules: []
                   patients: []
         "500": { $ref: "#/components/responses/InternalError" }
@@ -835,6 +838,34 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/StaffDetail" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "500": { $ref: "#/components/responses/InternalError" }
+
+  /v1/me/external_calendar:
+    get:
+      tags: [calendar]
+      operationId: getMyExternalCalendar
+      summary: トークンの職員に結び付いたカレンダーを取得する
+      description: |
+        外していないカレンダーを、最も新しく始めた取り込みを付けて返す。権限は求めない。
+        トークンの職員の分だけを返し、ほかの職員のカレンダーは返さない。結び付いていなければ external_calendar を null にする。
+      responses:
+        "200":
+          description: 結び付いたカレンダー
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [external_calendar]
+                properties:
+                  external_calendar:
+                    description: 結び付いたカレンダー。結び付いていなければ null
+                    type: object
+                    nullable: true
+                    x-omitempty: false
+                    allOf:
+                      - $ref: "#/components/schemas/ExternalCalendar"
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
         "500": { $ref: "#/components/responses/InternalError" }
@@ -966,7 +997,7 @@ paths:
       operationId: endPatientService
       summary: 利用者の利用を終了する
       description: |
-        利用者の利用を終了する（ADR-0021）。利用者のレコードは消さず、名前、サービス、担当の職員を残す。
+        利用者の利用を終了する（ADR-0005）。利用者のレコードは消さず、名前、サービス、担当の職員を残す。
         利用の終了の利用者は、デフォルトの利用者の一覧に出ず、予定の利用者に新しく指せず、職員の退職の確認で担当に数えない。
         その日（事業所の現地の日付）以降の予定か、その日以降に終わる繰り返しの予定が残るときは、書かずに 409（patient_has_schedules）で残る一覧を返す。
         利用の終了の利用者の利用を終了しても成功し、最初に利用を終了した時刻を残す。職員の管理の権限（staff.manage）を持つ職員だけが呼べる。
@@ -991,7 +1022,7 @@ paths:
                 code: patient_has_schedules
                 message: "その日以降の予定か繰り返しの予定が残る利用者は、利用の終了にできません。予定をキャンセルするか、繰り返しを終えてください"
                 schedules:
-                  schedules: [{ id: 01M3TC5H00QV17BC0J9V3393ZP, date: "2026-11-02", start_time: "09:00", end_time: "10:00" }]
+                  schedules: [{ id: 01M3TC5H00QV17BC0J9V3393ZP, date: "2026-11-02", start_time: "09:00", end_time: "10:00", ends_next_day: false }]
                   recurring_schedules: []
         "500": { $ref: "#/components/responses/InternalError" }
 
@@ -1023,7 +1054,7 @@ paths:
       operationId: resumePatientService
       summary: 利用の終了の利用者を利用中に戻す
       description: |
-        利用者を利用中に戻し（利用の再開）、担当の職員を本文の職員にする（ADR-0021）。利用の終了の前の予定は、同じ利用者の予定のまま残る。
+        利用者を利用中に戻し（利用の再開）、担当の職員を本文の職員にする（ADR-0005）。利用の終了の前の予定は、同じ利用者の予定のまま残る。
         担当の職員は必ず指定し、休職か退職の職員は 400 で拒む。利用中の利用者を戻しても成功し、担当を書き換える。
         職員の管理の権限（staff.manage）を持つ職員だけが呼べる。
       parameters:
@@ -1109,11 +1140,13 @@ paths:
         事業所の単発の予定と繰り返しの予定のうち、職員が見てよい予定を返す。見てよくない職員の予定は除く。
         sort_field と sort_order は許可した値だけを受け付け、ほかの値は 400 を返す。date_from と date_to は単発の予定だけを、予定の日付（開始の日）で絞る。
         date_from の前の日に始まり、date_from に終わる ends_next_day の予定も返す。
-        Google カレンダーを予定の正本にする事業所（google_primary）では、同期が写した Google カレンダーの予定（Projection）を読む（ADR-0035）。
+        Google カレンダーを予定の正本にする事業所（google_primary）では、同期が写した Google カレンダーの予定（Projection）を読む（ADR-0029）。
         繰り返しの予定は、date_from から date_to までの回に展開し、回ごとに単発の予定（source が google_calendar）として返す。recurring_schedules は空である。
         date_from か date_to を省くと、Projection を保持する期間（前々月の初日から 3 か月後の月末）の端を使う。
         外したカレンダーの予定は返さない。buddy の繰り返しの規則に写せない繰り返しの予定は、最初の回の日時の 1 件にし、review_reason を付けて返す。
-        Projection の予定には GET /v1/schedules/{schedule_id} が無く、id は一覧を読むたびに同じ値になるよう Google の予定と回の日付から作る。
+        Projection の予定の id は、一覧を読むたびに同じ値になる。buddy から書いた予定と、buddy で変えた Google の予定は、書いたときの予定の ID にする。
+        ほかの予定は Google の予定から作る。繰り返しの回は、カレンダー、親の予定、回の元の日付から作り、回を変えても同じ値である。
+        予定と繰り返しの回は、この id で取得、変更、取り消しができる。繰り返しの回の etag は、親の予定の etag である。
       parameters:
         - $ref: "#/components/parameters/FacilityID"
         - { name: schedule_type, in: query, schema: { $ref: "#/components/schemas/ScheduleTypeName" } }
@@ -1131,7 +1164,7 @@ paths:
             application/json:
               schema:
                 type: object
-                required: [schedules, recurring_schedules, source_mode, calendar_syncs, cutover]
+                required: [schedules, recurring_schedules, source_mode, calendar_syncs, cutover, all_day_events, unlisted_event_counts]
                 properties:
                   schedules:
                     type: array
@@ -1147,12 +1180,30 @@ paths:
                       最新でないとみなす時間は画面が決める。
                     items: { $ref: "#/components/schemas/CalendarSyncStatus" }
                   cutover:
-                    description: google_primary の事業所で、予定の正本を buddy に切り替えている間の open の切り替え。無ければ null（ADR-0035）
+                    description: google_primary の事業所で、予定の正本を buddy に切り替えている間の open の切り替え。無ければ null（ADR-0031）
                     type: object
                     nullable: true
                     x-omitempty: false
                     allOf:
                       - $ref: "#/components/schemas/OpenCalendarCutover"
+                  all_day_events:
+                    type: array
+                    description: |
+                      google_primary の事業所で、date_from から date_to までの期間に重なる、職員が見てよい職員の Google カレンダーの終日の予定。
+                      buddy の予定ではないので、取得、変更、取り消しはできず、照合の対象にもしない。繰り返しの終日の予定は回ごとに返す。
+                      buddy の繰り返しの規則に写せない繰り返しの終日の予定は、回が期間に重なりうる間、最初の回の 1 件にし、review_reason を付けて返す。
+                      最初の回は期間の外のことがある（#972）。
+                      buddy_primary の事業所と、schedule_type で絞ったときは空である（#672）
+                    items: { $ref: "#/components/schemas/AllDayEvent" }
+                  unlisted_event_counts:
+                    type: array
+                    description: |
+                      google_primary の事業所で、date_from から date_to までの期間に重なる、職員が見てよい職員の、schedules にも all_day_events にも出せない
+                      Google カレンダーの予定の、職員ごとの件数。2 日以上にわたる予定、24 時間以上の予定、開始か終了の日時を読めない予定、長さが 0 以下の予定を数える。
+                      繰り返しの予定は、期間に重なる回の数を数える。日時を読めない予定は、開始か終了の読めた方の日で期間に重なるかを決め、
+                      どちらも読めなければどの期間でも数える。件数が 1 以上の職員だけを返す。
+                      buddy_primary の事業所と、schedule_type で絞ったときは空である（#672）
+                    items: { $ref: "#/components/schemas/UnlistedEventCount" }
         "400": { $ref: "#/components/responses/BadRequest" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
@@ -1162,12 +1213,28 @@ paths:
       tags: [schedule]
       operationId: createSchedule
       summary: 単発の予定を作る
+      description: |
+        buddy_primary の事業所では、buddy の予定のテーブルに予定を作る。
+        google_primary の事業所では、予定の職員のカレンダーに Google カレンダーの予定を作り、書けたときだけ成功を返す（ADR-0029）。
+        訪問の情報は buddy に持ち、Google の予定のタイトルは `【サービス内容】利用者名` にする。応答の source は google_calendar である。
+        google_primary の事業所では id が必須で、同じ id で送り直しても Google の予定は 1 つのままである。
+        Google の予定が送った内容と同じなら成功を返し、違えば 409（google_event_changed）を返す。
       parameters: [$ref: "#/components/parameters/FacilityID"]
       requestBody:
         required: true
         content:
           application/json:
-            schema: { $ref: "#/components/schemas/SlotRequest" }
+            schema:
+              allOf:
+                - $ref: "#/components/schemas/SlotRequest"
+                - type: object
+                  properties:
+                    id:
+                      description: |
+                        画面が決める予定の ID（ULID）。google_primary の事業所では必須で、Google の予定の ID をこの ID から決める。
+                        buddy_primary の事業所では、送れば予定の ID にし、省けばサーバーが決める。
+                      allOf:
+                        - $ref: "#/components/schemas/ID"
       responses:
         "201":
           description: 作った予定
@@ -1178,14 +1245,50 @@ paths:
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
         "404": { $ref: "#/components/responses/NotFound" }
-        "409": { $ref: "#/components/responses/GooglePrimary" }
+        "409":
+          description: |
+            google_primary の事業所で、予定を書けない。code は次のいずれかである。
+            conflict（id がほかの予定に使われているか、事業所の予定の正本が変わった）、cutover_open（予定の正本を切り替えている）、
+            calendar_not_linked（予定の職員が外していないカレンダーを持たない。Google に書かない）、
+            google_write_pending（同じ id の書き込みが途中である）、google_event_changed（Google の予定が送った内容と違う）、
+            google_event_not_found（Google で予定が見つからない）、google_calendar_unwritable（サービスアカウントがカレンダーに書けない）、
+            google_event_rejected（Google が予定の内容を受け付けない）
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+              examples:
+                calendarNotLinked:
+                  summary: 予定の職員がカレンダーを結び付けていない
+                  value: { code: calendar_not_linked, message: "予定の職員が Google カレンダーを結び付けていません。カレンダーを結び付けてから予定を作ってください" }
+                googleEventChanged:
+                  summary: Google の予定が送った内容と違う
+                  value: { code: google_event_changed, message: "Google カレンダーで予定が変わっていました。最新の予定を確認してください" }
         "500": { $ref: "#/components/responses/InternalError" }
+        "503":
+          description: |
+            google_primary の事業所で、Google カレンダーに書けない。code は次のいずれかである。
+            google_write_unknown（Google が受けたかが分からない。時間をおいて予定を開き直す）、
+            google_unavailable（Google が一時的に拒んだ。書いていない）、calendar_not_configured（サービスアカウントの設定が無い）
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+              examples:
+                googleWriteUnknown:
+                  summary: Google が受けたかが分からない
+                  value: { code: google_write_unknown, message: "予定を Google カレンダーに書けたかを確認できませんでした。時間をおいて予定を開き直してください" }
+                googleUnavailable:
+                  summary: Google が一時的に拒んだ
+                  value: { code: google_unavailable, message: "予定を Google カレンダーに書けませんでした。時間をおいてやり直してください" }
 
   /v1/facilities/{facility_id}/schedules/recurring:
     post:
       tags: [schedule]
       operationId: createRecurringSchedule
       summary: 繰り返しの予定を作る
+      description: |
+        buddy_primary の事業所では、buddy の繰り返しの予定のテーブルに予定を作る。
+        google_primary の事業所では、予定の職員のカレンダーに、RRULE の繰り返しの予定を 1 つ作り、書けたときだけ成功を返す（ADR-0029）。
+        訪問の情報は buddy に持ち、手順、送り直し、409 と 503 の code は createSchedule と同じである。id が必須である。
       parameters: [$ref: "#/components/parameters/FacilityID"]
       requestBody:
         required: true
@@ -1198,6 +1301,12 @@ paths:
                   required: [recurring_rule]
                   properties:
                     recurring_rule: { $ref: "#/components/schemas/RecurringRule" }
+                    id:
+                      description: |
+                        画面が決める繰り返しの予定の ID（ULID）。google_primary の事業所では必須で、Google の予定の ID をこの ID から決める。
+                        buddy_primary の事業所では読まない。
+                      allOf:
+                        - $ref: "#/components/schemas/ID"
       responses:
         "201":
           description: 作った繰り返しの予定
@@ -1208,14 +1317,26 @@ paths:
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
         "404": { $ref: "#/components/responses/NotFound" }
-        "409": { $ref: "#/components/responses/GooglePrimary" }
+        "409":
+          description: google_primary の事業所で、予定を書けない。code は createSchedule の 409 と同じである
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
         "500": { $ref: "#/components/responses/InternalError" }
+        "503":
+          description: google_primary の事業所で、Google カレンダーに書けない。code は createSchedule の 503 と同じである
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
 
   /v1/schedules/{schedule_id}:
     get:
       tags: [schedule]
       operationId: getSchedule
       summary: 単発の予定を取得する
+      description: |
+        google_primary の事業所では、一覧（listSchedules）の id で、Projection の単発の予定を一覧と同じ内容で返す（ADR-0029）。
+        繰り返しの予定の回は、一覧と同じ id と内容で返す。取り消した予定と、繰り返しの予定の全体は返さない。
       parameters: [$ref: "#/components/parameters/ScheduleID"]
       responses:
         "200":
@@ -1236,12 +1357,23 @@ paths:
       description: |
         予定の枠を本文の内容に置き換える。訪問の情報は、本文の内容で作り直す。
         繰り返しの予定の回を置き換えた予定は、元の繰り返しの予定への結び付きを保つ。
+        google_primary の事業所では、Google カレンダーの予定を書き換え、書けたときだけ成功を返す（ADR-0029）。
+        etag が必須で、Google に If-Match で付ける。読んだ後に Google で予定が変わっていれば 409（google_event_changed）を返し、Google の予定を変えない。
+        Google で作った予定に訪問の情報を足すと、buddy に訪問の情報を持つ。予定の職員を替えると、予定を新しい職員のカレンダーに移す。
       parameters: [$ref: "#/components/parameters/ScheduleID"]
       requestBody:
         required: true
         content:
           application/json:
-            schema: { $ref: "#/components/schemas/SlotRequest" }
+            schema:
+              allOf:
+                - $ref: "#/components/schemas/SlotRequest"
+                - type: object
+                  properties:
+                    etag:
+                      type: string
+                      minLength: 1
+                      description: 画面が読んだ予定の etag。google_primary の事業所では必須で、buddy_primary の事業所では読まない
       responses:
         "200":
           description: 置き換えた予定
@@ -1253,7 +1385,12 @@ paths:
         "403": { $ref: "#/components/responses/Forbidden" }
         "404": { $ref: "#/components/responses/NotFound" }
         "409":
-          description: キャンセル済み（conflict）か、事業所が Google カレンダーを予定の正本にしている（google_primary）
+          description: |
+            キャンセル済み（conflict）か、予定を書いている間に事業所の予定の正本が変わった（google_primary、conflict）。
+            google_primary の事業所では、createSchedule の 409 と同じ code も返す。google_write_pending は、予定の前の書き込みの結果がまだ分からないことを表す。
+            繰り返しの予定の全体は、conflict で拒む。繰り返しの回を変えると、Google の例外の回にし、親の予定の EXDATE は変えない。
+            回の etag は親の予定の etag で、読んだ後に親の予定が変わっていれば google_event_changed を返す。
+            回の予定の職員を替えると、元のカレンダーの回を取り消し、新しい職員のカレンダーに単発の予定を作る。
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Error" }
@@ -1261,9 +1398,53 @@ paths:
                 cancelled:
                   summary: キャンセル済み
                   value: { code: conflict, message: "キャンセル済みの予定は変えられません" }
-                googlePrimary:
-                  summary: 事業所が Google カレンダーを予定の正本にしている
-                  value: { code: google_primary, message: "この事業所の予定は Google カレンダーで管理しています。予定は Google カレンダーで作成、変更してください" }
+                googleEventChanged:
+                  summary: 読んだ後に Google カレンダーで予定が変わった
+                  value: { code: google_event_changed, message: "Google カレンダーで予定が変わっていました。最新の予定を確認してください" }
+        "500": { $ref: "#/components/responses/InternalError" }
+        "503":
+          description: google_primary の事業所で、Google カレンダーに書けない。code は createSchedule の 503 と同じである
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+
+    delete:
+      tags: [schedule]
+      operationId: deleteSchedule
+      summary: 誤って入れた単発の予定を削除する
+      description: |
+        buddy_primary の事業所で、開始の日が今日（Asia/Tokyo）以降の有効な単発の予定を削除する（ADR-0040）。キャンセルと別の操作で、理由を持たない。
+        削除した予定は、listSchedules と getSchedule に出ず、戻せない。予定の行は消し、監査の記録だけを残す。
+        繰り返しの予定の回を置き換えた予定を削除しても、元の回に戻さない。その日は exclusion_dates のまま残る。
+        Google カレンダーへの書き出しが有効なら、書き出しが Google の予定を消す。
+        削除の可否は、キャンセルと同じく、予定の職員の予定を編集する権限で判定する。
+      parameters: [$ref: "#/components/parameters/ScheduleID"]
+      responses:
+        "204":
+          description: 削除した
+        "400":
+          description: 開始の日が今日より前の予定である
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+              examples:
+                past:
+                  summary: 今日より前の予定
+                  value: { code: invalid_input, message: "今日より前の予定は削除できません" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409":
+          description: |
+            キャンセル済み（conflict）か、事業所が google_primary である（google_primary）。
+            google_primary の事業所では、予定を読まずに拒む。
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+              examples:
+                cancelled:
+                  summary: キャンセル済み
+                  value: { code: conflict, message: "キャンセル済みの予定は削除できません" }
         "500": { $ref: "#/components/responses/InternalError" }
 
   /v1/schedules/{schedule_id}/cancel:
@@ -1271,6 +1452,10 @@ paths:
       tags: [schedule]
       operationId: cancelSchedule
       summary: 単発の予定をキャンセルする
+      description: |
+        google_primary の事業所では、Google カレンダーの予定を消し、消せたときだけ成功を返す（ADR-0029）。
+        etag が必須で、Google に If-Match で付ける。理由は Google に書けないので保存せず、応答のキャンセルの id は予定の id と同じである。
+        消した予定は一覧に出さず、buddy に持つ訪問の情報も消す。
       parameters: [$ref: "#/components/parameters/ScheduleID"]
       requestBody:
         required: true
@@ -1281,6 +1466,10 @@ paths:
               required: [reason]
               properties:
                 reason: { type: string, minLength: 1, maxLength: 255 }
+                etag:
+                  type: string
+                  minLength: 1
+                  description: 画面が読んだ予定の etag。google_primary の事業所では必須で、buddy_primary の事業所では読まない
       responses:
         "201":
           description: キャンセル
@@ -1292,7 +1481,11 @@ paths:
         "403": { $ref: "#/components/responses/Forbidden" }
         "404": { $ref: "#/components/responses/NotFound" }
         "409":
-          description: キャンセル済み（conflict）か、事業所が Google カレンダーを予定の正本にしている（google_primary）
+          description: |
+            キャンセル済み（conflict）か、予定を書いている間に事業所の予定の正本が変わった（google_primary、conflict）。
+            google_primary の事業所では、createSchedule の 409 と同じ code も返す。Google で消されていた予定は google_event_not_found である。
+            繰り返しの予定の全体は、conflict で拒む。繰り返しの回を取り消すと、Google はその回だけを取り消し、ほかの回は残る。
+            回の etag は親の予定の etag で、読んだ後に親の予定が変わっていれば google_event_changed を返す。
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Error" }
@@ -1300,10 +1493,15 @@ paths:
                 cancelled:
                   summary: キャンセル済み
                   value: { code: conflict, message: "この予定はすでにキャンセルされています" }
-                googlePrimary:
-                  summary: 事業所が Google カレンダーを予定の正本にしている
-                  value: { code: google_primary, message: "この事業所の予定は Google カレンダーで管理しています。予定は Google カレンダーで作成、変更してください" }
+                googleEventChanged:
+                  summary: 読んだ後に Google カレンダーで予定が変わった
+                  value: { code: google_event_changed, message: "Google カレンダーで予定が変わっていました。最新の予定を確認してください" }
         "500": { $ref: "#/components/responses/InternalError" }
+        "503":
+          description: google_primary の事業所で、Google カレンダーに書けない。code は createSchedule の 503 と同じである
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
 
   /v1/schedules/recurring/{recurring_schedule_id}:
     get:
@@ -1323,6 +1521,74 @@ paths:
         "404": { $ref: "#/components/responses/NotFound" }
         "500": { $ref: "#/components/responses/InternalError" }
 
+  /v1/schedules/recurring/{recurring_schedule_id}/rule:
+    put:
+      tags: [schedule]
+      operationId: changeRecurringRule
+      summary: 繰り返しの予定の規則を、適用の日以降の回について変える
+      description: |
+        規則を、effective_date 以降の回にだけ当てる（ADR-0037）。今日より前の回は変えない。
+        元の繰り返しの予定に effective_date より前の回があれば、元の繰り返しの予定の終了日を effective_date の前の日にし、
+        effective_date 以降で新しい規則が当たる最初の日を最初の日付にした、新しい繰り返しの予定を作る。時刻、職員、訪問の情報は元の繰り返しの予定から写す。
+        effective_date より前の回が無ければ、分けずに規則と最初の日付を書き換える。終了日だけを変えるときも、分けずに終了日を書き換える。
+        適用の日以降（終了日だけの変更では新しい終了日の後）の置き換えた回は、単発の予定として残し、取り消した回は新しい規則に引き継がない。
+        google_primary の事業所では、recurring_schedule_id は changeOccurrence と同じ繰り返しの予定の id で、
+        変えた例外の回を同じカレンダーの単発の予定に作り直してから、親の予定の RRULE を書く。
+        google_primary の事業所では、effective_date より前の回が無いときも、新しい親の予定を id で作って元の親の予定を消すので、id が変わる。
+        応答は、effective_date 以降の回を持つ繰り返しの予定である。分けたときは新しい繰り返しの予定で、id が変わる。
+      parameters: [$ref: "#/components/parameters/RecurringScheduleID"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [recurring_rule]
+              properties:
+                recurring_rule: { $ref: "#/components/schemas/RecurringRule" }
+                effective_date:
+                  type: string
+                  format: date
+                  description: 適用の日。今日（Asia/Tokyo）以降に限る。規則の終了日のほかの項目を変えるときは必須で、終了日だけを変えるときは読まない
+                first_week_date:
+                  type: string
+                  format: date
+                  description: |
+                    新しい規則の 1 週目を決める日（ADR-0038）。分けるときは、この日を含む週を 1 週目にして毎週の間隔を数え、
+                    effective_date 以降で新しい規則が当たる最初の日を最初の日付にする。画面は開いた回の日を送る。
+                    元の繰り返しの最初の日付以降、effective_date 以前に限る。省くと effective_date を使う。終了日だけを変えるときは読まない
+                id:
+                  description: |
+                    繰り返しの予定を分けるときの、新しい繰り返しの予定の ID（ULID）。google_primary の事業所で規則を変えるときは必須で、
+                    Google の予定の ID をこの ID から決める。buddy_primary の事業所では読まない。
+                  allOf:
+                    - $ref: "#/components/schemas/ID"
+                etag:
+                  description: 画面が読んだ親の予定の etag。google_primary の事業所では必須で、buddy_primary の事業所では読まない
+                  type: string
+      responses:
+        "200":
+          description: effective_date 以降の回を持つ繰り返しの予定
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/RecurringSchedule" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409":
+          description: |
+            事業所が予定を書けない。google_primary の事業所では、updateSchedule の 409 と同じ code も返す。
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+        "500": { $ref: "#/components/responses/InternalError" }
+        "503":
+          description: google_primary の事業所で、Google カレンダーに書けない。code は createSchedule の 503 と同じである
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+
   /v1/schedules/recurring/{recurring_schedule_id}/occurrences:
     post:
       tags: [schedule]
@@ -1331,6 +1597,11 @@ paths:
       description: |
         繰り返しの予定の original_date の回を、本文の内容の単発の予定に置き換える。
         元の回は exclusion_dates に加わり、作った予定は recurring_schedule_id で元の繰り返しの予定を指す。
+        google_primary の事業所では、recurring_schedule_id は Google カレンダーの繰り返しの予定の id（createRecurringSchedule の応答の id）である。
+        Google の回（events.instances で読んだ回）を例外の回として書き換え、親の予定の EXDATE は変えない（ADR-0029）。
+        応答の予定の id は、回の listSchedules での id で、回を変える前と同じである。
+        予定の職員を替えると、元のカレンダーの回を取り消し、新しい職員のカレンダーに単発の予定を作る。
+        訪問の情報は繰り返しの予定のものを引き継ぎ、変えたときだけ回に持つ。409 と 503 の code は updateSchedule と同じである。
       parameters: [$ref: "#/components/parameters/RecurringScheduleID"]
       requestBody:
         required: true
@@ -1357,7 +1628,9 @@ paths:
         "403": { $ref: "#/components/responses/Forbidden" }
         "404": { $ref: "#/components/responses/NotFound" }
         "409":
-          description: その回はすでに置き換えた（conflict）か、事業所が Google カレンダーを予定の正本にしている（google_primary）
+          description: |
+            その回はすでに置き換えた（conflict）。google_primary の事業所では、予定の職員を替える入力も conflict で、
+            createSchedule の 409 と同じ code も返す。
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Error" }
@@ -1365,9 +1638,110 @@ paths:
                 replaced:
                   summary: その回はすでに置き換えた
                   value: { code: conflict, message: "2026-10-12 の回はすでに置き換えられています" }
-                googlePrimary:
-                  summary: 事業所が Google カレンダーを予定の正本にしている
-                  value: { code: google_primary, message: "この事業所の予定は Google カレンダーで管理しています。予定は Google カレンダーで作成、変更してください" }
+        "500": { $ref: "#/components/responses/InternalError" }
+        "503":
+          description: google_primary の事業所で、Google カレンダーに書けない。code は createSchedule の 503 と同じである
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+
+  /v1/schedules/recurring/{recurring_schedule_id}/occurrences/cancel:
+    post:
+      tags: [schedule]
+      operationId: cancelOccurrence
+      summary: 繰り返しの予定の 1 回をキャンセルする
+      description: |
+        buddy_primary の事業所で、繰り返しの予定の original_date の回を、繰り返しの予定と同じ内容の単発の予定にし、理由を付けてキャンセルする。
+        元の回は exclusion_dates に加わり、作った予定は recurring_schedule_id で元の繰り返しの予定を指す。
+        キャンセルした予定は、listSchedules の include_cancelled で返る。応答のキャンセルの schedule_id は、作った予定の id である。
+        置き換えた後の回は単発の予定なので、cancelSchedule でキャンセルする。
+        google_primary の事業所の回は、cancelSchedule で回の id を指してキャンセルする。
+      parameters: [$ref: "#/components/parameters/RecurringScheduleID"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [original_date, reason]
+              properties:
+                original_date:
+                  type: string
+                  format: date
+                  description: キャンセルする回の日付。繰り返しの規則に当たる日に限る
+                reason: { type: string, minLength: 1, maxLength: 255 }
+      responses:
+        "201":
+          description: キャンセル
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Cancel" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409":
+          description: |
+            その回はすでに置き換えたかキャンセルした（conflict）か、事業所が google_primary である（google_primary）。
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+              examples:
+                replaced:
+                  summary: その回はすでに置き換えたかキャンセルした
+                  value: { code: conflict, message: "2026-10-12 の回はすでに置き換えられています" }
+        "500": { $ref: "#/components/responses/InternalError" }
+
+  /v1/schedules/recurring/{recurring_schedule_id}/occurrences/delete:
+    post:
+      tags: [schedule]
+      operationId: deleteOccurrence
+      summary: 誤って入れた繰り返しの予定の 1 回を削除する
+      description: |
+        buddy_primary の事業所で、繰り返しの予定の original_date の回を削除する（ADR-0040）。元の回は exclusion_dates に加わり、単発の予定は作らない。
+        削除した回は listSchedules に出ず、戻せない。監査の記録だけを残す。
+        削除した日は、changeRecurringRule で規則を変えたときに新しい規則に引き継がず、新しい規則の回が当たれば回を出す。
+        置き換えた後の回は単発の予定なので、deleteSchedule で削除する。繰り返しの予定そのものは削除できない。
+        Google カレンダーへの書き出しが有効なら、書き出しがその日を親の予定の EXDATE にする。
+        google_primary の事業所では、何も読まずに 409（google_primary）で拒む。
+      parameters: [$ref: "#/components/parameters/RecurringScheduleID"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [original_date]
+              properties:
+                original_date:
+                  type: string
+                  format: date
+                  description: 削除する回の日付。繰り返しの規則に当たる、今日（Asia/Tokyo）以降の日に限る
+      responses:
+        "204":
+          description: 削除した
+        "400":
+          description: original_date が繰り返しの規則に当たらないか、今日より前である
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+              examples:
+                past:
+                  summary: 今日より前の回
+                  value: { code: invalid_input, message: "今日より前の予定は削除できません" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409":
+          description: |
+            その回はすでに置き換えたか、キャンセルしたか、削除した（conflict）か、事業所が google_primary である（google_primary）。
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+              examples:
+                excluded:
+                  summary: その回はすでに置き換えたか、キャンセルしたか、削除した
+                  value: { code: conflict, message: "2026-10-12 の回はすでに置き換えたか、キャンセルしたか、削除しています" }
         "500": { $ref: "#/components/responses/InternalError" }
 
   /v1/facilities/{facility_id}/calendar_service_account:
@@ -1375,7 +1749,7 @@ paths:
       tags: [calendar]
       operationId: getCalendarServiceAccount
       summary: カレンダーを共有する相手のサービスアカウントを取得する
-      description: 職員が Google カレンダーを共有する相手の、この事業所のサービスアカウントのメールアドレスを返す。サービスアカウントは事業所ごとにある（ADR-0012）。職員の管理の権限（staff.manage）を持つ職員だけが呼べる。
+      description: 職員が Google カレンダーを共有する相手の、この事業所のサービスアカウントのメールアドレスを返す。サービスアカウントは事業所ごとにある（ADR-0030）。職員の管理の権限（staff.manage）を持つ職員だけが呼べる。
       parameters: [$ref: "#/components/parameters/FacilityID"]
       responses:
         "200":
@@ -1656,51 +2030,6 @@ paths:
                   value: { code: export_not_in_review, message: "この予定は、確認が必要な書き出しではありません" }
         "500": { $ref: "#/components/responses/InternalError" }
 
-  /v1/calendar_exports/{calendar_export_id}/acceptances:
-    post:
-      tags: [calendar]
-      operationId: createCalendarExportAcceptance
-      summary: 確認が必要な書き出しを Google カレンダーの内容で解く
-      description: |
-        確認が必要な書き出しの予定を、Google カレンダーの今の内容にそろえ、書き出しを終える。buddy で変えた日時とタイトルは消える。
-        Google カレンダーで消された予定（予定が cancelled で返るときと、予定が 404 か 410 で、カレンダーは読めるとき）は、buddy でキャンセルする。
-        buddy を予定の正本にする事業所（buddy_primary）では、Google カレンダーの内容を当てず、export_not_acceptable で拒む（ADR-0035）。
-        acceptable が true の書き出しだけを解ける。職員の管理の権限（staff.manage）を持つ職員だけが呼べる。
-      parameters: [$ref: "#/components/parameters/CalendarExportID"]
-      responses:
-        "200":
-          description: Google カレンダーの内容にそろえ、書き出しを終えた
-          content:
-            application/json:
-              schema: { $ref: "#/components/schemas/CalendarExport" }
-        "400": { $ref: "#/components/responses/BadRequest" }
-        "401": { $ref: "#/components/responses/Unauthorized" }
-        "403": { $ref: "#/components/responses/Forbidden" }
-        "404": { $ref: "#/components/responses/NotFound" }
-        "409":
-          description: |
-            確認が必要な書き出しでない（export_not_in_review）か、Google カレンダーの内容で解けない書き出しである（export_not_acceptable）か、
-            Google カレンダーの予定を buddy の予定に読み替えられない（external_change_unappliable。終日にした予定、タイトルの利用者を引けない予定など）
-          content:
-            application/json:
-              schema: { $ref: "#/components/schemas/Error" }
-              examples:
-                notInReview:
-                  summary: 確認が必要な書き出しでない
-                  value: { code: export_not_in_review, message: "この予定は、確認が必要な書き出しではありません" }
-                notAcceptable:
-                  summary: Google カレンダーの内容で解けない
-                  value: { code: export_not_acceptable, message: "この予定は、Google カレンダーの内容を buddy に当てられません。buddy の内容で書き直してください" }
-                buddyPrimary:
-                  summary: 事業所が buddy を予定の正本にしている
-                  value: { code: export_not_acceptable, message: "この事業所の予定は buddy で管理しているので、Google カレンダーの内容を buddy に当てられません。buddy の内容で書き直してください" }
-                unappliable:
-                  summary: Google カレンダーの予定を読み替えられない
-                  value: { code: external_change_unappliable, message: "Google カレンダーの予定を、buddy の予定に読み替えられません。buddy の内容で書き直してください" }
-        "422": { $ref: "#/components/responses/CalendarUnreadable" }
-        "500": { $ref: "#/components/responses/InternalError" }
-        "502": { $ref: "#/components/responses/CalendarUnavailable" }
-        "503": { $ref: "#/components/responses/CalendarNotConfigured" }
 
   /v1/facilities/{facility_id}/calendar_cutover_status:
     get:
@@ -1708,7 +2037,7 @@ paths:
       operationId: getCalendarCutoverStatus
       summary: 予定の正本の切り替えの状況を取得する
       description: |
-        事業所の open の切り替えと、外していない全てのカレンダーの同期の状況と、この切り替えで最後に成功した取り込みを返す（ADR-0035）。
+        事業所の open の切り替えと、外していない全てのカレンダーの同期の状況と、この切り替えで最後に成功した取り込みを返す（ADR-0031）。
         open の切り替えが無ければ、cutover は null で、カレンダーの last_import は null である。
         職員の管理の権限（staff.manage）を持つ職員だけが呼べる。
       parameters: [$ref: "#/components/parameters/FacilityID"]
@@ -1729,11 +2058,13 @@ paths:
       operationId: startCalendarCutover
       summary: 予定の正本の切り替えを始める
       description: |
-        Google カレンダーを予定の正本にする事業所（google_primary）で、予定の正本を buddy に切り替える作業（切り替え）を始める（ADR-0035）。
+        Google カレンダーを予定の正本にする事業所（google_primary）で、予定の正本を buddy に切り替える作業（切り替え）を始める（ADR-0031）。
         取り込みの期間は、今の Asia/Tokyo の月の初日から先の全てで、終わりを持たない。
         始めると、カレンダーごとに、取り込みのプレビューと確定（期間は range_start が切り替えの range_start、range_end が null）で取り込む。
         画面と照合は、切り替えの間も Google カレンダーの予定の写し（Projection）を読む。
-        外していない全てのカレンダーの最後の同期が成功していることを条件にする。職員の管理の権限（staff.manage）を持つ職員だけが呼べる。
+        外していない全てのカレンダーの最後の同期が成功していて、buddy から Google カレンダーに書いた結果がまだ分からない予定（保留の版）が無いことを条件にする。
+        切り替えの間は、buddy から予定を作成、変更、取り消しできない（createSchedule などが 409 の cutover_open を返す）。
+        職員の管理の権限（staff.manage）を持つ職員だけが呼べる。
       parameters: [$ref: "#/components/parameters/FacilityID"]
       responses:
         "201":
@@ -1748,6 +2079,7 @@ paths:
         "409":
           description: |
             事業所が buddy を予定の正本にしている（cutover_not_google_primary）か、open の切り替えがある（cutover_open）か、
+            保留の版がある（google_write_pending。buddy から Google カレンダーに書いた結果がまだ分からない予定がある）か、
             最後の同期が成功していないカレンダーがある（cutover_sync_not_ready）
           content:
             application/json:
@@ -1759,6 +2091,9 @@ paths:
                 open:
                   summary: open の切り替えがある
                   value: { code: cutover_open, message: "この事業所では、切り替えをすでに始めています" }
+                writePending:
+                  summary: buddy から Google カレンダーに書いた結果がまだ分からない予定がある
+                  value: { code: google_write_pending, message: "buddy から Google カレンダーに書いた結果がまだ分からない予定が 1 件あります。時間をおいてから、もう一度始めてください" }
                 sync:
                   summary: 最後の同期が成功していないカレンダーがある
                   value: { code: cutover_sync_not_ready, message: "最後の同期が成功していないカレンダーがあります（岡田 葵）。同期が成功してから始めてください" }
@@ -1770,7 +2105,8 @@ paths:
       operationId: createCalendarCutoverCompletion
       summary: 予定の正本の切り替えを完了する
       description: |
-        Google カレンダーを切り替えの月の初日から先の全てで読み直し、事業所の行を排他のロックで取って、カレンダーごとに次の 3 つを確認する（ADR-0035）。
+        Google カレンダーを切り替えの月の初日から先の全てで読み直し、事業所の行を排他のロックで取って、カレンダーごとに次の 3 つを確認する（ADR-0031）。
+        確認の前に、buddy から Google カレンダーに書いた結果がまだ分からない予定（保留の版）があれば、何も書かずに 409（google_write_pending）を返す。
         最後の取り込みの後に同期が成功している。読み直した予定が全て、予定の対応を持つか取り込まないと決めた予定で、規則に写せない繰り返しの予定が残っていない。
         予定の対応の etag と Google の etag が同じである。
         満たせば、事業所を buddy_primary にし、事業所の Projection の行を消し、切り替えを completed にする。同期をやめ、書き出しを始める。
@@ -1788,7 +2124,9 @@ paths:
         "403": { $ref: "#/components/responses/Forbidden" }
         "404": { $ref: "#/components/responses/NotFound" }
         "409":
-          description: 完了の確認を満たさない（cutover_incomplete。items に一覧がある）か、切り替えが open でない（cutover_not_open）
+          description: |
+            完了の確認を満たさない（cutover_incomplete。items に一覧がある）か、切り替えが open でない（cutover_not_open）か、
+            保留の版がある（google_write_pending。buddy から Google カレンダーに書いた結果がまだ分からない予定がある。items を持たない）
           content:
             application/json:
               schema: { $ref: "#/components/schemas/CalendarCutoverIncomplete" }
@@ -1812,6 +2150,9 @@ paths:
                 notOpen:
                   summary: 切り替えが open でない
                   value: { code: cutover_not_open, message: "この切り替えは、すでに完了したか、やめています" }
+                writePending:
+                  summary: buddy から Google カレンダーに書いた結果がまだ分からない予定がある
+                  value: { code: google_write_pending, message: "buddy から Google カレンダーに書いた結果がまだ分からない予定が 1 件あります。時間をおいてから、もう一度完了してください" }
         "422": { $ref: "#/components/responses/CalendarUnreadable" }
         "500": { $ref: "#/components/responses/InternalError" }
         "502": { $ref: "#/components/responses/CalendarUnavailable" }
@@ -1823,7 +2164,7 @@ paths:
       operationId: cancelCalendarCutover
       summary: 予定の正本の切り替えをやめる
       description: |
-        この切り替えの取り込みで作った buddy の予定、繰り返しの予定、訪問の情報、予定の対応を消し、切り替えを canceled にする（ADR-0035）。
+        この切り替えの取り込みで作った buddy の予定、繰り返しの予定、訪問の情報、予定の対応を消し、切り替えを canceled にする（ADR-0031）。
         事業所は Google カレンダーを予定の正本にしたままで、画面と照合は Projection を読み続ける。やめた後に、もう一度始められる。
         職員の管理の権限（staff.manage）を持つ職員だけが呼べる。
       parameters: [$ref: "#/components/parameters/CalendarCutoverID"]
@@ -1982,12 +2323,6 @@ components:
         application/json:
           schema: { $ref: "#/components/schemas/Error" }
           example: { code: calendar_unavailable, message: "外部のカレンダーから予定を読めませんでした" }
-    GooglePrimary:
-      description: 事業所が Google カレンダーを予定の正本にしている（google_primary）ので、予定を書けない（ADR-0035）
-      content:
-        application/json:
-          schema: { $ref: "#/components/schemas/Error" }
-          example: { code: google_primary, message: "この事業所の予定は Google カレンダーで管理しています。予定は Google カレンダーで作成、変更してください" }
     CalendarNotConfigured:
       description: この事業所の Google のサービスアカウントが設定されていない。`code` は calendar_not_configured
       content:
@@ -2037,8 +2372,6 @@ components:
             - import_running
             - import_preview_changed
             - export_not_in_review
-            - export_not_acceptable
-            - external_change_unappliable
             - google_primary
             - staff_has_assignments
             - patient_has_schedules
@@ -2047,6 +2380,14 @@ components:
             - cutover_sync_not_ready
             - cutover_not_open
             - cutover_incomplete
+            - calendar_not_linked
+            - google_write_pending
+            - google_event_changed
+            - google_event_not_found
+            - google_calendar_unwritable
+            - google_event_rejected
+            - google_write_unknown
+            - google_unavailable
         message:
           type: string
           description: 人が読む日本語の説明。文言は変わることがあるので、利用者の分岐は `code` で行う
@@ -2191,18 +2532,21 @@ components:
           description: その日以降のキャンセルしていない単発の予定。日時の順
           items:
             type: object
-            required: [id, date, start_time, end_time]
+            required: [id, date, start_time, end_time, ends_next_day]
             properties:
               id: { $ref: "#/components/schemas/ID" }
               date: { $ref: "#/components/schemas/Date" }
               start_time: { $ref: "#/components/schemas/Time" }
               end_time: { $ref: "#/components/schemas/Time" }
+              ends_next_day:
+                type: boolean
+                description: date の翌日の end_time に終わる予定のとき true
         recurring_schedules:
           type: array
           description: その日以降に終わる繰り返しの予定。終了日の無い繰り返しを含める。最初の回の日時の順
           items:
             type: object
-            required: [id, date, end_date, start_time, end_time]
+            required: [id, date, end_date, start_time, end_time, ends_next_day]
             properties:
               id: { $ref: "#/components/schemas/ID" }
               date:
@@ -2215,9 +2559,12 @@ components:
                 description: 終了日。終了日が無ければ null
               start_time: { $ref: "#/components/schemas/Time" }
               end_time: { $ref: "#/components/schemas/Time" }
+              ends_next_day:
+                type: boolean
+                description: 全ての回が、回の日付の翌日の end_time に終わるとき true
         patients:
           type: array
-          description: 職員が主に担当する利用中の利用者。利用の終了の利用者は含めない（ADR-0021）。名前の順
+          description: 職員が主に担当する利用中の利用者。利用の終了の利用者は含めない（ADR-0005）。名前の順
           items:
             type: object
             required: [id, name]
@@ -2314,18 +2661,21 @@ components:
           description: その日以降のキャンセルしていない単発の予定。日時の順
           items:
             type: object
-            required: [id, date, start_time, end_time]
+            required: [id, date, start_time, end_time, ends_next_day]
             properties:
               id: { $ref: "#/components/schemas/ID" }
               date: { $ref: "#/components/schemas/Date" }
               start_time: { $ref: "#/components/schemas/Time" }
               end_time: { $ref: "#/components/schemas/Time" }
+              ends_next_day:
+                type: boolean
+                description: date の翌日の end_time に終わる予定のとき true
         recurring_schedules:
           type: array
           description: その日以降に終わる繰り返しの予定。終了日の無い繰り返しを含める。最初の回の日時の順
           items:
             type: object
-            required: [id, date, end_date, start_time, end_time]
+            required: [id, date, end_date, start_time, end_time, ends_next_day]
             properties:
               id: { $ref: "#/components/schemas/ID" }
               date:
@@ -2338,6 +2688,9 @@ components:
                 description: 終了日。終了日が無ければ null
               start_time: { $ref: "#/components/schemas/Time" }
               end_time: { $ref: "#/components/schemas/Time" }
+              ends_next_day:
+                type: boolean
+                description: 全ての回が、回の日付の翌日の end_time に終わるとき true
     EndServiceConflict:
       allOf:
         - $ref: "#/components/schemas/Error"
@@ -2486,11 +2839,22 @@ components:
         title: { type: string, nullable: true }
         description: { type: string, nullable: true }
         recurring_schedule_id:
-          description: 繰り返しの予定の 1 回を置き換えた予定のとき、元の繰り返しの予定
+          description: |
+            繰り返しの予定の 1 回を置き換えた予定のとき、元の繰り返しの予定。
+            google_primary の事業所で、繰り返しの親を展開した回のときは、親の予定の一覧での ID で、changeRecurringRule の recurring_schedule_id に使う
           type: string
           nullable: true
           allOf:
             - $ref: "#/components/schemas/ID"
+        recurring_rule:
+          description: |
+            google_primary の事業所で、繰り返しの親を展開した回のときの、親の繰り返しの規則。ほかの予定では null である。
+            指定しない項目は、親の最初の日付の曜日や日から決まり、展開した回の日付の曜日や日と同じである（ADR-0037）
+          type: object
+          nullable: true
+          x-omitempty: false
+          allOf:
+            - $ref: "#/components/schemas/RecurringRule"
         visit_info:
           type: object
           nullable: true
@@ -2506,7 +2870,14 @@ components:
           enum: [buddy, google_calendar]
           description: |
             予定の読み元。buddy は buddy の予定、google_calendar は google_primary の事業所で同期が写した Google カレンダーの予定（Projection）である。
-            google_calendar の予定は buddy から変えられず、Google カレンダーで変える。
+            google_calendar の予定は、etag を付けて変更と取り消しができる。繰り返しの回も同じで、回の etag は親の予定の etag である。
+        etag:
+          description: |
+            google_calendar の予定の、Google カレンダーの etag。予定を変えるか取り消すときに送る。
+            buddy の予定では null で、繰り返しの回では親の予定の etag である
+          type: string
+          nullable: true
+          x-omitempty: false
         review_reason:
           description: google_calendar の予定のうち、確認が必要な予定の理由。ほかの予定では null
           type: string
@@ -2523,17 +2894,48 @@ components:
           description: google_calendar の予定では、Google で最後に変えた時刻（無ければ写した時刻）
     ScheduleReviewReason:
       type: string
-      enum: [recurrence_unsupported, patient_not_found, patient_ambiguous, service_code_not_found, title_unreadable]
+      enum: [recurrence_unsupported, patient_not_found, patient_ambiguous, service_code_not_found, title_unreadable, title_mismatch]
       description: |
         Google カレンダーの予定を、buddy の予定に読み替えられなかった理由。
         recurrence_unsupported は buddy の繰り返しの規則に写せない繰り返しの予定で、回に展開せず最初の回の 1 件で返す。
         patient_not_found と patient_ambiguous はタイトルの利用者名の利用者がいないか 2 人以上いる予定、
         service_code_not_found はタイトルのサービス内容がサービスコードのマスタに無い予定、title_unreadable はタイトルが空か、訪問のタイトルを読めない予定である。
-        recurrence_unsupported のほかの予定は、訪問の情報（visit_info）を空にし、Google のタイトルを title に入れた通常の予定として返す。
+        patient_not_found、patient_ambiguous、service_code_not_found、title_unreadable の予定は、訪問の情報（visit_info）を空にし、
+        Google のタイトルを title に入れた通常の予定として返す。
+        title_mismatch は、buddy で訪問の情報を入力した予定のうち、Google でタイトルを変え、タイトルの利用者かサービス内容が
+        buddy の訪問の情報と違う予定である。訪問の情報は buddy の内容で返す（ADR-0029）。
     SourceMode:
       type: string
       enum: [google_primary, buddy_primary]
-      description: 事業所の予定の正本。google_primary は Google カレンダー、buddy_primary は buddy である（ADR-0035）
+      description: 事業所の予定の正本。google_primary は Google カレンダー、buddy_primary は buddy である（ADR-0029）
+    AllDayEvent:
+      type: object
+      description: Google カレンダーの終日の予定。buddy の予定ではない（#672）
+      required: [id, staff_id, staff_name, start_date, end_date, title, review_reason]
+      properties:
+        id:
+          description: 一覧を読むたびに同じになる値。繰り返しの回は回ごとに違う値である。予定の ID としては使えない
+          type: string
+        staff_id: { $ref: "#/components/schemas/ID" }
+        staff_name: { type: string }
+        start_date: { type: string, format: date, description: 予定がかかる最初の日 }
+        end_date: { type: string, format: date, description: 予定がかかる最後の日（この日を含む）。1 日の予定では start_date と同じ }
+        title: { type: string, description: Google の予定のタイトル。空のことがある }
+        review_reason:
+          description: |
+            確認が必要な理由。無ければ null。buddy の繰り返しの規則に写せない繰り返しの終日の予定は、最初の回の 1 件にし、
+            recurrence_unsupported を付ける（#972）
+          type: string
+          nullable: true
+          allOf:
+            - $ref: "#/components/schemas/ScheduleReviewReason"
+    UnlistedEventCount:
+      type: object
+      description: 職員の、予定のカレンダーに出せない Google カレンダーの予定の件数。予定の中身は返さない（#672）
+      required: [staff_id, count]
+      properties:
+        staff_id: { $ref: "#/components/schemas/ID" }
+        count: { type: integer, minimum: 1 }
     CalendarSyncStatus:
       type: object
       description: 結び付けたカレンダーの同期の状況
@@ -2563,19 +2965,41 @@ components:
       type: object
       required: [frequency]
       description: |
-        weekly は day_of_week だけを、monthly は day_of_month だけか、week_of_month と day_of_week の組を指定できる。
+        weekly は days_of_week と interval だけを、monthly は day_of_month だけか、week_of_month と day_of_week の組を指定できる。
         指定しない項目は、最初の日付の曜日や日から決める。
         最初の日付が規則の回に当たらない組み合わせ（火曜の最初の日付に毎週の月曜など）は、入力のエラーにする。
+        weekly の回は、日曜に始まる週で数え、最初の日付を含む週を 1 週目として、1 週目から interval の倍数だけ後の週の days_of_week の曜日にある（ADR-0038）。
+        繰り返しの終わりは end_date だけで持ち、回数は持たない。
       # レスポンスでは、値のない項目も省かず null で返す。x-omitempty は oapi-codegen が読み、Go の型から omitempty を外す
       properties:
         frequency: { type: string, enum: [weekly, monthly] }
+        days_of_week:
+          description: |
+            weekly の曜日。1 が月曜、7 が日曜で、重ならない 1 つ以上の曜日を指定する。省くと最初の日付の曜日の 1 つにする。
+            レスポンスでは、weekly は月曜から日曜の順に並べて必ず返し、monthly は null である
+          type: array
+          nullable: true
+          minItems: 1
+          maxItems: 7
+          uniqueItems: true
+          x-omitempty: false
+          items: { type: integer, minimum: 1, maximum: 7 }
+        interval:
+          description: |
+            weekly の間隔の週の数。1 が毎週、2 が隔週である。weekly で省くと 1 にする。monthly には指定できない（1 も 400 になる）。
+            レスポンスでは、weekly は必ず返し、monthly は null である
+          type: integer
+          nullable: true
+          minimum: 1
+          maximum: 52
+          x-omitempty: false
         day_of_week:
           type: integer
           nullable: true
           minimum: 1
           maximum: 7
           x-omitempty: false
-          description: 1 が月曜、7 が日曜
+          description: monthly の week_of_month の週の曜日。1 が月曜、7 が日曜。weekly には指定できない
         day_of_month: { type: integer, nullable: true, minimum: 1, maximum: 31, x-omitempty: false }
         week_of_month: { type: integer, nullable: true, minimum: 1, maximum: 5, x-omitempty: false }
         end_date:
@@ -2706,7 +3130,7 @@ components:
             forbidden はサービスアカウントがカレンダーに書けない、rejected は Google が予定の内容を受け付けなかった（400）、
             unavailable は Google に届かないか一時的なエラーが続いた、unappliable は Google カレンダーの変更を buddy の予定に読み替えられない
             （終日にした予定、タイトルの利用者を引けない予定、繰り返しの予定そのものの変更）。
-            not_buddy_primary は事業所が buddy を予定の正本にしていないので、書かずに保留にした（ADR-0035）
+            not_buddy_primary は事業所が buddy を予定の正本にしていないので、書かずに保留にした（ADR-0029）
         attempts:
           type: integer
           minimum: 0
@@ -2730,8 +3154,8 @@ components:
             acceptable:
               type: boolean
               description: |
-                Google カレンダーの内容で解けるか（POST /v1/calendar_exports/{calendar_export_id}/acceptances）。
-                単発の予定で、buddy でキャンセルしておらず、error_code が precondition_failed か not_found のときに true
+                Google カレンダーで予定が変わったか消えたので書けなかった、buddy でキャンセルしていない単発の予定か。
+                error_code が precondition_failed か not_found のときに true
     ExternalCalendar:
       type: object
       required: [id, facility_id, staff_id, provider, calendar_id, created_at, updated_at, last_import]
@@ -2754,7 +3178,7 @@ components:
       type: object
       required: [range_start]
       description: |
-        事業所に open の予定の正本の切り替えがあるときは、range_start を切り替えの range_start にし、range_end を省くか null にする（ADR-0035）。
+        事業所に open の予定の正本の切り替えがあるときは、range_start を切り替えの range_start にし、range_end を省くか null にする（ADR-0031）。
         ほかの期間は 400 になる。open の切り替えが無いときは、range_end を省けない。
       properties:
         range_start:
@@ -2875,7 +3299,7 @@ components:
           type: string
           enum: [all_day, multi_day, unreadable_time, zero_length, unreadable_title, service_not_found, staff_on_leave, staff_non_visiting]
           description: |
-            all_day は終日、multi_day は日をまたぐ（24:00 に終わる予定を含む）、unreadable_time は日時を読めない、
+            all_day は終日、multi_day は終了が開始の翌日より後か、長さが 24 時間以上（翌日に終わる 24 時間未満の予定は含まない）、unreadable_time は日時を読めない、
             zero_length は長さが無い、unreadable_title はタイトルが空白だけか訪問のタイトルを読めない、
             service_not_found はタイトルのサービス内容がサービスコードに無い、
             staff_on_leave はカレンダーを結び付けた職員が休職しているので作らない新しい予定、
@@ -2934,7 +3358,7 @@ components:
               description: 前の取り込みで取り込んでいて、今回は書かなかった予定の数
     CalendarCutover:
       type: object
-      description: 事業所の予定の正本を Google カレンダーから buddy に切り替える作業の記録（ADR-0035）
+      description: 事業所の予定の正本を Google カレンダーから buddy に切り替える作業の記録（ADR-0031）
       required: [id, facility_id, status, range_start, started_by, started_at, finished_at]
       properties:
         id: { $ref: "#/components/schemas/ID" }
@@ -3046,9 +3470,16 @@ components:
     OpenCalendarCutover:
       type: object
       description: 予定の正本を buddy に切り替えている間の、open の切り替え
-      required: [started_at, range_start]
+      required: [started_at, started_by, started_by_name, range_start]
       properties:
         started_at: { type: string, format: date-time }
+        started_by:
+          description: 切り替えを始めた職員
+          allOf:
+            - $ref: "#/components/schemas/ID"
+        started_by_name:
+          type: string
+          description: 切り替えを始めた職員の名前。職員の状態（休職、退職）によらず返し、予定の一覧を読める全ての職員に返す
         range_start:
           description: 取り込みの期間の最初の日
           allOf:

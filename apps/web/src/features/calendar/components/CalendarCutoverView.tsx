@@ -10,6 +10,7 @@ import type {
 import { formatCutoverImport, formatCutoverSync } from '../lib/cutover'
 import { formatDateRange, formatDateTime } from '../lib/format'
 import { CalendarCutoverUnmetTable } from './CalendarCutoverUnmetTable'
+import { RefetchErrorMessage } from '#/components/page/RefetchErrorMessage'
 
 /**
  * 予定の正本の切り替えの画面の状態。buddy_primary は事業所の予定の正本が buddy（切り替え済み）、not_started は Google カレンダーが正本で
@@ -26,6 +27,10 @@ export type CalendarCutoverViewState =
 export type CalendarCutoverViewProps = {
   state: CalendarCutoverViewState
   onRetry: () => void
+  /** 読み終えた後に読み直して、データを読めなかったか。 */
+  refetchFailed?: boolean
+  /** 読み終えた後に読めなかったデータだけを読み直す。 */
+  onRefetch?: () => void
   onStart: () => void
   isStarting: boolean
   /** 始められなかったときの文。 */
@@ -136,10 +141,13 @@ const CutoverCalendarTable = ({
  * 予定の正本の切り替えの画面の本文。タイトル、カレンダーの連携へのリンク、説明の文の下に、状態ごとの中身を並べる。
  * 始める前は手順と同期の状況と始めるボタンを、切り替え中はカレンダーごとの取り込みと同期の状況と、完了とやめるのボタンを出す。
  * 完了の確認を満たさないときは、満たさないカレンダーと予定の一覧を出す。
+ * やめるボタンは取り込んだ予定を消す操作の起点なので、赤い文字にし、完了のボタンから離して行の右端に置く。
  */
 export const CalendarCutoverView = ({
   state,
   onRetry,
+  refetchFailed,
+  onRefetch,
   onStart,
   isStarting,
   startError,
@@ -166,6 +174,9 @@ export const CalendarCutoverView = ({
       に切り替えます。切り替えた後は、予定を buddy で作成、変更し、Google カレンダーには buddy
       の予定を書き出します。
     </p>
+    {refetchFailed === true && onRefetch !== undefined && (
+      <RefetchErrorMessage onRetry={onRefetch} />
+    )}
     {state.status === 'loading' && (
       <div data-testid="calendar-cutover-loading">
         <Loading description="読み込んでいます" />
@@ -281,7 +292,7 @@ export const CalendarCutoverView = ({
               {completeError}
             </p>
           )}
-          <div className="flex flex-wrap gap-3">
+          <div className="flex w-full max-w-3xl flex-wrap justify-between gap-3">
             <Button
               data-testid="calendar-cutover-complete"
               disabled={isCompleting}
@@ -297,7 +308,7 @@ export const CalendarCutoverView = ({
               disabled={isCompleting}
               onClick={onCancel}
               size="S"
-              variant="secondary"
+              variant="destructive"
             >
               切り替えをやめる
             </Button>

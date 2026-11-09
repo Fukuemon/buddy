@@ -3,10 +3,26 @@
 [ログインの失敗](index.md) の項目と、web の型と OpenAPI の項目の対応。  
 この画面は API を呼ばず、URL の search params の `reason` だけを読む。
 
+## 値の対応
+
 | 要素名 | 表示する値 | web の型の項目 | OpenAPI の項目 |
 | --- | --- | --- | --- |
 | ページのタイトル | 理由ごとのタイトル | search params の `reason`（`AuthErrorReason`） | なし |
 | 説明の文 | 理由ごとの文 | search params の `reason`（`AuthErrorReason`） | なし |
+
+## 条件の対応
+
+なし。
+
+- 画面を出し分けるのは search params の `reason` だけで、どれも状態が決める。
+
+## 要素の testid
+
+| 番号 | 要素名 | testid |
+| --- | --- | --- |
+| 4 | もう一度ログインする | `auth-error-login` |
+
+- カードの `auth-error` は、構成要素の表に載せないので、この表に載せない。
 
 ## 状態と失敗の要因
 

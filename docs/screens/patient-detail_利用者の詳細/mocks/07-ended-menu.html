@@ -22,6 +22,7 @@
               <span class="wf-site-account" aria-label="アカウント（青木 陽菜）" data-open="viewer-menu" data-m="2" data-testid="viewer-menu-open"><span class="wf-site-avatar" aria-hidden="true">青</span><span class="wf-site-account__name">青木 陽菜</span></span>
               <div class="wf-site-viewer-menu" data-panel="viewer-menu" data-panel-dismiss>
                 <span class="wf-text wf-text--s">青木 陽菜</span>
+                <span class="wf-btn wf-btn--text" data-testid="viewer-profile" data-go="../../account-profile_自分の情報/mocks/02-manager.html">自分の情報</span>
                 <span class="wf-btn" data-m="3" data-testid="viewer-logout">ログアウト</span>
               </div>
             </div>
@@ -62,7 +63,7 @@
                   <div class="pt-hero__text">
                     <div class="pt-hero__name">
                       <h1 class="wf-heading" data-m="5" data-testid="patient-detail-name">見本 四季</h1>
-                      <span class="wf-status wf-status--muted" data-m="6" data-testid="patient-detail-status">利用の終了（2026/09/30）</span>
+                      <span class="wf-status wf-status--muted" data-m="6" data-testid="patient-detail-status">利用の終了（2026年9月30日（水））</span>
                     </div>
                   </div>
                   <div class="pt-hero__actions">
@@ -70,13 +71,13 @@
                     <span class="wf-menu-anchor">
                       <span class="wf-btn wf-btn--icon" aria-label="ほかの操作" aria-haspopup="menu" aria-expanded="true" data-m="8" data-testid="patient-detail-menu" data-go="06-ended.html"><svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><circle cx="4" cy="10" r="1.6" fill="currentColor" /><circle cx="10" cy="10" r="1.6" fill="currentColor" /><circle cx="16" cy="10" r="1.6" fill="currentColor" /></svg></span>
                       <div class="wf-menu is-open" role="menu" data-testid="patient-detail-menu-list">
-                        <span class="wf-menu__item" role="menuitem" data-m="11" data-testid="patient-detail-resume" data-go="08-resume.html">利用を再開する</span>
+                        <span class="wf-menu__item" role="menuitem" data-m="11" data-testid="patient-detail-resume" data-go="11-resume-unselected.html">利用を再開する</span>
                       </div>
                     </span>
                   </div>
                 </div>
-                <section class="wf-panel pt-section" data-testid="patient-detail-profile">
-                  <dl class="pt-dl" data-m="9">
+                <section class="wf-panel pt-section" data-m="9" data-testid="patient-detail-profile">
+                  <dl class="pt-dl">
                     <dt>サービス</dt><dd>訪看I2（20〜29 分）</dd>
                     <dt>希望の時間帯</dt><dd>午後</dd>
                     <dt>希望する担当の性別</dt><dd>女性</dd>

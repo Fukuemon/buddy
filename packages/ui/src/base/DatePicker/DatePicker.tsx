@@ -18,6 +18,8 @@ export type DatePickerProps<T extends FieldValues> = Omit<
   control: Control<T>
   label: string
   isWide?: boolean
+  /** true なら、見出しを読み上げだけに残して見せず、枠の高さを 44px にする。見出しを欄の外に置くときに使う。 */
+  isLabelHidden?: boolean
 }
 
 /** 日付の入力。値は `YYYY-MM-DD` の文字列で、React Hook Form のフィールドに結び付ける。 */
@@ -26,6 +28,7 @@ export const DatePicker = <T extends FieldValues>({
   control,
   label,
   isWide,
+  isLabelHidden,
   onClick,
   ...props
 }: DatePickerProps<T>) => {
@@ -40,6 +43,7 @@ export const DatePicker = <T extends FieldValues>({
       errorId={errorId}
       htmlFor={inputId}
       icon={<CalendarIcon height={20} width={20} />}
+      isLabelHidden={isLabelHidden}
       isWide={isWide}
       label={label}
     >

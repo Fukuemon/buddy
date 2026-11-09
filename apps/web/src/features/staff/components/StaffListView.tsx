@@ -14,6 +14,7 @@ import {
 } from '@buddy/ui'
 
 import type { Department, Position, StaffRecord, Team } from '#/api/types'
+import { RefetchErrorMessage } from '#/components/page/RefetchErrorMessage'
 import { teamDotClassName } from '#/components/teamColor'
 
 import { STATUS_FILTER_OPTIONS, type StaffListFilter } from '../lib/filter'
@@ -24,7 +25,12 @@ import { sortByName } from './StaffFormFields'
 export type StaffListViewState =
   | { status: 'loading' }
   | { status: 'error'; message: string }
-  | { status: 'ready'; staffList: readonly StaffRecord[] }
+  | {
+      status: 'ready'
+      staffList: readonly StaffRecord[]
+      /** 読み終えた後に読み直して、職員を読めなかったか。 */
+      refetchFailed?: boolean
+    }
 
 export type StaffListViewProps = {
   state: StaffListViewState
@@ -36,7 +42,10 @@ export type StaffListViewProps = {
   departments?: readonly Department[]
   teams?: readonly Team[]
   positions?: readonly Position[]
+  /** 一度も読めなかったときに、職員を読み直す。 */
   onRetry: () => void
+  /** 読み終えた後に読めなかったデータだけを読み直す。 */
+  onRefetch?: () => void
   onCreate: () => void
 }
 
@@ -60,13 +69,13 @@ const statusOf = (staff: StaffRecord, status: StaffListFilter['status']) => {
       <span data-testid={`staff-list-leave-return-${staff.id}`}>
         {staff.leave_return_date === null
           ? '戻る予定の日なし'
-          : `${formatDate(staff.leave_return_date)} に戻る予定`}
+          : `${formatDate(staff.leave_return_date)}に戻る予定`}
       </span>
     )
   if (status === 'retired')
     return (
       <span data-testid={`staff-list-retired-on-${staff.id}`}>
-        {staff.retired_at === null ? '退職' : `${formatDateTimeAsDate(staff.retired_at)} に退職`}
+        {staff.retired_at === null ? '退職' : `${formatDateTimeAsDate(staff.retired_at)}に退職`}
       </span>
     )
   if (status === 'all')
@@ -93,6 +102,7 @@ export const StaffListView = ({
   teams,
   positions,
   onRetry,
+  onRefetch,
   onCreate,
 }: StaffListViewProps) => (
   <div className="flex flex-col gap-5">
@@ -124,6 +134,9 @@ export const StaffListView = ({
     )}
     {state.status === 'ready' && (
       <>
+        {state.refetchFailed === true && onRefetch !== undefined && (
+          <RefetchErrorMessage onRetry={onRefetch} />
+        )}
         <ListTools>
           <div className="w-full desktop:w-60">
             <SearchBox

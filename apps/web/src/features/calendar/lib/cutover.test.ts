@@ -31,15 +31,15 @@ const calendar = (patch: Partial<CalendarCutoverCalendar>): CalendarCutoverCalen
 
 describe('formatUnmetDateTime', () => {
   it('日時を読めた予定は、日付と時刻を出す', () => {
-    expect(formatUnmetDateTime(unmet({}))).toBe('2026/11/04（水）10:00〜11:00')
+    expect(formatUnmetDateTime(unmet({}))).toBe('2026年11月4日（水） 10:00〜11:00')
     expect(
       formatUnmetDateTime(unmet({ start_time: '22:00', end_time: '01:00', ends_next_day: true })),
-    ).toBe('2026/11/04（水）22:00〜翌 01:00')
+    ).toBe('2026年11月4日（水） 22:00〜翌 01:00')
   })
 
   it('日付だけの予定と、日時の無い理由は、読めた分だけ出す', () => {
     expect(formatUnmetDateTime(unmet({ start_time: null, end_time: null }))).toBe(
-      '2026/11/04（水）',
+      '2026年11月4日（水）',
     )
     expect(formatUnmetDateTime(unmet({ reason: 'sync_stale', date: null }))).toBe('—')
   })

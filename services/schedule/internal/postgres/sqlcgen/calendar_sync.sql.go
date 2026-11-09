@@ -70,7 +70,7 @@ type ClaimCalendarSyncsRow struct {
 }
 
 // 複数の処理が同時に取っても同じカレンダーを渡さないよう、行をロックできたものだけを取る。外したカレンダーは取らない。
-// 事業所の正本のモードが modes に無いカレンダーは取らない（ADR-0035）。
+// 事業所の正本のモードが modes に無いカレンダーは取らない（ADR-0029）。
 func (q *Queries) ClaimCalendarSyncs(ctx context.Context, arg ClaimCalendarSyncsParams) ([]ClaimCalendarSyncsRow, error) {
 	rows, err := q.db.Query(ctx, claimCalendarSyncs, arg.LeaseSeconds, arg.Modes, arg.MaxCount)
 	if err != nil {
@@ -147,33 +147,4 @@ func (q *Queries) FinishCalendarSync(ctx context.Context, arg FinishCalendarSync
 		return 0, err
 	}
 	return result.RowsAffected(), nil
-}
-
-const getExternalEventLinkByEvent = `-- name: GetExternalEventLinkByEvent :one
-SELECT id, facility_id, external_calendar_id, external_event_id, recurring_event_id, etag, schedule_id, recurring_schedule_id, created_at, updated_at, synced_version, cutover_id FROM external_event_links WHERE external_calendar_id = $1 AND external_event_id = $2
-`
-
-type GetExternalEventLinkByEventParams struct {
-	ExternalCalendarID string
-	ExternalEventID    string
-}
-
-func (q *Queries) GetExternalEventLinkByEvent(ctx context.Context, arg GetExternalEventLinkByEventParams) (ExternalEventLink, error) {
-	row := q.db.QueryRow(ctx, getExternalEventLinkByEvent, arg.ExternalCalendarID, arg.ExternalEventID)
-	var i ExternalEventLink
-	err := row.Scan(
-		&i.ID,
-		&i.FacilityID,
-		&i.ExternalCalendarID,
-		&i.ExternalEventID,
-		&i.RecurringEventID,
-		&i.Etag,
-		&i.ScheduleID,
-		&i.RecurringScheduleID,
-		&i.CreatedAt,
-		&i.UpdatedAt,
-		&i.SyncedVersion,
-		&i.CutoverID,
-	)
-	return i, err
 }

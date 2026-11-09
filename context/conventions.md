@@ -1,7 +1,7 @@
 ---
 type: context
 title: コードと文書の規約
-description: 命名、コメント、文書と API の定義の書き方のうちこのリポジトリだけの規則、共有の設定、自動チェックの除外。lint で検出できる規則は書かない
+description: 命名、コメント、文書と API の定義の書き方のうちこのリポジトリだけの規則、画面の日付と時刻の書き方、共有の設定、自動チェックの除外。lint で検出できる規則は書かない
 status: stable
 ---
 
@@ -19,7 +19,8 @@ status: stable
 - web の import は、同じ機能か同じディレクトリの中では相対のパスで書き、それをまたぐときは `#/` のエイリアスで書く。
   - tsconfig の `@/` は使わない。
 - Go のテストのためのフェイクは、`<パッケージ>test` のパッケージに置く（`oidctest`、`gcaltest`）。
-- API の operationId は、lowerCamel の「動詞と名詞」にする。動詞は `get`、`list`、`create`、`update`、`cancel`、`change`、`add`、`remove`、`start`、`end`、`resume`、`retire`、`reinstate` から選ぶ。
+- API の operationId は、lowerCamel の「動詞と名詞」にする。動詞は `get`、`list`、`create`、`update`、`cancel`、`delete`、`change`、`add`、`remove`、`start`、`end`、`resume`、`retire`、`reinstate` から選ぶ。
+  - `delete` は、行を消して戻せない操作に使い、理由を残す取り消しの `cancel` と分ける（`deleteSchedule`、ADR-0040）。
   - `add` と `remove` は、職員に権限を足す、外すのように、リソースの結び付きを足して外す操作に使う（`addUserPolicy`、`removeUserPolicy`）。
 - API のパスは `/v1` の下の複数形の snake_case にする。
   - 事業所に属する一覧と作成は `/v1/facilities/{facility_id}/<リソース>`、1 件は `/v1/<リソース>/{<リソース>_id}` に置く。
@@ -45,7 +46,7 @@ API の操作を呼ぶ関数とリポジトリのメソッドは、operationId �
 
 | 操作 | 動詞 | 例 | 書き込みか読み取りか |
 | --- | --- | --- | --- |
-| 保存された状態を変える | operationId の動詞（`create`、`update`、`cancel`、`change`、`add`、`remove`、`start`、`end`、`resume`、`retire`、`reinstate`） | `CreateTeam`、`Retire` | 書き込み |
+| 保存された状態を変える | operationId の動詞（`create`、`update`、`cancel`、`delete`、`change`、`add`、`remove`、`start`、`end`、`resume`、`retire`、`reinstate`） | `CreateTeam`、`Retire` | 書き込み |
 | ID で 1 件を取る | `get` | `GetFacility`、`getSchedule` | 読み取り |
 | 一覧を取る | `list` | `ListDepartments`、`listRecords` | 読み取り |
 | ID 以外の値で探し、見つからないことがある | `find` | `FindByEmail`、`findCalendar` | 読み取り |
@@ -62,7 +63,7 @@ API の操作を呼ぶ関数とリポジトリのメソッドは、operationId �
 | 画面のイベントを受ける | props は `on<イベント>`、コンポーネントの中の関数は `handle<イベント>` | `onSubmit`、`handleSubmit` | 状態を読み書きしない |
 
 - 書き込みと読み取りは、動詞だけで区別する。読み取りの DB と、その同期は持たない。
-  - ADR-0030: [Go の 3 つの API で、パッケージをフラットに保ち、ファイルの名前の末尾の語で役割を表す](../docs/adr/0030-go-file-names-by-role.md)
+  - ADR-0025: [Go の API のパッケージをフラットに保ち、ファイルの名前の末尾の語で役割を表す](../docs/adr/0025-go-file-names.md)
 
 - `fetch`、`build`、`make`、`convert` は使わない。HTTP で取るときも `get` と `list` にする。
   - Fetch API の `fetch` を包む関数（`fetchWithAccessToken`）は、包む関数の名前を残す。
@@ -131,8 +132,9 @@ buddy だけの規則は次のとおり。
 - PRD は `docs/PRD.md`、全体の Design Doc は `docs/design/`、ADR は `docs/adr/`、画面仕様書は `docs/screens/` に置き、Zensical のサイトで読む。
   - Design Doc と ADR の配置先は、`context/project.yml` の `docs` と同じにする。
 - アプリとパッケージの README の見出しは、Setup、Configuration、Running、Tests and Checks、Code Generation、Documentation の順に置く。当てはまらないセクションは省く。
-- 機能ごとの Design Doc は、コードの隣（`services/<API>/DesignDoc.md`、`packages/<パッケージ>/DesignDoc.md`）に置く。
-  - サイトには、`docs/design/services/` か `docs/design/packages/` のファイル単位のシンボリックリンクで載せる。リンク先は `zensical.toml` の `watch` にも並べる。
+- 機能ごとの Design Doc は、コードの隣に置く。
+  - 配置先は、`services/<API>/DesignDoc.md`、`packages/<パッケージ>/DesignDoc.md`、`apps/<アプリ>/src/features/<機能>/DesignDoc.md` である。
+  - サイトには、`docs/design/services/`、`docs/design/packages/`、`docs/design/apps/` のファイル単位のシンボリックリンクで載せる。リンク先は `zensical.toml` の `watch` にも並べる。
 - 機能ごとの Design Doc と ADR から `docs/`、`apps/`、`services/` の文書へのリンクは、GitHub の `develop` の URL で書く。
   - 相対リンクは、GitHub とサイトで指す先が変わり、どちらかで切れる。
 - 見出しには比喩と擬人化を使わず、セクションが扱う物と操作の名詞で書く。
@@ -141,6 +143,29 @@ buddy だけの規則は次のとおり。
 - 見出しのアンカーは、日本語のまま残す（`zensical.toml` の toc の slugify）。
   - 見出しを変えるときは、ほかの文書からのリンクを探して直す。
 - 画面仕様書の画面 ID の規則は [画面仕様書の目次](../docs/screens/index.md) の「画面の ID の規則」に、ページのセクションの規則は [画面仕様書の規約](../docs/screens/rules.md) の「仕様書のページ」にある。
+
+## 画面の文言
+
+### 日付と時刻
+
+画面に出す日付と時刻は、次の形にする。  
+一覧、表、カレンダーの予定のように幅が狭いところも、同じ形にし、別の形を作らない。
+
+| 対象 | 形 | 例 |
+| --- | --- | --- |
+| 日付 | 年、月、日と、括弧で囲んだ曜日 | `2026年11月9日（月）` |
+| 同じ画面で年が分かるところの日付 | 年を省く | `11月9日（月）` |
+| 時刻 | 時と分を 2 桁にする | `09:00` |
+| 時刻の範囲 | 開始と終了を `〜` でつなぐ | `09:00〜09:29` |
+| 翌日に終わる時刻の範囲 | 終了の時刻の前に `翌 ` を付ける | `22:00〜翌 01:00` |
+| 前の日に始まる時刻の範囲 | 開始の時刻の前に `前日 ` を付ける | `前日 22:00〜01:00` |
+| 日付と時刻 | 日付と時刻を半角の空白でつなぐ | `2026年11月9日（月） 09:00〜09:29`、`2026年10月20日（火） 15:42` |
+| 日付の範囲 | 両側を日付の形にし、`〜` でつなぐ | `2026年11月1日（日）〜2026年11月30日（月）` |
+| 終わりの無い日付の範囲 | 終わりの側を空ける | `2026年11月1日（日）〜` |
+
+- 形を作る処理は `apps/web/src/components/dateFormat.ts` にある。画面ごとに形を作らず、この処理を呼ぶ。
+- ダウンロードするファイル（照合の結果の CSV）の日付は、この形にしない。読み込む側の形に合わせる。
+- 日付と時刻の入力の欄（`input type="date"`、`type="time"`）の表示は、ブラウザの言語で決まるので、対象にしない。
 
 ## API Definitions
 
@@ -169,7 +194,7 @@ buddy だけの規則は次のとおり。
 | --- | --- | --- |
 | `routeTree.gen.ts`、`src/api/generated/**` | 整形、lint | 生成物である。生成のし直しで差分を確認する（`pnpm check:generated`） |
 | `**/*.md` | 整形（`vp fmt`） | 文書は textlint で確認する |
-| `packages/ui/src/tokens/`、`apps/web/src/api/generated/` | `pnpm check:design` | トークンの段のファイルとトークンのカタログのページは、色の値と DADS の変数の名前を持つ。生成物は画面のコードではない |
+| `packages/ui/src/tokens/`、`apps/web/src/api/generated/` | `pnpm check:design` | トークンの層のファイルとトークンのカタログのページは、色の値とプリミティブトークンの名前を持つ。生成物は画面のコードではない |
 | `dist`、`storybook-static` | lint | ビルドの出力である |
 | Go の生成物 | golangci-lint（`exclusions.generated: lax`） | 生成物である |
 | `services/schedule` の `_test.go` の gosec G101 | golangci-lint | テストの接続の設定は、使い捨てのコンテナの値である |

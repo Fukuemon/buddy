@@ -39,7 +39,9 @@ CREATE VIEW recurring_schedule_details AS (
     rs.created_at,
     rs.updated_at,
     rs.version,
-    rs.ends_next_day
+    rs.ends_next_day,
+    rs.days_of_week,
+    rs.interval_weeks
    FROM (((recurring_schedules rs
      JOIN schedule_types st ON ((st.id = rs.schedule_type_id)))
      JOIN users u ON ((u.id = rs.staff_id)))
@@ -84,12 +86,14 @@ CREATE VIEW recurring_schedule_details AS (
 | updated_at          | timestamp with time zone |         | true     |          |         |         |
 | version             | integer                  |         | true     |          |         |         |
 | ends_next_day       | boolean                  |         | true     |          |         |         |
+| days_of_week        | smallint[]               |         | true     |          |         |         |
+| interval_weeks      | smallint                 |         | true     |          |         |         |
 
 ## Referenced Tables
 
 | Name                                                        | Columns | Comment                                            | Type       |
 | ----------------------------------------------------------- | ------- | -------------------------------------------------- | ---------- |
-| [public.recurring_schedules](public.recurring_schedules.md) | 20      | 繰り返しの予定と、その規則                         | BASE TABLE |
+| [public.recurring_schedules](public.recurring_schedules.md) | 22      | 繰り返しの予定と、その規則                         | BASE TABLE |
 | [public.schedule_types](public.schedule_types.md)           | 5       | 予定の種類（通常、訪問）。マイグレーションで入れる | BASE TABLE |
 | [public.users](public.users.md)                             | 15      | 職員                                               | BASE TABLE |
 | [public.visit_info_details](public.visit_info_details.md)   | 10      | 訪問の情報と名前を結合したビュー                   | VIEW       |
@@ -138,6 +142,8 @@ erDiagram
   timestamp_with_time_zone updated_at
   integer version
   boolean ends_next_day
+  smallint__ days_of_week
+  smallint interval_weeks
 }
 ```
 

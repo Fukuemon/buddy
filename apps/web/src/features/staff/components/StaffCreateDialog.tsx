@@ -1,4 +1,10 @@
-import { FormField, formFieldControlClassName, HelpToggle, InputDialog } from '@buddy/ui'
+import {
+  FormField,
+  formFieldControlClassName,
+  HelpToggle,
+  InputDialog,
+  useFocusFirstInvalid,
+} from '@buddy/ui'
 import { useId, useRef, useState } from 'react'
 
 import type { Department, Position, StaffCreateInput, Team } from '#/api/types'
@@ -28,7 +34,7 @@ export type StaffCreateDialogProps = {
 
 /**
  * 職員を登録するダイアログ。登録を押すと入力を確認し、誤りがあれば送らずに欄の下に文を出す。
- * 部署、チーム、役職は、名前の順の最初のものを選んで始める。訪問するかは「訪問する」で始め、役職からは決めない（ADR-0022）。
+ * 部署、チーム、役職は、名前の順の最初のものを選んで始める。訪問するかは「訪問する」で始め、役職からは決めない（ADR-0006）。
  * 開くと名前の欄にフォーカスを置く。
  */
 export const StaffCreateDialog = ({
@@ -41,6 +47,7 @@ export const StaffCreateDialog = ({
   onClose,
 }: StaffCreateDialogProps) => {
   const formId = useId()
+  const { ref: formRef, focusFirstInvalid } = useFocusFirstInvalid<HTMLFormElement>()
   const nameRef = useRef<HTMLInputElement>(null)
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
@@ -65,7 +72,10 @@ export const StaffCreateDialog = ({
       phone: validatePhone(phone),
     }
     setErrors(next)
-    if (Object.values(next).some((error) => error !== undefined)) return
+    if (Object.values(next).some((error) => error !== undefined)) {
+      focusFirstInvalid()
+      return
+    }
     onSubmit({
       username: name.trim(),
       email: email.trim(),
@@ -107,6 +117,7 @@ export const StaffCreateDialog = ({
           event.preventDefault()
           submit()
         }}
+        ref={formRef}
       >
         <FormField errorTestId="staff-new-error-name" error={errors.name} label="名前">
           {(field) => (

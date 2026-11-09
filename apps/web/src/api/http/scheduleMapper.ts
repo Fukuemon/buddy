@@ -1,6 +1,7 @@
 import type { components } from '../generated/schedule'
 import {
   SCHEDULE_CATEGORIES,
+  type AllDayEvent,
   type Facility,
   SCHEDULE_POLICY_CODES,
   type Schedule,
@@ -10,6 +11,7 @@ import {
   type ScheduleInput,
   type ScheduleKind,
   type Patient,
+  type RecurringRule,
   type Staff,
   type Team,
   type Viewer,
@@ -79,8 +81,15 @@ export const fromApiMe = (me: Schemas['StaffDetail']): Viewer => ({
 export const fromApiTeam = ({ id, name, color }: Schemas['Team']): Team => ({ id, name, color })
 
 /** API の利用者を、画面の利用者にする。 */
-export const fromApiPatient = ({ id, name, ended_at }: Schemas['Patient']): Patient =>
-  ended_at === null ? { id, name } : { id, name, ended: true }
+export const fromApiPatient = ({
+  id,
+  name,
+  service_code,
+  ended_at,
+}: Schemas['Patient']): Patient =>
+  ended_at === null
+    ? { id, name, serviceCode: service_code }
+    : { id, name, serviceCode: service_code, ended: true }
 
 /** API の日付と時刻は事業所の現地時刻で、事業所は日本にあるものとする。 */
 const OFFSET = '+09:00'
@@ -112,6 +121,20 @@ export const splitDateTime = (dateTime: string) => {
   return { date: local.slice(0, 10), time: local.slice(11, 16) }
 }
 
+/** API の Google カレンダーの終日の予定を、画面の終日の予定にする。確認が必要な理由は、あるときだけ持たせる。 */
+export const fromApiAllDayEvent = (event: Schemas['AllDayEvent']): AllDayEvent => {
+  const result: AllDayEvent = {
+    id: event.id,
+    staffId: event.staff_id,
+    staffName: event.staff_name,
+    startDate: event.start_date,
+    endDate: event.end_date,
+    title: event.title,
+  }
+  if (event.review_reason !== null) result.reviewReason = event.review_reason
+  return result
+}
+
 /**
  * API の単発の予定を、画面の予定にする。終了が翌日の印が付いた予定は、終了の日時を日付の翌日にする。
  *
@@ -141,9 +164,38 @@ export const fromApiSchedule = (schedule: ApiSchedule): Schedule => {
   }
   if (schedule.cancel !== null) result.cancel = { reason: schedule.cancel.reason }
   if (schedule.source === 'google_calendar') result.fromGoogleCalendar = true
+  if (schedule.etag !== null) result.etag = schedule.etag
   if (schedule.review_reason !== null) result.reviewReason = schedule.review_reason
+  if (schedule.recurring_rule != null && schedule.recurring_schedule_id !== null) {
+    result.recurrence = {
+      recurringScheduleId: schedule.recurring_schedule_id,
+      rule: fromApiRecurringRule(schedule.recurring_rule),
+    }
+  }
   return result
 }
+
+/** API の繰り返しの規則を、画面の繰り返しの規則にする。 */
+export const fromApiRecurringRule = (rule: Schemas['RecurringRule']): RecurringRule => ({
+  frequency: rule.frequency,
+  daysOfWeek: rule.days_of_week ?? null,
+  interval: rule.interval ?? null,
+  dayOfWeek: rule.day_of_week ?? null,
+  dayOfMonth: rule.day_of_month ?? null,
+  weekOfMonth: rule.week_of_month ?? null,
+  endDate: rule.end_date ?? null,
+})
+
+/** 画面の繰り返しの規則を、API の繰り返しの規則にする。 */
+export const toApiRecurringRule = (rule: RecurringRule): Schemas['RecurringRule'] => ({
+  frequency: rule.frequency,
+  days_of_week: rule.daysOfWeek,
+  interval: rule.interval,
+  day_of_week: rule.dayOfWeek,
+  day_of_month: rule.dayOfMonth,
+  week_of_month: rule.weekOfMonth,
+  end_date: rule.endDate,
+})
 
 /** API の事業所を、画面の事業所にする。 */
 export const fromApiFacility = ({ id, name, source_mode }: Schemas['Facility']): Facility => ({

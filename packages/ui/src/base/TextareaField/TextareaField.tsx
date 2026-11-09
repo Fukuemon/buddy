@@ -45,7 +45,7 @@ export const TextareaField = <T extends FieldValues>({
         value={(field.value as string | undefined) ?? ''}
       />
       {error !== undefined && (
-        <span className="text-caption text-danger" id={errorId} role="alert">
+        <span className="text-caption text-danger" id={errorId}>
           {error}
         </span>
       )}

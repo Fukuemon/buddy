@@ -1,14 +1,17 @@
 import { expect, test } from '@playwright/test'
 
+import { LOGIN_STATE } from '../../fixtures/env'
 import { createNormalSchedule } from '../../fixtures/schedule'
 import {
   issueManagerToken,
   newStaff,
   registerStaff,
+  registerStaffId,
   retireStaff,
   STAFF_FORM,
 } from '../../fixtures/staff'
 import { enterEmailAtBroker } from '../../screens/login'
+import { REMAINING_SCHEDULE_DATE } from './dates'
 
 /** 退職を拒む予定の日。退職の操作の日より後にする。 */
 const FUTURE_DATE = '2030-01-07'
@@ -22,7 +25,7 @@ test.describe('予定のカレンダー', () => {
       request,
     }) => {
       const staff = newStaff('retired')
-      const manager = await issueManagerToken(request)
+      const manager = await issueManagerToken()
       const registered = await registerStaff(request, manager, staff)
       expect(registered.status()).toBe(201)
       const { id } = (await registered.json()) as { id: string }
@@ -43,7 +46,7 @@ test.describe('予定のカレンダー', () => {
       request,
     }) => {
       const staff = newStaff('rehired')
-      const manager = await issueManagerToken(request)
+      const manager = await issueManagerToken()
       const first = await registerStaff(request, manager, staff)
       expect(first.status()).toBe(201)
       const { id } = (await first.json()) as { id: string }
@@ -60,7 +63,7 @@ test.describe('予定のカレンダー', () => {
       request,
     }) => {
       const staff = newStaff('assigned')
-      const manager = await issueManagerToken(request)
+      const manager = await issueManagerToken()
       const registered = await registerStaff(request, manager, staff)
       expect(registered.status()).toBe(201)
       const { id } = (await registered.json()) as { id: string }
@@ -83,6 +86,42 @@ test.describe('予定のカレンダー', () => {
           patients: [],
         },
       })
+    })
+  })
+})
+
+test.describe('職員の詳細', () => {
+  // ファイルの既定はログインしていない状態なので、職員の管理の画面はマネージャーでログインした状態で開く
+  test.use({ storageState: LOGIN_STATE })
+
+  test.describe('退職', () => {
+    test('その日以降の予定が残る職員を退職にしようとした場合、残る予定が出て、退職を確定できないこと', async ({
+      page,
+      request,
+    }) => {
+      const manager = await issueManagerToken()
+      const staff = newStaff('retire-screen')
+      const id = await registerStaffId(request, manager, staff)
+      const created = await createNormalSchedule(request, manager, STAFF_FORM.facilityId, {
+        staffId: id,
+        title: `E2E の退職の会議 ${Date.now()}`,
+        date: REMAINING_SCHEDULE_DATE,
+      })
+      const scheduleId = ((await created.json()) as { id: string }).id
+
+      await page.goto(`/staff/${id}`)
+      await page.getByTestId('staff-detail-menu').click()
+      await page.getByTestId('staff-detail-retire').click()
+      const dialog = page.getByTestId('staff-retire-dialog')
+
+      await expect(dialog).toContainText(`${staff.name} を退職にできません`)
+      await expect(
+        dialog.getByTestId(`staff-retire-assignment-schedule-${scheduleId}`),
+      ).toBeVisible()
+      await expect(dialog.getByTestId('staff-retire-submit')).toHaveAttribute(
+        'aria-disabled',
+        'true',
+      )
     })
   })
 })

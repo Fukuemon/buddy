@@ -43,7 +43,7 @@ export const StaffRetireDialog = ({
       onCancel={onCancel}
       onSubmit={onSubmit}
       submitLabel="退職にする"
-      submitVariant="destructive"
+      submitVariant="danger"
       testIdPrefix="staff-retire"
       title={
         refused ? `${staff.username} を退職にできません` : `${staff.username} を退職にしますか`

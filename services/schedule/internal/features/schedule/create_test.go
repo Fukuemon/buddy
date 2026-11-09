@@ -92,3 +92,25 @@ func TestSchedulesCreate(t *testing.T) {
 		})
 	}
 }
+
+// TestSchedulesCreateWithID は、画面が予定の ID を決めたときはその ID で作り、決めないときは発行することを確認する。
+func TestSchedulesCreateWithID(t *testing.T) {
+	s := inmem.Seeded()
+	uc, _ := newSchedules(s)
+	in := normalSlot()
+	in.ID = "01M3TC5H00QV17BC0J9V3393ZP"
+	got, err := uc.Create(editorCtx(), facilityID, in)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, ok := s.Schedules[in.ID]; got.ID != in.ID || !ok {
+		t.Errorf("ID = %s, want %s", got.ID, in.ID)
+	}
+	got, err = uc.Create(editorCtx(), facilityID, normalSlot())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.ID == "" || got.ID == in.ID {
+		t.Errorf("発行した ID = %q", got.ID)
+	}
+}

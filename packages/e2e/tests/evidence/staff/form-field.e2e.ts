@@ -17,11 +17,7 @@ const signInManager = async (page: Page) => {
 /** マネージャーでログインし、撮影の前に職員を 1 人登録して、その ID を返す。 */
 const prepareStaff = (label: string) => async (page: Page) => {
   await signInManager(page)
-  const id = await registerStaffId(
-    page.request,
-    await issueManagerToken(page.request),
-    newStaff(label),
-  )
+  const id = await registerStaffId(page.request, await issueManagerToken(), newStaff(label))
   return { id }
 }
 

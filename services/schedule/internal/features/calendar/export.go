@@ -39,15 +39,17 @@ const (
 	// ErrorUnappliable は、外部のカレンダーでの予定の変更を、buddy の予定に読み替えられなかったことを表す。
 	// 終日にした予定、タイトルの利用者を引けない予定、繰り返しの予定そのものの変更が当たる。
 	ErrorUnappliable ExportErrorCode = "unappliable"
-	// ErrorNotBuddyPrimary は、事業所が buddy を予定の正本にしていない（buddy_primary でない）ので、書かずに保留にしたことを表す（ADR-0035）。
+	// ErrorNotBuddyPrimary は、事業所が buddy を予定の正本にしていない（buddy_primary でない）ので、書かずに保留にしたことを表す（ADR-0029）。
 	ErrorNotBuddyPrimary ExportErrorCode = "not_buddy_primary"
 )
 
-// Target は、書き出す予定である。ScheduleID と RecurringScheduleID のどちらか 1 つを持つ。
+// Target は、書き出す予定である。ScheduleID、RecurringScheduleID、DeletedScheduleID のどれか 1 つを持つ。
+// DeletedScheduleID は、削除した単発の予定の ID で、その外部の予定を消す（ADR-0040）。
 type Target struct {
 	FacilityID          string
 	ScheduleID          string
 	RecurringScheduleID string
+	DeletedScheduleID   string
 }
 
 // Export は、1 つの予定の書き出しの待ちである。書くときは、待ちを積んだ時点ではなく、書く時点の予定の内容を書く。
@@ -80,8 +82,7 @@ func (e Export) IsWriting(now time.Time) bool {
 	return e.Status == ExportPending && e.LockedUntil != nil && e.LockedUntil.After(now)
 }
 
-// IsAcceptable は、外部のカレンダーの内容を buddy の予定に当てて、待ちを解けるかを返す。
-// 単発の予定で、外部のカレンダーで予定が変わっていたか消えていた待ちだけが当たる。
+// IsAcceptable は、外部のカレンダーで予定が変わっていたか消えていたので書けなかった、単発の予定の待ちかを返す。
 func (e Export) IsAcceptable() bool {
 	if e.ScheduleID == "" || e.Status != ExportConflict || e.ErrorCode == nil {
 		return false
@@ -113,8 +114,7 @@ type ExportIssue struct {
 	EndsNextDay bool
 }
 
-// IsAcceptable は、外部のカレンダーの内容を buddy の予定に当てて、待ちを解けるかを返す。
-// buddy でキャンセルした予定は、外部の内容に戻せないので当たらない。
+// IsAcceptable は、Export.IsAcceptable の待ちのうち、buddy でキャンセルしていない予定の待ちかを返す。
 func (i ExportIssue) IsAcceptable() bool {
 	return i.Export.IsAcceptable() && !i.Cancelled
 }

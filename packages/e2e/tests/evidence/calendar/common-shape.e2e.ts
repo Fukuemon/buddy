@@ -4,7 +4,7 @@ import { HAYASHI, LOGIN_EMAIL, LOGIN_STAFF } from '../../fixtures/env'
 import { EVIDENCE_VARIANTS, PHONE_VIEWPORT, recordPrEvidence } from '../../fixtures/evidence'
 import { findGoogleEvent, holdGoogleChanges, shiftGoogleEvent } from '../../fixtures/googleCalendar'
 import { SCHEDULE_DETAIL_URL, scheduleIdFromUrl } from '../../fixtures/schedule'
-import { linkStaffCalendar } from '../../screens/calendar'
+import { linkStaffCalendar } from '../../setup/calendar'
 import { signInAtBroker } from '../../screens/login'
 import { commonShapeParts } from '../../selectors/commonShape'
 import { pageRoot } from '../../selectors/page'
@@ -112,14 +112,15 @@ test.describe('画面の共通の形', () => {
       )
     })
 
-    test(`${prefix}確認が必要な予定の行を押した場合、予定と、選べる操作を入れたダイアログが出ること`, async ({
+    test(`${prefix}buddy を正本にする事業所で確認が必要な予定の行を押した場合、予定と、buddy の内容で書き直すと、閉じるためのボタンを入れたダイアログが出ること`, async ({
       browser,
     }) => {
       await recordPrEvidence(
         browser,
         {
           name: 'review-detail-dialog',
-          title: '確認が必要な予定の行を押し、予定と選べる操作を入れたダイアログを見て、× で閉じる',
+          title:
+            'buddy を正本にする事業所で確認が必要な予定の行を押し、予定と書き直すだけを入れたダイアログを見て、閉じる',
           actor: ACTOR,
           variant,
         },
@@ -139,13 +140,25 @@ test.describe('画面の共通の形', () => {
           await expect(dialog.getByTestId('calendar-review-dialog-reason')).toBeVisible()
           const rewrite = dialog.getByTestId(/^calendar-review-rewrite-/)
           await expect(rewrite).not.toHaveClass(/bg-primary/)
-          await expect(dialog.getByTestId(/^calendar-review-accept-/)).not.toHaveClass(/bg-primary/)
-          await check(
-            '「食い違った予定」のダイアログに、予定の日時、職員、最後に変わった日時、理由、予定を開くが出て、フッターに「Google の内容に合わせる」「buddy の内容で書き直す」が主ボタンの色でなく並ぶ',
-          )
+          await expect(dialog).not.toContainText('Google の内容に合わせる')
+          if (variant.name === 'before') {
+            await check(
+              '「食い違った予定」のダイアログに、予定の日時、職員、最後に変わった日時、理由、予定を開くが出て、右上に × があり、フッターに「buddy の内容で書き直す」だけが主ボタンの色でなく出る',
+            )
 
-          await step('右上の × を押す')
-          await dialog.getByTestId('calendar-review-close').click()
+            await step('右上の × を押す')
+            await commonShapeParts(dialog).closeButton.click()
+          } else {
+            await expect(commonShapeParts(dialog).closeButton).toHaveCount(0)
+            await expect(rewrite).toHaveClass(/text-danger/)
+            await expect(dialog.getByTestId('calendar-review-cancel')).toHaveText('閉じる')
+            await check(
+              '「食い違った予定」のダイアログに、予定の日時、職員、最後に変わった日時、理由、予定を開くが出て、右上に × が無く、フッターの左端に赤い文字の「buddy の内容で書き直す」と、右に「閉じる」が出る',
+            )
+
+            await step('フッターの「閉じる」を押す')
+            await dialog.getByTestId('calendar-review-cancel').click()
+          }
           await expect(dialog).toBeHidden()
           await check('ダイアログが閉じ、一覧に戻る')
         },
@@ -160,7 +173,7 @@ test.describe('画面の共通の形', () => {
         {
           name: 'review-rewrite-confirm',
           title:
-            '予定の確認のダイアログで buddy の内容で書き直すを押し、確定のボタンの色を見て、キャンセルで戻る',
+            '予定の確認のダイアログで buddy の内容で書き直すを押し、確定のボタンの色を見て、戻るで戻る',
           actor: ACTOR,
           variant,
         },
@@ -181,7 +194,7 @@ test.describe('画面の共通の形', () => {
             '「buddy の内容で書き直しますか」の確認のダイアログが出て、確定の「書き直す」が赤い面で出る。× は無い',
           )
 
-          await step('「キャンセル」を押す')
+          await step('「戻る」を押す')
           await confirm.getByTestId('calendar-rewrite-cancel').click()
           await expect(confirm).toBeHidden()
           await expect(detail).toBeVisible()

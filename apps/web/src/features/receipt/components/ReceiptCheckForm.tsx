@@ -1,5 +1,5 @@
 import { Button, MonthPicker, SegmentedControl } from '@buddy/ui'
-import type { FormEvent } from 'react'
+import { useId, type FormEvent } from 'react'
 
 import { CsvFileField } from './CsvFileField'
 
@@ -21,6 +21,8 @@ export type ReceiptCheckFormProps = {
   onVisitsChange: (file: File | null) => void
   /** 入力がそろっていなければ false。送信のボタンを押せなくする。 */
   canSubmit: boolean
+  /** canSubmit が false の間に、送信のボタンの右に出す、押せるようにする条件の文。 */
+  submitHint?: string
   isSubmitting: boolean
   onSubmit: () => void
   /** 照合の失敗の文。 */
@@ -38,11 +40,14 @@ export const ReceiptCheckForm = ({
   onSchedulesChange,
   onVisitsChange,
   canSubmit,
+  submitHint,
   isSubmitting,
   onSubmit,
   errorMessage,
   errorLines = [],
 }: ReceiptCheckFormProps) => {
+  const hintId = useId()
+  const showsHint = !canSubmit && !isSubmitting && submitHint !== undefined
   const handleSubmit = (event: FormEvent) => {
     event.preventDefault()
     if (canSubmit && !isSubmitting) onSubmit()
@@ -97,8 +102,9 @@ export const ReceiptCheckForm = ({
           )}
         </div>
       )}
-      <div>
+      <div className="flex flex-wrap items-center gap-3">
         <Button
+          aria-describedby={showsHint ? hintId : undefined}
           type="submit"
           disabled={!canSubmit}
           isLoading={isSubmitting}
@@ -106,6 +112,15 @@ export const ReceiptCheckForm = ({
         >
           照合する
         </Button>
+        {showsHint && (
+          <span
+            className="text-caption text-text-secondary"
+            data-testid="receipt-check-submit-hint"
+            id={hintId}
+          >
+            {submitHint}
+          </span>
+        )}
       </div>
     </form>
   )

@@ -59,6 +59,10 @@ export const CalendarImportForm = ({
   const startErrorId = useId()
   const endErrorId = useId()
   const hintId = useId()
+  const previewHintId = useId()
+  // 期間の誤りは欄の下に出るので、日付が欠けて押せないときだけ、押せる条件をボタンの横に出す
+  const showsPreviewHint =
+    !canPreview && !isLocked && cutoverRangeStart === undefined && (start === '' || end === '')
   const handleSubmit = (event: FormEvent) => {
     event.preventDefault()
     if (canPreview && !isLocked) onPreview()
@@ -117,7 +121,7 @@ export const CalendarImportForm = ({
                   value={start}
                 />
                 {rangeErrors.start !== undefined && (
-                  <span className="text-caption text-danger" id={startErrorId} role="alert">
+                  <span className="text-caption text-danger" id={startErrorId}>
                     {rangeErrors.start}
                   </span>
                 )}
@@ -138,7 +142,7 @@ export const CalendarImportForm = ({
                   value={end}
                 />
                 {rangeErrors.end !== undefined && (
-                  <span className="text-caption text-danger" id={endErrorId} role="alert">
+                  <span className="text-caption text-danger" id={endErrorId}>
                     {rangeErrors.end}
                   </span>
                 )}
@@ -151,8 +155,9 @@ export const CalendarImportForm = ({
             ? '切り替えの月の初日から先に始まる全ての予定を、職員の Google カレンダーから読みます。繰り返しの予定は、規則のまま取り込みます。'
             : '開始日から終了日までに始まる予定を、職員の Google カレンダーから読みます。'}
         </span>
-        <div>
+        <div className="flex flex-wrap items-center gap-3">
           <Button
+            aria-describedby={showsPreviewHint ? previewHintId : undefined}
             data-testid="calendar-import-preview"
             disabled={!canPreview || isLocked}
             size="S"
@@ -161,6 +166,15 @@ export const CalendarImportForm = ({
           >
             プレビューする
           </Button>
+          {showsPreviewHint && (
+            <span
+              className="text-caption text-text-secondary"
+              data-testid="calendar-import-preview-hint"
+              id={previewHintId}
+            >
+              開始日と終了日を入れると、プレビューできます。
+            </span>
+          )}
         </div>
       </form>
       {isPreviewing && (

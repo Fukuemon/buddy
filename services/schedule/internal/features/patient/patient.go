@@ -36,7 +36,7 @@ const (
 func (g PreferredGender) IsValid() bool { return g == Male || g == Female }
 
 // Patient は、利用者である。AssignedStaffID は担当の職員、ServiceCodeID はデフォルトのサービスコードである。
-// EndedAt は利用の終了にした時刻で、利用中なら nil である（ADR-0021）。
+// EndedAt は利用の終了にした時刻で、利用中なら nil である（ADR-0005）。
 type Patient struct {
 	ID              string
 	FacilityID      string
@@ -93,21 +93,24 @@ type ListQuery struct {
 	Sort            kernel.Sort
 }
 
-// RemainingSchedule は、利用者の単発の予定である。
+// RemainingSchedule は、利用者の単発の予定である。EndsNextDay が true なら、Date の翌日の EndTime に終わる。
 type RemainingSchedule struct {
-	ID        string
-	Date      civil.Date
-	StartTime civil.Time
-	EndTime   civil.Time
+	ID          string
+	Date        civil.Date
+	StartTime   civil.Time
+	EndTime     civil.Time
+	EndsNextDay bool
 }
 
 // RemainingRecurring は、利用者の繰り返しの予定である。Date は最初の回の日付で、EndDate は終了日である。
+// EndsNextDay が true なら、各回は始まる日の翌日の EndTime に終わる。
 type RemainingRecurring struct {
-	ID        string
-	Date      civil.Date
-	EndDate   *civil.Date
-	StartTime civil.Time
-	EndTime   civil.Time
+	ID          string
+	Date        civil.Date
+	EndDate     *civil.Date
+	StartTime   civil.Time
+	EndTime     civil.Time
+	EndsNextDay bool
 }
 
 // Remaining は、利用者を利用の終了にするときに残る、その日以降の予定と繰り返しの予定である。

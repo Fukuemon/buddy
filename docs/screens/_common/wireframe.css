@@ -1,6 +1,6 @@
 /*
  * モックの中の画面の共通の見た目。mock.css と tokens.css の後に読む。
- * 色は tokens.css の buddy の意味のトークン（packages/ui と同じ値）を、角丸と書体は DADS の基本のトークンを --wf-* に当てて使う。
+ * 色は tokens.css の buddy のセマンティックトークン（packages/ui と同じ値）を、角丸と書体はプリミティブトークンを --wf-* に当てて使う。
  * 部品の形は実装の形をまねず、箱と線で配置と状態だけを示す。
  * 画面の幅による切り替えは、.screen の幅を測る @container screen で書く。
  */
@@ -32,11 +32,11 @@
   --wf-team-purple: var(--buddy-color-team-purple);
   --wf-team-green: var(--buddy-color-team-green);
   --wf-team-lime: var(--buddy-color-team-lime);
-  --wf-radius: var(--border-radius-8);
+  --wf-radius: var(--buddy-primitive-border-radius-8);
 
   color: var(--wf-ink);
   /* Web フォントは読み込まないので、DADS の書体（Noto Sans JP）がデバイスに無ければ sans-serif で描く */
-  font-family: var(--font-family-sans);
+  font-family: var(--buddy-primitive-font-family-sans);
 }
 
 /* 文字の大きさは body に置き、rem の基準（16px）をトークンの角丸と同じにする */
@@ -315,6 +315,15 @@ body {
   font-weight: 700;
 }
 
+/* 読み終えた表示を残したまま、読み直して読めなかったことを示す帯。wf-alert と重ね、文と読み直すを横に並べる */
+.wf-refetch-error {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
 /* 仕様が決まっていない箇所。未決の内容を枠の中に書く */
 .wf-undecided {
   padding: 10px 12px;
@@ -365,7 +374,11 @@ body {
   border-bottom: 1px solid var(--wf-line-soft);
 }
 
+/* 閉じるボタン（×）の無いヘッダーでも、× を置いたヘッダーと同じ高さにする */
 .wf-modal__title {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
   margin: 0 0 0 auto;
   font-size: 15px;
   font-weight: 700;
@@ -480,7 +493,7 @@ body {
   height: 44px;
 }
 
-/* ログインした職員のメニュー（ViewerMenu）。名前の頭文字の丸と名前を並べたボタンで、名前とログアウトを入れたメニューを開く */
+/* ログインした職員のメニュー（ViewerMenu）。名前の頭文字の丸と名前を並べたボタンで、名前、自分の情報、ログアウトを入れたメニューを開く */
 .wf-site-header__viewer {
   display: flex;
   align-items: center;
@@ -832,11 +845,37 @@ body {
   font-size: 12px;
 }
 
+/* 押せないボタンと、その右に出す押せるようにする条件の文 */
+.wf-submit-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+
+/* ダイアログのフッターでは、条件の文を確定のボタンの上に右寄せで出す */
+.wf-dialog__footer > .wf-hint {
+  flex-basis: 100%;
+  margin: 0;
+  text-align: right;
+}
+
 /* 取り消せない操作のボタン */
 .wf-btn--danger {
   border-color: var(--wf-danger);
   background: var(--wf-danger);
   color: var(--wf-surface);
+}
+
+/* データを失う操作の確認のダイアログを開く起点のボタン（apps/web の Button の destructive）。白い面に赤い文字で出す */
+.wf-btn--destructive {
+  color: var(--wf-danger);
+}
+
+/* ダイアログとモーダルのフッターでは、起点のボタンを 1 つだけ左端に置き、閉じるボタンから離す（apps/web の mr-auto） */
+.wf-dialog__footer > .wf-btn--destructive,
+.wf-modal__footer > .wf-btn--destructive {
+  margin-right: auto;
 }
 
 /* タイトル、説明の文、リンクを縦に積む、画面の全体の知らせ（権限が無いときなど） */
@@ -872,16 +911,19 @@ body {
   margin: 0;
 }
 
-/* 入力のダイアログのヘッダー。左にタイトルを、右上に閉じるボタン（×）を置く */
+/* 入力のダイアログのヘッダー。左にタイトルを置く。フッターで閉じるので、閉じるボタン（×）を置かない */
 .wf-dialog__header {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 12px 12px 12px 20px;
+  padding: 12px 20px;
   border-bottom: 1px solid var(--wf-line-soft);
 }
 
 .wf-dialog__header > .wf-dialog__title {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
   font-size: 15px;
   font-weight: 700;
 }

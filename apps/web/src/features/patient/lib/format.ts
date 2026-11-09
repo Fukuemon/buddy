@@ -1,28 +1,17 @@
 import { isActiveStaffRecord } from '#/api/activeStaff'
 import type { PatientRecord, PatientSchedules, ServiceCodeRecord, StaffRecord } from '#/api/types'
-
-/** 事業所の現地のタイムゾーン。予定の API の日付と同じく、事業所は日本にあるものとする。 */
-const FACILITY_TIME_ZONE = 'Asia/Tokyo'
-
-const dateFormat = new Intl.DateTimeFormat('ja-JP', {
-  timeZone: FACILITY_TIME_ZONE,
-  year: 'numeric',
-  month: '2-digit',
-  day: '2-digit',
-})
-
-/** ISO 8601 の時刻を、事業所の現地の日付の `2026/09/30` の形にする。 */
-export const formatDateTimeAsDate = (dateTime: string) => dateFormat.format(new Date(dateTime))
-
-/** API の日付（YYYY-MM-DD）を `2026/11/02` の形にする。 */
-const formatDate = (date: string) => date.replaceAll('-', '/')
+import {
+  formatDateKey as formatDate,
+  formatFacilityDate as formatDateTimeAsDate,
+  formatTimeRange,
+} from '#/components/dateFormat'
 
 /** 利用の終了の状態の印の文言。利用中なら undefined を返す。 */
 export const endedLabel = (patient: Pick<PatientRecord, 'ended_at'>) =>
   patient.ended_at === null ? undefined : `利用の終了（${formatDateTimeAsDate(patient.ended_at)}）`
 
 /** 一覧の利用の終了にした日の列の文言。 */
-export const endedOnText = (endedAt: string) => `${formatDateTimeAsDate(endedAt)} に利用の終了`
+export const endedOnText = (endedAt: string) => `${formatDateTimeAsDate(endedAt)}に利用の終了`
 
 /** サービスの選択肢と詳細の、`訪看I2（20〜29 分）` の形の文言。 */
 export const serviceCodeLabel = (code: ServiceCodeRecord) =>
@@ -70,21 +59,54 @@ export const editStaffOptions = (
   ]
 }
 
-/** 担当に選べる、有効で訪問する職員を、名前の順に返す。訪問しない職員は担当にできない（ADR-0022）。 */
+/** 担当に選べる、有効で訪問する職員を、名前の順に返す。訪問しない職員は担当にできない（ADR-0006）。 */
 export const activeStaffOptions = (staff: readonly StaffRecord[]) =>
   staff.filter(isActiveStaffRecord).sort((a, b) => a.username.localeCompare(b.username, 'ja'))
 
-/** 残る単発の予定 1 件の、`2026/11/02 09:00〜09:29` の形の日時。 */
-export const formatRemainingSchedule = (schedule: PatientSchedules['schedules'][number]) =>
-  `${formatDate(schedule.date)} ${schedule.start_time}〜${schedule.end_time}`
+/**
+ * 残る単発の予定 1 件の日付と時刻の範囲。`2026年11月2日（月）` と `09:00〜09:29` の形にし、翌日に終わる予定は `22:00〜翌 01:00` にする。
+ * 画面が時刻の範囲の中で折り返さないよう、日付と時刻の範囲を分けて返す。
+ */
+export const formatRemainingScheduleParts = (schedule: PatientSchedules['schedules'][number]) => ({
+  date: formatDate(schedule.date),
+  time: formatTimeRange(
+    schedule.start_time,
+    schedule.end_time,
+    schedule.ends_next_day ? 'nextDay' : 'sameDay',
+  ),
+})
 
-/** 残る繰り返しの予定 1 件の、最初の回の日付、終了日、時間。職員の詳細の残る繰り返しの予定と同じ形にする。 */
+/** 残る単発の予定 1 件の、`2026年11月2日（月） 09:00〜09:29` の形の日時。翌日に終わる予定は `22:00〜翌 01:00` にする。 */
+export const formatRemainingSchedule = (schedule: PatientSchedules['schedules'][number]) => {
+  const { date, time } = formatRemainingScheduleParts(schedule)
+  return `${date} ${time}`
+}
+
+/**
+ * 残る繰り返しの予定 1 件の、最初の回の日付と終了日（`2026年10月6日（火）から終了日なし、`）と、時刻の範囲。職員の詳細の残る繰り返しの予定と同じ形にする。
+ * 翌日に終わる繰り返しの時刻の範囲は `22:00〜翌 01:00` にする。画面が時刻の範囲の中で折り返さないよう、2 つを分けて返す。
+ */
+export const formatRemainingRecurringParts = (
+  recurring: PatientSchedules['recurring_schedules'][number],
+) => ({
+  period:
+    recurring.end_date === null
+      ? `${formatDate(recurring.date)}から終了日なし、`
+      : `${formatDate(recurring.date)}から${formatDate(recurring.end_date)}まで、`,
+  time: formatTimeRange(
+    recurring.start_time,
+    recurring.end_time,
+    recurring.ends_next_day ? 'nextDay' : 'sameDay',
+  ),
+})
+
+/** 残る繰り返しの予定 1 件の、最初の回の日付、終了日、時刻の範囲をつないだ文。 */
 export const formatRemainingRecurring = (
   recurring: PatientSchedules['recurring_schedules'][number],
-) =>
-  recurring.end_date === null
-    ? `${formatDate(recurring.date)} から 終了日なし、${recurring.start_time}〜${recurring.end_time}`
-    : `${formatDate(recurring.date)} から ${formatDate(recurring.end_date)} まで、${recurring.start_time}〜${recurring.end_time}`
+) => {
+  const { period, time } = formatRemainingRecurringParts(recurring)
+  return `${period}${time}`
+}
 
 /** 残る予定と繰り返しの予定が 1 つも無いか。 */
 export const hasNoSchedules = (schedules: PatientSchedules) =>

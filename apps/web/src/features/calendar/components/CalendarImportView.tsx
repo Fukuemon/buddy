@@ -1,5 +1,6 @@
 import { Button, Loading } from '@buddy/ui'
 import type { ReactNode } from 'react'
+import { RefetchErrorMessage } from '#/components/page/RefetchErrorMessage'
 
 /** 予定の取り込みの画面の状態。ready のときは、children に職員と期間の入力と結果を渡す。 */
 export type CalendarImportViewState =
@@ -11,11 +12,21 @@ export type CalendarImportViewState =
 export type CalendarImportViewProps = {
   state: CalendarImportViewState
   onRetry: () => void
+  /** 読み終えた後に読み直して、データを読めなかったか。 */
+  refetchFailed?: boolean
+  /** 読み終えた後に読めなかったデータだけを読み直す。 */
+  onRefetch?: () => void
   children?: ReactNode
 }
 
 /** 予定の取り込みの画面の本文。タイトル、カレンダーの連携へのリンク、説明の文の下に、状態ごとの中身を並べる。 */
-export const CalendarImportView = ({ state, onRetry, children }: CalendarImportViewProps) => (
+export const CalendarImportView = ({
+  state,
+  onRetry,
+  refetchFailed,
+  onRefetch,
+  children,
+}: CalendarImportViewProps) => (
   <div className="flex flex-col gap-6">
     <div className="flex flex-wrap items-baseline justify-between gap-3">
       <h1 className="text-heading-md">予定の取り込み</h1>
@@ -30,6 +41,9 @@ export const CalendarImportView = ({ state, onRetry, children }: CalendarImportV
     <p className="max-w-3xl text-body">
       職員の Google カレンダーの予定を、期間を選んで buddy に取り込みます。
     </p>
+    {refetchFailed === true && onRefetch !== undefined && (
+      <RefetchErrorMessage onRetry={onRefetch} />
+    )}
     {state.status === 'loading' && (
       <div data-testid="calendar-import-loading">
         <Loading description="読み込んでいます" />

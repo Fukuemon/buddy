@@ -1,4 +1,4 @@
-import { FormField, formFieldControlClassName, InputDialog } from '@buddy/ui'
+import { FormField, formFieldControlClassName, InputDialog, useFocusFirstInvalid } from '@buddy/ui'
 import { useId, useRef, useState } from 'react'
 
 import type { Department, StaffAssignments, StaffDetail, StaffUpdateInput, Team } from '#/api/types'
@@ -16,7 +16,7 @@ import { VisitsField } from './VisitsField'
 
 export type StaffProfileDialogProps = {
   staff: StaffDetail
-  /** 選択肢。読み終えるまでは undefined にする。 */
+  /** 選択肢。読み終えるまでと、読めなかったときは undefined にする。どちらかが undefined の間は保存を押せない。 */
   departments?: readonly Department[]
   teams?: readonly Team[]
   isSubmitting: boolean
@@ -44,6 +44,7 @@ export const StaffProfileDialog = ({
   onClose,
 }: StaffProfileDialogProps) => {
   const formId = useId()
+  const { ref: formRef, focusFirstInvalid } = useFocusFirstInvalid<HTMLFormElement>()
   const nameRef = useRef<HTMLInputElement>(null)
   const [name, setName] = useState(staff.username)
   const [phone, setPhone] = useState(staff.phone_number ?? '')
@@ -55,7 +56,10 @@ export const StaffProfileDialog = ({
   const submit = () => {
     const next: StaffFormErrors = { name: validateName(name), phone: validatePhone(phone) }
     setErrors(next)
-    if (Object.values(next).some((error) => error !== undefined)) return
+    if (Object.values(next).some((error) => error !== undefined)) {
+      focusFirstInvalid()
+      return
+    }
     onSubmit({
       username: name.trim(),
       phone_number: phoneNumberOf(phone),
@@ -92,6 +96,7 @@ export const StaffProfileDialog = ({
           event.preventDefault()
           submit()
         }}
+        ref={formRef}
       >
         <FormField error={errors.name} errorTestId="staff-detail-error-name" label="名前">
           {(field) => (

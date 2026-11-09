@@ -72,7 +72,8 @@ flowchart TB
 ```
 
 - `specs/<dir>/` に置く spec 以外のファイルは、値だけを持つ。要求ごとの値をどの要求にも使う `fixtures/` に置くと、要求に関わるものが複数の配置先に分かれるためである。
-- `widgets/<UI>/` を操作しないテストは、spec から `waits/` を直接呼ぶ。
+- `widgets/<UI>/` は、操作を `actions/` に、待ちを `waits/` に置く。`actions/` の操作は、内部で `waits/` を呼んで完了まで待つ。
+- UI を操作せずに待ちだけが要るテストは、spec から `widgets/<UI>/waits/` を直接呼ぶ。
 
 ### 配置先の決め方
 
@@ -211,7 +212,7 @@ runner の状態で所要が振れ、実行の間で 2 倍近く違うことが�
 locator は spec に書き、`screens/` には共有する「開く、モードを変える」だけを置く。
 待ちは、テストの側で観測できるもの（API のレスポンス、ライブラリが作る DOM）で組み立て、描画の完了を示す属性をアプリに足さない。
 
-- ADR-0024: [E2E のテストのコードを、Page Object を使わず page を受け取る関数で書き、描画の完了の信号をアプリに足さない](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0024-e2e-functions-without-page-object.md)
+- ADR-0034: [E2E のテストのコードを、Page Object を使わず page を受け取る関数で書き、描画の完了の信号をアプリに足さない](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0034-e2e-functions-without-page-object.md)
 
 ## Interface
 

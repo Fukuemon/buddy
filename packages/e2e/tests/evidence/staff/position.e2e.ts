@@ -1,15 +1,15 @@
 import { expect, test, type Page } from '@playwright/test'
 
-import { prepareApiReference, routeApiReference } from '../../fixtures/apiReference'
+import { issueAccessToken, routeApiReference } from '../../fixtures/apiReference'
 import { LOGIN_EMAIL, LOGIN_STAFF, SCHEDULE_URL } from '../../fixtures/env'
 import { EVIDENCE_VARIANTS, recordPrEvidence } from '../../fixtures/evidence'
 import { STAFF_FORM } from '../../fixtures/staff'
+import { openApiClient, openApiReference } from '../../screens/apiReference'
 import {
   fillApiBody,
   fillApiToken,
   fillApiVariable,
-  openApiClient,
-} from '../../screens/apiReference'
+} from '../../widgets/apiClient/actions/apiClient'
 import { apiClient } from '../../selectors/apiReference'
 
 const TEAM_B = '01M3TC5MX04QJ19X6XR1ZCBZRJ'
@@ -17,7 +17,9 @@ const LEADER_POSITION = '01M3TC5PVG7W2H1H20W0T1ZVEJ'
 
 /** API の参照のページを開き、トークンを取って、役職を変える相手のメンバーの職員を作る。シードの職員の権限を変えないため。 */
 const prepareMember = async (page: Page) => {
-  const token = await prepareApiReference('schedule', LOGIN_EMAIL)(page)
+  await routeApiReference(page)
+  await openApiReference(page, 'schedule')
+  const token = await issueAccessToken(page.request, LOGIN_EMAIL)
   const res = await page.request.post(
     `${SCHEDULE_URL}/v1/facilities/${STAFF_FORM.facilityId}/users`,
     {

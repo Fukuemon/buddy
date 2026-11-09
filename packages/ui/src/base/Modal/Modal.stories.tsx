@@ -27,7 +27,7 @@ export const WithStickyFooter: Story = {
   args: { stickyFooter: <Button>作成</Button> },
 }
 
-/** 関数で渡した stickyFooter は、閉じる要求を受け取り、「キャンセル」で閉じるボタンと同じく閉じる。 */
+/** 関数で渡した stickyFooter は、閉じる要求を受け取り、「キャンセル」で背景と Escape キーと同じく閉じる。右上に × を出さない。 */
 export const WithCancel: Story = {
   args: {
     isDirty: true,
@@ -37,6 +37,23 @@ export const WithCancel: Story = {
           キャンセル
         </Button>
         <Button size="S">保存</Button>
+      </>
+    ),
+  },
+}
+
+/** データを失う操作の起点のボタンを 1 つだけ左端に置き、「閉じる」と編集を右にまとめる。 */
+export const WithDestructiveAction: Story = {
+  args: {
+    stickyFooter: (requestClose) => (
+      <>
+        <Button className="mr-auto" variant="destructive">
+          予定をキャンセル
+        </Button>
+        <Button onClick={requestClose} variant="secondary">
+          閉じる
+        </Button>
+        <Button variant="secondary">編集</Button>
       </>
     ),
   },
@@ -76,7 +93,14 @@ export const WithOpener: Story = {
             args.onCloseRequest?.()
             setIsOpen(false)
           }}
-          stickyFooter={<Button>編集</Button>}
+          stickyFooter={(requestClose) => (
+            <>
+              <Button onClick={requestClose} variant="secondary">
+                閉じる
+              </Button>
+              <Button>編集</Button>
+            </>
+          )}
         />
       </>
     )

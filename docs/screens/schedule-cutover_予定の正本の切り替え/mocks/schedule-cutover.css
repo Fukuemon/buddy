@@ -55,3 +55,15 @@
 .sc-unmet > p {
   margin: 0;
 }
+
+/*
+ * 完了すると、切り替えをやめるの行（apps/web の CalendarCutoverView の justify-between）。
+ * やめるは取り込んだ予定を消す操作の起点なので、完了するから離して右端に置く
+ */
+.sc-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 12px;
+  max-width: 768px;
+}

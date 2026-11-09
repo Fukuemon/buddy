@@ -2,7 +2,7 @@ import { expect, test, type Page } from '@playwright/test'
 
 import { LEADER, LOGIN_EMAIL, LOGIN_STAFF, SEED_PATIENT } from '../../fixtures/env'
 import { EVIDENCE_VARIANTS, recordPrEvidence } from '../../fixtures/evidence'
-import { linkStaffCalendar, unlinkStaffCalendar } from '../../screens/calendar'
+import { linkStaffCalendar, unlinkStaffCalendar } from '../../setup/calendar'
 import { signInAtBroker } from '../../screens/login'
 import { pageBody } from '../../selectors/page'
 
@@ -93,7 +93,7 @@ test.describe('予定の取り込み', () => {
           {
             name: 'calendar-import-recurring-wording',
             title:
-              '毎週と隔週の繰り返しを含む森 健太の 2026 年 11 月をプレビューすると、件数の文が「繰り返しとして」「1 回ずつに分ける」の語で出て、「回ごと」「繰り返しのまま」が出ない',
+              '毎週と 14 日ごとの繰り返しを含む森 健太の 2026 年 11 月をプレビューすると、件数の文が「繰り返しとして」「1 回ずつに分ける」の語で出て、「回ごと」「繰り返しのまま」が出ない',
             actor: ACTOR,
             variant,
           },
@@ -106,7 +106,7 @@ test.describe('予定の取り込み', () => {
                 '職員の Google カレンダーの予定を、期間を選んで buddy に取り込みます。',
               )
               await step(
-                `予定の取り込みの画面で、${MORI.name} を選んでいる。カレンダーには毎週水曜と隔週金曜の繰り返しの予定がある`,
+                `予定の取り込みの画面で、${MORI.name} を選んでいる。カレンダーには毎週水曜と 14 日ごとの金曜の繰り返しの予定がある`,
               )
               await check(
                 '説明は「職員の Google カレンダーの予定を、期間を選んで buddy に取り込みます。」の 1 文',

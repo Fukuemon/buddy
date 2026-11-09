@@ -24,12 +24,12 @@ describe('FormField', () => {
     )
   })
 
-  it('誤りがあれば欄に aria-invalid を付け、誤りの文を読み上げて欄に結び付ける', () => {
+  it('誤りがあれば欄に aria-invalid を付け、誤りの文を割り込みで読み上げずに欄に結び付ける', () => {
     render(<Invalid />)
     const input = screen.getByRole('textbox', { name: '名前' })
     expect(input).toHaveAttribute('aria-invalid', 'true')
     expect(input).toHaveAccessibleDescription('名前を入れてください')
-    expect(screen.getByRole('alert')).toHaveTextContent('名前を入れてください')
+    expect(screen.queryByRole('alert')).toBeNull()
   })
 
   it('isGroup では見出しで組を名付け、組に誤りを結び付ける', () => {

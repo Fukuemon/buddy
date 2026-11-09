@@ -60,3 +60,26 @@ RETURNING visit_info_id;
 -- name: DeleteImportedVisitInfos :exec
 -- 消した予定の訪問の情報を消す。
 DELETE FROM visit_infos WHERE id = ANY(sqlc.arg(ids)::text[]);
+
+-- name: CountPendingCalendarEventRecords :one
+-- 切り替えを始める操作と完了する操作が、予定の API が Google に書いている途中か、結果が分からない書き込みを数える（ADR-0031）。
+SELECT count(*) FROM calendar_event_records WHERE facility_id = sqlc.arg(facility_id) AND pending_version IS NOT NULL;
+
+-- name: ListCalendarEventRecordVisits :many
+-- 切り替えの取り込みが、予定の API が Google に書いた予定の訪問の情報を、タイトルの読み替えより優先して使う（ADR-0031）。
+-- Google が受けたと分かった版の訪問の情報だけを返し、保留の版の訪問の情報は返さない。
+-- 訪問の情報を持たない確定した記録（通常の予定）も、訪問の情報を空にして返す。繰り返しの予定の例外の回が、自分の記録を持つかを見分けるためである。
+SELECT r.external_event_id, vi.id, vi.patient_id, vi.assigned_staff_id, vi.companion_id, vi.service_code_id,
+       ARRAY(
+           SELECT c.visit_category_id FROM visit_info_visit_categories c WHERE c.visit_info_id = vi.id ORDER BY c.visit_category_id
+       )::text[] AS category_ids
+FROM calendar_event_records r
+LEFT JOIN visit_infos vi ON vi.id = r.visit_info_id
+WHERE r.external_calendar_id = sqlc.arg(external_calendar_id) AND r.version > 0
+ORDER BY r.external_event_id;
+
+-- name: DeleteCalendarEventRecordsByFacility :many
+-- 切り替えの完了が、事業所の記録を消し、記録が指していた訪問の情報を返す。訪問の情報は、呼ぶ側が使われていなければ消す。
+-- 同じ文の中では消した記録がまだ見えるので、訪問の情報は別の文（DeleteUnusedVisitInfo）で消す。
+DELETE FROM calendar_event_records WHERE facility_id = sqlc.arg(facility_id)
+RETURNING visit_info_id, pending_visit_info_id;

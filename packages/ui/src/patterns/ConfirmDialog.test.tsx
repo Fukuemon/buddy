@@ -6,7 +6,7 @@ import { userEvent } from 'vite-plus/test/browser/context'
 
 import * as stories from './ConfirmDialog.stories'
 
-const { Default, Submitting, WithError } = composeStories(stories)
+const { Default, Submitting, CancelAction, WithError } = composeStories(stories)
 
 describe('ConfirmDialog', () => {
   it('問いの形のタイトルを名前にした alertdialog で開き、× を置かない', () => {
@@ -52,6 +52,16 @@ describe('ConfirmDialog', () => {
     await userEvent.keyboard('{Escape}')
     expect(onCancel).not.toHaveBeenCalled()
     expect(screen.getByRole('alertdialog')).toHaveProperty('open', true)
+  })
+
+  it('cancelLabel を渡すと、閉じる側のボタンをその文字にし、押すと onCancel を呼ぶ', async () => {
+    const onCancel = fn()
+    render(<CancelAction onCancel={onCancel} />)
+    expect(screen.queryByRole('button', { name: 'キャンセル' })).not.toBeInTheDocument()
+    const back = screen.getByRole('button', { name: '戻る' })
+    expect(back).toHaveFocus()
+    await userEvent.click(back)
+    expect(onCancel).toHaveBeenCalledTimes(1)
   })
 
   it('送れなかったときの文を role="alert" で出す', () => {

@@ -2,6 +2,7 @@ import { ActionMenu, type ActionMenuItem, Avatar, Button, Loading, StatusBadge }
 import type { ReactNode } from 'react'
 
 import type { PatientRecord, ServiceCodeRecord, StaffRecord } from '#/api/types'
+import { RefetchErrorMessage } from '#/components/page/RefetchErrorMessage'
 
 import { assignedStaffLabel, endedLabel, serviceCodeLabel } from '../lib/format'
 
@@ -9,11 +10,19 @@ import { assignedStaffLabel, endedLabel, serviceCodeLabel } from '../lib/format'
 export type PatientDetailViewState =
   | { status: 'loading' }
   | { status: 'error'; message: string; canRetry: boolean }
-  | { status: 'ready'; patient: PatientRecord }
+  | {
+      status: 'ready'
+      patient: PatientRecord
+      /** 読み終えた後に読み直して、利用者を読めなかったか。 */
+      refetchFailed?: boolean
+    }
 
 export type PatientDetailViewProps = {
   state: PatientDetailViewState
+  /** 一度も読めなかったときに、利用者を読み直す。 */
   onRetry: () => void
+  /** 読み終えた後に読めなかった利用者を読み直す。 */
+  onRefetch?: () => void
   /** サービスの時間の範囲を出すためのサービスコード。読み終えるまでは undefined にし、コードだけを出す。 */
   serviceCodes?: readonly ServiceCodeRecord[]
   /** 担当の職員の休職と退職を出すための職員。読み終えるまでは undefined にする。 */
@@ -60,7 +69,13 @@ export const PatientDetailView = (props: PatientDetailViewProps) => {
           )}
         </div>
       )}
-      {state.status === 'ready' && <PatientDetailBody {...props} patient={state.patient} />}
+      {state.status === 'ready' && (
+        <PatientDetailBody
+          {...props}
+          patient={state.patient}
+          refetchFailed={state.refetchFailed === true}
+        />
+      )}
     </div>
   )
 }
@@ -72,7 +87,9 @@ const PatientDetailBody = ({
   onEdit,
   onEnd,
   onResume,
-}: PatientDetailViewProps & { patient: PatientRecord }) => {
+  onRefetch,
+  refetchFailed,
+}: PatientDetailViewProps & { patient: PatientRecord; refetchFailed: boolean }) => {
   const ended = endedLabel(patient)
   const menuItems: ActionMenuItem[] =
     ended === undefined
@@ -119,6 +136,7 @@ const PatientDetailBody = ({
           <ActionMenu data-testid="patient-detail-menu" items={menuItems} label="ほかの操作" />
         </div>
       </div>
+      {refetchFailed && onRefetch !== undefined && <RefetchErrorMessage onRetry={onRefetch} />}
       <section
         aria-label="プロフィール"
         className="rounded-8 border border-border bg-surface p-4 desktop:p-5"

@@ -27,7 +27,7 @@ iBow から出した実訪問の CSV と予定（予定の CSV か Google カレ
 - `SCHEDULE_URL`: 予定の API の URL。
   - 必須。
   - 照合の API は、照合の前に、受けたトークンで `GET /v1/me` を呼び、照合の権限（`receipt.check`）を持つかを確認する。
-  - ADR-0022: [照合を照合の権限で許し、事務の役職を足し、訪問しない職員を予定と担当から外す](../../docs/adr/0022-receipt-check-policy-and-non-visiting-staff.md)
+  - ADR-0007: [権限を役職のデフォルトと職員ごとの上書きで持ち、職員の管理と照合も権限で許す](../../docs/adr/0007-pbac.md)
 - `CORS_ALLOW_ORIGINS`: CORS でレスポンスを読ませるオリジンを、カンマで区切って並べた値。
   - 空なら CORS のヘッダーを返さない。
 - `GOOGLE_CALENDARS_FILE`: 照合の対象のカレンダーの設定を書いた JSON のパス。
@@ -43,14 +43,15 @@ iBow から出した実訪問の CSV と予定（予定の CSV か Google カレ
 
 ## Running
 
-API の 8080 とフェイクの Issuer の 9000 は、ルートの compose の予定の API と IdP と重なる。  
-compose を起動しているときは、重なる 2 つを `docker compose stop schedule idp` で止めてから実行する。
+API の 8080 とフェイクの Issuer の 9000 は、portless を通さずに起動したルートの compose の予定の API と IdP と重なる。  
+そのときは、重なる 2 つを `docker compose stop schedule idp` で止めてから実行する。  
+portless で起動した compose は、8080 と 9000 を使わない。
 
 照合の API は、`SCHEDULE_URL` の予定の API に同じトークンで `GET /v1/me` を呼び、照合の権限を確認する。  
 予定の API はフェイクの Issuer のトークンを受けないので、この起動の仕方では、照合は 502 か 403 を返す。  
 照合を試すときは、ルートの compose で起動する。
 
-- ADR-0022: [照合を照合の権限で許し、事務の役職を足し、訪問しない職員を予定と担当から外す](../../docs/adr/0022-receipt-check-policy-and-non-visiting-staff.md)
+- ADR-0007: [権限を役職のデフォルトと職員ごとの上書きで持ち、職員の管理と照合も権限で許す](../../docs/adr/0007-pbac.md)
 
 ```sh
 # Hydra の代わりに、フェイクの Issuer を別のターミナルで起動する
@@ -132,7 +133,7 @@ curl -s -H "Authorization: Bearer $TOKEN" -F visits=@testdata/visits_utf8.csv -F
 共有の権限は、[基盤と運用の事業所を足す手順](../../context/operations.md#adding-a-facility) にある。  
 認証のしかたは、[DesignDoc.md](DesignDoc.md#予定のデータソース-google-カレンダー) の「予定のデータソース: Google カレンダー」にある。
 
-- ADR-0012: [Google カレンダーのサービスアカウントを事業所ごとに分け、buddy は IAM の権限借用で切り替える](../../docs/adr/0012-google-calendar-facility-service-accounts.md)
+- ADR-0030: [職員のカレンダーを、事業所ごとのサービスアカウントへの共有で読み書きする](../../docs/adr/0030-google-calendar-service-accounts.md)
 
 ローカルで検証の事業所のカレンダーを読む手順は、次のとおり。  
 この手順はメンテナー向けで、運営側の GCP のプロジェクトと検証の事業所のサービスアカウントを前提にする。  
@@ -140,7 +141,7 @@ curl -s -H "Authorization: Bearer $TOKEN" -F visits=@testdata/visits_utf8.csv -F
 
 1. 運営側に、検証の事業所のサービスアカウントのトークン作成者のロール（`roles/iam.serviceAccountTokenCreator`）を、自分のアカウントに付けてもらう。本番の事業所のアカウントのロールは付けない。
    - 検証の事業所のアカウントに、`serviceusage.services.use` を持つロールも要るかは、未確認である。
-     - ADR-0012: [承認の条件](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0012-google-calendar-facility-service-accounts.md#承認の条件)
+     - ADR-0030: [承認の条件](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0030-google-calendar-service-accounts.md#承認の条件)
 2. 検証のカレンダーを、検証の事業所のサービスアカウントに、事業所を足す手順と同じ権限で共有する。
 3. 検証の事業所のサービスアカウントになりすました Application Default Credentials を作る。
    ```sh

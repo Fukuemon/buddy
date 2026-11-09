@@ -11,7 +11,7 @@ export const PageForbiddenMessage = ({ policyName = '職員の管理' }: PageFor
     <h1 className="text-heading-md">この画面を開く権限がありません</h1>
     <p className="text-body">
       {policyName}
-      の権限を持つ職員だけが開けます。権限が要るときは、職員の管理の権限を持つ職員に頼んでください。
+      の権限を持つ職員だけが開けます。権限が要るときは、事業所の管理者に頼んでください。
     </p>
     <a
       className={buttonClassName({ variant: 'secondary' })}

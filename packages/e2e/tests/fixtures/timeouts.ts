@@ -13,6 +13,15 @@ export const TIMEOUT_MS = {
   evidence: 180_000,
 }
 
+/** Storybook の、応答を遅らせた story の読み込みと送信が終わるのを待つ expect に渡す。 */
+export const SLOW_STORY_WAIT = { timeout: TIMEOUT_MS.action }
+
+/**
+ * widgets/scroll の、スクロールが止まるのを待つ waitForFunction に渡す。スクロールは操作の続きなので、操作と同じ時間にする。
+ * CI の 5 回の実行で、スクロールを含むテストは 1 本が最大 715ms で終わり、止まるまでの待ちはこの時間に届かない
+ */
+export const SCROLL_IDLE_WAIT = { timeout: TIMEOUT_MS.action }
+
 /** 止めた職員がログインの画面へ戻るまで開き直す toPass に渡す。 */
 export const SUSPENSION_WAIT = { timeout: TIMEOUT_MS.suspension }
 

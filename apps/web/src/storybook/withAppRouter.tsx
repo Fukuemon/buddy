@@ -8,6 +8,7 @@ import {
   createRouter,
   stripSearchParams,
   useParams,
+  type RouterHistory,
 } from '@tanstack/react-router'
 import type { Decorator, StoryContext } from '@storybook/react-vite'
 import { useState } from 'react'
@@ -34,6 +35,7 @@ export type StoryRouteId =
   | '/schedule/new'
   | '/schedule/$scheduleId/'
   | '/schedule/$scheduleId/edit'
+  | '/schedule/$scheduleId/recurrence'
   | '/receipt/'
   | '/receipt/result'
   | '/schedule_/link'
@@ -44,6 +46,7 @@ export type StoryRouteId =
   | '/staff/new'
   | '/staff_/$staffId'
   | '/organization'
+  | '/me'
   | '/patients'
   | '/patients/new'
   | '/patients_/$patientId'
@@ -61,6 +64,8 @@ export type AppRouterParameters = {
   receiptApi?: ReceiptApi
   /** 描く前に query の cache に置く値。 */
   seed?: (queryClient: QueryClient) => void
+  /** テストが移った先の URL を読むための履歴。デフォルトは url から作る。 */
+  history?: RouterHistory
 }
 
 /** decorator が受ける story。route の params を args に足して描けるよう、args を受ける形にする。 */
@@ -112,6 +117,11 @@ const createStoryRouter = (Story: StoryFn, params: AppRouterParameters) => {
     getParentRoute: () => schedule,
     path: '$scheduleId/edit',
     component: atScheduleId('/schedule/$scheduleId/edit'),
+  })
+  const scheduleRecurrence = createRoute({
+    getParentRoute: () => schedule,
+    path: '$scheduleId/recurrence',
+    component: atScheduleId('/schedule/$scheduleId/recurrence'),
   })
   const receipt = createRoute({
     getParentRoute: () => root,
@@ -167,6 +177,7 @@ const createStoryRouter = (Story: StoryFn, params: AppRouterParameters) => {
     path: 'staff/$staffId',
     component: StaffIdRoute,
   })
+  const me = createRoute({ getParentRoute: () => root, path: 'me', component: at('/me') })
   const organization = createRoute({
     getParentRoute: () => root,
     path: 'organization',
@@ -195,7 +206,7 @@ const createStoryRouter = (Story: StoryFn, params: AppRouterParameters) => {
 
   const router = createRouter({
     routeTree: root.addChildren([
-      schedule.addChildren([scheduleNew, scheduleDetail, scheduleEdit]),
+      schedule.addChildren([scheduleNew, scheduleDetail, scheduleEdit, scheduleRecurrence]),
       receipt,
       receiptResult,
       scheduleLink,
@@ -205,10 +216,11 @@ const createStoryRouter = (Story: StoryFn, params: AppRouterParameters) => {
       staff.addChildren([staffNew]),
       staffDetail,
       organization,
+      me,
       patients.addChildren([patientsNew]),
       patientDetail,
     ]),
-    history: createMemoryHistory({ initialEntries: [params.url] }),
+    history: params.history ?? createMemoryHistory({ initialEntries: [params.url] }),
     context,
   })
   return { router, queryClient }
@@ -268,7 +280,17 @@ export const suspendedStaffBuddyApi = (base: BuddyApi = createFakeBuddyApi()): B
 /** 全ての操作を operation にしたフェイクの API を作る。 */
 const buddyApiOf = (operation: () => Promise<never>): BuddyApi => ({
   facilities: { get: operation },
-  schedules: { list: operation, get: operation, create: operation, update: operation },
+  me: { get: operation, externalCalendar: operation },
+  schedules: {
+    list: operation,
+    get: operation,
+    create: operation,
+    update: operation,
+    cancel: operation,
+    delete: operation,
+    createRecurring: operation,
+    changeRule: operation,
+  },
   staff: {
     list: operation,
     listRecords: operation,
@@ -308,13 +330,27 @@ const buddyApiOf = (operation: () => Promise<never>): BuddyApi => ({
     import: operation,
     exportIssues: operation,
     retryExport: operation,
-    acceptExport: operation,
     cutoverStatus: operation,
     startCutover: operation,
     completeCutover: operation,
     cancelCutover: operation,
   },
 })
+
+/**
+ * 2 回目の呼び出しだけ status が 500 の ApiError で失敗する操作を作る。1 回目と 3 回目からは operation の結果を返す。
+ * 読み終えた後に読み直して読めなかったときと、その後に読み直して読めたときを見るために使う。
+ */
+export const failOnSecondCall = <Args extends unknown[], Result>(
+  operation: (...args: Args) => Promise<Result>,
+): ((...args: Args) => Promise<Result>) => {
+  let calls = 0
+  return async (...args) => {
+    calls += 1
+    if (calls === 2) throw new ApiError(500, '読み直しで読めない')
+    return operation(...args)
+  }
+}
 
 /** 全ての操作が status の ApiError で失敗するフェイクの API を作る。 */
 export const failingBuddyApi = (status = 500): BuddyApi =>

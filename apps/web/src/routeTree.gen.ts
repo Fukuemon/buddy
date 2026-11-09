@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as HealthzRouteImport } from './routes/healthz'
+import { Route as MeRouteImport } from './routes/me'
 import { Route as OrganizationRouteImport } from './routes/organization'
 import { Route as PatientsRouteImport } from './routes/patients'
 import { Route as ReadyzRouteImport } from './routes/readyz'
@@ -32,6 +33,7 @@ import { Route as StaffNewRouteImport } from './routes/staff.new'
 import { Route as StaffStaffIdRouteImport } from './routes/staff_.$staffId'
 import { Route as ScheduleScheduleIdIndexRouteImport } from './routes/schedule.$scheduleId.index'
 import { Route as ScheduleScheduleIdEditRouteImport } from './routes/schedule.$scheduleId.edit'
+import { Route as ScheduleScheduleIdRecurrenceRouteImport } from './routes/schedule.$scheduleId.recurrence'
 import { Route as ScheduleLinkCutoverRouteImport } from './routes/schedule_.link_.cutover'
 
 const IndexRoute = IndexRouteImport.update({
@@ -42,6 +44,11 @@ const IndexRoute = IndexRouteImport.update({
 const HealthzRoute = HealthzRouteImport.update({
   id: '/healthz',
   path: '/healthz',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MeRoute = MeRouteImport.update({
+  id: '/me',
+  path: '/me',
   getParentRoute: () => rootRouteImport,
 } as any)
 const OrganizationRoute = OrganizationRouteImport.update({
@@ -149,6 +156,12 @@ const ScheduleScheduleIdEditRoute = ScheduleScheduleIdEditRouteImport.update({
   path: '/$scheduleId/edit',
   getParentRoute: () => ScheduleRoute,
 } as any)
+const ScheduleScheduleIdRecurrenceRoute =
+  ScheduleScheduleIdRecurrenceRouteImport.update({
+    id: '/$scheduleId/recurrence',
+    path: '/$scheduleId/recurrence',
+    getParentRoute: () => ScheduleRoute,
+  } as any)
 const ScheduleLinkCutoverRoute = ScheduleLinkCutoverRouteImport.update({
   id: '/schedule_/link_/cutover',
   path: '/schedule/link/cutover',
@@ -158,6 +171,7 @@ const ScheduleLinkCutoverRoute = ScheduleLinkCutoverRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/healthz': typeof HealthzRoute
+  '/me': typeof MeRoute
   '/organization': typeof OrganizationRoute
   '/patients': typeof PatientsRouteWithChildren
   '/readyz': typeof ReadyzRoute
@@ -178,12 +192,14 @@ export interface FileRoutesByFullPath {
   '/staff/$staffId': typeof StaffStaffIdRoute
   '/receipt/': typeof ReceiptIndexRoute
   '/schedule/$scheduleId/edit': typeof ScheduleScheduleIdEditRoute
+  '/schedule/$scheduleId/recurrence': typeof ScheduleScheduleIdRecurrenceRoute
   '/schedule/link/cutover': typeof ScheduleLinkCutoverRoute
   '/schedule/$scheduleId/': typeof ScheduleScheduleIdIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/healthz': typeof HealthzRoute
+  '/me': typeof MeRoute
   '/organization': typeof OrganizationRoute
   '/patients': typeof PatientsRouteWithChildren
   '/readyz': typeof ReadyzRoute
@@ -204,6 +220,7 @@ export interface FileRoutesByTo {
   '/staff/$staffId': typeof StaffStaffIdRoute
   '/receipt': typeof ReceiptIndexRoute
   '/schedule/$scheduleId/edit': typeof ScheduleScheduleIdEditRoute
+  '/schedule/$scheduleId/recurrence': typeof ScheduleScheduleIdRecurrenceRoute
   '/schedule/link/cutover': typeof ScheduleLinkCutoverRoute
   '/schedule/$scheduleId': typeof ScheduleScheduleIdIndexRoute
 }
@@ -211,6 +228,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/healthz': typeof HealthzRoute
+  '/me': typeof MeRoute
   '/organization': typeof OrganizationRoute
   '/patients': typeof PatientsRouteWithChildren
   '/readyz': typeof ReadyzRoute
@@ -231,6 +249,7 @@ export interface FileRoutesById {
   '/staff_/$staffId': typeof StaffStaffIdRoute
   '/receipt/': typeof ReceiptIndexRoute
   '/schedule/$scheduleId/edit': typeof ScheduleScheduleIdEditRoute
+  '/schedule/$scheduleId/recurrence': typeof ScheduleScheduleIdRecurrenceRoute
   '/schedule_/link_/cutover': typeof ScheduleLinkCutoverRoute
   '/schedule/$scheduleId/': typeof ScheduleScheduleIdIndexRoute
 }
@@ -239,6 +258,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/healthz'
+    | '/me'
     | '/organization'
     | '/patients'
     | '/readyz'
@@ -259,12 +279,14 @@ export interface FileRouteTypes {
     | '/staff/$staffId'
     | '/receipt/'
     | '/schedule/$scheduleId/edit'
+    | '/schedule/$scheduleId/recurrence'
     | '/schedule/link/cutover'
     | '/schedule/$scheduleId/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/healthz'
+    | '/me'
     | '/organization'
     | '/patients'
     | '/readyz'
@@ -285,12 +307,14 @@ export interface FileRouteTypes {
     | '/staff/$staffId'
     | '/receipt'
     | '/schedule/$scheduleId/edit'
+    | '/schedule/$scheduleId/recurrence'
     | '/schedule/link/cutover'
     | '/schedule/$scheduleId'
   id:
     | '__root__'
     | '/'
     | '/healthz'
+    | '/me'
     | '/organization'
     | '/patients'
     | '/readyz'
@@ -311,6 +335,7 @@ export interface FileRouteTypes {
     | '/staff_/$staffId'
     | '/receipt/'
     | '/schedule/$scheduleId/edit'
+    | '/schedule/$scheduleId/recurrence'
     | '/schedule_/link_/cutover'
     | '/schedule/$scheduleId/'
   fileRoutesById: FileRoutesById
@@ -318,6 +343,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   HealthzRoute: typeof HealthzRoute
+  MeRoute: typeof MeRoute
   OrganizationRoute: typeof OrganizationRoute
   PatientsRoute: typeof PatientsRouteWithChildren
   ReadyzRoute: typeof ReadyzRoute
@@ -351,6 +377,13 @@ declare module '@tanstack/react-router' {
       path: '/healthz'
       fullPath: '/healthz'
       preLoaderRoute: typeof HealthzRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/me': {
+      id: '/me'
+      path: '/me'
+      fullPath: '/me'
+      preLoaderRoute: typeof MeRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/organization': {
@@ -500,6 +533,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ScheduleScheduleIdEditRouteImport
       parentRoute: typeof ScheduleRoute
     }
+    '/schedule/$scheduleId/recurrence': {
+      id: '/schedule/$scheduleId/recurrence'
+      path: '/$scheduleId/recurrence'
+      fullPath: '/schedule/$scheduleId/recurrence'
+      preLoaderRoute: typeof ScheduleScheduleIdRecurrenceRouteImport
+      parentRoute: typeof ScheduleRoute
+    }
     '/schedule_/link_/cutover': {
       id: '/schedule_/link_/cutover'
       path: '/schedule/link/cutover'
@@ -525,12 +565,14 @@ const PatientsRouteWithChildren = PatientsRoute._addFileChildren(
 interface ScheduleRouteChildren {
   ScheduleNewRoute: typeof ScheduleNewRoute
   ScheduleScheduleIdEditRoute: typeof ScheduleScheduleIdEditRoute
+  ScheduleScheduleIdRecurrenceRoute: typeof ScheduleScheduleIdRecurrenceRoute
   ScheduleScheduleIdIndexRoute: typeof ScheduleScheduleIdIndexRoute
 }
 
 const ScheduleRouteChildren: ScheduleRouteChildren = {
   ScheduleNewRoute: ScheduleNewRoute,
   ScheduleScheduleIdEditRoute: ScheduleScheduleIdEditRoute,
+  ScheduleScheduleIdRecurrenceRoute: ScheduleScheduleIdRecurrenceRoute,
   ScheduleScheduleIdIndexRoute: ScheduleScheduleIdIndexRoute,
 }
 
@@ -551,6 +593,7 @@ const StaffRouteWithChildren = StaffRoute._addFileChildren(StaffRouteChildren)
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   HealthzRoute: HealthzRoute,
+  MeRoute: MeRoute,
   OrganizationRoute: OrganizationRoute,
   PatientsRoute: PatientsRouteWithChildren,
   ReadyzRoute: ReadyzRoute,

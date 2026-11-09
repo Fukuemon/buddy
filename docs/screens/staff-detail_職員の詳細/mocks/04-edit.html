@@ -22,6 +22,7 @@
               <span class="wf-site-account" aria-label="アカウント（青木 陽菜）" data-open="viewer-menu" data-testid="viewer-menu-open"><span class="wf-site-avatar" aria-hidden="true">青</span><span class="wf-site-account__name">青木 陽菜</span></span>
               <div class="wf-site-viewer-menu" data-panel="viewer-menu" data-panel-dismiss>
                 <span class="wf-text wf-text--s">青木 陽菜</span>
+                <span class="wf-btn wf-btn--text" data-testid="viewer-profile" data-go="../../account-profile_自分の情報/mocks/02-manager.html">自分の情報</span>
                 <span class="wf-btn" data-testid="viewer-logout">ログアウト</span>
               </div>
             </div>
@@ -82,44 +83,43 @@
                     <dt>部署</dt><dd>看護部</dd>
                     <dt>チーム</dt><dd>東チーム</dd>
                     <dt>訪問</dt><dd data-testid="staff-detail-visits">訪問する</dd>
-                    <dt>役職</dt><dd><span data-testid="staff-detail-position-name">メンバー</span><span class="wf-btn wf-btn--text" data-testid="staff-detail-position-change" data-go="05-position.html">役職を変える</span></dd>
+                    <dt>役職</dt><dd><span data-testid="staff-detail-position-name">メンバー</span><span class="wf-btn wf-btn--text" data-testid="staff-detail-position-change" data-go="19-position-open.html">役職を変える</span></dd>
                   </dl>
                 </section>
               </main>
               <div class="wf-overlay" tabindex="-1" data-m="1" data-go="01-detail.html"></div>
-              <div class="wf-dialog" role="dialog" aria-modal="true" aria-labelledby="edit-title" data-testid="staff-detail-edit-dialog">
+              <div class="wf-dialog" role="dialog" aria-modal="true" aria-labelledby="edit-title" data-m="2" data-testid="staff-detail-edit-dialog">
                 <div class="wf-dialog__header">
-                  <h2 class="wf-dialog__title" id="edit-title" data-m="2">プロフィールを編集</h2>
-                  <span class="wf-btn wf-btn--icon" aria-label="閉じる" data-escape data-m="3" data-testid="staff-detail-edit-close" data-go="01-detail.html"><svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><path d="M5 5l10 10M15 5 5 15" fill="none" stroke="currentColor" stroke-width="1.8" /></svg></span>
+                  <h2 class="wf-dialog__title" id="edit-title">プロフィールを編集</h2>
                 </div>
                 <div class="wf-dialog__body" data-testid="staff-detail-profile-form">
                   <div class="wf-field">
                     <span class="wf-label">名前</span>
-                    <div class="wf-input wf-field__input" data-m="4" data-testid="staff-detail-name-input">林 さくら</div>
+                    <div class="wf-input wf-field__input" data-m="3" data-testid="staff-detail-name-input">林 さくら</div>
                   </div>
                   <div class="wf-field">
                     <span class="wf-label">メールアドレス</span>
-                    <span data-m="5" data-testid="staff-detail-email-readonly">sakura.hayashi@example.com</span>
+                    <span data-m="4" data-testid="staff-detail-email-readonly">sakura.hayashi@example.com</span>
                     <span class="wf-hint">メールアドレスは変えられません。</span>
                   </div>
                   <div class="wf-field">
                     <span class="wf-label">電話番号（任意）</span>
-                    <div class="wf-input wf-field__input" data-m="6" data-testid="staff-detail-phone-input">09000000001</div>
+                    <div class="wf-input wf-field__input" data-m="5" data-testid="staff-detail-phone-input">09000000001</div>
                   </div>
                   <div class="st-row">
                     <div class="wf-field">
                       <span class="wf-label">部署</span>
-                      <div class="wf-input wf-field__input st-select" data-m="7" data-testid="staff-detail-department-input">看護部</div>
+                      <div class="wf-input wf-field__input st-select" data-m="6" data-testid="staff-detail-department-input">看護部</div>
                     </div>
                     <div class="wf-field">
                       <span class="wf-label">チーム</span>
-                      <div class="wf-input wf-field__input st-select" data-m="8" data-testid="staff-detail-team-input">西チーム</div>
-                      <span class="wf-hint" data-m="9">チームを変えると、今のチームを対象にしている権限は、新しいチームが対象になります。</span>
+                      <div class="wf-input wf-field__input st-select" data-m="7" data-testid="staff-detail-team-input">西チーム</div>
+                      <span class="wf-hint" data-m="8">チームを変えると、今のチームを対象にしている権限は、新しいチームが対象になります。</span>
                     </div>
                   </div>
                   <div class="wf-field">
                     <span class="wf-label">訪問</span>
-                    <div class="wf-tabs st-visits" role="radiogroup" aria-label="訪問" data-m="10" data-testid="staff-detail-visits-input">
+                    <div class="wf-tabs st-visits" role="radiogroup" aria-label="訪問" data-m="9" data-testid="staff-detail-visits-input">
                       <span class="wf-tab is-on" data-choice="visits" data-testid="staff-detail-visits-input-visits">訪問する</span>
                       <span class="wf-tab" data-choice="visits" data-testid="staff-detail-visits-input-non-visiting">訪問しない</span>
                     </div>
@@ -127,8 +127,8 @@
                   </div>
                 </div>
                 <div class="wf-dialog__footer">
-                  <span class="wf-btn" data-m="11" data-testid="staff-detail-edit-cancel" data-go="01-detail.html">キャンセル</span>
-                  <span class="wf-btn wf-btn--primary" data-m="12" data-testid="staff-detail-save" data-go="01-detail.html">保存</span>
+                  <span class="wf-btn" data-escape data-m="10" data-testid="staff-detail-edit-cancel" data-go="01-detail.html">キャンセル</span>
+                  <span class="wf-btn wf-btn--primary" data-m="11" data-testid="staff-detail-save" data-go="01-detail.html">保存</span>
                 </div>
               </div>
             </div>

@@ -17,12 +17,6 @@ export type PolicyChange =
   | { kind: 'remove'; name: string; userPolicyId: StaffPolicy['user_policy_id'] }
   | { kind: 'add'; name: string; input: StaffPolicyInput }
 
-/** 権限を、ほかの権限の後に職員の管理を置く並びにする。 */
-export const orderPolicies = (policies: readonly Policy[]) => [
-  ...policies.filter((p) => p.code !== STAFF_MANAGE),
-  ...policies.filter((p) => p.code === STAFF_MANAGE),
-]
-
 /**
  * 権限を、職員の今の役職に決まっている権限と、ほかの権限の 2 つのまとまりに分ける。並びは渡した並びのままにする。
  * 役職に決まっているかは権限で決め、対象では決めない。役職を読み終えるまでは、全てをほかの権限にする。

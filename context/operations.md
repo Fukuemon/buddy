@@ -44,16 +44,21 @@ buddy のコードと設定は、特定のデプロイ先を前提にしない�
 ## Calendar Worker
 
 Google カレンダーの書き出しと同期は、予定の API と同じイメージの `calendar-worker` が、役割ごとのプロセスで動かす。  
-ADR-0036: [Google カレンダーの書き出しと同期を、予定の API と同じイメージの Worker のコマンドで動かす](../docs/adr/0036-calendar-worker.md)
+ADR-0032: [Google カレンダーの書き出しと同期を、予定の API と同じイメージの Worker のコマンドで役割ごとに動かし、繰り返しを Worker のコマンドに集める](../docs/adr/0032-calendar-worker.md)
 
 - 役割は `calendar-worker export`（書き出し）と `calendar-worker sync`（同期）で、1 つのプロセスは 1 つの役割だけを持つ。
 - 常駐で動かすか、`--once` を付けて定期的に起動するかは、インフラのリポジトリが決める。
-- 同じ役割の Worker を 2 つ以上動かしてもよい。待ちとカレンダーは、リースで 1 つの Worker だけが取る。
-- 止めるときは停止の合図（SIGTERM）を送る。Worker は新しく取るのをやめ、取ったものの結果を書いてから終わる。
-- 異常終了で結果を書けなかった待ちとカレンダーは、リースが切れた後に取り直される。復旧のために DB を直す必要はない。
-- 同期の Worker は、Google カレンダーを予定の正本にする事業所（`google_primary`）のカレンダーだけを取る。buddy を正本にする事業所（`buddy_primary`）のカレンダーは読まない。
-  - ADR-0035: [事業所の予定の正本を Google カレンダーから buddy へ段階で切り替え、Google カレンダーを正本にする間は予定を参照のモデルに写す](../docs/adr/0035-google-calendar-source-modes.md)
-- 処理の回数、成功と失敗、滞留は、Worker のログ（`component` が `calendar-export` か `calendar-sync`）から見る。メトリクスは、インフラの側でこのログから作る。
+- 同じ役割の Worker を 2 つ以上動かしてもよい。
+  - 待ちとカレンダーは、リースで 1 つの Worker だけが取る。
+- 止めるときは停止の合図（SIGTERM）を送る。
+  - Worker は新しく取るのをやめ、取ったものの結果を書いてから終わる。
+- 異常終了で結果を書けなかった待ちとカレンダーは、リースが切れた後に取り直される。
+  - 復旧のために DB を直す必要はない。
+- 同期の Worker は、Google カレンダーを予定の正本にする事業所（`google_primary`）のカレンダーだけを取る。
+  - buddy を正本にする事業所（`buddy_primary`）のカレンダーは読まない。
+  - ADR-0029: [Google カレンダーとの連携を、事業所ごとの正本のモードで分ける](../docs/adr/0029-google-calendar-sync.md)
+- 処理の回数、成功と失敗、滞留は、Worker のログ（`component` が `calendar-export` か `calendar-sync`）から見る。
+  - メトリクスは、インフラの側でこのログから作る。
 
 ### Worker のログ
 
@@ -62,7 +67,9 @@ Worker は、待ちかカレンダーを取って処理する 1 回（バッチ�
 バッチの後に、滞留の件数と時間を `info` の水準で書く。  
 停止の合図を受けた後のバッチでは、滞留を数えない。
 
-要約の `msg` は、書き出しが `calendar export batch`、同期が `calendar sync batch` である。項目は次のとおり。
+要約の `msg` は、書き出しが `calendar export batch`、同期が `calendar sync batch` である。  
+同期の Worker は、書く期限を過ぎた保留の版の読み戻しの要約も、`calendar pending readback batch` に書く。読み戻しでは、取った数は Google カレンダーに書いた予定の記録の数になる。  
+項目は次のとおり。
 
 - `claimed_count`: 取った待ちかカレンダーの数
   - 残りの 4 つの項目の和は、`claimed_count` と同じになる。
@@ -94,7 +101,8 @@ Worker は、待ちかカレンダーを取って処理する 1 回（バッチ�
 予定のタイトル、利用者名、カレンダーの ID のメールは、どのログにも書かない。  
 1 つの待ちやカレンダーの失敗は、要約とは別に、`calendar export failed` と `calendar sync failed` の行に書く。  
 失敗の行には、待ちの ID（`export_id`）か、事業所の ID（`facility_id`）と buddy のカレンダーの ID（`external_calendar_id`）を付ける。  
-日時を読めずに参照のモデル（Projection）に写さなかった予定は、`calendar projection skipped` の行に、事業所、カレンダー、Google の予定の ID（`event_id`）を付けて書く。
+日時を読めずに参照のモデル（Projection）に写さなかった予定は、`calendar projection skipped` の行に、事業所、カレンダー、Google の予定の ID（`event_id`）を付けて書く。  
+保留の版を読み戻せなかった記録は、`calendar pending readback failed` の行に、事業所、カレンダー、Google の予定の ID を付けて書く。
 
 ## Rollback
 
@@ -109,7 +117,7 @@ Worker は、待ちかカレンダーを取って処理する 1 回（バッチ�
   - ブローカーでは、上流の IdP の client secret のファイル（`UPSTREAM_IDP_CLIENT_SECRETS_FILE`）と、token_hook のヘッダーの値（`TOKEN_HOOK_KEY`）もシークレットである。
 - Google のサービスアカウントのキーは作らず、どこにも置かない。
   - API は、Application Default Credentials で認証し、事業所のサービスアカウントの権限を借用する。
-  - ADR-0012: [Google カレンダーのサービスアカウントを事業所ごとに分け、buddy は IAM の権限借用で切り替える](../docs/adr/0012-google-calendar-facility-service-accounts.md)
+  - ADR-0030: [職員のカレンダーを、事業所ごとのサービスアカウントへの共有で読み書きする](../docs/adr/0030-google-calendar-service-accounts.md)
 - 組織とサービスアカウントの対応のファイル（`GOOGLE_CALENDAR_SERVICE_ACCOUNTS_FILE`）は、buddy のリポジトリに置かない。
   - シークレットではないが、サービスアカウントのメールアドレスを持つためである。
   - 照合の対象のカレンダーのファイル（`GOOGLE_CALENDARS_FILE`）も、職員のカレンダー ID を持つので同じ扱いにする。
@@ -125,7 +133,8 @@ Worker は、待ちかカレンダーを取って処理する 1 回（バッチ�
 運営側は、事業所を足すたびに、Google カレンダーのサービスアカウントを次の順で用意する。
 
 1. 運営側の GCP のプロジェクトに、事業所のサービスアカウントを作る。
-2. Application Default Credentials で認証する主体に、事業所のサービスアカウントのトークン作成者のロールを付ける。プロジェクトの全体には付けない。
+2. Application Default Credentials で認証する主体に、事業所のサービスアカウントのトークン作成者のロールを付ける。
+   - ロールは、プロジェクトの全体には付けない。
    - 主体は、Workload Identity Federation のプールの主体か、中間のサービスアカウントである。
 3. 事業所の組織の ID とサービスアカウントのメールアドレスの対応を、`GOOGLE_CALENDAR_SERVICE_ACCOUNTS_FILE` のファイルに足し、予定の API と照合の API に渡す。
 4. 事業所の職員に、事業所のサービスアカウントのメールアドレスを伝え、自分のカレンダーを「予定の変更」の権限で共有してもらう。
@@ -134,7 +143,7 @@ Worker は、待ちかカレンダーを取って処理する 1 回（バッチ�
    - 予定の API が予定を書き出すので、閲覧だけの権限では足りない。
    - 「予定の変更」の共有だけで、ドメイン全体の委任なしに予定を書けるかは、未確認である。PRD の [Open Questions](../docs/PRD.md#open-questions) にある。
      - 確認するまで、本番で書き出しを有効にしない。
-   - ADR-0012: [Google カレンダーのサービスアカウントを事業所ごとに分け、buddy は IAM の権限借用で切り替える](../docs/adr/0012-google-calendar-facility-service-accounts.md)
+   - ADR-0030: [職員のカレンダーを、事業所ごとのサービスアカウントへの共有で読み書きする](../docs/adr/0030-google-calendar-service-accounts.md)
 
 事業所のアカウントに切り替える前の 1 つのアカウントに共有したカレンダーは、切り替えると読めなくなる。  
 職員が事業所のアカウントに共有し直した後に、運営側は前のアカウントへの共有を外してもらい、前のアカウントを止める。
@@ -144,16 +153,27 @@ Worker は、待ちかカレンダーを取って処理する 1 回（バッチ�
 Google カレンダーを予定の正本にする事業所（`google_primary`）を buddy の正本に切り替えるときは、事業所のマネージャーが、予定の正本の切り替えの画面（`/schedule/link/cutover`）で次の順に進める。  
 手順の規則は [Google カレンダーとの連携の Design Doc の予定の正本の切り替え](../services/schedule/internal/features/calendar/DesignDoc.md#予定の正本の切り替え) にある。
 
-1. 始める前に、事業所の職員に、切り替えが終わるまで Google カレンダーで予定を作成、変更しないよう頼む。始める日時と、終わる見込みの日時を伝える。
-   - 切り替えの間も、予定のカレンダーの画面は Google カレンダーの予定を出し、切り替え中であることを示す。
+切り替えは、業務時間外の 1 回の作業で、始めてから完了まで終える。  
+その日のうちに完了できなければ、切り替えを「やめる」で終え、別の日に始めからやり直す。  
+切り替えの間は、職員が buddy から予定を作成、変更、取り消しできないためである。  
+予定の API は、`open` の切り替えを自動の期限で止めないので、マネージャーが完了するか、やめるまで切り替えは続く。  
+ADR-0031: [事業所の予定の正本を、期間のある切り替えの記録で Google カレンダーから buddy へ移す](../docs/adr/0031-calendar-cutover.md)
+
+1. 始める前に、事業所の職員に、切り替えが終わるまで Google カレンダーと buddy で予定を作成、変更しないよう頼む。
+   - 業務時間外の始める日時と、その日のうちの終わる見込みの日時を伝える。
+   - 切り替えの間も、予定のカレンダーの画面は Google カレンダーの予定を出し、切り替え中であることを示す。buddy からの予定の作成、変更、取り消しは拒まれる。
    - 頼んだ後に Google カレンダーで変えた予定は、完了するときに見つかり、取り込み直すまで完了できない。
 2. 切り替えの画面で、全ての職員のカレンダーの最後の同期が成功していることを見てから、切り替えを始める。
    - 同期が失敗している職員がいれば始められない。同期の Worker のログ（`calendar sync failed`）とカレンダーの共有を見て、同期が成功するまで待つ。
-3. 職員ごとに予定を取り込む。確認が必要な予定は、利用者を選ぶか、通常の予定にするか、取り込まないかを決める。
+   - buddy から Google カレンダーに書いた結果がまだ分からない予定があれば始められない（`google_write_pending`）。同期の読み戻しが結果を決めるまで、時間をおいてから始め直す。
+3. 職員ごとに予定を取り込む。
+   - 確認が必要な予定は、利用者を選ぶか、通常の予定にするか、取り込まないかを決める。
    - 繰り返しの規則を buddy に写せない予定は、職員に Google カレンダーで規則を直してもらって取り込み直すか、取り込まないと決める。
 4. 全ての職員を取り込んだら、同期の間隔（`GOOGLE_CALENDAR_SYNC_INTERVAL`）が過ぎるのを待ってから完了する。
    - 完了できないときは、画面の一覧の職員を取り込み直す。Google で変わった予定は、取り込み直すと Google の内容で上書きする。
-5. 完了したら、職員に、これからは予定を buddy で作成、変更するよう伝える。Google カレンダーには buddy の予定を書き出す。
+   - その日のうちに完了できなければ、切り替えをやめる。
+5. 完了したら、職員に、これからは予定を buddy で作成、変更するよう伝える。
+   - Google カレンダーには buddy の予定を書き出す。
    - Google カレンダーで変えた予定は buddy に取り込まず、書き出しで buddy の内容に戻る。
 
 切り替えをやめると、取り込んだ予定を buddy から消し、事業所は Google カレンダーを正本にしたままになる。  
@@ -173,9 +193,11 @@ GitHub のランナーに戻すときは、`gh variable delete RUNS_ON -R Fukuem
 
 - self-hosted runner の機械では、ローカル環境の compose が動いていることがある。
   - CI の E2E は、compose のプロジェクトの名前を `buddy-ci` にし、ポートを全てずらして起動する。ずらしたポートは `.github/workflows/ci.yml` の `e2e` のジョブにある。
+  - CI の E2E は portless を使わず、`http://localhost:<ポート>` で動く。ブラウザが開く URL（`*_ORIGIN`）と `SESSION_COOKIE_SECURE=false` も、同じジョブが渡す（ADR-0036）。
 - self-hosted runner は、E2E のジョブの後に、タグの無い Docker のイメージと 7 日より古いビルドのキャッシュを消す。
   - Docker は runner の機械のローカル環境と共有なので、ローカル環境のものも消える。
 - self-hosted runner は、runner の `.env` で Go、pnpm、mise、Playwright のキャッシュの配置先を `~/actions-runner/_cache` に分ける。
   - `.path` では、PATH を Homebrew とシステムのディレクトリに絞る。
   - ローカル環境のツールとキャッシュを CI と共有しないためである。runner を作り直すときも、同じ設定にする。
-- self-hosted runner は、private のリポジトリだけに使う。public のリポジトリでは、外部の人の pull request のコードが runner の機械で流れる。
+- self-hosted runner は、private のリポジトリだけに使う。
+  - public のリポジトリでは、外部の人の pull request のコードが runner の機械で流れる。
