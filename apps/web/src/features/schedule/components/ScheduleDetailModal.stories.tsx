@@ -56,3 +56,31 @@ export const Recurring: Story = {
     onChangeRecurrence: fn(),
   },
 }
+
+/** 月曜から日曜までの 7 つの曜日を、間隔 interval で繰り返す予定の、2026-11-09 の回の args。 */
+const allDaysArgs = (interval: number, endDate: string | null) => ({
+  schedule: {
+    ...visit!,
+    startsAt: '2026-11-09T09:00:00+09:00',
+    endsAt: '2026-11-09T09:29:00+09:00',
+    recurrence: {
+      recurringScheduleId: 'recurring-1',
+      rule: {
+        frequency: 'weekly' as const,
+        daysOfWeek: [1, 2, 3, 4, 5, 6, 7],
+        interval,
+        dayOfWeek: null,
+        dayOfMonth: null,
+        weekOfMonth: null,
+        endDate,
+      },
+    },
+  },
+  onChangeRecurrence: fn(),
+})
+
+/** 7 つの曜日の毎週で、終了日を 2027-03-31 にした繰り返しの予定の回。毎日の訪問は、ADR-0038 のとおりこの形で持つ。 */
+export const RecurringDaily: Story = { args: allDaysArgs(1, '2027-03-31') }
+
+/** 7 つの曜日の隔週の、終了日の無い繰り返しの予定の回。 */
+export const RecurringBiweeklyAllDays: Story = { args: allDaysArgs(2, null) }
