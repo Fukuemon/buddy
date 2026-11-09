@@ -36,6 +36,13 @@ web の型（`apps/web/src/api/types.ts`）はフェイクの API に合わせ�
 | 予定 | Google カレンダーの予定か | `Schedule.fromGoogleCalendar` | `listSchedules` の `Schedule.source` が `google_calendar` |
 | 切り替え中の案内、予定を作成、空いた時間、時間の枠 | 切り替え中か | `ScheduleList.cutover` が `null` でない | `listSchedules` の `cutover` |
 | 切り替えの開始 | 始めた職員の名前と時刻 | `OpenCalendarCutover.started_by_name`、`OpenCalendarCutover.started_at` | `listSchedules` の `cutover.started_by_name`、`cutover.started_at` |
+| 終日の予定、終日の行、一覧の終日の予定、終日の見出し、職員の終日の欄 | かかる最初の日と最後の日（最後の日を含む） | `AllDayEvent.startDate`、`AllDayEvent.endDate` | `listSchedules` の `all_day_events[].start_date`、`end_date` |
+| 終日の予定、一覧の終日の予定 | タイトル。空白だけなら「（タイトルなし）」 | `AllDayEvent.title` を `allDayEventTitle` に通した値 | `listSchedules` の `all_day_events[].title` |
+| 終日の予定、一覧の終日の予定 | 職員の名前 | `AllDayEvent.staffName` | `listSchedules` の `all_day_events[].staff_name` |
+| 終日の予定、一覧の終日の予定、職員の終日の欄 | 職員の色と、置く列 | `AllDayEvent.staffId` | `listSchedules` の `all_day_events[].staff_id` |
+| カレンダーに出せない予定の通知 | 件数 | `ScheduleList.unlistedEventCounts` の `UnlistedEventCount.count` の合計 | `listSchedules` の `unlisted_event_counts[].count` の合計 |
+| 出せない予定の行 | 職員の名前 | `UnlistedEventCount.staffId` を、職員の一覧（`Staff.name`）で引く | `unlisted_event_counts[].staff_id` を、`listUsers` の `Staff.username` で引く |
+| 出せない予定の行 | 件数 | `UnlistedEventCount.count` | `listSchedules` の `unlisted_event_counts[].count` |
 
 - 予定の一覧の取得は、`listSchedules`（`GET /v1/facilities/{facility_id}/schedules`）に当たる。
   - web の画面は、期間を `ScheduleListParams` の `from`、`to` の日時で、職員を `staffIds` で渡す。
@@ -73,7 +80,19 @@ web の型（`apps/web/src/api/types.ts`）はフェイクの API に合わせ�
   - `schedules` は、期間に重なり、職員の絞り込みに当たる予定である。
   - `needsReview` は、`review_reason` を持つ予定を、期間で絞らず、職員の絞り込みだけで絞ったものである。
   - `calendarSyncs` は、`calendar_syncs` を `staff_id` で職員の絞り込みに当てたものである。
+  - `allDayEvents` と `unlistedEventCounts` は、`all_day_events` と `unlisted_event_counts` を `staff_id` で職員の絞り込みに当てたものである。
   - 処理は `apps/web/src/api/http/httpBuddyApi.ts` の `schedules.list` にある。
+- `all_day_events` と `unlisted_event_counts` は、`date_from` から `date_to` までの期間に重なり、ログインした職員が見てよい職員の分を返す（#672）。
+  - `buddy_primary` の事業所と、`schedule_type` で絞ったときは空である。
+  - 繰り返しの終日の予定は、回ごとに返す。`AllDayEvent.id` は回ごとに違い、予定の ID としては使えない。
+  - `unlisted_event_counts` は、2 日以上にわたる予定、24 時間以上の予定、開始か終了の日時を読めない予定、長さが 0 以下の予定を数える。
+  - `unlisted_event_counts` は、件数が 1 以上の職員だけを返す。繰り返しの予定は、期間に重なる回の数を数える。
+  - 日時を読めない予定は、開始か終了の読めた方の日で期間に重なるかを決め、どちらも読めなければどの期間でも数える。
+- 画面は、`apps/web/src/features/schedule/lib/allDayEvents.ts` の `toCalendarAllDayEvents` で、終日の予定に職員の色を付ける。
+  - 職員の絞り込みに出す職員（`activeStaff` と `readableStaff` で絞った職員）にいない職員の終日の予定は除く。
+  - 月と週の表示は FullCalendar の終日の予定にし、終わりを `endDate` の翌日にする。押しても `onEventClick` を呼ばない。
+  - 日の表示と週の一覧は、`allDayEventsOn` で日にかかる予定を選ぶ。
+- 出せない予定の行の職員の名前は、`activeStaff` と `readableStaff` で絞る前の職員の一覧（`ScheduleSourceNotices` に渡す `allStaff`）の `Staff.name` を出す。
 - `calendar_syncs` は、ログインした職員が見てよい職員に結び付けた、外していないカレンダーの分を返す。
   - `buddy_primary` の事業所では空である。
   - 最新でないとみなす時間は画面が決め、`apps/web/src/features/schedule/lib/calendarSync.ts` の `CALENDAR_SYNC_STALE_MS`（10 分）にある。
@@ -154,6 +173,15 @@ web の型（`apps/web/src/api/types.ts`）はフェイクの API に合わせ�
 | 画面の幅が、768px 未満である | `useIsDesktop()` が false |
 | 予定が、カレンダーに予定を出す条件に当てはまる | カレンダーと職員ごとの日の表に渡す `events`（`toCalendarEvents` の結果）にある。`ScheduleWeekAgenda` が、同じ `events` を `groupWeekAgenda` で日ごとに分ける |
 | 表示の期間が、今日を含む | 週の表示は FullCalendar の `nowIndicator` が今日の列にだけ線を引く。日の表示は `nowForDay(date, now)` が、`date` が今日のときだけ今の時刻を返す |
+| 表示する職員の予定に、表示の期間に重なるカレンダーに出せない予定がある | `ScheduleList.unlistedEventCounts` のうち、`activeStaff` と `readableStaff` で絞った職員の一覧にある職員の `count` の合計が 1 以上（`ScheduleCalendarContainer` の `unlistedEventCounts`、`ScheduleSourceNotices` の `unlistedTotal`） |
+| 終日の予定が、表示の期間の日にかかる | `listSchedules` が、`date_from` から `date_to` までに重なる予定だけを `all_day_events` に返す。日の表示と週の一覧は、`allDayEventsOn` が、日が `AllDayEvent.startDate` 以上 `AllDayEvent.endDate` 以下の予定だけを置く |
+| 表示する職員の絞り込みが、終日の予定の職員を含む | 選んだ職員に `AllDayEvent.staffId` がある。web のサーバーが `ScheduleListParams` の `staffIds` で絞る |
+| 終日の予定の職員が、休職か退職の職員である | `AllDayEvent.staffId` の職員の `Staff.status` がある（`toCalendarAllDayEvents` が、`activeStaff` で絞った職員にいない職員の予定を除く） |
+| 終日の予定の職員が、訪問しない職員である | `AllDayEvent.staffId` の職員の `Staff.nonVisiting` が `true`（`toCalendarAllDayEvents` が除く） |
+| ログインした職員が、終日の予定の職員の予定を見られる | `listSchedules` が、閲覧の権限で見てよい職員の分だけを `all_day_events` に返す。`toCalendarAllDayEvents` も、`readableStaff` で絞った職員にいない職員の予定を除く |
+| 表示の期間に、カレンダーに出す終日の予定がある | `ScheduleCalendar` の `allDayEvents`（`toCalendarAllDayEvents` の結果）が空でない（FullCalendar の `allDaySlot`） |
+| 表示する日に、カレンダーに出す終日の予定がある | `allDayEventsOn(allDayEvents, date)` が空でない（`StaffScheduleDayGrid` の `allDayToday`） |
+| 終日の予定が、カレンダーに終日の予定を出す条件に当てはまる | `ScheduleWeekAgenda` に渡す `allDayEvents`（`toCalendarAllDayEvents` の結果）にあり、`allDayEventsOn` が日の見出しの日にかかると返す |
 
 - 判定の処理は、次のファイルにある。
   - 職員の絞り込みの出し分けと押せるかは、`StaffFilterSidebar.tsx` と `StaffFilterSidebarContainer.tsx` にある。
@@ -333,9 +361,20 @@ web の型（`apps/web/src/api/types.ts`）はフェイクの API に合わせ�
 | 33 | 一覧の予定 | `schedule-event-{予定の id}` |
 | 30 | 最新の情報の読み込みの失敗の文 | `refetch-error` |
 | 31 | 最新の情報を読み直す | `refetch-retry` |
+| 34 | Google カレンダーの案内 | `schedule-calendar-google-primary` |
+| 34 | カレンダーに出せない予定の通知 | `schedule-calendar-unlisted` |
+| 35 | カレンダーに出せない予定の通知 | `schedule-calendar-unlisted` |
+| 36 | カレンダーに出せない予定の通知 | `schedule-calendar-unlisted` |
+| 35 | 出せない予定の行 | `schedule-calendar-unlisted-{職員の id}` |
+| 36 | 出せない予定の行 | `schedule-calendar-unlisted-{職員の id}` |
+| 37 | 出せない予定の行 | `schedule-calendar-unlisted-{職員の id}` |
+| 38 | 終日の予定 | `all-day-event-{終日の予定の id}` |
+| 36 | 終日の見出し | `day-grid-all-day` |
+| 37 | 職員の終日の欄 | `day-grid-all-day-{職員の id}` |
+| 39 | 一覧の終日の予定 | `all-day-event-{終日の予定の id}-{日付}` |
 
 - 番号は、状態ごとの構成要素の表の番号である。同じ要素が状態ごとに違う番号を持つときは、番号ごとに行を分ける。
-- 空いた日、職員の列、週の表示の今の時刻の線、読み込み中の表示、読み込みの失敗の文には、実装が testid を付けないので、この表に載せない。
+- 空いた日、職員の列、週の表示の今の時刻の線、終日の行、読み込み中の表示、読み込みの失敗の文には、実装が testid を付けないので、この表に載せない。
 - 職員の予定の列の `day-grid-staff-{職員の id}` は、構成要素の表に要素はあるがセクションを持たない。
 - 職員ごとの日の表の時刻の列の `day-grid-times` は、構成要素の表に番号を持たないので、この表に載せない。
 - 左の欄を閉じるの `site-sidebar-close` は、packages/ui の `Drawer` の `closeButtonTestId` に渡す値である。

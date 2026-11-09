@@ -115,7 +115,7 @@
                   <div class="sc-toolbar__group">
                     <div class="wf-tabs sc-view" data-m="12" data-testid="calendar-view">
                       <span class="wf-tab" data-testid="calendar-view-month" data-go="09-google-primary.html">月</span>
-                      <span class="wf-tab" data-testid="calendar-view-week" data-go="02-week.html">週</span>
+                      <span class="wf-tab" data-testid="calendar-view-week" data-go="13-google-primary-week.html">週</span>
                       <span class="wf-tab is-active" data-testid="calendar-view-day">日</span>
                     </div>
                     <span class="wf-btn sc-filter-open" data-open="site-sidebar" data-m="28" data-testid="site-sidebar-open">日付と絞り込み</span>
@@ -127,14 +127,21 @@
                     <h2 class="sc-notice__title">予定は Google カレンダーと同期しています</h2>
                     <p class="sc-notice__text">この事業所の予定は、Google カレンダーと buddy のどちらでも作成、変更できます。buddy で保存した予定は Google カレンダーにも書き、Google カレンダーで変えた予定は数分のうちに buddy に出ます。</p>
                   </section>
+                  <section class="sc-notice sc-notice--warning" data-m="34" data-testid="schedule-calendar-unlisted">
+                    <h2 class="sc-notice__title">カレンダーに出せない予定が 1 件あります</h2>
+                    <ul class="sc-notice__list">
+                      <li data-m="35" data-testid="schedule-calendar-unlisted-{職員の id}"><strong>職員 C</strong>: 1 件</li>
+                    </ul>
+                    <p class="sc-notice__text">2 日以上にわたる予定、24 時間以上の予定、日時を読めない予定、長さの無い予定は、buddy のカレンダーに出せません。Google カレンダーで確認してください。</p>
+                  </section>
                 </div>
                 <div class="sc-day-wrap" data-m="14" data-testid="staff-schedule-day-grid">
                   <div class="sc-day">
-                    <div class="sc-head"></div>
-                    <div class="sc-head" data-m="15">職員 A</div>
-                    <div class="sc-head">職員 B</div>
-                    <div class="sc-head">職員 C</div>
-                    <div class="sc-head">職員 D</div>
+                    <div class="sc-head sc-head--allday-corner"><span data-m="36" data-testid="day-grid-all-day">終日</span></div>
+                    <div class="sc-head" data-m="15">職員 A<div class="sc-day-allday" data-m="37" data-testid="day-grid-all-day-{職員の id}"><span class="sc-allday" data-m="38" data-testid="all-day-event-{終日の予定の id}">休み</span></div></div>
+                    <div class="sc-head">職員 B<div class="sc-day-allday" data-testid="day-grid-all-day-{職員の id}"><span class="sc-allday" data-testid="all-day-event-{終日の予定の id}">研修</span></div></div>
+                    <div class="sc-head">職員 C<div class="sc-day-allday" data-testid="day-grid-all-day-{職員の id}"></div></div>
+                    <div class="sc-head">職員 D<div class="sc-day-allday" data-testid="day-grid-all-day-{職員の id}"></div></div>
                     <div class="sc-times"><div>00:00</div><div>01:00</div><div>02:00</div><div>03:00</div><div>04:00</div><div>05:00</div><div>06:00</div><div>07:00</div><div>08:00</div><div>09:00</div><div>10:00</div><div>11:00</div><div>12:00</div><div>13:00</div><div>14:00</div><div>15:00</div><div>16:00</div><div>17:00</div><div>18:00</div><div>19:00</div><div>20:00</div><div>21:00</div><div>22:00</div><div>23:00</div></div>
                     <div class="sc-col" data-m="16" data-testid="day-grid-staff-{職員の id}"><span class="sc-now" data-m="20" data-testid="day-grid-now-{職員の id}" style="top: 452px"></span><span class="sc-event" data-m="18" data-testid="schedule-event-{予定の id}" style="top: 288px; height: 16px" data-go="../../schedule-detail_予定の詳細/mocks/08-google-calendar.html">09:00〜09:30 利用者 A 訪問</span><span class="sc-slot sc-free" data-m="33" data-testid="day-grid-slot-{職員の id}-{HH:mm}" style="top: 352px; height: 16px" data-go="../../schedule-new_予定の作成/mocks/01-visit.html"></span></div>
                     <div class="sc-col" data-testid="day-grid-staff-{職員の id}"><span class="sc-now" style="top: 452px"></span><span class="sc-event" data-testid="schedule-event-{予定の id}" style="top: 336px; height: 32px" data-go="../../schedule-detail_予定の詳細/mocks/08-google-calendar.html">10:30〜11:30 利用者 B 訪問</span></div>
