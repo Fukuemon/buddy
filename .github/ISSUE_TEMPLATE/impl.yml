@@ -1,6 +1,6 @@
-name: タスク
-description: 要求を分解した実装の単位を起票する。親の要求の sub-issue にする
-labels: [type:task]
+name: 実装のタスク
+description: 要求を分解した、コードを変えるタスクを起票する。親の要求の sub-issue にする
+labels: [type:impl]
 body:
   - type: input
     id: parent
