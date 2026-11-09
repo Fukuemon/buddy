@@ -33,7 +33,7 @@ MISE_AQUA_GITHUB_ATTESTATIONS=false mise install aqua:cli/cli
 
 ### スキルとフック
 
-agent-harness のスキルとフックは apm で配置し、Git で追跡しない。  
+agent-harness のスキルとフックと、agent-playbooks のスキルとレビューの subagent は、apm で配置し、Git で追跡しない。  
 文書の編集の後のフック（`.claude/hooks/docs/`）も apm が配置する。  
 Claude Code か Codex を使うときは、clone した後の最初のセッションで、セッションの開始のフックが配置する。  
 コーディングエージェントを使わないときは、手で配置する。
@@ -47,6 +47,10 @@ apm install --frozen
 ```sh
 apm lifecycle trust
 ```
+
+コーディングエージェントで作業するときは、スキル run-playbook で依頼に合う playbook を選び、その手順で進める。  
+要求の issue では、種別から playbook が決まる。対応の表は run-playbook にある。  
+1 回の会話を超える作業（中断と再開、別のセッションに渡す作業、ワーカーに配る作業）は、スキル run-session から始める。
 
 ## Running Locally
 
