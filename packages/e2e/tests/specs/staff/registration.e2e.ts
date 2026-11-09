@@ -1,8 +1,21 @@
 import { expect, test } from '@playwright/test'
 
 import { issueAccessToken } from '../../fixtures/apiReference'
-import { BROKER_INTERNAL_URL, BROKER_URL, LEADER, LOGIN_EMAIL, OFFICE_B } from '../../fixtures/env'
-import { newStaff, registerStaff } from '../../fixtures/staff'
+import {
+  BROKER_INTERNAL_URL,
+  BROKER_URL,
+  LEADER,
+  LOGIN_EMAIL,
+  LOGIN_STATE,
+  OFFICE_B,
+} from '../../fixtures/env'
+import {
+  issueManagerToken,
+  listPositions,
+  newStaff,
+  registerStaff,
+  STAFF_FORM,
+} from '../../fixtures/staff'
 import { enterEmailAtBroker, signInAtBroker } from '../../screens/login'
 
 test.use({ storageState: { cookies: [], origins: [] } })
@@ -88,6 +101,46 @@ test.describe('ブローカーの内部の API', () => {
 
       const res = await request.post(`${BROKER_URL}/internal/staff`, { data })
       expect(res.status()).toBe(404)
+    })
+  })
+})
+
+test.describe('職員の一覧', () => {
+  // ファイルの既定はログインしていない状態なので、職員の管理の画面はマネージャーでログインした状態で開く
+  test.use({ storageState: LOGIN_STATE })
+
+  test.describe('職員の登録', () => {
+    test('職員の管理の権限を持つ職員がメールアドレスと役職で職員を登録した場合、一覧に出て、役職に決まっている権限が付くこと', async ({
+      page,
+      request,
+    }) => {
+      const staff = newStaff('screen')
+      const positions = await listPositions(request, await issueManagerToken(request))
+      const member = positions.find((p) => p.id === STAFF_FORM.positionId)
+      expect(member).toBeDefined()
+
+      await page.goto('/staff')
+      await page.getByTestId('staff-list-new').click()
+      const dialog = page.getByTestId('staff-new-dialog')
+      await dialog.getByTestId('staff-new-name').fill(staff.name)
+      await dialog.getByTestId('staff-new-email').fill(staff.email)
+      await dialog.getByTestId('staff-new-position').selectOption(STAFF_FORM.positionId)
+      await dialog.getByTestId('staff-new-submit').click()
+
+      await expect(page).toHaveURL(/\/staff\/[0-9A-HJKMNP-TV-Z]{26}$/)
+      await expect(page.getByTestId('staff-detail-name')).toHaveText(staff.name)
+      await page.getByTestId('staff-detail-tab-policies').click()
+      const positionGroup = page.getByTestId('staff-policy-group-position')
+      await expect(positionGroup).toContainText(`役職「${member?.name}」で付く権限`)
+      for (const { code } of member?.policies ?? []) {
+        await expect(positionGroup.getByTestId(`staff-policy-row-${code}`)).toBeVisible()
+      }
+      await expect(page.getByTestId('staff-policy-group-individual')).toHaveCount(0)
+
+      await page.getByTestId('staff-detail-back').click()
+      await page.getByTestId('staff-list-search').fill(staff.name)
+      await expect(page.getByTestId('staff-list-count')).toHaveText('1 人')
+      await expect(page.getByTestId('staff-list-table')).toContainText(staff.name)
     })
   })
 })
