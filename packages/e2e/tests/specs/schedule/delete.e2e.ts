@@ -59,7 +59,7 @@ test.describe('予定の削除', () => {
     const title = `E2E の削除する予定 ${Date.now()}`
     const kept = `E2E の削除しない予定 ${Date.now()}`
     const date = daysFromToday(1)
-    const token = await issueManagerToken(request)
+    const token = await issueManagerToken()
     const id = await createOwnSchedule(request, token, title, date)
     await createOwnSchedule(request, token, kept, date)
 
@@ -83,7 +83,7 @@ test.describe('予定の削除', () => {
   }) => {
     const title = `E2E の残す予定 ${Date.now()}`
     const date = daysFromToday(1)
-    const token = await issueManagerToken(request)
+    const token = await issueManagerToken()
     const id = await createOwnSchedule(request, token, title, date)
 
     await openDetail(page, id, date)
@@ -101,7 +101,7 @@ test.describe('予定の削除', () => {
     request,
   }) => {
     const date = daysFromToday(-1)
-    const token = await issueManagerToken(request)
+    const token = await issueManagerToken()
     const id = await createOwnSchedule(request, token, `E2E の昨日の予定 ${Date.now()}`, date)
 
     await openDetail(page, id, date)
@@ -116,7 +116,7 @@ test.describe('予定の削除', () => {
   }) => {
     const title = `E2E の回を削除する定例 ${Date.now()}`
     const kept = `E2E の回を削除する日の予定 ${Date.now()}`
-    const token = await issueManagerToken(request)
+    const token = await issueManagerToken()
     const created = await createWeeklyNormalSchedule(request, token, STAFF_FORM.facilityId, {
       staffId: LOGIN_STAFF.id,
       title,
