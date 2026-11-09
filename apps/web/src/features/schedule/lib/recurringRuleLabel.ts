@@ -13,12 +13,15 @@ export const ISO_WEEKDAYS = ['月', '火', '水', '木', '金', '土', '日'] as
 /** 曜日（1 が月曜、7 が日曜）を「月曜日」の形にする。 */
 export const weekdayLabel = (day: number) => `${ISO_WEEKDAYS[day - 1]}曜日`
 
+/** 毎週の間隔を「毎週」として扱うか。1 と、欄を空にした間（NaN）である。 */
+const isEveryWeek = (interval: number) => interval === 1 || Number.isNaN(interval)
+
 /**
  * 毎週の間隔の文言。1 は「毎週」、2 は「隔週」、3 以上は「3 週ごと」の形である。
  * 欄を空にした間（NaN）は「毎週」を出す。範囲の外の数は、入れた数のまま出し、誤りの文で直させる。
  */
 export const weeklyIntervalLabel = (interval: number) => {
-  if (interval === 1 || Number.isNaN(interval)) return '毎週'
+  if (isEveryWeek(interval)) return '毎週'
   if (interval === 2) return '隔週'
   return `${interval} 週ごと`
 }
@@ -38,10 +41,11 @@ export type RepetitionValues = Pick<
  */
 export const repetitionLabel = (values: RepetitionValues) => {
   if (values.frequency === 'weekly') {
-    const interval = weeklyIntervalLabel(values.interval)
     const days = weeklyDaysOf(values)
-    if (interval === '毎週' && days.length === ISO_WEEKDAYS.length) return '毎日'
-    return `${interval} ${days.map(weekdayLabel).join('、')}`
+    if (isEveryWeek(values.interval) && ISO_WEEKDAYS.every((_, i) => days.includes(i + 1))) {
+      return '毎日'
+    }
+    return `${weeklyIntervalLabel(values.interval)} ${days.map(weekdayLabel).join('、')}`
   }
   if (values.monthlyBy === 'day') return `毎月 ${values.dayOfMonth} 日`
   return `毎月 第 ${values.weekOfMonth} ${weekdayLabel(values.dayOfWeek)}`

@@ -39,6 +39,12 @@ describe('recurringRuleLabel', () => {
     )
   })
 
+  it('7 つの曜日で、間隔を持たないか間隔の欄が空の規則も「毎日」にする', () => {
+    const allDays = [1, 2, 3, 4, 5, 6, 7]
+    expect(recurringRuleLabel({ ...weekly(allDays, 1), interval: null }, '2026-11-09')).toBe('毎日')
+    expect(recurringRuleLabel(weekly(allDays, Number.NaN), '2026-11-09')).toBe('毎日')
+  })
+
   it('7 つの曜日で間隔 2 以上の規則は、間隔の文言と曜日の並びにする', () => {
     expect(recurringRuleLabel(weekly([1, 2, 3, 4, 5, 6, 7], 2), '2026-11-09')).toBe(
       '隔週 月曜日、火曜日、水曜日、木曜日、金曜日、土曜日、日曜日',

@@ -6,7 +6,8 @@ import { describe, expect, it } from 'vite-plus/test'
 
 import * as stories from './ScheduleDetailModal.stories'
 
-const { Visit, Normal, Cancelled, Recurring } = composeStories(stories)
+const { Visit, Normal, Cancelled, Recurring, RecurringDaily, RecurringBiweeklyAllDays } =
+  composeStories(stories)
 
 describe('ScheduleDetailModal', () => {
   it('訪問の予定は利用者とサービスコードを出す', () => {
@@ -77,6 +78,18 @@ describe('ScheduleDetailModal', () => {
     render(<Recurring />)
     expect(screen.getByTestId('schedule-detail-recurrence')).toHaveTextContent(
       '繰り返し隔週 月曜日、木曜日',
+    )
+  })
+
+  it('7 つの曜日の毎週は「毎日」と出し、隔週は曜日を並べる', () => {
+    const { unmount } = render(<RecurringDaily />)
+    expect(screen.getByTestId('schedule-detail-recurrence')).toHaveTextContent(
+      '繰り返し毎日（2027年3月31日（水）まで）',
+    )
+    unmount()
+    render(<RecurringBiweeklyAllDays />)
+    expect(screen.getByTestId('schedule-detail-recurrence')).toHaveTextContent(
+      '繰り返し隔週 月曜日、火曜日、水曜日、木曜日、金曜日、土曜日、日曜日',
     )
   })
 
