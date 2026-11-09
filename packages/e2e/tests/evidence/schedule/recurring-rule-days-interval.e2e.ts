@@ -279,10 +279,11 @@ test.describe('繰り返しの変更', () => {
               '曜日の欄の下に「曜日を 1 つ以上選んでください」が出て、モーダルが開いたまま',
             )
             await step('「キャンセル」を押し、変更を破棄して閉じ、同じ日の表示を開き直す')
-            const confirm = await acceptBrowserDialog(page, () =>
+            const discard = '変更が破棄されますがよろしいですか？'
+            const confirm = await acceptBrowserDialog(page, discard, () =>
               page.getByTestId('schedule-recurrence-cancel').click(),
             )
-            expect(confirm).toBe('変更が破棄されますがよろしいですか？')
+            expect(confirm).toBe(discard)
             await checkDay(page, check, LOGIN_STAFF.id, start, title, true, '月曜')
           },
         )

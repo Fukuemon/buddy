@@ -72,10 +72,11 @@ test.describe('予定のカレンダー', () => {
         )
         await expect(page.getByTestId('schedule-form-modal')).toBeVisible()
         // 送っていれば、次の火曜に回ができる。閉じて開き直した日の表示で、列が出てから数える
-        const confirm = await acceptBrowserDialog(page, () =>
+        const discard = '変更が破棄されますがよろしいですか？'
+        const confirm = await acceptBrowserDialog(page, discard, () =>
           page.getByTestId('schedule-new-cancel').click(),
         )
-        expect(confirm).toBe('変更が破棄されますがよろしいですか？')
+        expect(confirm).toBe(discard)
         await expect(page.getByTestId('schedule-form-modal')).toBeHidden()
         await openDay(page, fromNextMonday(1), LOGIN_STAFF.id)
         await expect(ownEvent(page, title)).toHaveCount(0)
