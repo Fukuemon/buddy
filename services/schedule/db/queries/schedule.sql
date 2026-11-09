@@ -165,3 +165,22 @@ SELECT p.facility_id FROM calendar_event_projections p WHERE projected_schedule_
 UNION ALL
 SELECT p.facility_id FROM calendar_event_projections p WHERE detached_schedule_id(p.external_calendar_id, p.external_event_id) = $1
 LIMIT 1;
+
+-- name: CreateScheduleDeletion :exec
+INSERT INTO schedule_deletions (id, facility_id, schedule_id, recurring_schedule_id, date, staff_id, deleted_by)
+VALUES (sqlc.arg(id), sqlc.arg(facility_id), sqlc.narg(schedule_id), sqlc.narg(recurring_schedule_id), sqlc.arg(date), sqlc.arg(staff_id), sqlc.arg(deleted_by));
+
+-- name: MoveExternalEventLinkToDeletion :exec
+-- 予定の行を消すと予定の対応も消えるので、書き出しが外部の予定を消すまで、削除の監査の記録を指す対応にする（ADR-0040）。
+UPDATE external_event_links SET deleted_schedule_id = schedule_id, schedule_id = NULL WHERE schedule_id = $1;
+
+-- name: DeleteSchedule :one
+-- 書き出しの待ちは外部キーの ON DELETE CASCADE で消える。
+DELETE FROM schedules WHERE id = $1 RETURNING visit_info_id;
+
+-- name: GetDeletedScheduleStaffID :one
+SELECT staff_id FROM schedule_deletions WHERE schedule_id = $1;
+
+-- name: ScheduleIDDeleted :one
+-- 削除した予定の ID は、作り直しに使わせない。削除の書き出しの待ちと監査の記録が、同じ ID の別の予定を指さないためである。
+SELECT EXISTS (SELECT 1 FROM schedule_deletions WHERE schedule_id = $1)::boolean;

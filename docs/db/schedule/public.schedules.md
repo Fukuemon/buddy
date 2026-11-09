@@ -30,7 +30,7 @@
 
 | Name                                                               | Definition                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
 | ------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| [予定と訪問](viewpoint-schedules.md)                               | 予定と、訪問のときの訪問の情報と区分、予定の取り消し                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| [予定と訪問](viewpoint-schedules.md)                               | 予定と、訪問のときの訪問の情報と区分、予定の取り消し、誤って入れた予定の削除の監査の記録                                                                                                                                                                                                                                                                                                                                                                                                   |
 | [繰り返しの予定](viewpoint-recurring.md)                           | 繰り返しの予定と規則、回にしない日。繰り返しの 1 回を置き換えた予定は schedules に入る                                                                                                                                                                                                                                                                                                                                                                                                     |
 | [外部のカレンダーの取り込みと書き出し](viewpoint-calendar-sync.md) | 職員の外部のカレンダーと同期の状態、外部の予定と予定の対応、取り込みの記録、書き出しの待ち、Google カレンダーの予定の写し（Projection）。書き出しは、予定の正本のモードが buddy_primary の事業所に限る。同期は google_primary の事業所のカレンダーだけを読み、予定の写しに書く。google_primary の事業所で buddy から Google カレンダーに書いた予定は、訪問の情報と書き込みの保留の版を記録に持つ。切り替えは、google_primary の事業所の予定を取り込み、完了で事業所を buddy_primary にする |
 
@@ -134,6 +134,7 @@ erDiagram
   timestamp_with_time_zone updated_at
   integer synced_version
   text cutover_id FK
+  text deleted_schedule_id FK
 }
 "public.calendar_exports" {
   text id
@@ -150,6 +151,7 @@ erDiagram
   timestamp_with_time_zone finished_at
   timestamp_with_time_zone created_at
   timestamp_with_time_zone updated_at
+  text deleted_schedule_id FK
 }
 "public.facilities" {
   text id

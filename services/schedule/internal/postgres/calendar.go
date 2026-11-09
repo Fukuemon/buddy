@@ -201,6 +201,7 @@ func toLink(l sqlcgen.ExternalEventLink) calendar.EventLink {
 		ETag:                l.Etag,
 		ScheduleID:          l.ScheduleID,
 		RecurringScheduleID: l.RecurringScheduleID,
+		DeletedScheduleID:   l.DeletedScheduleID,
 		CutoverID:           l.CutoverID,
 	}
 	if l.SyncedVersion != nil {
@@ -238,6 +239,15 @@ func (r *CalendarRepository) LinkBySchedule(ctx context.Context, scheduleID stri
 // LinkByRecurringSchedule は、繰り返しの予定 recurringScheduleID の予定の対応を返す。無いときは apperr.ErrNotFound を返す。
 func (r *CalendarRepository) LinkByRecurringSchedule(ctx context.Context, recurringScheduleID string) (calendar.EventLink, error) {
 	l, err := r.q(ctx).GetExternalEventLinkByRecurringSchedule(ctx, &recurringScheduleID)
+	if err != nil {
+		return calendar.EventLink{}, translate("get external event link", err)
+	}
+	return toLink(l), nil
+}
+
+// LinkByDeletedSchedule は、削除した単発の予定 scheduleID の予定の対応を返す。無いときは apperr.ErrNotFound を返す。
+func (r *CalendarRepository) LinkByDeletedSchedule(ctx context.Context, scheduleID string) (calendar.EventLink, error) {
+	l, err := r.q(ctx).GetExternalEventLinkByDeletedSchedule(ctx, &scheduleID)
 	if err != nil {
 		return calendar.EventLink{}, translate("get external event link", err)
 	}

@@ -78,3 +78,6 @@ UPDATE external_calendars SET disabled_at = now() WHERE staff_id = $1 AND disabl
 -- name: GetExternalCalendarFacilityID :one
 -- access がパスの ID のリソースの事業所を確認するときに、事業所だけを読む。
 SELECT facility_id FROM external_calendars WHERE id = $1;
+
+-- name: GetExternalEventLinkByDeletedSchedule :one
+SELECT * FROM external_event_links WHERE deleted_schedule_id = $1;

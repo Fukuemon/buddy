@@ -1390,6 +1390,45 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/Error" }
 
+    delete:
+      tags: [schedule]
+      operationId: deleteSchedule
+      summary: 誤って入れた単発の予定を削除する
+      description: |
+        buddy_primary の事業所で、開始の日が今日（Asia/Tokyo）以降の有効な単発の予定を削除する（ADR-0040）。キャンセルと別の操作で、理由を持たない。
+        削除した予定は、listSchedules と getSchedule に出ず、戻せない。予定の行は消し、監査の記録だけを残す。
+        繰り返しの予定の回を置き換えた予定を削除しても、元の回に戻さない。その日は exclusion_dates のまま残る。
+        Google カレンダーへの書き出しが有効なら、書き出しが Google の予定を消す。
+        削除の可否は、キャンセルと同じく、予定の職員の予定を編集する権限で判定する。
+      parameters: [$ref: "#/components/parameters/ScheduleID"]
+      responses:
+        "204":
+          description: 削除した
+        "400":
+          description: 開始の日が今日より前の予定である
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+              examples:
+                past:
+                  summary: 今日より前の予定
+                  value: { code: invalid_input, message: "今日より前の予定は削除できません" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409":
+          description: |
+            キャンセル済み（conflict）か、事業所が google_primary である（google_primary）。
+            google_primary の事業所では、予定を読まずに拒む。
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+              examples:
+                cancelled:
+                  summary: キャンセル済み
+                  value: { code: conflict, message: "キャンセル済みの予定は削除できません" }
+        "500": { $ref: "#/components/responses/InternalError" }
+
   /v1/schedules/{schedule_id}/cancel:
     post:
       tags: [schedule]
@@ -1633,6 +1672,58 @@ paths:
                 replaced:
                   summary: その回はすでに置き換えたかキャンセルした
                   value: { code: conflict, message: "2026-10-12 の回はすでに置き換えられています" }
+        "500": { $ref: "#/components/responses/InternalError" }
+
+  /v1/schedules/recurring/{recurring_schedule_id}/occurrences/delete:
+    post:
+      tags: [schedule]
+      operationId: deleteOccurrence
+      summary: 誤って入れた繰り返しの予定の 1 回を削除する
+      description: |
+        buddy_primary の事業所で、繰り返しの予定の original_date の回を削除する（ADR-0040）。元の回は exclusion_dates に加わり、単発の予定は作らない。
+        削除した回は listSchedules に出ず、戻せない。監査の記録だけを残す。
+        削除した日は、changeRecurringRule で規則を変えたときに新しい規則に引き継がず、新しい規則の回が当たれば回を出す。
+        置き換えた後の回は単発の予定なので、deleteSchedule で削除する。繰り返しの予定そのものは削除できない。
+        Google カレンダーへの書き出しが有効なら、書き出しがその日を親の予定の EXDATE にする。
+        google_primary の事業所では、何も読まずに 409（google_primary）で拒む。
+      parameters: [$ref: "#/components/parameters/RecurringScheduleID"]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [original_date]
+              properties:
+                original_date:
+                  type: string
+                  format: date
+                  description: 削除する回の日付。繰り返しの規則に当たる、今日（Asia/Tokyo）以降の日に限る
+      responses:
+        "204":
+          description: 削除した
+        "400":
+          description: original_date が繰り返しの規則に当たらないか、今日より前である
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+              examples:
+                past:
+                  summary: 今日より前の回
+                  value: { code: invalid_input, message: "今日より前の予定は削除できません" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409":
+          description: |
+            その回はすでに置き換えたか、キャンセルしたか、削除した（conflict）か、事業所が google_primary である（google_primary）。
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+              examples:
+                excluded:
+                  summary: その回はすでに置き換えたか、キャンセルしたか、削除した
+                  value: { code: conflict, message: "2026-10-12 の回はすでに置き換えたか、キャンセルしたか、削除しています" }
         "500": { $ref: "#/components/responses/InternalError" }
 
   /v1/facilities/{facility_id}/calendar_service_account:

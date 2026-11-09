@@ -242,6 +242,8 @@ func scheduleApp(
 		Cancel:           schedule.NewCancel(schedules, staffRefs, locks, exports, tx, ids).Do,
 		CancelOccurrence: schedule.NewCancelOccurrence(recurring, staffRefs, locks, schedules, types, visits, exports, tx, ids).Do,
 		Update:           schedule.NewUpdate(schedules, staffRefs, locks, types, visits, nil, exports, tx).Do,
+		Delete:           schedule.NewDelete(schedules, staffRefs, locks, nil, exports, tx, ids).Do,
+		DeleteOccurrence: schedule.NewDeleteOccurrence(recurring, staffRefs, locks, nil, exports, tx, ids).Do,
 	}
 }
 

@@ -388,7 +388,7 @@ func (q *Queries) ListCalendarEventRecordVisits(ctx context.Context, externalCal
 }
 
 const listCutoverEventLinks = `-- name: ListCutoverEventLinks :many
-SELECT id, facility_id, external_calendar_id, external_event_id, recurring_event_id, etag, schedule_id, recurring_schedule_id, created_at, updated_at, synced_version, cutover_id FROM external_event_links WHERE cutover_id = $1 ORDER BY id
+SELECT id, facility_id, external_calendar_id, external_event_id, recurring_event_id, etag, schedule_id, recurring_schedule_id, created_at, updated_at, synced_version, cutover_id, deleted_schedule_id FROM external_event_links WHERE cutover_id = $1 ORDER BY id
 `
 
 // 切り替えの取り込みで作った予定の対応を返す。
@@ -414,6 +414,7 @@ func (q *Queries) ListCutoverEventLinks(ctx context.Context, cutoverID *string) 
 			&i.UpdatedAt,
 			&i.SyncedVersion,
 			&i.CutoverID,
+			&i.DeletedScheduleID,
 		); err != nil {
 			return nil, err
 		}

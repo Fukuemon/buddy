@@ -43,11 +43,13 @@ const (
 	ErrorNotBuddyPrimary ExportErrorCode = "not_buddy_primary"
 )
 
-// Target は、書き出す予定である。ScheduleID と RecurringScheduleID のどちらか 1 つを持つ。
+// Target は、書き出す予定である。ScheduleID、RecurringScheduleID、DeletedScheduleID のどれか 1 つを持つ。
+// DeletedScheduleID は、削除した単発の予定の ID で、その外部の予定を消す（ADR-0040）。
 type Target struct {
 	FacilityID          string
 	ScheduleID          string
 	RecurringScheduleID string
+	DeletedScheduleID   string
 }
 
 // Export は、1 つの予定の書き出しの待ちである。書くときは、待ちを積んだ時点ではなく、書く時点の予定の内容を書く。

@@ -56,7 +56,8 @@ type ImportRun struct {
 	FinishedAt    *time.Time
 }
 
-// EventLink は、取り込んだ外部の予定と、buddy の単発か繰り返しの予定の対応である。ScheduleID と RecurringScheduleID のどちらか 1 つを持つ。
+// EventLink は、取り込んだ外部の予定と、buddy の単発か繰り返しの予定の対応である。ScheduleID、RecurringScheduleID、DeletedScheduleID のどれか 1 つを持つ。
+// DeletedScheduleID は、削除した単発の予定の ID で、書き出しが外部の予定を消すまで対応を残す（ADR-0040）。
 type EventLink struct {
 	ID                 string
 	FacilityID         string
@@ -68,6 +69,7 @@ type EventLink struct {
 	SyncedVersion       *int
 	ScheduleID          *string
 	RecurringScheduleID *string
+	DeletedScheduleID   *string
 	// CutoverID は、切り替えの取り込みで作った対応のときの切り替えで、ほかの対応では nil である。切り替えをやめると、対応と予定を消す。
 	CutoverID *string
 }

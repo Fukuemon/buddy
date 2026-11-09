@@ -35,7 +35,7 @@ import { occurrenceId } from '../http/recurrence'
 import { fromApiSchedule } from '../http/scheduleMapper'
 import { FAKE_VIEWER, createFakeSchedules, fakeTeams } from './fixtures'
 import { createFakePatientApi, createFakePatientRecords } from './fakePatientApi'
-import { createFakeStaffApi } from './fakeStaffApi'
+import { createFakeStaffApi, localDate } from './fakeStaffApi'
 
 /** createFakeBuddyApi の設定。 */
 export type FakeBuddyApiOptions = {
@@ -348,6 +348,27 @@ export const createFakeBuddyApi = ({
         // 本物の API と同じく、google_primary の事業所では Google カレンダーの予定を消し、理由は残さない
         if (mode === 'google_primary') schedules.delete(scheduleId)
         else schedules.set(scheduleId, { ...current, cancel: { reason } })
+      },
+      // 本物の API と同じく、google_primary の事業所、キャンセル済みの予定、開始の日が今日より前の予定の削除を拒む（ADR-0040）
+      delete: async (facilityId, scheduleId) => {
+        assertFacility(facilityId)
+        if (mode === 'google_primary') {
+          throw new ApiError(
+            409,
+            'この事業所の予定は Google カレンダーで管理しています。予定は Google カレンダーで作成、変更してください',
+            [],
+            'google_primary',
+          )
+        }
+        const current = findSchedule(scheduleId)
+        if (current.cancel !== undefined) {
+          throw new ApiError(409, 'キャンセル済みの予定は削除できません', [], 'conflict')
+        }
+        // 本物の API は Asia/Tokyo の今日と比べる。フェイクは端末の時刻帯の今日と比べる
+        if (current.startsAt.slice(0, 10) < localDate(baseDate)) {
+          throw new ApiError(400, '今日より前の予定は削除できません', [], 'invalid_input')
+        }
+        schedules.delete(scheduleId)
       },
       // フェイクの予定は回を規則から求めないので、適用の日以降の回の規則だけを書き換え、回の日は動かさない
       // 回を求めず、最初の回だけを、繰り返しの予定を指す予定として置く

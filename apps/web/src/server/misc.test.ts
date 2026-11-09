@@ -66,7 +66,7 @@ describe('parseBffCall', () => {
       op: 'teams.list',
       args: ['f'],
     })
-    expect(() => parseBffCall({ op: 'schedules.delete', args: [] })).toThrow('schedules.delete')
+    expect(() => parseBffCall({ op: 'schedules.purge', args: [] })).toThrow('schedules.purge')
     expect(() => parseBffCall({ op: 'teams.list' })).toThrow('配列')
     expect(() => parseBffCall(null)).toThrow('形が正しくない')
   })

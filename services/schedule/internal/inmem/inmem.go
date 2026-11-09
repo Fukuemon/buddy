@@ -71,6 +71,8 @@ type Store struct {
 	CutoverSkips []calendarimport.CutoverSkip
 	// Records は、予定の ID ごとの、Google カレンダーに書いた予定の記録である。
 	Records map[string]calendar.EventRecord
+	// Deletions は、予定を削除した監査の記録である。
+	Deletions []schedule.Deletion
 }
 
 // NewStore は、空の Store を作る。

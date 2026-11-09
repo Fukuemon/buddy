@@ -4640,6 +4640,12 @@
           "type": "text",
           "nullable": true,
           "comment": "切り替えの取り込みで作った対応のとき、その切り替え。切り替えをやめると、この対応と予定を消す"
+        },
+        {
+          "name": "deleted_schedule_id",
+          "type": "text",
+          "nullable": true,
+          "comment": "削除した単発の予定の ID。書き出しが外部の予定を消すまで対応を残す（ADR-0040）"
         }
       ],
       "indexes": [
@@ -4710,6 +4716,14 @@
           "columns": [
             "facility_id",
             "cutover_id"
+          ]
+        },
+        {
+          "name": "external_event_links_deleted_schedule_key",
+          "def": "CREATE UNIQUE INDEX external_event_links_deleted_schedule_key ON public.external_event_links USING btree (deleted_schedule_id)",
+          "table": "public.external_event_links",
+          "columns": [
+            "deleted_schedule_id"
           ]
         }
       ],
@@ -4797,12 +4811,13 @@
         {
           "name": "external_event_links_target_check",
           "type": "CHECK",
-          "def": "CHECK ((num_nonnulls(schedule_id, recurring_schedule_id) = 1))",
+          "def": "CHECK ((num_nonnulls(schedule_id, recurring_schedule_id, deleted_schedule_id) = 1))",
           "table": "public.external_event_links",
           "referenced_table": "",
           "columns": [
             "schedule_id",
-            "recurring_schedule_id"
+            "recurring_schedule_id",
+            "deleted_schedule_id"
           ]
         },
         {
@@ -4914,6 +4929,31 @@
           "referenced_columns": [
             "facility_id",
             "id"
+          ]
+        },
+        {
+          "name": "external_event_links_deleted_schedule_fkey",
+          "type": "FOREIGN KEY",
+          "def": "FOREIGN KEY (facility_id, deleted_schedule_id) REFERENCES schedule_deletions(facility_id, schedule_id)",
+          "table": "public.external_event_links",
+          "referenced_table": "public.schedule_deletions",
+          "columns": [
+            "facility_id",
+            "deleted_schedule_id"
+          ],
+          "referenced_columns": [
+            "facility_id",
+            "schedule_id"
+          ]
+        },
+        {
+          "name": "external_event_links_deleted_schedule_key",
+          "type": "UNIQUE",
+          "def": "UNIQUE (deleted_schedule_id)",
+          "table": "public.external_event_links",
+          "referenced_table": "",
+          "columns": [
+            "deleted_schedule_id"
           ]
         }
       ],
@@ -5788,6 +5828,12 @@
           "type": "timestamp with time zone",
           "nullable": false,
           "default": "now()"
+        },
+        {
+          "name": "deleted_schedule_id",
+          "type": "text",
+          "nullable": true,
+          "comment": "削除した単発の予定の ID。外部の予定を消す待ち（ADR-0040）"
         }
       ],
       "indexes": [
@@ -5858,6 +5904,23 @@
           "columns": [
             "facility_id",
             "recurring_schedule_id"
+          ]
+        },
+        {
+          "name": "calendar_exports_open_deleted_schedule_key",
+          "def": "CREATE UNIQUE INDEX calendar_exports_open_deleted_schedule_key ON public.calendar_exports USING btree (deleted_schedule_id) WHERE ((status \u003c\u003e 'succeeded'::text) AND (deleted_schedule_id IS NOT NULL))",
+          "table": "public.calendar_exports",
+          "columns": [
+            "deleted_schedule_id"
+          ]
+        },
+        {
+          "name": "calendar_exports_facility_deleted_schedule_idx",
+          "def": "CREATE INDEX calendar_exports_facility_deleted_schedule_idx ON public.calendar_exports USING btree (facility_id, deleted_schedule_id) WHERE (deleted_schedule_id IS NOT NULL)",
+          "table": "public.calendar_exports",
+          "columns": [
+            "facility_id",
+            "deleted_schedule_id"
           ]
         }
       ],
@@ -5997,12 +6060,13 @@
         {
           "name": "calendar_exports_target_check",
           "type": "CHECK",
-          "def": "CHECK ((num_nonnulls(schedule_id, recurring_schedule_id) = 1))",
+          "def": "CHECK ((num_nonnulls(schedule_id, recurring_schedule_id, deleted_schedule_id) = 1))",
           "table": "public.calendar_exports",
           "referenced_table": "",
           "columns": [
             "schedule_id",
-            "recurring_schedule_id"
+            "recurring_schedule_id",
+            "deleted_schedule_id"
           ]
         },
         {
@@ -6077,6 +6141,21 @@
           "columns": [
             "facility_id",
             "id"
+          ]
+        },
+        {
+          "name": "calendar_exports_deleted_schedule_fkey",
+          "type": "FOREIGN KEY",
+          "def": "FOREIGN KEY (facility_id, deleted_schedule_id) REFERENCES schedule_deletions(facility_id, schedule_id)",
+          "table": "public.calendar_exports",
+          "referenced_table": "public.schedule_deletions",
+          "columns": [
+            "facility_id",
+            "deleted_schedule_id"
+          ],
+          "referenced_columns": [
+            "facility_id",
+            "schedule_id"
           ]
         }
       ],
@@ -7271,6 +7350,269 @@
           "def": "CREATE TRIGGER calendar_event_records_set_updated_at BEFORE UPDATE ON public.calendar_event_records FOR EACH ROW EXECUTE FUNCTION set_updated_at()"
         }
       ]
+    },
+    {
+      "name": "public.schedule_deletions",
+      "type": "BASE TABLE",
+      "comment": "誤って入れた予定を削除した監査の記録（ADR-0040）。画面に出さない。消した時点の内容（訪問の情報と利用者）は持たない",
+      "columns": [
+        {
+          "name": "id",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "facility_id",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "schedule_id",
+          "type": "text",
+          "nullable": true,
+          "comment": "削除した単発の予定の ID。回の削除では NULL"
+        },
+        {
+          "name": "recurring_schedule_id",
+          "type": "text",
+          "nullable": true,
+          "comment": "回を削除した繰り返しの予定。単発の予定の削除では NULL"
+        },
+        {
+          "name": "date",
+          "type": "date",
+          "nullable": false,
+          "comment": "単発の予定の開始の日か、削除した回の日"
+        },
+        {
+          "name": "staff_id",
+          "type": "text",
+          "nullable": false,
+          "comment": "削除した予定の職員"
+        },
+        {
+          "name": "deleted_by",
+          "type": "text",
+          "nullable": false,
+          "comment": "削除した職員"
+        },
+        {
+          "name": "deleted_at",
+          "type": "timestamp with time zone",
+          "nullable": false,
+          "default": "now()",
+          "comment": "削除した時刻"
+        }
+      ],
+      "indexes": [
+        {
+          "name": "schedule_deletions_pkey",
+          "def": "CREATE UNIQUE INDEX schedule_deletions_pkey ON public.schedule_deletions USING btree (id)",
+          "table": "public.schedule_deletions",
+          "columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "schedule_deletions_schedule_key",
+          "def": "CREATE UNIQUE INDEX schedule_deletions_schedule_key ON public.schedule_deletions USING btree (facility_id, schedule_id)",
+          "table": "public.schedule_deletions",
+          "columns": [
+            "facility_id",
+            "schedule_id"
+          ]
+        },
+        {
+          "name": "schedule_deletions_recurring_schedule_idx",
+          "def": "CREATE INDEX schedule_deletions_recurring_schedule_idx ON public.schedule_deletions USING btree (facility_id, recurring_schedule_id, date) WHERE (recurring_schedule_id IS NOT NULL)",
+          "table": "public.schedule_deletions",
+          "columns": [
+            "facility_id",
+            "recurring_schedule_id",
+            "date"
+          ]
+        },
+        {
+          "name": "schedule_deletions_staff_idx",
+          "def": "CREATE INDEX schedule_deletions_staff_idx ON public.schedule_deletions USING btree (facility_id, staff_id)",
+          "table": "public.schedule_deletions",
+          "columns": [
+            "facility_id",
+            "staff_id"
+          ]
+        },
+        {
+          "name": "schedule_deletions_deleted_by_idx",
+          "def": "CREATE INDEX schedule_deletions_deleted_by_idx ON public.schedule_deletions USING btree (facility_id, deleted_by)",
+          "table": "public.schedule_deletions",
+          "columns": [
+            "facility_id",
+            "deleted_by"
+          ]
+        }
+      ],
+      "constraints": [
+        {
+          "name": "schedule_deletions_date_not_null",
+          "type": "n",
+          "def": "NOT NULL date",
+          "table": "public.schedule_deletions",
+          "referenced_table": "",
+          "columns": [
+            "date"
+          ]
+        },
+        {
+          "name": "schedule_deletions_deleted_at_not_null",
+          "type": "n",
+          "def": "NOT NULL deleted_at",
+          "table": "public.schedule_deletions",
+          "referenced_table": "",
+          "columns": [
+            "deleted_at"
+          ]
+        },
+        {
+          "name": "schedule_deletions_deleted_by_not_null",
+          "type": "n",
+          "def": "NOT NULL deleted_by",
+          "table": "public.schedule_deletions",
+          "referenced_table": "",
+          "columns": [
+            "deleted_by"
+          ]
+        },
+        {
+          "name": "schedule_deletions_facility_id_not_null",
+          "type": "n",
+          "def": "NOT NULL facility_id",
+          "table": "public.schedule_deletions",
+          "referenced_table": "",
+          "columns": [
+            "facility_id"
+          ]
+        },
+        {
+          "name": "schedule_deletions_id_check",
+          "type": "CHECK",
+          "def": "CHECK ((id ~ '^[0-7][0-9A-HJKMNP-TV-Z]{25}$'::text))",
+          "table": "public.schedule_deletions",
+          "referenced_table": "",
+          "columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "schedule_deletions_id_not_null",
+          "type": "n",
+          "def": "NOT NULL id",
+          "table": "public.schedule_deletions",
+          "referenced_table": "",
+          "columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "schedule_deletions_staff_id_not_null",
+          "type": "n",
+          "def": "NOT NULL staff_id",
+          "table": "public.schedule_deletions",
+          "referenced_table": "",
+          "columns": [
+            "staff_id"
+          ]
+        },
+        {
+          "name": "schedule_deletions_target_check",
+          "type": "CHECK",
+          "def": "CHECK ((num_nonnulls(schedule_id, recurring_schedule_id) = 1))",
+          "table": "public.schedule_deletions",
+          "referenced_table": "",
+          "columns": [
+            "schedule_id",
+            "recurring_schedule_id"
+          ]
+        },
+        {
+          "name": "schedule_deletions_facility_fkey",
+          "type": "FOREIGN KEY",
+          "def": "FOREIGN KEY (facility_id) REFERENCES facilities(id)",
+          "table": "public.schedule_deletions",
+          "referenced_table": "public.facilities",
+          "columns": [
+            "facility_id"
+          ],
+          "referenced_columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "schedule_deletions_deleted_by_fkey",
+          "type": "FOREIGN KEY",
+          "def": "FOREIGN KEY (facility_id, deleted_by) REFERENCES users(facility_id, id)",
+          "table": "public.schedule_deletions",
+          "referenced_table": "public.users",
+          "columns": [
+            "facility_id",
+            "deleted_by"
+          ],
+          "referenced_columns": [
+            "facility_id",
+            "id"
+          ]
+        },
+        {
+          "name": "schedule_deletions_staff_fkey",
+          "type": "FOREIGN KEY",
+          "def": "FOREIGN KEY (facility_id, staff_id) REFERENCES users(facility_id, id)",
+          "table": "public.schedule_deletions",
+          "referenced_table": "public.users",
+          "columns": [
+            "facility_id",
+            "staff_id"
+          ],
+          "referenced_columns": [
+            "facility_id",
+            "id"
+          ]
+        },
+        {
+          "name": "schedule_deletions_recurring_schedule_fkey",
+          "type": "FOREIGN KEY",
+          "def": "FOREIGN KEY (facility_id, recurring_schedule_id) REFERENCES recurring_schedules(facility_id, id)",
+          "table": "public.schedule_deletions",
+          "referenced_table": "public.recurring_schedules",
+          "columns": [
+            "facility_id",
+            "recurring_schedule_id"
+          ],
+          "referenced_columns": [
+            "facility_id",
+            "id"
+          ]
+        },
+        {
+          "name": "schedule_deletions_pkey",
+          "type": "PRIMARY KEY",
+          "def": "PRIMARY KEY (id)",
+          "table": "public.schedule_deletions",
+          "referenced_table": "",
+          "columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "schedule_deletions_schedule_key",
+          "type": "UNIQUE",
+          "def": "UNIQUE (facility_id, schedule_id)",
+          "table": "public.schedule_deletions",
+          "referenced_table": "",
+          "columns": [
+            "facility_id",
+            "schedule_id"
+          ]
+        }
+      ]
     }
   ],
   "relations": [
@@ -7839,6 +8181,21 @@
       "def": "FOREIGN KEY (facility_id, cutover_id) REFERENCES calendar_cutovers(facility_id, id)"
     },
     {
+      "table": "public.external_event_links",
+      "columns": [
+        "facility_id",
+        "deleted_schedule_id"
+      ],
+      "cardinality": "zero_or_more",
+      "parent_table": "public.schedule_deletions",
+      "parent_columns": [
+        "facility_id",
+        "schedule_id"
+      ],
+      "parent_cardinality": "exactly_one",
+      "def": "FOREIGN KEY (facility_id, deleted_schedule_id) REFERENCES schedule_deletions(facility_id, schedule_id)"
+    },
+    {
       "table": "public.import_runs",
       "columns": [
         "facility_id",
@@ -7925,6 +8282,21 @@
       ],
       "parent_cardinality": "exactly_one",
       "def": "FOREIGN KEY (facility_id, schedule_id) REFERENCES schedules(facility_id, id) ON DELETE CASCADE"
+    },
+    {
+      "table": "public.calendar_exports",
+      "columns": [
+        "facility_id",
+        "deleted_schedule_id"
+      ],
+      "cardinality": "zero_or_more",
+      "parent_table": "public.schedule_deletions",
+      "parent_columns": [
+        "facility_id",
+        "schedule_id"
+      ],
+      "parent_cardinality": "exactly_one",
+      "def": "FOREIGN KEY (facility_id, deleted_schedule_id) REFERENCES schedule_deletions(facility_id, schedule_id)"
     },
     {
       "table": "public.calendar_event_projections",
@@ -8086,6 +8458,64 @@
       ],
       "parent_cardinality": "exactly_one",
       "def": "FOREIGN KEY (facility_id, pending_external_calendar_id) REFERENCES external_calendars(facility_id, id) ON DELETE CASCADE"
+    },
+    {
+      "table": "public.schedule_deletions",
+      "columns": [
+        "facility_id"
+      ],
+      "cardinality": "zero_or_more",
+      "parent_table": "public.facilities",
+      "parent_columns": [
+        "id"
+      ],
+      "parent_cardinality": "exactly_one",
+      "def": "FOREIGN KEY (facility_id) REFERENCES facilities(id)"
+    },
+    {
+      "table": "public.schedule_deletions",
+      "columns": [
+        "facility_id",
+        "deleted_by"
+      ],
+      "cardinality": "zero_or_more",
+      "parent_table": "public.users",
+      "parent_columns": [
+        "facility_id",
+        "id"
+      ],
+      "parent_cardinality": "exactly_one",
+      "def": "FOREIGN KEY (facility_id, deleted_by) REFERENCES users(facility_id, id)"
+    },
+    {
+      "table": "public.schedule_deletions",
+      "columns": [
+        "facility_id",
+        "staff_id"
+      ],
+      "cardinality": "zero_or_more",
+      "parent_table": "public.users",
+      "parent_columns": [
+        "facility_id",
+        "id"
+      ],
+      "parent_cardinality": "exactly_one",
+      "def": "FOREIGN KEY (facility_id, staff_id) REFERENCES users(facility_id, id)"
+    },
+    {
+      "table": "public.schedule_deletions",
+      "columns": [
+        "facility_id",
+        "recurring_schedule_id"
+      ],
+      "cardinality": "zero_or_more",
+      "parent_table": "public.recurring_schedules",
+      "parent_columns": [
+        "facility_id",
+        "id"
+      ],
+      "parent_cardinality": "exactly_one",
+      "def": "FOREIGN KEY (facility_id, recurring_schedule_id) REFERENCES recurring_schedules(facility_id, id)"
     }
   ],
   "functions": [
@@ -8181,11 +8611,12 @@
     {
       "id": "schedules",
       "name": "予定と訪問",
-      "desc": "予定と、訪問のときの訪問の情報と区分、予定の取り消し",
+      "desc": "予定と、訪問のときの訪問の情報と区分、予定の取り消し、誤って入れた予定の削除の監査の記録",
       "tables": [
         "public.schedules",
         "public.schedule_types",
         "public.schedule_cancels",
+        "public.schedule_deletions",
         "public.visit_infos",
         "public.visit_categories",
         "public.visit_info_visit_categories",
@@ -8228,6 +8659,7 @@
         "public.calendar_cutovers",
         "public.calendar_cutover_skips",
         "public.calendar_exports",
+        "public.schedule_deletions",
         "public.schedules",
         "public.recurring_schedules",
         "public.users",

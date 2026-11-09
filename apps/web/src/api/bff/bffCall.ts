@@ -89,6 +89,7 @@ const ARGS = {
   'schedules.create': z.tuple([id, scheduleInput, id]),
   'schedules.update': z.tuple([id, id, scheduleInput, etag.nullable()]),
   'schedules.cancel': z.tuple([id, id, z.string().min(1).max(255), etag.nullable()]),
+  'schedules.delete': z.tuple([id, id]),
   'schedules.createRecurring': z.tuple([id, scheduleInput, recurringRule, id]),
   'schedules.changeRule': z.tuple([
     id,

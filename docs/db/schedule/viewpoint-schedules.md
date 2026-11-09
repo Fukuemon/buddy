@@ -2,25 +2,26 @@
 
 ## Description
 
-予定と、訪問のときの訪問の情報と区分、予定の取り消し
+予定と、訪問のときの訪問の情報と区分、予定の取り消し、誤って入れた予定の削除の監査の記録
 
 ## Tables
 
-| Name                                                                        | Columns | Comment                                                      | Type       |
-| --------------------------------------------------------------------------- | ------- | ------------------------------------------------------------ | ---------- |
-| [public.facilities](public.facilities.md)                                   | 7       | 訪問看護の事業所                                             | BASE TABLE |
-| [public.users](public.users.md)                                             | 15      | 職員                                                         | BASE TABLE |
-| [public.service_codes](public.service_codes.md)                             | 6       | サービスコード。マイグレーションで入れる                     | BASE TABLE |
-| [public.visit_categories](public.visit_categories.md)                       | 4       | 訪問の区分（夜勤、緊急、入院）。マイグレーションで入れる     | BASE TABLE |
-| [public.patients](public.patients.md)                                       | 10      | 利用者                                                       | BASE TABLE |
-| [public.visit_infos](public.visit_infos.md)                                 | 8       | 訪問の情報                                                   | BASE TABLE |
-| [public.visit_info_visit_categories](public.visit_info_visit_categories.md) | 2       | 訪問に付けた区分。1 件の訪問に複数を付けられる               | BASE TABLE |
-| [public.schedule_types](public.schedule_types.md)                           | 5       | 予定の種類（通常、訪問）。マイグレーションで入れる           | BASE TABLE |
-| [public.recurring_schedules](public.recurring_schedules.md)                 | 22      | 繰り返しの予定と、その規則                                   | BASE TABLE |
-| [public.schedules](public.schedules.md)                                     | 17      | 予定                                                         | BASE TABLE |
-| [public.schedule_cancels](public.schedule_cancels.md)                       | 5       | 予定の取り消し                                               | BASE TABLE |
-| [public.visit_info_details](public.visit_info_details.md)                   | 10      | 訪問の情報と名前を結合したビュー                             | VIEW       |
-| [public.schedule_details](public.schedule_details.md)                       | 30      | 一覧の読み出しに使う、予定と訪問の情報と名前を結合したビュー | VIEW       |
+| Name                                                                        | Columns | Comment                                                                                                            | Type       |
+| --------------------------------------------------------------------------- | ------- | ------------------------------------------------------------------------------------------------------------------ | ---------- |
+| [public.facilities](public.facilities.md)                                   | 7       | 訪問看護の事業所                                                                                                   | BASE TABLE |
+| [public.users](public.users.md)                                             | 15      | 職員                                                                                                               | BASE TABLE |
+| [public.service_codes](public.service_codes.md)                             | 6       | サービスコード。マイグレーションで入れる                                                                           | BASE TABLE |
+| [public.visit_categories](public.visit_categories.md)                       | 4       | 訪問の区分（夜勤、緊急、入院）。マイグレーションで入れる                                                           | BASE TABLE |
+| [public.patients](public.patients.md)                                       | 10      | 利用者                                                                                                             | BASE TABLE |
+| [public.visit_infos](public.visit_infos.md)                                 | 8       | 訪問の情報                                                                                                         | BASE TABLE |
+| [public.visit_info_visit_categories](public.visit_info_visit_categories.md) | 2       | 訪問に付けた区分。1 件の訪問に複数を付けられる                                                                     | BASE TABLE |
+| [public.schedule_types](public.schedule_types.md)                           | 5       | 予定の種類（通常、訪問）。マイグレーションで入れる                                                                 | BASE TABLE |
+| [public.recurring_schedules](public.recurring_schedules.md)                 | 22      | 繰り返しの予定と、その規則                                                                                         | BASE TABLE |
+| [public.schedules](public.schedules.md)                                     | 17      | 予定                                                                                                               | BASE TABLE |
+| [public.schedule_cancels](public.schedule_cancels.md)                       | 5       | 予定の取り消し                                                                                                     | BASE TABLE |
+| [public.visit_info_details](public.visit_info_details.md)                   | 10      | 訪問の情報と名前を結合したビュー                                                                                   | VIEW       |
+| [public.schedule_details](public.schedule_details.md)                       | 30      | 一覧の読み出しに使う、予定と訪問の情報と名前を結合したビュー                                                       | VIEW       |
+| [public.schedule_deletions](public.schedule_deletions.md)                   | 8       | 誤って入れた予定を削除した監査の記録（ADR-0040）。画面に出さない。消した時点の内容（訪問の情報と利用者）は持たない | BASE TABLE |
 
 ## Relations
 
@@ -47,6 +48,10 @@ erDiagram
 "public.schedules" }o--|| "public.schedule_types" : "FOREIGN KEY (schedule_type_id) REFERENCES schedule_types(id)"
 "public.schedules" }o--|| "public.recurring_schedules" : "FOREIGN KEY (facility_id, recurring_schedule_id) REFERENCES recurring_schedules(facility_id, id)"
 "public.schedule_cancels" |o--|| "public.schedules" : "FOREIGN KEY (schedule_id) REFERENCES schedules(id) ON DELETE CASCADE"
+"public.schedule_deletions" }o--|| "public.facilities" : "FOREIGN KEY (facility_id) REFERENCES facilities(id)"
+"public.schedule_deletions" }o--|| "public.users" : "FOREIGN KEY (facility_id, deleted_by) REFERENCES users(facility_id, id)"
+"public.schedule_deletions" }o--|| "public.users" : "FOREIGN KEY (facility_id, staff_id) REFERENCES users(facility_id, id)"
+"public.schedule_deletions" }o--|| "public.recurring_schedules" : "FOREIGN KEY (facility_id, recurring_schedule_id) REFERENCES recurring_schedules(facility_id, id)"
 
 "public.facilities" {
   text id
@@ -214,6 +219,16 @@ erDiagram
   timestamp_with_time_zone updated_at
   integer version
   boolean ends_next_day
+}
+"public.schedule_deletions" {
+  text id
+  text facility_id
+  text schedule_id
+  text recurring_schedule_id
+  date date
+  text staff_id
+  text deleted_by
+  timestamp_with_time_zone deleted_at
 }
 ```
 

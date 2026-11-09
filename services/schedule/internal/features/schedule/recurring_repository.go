@@ -15,6 +15,9 @@ type RecurringRepository interface {
 	// トランザクションの最初に呼ぶ。
 	GetForUpdate(ctx context.Context, id string) (StoredRecurring, error)
 	AddExclusion(ctx context.Context, recurringScheduleID string, d civil.Date) error
+	// DeleteOccurrence は、繰り返しの予定 d.RecurringScheduleID の除外する日に d.Date を足し、監査の記録 d を足す（ADR-0040）。
+	// AddExclusion と同じく、更新の番号を 1 つ増やし、同じ日付をすでに除外しているときは apperr.ErrConflict を返す。
+	DeleteOccurrence(ctx context.Context, d Deletion) error
 	// UpdateRule は、繰り返しの予定 rs.ID の最初の日付と規則を rs の値で上書きし、更新の番号を 1 つ増やす。ほかの項目は変えない。
 	UpdateRule(ctx context.Context, rs RecurringSchedule) error
 	// RemoveUnreplacedExclusions は、繰り返しの予定 recurringScheduleID の from 以降の除外する日のうち、

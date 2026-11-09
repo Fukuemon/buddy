@@ -280,8 +280,33 @@ func (q *Queries) GetExternalCalendarFacilityID(ctx context.Context, id string) 
 	return facility_id, err
 }
 
+const getExternalEventLinkByDeletedSchedule = `-- name: GetExternalEventLinkByDeletedSchedule :one
+SELECT id, facility_id, external_calendar_id, external_event_id, recurring_event_id, etag, schedule_id, recurring_schedule_id, created_at, updated_at, synced_version, cutover_id, deleted_schedule_id FROM external_event_links WHERE deleted_schedule_id = $1
+`
+
+func (q *Queries) GetExternalEventLinkByDeletedSchedule(ctx context.Context, deletedScheduleID *string) (ExternalEventLink, error) {
+	row := q.db.QueryRow(ctx, getExternalEventLinkByDeletedSchedule, deletedScheduleID)
+	var i ExternalEventLink
+	err := row.Scan(
+		&i.ID,
+		&i.FacilityID,
+		&i.ExternalCalendarID,
+		&i.ExternalEventID,
+		&i.RecurringEventID,
+		&i.Etag,
+		&i.ScheduleID,
+		&i.RecurringScheduleID,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.SyncedVersion,
+		&i.CutoverID,
+		&i.DeletedScheduleID,
+	)
+	return i, err
+}
+
 const getExternalEventLinkByRecurringSchedule = `-- name: GetExternalEventLinkByRecurringSchedule :one
-SELECT id, facility_id, external_calendar_id, external_event_id, recurring_event_id, etag, schedule_id, recurring_schedule_id, created_at, updated_at, synced_version, cutover_id FROM external_event_links WHERE recurring_schedule_id = $1
+SELECT id, facility_id, external_calendar_id, external_event_id, recurring_event_id, etag, schedule_id, recurring_schedule_id, created_at, updated_at, synced_version, cutover_id, deleted_schedule_id FROM external_event_links WHERE recurring_schedule_id = $1
 `
 
 func (q *Queries) GetExternalEventLinkByRecurringSchedule(ctx context.Context, recurringScheduleID *string) (ExternalEventLink, error) {
@@ -300,12 +325,13 @@ func (q *Queries) GetExternalEventLinkByRecurringSchedule(ctx context.Context, r
 		&i.UpdatedAt,
 		&i.SyncedVersion,
 		&i.CutoverID,
+		&i.DeletedScheduleID,
 	)
 	return i, err
 }
 
 const getExternalEventLinkBySchedule = `-- name: GetExternalEventLinkBySchedule :one
-SELECT id, facility_id, external_calendar_id, external_event_id, recurring_event_id, etag, schedule_id, recurring_schedule_id, created_at, updated_at, synced_version, cutover_id FROM external_event_links WHERE schedule_id = $1
+SELECT id, facility_id, external_calendar_id, external_event_id, recurring_event_id, etag, schedule_id, recurring_schedule_id, created_at, updated_at, synced_version, cutover_id, deleted_schedule_id FROM external_event_links WHERE schedule_id = $1
 `
 
 func (q *Queries) GetExternalEventLinkBySchedule(ctx context.Context, scheduleID *string) (ExternalEventLink, error) {
@@ -324,6 +350,7 @@ func (q *Queries) GetExternalEventLinkBySchedule(ctx context.Context, scheduleID
 		&i.UpdatedAt,
 		&i.SyncedVersion,
 		&i.CutoverID,
+		&i.DeletedScheduleID,
 	)
 	return i, err
 }
@@ -362,7 +389,7 @@ func (q *Queries) ListExternalCalendarsByFacility(ctx context.Context, facilityI
 }
 
 const listExternalEventLinks = `-- name: ListExternalEventLinks :many
-SELECT id, facility_id, external_calendar_id, external_event_id, recurring_event_id, etag, schedule_id, recurring_schedule_id, created_at, updated_at, synced_version, cutover_id FROM external_event_links WHERE external_calendar_id = $1 ORDER BY id
+SELECT id, facility_id, external_calendar_id, external_event_id, recurring_event_id, etag, schedule_id, recurring_schedule_id, created_at, updated_at, synced_version, cutover_id, deleted_schedule_id FROM external_event_links WHERE external_calendar_id = $1 ORDER BY id
 `
 
 func (q *Queries) ListExternalEventLinks(ctx context.Context, externalCalendarID string) ([]ExternalEventLink, error) {
@@ -387,6 +414,7 @@ func (q *Queries) ListExternalEventLinks(ctx context.Context, externalCalendarID
 			&i.UpdatedAt,
 			&i.SyncedVersion,
 			&i.CutoverID,
+			&i.DeletedScheduleID,
 		); err != nil {
 			return nil, err
 		}

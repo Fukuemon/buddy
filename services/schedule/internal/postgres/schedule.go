@@ -5,6 +5,7 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"github.com/Fukuemon/buddy/services/schedule/internal/apperr"
 	"github.com/Fukuemon/buddy/services/schedule/internal/civil"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/schedule"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/scheduleview"
@@ -56,7 +57,14 @@ func NewScheduleRepository(pool *pgxpool.Pool) *ScheduleRepository {
 
 // Create は、予定を書く。IsOverTimeWork は書かず、DB が開始の時刻から生成する。参照先（事業所、職員、予定の種類、繰り返しの予定、訪問の情報）が無いか、値がカラムの制約に合わないときは apperr.ErrInvalidInput のエラーを返す。
 func (r *ScheduleRepository) Create(ctx context.Context, s schedule.Schedule) error {
-	err := r.q(ctx).CreateSchedule(ctx, sqlcgen.CreateScheduleParams{
+	deleted, err := r.q(ctx).ScheduleIDDeleted(ctx, &s.ID)
+	if err != nil {
+		return translate("check deleted schedule id", err)
+	}
+	if deleted {
+		return apperr.ErrConflict
+	}
+	err = r.q(ctx).CreateSchedule(ctx, sqlcgen.CreateScheduleParams{
 		ID:                  s.ID,
 		FacilityID:          s.FacilityID,
 		StaffID:             s.StaffID,
@@ -262,6 +270,38 @@ func (r *ScheduleRepository) CreateCancel(ctx context.Context, c schedule.Cancel
 	return translate("bump schedule version", r.q(ctx).BumpScheduleVersion(ctx, c.ScheduleID))
 }
 
+// Delete は、監査の記録 d を書き、予定の対応を監査の記録に付け替えてから、予定 d.ScheduleID の行と訪問の情報を消す。
+// 呼び出し側が、同じトランザクションの GetForUpdate で予定があることを確かめてから呼ぶ。削除した予定をもう一度渡すと、監査の記録の一意の制約で apperr.ErrConflict を返す。
+func (r *ScheduleRepository) Delete(ctx context.Context, d schedule.Deletion) error {
+	if err := createDeletion(ctx, r.q(ctx), d); err != nil {
+		return err
+	}
+	if err := r.q(ctx).MoveExternalEventLinkToDeletion(ctx, &d.ScheduleID); err != nil {
+		return translate("move external event link to deletion", err)
+	}
+	visitInfoID, err := r.q(ctx).DeleteSchedule(ctx, d.ScheduleID)
+	if err != nil {
+		return translate("delete schedule", err)
+	}
+	if visitInfoID == nil {
+		return nil
+	}
+	return translate("delete visit info", r.q(ctx).DeleteUnusedVisitInfo(ctx, *visitInfoID))
+}
+
+// StaffOfDeleted は、calendarexport.DeletedSchedules を実装する。
+func (r *ScheduleRepository) StaffOfDeleted(ctx context.Context, scheduleID string) (string, error) {
+	id, err := r.q(ctx).GetDeletedScheduleStaffID(ctx, &scheduleID)
+	return id, translate("get deleted schedule staff", err)
+}
+
+func createDeletion(ctx context.Context, q *sqlcgen.Queries, d schedule.Deletion) error {
+	return translate("create schedule deletion", q.CreateScheduleDeletion(ctx, sqlcgen.CreateScheduleDeletionParams{
+		ID: d.ID, FacilityID: d.FacilityID, ScheduleID: optional(d.ScheduleID), RecurringScheduleID: optional(d.RecurringScheduleID),
+		Date: d.Date.Time(), StaffID: d.StaffID, DeletedBy: d.DeletedBy,
+	}))
+}
+
 // RecurringScheduleRepository は、schedule.RecurringRepository と scheduleview.RecurringSchedules を実装する。
 type RecurringScheduleRepository struct{ conn }
 
@@ -446,6 +486,15 @@ func (r *RecurringScheduleRepository) AddExclusion(ctx context.Context, recurrin
 		return translate("add recurring schedule exclusion", err)
 	}
 	return translate("bump recurring schedule version", r.q(ctx).BumpRecurringScheduleVersion(ctx, recurringScheduleID))
+}
+
+// DeleteOccurrence は、繰り返しの予定 d.RecurringScheduleID の除外する日に d.Date を足し、監査の記録 d を書く。
+// 同じ日付をすでに除外しているときは apperr.ErrConflict を返す。
+func (r *RecurringScheduleRepository) DeleteOccurrence(ctx context.Context, d schedule.Deletion) error {
+	if err := r.AddExclusion(ctx, d.RecurringScheduleID, d.Date); err != nil {
+		return err
+	}
+	return createDeletion(ctx, r.q(ctx), d)
 }
 
 // UpdateRule は、繰り返しの予定 rs.ID の最初の日付と規則を rs の値で上書きし、更新の番号を 1 つ増やす。
