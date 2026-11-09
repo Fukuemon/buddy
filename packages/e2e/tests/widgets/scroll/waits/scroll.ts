@@ -1,5 +1,7 @@
 import type { Page } from '@playwright/test'
 
+import { SCROLL_IDLE_WAIT } from '../../../fixtures/timeouts'
+
 /** スクロールが始まらないと判断するまでの、待ち始めてからのフレームの数 */
 const FRAMES_WITHOUT_SCROLL = 10
 
@@ -9,19 +11,23 @@ const QUIET_FRAMES = 2
 type ScrollWatch = Window & {
   __e2eScrolledAt?: number
   __e2eStopScrollWatch?: () => void
+  /** 止まるのを待つ間の、数えたフレームの数、scroll のイベントが来ないフレームの数、前のフレームで見た時刻 */
+  __e2eScrollIdle?: { frames: number; quiet: number; last: number }
 }
 
 /**
  * ページの中のどこかのスクロールを見張り始め、止まるまで待つ関数を返す。スクロールの操作の前に呼び、返った関数を操作の後に待つ。
  * スクロールの位置は DOM に出ないので、scroll のイベントが来なくなったことをフレームの数で判定する。
  * 操作でスクロールしなかったとき（端に着いていたとき）は、待ち始めてから FRAMES_WITHOUT_SCROLL のフレームの後に返る。
- * 見張りは、返った関数が返るときに外す。
+ * 返った関数は、SCROLL_IDLE_WAIT の時間を過ぎても止まらないか、描画が止まってフレームが進まないときに、TimeoutError を投げる。
+ * 見張りは、返った関数が止まったと判断したときに外す。
  */
 export const watchScrollIdle = async (page: Page): Promise<() => Promise<void>> => {
   await page.evaluate(() => {
     const w = window as ScrollWatch
     w.__e2eStopScrollWatch?.()
     w.__e2eScrolledAt = 0
+    w.__e2eScrollIdle = undefined
     const onScroll = () => {
       w.__e2eScrolledAt = performance.now()
     }
@@ -31,28 +37,24 @@ export const watchScrollIdle = async (page: Page): Promise<() => Promise<void>> 
       w.__e2eStopScrollWatch = undefined
     }
   })
-  return () =>
-    page.evaluate(
-      ({ framesWithoutScroll, quietFrames }) =>
-        new Promise<void>((resolve) => {
-          const w = window as ScrollWatch
-          let frames = 0
-          let quiet = 0
-          let last = w.__e2eScrolledAt ?? 0
-          const tick = () => {
-            frames += 1
-            const at = w.__e2eScrolledAt ?? 0
-            quiet = at === last ? quiet + 1 : 0
-            last = at
-            if ((at > 0 && quiet >= quietFrames) || (at === 0 && frames >= framesWithoutScroll)) {
-              w.__e2eStopScrollWatch?.()
-              resolve()
-              return
-            }
-            requestAnimationFrame(tick)
-          }
-          requestAnimationFrame(tick)
-        }),
+  return async () => {
+    // polling の raf で、判定をフレームごとに 1 回呼ぶ。上限は Playwright の側で数えるので、フレームが進まなくても返る
+    await page.waitForFunction(
+      ({ framesWithoutScroll, quietFrames }) => {
+        const w = window as ScrollWatch
+        const at = w.__e2eScrolledAt ?? 0
+        const state = (w.__e2eScrollIdle ??= { frames: 0, quiet: 0, last: at })
+        state.frames += 1
+        state.quiet = at === state.last ? state.quiet + 1 : 0
+        state.last = at
+        const idle =
+          (at > 0 && state.quiet >= quietFrames) ||
+          (at === 0 && state.frames >= framesWithoutScroll)
+        if (idle) w.__e2eStopScrollWatch?.()
+        return idle
+      },
       { framesWithoutScroll: FRAMES_WITHOUT_SCROLL, quietFrames: QUIET_FRAMES },
+      { polling: 'raf', ...SCROLL_IDLE_WAIT },
     )
+  }
 }
