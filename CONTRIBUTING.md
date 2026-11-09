@@ -124,7 +124,7 @@ worktree では、ホスト名の `buddy` の部分が worktree ごとの名前�
 - 別の worktree で同時に起動するときは、worktree を `wt switch --create <ブランチ>` で作り、同じ手順で起動する。
   - worktrunk のフック（`.config/wt.toml`）が、compose のプロジェクトの名前、ブラウザが開く URL、E2E の URL を、worktree の `.env` に書く。
     - 開く URL は `.env` の `E2E_BASE_URL` にある。
-    - mise が `.env` を環境変数に入れるので、`pnpm e2e` と `compose/dev-token.sh` も、その worktree の環境に向く。mise を有効にしていないシェルでは `mise exec -- pnpm e2e` で流す。
+    - `pnpm e2e` と `compose/dev-token.sh` も `.env` を読むので、その worktree の環境に向く。コマンドの前で環境変数を渡すと、`.env` の値より優先される。
     - `.env` は、portless が変えない postgres と valkey のポートもずらす。2 つの worktree のポートがぶつかったときは、片方の `.env` のポートを手で直す。
   - 初めてフックを流すときは、worktrunk が承認を求める。コーディングエージェントは `--yes` を付ける。
   - `wt remove <ブランチ>` で worktree を消すと、フックがその worktree の compose を、DB のボリューム、ビルドしたイメージ、portless に登録したホスト名ごと消す。
@@ -156,7 +156,7 @@ docker compose up -d --build --wait
 ### API を手で呼ぶ
 
 `compose/dev-token.sh` で、引数のメールの職員の access token を取る。  
-デフォルトは main の checkout の環境である。worktree では、mise が `.env` からその環境の URL を渡す。  
+デフォルトは main の checkout の環境である。worktree では、`compose/dev-token.sh` が `.env` からその環境の URL を読む。  
 次の例は main の checkout の URL を呼ぶ。worktree では、ホスト名の `buddy` を worktree の名前に変える。  
 portless の CA はシステムに信頼させないので、curl に `--cacert` を付ける。
 

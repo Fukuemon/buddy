@@ -17,8 +17,8 @@ uv = "0.13"
 # portless はローカル環境の compose を、ホスト名の URL で出す（ADR-0036）
 "npm:portless" = "0.16.0"
 
-# worktree ごとのポートの組（.config/wt.toml が書く）を、compose 以外のコマンドにも渡す
+# worktree の .env は mise で読まない。mise exec と shim は、.env の値をコマンドの前で渡した値より優先するためである。
+# .env を使う compose、E2E の設定、compose/dev-token.sh は、それぞれ .env を読む
 [env]
-_.file = ".env"
 # E2E が Node.js から portless の https の URL を呼ぶときに、portless の CA で検証する。main の checkout には .env が無いので、ここで渡す（ADR-0036）
 NODE_EXTRA_CA_CERTS = "{{env.HOME}}/.portless/ca.pem"
