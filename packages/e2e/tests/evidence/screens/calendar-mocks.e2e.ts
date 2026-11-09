@@ -103,13 +103,13 @@ test.describe('確認が必要な予定とカレンダーの連携の画面仕�
         },
         async ({ page, step, check }) => {
           await page.goto(mockUrl(`${REVIEW}01-list.html`))
-          await step('1 行目の予定（2026/11/04（水）09:00〜09:29）を押す')
+          await step('1 行目の予定（2026年11月4日（水） 09:00〜09:29）を押す')
           await page.getByTestId('calendar-review-row-schedule-schedule-1').click()
           await expect(page).toHaveURL(/05-detail\.html/)
           const dialog = page.getByTestId('calendar-review-dialog')
           await expect(dialog).toBeVisible()
           await expect(page.getByTestId('calendar-review-dialog-datetime')).toHaveText(
-            '2026/11/04（水）09:00〜09:29',
+            '2026年11月4日（水） 09:00〜09:29',
           )
           await expect(page.getByTestId('calendar-review-open-export-1')).toBeVisible()
           await expect(page.getByTestId('calendar-review-dialog')).not.toContainText(

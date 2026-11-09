@@ -226,7 +226,12 @@ test.describe('照合の結果', () => {
               await page.getByTestId('receipt-check-submit').click()
               await expect(page).toHaveURL(/\/receipt\/result$/)
 
-              const cells = receiptCategoryRowCells(page, item.category, '2024-04-01', item.patient)
+              const cells = receiptCategoryRowCells(
+                page,
+                item.category,
+                '2024年4月1日（月）',
+                item.patient,
+              )
               if (isBefore) {
                 await step(`結果の表で、${item.patient} の行の観点のセルが見えるまで送る`)
                 await cells.nth(BEFORE_COLUMN[item.focus]).scrollIntoViewIfNeeded()
@@ -244,7 +249,7 @@ test.describe('照合の結果', () => {
                 const visitOnly = receiptCategoryRowCells(
                   page,
                   'visit_only',
-                  '2024-04-01',
+                  '2024年4月1日（月）',
                   '利用者F',
                 )
                 await expect(findings(visitOnly)).toHaveText(['予定が無い'])

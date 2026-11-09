@@ -10,7 +10,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useIsDesktop } from '@buddy/ui'
 
 import type { CalendarView } from '../constants/calendarView'
-import { nextDayPrefix, toDateKey, toTimeKey, WEEKDAYS } from '../lib/dateTime'
+import { formatScheduleTimeRange, toDateKey, toTimeKey, WEEKDAYS } from '../lib/dateTime'
 import type { ScheduleCalendarEvent } from '../lib/toCalendarEvents'
 import { CancelledMark } from './CancelledMark'
 import { NeedsReviewMark } from './NeedsReviewMark'
@@ -26,17 +26,12 @@ const FULL_CALENDAR_VIEW = {
  */
 const WIDE_DAY_HEADER_MIN_WIDTH_PX = 680
 
-const hourMinute = (date: Date) =>
-  `${date.getHours()}:${String(date.getMinutes()).padStart(2, '0')}`
-
 /**
- * 週の表示の予定に出す時刻の文を、`9:00 - 9:30` の形で返す。翌日に終わる予定は、開始の日と翌日の両方に予定の全体の時刻を `22:00 - 翌 1:00` の形で出す。
+ * 週の表示の予定に出す時刻の文を、`09:00〜09:30` の形で返す。翌日に終わる予定は、開始の日と翌日の両方に予定の全体の時刻を `22:00〜翌 01:00` の形で出す。
  * FullCalendar 7 の日本語の時刻の文は `9時00分～9時30分` の形で、区切りを変えるオプションが無いので、ここで作る。
  */
 const eventTimeText = (start: Date | null, end: Date | null, timeText: string) =>
-  start === null || end === null
-    ? timeText
-    : `${hourMinute(start)} - ${nextDayPrefix(start, end)}${hourMinute(end)}`
+  start === null || end === null ? timeText : formatScheduleTimeRange(start, end)
 
 /** 時刻の見出しの `data-time` に入れる `HH:mm:ss`。E2E の spec が時刻の見出しを指すのに使う。 */
 const slotTime = (milliseconds: number) => {

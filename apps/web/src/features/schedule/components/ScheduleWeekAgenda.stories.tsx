@@ -28,7 +28,7 @@ const meta = {
 export default meta
 type Story = StoryObj<typeof meta>
 
-/** 幅 390px の週の表示。2026/10/18（日）から 24 日（土）の予定を、日ごとに時刻の順に並べる。 */
+/** 幅 390px の週の表示。2026年10月18日（日）から 24 日（土）の予定を、日ごとに時刻の順に並べる。 */
 export const Default: Story = {}
 
 /** 予定の無い週。日の見出しだけを出す。 */

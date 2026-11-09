@@ -104,13 +104,13 @@ test.describe('予定のカレンダー', () => {
             await segments.first().scrollIntoViewIfNeeded()
             await expect(segments).toHaveCount(2)
             await expect(segments.first()).toBeInViewport()
-            await expect(segments.first()).toContainText('22:00 - 翌 1:00 夜勤（週の表示）')
+            await expect(segments.first()).toContainText('22:00〜翌 01:00 夜勤（週の表示）')
             await check('11月10日（火）の 22 時から 24 時に、予定が描かれる')
 
             await step('カレンダーを上へ送り、0 時から 1 時を出す')
             await segments.last().scrollIntoViewIfNeeded()
             await expect(segments.last()).toBeInViewport()
-            await expect(segments.last()).toContainText('22:00 - 翌 1:00 夜勤（週の表示）')
+            await expect(segments.last()).toContainText('22:00〜翌 01:00 夜勤（週の表示）')
             await check('11月11日（水）の 0 時から 1 時に、同じ予定が描かれる')
           },
         )
@@ -141,7 +141,7 @@ test.describe('予定のカレンダー', () => {
             const event = page.getByTestId(`schedule-event-${id}`)
             await event.scrollIntoViewIfNeeded()
             await expect(event).toBeInViewport()
-            await expect(event).toContainText('22:00-翌 01:00 夜勤（日の表示）')
+            await expect(event).toContainText('22:00〜翌 01:00 夜勤（日の表示）')
             await expect(page.getByTestId(`day-grid-slot-${LOGIN_STAFF.id}-00:00`)).toBeInViewport()
             await check('0 時から 1 時に、その予定が描かれる')
           },

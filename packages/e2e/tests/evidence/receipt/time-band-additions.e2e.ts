@@ -75,7 +75,7 @@ test.describe('照合の結果', () => {
             await check(page, schedules, visits)
             await step('表示する行を「全ての行」に切り替える')
             await showAllReceiptRows(page)
-            const cells = receiptCategoryRowCells(page, 'match', '2024-04-01', '利用者A')
+            const cells = receiptCategoryRowCells(page, 'match', '2024年4月1日（月）', '利用者A')
             await step('結果の表を、加算の列が見えるまで右へ送る')
             await cells.nth(ADDITION_COLUMN).scrollIntoViewIfNeeded()
             await expect(cells.nth(5)).toHaveText('19:00')
@@ -110,7 +110,7 @@ test.describe('照合の結果', () => {
 
             await step('予定と実績のダミーの CSV を選び、照合する')
             await check(page, schedules, visits)
-            const cells = receiptCategoryRowCells(page, 'mismatch', '2024-04-01', '利用者C')
+            const cells = receiptCategoryRowCells(page, 'mismatch', '2024年4月1日（月）', '利用者C')
             await step('結果の表を、加算の列が見えるまで右へ送る')
             await cells.nth(ADDITION_COLUMN).scrollIntoViewIfNeeded()
             await expect(cells.nth(5)).toHaveText('10:00')

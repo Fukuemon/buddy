@@ -55,7 +55,7 @@ describe('ScheduleWeekAgenda', () => {
       />,
     )
     const row = screen.getByTestId('schedule-event-e1')
-    expect(row).toHaveTextContent('9:00 - 9:30')
+    expect(row).toHaveTextContent('09:00〜09:30')
     expect(row).toHaveTextContent('予定 e1')
     expect(row).toHaveTextContent(staff.name)
 
@@ -72,8 +72,8 @@ describe('ScheduleWeekAgenda', () => {
         ]}
       />,
     )
-    expect(screen.getByTestId('schedule-event-night')).toHaveTextContent('22:00 - 翌 1:00')
-    expect(screen.getByTestId('schedule-event-carried')).toHaveTextContent('前日 22:00 - 1:00')
+    expect(screen.getByTestId('schedule-event-night')).toHaveTextContent('22:00〜翌 01:00')
+    expect(screen.getByTestId('schedule-event-carried')).toHaveTextContent('前日 22:00〜01:00')
   })
 
   it('日の見出しを押すと、その日を渡す', async () => {

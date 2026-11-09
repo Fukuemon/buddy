@@ -58,7 +58,7 @@ describe('recurringRuleLabel', () => {
         monthly({ dayOfWeek: 1, weekOfMonth: 2, endDate: '2027-03-31' }),
         '2026-11-09',
       ),
-    ).toBe('毎月 第 2 月曜日（2027年3月31日まで）')
+    ).toBe('毎月 第 2 月曜日（2027年3月31日（水）まで）')
   })
 })
 

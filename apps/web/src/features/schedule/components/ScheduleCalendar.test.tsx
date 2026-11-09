@@ -21,7 +21,7 @@ describe('ScheduleCalendar', () => {
     render(<Week onEventClick={onEventClick} />)
     const segments = screen.getAllByTestId('schedule-event-schedule-7')
     expect(segments).toHaveLength(2)
-    for (const segment of segments) expect(segment).toHaveTextContent('22:00 - 翌 1:00 夜勤')
+    for (const segment of segments) expect(segment).toHaveTextContent('22:00〜翌 01:00 夜勤')
 
     await userEvent.click(segments[1])
     expect(onEventClick).toHaveBeenCalledWith('schedule-7')

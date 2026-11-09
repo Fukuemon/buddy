@@ -47,13 +47,13 @@ describe('StaffScheduleDayGrid', () => {
     const { unmount } = render(<Default />)
     const startDay = screen.getByTestId('schedule-event-schedule-7')
     expect([startDay.style.top, startDay.style.height]).toEqual(['1936px', '176px'])
-    expect(startDay).toHaveTextContent('22:00-翌 01:00 夜勤')
+    expect(startDay).toHaveTextContent('22:00〜翌 01:00 夜勤')
     unmount()
 
     render(<NextDayOfOvernight />)
     const nextDay = screen.getByTestId('schedule-event-schedule-7')
     expect([nextDay.style.top, nextDay.style.height]).toEqual(['0px', '88px'])
-    expect(nextDay).toHaveTextContent('22:00-翌 01:00 夜勤')
+    expect(nextDay).toHaveTextContent('22:00〜翌 01:00 夜勤')
     expect(screen.queryByTestId('schedule-event-schedule-1')).not.toBeInTheDocument()
   })
 
@@ -92,7 +92,7 @@ describe('StaffScheduleDayGrid', () => {
     expect(button).toHaveAccessibleName(/^キャンセル、/)
     expect(screen.getByText('キャンセル、')).toHaveClass('sr-only')
     expect(screen.getByTestId('schedule-event-e1-cancelled')).toHaveClass('line-through')
-    expect(screen.getByTestId('schedule-event-e1-cancelled')).toHaveTextContent('09:00-09:30 訪問')
+    expect(screen.getByTestId('schedule-event-e1-cancelled')).toHaveTextContent('09:00〜09:30 訪問')
   })
 
   it('確認が必要な予定に「要確認」の印を付ける', () => {
@@ -126,6 +126,6 @@ describe('StaffScheduleDayGrid', () => {
     const timeLine = screen
       .getByTestId('schedule-event-e1-needs-review')
       .closest<HTMLElement>('.block')
-    expect(timeLine?.textContent).toBe('要確認、09:00-09:30')
+    expect(timeLine?.textContent).toBe('要確認、09:00〜09:30')
   })
 })

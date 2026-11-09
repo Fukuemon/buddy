@@ -7,7 +7,12 @@ import { TextareaField, useFocusFirstInvalid } from '@buddy/ui'
 import { SCHEDULE_CATEGORY_LABEL } from '../constants/scheduleLabels'
 import { activePatients } from '#/api/activePatients'
 import { activeStaff } from '../lib/activeStaff'
-import { formatEndTime, patientServiceCode, visitEndOfInput } from '../lib/scheduleFormMapper'
+import {
+  formatEndTime,
+  formatScheduleDate,
+  patientServiceCode,
+  visitEndOfInput,
+} from '../lib/scheduleFormMapper'
 import type { ScheduleFormValues } from '../schema/scheduleForm'
 import { PatientSelectList } from './PatientSelectList'
 import { ScheduleCategoryCheckboxGroup } from './ScheduleCategoryCheckboxGroup'
@@ -92,7 +97,7 @@ export const ScheduleForm = ({
     if (values.kind === 'visit') {
       const end = visitEndOfInput(values.startTime, values.serviceTime)
       const serviceTime = Number.isFinite(values.serviceTime) ? values.serviceTime : '-'
-      return `${values.scheduleDate ?? ''} ${values.startTime ?? ''} - ${end === undefined ? '-' : formatEndTime(end)}（${serviceTime} 分、${values.serviceCode ?? ''}）`
+      return `${formatScheduleDate(values.scheduleDate)} ${values.startTime || '-'}〜${end === undefined ? '-' : formatEndTime(end)}（${serviceTime} 分、${values.serviceCode ?? ''}）`
     }
     const endTime =
       values.kind === 'normal'
@@ -101,7 +106,7 @@ export const ScheduleForm = ({
             endsNextDay: values.endsNextDay === true,
           })
         : ''
-    return `${values.scheduleDate ?? ''} ${values.startTime ?? ''} - ${endTime}`
+    return `${formatScheduleDate(values.scheduleDate)} ${values.startTime || '-'}〜${endTime}`
   })()
 
   const items: ScheduleFieldSummaryItem<FieldId>[] = [

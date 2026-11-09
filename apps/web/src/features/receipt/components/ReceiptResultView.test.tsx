@@ -62,7 +62,7 @@ describe('ReceiptResultView', () => {
     const { unmount } = render(<Default />)
     const warnings = screen.getByTestId('receipt-warnings').textContent
     expect(warnings).toContain(
-      '2024-04-05 10:00: タイトルが「【サービス内容】利用者名」の形になっていません。',
+      '2024年4月5日（金） 10:00: タイトルが「【サービス内容】利用者名」の形になっていません。',
     )
     expect(warnings).not.toContain('の組がない')
     unmount()

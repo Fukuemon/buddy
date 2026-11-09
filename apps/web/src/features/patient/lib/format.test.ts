@@ -20,7 +20,9 @@ const staffList: StaffRecord[] = [
 
 describe('format', () => {
   it('利用の終了の印は、事業所の現地の日付で出し、利用中なら出さない', () => {
-    expect(endedLabel({ ended_at: '2026-09-30T15:30:00Z' })).toBe('利用の終了（2026/10/01）')
+    expect(endedLabel({ ended_at: '2026-09-30T15:30:00Z' })).toBe(
+      '利用の終了（2026年10月1日（木））',
+    )
     expect(endedLabel({ ended_at: null })).toBeUndefined()
   })
 
@@ -69,6 +71,6 @@ describe('format', () => {
         start_time: '09:00',
         end_time: '09:29',
       }),
-    ).toBe('2026/11/02 から 終了日なし、09:00〜09:29')
+    ).toBe('2026年11月2日（月）から終了日なし、09:00〜09:29')
   })
 })

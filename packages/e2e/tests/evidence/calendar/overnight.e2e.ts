@@ -247,10 +247,10 @@ test.describe('予定の取り込み', () => {
                 '取り込まない予定（1 件）',
               )
               const skipped = page.getByTestId('calendar-import-skipped')
-              await expect(skipped).toContainText('2026/11/13（金）17:00〜翌 09:00')
+              await expect(skipped).toContainText('2026年11月13日（金） 17:00〜翌 09:00')
               await expect(skipped).toContainText('日をまたぐ予定')
               await check(
-                '取り込まない予定（1 件）に「2026/11/13（金）17:00〜翌 09:00」と「日をまたぐ予定」が出る',
+                '取り込まない予定（1 件）に「2026年11月13日（金） 17:00〜翌 09:00」と「日をまたぐ予定」が出る',
               )
             } finally {
               await step('（撮影のため、ほかの撮影の前提に戻すよう、結び付けを外す）')
@@ -269,7 +269,7 @@ test.describe('予定の取り込み', () => {
           browser,
           {
             name: 'calendar-import-overnight-review',
-            title: `利用者のいない「${title}」${date} 22:00〜翌 01:00 は、確認が必要な予定に「2026/12/07（月）22:00〜翌 01:00」で出る`,
+            title: `利用者のいない「${title}」${date} 22:00〜翌 01:00 は、確認が必要な予定に「2026年12月7日（月） 22:00〜翌 01:00」で出る`,
             actor: ACTOR,
             variant,
           },
@@ -293,9 +293,9 @@ test.describe('予定の取り込み', () => {
                 '1 件',
               )
               await expect(page.getByTestId('calendar-import-result-preview')).toContainText(
-                '2026/12/07（月）22:00〜翌 01:00',
+                '2026年12月7日（月） 22:00〜翌 01:00',
               )
-              await check('確認が必要な予定に、日時「2026/12/07（月）22:00〜翌 01:00」が出る')
+              await check('確認が必要な予定に、日時「2026年12月7日（月） 22:00〜翌 01:00」が出る')
             } finally {
               await step('（撮影のため、ほかの撮影の前提に戻すよう、結び付けを外す）')
               await unlinkStaffCalendar(page, SATO.id)
@@ -396,7 +396,7 @@ test.describe('確認が必要な予定', () => {
           {
             name: 'calendar-review-overnight',
             title:
-              '確認が必要な予定の一覧で、終了が翌日の予定の日時が「2026/11/13（金）22:00〜翌 01:00」で出る',
+              '確認が必要な予定の一覧で、終了が翌日の予定の日時が「2026年11月13日（金） 22:00〜翌 01:00」で出る',
             actor: 'ログインなし（Storybook の story）',
             variant,
           },
@@ -410,8 +410,8 @@ test.describe('確認が必要な予定', () => {
             await step(
               '確認が必要な予定の画面（Storybook の CalendarReviewView の OvernightIssue）を開いている\n行は、2026-11-13 22:00 に始まり翌日の 01:00 に終わる単発の予定である（架空のデータ）',
             )
-            await expect(datetime).toHaveText('2026/11/13（金）22:00〜翌 01:00')
-            await check('行の日時が「2026/11/13（金）22:00〜翌 01:00」で出る')
+            await expect(datetime).toHaveText('2026年11月13日（金） 22:00〜翌 01:00')
+            await check('行の日時が「2026年11月13日（金） 22:00〜翌 01:00」で出る')
           },
         )
       })

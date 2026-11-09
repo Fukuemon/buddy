@@ -1,3 +1,5 @@
+import { formatDate, formatTimeRange, type TimeRangeDay } from '#/components/dateFormat'
+
 const pad = (value: number) => String(value).padStart(2, '0')
 
 /** 日付を、デバイスの時間帯で `YYYY-MM-DD` にする。 */
@@ -59,17 +61,27 @@ export const diffMinutes = (startTimeKey: string, endTimeKey: string) => {
 /** 曜日の 1 文字。`Date.getDay()` の値で引く。 */
 export const WEEKDAYS = ['日', '月', '火', '水', '木', '金', '土'] as const
 
-/** 終了が開始の翌日なら `翌 `、同じ日なら空の文字列を返す。終了の時刻の前に付ける。 */
-export const nextDayPrefix = (start: Date, end: Date) =>
-  toDateKey(start) === toDateKey(end) ? '' : '翌 '
-
 /**
  * 開始と終了の日時を、デバイスの時間帯で `2026年10月20日（火） 09:00〜09:29` の形にする。
  * 終了が開始の翌日なら `2026年10月20日（火） 22:00〜翌 01:00` の形にする。
  */
 export const formatDateTimeRange = (start: Date, end: Date) =>
-  `${start.getFullYear()}年${start.getMonth() + 1}月${start.getDate()}日（${WEEKDAYS[start.getDay()]}） ${toTimeKey(start)}〜${nextDayPrefix(start, end)}${toTimeKey(end)}`
+  `${formatDate(start)} ${formatScheduleTimeRange(start, end)}`
 
-/** 日時を、デバイスの時間帯で `2026年10月20日（火） 09:00` の形にする。 */
-export const formatDateTime = (date: Date) =>
-  `${date.getFullYear()}年${date.getMonth() + 1}月${date.getDate()}日（${WEEKDAYS[date.getDay()]}） ${toTimeKey(date)}`
+/** 終了が開始の翌日なら `nextDay`、同じ日なら `sameDay` を返す。 */
+const timeRangeDayOf = (start: Date, end: Date): TimeRangeDay =>
+  toDateKey(start) === toDateKey(end) ? 'sameDay' : 'nextDay'
+
+/**
+ * 開始と終了の日時の時刻を、デバイスの時間帯で `09:00〜09:29` の形にする。
+ * 終了が開始の翌日なら `22:00〜翌 01:00`、startsBeforeDay が true なら `前日 22:00〜01:00` にする。
+ * startsBeforeDay は、表示する日より前に始まる予定を、その日の下に置くときに渡す。
+ */
+export const formatScheduleTimeRange = (start: Date, end: Date, startsBeforeDay = false) =>
+  formatTimeRange(
+    toTimeKey(start),
+    toTimeKey(end),
+    startsBeforeDay ? 'previousDay' : timeRangeDayOf(start, end),
+  )
+
+export { formatDateTime } from '#/components/dateFormat'

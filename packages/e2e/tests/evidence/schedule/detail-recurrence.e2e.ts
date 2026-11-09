@@ -134,8 +134,8 @@ test.describe('予定の詳細', () => {
               await check('予定の詳細に、繰り返しの規則と終了日が出ない')
               return
             }
-            await expect(row).toHaveText('繰り返し毎月 第 2 月曜日（2027年3月31日まで）')
-            await check('「繰り返し」の行に「毎月 第 2 月曜日（2027年3月31日まで）」が出る')
+            await expect(row).toHaveText('繰り返し毎月 第 2 月曜日（2027年3月31日（水）まで）')
+            await check('「繰り返し」の行に「毎月 第 2 月曜日（2027年3月31日（水）まで）」が出る')
           },
         )
       })

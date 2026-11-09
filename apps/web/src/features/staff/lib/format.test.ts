@@ -13,11 +13,11 @@ describe('statusLabel', () => {
   it('休職は戻る予定の日を、退職は事業所の現地の日付の退職にした日を添える', () => {
     expect(statusLabel(active)).toBe('有効')
     expect(statusLabel({ ...active, status: 'on_leave', leave_return_date: '2027-04-01' })).toBe(
-      '休職（2027/04/01 に戻る予定）',
+      '休職（2027年4月1日（木）に戻る予定）',
     )
     expect(statusLabel({ ...active, status: 'on_leave' })).toBe('休職')
     expect(statusLabel({ ...active, status: 'retired', retired_at: '2026-09-30T15:00:00Z' })).toBe(
-      '退職（2026/10/01）',
+      '退職（2026年10月1日（木））',
     )
   })
 })
@@ -29,9 +29,9 @@ describe('employmentText', () => {
       status: 'on_leave',
       leave_started_at: '2026-10-31T01:00:00Z',
     } as const
-    expect(employmentText(onLeave)).toBe('2026/10/31 から休職です。')
+    expect(employmentText(onLeave)).toBe('2026年10月31日（土）から休職です。')
     expect(employmentText({ ...onLeave, leave_return_date: '2027-04-01' })).toBe(
-      '2026/10/31 から休職です。戻る予定の日に自動では戻りません。',
+      '2026年10月31日（土）から休職です。戻る予定の日に自動では戻りません。',
     )
     expect(employmentText(active)).toBeUndefined()
   })
@@ -46,9 +46,11 @@ describe('formatRemainingRecurring', () => {
       start_time: '10:00',
       end_time: '11:00',
     }
-    expect(formatRemainingRecurring(recurring)).toBe('2026/10/06 から 終了日なし、10:00〜11:00')
+    expect(formatRemainingRecurring(recurring)).toBe(
+      '2026年10月6日（火）から終了日なし、10:00〜11:00',
+    )
     expect(formatRemainingRecurring({ ...recurring, end_date: '2027-03-31' })).toBe(
-      '2026/10/06 から 2027/03/31 まで、10:00〜11:00',
+      '2026年10月6日（火）から2027年3月31日（水）まで、10:00〜11:00',
     )
   })
 })

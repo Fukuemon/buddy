@@ -97,9 +97,9 @@ test.describe('照合の結果', () => {
             await expect(page.getByTestId('receipt-check-error')).toHaveCount(0)
             await step('表示する行を「全ての行」に切り替える')
             await showAllReceiptRows(page)
-            const cells = receiptCategoryRowCells(page, 'match', '2024-04-01', '利用者A')
+            const cells = receiptCategoryRowCells(page, 'match', '2024年4月1日（月）', '利用者A')
             await expect(cells).toHaveText([
-              '2024-04-01',
+              '2024年4月1日（月）',
               '利用者A',
               '職員B',
               '',
@@ -156,13 +156,18 @@ test.describe('照合の結果', () => {
             await step('表示する行を「全ての行」に切り替える')
             await showAllReceiptRows(page)
             await expect(
-              receiptCategoryRowCells(page, 'match', '2024-04-01', '利用者C'),
+              receiptCategoryRowCells(page, 'match', '2024年4月1日（月）', '利用者C'),
             ).toHaveCount(13)
             await check(
               '照合の全体が止まらずに結果の画面が開き、利用者C の日をまたがない行は整合データに入る',
             )
 
-            const cells = receiptCategoryRowCells(page, 'visit_only', '2024-04-01', '利用者D')
+            const cells = receiptCategoryRowCells(
+              page,
+              'visit_only',
+              '2024年4月1日（月）',
+              '利用者D',
+            )
             await step('（撮影のため、結果の表を右端まで送り、実績の側の列を見せる）')
             await scrollToVisitColumns(page)
             await expect(cells.nth(9)).toHaveText('22:00')
@@ -213,9 +218,9 @@ test.describe('照合の結果', () => {
             await expect(page.getByTestId('receipt-warnings')).toHaveCount(0)
             await step('表示する行を「全ての行」に切り替える')
             await showAllReceiptRows(page)
-            const cells = receiptCategoryRowCells(page, 'match', '2026-11-20', '見本一郎')
+            const cells = receiptCategoryRowCells(page, 'match', '2026年11月20日（金）', '見本一郎')
             await expect(cells).toHaveText([
-              '2026-11-20',
+              '2026年11月20日（金）',
               '見本一郎',
               LEADER.staff.name,
               '',

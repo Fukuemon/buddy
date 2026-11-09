@@ -1,32 +1,23 @@
 import { clsx } from 'clsx'
 
 import type { Staff } from '#/api/types'
+import { formatDateKey } from '#/components/dateFormat'
 
-import { nextDayPrefix, parseDateKey, WEEKDAYS } from '../lib/dateTime'
+import { formatScheduleTimeRange } from '../lib/dateTime'
 import type { ScheduleCalendarEvent } from '../lib/toCalendarEvents'
 import { groupWeekAgenda, type WeekAgendaItem } from '../lib/weekAgenda'
 import { CancelledMark } from './CancelledMark'
 import { NeedsReviewMark } from './NeedsReviewMark'
 
-const hourMinute = (date: Date) =>
-  `${date.getHours()}:${String(date.getMinutes()).padStart(2, '0')}`
-
 /**
- * 行の時刻の文。週の表示の格子と同じく `9:00 - 9:30` の形にし、翌日に終わる予定は `22:00 - 翌 1:00` にする。
- * 週より前の日に始まる予定は、週の最初の日の下に置くので `前日 22:00 - 1:00` にする。
+ * 行の時刻の文。`09:00〜09:30` の形にし、翌日に終わる予定は `22:00〜翌 01:00` にする。
+ * 週より前の日に始まる予定は、週の最初の日の下に置くので `前日 22:00〜01:00` にする。
  */
-const timeText = ({ event, startsBeforeWeek }: WeekAgendaItem) => {
-  const start = new Date(event.start)
-  const end = new Date(event.end)
-  return startsBeforeWeek
-    ? `前日 ${hourMinute(start)} - ${hourMinute(end)}`
-    : `${hourMinute(start)} - ${nextDayPrefix(start, end)}${hourMinute(end)}`
-}
+const timeText = ({ event, startsBeforeWeek }: WeekAgendaItem) =>
+  formatScheduleTimeRange(new Date(event.start), new Date(event.end), startsBeforeWeek)
 
-const dayHeading = (dateKey: string) => {
-  const date = parseDateKey(dateKey)
-  return `${date.getMonth() + 1}月${date.getDate()}日（${WEEKDAYS[date.getDay()]}）`
-}
+/** 日の見出し。週の一覧の上に年が出るので、年を省く。 */
+const dayHeading = (dateKey: string) => formatDateKey(dateKey, { withYear: false })
 
 export type ScheduleWeekAgendaProps = {
   /** 表示の基準の日付。この日を含む週（日曜から 7 日）を出す。`YYYY-MM-DD` */

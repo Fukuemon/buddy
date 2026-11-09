@@ -133,7 +133,7 @@ describe('PatientDetailContainer', () => {
   it('利用の終了の利用者は、休職の担当に状態を添え、再開では担当を選び直すまで再開を押せない', async () => {
     render(<Ended />)
     expect(await screen.findByTestId('patient-detail-status')).toHaveTextContent(
-      '利用の終了（2026/10/01）',
+      '利用の終了（2026年10月1日（木））',
     )
     expect(await screen.findByText('石川 二葉（休職）')).toBeInTheDocument()
     await openMenuItem('patient-detail-resume')

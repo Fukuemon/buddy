@@ -196,7 +196,7 @@ describe('StaffDetailContainer', () => {
     await userEvent.click(within(dialog).getByTestId('staff-leave-submit'))
 
     expect(await screen.findByTestId('staff-detail-status')).toHaveTextContent(
-      '休職（2027/04/01 に戻る予定）',
+      '休職（2027年4月1日（木）に戻る予定）',
     )
   })
 
@@ -578,7 +578,9 @@ describe('StaffDetailContainer', () => {
 
   it('退職した職員と自分の詳細では、出さない操作がある', async () => {
     const { unmount } = render(<Retired />)
-    expect(await screen.findByTestId('staff-detail-status')).toHaveTextContent('退職（2026/09/30）')
+    expect(await screen.findByTestId('staff-detail-status')).toHaveTextContent(
+      '退職（2026年9月30日（水））',
+    )
     expect(screen.queryByTestId('staff-detail-menu')).toBeNull()
     expect(screen.queryByTestId('staff-detail-position-change')).toBeNull()
     unmount()
