@@ -1,4 +1,4 @@
-package assemble
+package main
 
 import (
 	"log/slog"
@@ -10,7 +10,7 @@ import (
 )
 
 func TestAccessResourcesCoverAllResources(t *testing.T) {
-	got := accessResources(NewRepositories(nil))
+	got := accessResources(newRepositories(nil))
 	for r := access.ResourceDepartment; r <= access.ResourceCalendarCutover; r++ {
 		if _, ok := got[r]; !ok {
 			t.Errorf("リソースの種類 %d の事業所を読むリポジトリが無い", r)
@@ -23,7 +23,7 @@ func TestAccessResourcesCoverAllResources(t *testing.T) {
 
 func TestAppsFillAllOperations(t *testing.T) {
 	for _, cfg := range []config.API{{}, {Calendar: config.Calendar{ExportEnabled: true}}} {
-		apps := reflect.ValueOf(newApps(NewRepositories(nil), nil, cfg, slog.New(slog.DiscardHandler)))
+		apps := reflect.ValueOf(newApps(newRepositories(nil), nil, cfg, slog.New(slog.DiscardHandler)))
 		for i := range apps.NumField() {
 			app, name := apps.Field(i), apps.Type().Field(i).Name
 			if app.Kind() != reflect.Struct {
