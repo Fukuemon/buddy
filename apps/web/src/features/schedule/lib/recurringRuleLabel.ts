@@ -1,4 +1,5 @@
 import type { RecurringRule } from '#/api/types'
+import { formatDateKey } from '#/components/dateFormat'
 
 import {
   toRecurringRuleFormValues,
@@ -42,14 +43,8 @@ export const repetitionLabel = (values: RepetitionValues) => {
   return `毎月 第 ${values.weekOfMonth} ${weekdayLabel(values.dayOfWeek)}`
 }
 
-/** YYYY-MM-DD を `2027年3月31日` の形にする。 */
-const formatDateKey = (dateKey: string) => {
-  const [year, month, day] = dateKey.split('-').map(Number) as [number, number, number]
-  return `${year}年${month}月${day}日`
-}
-
 /**
- * 繰り返しの規則を、繰り返しの変更の選択肢と同じ形の文（repetitionLabel）にし、終了日があれば「（2027年3月31日まで）」を後ろに付ける。
+ * 繰り返しの規則を、繰り返しの変更の選択肢と同じ形の文（repetitionLabel）にし、終了日があれば「（2027年3月31日（水）まで）」を後ろに付ける。
  * 規則が持たない曜日、日、週は、予定の API と同じく baseDate（YYYY-MM-DD）から決める。baseDate には、その規則の回の日を渡す。
  */
 export const recurringRuleLabel = (rule: RecurringRule, baseDate: string) => {

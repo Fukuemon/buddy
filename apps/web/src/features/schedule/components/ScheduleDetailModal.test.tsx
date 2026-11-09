@@ -102,7 +102,7 @@ describe('ScheduleDetailModal', () => {
       />,
     )
     expect(screen.getByTestId('schedule-detail-recurrence')).toHaveTextContent(
-      '毎月 第 2 月曜日（2027年3月31日まで）',
+      '毎月 第 2 月曜日（2027年3月31日（水）まで）',
     )
   })
 
