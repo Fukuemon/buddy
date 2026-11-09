@@ -83,6 +83,24 @@ export const scheduleSubmitErrorMessage = (
   return `予定を${verb}できませんでした。`
 }
 
+/**
+ * 予定の削除を拒まれたときの文（ADR-0040）。
+ * 409 の conflict は、開いた後に予定がキャンセルされたか、回がすでに置き換えか、キャンセルか、削除されていたときである。
+ * 400 は、開いた後に日付が変わり開始の日が今日より前になったときと、繰り返しの規則が変わり回の日が回に当たらなくなったときである。
+ */
+export const scheduleDeleteErrorMessage = (error: unknown) => {
+  if (!(error instanceof ApiError)) return '予定を削除できませんでした。'
+  if (error.status === 403) return FORBIDDEN_MESSAGE
+  if (error.code === 'google_primary') return SCHEDULE_GOOGLE_PRIMARY_MESSAGE
+  if (error.status === 404)
+    return '予定が見つかりません。カレンダーに戻って、予定を確認してください。'
+  if (error.status === 409)
+    return '予定がキャンセルか変更されていたので、削除できませんでした。予定を開き直してください。'
+  if (error.status === 400)
+    return '予定が変更されたか、今日より前になったので、削除できませんでした。予定を開き直してください。'
+  return '予定を削除できませんでした。'
+}
+
 /** 予定の書き込みが、Google カレンダーで予定が変わっていたために拒まれたか（409 の google_event_changed）を返す。 */
 export const isGoogleEventChanged = (error: unknown) =>
   error instanceof ApiError && error.code === 'google_event_changed'
