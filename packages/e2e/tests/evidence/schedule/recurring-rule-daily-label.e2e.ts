@@ -107,7 +107,9 @@ test.describe('繰り返しの規則の文', () => {
             await page.getByTestId('recurring-rule-end-date').fill('2027-03-31')
             await page.getByTestId('schedule-field-date-time').click()
             await expect(page.getByTestId('schedule-field-recurrence')).toContainText(
-              '2027年3月31日',
+              variant.name === 'before'
+                ? '毎週 月曜日、火曜日、水曜日、木曜日、金曜日、土曜日、日曜日（2027年3月31日（水）まで）'
+                : '毎日（2027年3月31日（水）まで）',
             )
             await check('閉じた繰り返しの欄に出る、繰り返しの文')
           },
