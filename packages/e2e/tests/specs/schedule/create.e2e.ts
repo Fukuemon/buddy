@@ -1,6 +1,7 @@
 import { expect, test } from '@playwright/test'
 
 import { LEADER, LEADER_STATE, LOGIN_STAFF, SEED_PATIENT, TEAM_MEMBER } from '../../fixtures/env'
+
 test.describe('予定のカレンダー', () => {
   test.describe('予定の作成', () => {
     test('通常の予定を作った場合、日の表示の予定者の列にその予定が出ること', async ({ page }) => {
