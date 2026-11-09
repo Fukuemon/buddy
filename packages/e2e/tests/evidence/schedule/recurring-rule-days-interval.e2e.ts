@@ -9,6 +9,7 @@ import { STAFF_FORM } from '../../fixtures/staff'
 import { signInAtBroker } from '../../screens/login'
 import { calendarpitEvent } from '../../selectors/calendarpit'
 import { fieldNote } from '../../selectors/formField'
+import { acceptBrowserDialog } from '../../widgets/browserDialog/actions/browserDialog'
 
 const ACTOR = `${LOGIN_STAFF.name}（マネージャー）`
 const OKADA_ACTOR = `${OKADA.staff.name}（Google カレンダーを正本にする事業所のマネージャー）`
@@ -278,8 +279,10 @@ test.describe('繰り返しの変更', () => {
               '曜日の欄の下に「曜日を 1 つ以上選んでください」が出て、モーダルが開いたまま',
             )
             await step('「キャンセル」を押し、変更を破棄して閉じ、同じ日の表示を開き直す')
-            page.once('dialog', (dialog) => void dialog.accept())
-            await page.getByTestId('schedule-recurrence-cancel').click()
+            const confirm = await acceptBrowserDialog(page, () =>
+              page.getByTestId('schedule-recurrence-cancel').click(),
+            )
+            expect(confirm).toBe('変更が破棄されますがよろしいですか？')
             await checkDay(page, check, LOGIN_STAFF.id, start, title, true, '月曜')
           },
         )

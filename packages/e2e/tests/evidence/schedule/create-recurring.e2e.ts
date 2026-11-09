@@ -5,6 +5,7 @@ import { EVIDENCE_VARIANTS, recordPrEvidence } from '../../fixtures/evidence'
 import { deleteGoogleEvent, listGoogleEvents } from '../../fixtures/googleCalendar'
 import { signInAtBroker } from '../../screens/login'
 import { calendarpitEvent } from '../../selectors/calendarpit'
+import { acceptBrowserDialog } from '../../widgets/browserDialog/actions/browserDialog'
 
 const ACTOR = `${LOGIN_STAFF.name}（マネージャー）`
 const OKADA_ACTOR = `${OKADA.staff.name}（Google カレンダーを正本にする事業所のマネージャー）`
@@ -277,8 +278,10 @@ test.describe('予定のカレンダー', () => {
               `項目の一覧の「繰り返し」と、繰り返しの欄の下に「${message}」が出て、ダイアログが開いたまま`,
             )
             await step('「キャンセル」を押し、変更を破棄して閉じる')
-            page.once('dialog', (dialog) => void dialog.accept())
-            await page.getByTestId('schedule-new-cancel').click()
+            const confirm = await acceptBrowserDialog(page, () =>
+              page.getByTestId('schedule-new-cancel').click(),
+            )
+            expect(confirm).toBe('変更が破棄されますがよろしいですか？')
             await expect(page.getByTestId('schedule-form-modal')).toBeHidden()
             await checkDay(page, check, LOGIN_STAFF.id, start, title, false)
             await checkDay(page, check, LOGIN_STAFF.id, fromNextMonday(3), title, false)

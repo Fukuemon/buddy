@@ -1,6 +1,7 @@
 import { expect, test, type Page } from '@playwright/test'
 
 import { LOGIN_STAFF } from '../../fixtures/env'
+import { acceptBrowserDialog } from '../../widgets/browserDialog/actions/browserDialog'
 
 /** 明日以降で最初の月曜の日付から、days 日後の日付（YYYY-MM-DD）。Asia/Tokyo の今日から数える。 */
 const fromNextMonday = (days: number) => {
@@ -82,8 +83,10 @@ test.describe('予定のカレンダー', () => {
         )
         await expect(page.getByTestId('schedule-form-modal')).toBeVisible()
         // 送っていれば、次の火曜に回ができる。閉じて開き直した日の表示で、列が出てから数える
-        page.once('dialog', (dialog) => void dialog.accept())
-        await page.getByTestId('schedule-new-cancel').click()
+        const confirm = await acceptBrowserDialog(page, () =>
+          page.getByTestId('schedule-new-cancel').click(),
+        )
+        expect(confirm).toBe('変更が破棄されますがよろしいですか？')
         await expect(page.getByTestId('schedule-form-modal')).toBeHidden()
         await openDay(page, fromNextMonday(1))
         await expect(ownEvent(page, title)).toHaveCount(0)
