@@ -46,6 +46,38 @@ describe('createFakeBuddyApi', () => {
     ).rejects.toMatchObject({ status: 409 })
   })
 
+  it('今日以降の有効な予定を削除し、キャンセル済みと今日より前の予定と google_primary の事業所の削除を拒む', async () => {
+    const api = createFakeBuddyApi({ baseDate })
+    await api.schedules.delete(MOCK_FACILITY_ID, 'schedule-1')
+    await expect(api.schedules.get(MOCK_FACILITY_ID, 'schedule-1')).rejects.toMatchObject({
+      status: 404,
+    })
+    await expect(api.schedules.delete(MOCK_FACILITY_ID, 'schedule-6')).rejects.toMatchObject({
+      status: 409,
+      code: 'conflict',
+    })
+    const past = await api.schedules.create(
+      MOCK_FACILITY_ID,
+      {
+        kind: 'normal',
+        title: '研修',
+        staffId: 'staff-2',
+        startsAt: '2026-10-19T15:00:00+09:00',
+        endsAt: '2026-10-19T16:00:00+09:00',
+        description: '',
+      },
+      'past-1',
+    )
+    await expect(api.schedules.delete(MOCK_FACILITY_ID, past.id)).rejects.toMatchObject({
+      status: 400,
+    })
+    const google = createFakeBuddyApi({ baseDate, sourceMode: 'google_primary' })
+    await expect(google.schedules.delete(MOCK_FACILITY_ID, 'schedule-1')).rejects.toMatchObject({
+      status: 409,
+      code: 'google_primary',
+    })
+  })
+
   it('作った予定を取得できる', async () => {
     const api = createFakeBuddyApi({ baseDate })
     const created = await api.schedules.create(

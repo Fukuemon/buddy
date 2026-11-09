@@ -36,7 +36,8 @@ const notFound = () => new ApiError(404, '職員が見つかりません', [], '
 const conflict = (message: string) => new ApiError(409, message, [], 'conflict')
 
 const pad = (value: number) => String(value).padStart(2, '0')
-const localDate = (date: Date) =>
+/** date の、端末の時刻での日付（YYYY-MM-DD）を返す。 */
+export const localDate = (date: Date) =>
   `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`
 
 /**

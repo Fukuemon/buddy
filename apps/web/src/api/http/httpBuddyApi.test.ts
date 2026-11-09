@@ -325,6 +325,46 @@ describe('createHttpBuddyApi', () => {
     ])
   })
 
+  it('単発の予定の削除は予定の削除の API を、回の ID の削除は回の削除の API を呼ぶ', async () => {
+    const sent: unknown[] = []
+    server.use(
+      scheduleHttp.delete('/v1/schedules/{schedule_id}', ({ params, response }) => {
+        sent.push({ id: params.schedule_id })
+        return response(204).empty()
+      }),
+      scheduleHttp.post(
+        '/v1/schedules/recurring/{recurring_schedule_id}/occurrences/delete',
+        async ({ params, request, response }) => {
+          sent.push({ id: params.recurring_schedule_id, body: await request.json() })
+          return response(204).empty()
+        },
+      ),
+    )
+    await api().schedules.delete('facility-1', '01M3TC6E9G4N8Q2R5T7V9W1X3Z')
+    await api().schedules.delete(
+      'facility-1',
+      occurrenceId('01M3TC6E9G4N8Q2R5T7V9W1X3Y', '2026-10-20'),
+    )
+    expect(sent).toEqual([
+      { id: '01M3TC6E9G4N8Q2R5T7V9W1X3Z' },
+      { id: '01M3TC6E9G4N8Q2R5T7V9W1X3Y', body: { original_date: '2026-10-20' } },
+    ])
+  })
+
+  it('予定の削除を拒まれると、状態と code を持つ ApiError を投げる', async () => {
+    server.use(
+      scheduleHttp.delete('/v1/schedules/{schedule_id}', ({ response }) =>
+        response(409).json({
+          code: 'google_primary',
+          message: 'Google カレンダーで管理しています',
+        }),
+      ),
+    )
+    await expect(
+      api().schedules.delete('facility-1', '01M3TC6E9G4N8Q2R5T7V9W1X3Z'),
+    ).rejects.toMatchObject({ status: 409, code: 'google_primary' })
+  })
+
   it('繰り返しの予定の回は、繰り返しの予定の ID と規則を持ち、置き換えた予定と google_primary の単発の予定は持たない', async () => {
     const rs: components['schemas']['RecurringSchedule'] = {
       ...schedule('01M3TC6E9G4N8Q2R5T7V9W1X3Y', { date: '2026-10-06' }),

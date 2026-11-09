@@ -62,6 +62,7 @@ const expectOk = async (promise: Promise<Result<unknown>>): Promise<void> => {
  * キャンセルした予定は画面で変換できなければ飛ばし、一覧の全体を失敗にしない。
  * schedules.get と schedules.update は、回の ID を受けると、繰り返しの予定のその回を読み、その回を置き換える。
  * schedules.cancel は、回の ID を受けると、繰り返しの予定のその回をキャンセルする。
+ * schedules.delete は、回の ID を受けると、繰り返しの予定のその回を削除する。
  * schedules.update は、今の予定を読んでから置き換え、画面が持たない同行者などを keepCurrentVisit で引き継ぐ。
  * etag は、画面が予定を読んだときの値を送り、今の予定を読み直した値は送らない。読んだ後の Google カレンダーでの変更を見落とさないためである。
  * schedules.create は、画面が決めた id を送る。
@@ -249,6 +250,23 @@ export const createHttpBuddyApi = ({ baseUrl, fetch }: HttpApiOptions): BuddyApi
           client.POST('/v1/schedules/{schedule_id}/cancel', {
             params: { path: { schedule_id: scheduleId } },
             body: etag === null ? { reason } : { reason, etag },
+          }),
+        )
+      },
+      delete: async (_facilityId, scheduleId) => {
+        const occurrence = parseOccurrenceId(scheduleId)
+        if (occurrence !== undefined) {
+          await expectOk(
+            client.POST('/v1/schedules/recurring/{recurring_schedule_id}/occurrences/delete', {
+              params: { path: { recurring_schedule_id: occurrence.recurringId } },
+              body: { original_date: occurrence.date },
+            }),
+          )
+          return
+        }
+        await expectOk(
+          client.DELETE('/v1/schedules/{schedule_id}', {
+            params: { path: { schedule_id: scheduleId } },
           }),
         )
       },

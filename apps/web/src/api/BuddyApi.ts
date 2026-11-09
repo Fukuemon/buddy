@@ -135,6 +135,13 @@ export interface BuddyApi {
       etag: string | null,
     ): Promise<void>
     /**
+     * 誤って入れた予定を削除する（ADR-0040）。キャンセルと違い、理由を持たず、削除した予定は一覧と取得に出ない。
+     * 回の ID を受けると、繰り返しの予定のその回を削除する。削除できるのは buddy_primary の事業所の、開始の日が今日以降の有効な予定だけである。
+     * 予定がなければ status が 404 の、今日より前の予定なら status が 400 の、キャンセル済みなら status が 409 の、
+     * google_primary の事業所なら status が 409 で code が google_primary の ApiError を投げる。
+     */
+    delete(facilityId: FacilityId, scheduleId: Schedule['id']): Promise<void>
+    /**
      * input の日時を最初の回にし、規則 rule で繰り返す、ID が id の繰り返しの予定を作る。作った繰り返しの予定の ID と最初の日付を返す。
      * input の開始の日付が rule の回に当たらないときは、status が 400 の ApiError を投げる。id の扱いは create と同じである。
      */
