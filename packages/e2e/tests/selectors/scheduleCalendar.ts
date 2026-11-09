@@ -21,6 +21,13 @@ export const calendarTimeLabel = (page: Page, time: string) =>
     .getByTestId('schedule-calendar')
     .locator(`.schedule-calendar-time-label-text[data-time="${time}"]`)
 
+/**
+ * 週の表示の時刻の格子の上の「終日」の行の、左端の見出し。FullCalendar が描く要素なので testid が無く、ScheduleCalendar が渡した文言で指す。
+ * 表示の期間に終日の予定が無いときは、行ごと描かれない。
+ */
+export const calendarAllDayRowLabel = (page: Page) =>
+  page.getByTestId('schedule-calendar').getByText('終日', { exact: true })
+
 /** 月の表示の日のマスの日付。FullCalendar が描く要素なので testid が無く、ScheduleCalendar が付けたクラスで指す。 */
 export const calendarDayNumbers = (page: Page) =>
   page.getByTestId('schedule-calendar').locator('.schedule-calendar-day-number')
