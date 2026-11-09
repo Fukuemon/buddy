@@ -108,6 +108,26 @@ export const createOvernightSchedule = async (
   })
 
 /**
+ * 予定の API で、facilityId の事業所に staffId の職員の、毎週の 22:00 に始まり翌日の 01:00 に終わる通常の予定を作り（createRecurringSchedule）、レスポンスを返す。
+ */
+export const createWeeklyOvernightSchedule = async (
+  request: APIRequestContext,
+  token: string,
+  facilityId: string,
+  schedule: NormalSchedule,
+) =>
+  request.post(`${SCHEDULE_URL}/v1/facilities/${facilityId}/schedules/recurring`, {
+    headers: { Authorization: `Bearer ${token}` },
+    data: {
+      ...(await normalSlot(request, token, schedule)),
+      start_time: '22:00',
+      end_time: '01:00',
+      ends_next_day: true,
+      recurring_rule: { frequency: 'weekly' },
+    },
+  })
+
+/**
  * 予定の API で、facilityId の事業所に staffId の職員の毎週の通常の予定を作り（createRecurringSchedule）、レスポンスを返す。
  * google_primary の事業所では、schedule.id に newScheduleId の ID を渡す。
  * schedule.rule に毎週の曜日の並び（days_of_week）と間隔（interval）を渡せる。渡さなければ最初の日付の曜日の毎週にする。
