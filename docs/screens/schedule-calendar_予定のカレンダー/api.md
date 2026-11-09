@@ -37,7 +37,7 @@ web の型（`apps/web/src/api/types.ts`）はフェイクの API に合わせ�
 | 切り替え中の案内、予定を作成、空いた時間、時間の枠 | 切り替え中か | `ScheduleList.cutover` が `null` でない | `listSchedules` の `cutover` |
 | 切り替えの開始 | 始めた職員の名前と時刻 | `OpenCalendarCutover.started_by_name`、`OpenCalendarCutover.started_at` | `listSchedules` の `cutover.started_by_name`、`cutover.started_at` |
 | 終日の予定、終日の行、一覧の終日の予定、終日の見出し、職員の終日の欄 | かかる最初の日と最後の日（最後の日を含む） | `AllDayEvent.startDate`、`AllDayEvent.endDate` | `listSchedules` の `all_day_events[].start_date`、`end_date` |
-| 終日の予定、一覧の終日の予定 | タイトル。空白だけなら「（タイトルなし）」 | `AllDayEvent.title` を `allDayEventTitle` に通した値 | `listSchedules` の `all_day_events[].title` |
+| 終日の予定、一覧の終日の予定 | タイトル。空白だけなら「（タイトルなし）」 | `AllDayEvent.title` を `formatAllDayEventTitle` に通した値 | `listSchedules` の `all_day_events[].title` |
 | 終日の予定、一覧の終日の予定 | 職員の名前 | `AllDayEvent.staffName` | `listSchedules` の `all_day_events[].staff_name` |
 | 終日の予定、一覧の終日の予定、職員の終日の欄 | 職員の色と、置く列 | `AllDayEvent.staffId` | `listSchedules` の `all_day_events[].staff_id` |
 | カレンダーに出せない予定の通知 | 件数 | `ScheduleList.unlistedEventCounts` の `UnlistedEventCount.count` の合計 | `listSchedules` の `unlisted_event_counts[].count` の合計 |

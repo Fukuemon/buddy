@@ -3,7 +3,11 @@ import { clsx } from 'clsx'
 import type { Staff } from '#/api/types'
 import { formatDateKey } from '#/components/dateFormat'
 
-import { allDayEventsOn, allDayEventTitle, type CalendarAllDayEvent } from '../lib/allDayEvents'
+import {
+  allDayEventsOn,
+  formatAllDayEventTitle,
+  type CalendarAllDayEvent,
+} from '../lib/allDayEvents'
 import { formatScheduleTimeRange } from '../lib/dateTime'
 import type { ScheduleCalendarEvent } from '../lib/toCalendarEvents'
 import { groupWeekAgenda, type WeekAgendaItem } from '../lib/weekAgenda'
@@ -78,7 +82,7 @@ export const ScheduleWeekAgenda = ({
             >
               <span className="text-caption text-text-secondary">終日</span>
               <span className="flex min-w-0 flex-col">
-                <span className="truncate">{allDayEventTitle(event)}</span>
+                <span className="truncate">{formatAllDayEventTitle(event)}</span>
                 <span className="flex items-center gap-1.5 text-caption text-text-secondary">
                   <span
                     aria-hidden

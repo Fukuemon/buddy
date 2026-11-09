@@ -9,10 +9,10 @@ export type CalendarAllDayEvent = AllDayEvent & {
 }
 
 /** タイトルが空白だけの終日の予定に出す文。 */
-export const UNTITLED_ALL_DAY_EVENT = '（タイトルなし）'
+const UNTITLED_ALL_DAY_EVENT = '（タイトルなし）'
 
 /** 終日の予定 event の、画面に出すタイトルを返す。 */
-export const allDayEventTitle = (event: AllDayEvent) =>
+export const formatAllDayEventTitle = (event: AllDayEvent) =>
   event.title.trim() === '' ? UNTITLED_ALL_DAY_EVENT : event.title
 
 /**

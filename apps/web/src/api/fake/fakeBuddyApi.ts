@@ -63,7 +63,7 @@ const assertFacility = (facilityId: FacilityId) => {
 }
 
 /** date のデバイスの時間帯の日付を `YYYY-MM-DD` で返す。 */
-const localDateKey = (date: Date) =>
+const toLocalDateKey = (date: Date) =>
   `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
 
 /** フェイクの API が読めるとみなすカレンダーの ID の末尾。ほかのカレンダーは読めない（calendar_unreadable）。 */
@@ -295,8 +295,8 @@ export const createFakeBuddyApi = ({
             isSelectedStaff(schedule.staffId),
         )
         // 本物の API と同じく、終日の予定と出せない予定は、期間に重なるものを数える。日付は、ダミーと同じくデバイスの日付で比べる
-        const dateFrom = localDateKey(new Date(fromTime))
-        const dateTo = localDateKey(new Date(toTime - 1))
+        const dateFrom = toLocalDateKey(new Date(fromTime))
+        const dateTo = toLocalDateKey(new Date(toTime - 1))
         const overlaps = (start: string | null, end: string | null) =>
           start === null || end === null || (start <= dateTo && end >= dateFrom)
         const unlistedByStaff = new Map<string, number>()

@@ -1,6 +1,6 @@
 import { clsx } from 'clsx'
 
-import { allDayEventTitle, type CalendarAllDayEvent } from '../lib/allDayEvents'
+import { formatAllDayEventTitle, type CalendarAllDayEvent } from '../lib/allDayEvents'
 
 export type AllDayEventLabelProps = {
   event: CalendarAllDayEvent
@@ -25,9 +25,9 @@ export const AllDayEventLabel = ({
     )}
     data-testid={`all-day-event-${event.id}`}
     style={{ borderColor: event.color }}
-    title={`${event.staffName} ${allDayEventTitle(event)}`}
+    title={`${event.staffName} ${formatAllDayEventTitle(event)}`}
   >
     {withStaffName && <span className="font-bold">{event.staffName} </span>}
-    {allDayEventTitle(event)}
+    {formatAllDayEventTitle(event)}
   </span>
 )
