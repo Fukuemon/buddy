@@ -69,15 +69,17 @@ services/schedule/internal/features/scheduleview/list.go  listProjected
 │   ├── タイトルを読めない予定は title_unreadable                          :260
 │   └── 訪問のタイトルで、サービスコードか利用者を引けなければ理由を付ける     :262-271
 └── collectCalendarOnly で終日の予定と出せない予定を集める                  :129
-    ├── 出せない予定は職員ごとに数える                                     calendar_only.go:56
-    ├── 単発の予定と日時を読めない予定は、期間に重なれば 1 件にする           calendar_only.go:87-91
-    └── 写せない繰り返しは、期間を見ずに最初の回の 1 件にする                calendar_only.go:93-99
+    ├── 出せない予定は職員ごとに数える                                     calendar_only.go:60
+    ├── 写せない繰り返しの 1 件に recurrence_unsupported を付ける            calendar_only.go:68-70
+    ├── 単発の予定と日時を読めない予定は、期間に重なれば 1 件にする           calendar_only.go:95-100
+    └── 写せない繰り返しは、回が期間に重なりうる間、最初の回の 1 件にする     calendar_only.go:101-108
 
 apps/web/src/api/http/httpBuddyApi.ts
-└── 理由のある予定を、期間で絞らずに needsReview にする                      :174
+├── 理由のある予定を、期間で絞らずに needsReview にする                      :178
+└── 理由のある終日の予定を、期間で絞らずに needsReviewAllDayEvents にする      :184
 
 apps/web/src/features/schedule/components/ScheduleSourceNotices.tsx
-├── 確認が必要な予定の件数と、予定ごとの日時、職員、理由を出す
+├── 確認が必要な予定の件数と、予定ごとの日時、職員、理由を出す。終日の予定は日付、職員、理由を出す
 └── 出せない予定の件数と職員ごとの件数、Google カレンダーで確認する案内を出す
 ```
 

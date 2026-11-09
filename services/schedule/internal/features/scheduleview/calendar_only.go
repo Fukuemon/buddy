@@ -40,7 +40,8 @@ type calendarOnly struct {
 
 // collectCalendarOnly は、rows の終日の予定と、出せない予定の職員ごとの件数を、from から to までの期間に重なる分だけ集める。
 // 繰り返しの親は、時刻のある予定と同じ規則で回に展開し、除外する日と、例外の回が置き換えた元の日を除く。規則に写せない繰り返しと、
-// 日時を読めない繰り返しは、最初の回の 1 件にする。日時のどちらも読めない予定は、どの期間でも数える。
+// 日時を読めない繰り返しは、最初の回の 1 件にする。規則に写せない終日の予定の 1 件には ReviewRecurrenceUnsupported を付ける。
+// 日時のどちらも読めない予定は、どの期間でも数える。
 // 終日の予定は、開始の日、職員の ID、ID の順に並べる。件数は、1 件以上の職員だけを職員の ID の順に返す。
 func collectCalendarOnly(rows []ProjectionDetail, rules EventRules, from, to civil.Date) calendarOnly {
 	ex := exceptionsOf(rows)
@@ -63,9 +64,11 @@ func collectCalendarOnly(rows []ProjectionDetail, rules EventRules, from, to civ
 			if !o.occurrence.IsZero() {
 				id = OccurrenceScheduleID(r.ExternalCalendarID, r.EventID, o.occurrence)
 			}
-			out.allDay = append(out.allDay, AllDayEvent{
-				ID: id, StaffID: r.StaffID, StaffName: r.StaffName, StartDate: o.Date, EndDate: o.LastDate, Title: o.Title,
-			})
+			e := AllDayEvent{ID: id, StaffID: r.StaffID, StaffName: r.StaffName, StartDate: o.Date, EndDate: o.LastDate, Title: o.Title}
+			if o.unsupported {
+				e.ReviewReason = ReviewRecurrenceUnsupported
+			}
+			out.allDay = append(out.allDay, e)
 		}
 	}
 	slices.SortFunc(out.allDay, func(a, b AllDayEvent) int {
@@ -80,9 +83,11 @@ func collectCalendarOnly(rows []ProjectionDetail, rules EventRules, from, to civ
 }
 
 // spanOccurrence は、終日の予定か出せない予定の 1 回である。occurrence は、繰り返しの親を展開した回の元の日で、展開した回でなければゼロ値である。
+// unsupported は、buddy の繰り返しの規則に写せない繰り返しの親を、最初の回の 1 件にしたときに true である。
 type spanOccurrence struct {
 	EventReading
-	occurrence civil.Date
+	occurrence  civil.Date
+	unsupported bool
 }
 
 // spanOccurrences は、読み替えた予定 rd（行 r）の回のうち、from から to までの期間に重なる回を返す。
@@ -99,7 +104,7 @@ func spanOccurrences(r ProjectionDetail, rd EventReading, rules EventRules, repl
 		if rd.Date.After(to) || (r.LastEndDate != nil && r.LastEndDate.Before(from)) {
 			return nil
 		}
-		return []spanOccurrence{{EventReading: rd}}
+		return []spanOccurrence{{EventReading: rd, unsupported: true}}
 	}
 	span := rd.LastDate.Time().Sub(rd.Date.Time())
 	var out []spanOccurrence

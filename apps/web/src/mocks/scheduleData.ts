@@ -374,6 +374,7 @@ export const createMockAllDayEvents = (base: Date): Schemas['AllDayEvent'][] => 
     start_date: dayAfter(base, 0),
     end_date: dayAfter(base, 0),
     title: '休み',
+    review_reason: null,
   },
   {
     id: 'gcal-allday-2',
@@ -382,6 +383,7 @@ export const createMockAllDayEvents = (base: Date): Schemas['AllDayEvent'][] => 
     start_date: dayAfter(base, -1),
     end_date: dayAfter(base, 1),
     title: '研修',
+    review_reason: null,
   },
 ]
 

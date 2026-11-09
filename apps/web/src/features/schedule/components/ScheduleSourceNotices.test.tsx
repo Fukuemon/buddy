@@ -42,7 +42,7 @@ describe('ScheduleSourceNotices', () => {
     const onOpenSchedule = fn()
     render(<Default onOpenSchedule={onOpenSchedule} />)
     const notice = screen.getByTestId('schedule-calendar-needs-review')
-    expect(notice).toHaveTextContent('確認が必要な予定が 3 件あります')
+    expect(notice).toHaveTextContent('確認が必要な予定が 4 件あります')
     expect(notice).toHaveTextContent(
       'Google カレンダーでタイトルか繰り返しの規則を直してください。',
     )
@@ -52,6 +52,17 @@ describe('ScheduleSourceNotices', () => {
     )
     await userEvent.click(item)
     expect(onOpenSchedule).toHaveBeenCalledWith('gcal-review-1')
+  })
+
+  it('繰り返しの規則を buddy で表せない終日の予定を、最初の回の日付、職員、理由で並べ、押せない行にする', () => {
+    render(<Default />)
+    const item = within(screen.getByTestId('schedule-calendar-needs-review')).getByTestId(
+      'schedule-calendar-needs-review-all-day-gcal-allday-unsupported',
+    )
+    expect(item).toHaveTextContent(
+      '2026年10月5日（月） 終日 青木 一郎: 繰り返しの規則を buddy で表せないため、最初の回だけを表示しています',
+    )
+    expect(within(item).queryByRole('button')).toBeNull()
   })
 
   it('同期が新しく確認が必要な予定も無ければ、案内だけを出す', () => {

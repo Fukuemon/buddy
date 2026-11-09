@@ -375,6 +375,10 @@ func TestListSchedulesProjected(t *testing.T) {
 		AllDayEvents: []scheduleview.AllDayEvent{{
 			ID: scheduleID, StaffID: staffID, StaffName: "岡田 葵",
 			StartDate: civil.Date{Year: 2026, Month: 10, Day: 20}, EndDate: civil.Date{Year: 2026, Month: 10, Day: 22}, Title: "研修",
+		}, {
+			ID: typeID, StaffID: staffID, StaffName: "岡田 葵",
+			StartDate: civil.Date{Year: 2026, Month: 10, Day: 1}, EndDate: civil.Date{Year: 2026, Month: 10, Day: 1}, Title: "当番",
+			ReviewReason: scheduleview.ReviewRecurrenceUnsupported,
 		}},
 		UnlistedEventCounts: []scheduleview.UnlistedEventCount{{StaffID: staffID, Count: 2}},
 	}}
@@ -400,10 +404,14 @@ func TestListSchedulesProjected(t *testing.T) {
 			t.Errorf("同期していないカレンダーの %s = %v, want null", key, v)
 		}
 	}
-	allDay := body["all_day_events"].([]any)[0].(map[string]any)
-	if allDay["id"] != scheduleID || allDay["staff_id"] != staffID || allDay["staff_name"] != "岡田 葵" ||
-		allDay["start_date"] != "2026-10-20" || allDay["end_date"] != "2026-10-22" || allDay["title"] != "研修" {
+	allDays := body["all_day_events"].([]any)
+	allDay := allDays[0].(map[string]any)
+	if reason, ok := allDay["review_reason"]; allDay["id"] != scheduleID || allDay["staff_id"] != staffID || allDay["staff_name"] != "岡田 葵" ||
+		allDay["start_date"] != "2026-10-20" || allDay["end_date"] != "2026-10-22" || allDay["title"] != "研修" || !ok || reason != nil {
 		t.Errorf("終日の予定 = %v", allDay)
+	}
+	if unsupported := allDays[1].(map[string]any); unsupported["review_reason"] != "recurrence_unsupported" {
+		t.Errorf("写せない繰り返しの終日の予定の review_reason = %v, want recurrence_unsupported", unsupported["review_reason"])
 	}
 	count := body["unlisted_event_counts"].([]any)[0].(map[string]any)
 	if count["staff_id"] != staffID || count["count"] != float64(2) {

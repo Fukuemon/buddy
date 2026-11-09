@@ -6,6 +6,7 @@ import {
   STORY_NOW,
   storyCalendarSyncs,
   storyNeedsReview,
+  storyNeedsReviewAllDayEvents,
   storyStaff,
   storyUnlistedEventCounts,
 } from './storyData'
@@ -17,6 +18,7 @@ const meta = {
     sourceMode: 'google_primary',
     calendarSyncs: storyCalendarSyncs,
     needsReview: storyNeedsReview,
+    needsReviewAllDayEvents: storyNeedsReviewAllDayEvents,
     staffList: storyStaff,
     now: STORY_NOW,
     onOpenSchedule: fn(),
@@ -31,12 +33,21 @@ export const Default: Story = {}
 
 /** 全てのカレンダーが 10 分以内に同期でき、確認が必要な予定も無い。案内だけを出す。 */
 export const GuideOnly: Story = {
-  args: { calendarSyncs: storyCalendarSyncs.slice(0, 1), needsReview: [] },
+  args: {
+    calendarSyncs: storyCalendarSyncs.slice(0, 1),
+    needsReview: [],
+    needsReviewAllDayEvents: [],
+  },
 }
 
 /** buddy_primary の事業所。何も出さない。 */
 export const BuddyPrimary: Story = {
-  args: { sourceMode: 'buddy_primary', calendarSyncs: [], needsReview: [] },
+  args: {
+    sourceMode: 'buddy_primary',
+    calendarSyncs: [],
+    needsReview: [],
+    needsReviewAllDayEvents: [],
+  },
 }
 
 /** 予定の正本を buddy に切り替えている。切り替え中であることと、予定を変えられないことを伝える文と、始めた職員と時刻を出す。 */
@@ -44,6 +55,7 @@ export const Cutover: Story = {
   args: {
     calendarSyncs: storyCalendarSyncs.slice(0, 1),
     needsReview: [],
+    needsReviewAllDayEvents: [],
     cutover: {
       started_at: '2026-10-05T00:00:00Z',
       started_by: 'staff-manager',
@@ -58,6 +70,7 @@ export const Unlisted: Story = {
   args: {
     calendarSyncs: storyCalendarSyncs.slice(0, 1),
     needsReview: [],
+    needsReviewAllDayEvents: [],
     unlistedEventCounts: storyUnlistedEventCounts,
   },
 }
