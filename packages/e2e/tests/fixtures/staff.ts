@@ -13,11 +13,13 @@ let managerToken: { value: string; issuedAt: number } | undefined
  * worker の中で 1 つを使い回し、TOKEN_REUSE_MS を過ぎたら取り直す。
  * トークンは、ログインの状態を持たない新しい request の context で取る。spec の request が別の職員の Hydra のセッションを持つと、
  * Hydra がその職員のログインを覚えていて、マネージャーのトークンを取れないためである。
+ * テストの中で作る context は、project と test.use の storageState を引き継ぐので、空の storageState を明示する。
  * 証明書のエラーの扱いは、playwright.config.ts の use と同じにする。
  */
 export const issueManagerToken = async () => {
   if (managerToken === undefined || Date.now() - managerToken.issuedAt > TOKEN_REUSE_MS) {
     const context = await apiRequest.newContext({
+      storageState: { cookies: [], origins: [] },
       ignoreHTTPSErrors: BASE_URL.startsWith('https://'),
     })
     try {
