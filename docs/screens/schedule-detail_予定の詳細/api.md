@@ -47,7 +47,7 @@ OpenAPI の項目は、`getSchedule`（`GET /v1/schedules/{schedule_id}`）の�
     - パスは `POST /v1/schedules/recurring/{recurring_schedule_id}/occurrences/cancel` である。
     - web のサーバーが、回の ID（`occurrenceId`）を繰り返しの予定の ID と回の日付に分け、`original_date` と `reason` を送る。
     - 予定の API は、その回を繰り返しの予定と同じ内容のキャンセルした単発の予定にする。予定のカレンダーで「キャンセルした予定を出す」を選ぶと、その予定を出す。
-    - 規則は [予定の管理の Design Doc の繰り返しの予定](../../../services/schedule/DesignDoc.md#繰り返しの予定) にある。
+    - 規則は [予定の管理の Design Doc の繰り返しの予定](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/DesignDoc.md#繰り返しの予定) にある。
   - 成功すると、予定の 1 件の取得の結果を捨て、事業所の予定の取得の結果を捨てて取り直す。処理は `apps/web/src/features/schedule/queries.ts` の `useCancelSchedule` にある。
 - 確認が必要な理由の直し方の文は、`apps/web/src/features/schedule/lib/reviewFix.ts` の `reviewFixMessage` が `reviewReason` で決める。
 - 画面に出していない同行者、時間外の勤務の印は、`Schedule` の `visit_info.companion_name`、`is_over_time_work` に当たる。
