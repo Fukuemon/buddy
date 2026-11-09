@@ -45,6 +45,7 @@ export const ScheduleDetailModalContainer = ({ scheduleId }: { scheduleId: Sched
   const navigate = useNavigate()
   const search = useSearch({ from: '/schedule' })
   const calendarSearch = pickCalendarSearch(search)
+  const close = () => navigate({ to: '/schedule', search: calendarSearch })
   const { api, facilityId, viewer } = useBuddyApi()
   const [openedAt] = useState(() => new Date())
   const today = toDateKey(openedAt)
@@ -52,7 +53,7 @@ export const ScheduleDetailModalContainer = ({ scheduleId }: { scheduleId: Sched
   const [cancelETag, setCancelETag] = useState<string | null>()
   const cancelSchedule = useCancelSchedule(scheduleId)
   const [isDeleteOpen, setIsDeleteOpen] = useState(false)
-  const deleteSchedule = useDeleteSchedule(scheduleId)
+  const deleteSchedule = useDeleteSchedule(scheduleId, close)
 
   const facilityQuery = useQuery(facilityQueryOptions(api, facilityId))
   const sourceMode = facilityQuery.data?.sourceMode
@@ -69,8 +70,6 @@ export const ScheduleDetailModalContainer = ({ scheduleId }: { scheduleId: Sched
   })
   const staffQuery = useQuery(staffListQueryOptions(api, facilityId))
   const patientsQuery = useQuery(patientListQueryOptions(api, facilityId))
-
-  const close = () => navigate({ to: '/schedule', search: calendarSearch })
 
   const activeQuery = sourceMode === 'google_primary' ? listQuery : scheduleQuery
   const error = facilityQuery.isError ? facilityQuery.error : activeQuery.error
@@ -177,7 +176,7 @@ export const ScheduleDetailModalContainer = ({ scheduleId }: { scheduleId: Sched
           }
           isSubmitting={deleteSchedule.isPending}
           onCancel={() => setIsDeleteOpen(false)}
-          onSubmit={() => deleteSchedule.mutate(undefined, { onSuccess: () => close() })}
+          onSubmit={() => deleteSchedule.mutate()}
           schedule={schedule}
         />
       )}

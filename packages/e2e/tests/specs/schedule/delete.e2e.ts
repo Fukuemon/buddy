@@ -51,18 +51,22 @@ test.describe('予定の削除', () => {
     request,
   }) => {
     const title = `E2E の削除する予定 ${Date.now()}`
+    const kept = `E2E の削除しない予定 ${Date.now()}`
     const date = daysFromToday(1)
     const id = await createOwnSchedule(request, title, date)
+    await createOwnSchedule(request, kept, date)
 
     await openDetail(page, id, date)
     await page.getByTestId('schedule-detail-delete-schedule').click()
     await expect(page.getByTestId('schedule-delete-dialog')).toContainText('この予定を削除しますか')
     await page.getByTestId('schedule-delete-submit').click()
 
+    // 一覧を読み終える前の空の列で「無い」と判定しないよう、同じ日に残す予定が出るのを待つ
     await expect(page.getByTestId('schedule-detail-modal')).toBeHidden()
-    await expect(page.getByTestId(`day-grid-staff-${LOGIN_STAFF.id}`)).toBeVisible()
+    await expect(ownEvent(page, kept)).toBeVisible()
     await expect(ownEvent(page, title)).toHaveCount(0)
     await openDay(page, date, { cancelled: true })
+    await expect(ownEvent(page, kept)).toBeVisible()
     await expect(ownEvent(page, title)).toHaveCount(0)
   })
 
@@ -102,6 +106,7 @@ test.describe('予定の削除', () => {
     request,
   }) => {
     const title = `E2E の回を削除する定例 ${Date.now()}`
+    const kept = `E2E の回を削除する日の予定 ${Date.now()}`
     const token = await issueAccessToken(request, LOGIN_EMAIL)
     const created = await createWeeklyNormalSchedule(request, token, STAFF_FORM.facilityId, {
       staffId: LOGIN_STAFF.id,
@@ -112,6 +117,8 @@ test.describe('予定の削除', () => {
 
     await openDay(page, fromNextMonday(7))
     await ownEvent(page, title).click()
+    // 同じ時刻に置くとカレンダーで回を押せないので、詳細を開いた後に、同じ日に残す予定を作る
+    await createOwnSchedule(request, kept, fromNextMonday(7))
     await page.getByTestId('schedule-detail-delete-schedule').click()
     await expect(page.getByTestId('schedule-delete-description')).toContainText(
       '繰り返しの予定のうち、この日の回だけを消します。ほかの回は残ります。',
@@ -119,6 +126,7 @@ test.describe('予定の削除', () => {
     await page.getByTestId('schedule-delete-submit').click()
 
     await expect(page.getByTestId('schedule-detail-modal')).toBeHidden()
+    await expect(ownEvent(page, kept)).toBeVisible()
     await expect(ownEvent(page, title)).toHaveCount(0)
     await openDay(page, fromNextMonday(0))
     await expect(ownEvent(page, title)).toBeVisible()

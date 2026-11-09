@@ -23,7 +23,7 @@ describe('scheduleDeleteErrorMessage', () => {
       'この事業所の予定は Google カレンダーで管理しています。予定は Google カレンダーで作成、変更してください。',
     )
     expect(scheduleDeleteErrorMessage(new ApiError(400, 'past', [], 'invalid_input'))).toBe(
-      '今日より前の予定は削除できません。',
+      '予定が変更されたか、今日より前になったので、削除できませんでした。予定を開き直してください。',
     )
     expect(scheduleDeleteErrorMessage(new ApiError(500, 'error'))).toBe(
       '予定を削除できませんでした。',

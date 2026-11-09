@@ -63,6 +63,7 @@ describe('ScheduleDetailModal', () => {
     const close = screen.getByTestId('schedule-detail-close')
     expect(remove).toHaveClass('text-danger')
     expect(remove.parentElement).toBe(cancel.parentElement)
+    expect(cancel.compareDocumentPosition(remove) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
     expect(remove.compareDocumentPosition(close) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
     await userEvent.click(remove)
     expect(onDeleteSchedule).toHaveBeenCalledOnce()

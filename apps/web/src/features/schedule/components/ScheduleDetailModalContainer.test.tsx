@@ -207,11 +207,12 @@ describe('ScheduleDetailModalContainer', () => {
     await waitFor(() => expect(remove).toHaveBeenCalledOnce())
     expect(remove.mock.calls[0]?.[1]).toBe('recurring-occurrence')
     await waitFor(() =>
-      expect(screen.queryByTestId('schedule-delete-dialog')).not.toBeInTheDocument(),
+      expect(screen.queryByTestId('schedule-detail-modal')).not.toBeInTheDocument(),
     )
+    expect(screen.queryByTestId('schedule-delete-dialog')).not.toBeInTheDocument()
   })
 
-  it('削除を拒まれると、ダイアログを開いたまま理由の文を出す', async () => {
+  it('削除を拒まれると、ダイアログを開いたまま理由の文を出し、閉じて開き直すと文を消す', async () => {
     render(<DeleteFailed />)
     await userEvent.click(await screen.findByTestId('schedule-detail-delete-schedule'))
     await userEvent.click(screen.getByTestId('schedule-delete-submit'))
@@ -219,5 +220,10 @@ describe('ScheduleDetailModalContainer', () => {
       '予定がキャンセルか変更されていたので、削除できませんでした。予定を開き直してください。',
     )
     expect(screen.getByTestId('schedule-delete-dialog')).toBeInTheDocument()
+
+    await userEvent.click(screen.getByTestId('schedule-delete-cancel'))
+    await userEvent.click(screen.getByTestId('schedule-detail-delete-schedule'))
+    expect(screen.getByTestId('schedule-delete-dialog')).toBeInTheDocument()
+    expect(screen.queryByTestId('schedule-delete-error')).not.toBeInTheDocument()
   })
 })
