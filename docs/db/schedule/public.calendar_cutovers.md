@@ -95,6 +95,7 @@ erDiagram
   timestamp_with_time_zone updated_at
   integer synced_version
   text cutover_id FK
+  text deleted_schedule_id FK
 }
 "public.import_runs" {
   text id

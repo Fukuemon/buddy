@@ -7,7 +7,7 @@
 | [事業所と組織](viewpoint-organization.md)                          | 事業所と、その中の部署、チーム、役職、職員。事業所は予定の正本のモードを持つ                                                                                                                                                                                                                                                                                                                                                                                                               |
 | [職員と権限](viewpoint-policies.md)                                | 職員が持つ権限と、その対象。職員を登録するとき、役職のデフォルトの権限をコピーする                                                                                                                                                                                                                                                                                                                                                                                                         |
 | [利用者](viewpoint-patients.md)                                    | 利用者と、受けているサービスと、主に担当する職員                                                                                                                                                                                                                                                                                                                                                                                                                                           |
-| [予定と訪問](viewpoint-schedules.md)                               | 予定と、訪問のときの訪問の情報と区分、予定の取り消し                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| [予定と訪問](viewpoint-schedules.md)                               | 予定と、訪問のときの訪問の情報と区分、予定の取り消し、誤って入れた予定の削除の監査の記録                                                                                                                                                                                                                                                                                                                                                                                                   |
 | [繰り返しの予定](viewpoint-recurring.md)                           | 繰り返しの予定と規則、回にしない日。繰り返しの 1 回を置き換えた予定は schedules に入る                                                                                                                                                                                                                                                                                                                                                                                                     |
 | [外部のカレンダーの取り込みと書き出し](viewpoint-calendar-sync.md) | 職員の外部のカレンダーと同期の状態、外部の予定と予定の対応、取り込みの記録、書き出しの待ち、Google カレンダーの予定の写し（Projection）。書き出しは、予定の正本のモードが buddy_primary の事業所に限る。同期は google_primary の事業所のカレンダーだけを読み、予定の写しに書く。google_primary の事業所で buddy から Google カレンダーに書いた予定は、訪問の情報と書き込みの保留の版を記録に持つ。切り替えは、google_primary の事業所の予定を取り込み、完了で事業所を buddy_primary にする |
 
@@ -36,16 +36,17 @@
 | [public.schedule_cancels](public.schedule_cancels.md)                           | 5       | 予定の取り消し                                                                                                                                                 | BASE TABLE |
 | [public.external_calendars](public.external_calendars.md)                       | 8       | 取り込む外部のカレンダーと、その持ち主の職員。外していないものは職員ごとに 1 つ                                                                                | BASE TABLE |
 | [public.calendar_sync_states](public.calendar_sync_states.md)                   | 10      | 外部のカレンダーごとの同期の状態                                                                                                                               | BASE TABLE |
-| [public.external_event_links](public.external_event_links.md)                   | 12      | 外部の予定と、buddy の単発か繰り返しの予定の対応                                                                                                               | BASE TABLE |
+| [public.external_event_links](public.external_event_links.md)                   | 13      | 外部の予定と、buddy の単発か繰り返しの予定の対応                                                                                                               | BASE TABLE |
 | [public.import_runs](public.import_runs.md)                                     | 15      | 外部のカレンダーからの取り込みの 1 回ごとの記録                                                                                                                | BASE TABLE |
 | [public.visit_info_details](public.visit_info_details.md)                       | 10      | 訪問の情報と名前を結合したビュー                                                                                                                               | VIEW       |
 | [public.schedule_details](public.schedule_details.md)                           | 30      | 一覧の読み出しに使う、予定と訪問の情報と名前を結合したビュー                                                                                                   | VIEW       |
 | [public.recurring_schedule_details](public.recurring_schedule_details.md)       | 33      | 一覧の読み出しに使う、繰り返しの予定と訪問の情報と名前を結合したビュー                                                                                         | VIEW       |
-| [public.calendar_exports](public.calendar_exports.md)                           | 14      | 予定を外部のカレンダーに書き出す待ち。予定の変更と同じトランザクションで積む                                                                                   | BASE TABLE |
+| [public.calendar_exports](public.calendar_exports.md)                           | 15      | 予定を外部のカレンダーに書き出す待ち。予定の変更と同じトランザクションで積む                                                                                   | BASE TABLE |
 | [public.calendar_event_projections](public.calendar_event_projections.md)       | 19      | Google カレンダーを予定の正本にする事業所の、Google カレンダーの予定の写し（Projection）。1 つの予定を 1 行にする                                              | BASE TABLE |
 | [public.calendar_cutovers](public.calendar_cutovers.md)                         | 9       | 事業所の予定の正本を Google カレンダーから buddy に切り替える作業の記録（切り替え）。事業所ごとに open は 1 つまで                                             | BASE TABLE |
 | [public.calendar_cutover_skips](public.calendar_cutover_skips.md)               | 6       | 切り替えの取り込みで、確認が必要な予定に取り込まないを選んだ記録                                                                                               | BASE TABLE |
 | [public.calendar_event_records](public.calendar_event_records.md)               | 15      | google_primary の事業所で、予定の API が Google カレンダーに書いた予定の、訪問の情報と書き込みの保留の版（ADR-0029）。通常の予定も保留の版を持つために行を作る | BASE TABLE |
+| [public.schedule_deletions](public.schedule_deletions.md)                       | 8       | 誤って入れた予定を削除した監査の記録（ADR-0040）。画面に出さない。消した時点の内容（訪問の情報と利用者）は持たない                                             | BASE TABLE |
 
 ## Stored procedures and functions
 
@@ -103,12 +104,14 @@ erDiagram
 "public.external_event_links" }o--|| "public.schedules" : "FOREIGN KEY (facility_id, schedule_id) REFERENCES schedules(facility_id, id) ON DELETE CASCADE"
 "public.external_event_links" }o--|| "public.external_calendars" : "FOREIGN KEY (facility_id, external_calendar_id) REFERENCES external_calendars(facility_id, id) ON DELETE CASCADE"
 "public.external_event_links" }o--|| "public.calendar_cutovers" : "FOREIGN KEY (facility_id, cutover_id) REFERENCES calendar_cutovers(facility_id, id)"
+"public.external_event_links" }o--|| "public.schedule_deletions" : "FOREIGN KEY (facility_id, deleted_schedule_id) REFERENCES schedule_deletions(facility_id, schedule_id)"
 "public.import_runs" }o--|| "public.users" : "FOREIGN KEY (facility_id, requested_by) REFERENCES users(facility_id, id)"
 "public.import_runs" }o--|| "public.external_calendars" : "FOREIGN KEY (facility_id, external_calendar_id) REFERENCES external_calendars(facility_id, id) ON DELETE CASCADE"
 "public.import_runs" }o--|| "public.calendar_cutovers" : "FOREIGN KEY (facility_id, cutover_id) REFERENCES calendar_cutovers(facility_id, id)"
 "public.calendar_exports" }o--|| "public.facilities" : "FOREIGN KEY (facility_id) REFERENCES facilities(id)"
 "public.calendar_exports" }o--|| "public.recurring_schedules" : "FOREIGN KEY (facility_id, recurring_schedule_id) REFERENCES recurring_schedules(facility_id, id) ON DELETE CASCADE"
 "public.calendar_exports" }o--|| "public.schedules" : "FOREIGN KEY (facility_id, schedule_id) REFERENCES schedules(facility_id, id) ON DELETE CASCADE"
+"public.calendar_exports" }o--|| "public.schedule_deletions" : "FOREIGN KEY (facility_id, deleted_schedule_id) REFERENCES schedule_deletions(facility_id, schedule_id)"
 "public.calendar_event_projections" }o--|| "public.users" : "FOREIGN KEY (facility_id, staff_id) REFERENCES users(facility_id, id) ON DELETE CASCADE"
 "public.calendar_event_projections" }o--|| "public.external_calendars" : "FOREIGN KEY (facility_id, external_calendar_id) REFERENCES external_calendars(facility_id, id) ON DELETE CASCADE"
 "public.calendar_cutovers" }o--|| "public.facilities" : "FOREIGN KEY (facility_id) REFERENCES facilities(id)"
@@ -120,6 +123,10 @@ erDiagram
 "public.calendar_event_records" }o--|| "public.visit_infos" : "FOREIGN KEY (facility_id, visit_info_id) REFERENCES visit_infos(facility_id, id)"
 "public.calendar_event_records" }o--|| "public.external_calendars" : "FOREIGN KEY (facility_id, external_calendar_id) REFERENCES external_calendars(facility_id, id) ON DELETE CASCADE"
 "public.calendar_event_records" }o--|| "public.external_calendars" : "FOREIGN KEY (facility_id, pending_external_calendar_id) REFERENCES external_calendars(facility_id, id) ON DELETE CASCADE"
+"public.schedule_deletions" }o--|| "public.facilities" : "FOREIGN KEY (facility_id) REFERENCES facilities(id)"
+"public.schedule_deletions" }o--|| "public.users" : "FOREIGN KEY (facility_id, deleted_by) REFERENCES users(facility_id, id)"
+"public.schedule_deletions" }o--|| "public.users" : "FOREIGN KEY (facility_id, staff_id) REFERENCES users(facility_id, id)"
+"public.schedule_deletions" }o--|| "public.recurring_schedules" : "FOREIGN KEY (facility_id, recurring_schedule_id) REFERENCES recurring_schedules(facility_id, id)"
 
 "public.facilities" {
   text id
@@ -330,6 +337,7 @@ erDiagram
   timestamp_with_time_zone updated_at
   integer synced_version
   text cutover_id FK
+  text deleted_schedule_id FK
 }
 "public.import_runs" {
   text id
@@ -442,6 +450,7 @@ erDiagram
   timestamp_with_time_zone finished_at
   timestamp_with_time_zone created_at
   timestamp_with_time_zone updated_at
+  text deleted_schedule_id FK
 }
 "public.calendar_event_projections" {
   text external_calendar_id FK
@@ -499,6 +508,16 @@ erDiagram
   timestamp_with_time_zone pending_locked_until
   text pending_external_calendar_id FK
   varchar_1024_ pending_external_event_id
+}
+"public.schedule_deletions" {
+  text id
+  text facility_id FK
+  text schedule_id
+  text recurring_schedule_id FK
+  date date
+  text staff_id FK
+  text deleted_by FK
+  timestamp_with_time_zone deleted_at
 }
 ```
 
