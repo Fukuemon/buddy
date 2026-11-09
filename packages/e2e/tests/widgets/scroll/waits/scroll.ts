@@ -20,7 +20,7 @@ type ScrollWatch = Window & {
  * スクロールの位置は DOM に出ないので、scroll のイベントが来なくなったことをフレームの数で判定する。
  * 操作でスクロールしなかったとき（端に着いていたとき）は、待ち始めてから FRAMES_WITHOUT_SCROLL のフレームの後に返る。
  * 返った関数は、SCROLL_IDLE_WAIT の時間を過ぎても止まらないか、描画が止まってフレームが進まないときに、TimeoutError を投げる。
- * 見張りは、返った関数が止まったと判断したときに外す。
+ * 見張りは、返った関数が返るときと投げるときの両方で外す。
  */
 export const watchScrollIdle = async (page: Page): Promise<() => Promise<void>> => {
   await page.evaluate(() => {
@@ -38,23 +38,32 @@ export const watchScrollIdle = async (page: Page): Promise<() => Promise<void>> 
     }
   })
   return async () => {
-    // polling の raf で、判定をフレームごとに 1 回呼ぶ。上限は Playwright の側で数えるので、フレームが進まなくても返る
-    await page.waitForFunction(
-      ({ framesWithoutScroll, quietFrames }) => {
-        const w = window as ScrollWatch
-        const at = w.__e2eScrolledAt ?? 0
-        const state = (w.__e2eScrollIdle ??= { frames: 0, quiet: 0, last: at })
-        state.frames += 1
-        state.quiet = at === state.last ? state.quiet + 1 : 0
-        state.last = at
-        const idle =
-          (at > 0 && state.quiet >= quietFrames) ||
-          (at === 0 && state.frames >= framesWithoutScroll)
-        if (idle) w.__e2eStopScrollWatch?.()
-        return idle
-      },
-      { framesWithoutScroll: FRAMES_WITHOUT_SCROLL, quietFrames: QUIET_FRAMES },
-      { polling: 'raf', ...SCROLL_IDLE_WAIT },
-    )
+    try {
+      // polling の raf は、判定を最初の 1 回だけすぐに呼び、その後をフレームごとに呼ぶ。最初の 1 回は待ち始めの値を覚えるだけで、フレームに数えない。
+      // 上限は Playwright の側で数えるので、フレームが進まなくても返る
+      const handle = await page.waitForFunction(
+        ({ framesWithoutScroll, quietFrames }) => {
+          const w = window as ScrollWatch
+          const at = w.__e2eScrolledAt ?? 0
+          const state = w.__e2eScrollIdle
+          if (state === undefined) {
+            w.__e2eScrollIdle = { frames: 0, quiet: 0, last: at }
+            return false
+          }
+          state.frames += 1
+          state.quiet = at === state.last ? state.quiet + 1 : 0
+          state.last = at
+          return (
+            (at > 0 && state.quiet >= quietFrames) ||
+            (at === 0 && state.frames >= framesWithoutScroll)
+          )
+        },
+        { framesWithoutScroll: FRAMES_WITHOUT_SCROLL, quietFrames: QUIET_FRAMES },
+        { polling: 'raf', ...SCROLL_IDLE_WAIT },
+      )
+      await handle.dispose()
+    } finally {
+      await page.evaluate(() => (window as ScrollWatch).__e2eStopScrollWatch?.())
+    }
   }
 }
