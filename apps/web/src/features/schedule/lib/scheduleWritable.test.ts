@@ -69,4 +69,9 @@ describe('canDeleteSchedule', () => {
     expect(canDeleteSchedule(cancelled, 'buddy_primary', null, startOfDay)).toBe(false)
     expect(canDeleteSchedule(schedule, 'buddy_primary', cutover, startOfDay)).toBe(false)
   })
+
+  it('buddy の繰り返しの規則に写せない予定は、削除できない', () => {
+    const unsupported = { ...schedule, reviewReason: 'recurrence_unsupported' as const }
+    expect(canDeleteSchedule(unsupported, 'buddy_primary', null, startOfDay)).toBe(false)
+  })
 })
