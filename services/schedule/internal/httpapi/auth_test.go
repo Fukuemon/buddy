@@ -181,7 +181,7 @@ func TestAuthenticatedPassesThrough(t *testing.T) {
 	}
 }
 
-// tokenVerifier は、共有の oidc.Verifier を httpapi.TokenVerifier にする。assemble の同じ名前の型と同じ働きをする。
+// tokenVerifier は、共有の oidc.Verifier を httpapi.TokenVerifier にする。cmd/api の同じ名前の型と同じ働きをする。
 type tokenVerifier struct{ v *oidc.Verifier }
 
 func (t tokenVerifier) Verify(ctx context.Context, raw string) (principal.Identity, error) {

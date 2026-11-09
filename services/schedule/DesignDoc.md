@@ -52,41 +52,40 @@ verified_commit: 4e53ca5
   - `organization`、`staff`、`servicecode`、`patient`、`visit`、`schedule`、`scheduleview`
   - Google カレンダーとの連携: `calendar`、`calendarimport`、`calendarsync`、`calendarexport`
 - `internal/` の直下には、アダプタ（`httpapi`、`postgres`、`gcal`、`broker`、`ulid`）と共通のパッケージ（`apperr`、`tx`、`kernel`、`civil`）を置く。
-  - `access`、`principal`、`config`、`assemble`、テストの `inmem` も、`internal/` の直下に置く。
-- `assemble` は、リポジトリ、HTTP のハンドラ、書き出しの `Exporter`、同期の `Syncer` を組み立てる。
-  - `cmd/api` は、`assemble` が作った値で、HTTP のサーバーを起動する。
+  - `access`、`principal`、`config`、テストの `inmem` も、`internal/` の直下に置く。
+- 依存の組み立ては、各 `cmd` に置く。
+  - `cmd/api` は、`handler.go` でリポジトリと HTTP のハンドラを組み立て、`main.go` で HTTP のサーバーを起動する。
   - ADR-0021: [予定の API を機能ごとのパッケージに分ける](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0021-schedule-api-packages.md)
-  - `cmd/calendar-worker` は、`assemble` が作った `Exporter` の `ExportDue` か `Syncer` の `SyncDue` を、役割（`export`、`sync`）ごとのプロセスで、常駐か 1 回の形で繰り返し呼ぶ。
+  - `cmd/calendar-worker` は、`worker.go` で書き出しの `Exporter` と同期の `Syncer` を組み立てる。
+    - `main.go` は、`Exporter` の `ExportDue` か `Syncer` の `SyncDue` を、役割（`export`、`sync`）ごとのプロセスで、常駐か 1 回の形で繰り返し呼ぶ。
     - 常駐も 1 回の形も、取れるものが無くなるまで呼ぶ。常駐は、その後に間隔を待つ。
-    - `cmd/api` と同じイメージに入れ、HTTP のポートを持たない。
+    - `cmd/api` と同じイメージに入れ、HTTP のポートを持たない。HTTP の層と OIDC の検証を import しない。
     - ADR-0032: [Google カレンダーの書き出しと同期を、予定の API と同じイメージの Worker のコマンドで役割ごとに動かし、繰り返しを Worker のコマンドに集める](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0032-calendar-worker.md)
 
-次の図は、2 つのコマンドが `assemble` を通して機能のパッケージとアダプタを使う構成を示す。  
+次の図は、2 つのコマンドが、それぞれの組み立てのファイルで機能のパッケージとアダプタを使う構成を示す。  
 矢印は、呼ぶ向きか、組み立てる向きである。  
 依存してよい向きの規則は、[コードベースの構造](https://github.com/Fukuemon/buddy/blob/develop/context/codebase.md) にある。
 
 ```mermaid
 flowchart TB
-  subgraph cmd["cmd"]
-    api["cmd/api<br/>[component]<br/>HTTP のサーバーの開始と停止"]
-    worker["cmd/calendar-worker<br/>[component]<br/>main.go、loop.go の resident と drain"]
+  subgraph api["cmd/api"]
+    apimain["main.go<br/>[component]<br/>HTTP のサーバーの開始と停止"]
+    apihandler["handler.go<br/>[component]<br/>newRepositories、openAccounts、newHandler"]
   end
-  subgraph assemble["assemble"]
-    asmapi["api.go<br/>[component]<br/>NewHandler"]
-    asmworker["worker.go<br/>[component]<br/>NewExporter、NewSyncer"]
-    asmshared["assemble.go<br/>[component]<br/>OpenDB、NewRepositories、NewCalendarAccounts"]
+  subgraph worker["cmd/calendar-worker"]
+    workermain["main.go、loop.go<br/>[component]<br/>役割の選択、resident と drain"]
+    workerasm["worker.go<br/>[component]<br/>openAccounts、newExporter、newSyncer"]
   end
   httpapi["httpapi<br/>[component]<br/>HTTP のハンドラ"]
   features["機能のパッケージ<br/>[component]<br/>organization、staff、patient、schedule、scheduleview、calendar、calendarimport、calendarexport、calendarsync など"]
   adapters["アダプタ<br/>[component]<br/>postgres、gcal、broker、ulid"]
-  api -- "ハンドラを作らせ、サーバーを起動する" --> asmapi
-  api -- "DB を開き、リポジトリとカレンダーのアカウントを作らせる" --> asmshared
-  worker -- "ExportDue か SyncDue を作らせ、取れるものが無くなるまで呼ぶ" --> asmworker
-  worker -- "DB を開き、リポジトリとカレンダーのアカウントを作らせる" --> asmshared
-  asmapi -- "組み立てる" --> httpapi
-  asmapi -- "操作の型を組み立てる" --> features
-  asmworker -- "Exporter と Syncer を組み立てる" --> features
-  asmshared -- "組み立てる" --> adapters
+  apimain -- "DB を開き、ハンドラを作らせ、サーバーを起動する" --> apihandler
+  workermain -- "DB を開き、ExportDue か SyncDue を作らせ、取れるものが無くなるまで呼ぶ" --> workerasm
+  apihandler -- "組み立てる" --> httpapi
+  apihandler -- "操作の型を組み立てる" --> features
+  apihandler -- "組み立てる" --> adapters
+  workerasm -- "Exporter と Syncer を組み立てる" --> features
+  workerasm -- "postgres、gcal、ulid だけを組み立てる" --> adapters
   httpapi -- "操作を呼ぶ" --> features
   adapters -- "インターフェースを実装する" --> features
 ```

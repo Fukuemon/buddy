@@ -38,7 +38,7 @@ type projectionApplier struct {
 
 // NewProjectionApplier は、今の時刻を time.Now で読み、Google カレンダーの予定の変更を projections に写す Applier を作る。
 // 保留の版を確定するときに、records の記録を書き、使われなくなった訪問の情報を visits で消す。
-// 組み立て（assemble）が、google_primary の事業所の Applier として Syncer に渡す。
+// 組み立て（cmd/calendar-worker）が、google_primary の事業所の Applier として Syncer に渡す。
 func NewProjectionApplier(projections Projections, records calendar.EventRecords, visits calendar.UnusedVisits, log *slog.Logger) Applier {
 	return projectionApplier{projections: projections, records: records, visits: visits, now: time.Now, log: log}
 }

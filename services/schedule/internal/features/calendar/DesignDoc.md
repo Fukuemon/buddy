@@ -666,7 +666,7 @@ sequenceDiagram
 `google_primary` の事業所の同期は、書き出しを使わない。
 
 同期の処理は、`calendarsync` の `Syncer` が変わった予定を読み、事業所の正本のモードの `Applier` が 1 つの予定ずつ当てる。  
-モードと `Applier` の対応（`Appliers`）は、組み立て（`internal/assemble`）が決めて `Syncer` に渡す。  
+モードと `Applier` の対応（`Appliers`）は、組み立て（`cmd/calendar-worker` の `worker.go`）が決めて `Syncer` に渡す。  
 組み立ては、`google_primary` に `projectionApplier` だけを渡し、`buddy_primary` には渡さない。  
 同期の処理は、API と別のプロセスの `calendar-worker sync` で動く。
 

@@ -1,8 +1,56 @@
-import { expect, test } from '@playwright/test'
+import { expect, test, type APIRequestContext } from '@playwright/test'
 
 import { LOGIN_STAFF } from '../../fixtures/env'
+import { registerPatient } from '../../fixtures/patient'
+import {
+  issueManagerToken,
+  leaveStaff,
+  newStaff,
+  registerStaff,
+  retireStaff,
+  setNonVisiting,
+  STAFF_FORM,
+} from '../../fixtures/staff'
 import { patientOptionByName } from '../../selectors/patientSelect'
 import { newPatientName } from './names'
+
+/** 休職か退職か、訪問しない職員（ADR-0006）にする操作。 */
+const STOPS = [
+  {
+    label: '休職の職員',
+    stop: leaveStaff,
+    message: /^休職の職員 .+ には、予定と担当を割り振れません$/,
+  },
+  {
+    label: '退職した職員',
+    stop: retireStaff,
+    message: /^退職した職員 .+ には、予定と担当を割り振れません$/,
+  },
+  {
+    label: '訪問しない職員',
+    stop: setNonVisiting,
+    message: /^訪問しない職員 .+ には、予定と担当を割り振れません$/,
+  },
+] as const
+
+/** 職員を 1 人登録し、ID と名前を返す。 */
+const register = async (request: APIRequestContext, token: string, label: string) => {
+  const staff = newStaff(label)
+  const registered = await registerStaff(request, token, staff)
+  expect(registered.status()).toBe(201)
+  return { id: ((await registered.json()) as { id: string }).id, name: staff.name }
+}
+
+/** 職員を 1 人登録して stop で休職か退職か、訪問しない職員にし、ID と名前を返す。 */
+const registerStopped = async (
+  request: APIRequestContext,
+  token: string,
+  stop: (typeof STOPS)[number]['stop'],
+) => {
+  const staff = await register(request, token, 'stopped')
+  expect((await stop(request, token, staff.id)).status()).toBe(200)
+  return staff
+}
 
 test.describe('利用者の一覧', () => {
   test.describe('利用者の登録', () => {
@@ -38,5 +86,26 @@ test.describe('利用者の一覧', () => {
       await page.getByTestId('patient-select-search').fill(name)
       await expect(patientOptionByName(page, name)).toBeVisible()
     })
+  })
+})
+
+test.describe('利用者の登録', () => {
+  test.describe('休職と退職の職員と、訪問しない職員への割り振り', () => {
+    for (const { label, stop, message } of STOPS) {
+      test(`担当を${label}にして利用者を登録しようとした場合、400 が返ること`, async ({
+        request,
+      }) => {
+        const manager = await issueManagerToken(request)
+        const stopped = await registerStopped(request, manager, stop)
+
+        const res = await registerPatient(request, manager, STAFF_FORM.facilityId, {
+          name: `E2E 利用者 ${Date.now()}`,
+          assignedStaffId: stopped.id,
+        })
+
+        expect(res.status()).toBe(400)
+        expect(await res.json()).toMatchObject({ code: 'invalid_input', message })
+      })
+    }
   })
 })

@@ -1,9 +1,11 @@
-package assemble
+package main
 
 import (
 	"context"
 	"log/slog"
 	"net/http"
+
+	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/Fukuemon/buddy/packages/go/oidc"
 
@@ -24,16 +26,95 @@ import (
 	"github.com/Fukuemon/buddy/services/schedule/internal/gcal"
 	"github.com/Fukuemon/buddy/services/schedule/internal/httpapi"
 	"github.com/Fukuemon/buddy/services/schedule/internal/kernel"
+	"github.com/Fukuemon/buddy/services/schedule/internal/postgres"
 	"github.com/Fukuemon/buddy/services/schedule/internal/principal"
 	"github.com/Fukuemon/buddy/services/schedule/internal/tx"
+	"github.com/Fukuemon/buddy/services/schedule/internal/ulid"
 )
 
-// HandlerConfig は、NewHandler がリポジトリのほかに受ける値である。
-type HandlerConfig struct {
-	// API は予定の API の設定で、NewHandler は AllowOrigins、Broker、Calendar の ExportEnabled を使う。
+// repositories は、1 つの接続のプールの上のリポジトリ、トランザクション、ID の発行である。
+// newRepositories で作り、openAccounts と newHandler に同じ値を渡す。
+type repositories struct {
+	tx               *postgres.Transactor
+	ids              ulid.Generator
+	facilities       *postgres.FacilityRepository
+	departments      *postgres.DepartmentRepository
+	teams            *postgres.TeamRepository
+	positions        *postgres.PositionRepository
+	policies         *postgres.PolicyRepository
+	staff            *postgres.StaffRepository
+	staffRefs        *postgres.StaffRefRepository
+	staffAssignments *postgres.StaffAssignmentReader
+	patients         *postgres.PatientRepository
+	patientSchedules *postgres.PatientScheduleReader
+	visitInfos       *postgres.VisitInfoRepository
+	serviceCodes     *postgres.ServiceCodeRepository
+	visitCategories  *postgres.VisitCategoryRepository
+	schedules        *postgres.ScheduleRepository
+	recurring        *postgres.RecurringScheduleRepository
+	scheduleTypes    *postgres.ScheduleTypeRepository
+	calendars        *postgres.CalendarRepository
+	exports          *postgres.CalendarExportRepository
+	projections      *postgres.CalendarProjectionRepository
+	cutovers         *postgres.CalendarCutoverRepository
+	records          *postgres.CalendarEventRecordRepository
+}
+
+// newRepositories は、db の上に repositories を作る。db に接続せず、失敗しない。
+func newRepositories(db *pgxpool.Pool) repositories {
+	return repositories{
+		tx:               postgres.NewTransactor(db),
+		ids:              ulid.Generator{},
+		facilities:       postgres.NewFacilityRepository(db),
+		departments:      postgres.NewDepartmentRepository(db),
+		teams:            postgres.NewTeamRepository(db),
+		positions:        postgres.NewPositionRepository(db),
+		policies:         postgres.NewPolicyRepository(db),
+		staff:            postgres.NewStaffRepository(db),
+		staffRefs:        postgres.NewStaffRefRepository(db),
+		staffAssignments: postgres.NewStaffAssignmentReader(db),
+		patients:         postgres.NewPatientRepository(db),
+		patientSchedules: postgres.NewPatientScheduleReader(db),
+		visitInfos:       postgres.NewVisitInfoRepository(db),
+		serviceCodes:     postgres.NewServiceCodeRepository(db),
+		visitCategories:  postgres.NewVisitCategoryRepository(db),
+		schedules:        postgres.NewScheduleRepository(db),
+		recurring:        postgres.NewRecurringScheduleRepository(db),
+		scheduleTypes:    postgres.NewScheduleTypeRepository(db),
+		calendars:        postgres.NewCalendarRepository(db),
+		exports:          postgres.NewCalendarExportRepository(db),
+		projections:      postgres.NewCalendarProjectionRepository(db),
+		cutovers:         postgres.NewCalendarCutoverRepository(db),
+		records:          postgres.NewCalendarEventRecordRepository(db),
+	}
+}
+
+// openAccounts は、事業所の組織のサービスアカウントで Google カレンダーを読み書きする gcal.Accounts を返す。
+// 書き出しを有効にした設定なら、スコープを calendar.events にする。サービスアカウントの設定が無ければ nil を返す。
+func openAccounts(ctx context.Context, cfg config.Calendar, r repositories) (*gcal.Accounts, error) {
+	return gcal.Open(ctx, gcal.Config{ServiceAccountsFile: cfg.ServiceAccountsFile, Endpoint: cfg.Endpoint, Writable: cfg.ExportEnabled},
+		func(ctx context.Context, facilityID string) (string, error) {
+			f, err := r.facilities.Get(ctx, facilityID)
+			return f.OrgID, err
+		})
+}
+
+func (r repositories) visitWriter() visit.Writer {
+	return visit.NewWriter(visit.WriterDeps{
+		Staff:        r.staffRefs,
+		Patients:     r.patients,
+		Infos:        r.visitInfos,
+		ServiceCodes: r.serviceCodes,
+		Categories:   r.visitCategories,
+	}, r.ids)
+}
+
+// handlerConfig は、newHandler がリポジトリのほかに受ける値である。
+type handlerConfig struct {
+	// API は予定の API の設定で、newHandler は AllowOrigins、Broker、Calendar の ExportEnabled を使う。
 	// ExportEnabled が false なら、予定の変更を書き出しの待ちに積まない。
 	API config.API
-	// Accounts は NewCalendarAccounts の戻り値である。nil なら、外部のカレンダーを読む操作は ErrNotConfigured を返す。
+	// Accounts は openAccounts の戻り値である。nil なら、外部のカレンダーを読む操作は ErrNotConfigured を返す。
 	Accounts *gcal.Accounts
 	// Verifier は、リクエストの access token を検証する。
 	Verifier *oidc.Verifier
@@ -42,14 +123,14 @@ type HandlerConfig struct {
 	Ready func(ctx context.Context) error
 }
 
-// NewHandler は、r と cfg から全ての機能の操作の型を作り、予定の API の全てのパスを受ける http.Handler を返す。
-func NewHandler(r Repositories, cfg HandlerConfig) http.Handler {
+// newHandler は、r と cfg から全ての機能の操作の型を作り、予定の API の全てのパスを受ける http.Handler を返す。
+func newHandler(r repositories, cfg handlerConfig) http.Handler {
 	return httpapi.NewRouter(newApps(r, cfg.Accounts, cfg.API, cfg.Logger), httpapi.RouterConfig{
 		Logger: cfg.Logger, AllowOrigins: cfg.API.AllowOrigins, Verifier: tokenVerifier{cfg.Verifier}, Ready: cfg.Ready,
 	})
 }
 
-func newApps(r Repositories, accounts *gcal.Accounts, cfg config.API, log *slog.Logger) httpapi.Apps {
+func newApps(r repositories, accounts *gcal.Accounts, cfg config.API, log *slog.Logger) httpapi.Apps {
 	var outbox schedule.Exports
 	if cfg.Calendar.ExportEnabled {
 		outbox = calendarexport.NewOutbox(r.facilities, r.exports, r.calendars, r.ids)
@@ -96,7 +177,7 @@ func newApps(r Repositories, accounts *gcal.Accounts, cfg config.API, log *slog.
 }
 
 // accessResources は、access.ResourceFacility を除くリソースの種類ごとに、事業所の ID を読むリポジトリを返す。
-func accessResources(r Repositories) map[access.Resource]access.FacilityReader {
+func accessResources(r repositories) map[access.Resource]access.FacilityReader {
 	return map[access.Resource]access.FacilityReader{
 		access.ResourceDepartment: r.departments, access.ResourceTeam: r.teams, access.ResourcePosition: r.positions,
 		access.ResourceStaff: r.staffRefs, access.ResourcePatient: r.patients,
