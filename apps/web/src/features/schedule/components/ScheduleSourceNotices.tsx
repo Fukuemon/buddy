@@ -1,4 +1,6 @@
+import { formatDateKey } from '#/components/dateFormat'
 import type {
+  AllDayEvent,
   CalendarSyncStatus,
   OpenCalendarCutover,
   Schedule,
@@ -18,6 +20,8 @@ export type ScheduleSourceNoticesProps = {
   cutover?: OpenCalendarCutover | null
   /** 確認が必要な予定。期間の外の予定も含む。 */
   needsReview: Schedule[]
+  /** 確認が必要な終日の予定。期間の外の予定も含む。押せないので、詳細を開かない。省くと出さない。 */
+  needsReviewAllDayEvents?: AllDayEvent[]
   /** 期間に重なる、カレンダーに出せない予定の職員ごとの件数。省くと出さない。 */
   unlistedEventCounts?: UnlistedEventCount[]
   /** 確認が必要な予定の職員の名前を引く職員。 */
@@ -31,7 +35,7 @@ export type ScheduleSourceNoticesProps = {
 /**
  * Google カレンダーを予定の正本にする事業所（google_primary）で、カレンダーの上に出す通知。
  * Google カレンダーと buddy のどちらでも予定を変えられる案内を常に出し、同期が失敗しているか古いカレンダーがあれば同期の警告を、
- * 確認が必要な予定があれば、予定ごとの日時、職員、理由を出す。表示の期間にカレンダーに出せない予定があれば、件数と職員ごとの件数を出し、
+ * 確認が必要な予定があれば、予定ごとの日時、職員、理由を出す。確認が必要な終日の予定は、時刻のある予定の後に、日付、職員、理由を押せない行で出す。表示の期間にカレンダーに出せない予定があれば、件数と職員ごとの件数を出し、
  * Google カレンダーで確認するよう促す。予定の中身は出さない。予定の正本を buddy に切り替えている間は、切り替え中であることと、
  * Google カレンダーで予定を変えないよう頼み、buddy でも予定を変えられないことを伝える文と、切り替えを始めた職員と時刻を出す。
  * buddy_primary の事業所では何も出さない。
@@ -41,6 +45,7 @@ export const ScheduleSourceNotices = ({
   calendarSyncs,
   cutover = null,
   needsReview,
+  needsReviewAllDayEvents = [],
   unlistedEventCounts = [],
   staffList,
   now,
@@ -50,6 +55,7 @@ export const ScheduleSourceNotices = ({
   const problems = calendarSyncProblemsOf(calendarSyncs, now)
   const staffName = new Map(staffList.map((staff) => [staff.id, staff.name]))
   const unlistedTotal = unlistedEventCounts.reduce((sum, { count }) => sum + count, 0)
+  const needsReviewTotal = needsReview.length + needsReviewAllDayEvents.length
   return (
     <div className="flex flex-col gap-2">
       <section
@@ -102,13 +108,13 @@ export const ScheduleSourceNotices = ({
           </ul>
         </section>
       )}
-      {needsReview.length > 0 && (
+      {needsReviewTotal > 0 && (
         <section
           className="rounded-8 bg-warning-surface px-4 py-3"
           data-testid="schedule-calendar-needs-review"
         >
           <h2 className="text-label text-warning">
-            確認が必要な予定が {needsReview.length} 件あります
+            確認が必要な予定が {needsReviewTotal} 件あります
           </h2>
           <ul className="mt-1 flex max-h-40 flex-col overflow-auto text-body-dense">
             {needsReview.map((schedule) => (
@@ -125,6 +131,22 @@ export const ScheduleSourceNotices = ({
                     ? ''
                     : SCHEDULE_REVIEW_REASON_LABEL[schedule.reviewReason]}
                 </button>
+              </li>
+            ))}
+            {needsReviewAllDayEvents.map((event) => (
+              <li
+                className="flex min-h-11 items-center"
+                data-testid={`schedule-calendar-needs-review-all-day-${event.id}`}
+                key={event.id}
+              >
+                {formatDateKey(event.startDate)}
+                {event.endDate === event.startDate
+                  ? ''
+                  : `〜${formatDateKey(event.endDate)}`} 終日{' '}
+                {staffName.get(event.staffId) ?? '職員不明'}:{' '}
+                {event.reviewReason === undefined
+                  ? ''
+                  : SCHEDULE_REVIEW_REASON_LABEL[event.reviewReason]}
               </li>
             ))}
           </ul>

@@ -145,6 +145,7 @@ describe('createHttpBuddyApi', () => {
               start_date: '2026-10-20',
               end_date: '2026-10-21',
               title: '休み',
+              review_reason: null,
             },
             {
               id: 'allday-2',
@@ -153,6 +154,16 @@ describe('createHttpBuddyApi', () => {
               start_date: '2026-10-20',
               end_date: '2026-10-20',
               title: '研修',
+              review_reason: null,
+            },
+            {
+              id: 'allday-unsupported',
+              staff_id: 'staff-1',
+              staff_name: '青木 一郎',
+              start_date: '2026-10-05',
+              end_date: '2026-10-05',
+              title: '当番',
+              review_reason: 'recurrence_unsupported',
             },
           ],
           unlisted_event_counts: [
@@ -177,6 +188,15 @@ describe('createHttpBuddyApi', () => {
       ['recurrence', 'recurrence_unsupported'],
     ])
     expect(list.calendarSyncs.map((s) => s.staff_id)).toEqual(['staff-1'])
+    const unsupportedAllDay = {
+      id: 'allday-unsupported',
+      staffId: 'staff-1',
+      staffName: '青木 一郎',
+      startDate: '2026-10-05',
+      endDate: '2026-10-05',
+      title: '当番',
+      reviewReason: 'recurrence_unsupported',
+    }
     expect(list.allDayEvents).toEqual([
       {
         id: 'allday-1',
@@ -186,7 +206,10 @@ describe('createHttpBuddyApi', () => {
         endDate: '2026-10-21',
         title: '休み',
       },
+      unsupportedAllDay,
     ])
+    // 期間の外の最初の回の日付でも、確認が必要な終日の予定に入る
+    expect(list.needsReviewAllDayEvents).toEqual([unsupportedAllDay])
     expect(list.unlistedEventCounts).toEqual([{ staffId: 'staff-1', count: 2 }])
     expect(list.cutover).toEqual({
       started_at: '2026-10-05T00:00:00Z',

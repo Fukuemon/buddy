@@ -92,9 +92,14 @@ func toCalendarSyncStatus(c scheduleview.CalendarSync) openapi.CalendarSyncStatu
 }
 
 func toAllDayEvent(e scheduleview.AllDayEvent) openapi.AllDayEvent {
-	return openapi.AllDayEvent{
+	r := openapi.AllDayEvent{
 		Id: e.ID, StaffId: e.StaffID, StaffName: e.StaffName, StartDate: e.StartDate.String(), EndDate: e.EndDate.String(), Title: e.Title,
 	}
+	if e.ReviewReason != "" {
+		reason := openapi.ScheduleReviewReason(e.ReviewReason)
+		r.ReviewReason = &reason
+	}
+	return r
 }
 
 func toUnlistedEventCount(c scheduleview.UnlistedEventCount) openapi.UnlistedEventCount {

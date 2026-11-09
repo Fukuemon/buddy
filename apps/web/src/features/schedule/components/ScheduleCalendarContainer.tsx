@@ -168,6 +168,7 @@ export const ScheduleCalendarContainer = ({
             calendarSyncs={schedulesQuery.data?.calendarSyncs ?? []}
             cutover={schedulesQuery.data?.cutover ?? null}
             needsReview={schedulesQuery.data?.needsReview ?? []}
+            needsReviewAllDayEvents={schedulesQuery.data?.needsReviewAllDayEvents ?? []}
             unlistedEventCounts={unlistedEventCounts}
             onOpenSchedule={openDetail}
             sourceMode={sourceMode}

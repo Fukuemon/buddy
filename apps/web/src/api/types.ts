@@ -197,6 +197,8 @@ export type ScheduleList = {
   cutover: OpenCalendarCutover | null
   /** google_primary の事業所の、期間に重なる Google カレンダーの終日の予定。職員の絞り込みを当てる。buddy_primary の事業所では空である。 */
   allDayEvents: AllDayEvent[]
+  /** 終日の予定のうち、確認が必要な予定（reviewReason を持つ予定）。期間で絞らず、職員の絞り込みだけを当てる（#972）。 */
+  needsReviewAllDayEvents: AllDayEvent[]
   /**
    * google_primary の事業所の、期間に重なる、カレンダーに出せない Google カレンダーの予定の職員ごとの件数。
    * 職員の絞り込みを当て、件数が 1 以上の職員だけを持つ。buddy_primary の事業所では空である。
@@ -215,6 +217,11 @@ export type AllDayEvent = {
   endDate: string
   /** Google の予定のタイトル。空のことがある。 */
   title: string
+  /**
+   * 確認が必要な理由。無ければ持たない。繰り返しの規則を buddy で表せない予定は、最初の回の 1 件で recurrence_unsupported を持ち、
+   * 表示の期間の外のことがある。
+   */
+  reviewReason?: ScheduleReviewReason
 }
 
 /** 職員の、カレンダーに出せない Google カレンダーの予定の件数。 */

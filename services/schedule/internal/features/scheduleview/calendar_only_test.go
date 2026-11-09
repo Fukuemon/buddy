@@ -166,6 +166,7 @@ func TestSchedulesListGooglePrimaryUnlistedCounts(t *testing.T) {
 
 // TestSchedulesListGooglePrimaryAllDayRecurrence は、繰り返しの終日の予定の、変えた回を変えた日にその回の ID で返し、
 // buddy の規則に写せない繰り返し（毎年）を、回が期間に重なりうる間は最初の回の 1 件にし、終わった後は返さないことを確認する（#672）。
+// 写せない繰り返しの 1 件にだけ、確認が必要な理由（ReviewRecurrenceUnsupported）を付ける（#972）。
 func TestSchedulesListGooglePrimaryAllDayRecurrence(t *testing.T) {
 	s := googleStore()
 	putAllDay(s, targetCalendarID, "weekly", "在宅勤務", oct(5), oct(5), func(p *scheduleview.Projection) {
@@ -189,9 +190,9 @@ func TestSchedulesListGooglePrimaryAllDayRecurrence(t *testing.T) {
 	}
 	var got []string
 	for _, e := range list.AllDayEvents {
-		got = append(got, e.StartDate.String()+" "+e.Title)
+		got = append(got, e.StartDate.String()+" "+e.Title+" "+string(e.ReviewReason))
 	}
-	want := []string{"2026-10-01 創立記念日", "2026-10-21 在宅勤務（変更）"}
+	want := []string{"2026-10-01 創立記念日 recurrence_unsupported", "2026-10-21 在宅勤務（変更） "}
 	if !slices.Equal(got, want) {
 		t.Errorf("終日の予定 = %v, want %v", got, want)
 	}

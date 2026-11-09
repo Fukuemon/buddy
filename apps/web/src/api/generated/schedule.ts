@@ -1528,6 +1528,11 @@ export interface components {
             end_date: string;
             /** @description Google の予定のタイトル。空のことがある */
             title: string;
+            /**
+             * @description 確認が必要な理由。無ければ null。buddy の繰り返しの規則に写せない繰り返しの終日の予定は、最初の回の 1 件にし、
+             *     recurrence_unsupported を付ける（#972）
+             */
+            review_reason: (string & components["schemas"]["ScheduleReviewReason"]) | null;
         };
         /** @description 職員の、予定のカレンダーに出せない Google カレンダーの予定の件数。予定の中身は返さない（#672） */
         UnlistedEventCount: {
@@ -3482,6 +3487,8 @@ export interface operations {
                         /**
                          * @description google_primary の事業所で、date_from から date_to までの期間に重なる、職員が見てよい職員の Google カレンダーの終日の予定。
                          *     buddy の予定ではないので、取得、変更、取り消しはできず、照合の対象にもしない。繰り返しの終日の予定は回ごとに返す。
+                         *     buddy の繰り返しの規則に写せない繰り返しの終日の予定は、回が期間に重なりうる間、最初の回の 1 件にし、review_reason を付けて返す。
+                         *     最初の回は期間の外のことがある（#972）。
                          *     buddy_primary の事業所と、schedule_type で絞ったときは空である（#672）
                          */
                         all_day_events: components["schemas"]["AllDayEvent"][];

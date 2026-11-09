@@ -464,6 +464,14 @@
   gap: 0;
 }
 
+/* 繰り返しの規則を buddy で表せない終日の予定の行。押せないので、ボタンの行と高さだけをそろえる */
+.sc-notice__all-day-item {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  font-size: 14px;
+}
+
 .sc-notice__item {
   min-height: 44px;
   color: var(--wf-primary);
