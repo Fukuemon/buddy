@@ -115,7 +115,7 @@
                   <div class="sc-toolbar__group">
                     <div class="wf-tabs sc-view" data-m="12" data-testid="calendar-view">
                       <span class="wf-tab is-active" data-testid="calendar-view-month">月</span>
-                      <span class="wf-tab" data-testid="calendar-view-week" data-go="02-week.html">週</span>
+                      <span class="wf-tab" data-testid="calendar-view-week" data-go="13-google-primary-week.html">週</span>
                       <span class="wf-tab" data-testid="calendar-view-day" data-go="10-google-primary-day.html">日</span>
                     </div>
                     <span class="wf-btn sc-filter-open" data-open="site-sidebar" data-m="25" data-testid="site-sidebar-open">日付と絞り込み</span>
@@ -142,6 +142,14 @@
                     </ul>
                     <p class="sc-notice__text">Google カレンダーでタイトルか繰り返しの規則を直してください。</p>
                   </section>
+                  <section class="sc-notice sc-notice--warning" data-m="36" data-testid="schedule-calendar-unlisted">
+                    <h2 class="sc-notice__title">カレンダーに出せない予定が 3 件あります</h2>
+                    <ul class="sc-notice__list">
+                      <li data-m="37" data-testid="schedule-calendar-unlisted-{職員の id}"><strong>職員 A</strong>: 2 件</li>
+                      <li data-testid="schedule-calendar-unlisted-{職員の id}"><strong>職員 D</strong>: 1 件</li>
+                    </ul>
+                    <p class="sc-notice__text">2 日以上にわたる予定、24 時間以上の予定、日時を読めない予定、長さの無い予定は、buddy のカレンダーに出せません。Google カレンダーで確認してください。</p>
+                  </section>
                 </div>
                 <div class="sc-month" data-m="14" data-testid="schedule-calendar">
                   <div class="sc-head">日</div>
@@ -161,7 +169,7 @@
                   <div>4</div>
                   <div>5<span class="sc-event" data-m="15" data-testid="schedule-event-{予定の id}" data-go="../../schedule-detail_予定の詳細/mocks/08-google-calendar.html">9時 利用者 A 訪問</span></div>
                   <div>6</div>
-                  <div>7</div>
+                  <div>7<span class="sc-allday" data-testid="all-day-event-{終日の予定の id}"><strong>職員 D</strong> 研修</span></div>
                   <div>8</div>
                   <div>9</div>
                   <div>10</div>
@@ -175,7 +183,7 @@
                   <div>18</div>
                   <div>19</div>
                   <div class="sc-free" data-m="16" data-go="10-google-primary-day.html">20</div>
-                  <div class="sc-today">21<span class="sc-event" data-testid="schedule-event-{予定の id}" data-go="../../schedule-detail_予定の詳細/mocks/08-google-calendar.html">9:30 利用者 C 訪問</span><span class="sc-event" data-testid="schedule-event-{予定の id}" data-go="../../schedule-detail_予定の詳細/mocks/08-google-calendar.html">13時 会議</span></div>
+                  <div class="sc-today">21<span class="sc-allday" data-m="38" data-testid="all-day-event-{終日の予定の id}"><strong>職員 A</strong> 休み</span><span class="sc-event" data-testid="schedule-event-{予定の id}" data-go="../../schedule-detail_予定の詳細/mocks/08-google-calendar.html">9:30 利用者 C 訪問</span><span class="sc-event" data-testid="schedule-event-{予定の id}" data-go="../../schedule-detail_予定の詳細/mocks/08-google-calendar.html">13時 会議</span></div>
                   <div>22</div>
                   <div>23</div>
                   <div>24</div>

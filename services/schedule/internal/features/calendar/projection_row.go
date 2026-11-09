@@ -45,7 +45,8 @@ func updatedOf(ev Event) *time.Time {
 
 // ProjectionOf は、カレンダー c の Google の予定 ev の Projection の行を作る。取り消した単発の予定と親の予定には呼ばず、CancelledProjectionOf を使う。
 // 同期（calendarsync）と、予定の API の書き込み（calendarwrite）が使う。
-// 開始、終了、例外の回の元の開始を読めないときは、エラーを返す。エラーの文に、予定のタイトルを含めない。
+// 開始か終了を読めない予定は、TimeUnreadable の行にする（unreadableTime）。
+// 例外の回の元の開始か、取り消した回の元の日付を読めないときは、エラーを返す。エラーの文に、予定のタイトルを含めない。
 func ProjectionOf(c ExternalCalendar, ev Event) (scheduleview.Projection, error) {
 	p := scheduleview.Projection{
 		ExternalCalendarID: c.ID, EventID: ev.ID, FacilityID: c.FacilityID, StaffID: c.StaffID, RecurringEventID: ev.RecurringEventID,
@@ -67,16 +68,14 @@ func ProjectionOf(c ExternalCalendar, ev Event) (scheduleview.Projection, error)
 		p.Status, p.Title, p.TimeZone, p.LastEndDate = scheduleview.ProjectionCancelled, "", "", &d
 		return p, nil
 	}
-	start, err := timeOf(ev.Start)
-	if err != nil {
-		return scheduleview.Projection{}, errors.Join(errors.New("開始を読めない"), err)
+	start, startErr := timeOf(ev.Start)
+	end, endErr := timeOf(ev.End)
+	if startErr != nil || endErr != nil {
+		p = unreadableTime(p, start, end)
+	} else {
+		p.Start, p.End = start, end
+		p.LastEndDate = lastEndDate(ev, dayOf(start), dayOf(end))
 	}
-	end, err := timeOf(ev.End)
-	if err != nil {
-		return scheduleview.Projection{}, errors.Join(errors.New("終了を読めない"), err)
-	}
-	p.Start, p.End = start, end
-	p.LastEndDate = lastEndDate(ev, dayOf(start), dayOf(end))
 	// 動かした例外の回は、元の回を置き換える記録なので、元の回が期間の中にある間は残す
 	if ev.RecurringEventID != "" && p.LastEndDate != nil {
 		if orig := dayOf(p.OriginalStart); p.LastEndDate.Before(orig) {
@@ -84,6 +83,22 @@ func ProjectionOf(c ExternalCalendar, ev Event) (scheduleview.Projection, error)
 		}
 	}
 	return p, nil
+}
+
+// unreadableTime は、開始か終了の日時を読めない予定の行 p に、読めた方の日時 start か end を入れて返す。
+// 終わる日は、読めた方の日付にする。どちらも読めなければ終わる日を持たず、保持する期間で消さない。
+// 繰り返しの親でも回に展開できないので、終わる日を規則から決めない。
+func unreadableTime(p scheduleview.Projection, start, end scheduleview.ProjectionTime) scheduleview.Projection {
+	p.TimeUnreadable, p.Start, p.End = true, start, end
+	switch {
+	case end.At != nil || end.Date != nil:
+		d := dayOf(end)
+		p.LastEndDate = &d
+	case start.At != nil || start.Date != nil:
+		d := dayOf(start)
+		p.LastEndDate = &d
+	}
+	return p
 }
 
 // timeOf は、Google の予定の日時 w を、時刻のある日時か終日の日付にする。どちらも無いか読めないときはエラーを返す。

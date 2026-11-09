@@ -245,6 +245,7 @@ erDiagram
   timestamp_with_time_zone google_updated_at
   date last_end_date
   timestamp_with_time_zone projected_at
+  boolean time_unreadable
 }
 "public.calendar_cutovers" {
   text id

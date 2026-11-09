@@ -68,6 +68,7 @@ func (f *fakeSchedules) List(_ context.Context, _ string, q scheduleview.ListQue
 	return scheduleview.Listing{
 		Schedules: []scheduleview.Detail{f.detail}, RecurringSchedules: []scheduleview.RecurringDetail{},
 		SourceMode: organization.SourceBuddyPrimary, CalendarSyncs: []scheduleview.CalendarSync{},
+		AllDayEvents: []scheduleview.AllDayEvent{}, UnlistedEventCounts: []scheduleview.UnlistedEventCount{},
 	}, f.err
 }
 
@@ -348,10 +349,15 @@ func TestListSchedules(t *testing.T) {
 	if cs, ok := body["calendar_syncs"].([]any); body["source_mode"] != "buddy_primary" || !ok || len(cs) != 0 {
 		t.Errorf("source_mode = %v, calendar_syncs = %v", body["source_mode"], body["calendar_syncs"])
 	}
+	for _, key := range []string{"all_day_events", "unlisted_event_counts"} {
+		if v, ok := body[key].([]any); !ok || len(v) != 0 {
+			t.Errorf("%s = %v, want []", key, body[key])
+		}
+	}
 }
 
 // TestListSchedulesProjected は、google_primary の事業所の一覧の応答が、正本のモード、カレンダーの同期の状況、
-// Projection の予定の読み元と確認が必要な理由を返すことを確認する。
+// Projection の予定の読み元と確認が必要な理由、終日の予定、出せない予定の職員ごとの件数を返すことを確認する。
 func TestListSchedulesProjected(t *testing.T) {
 	succeeded := time.Date(2026, 10, 20, 9, 0, 0, 0, time.UTC)
 	code := "unavailable"
@@ -366,6 +372,11 @@ func TestListSchedulesProjected(t *testing.T) {
 			{ExternalCalendarID: typeID, StaffID: staffID, StaffName: "岡田 葵", LastStatus: scheduleview.SyncFailed, LastSucceededAt: &succeeded, LastError: &code},
 			{ExternalCalendarID: scheduleID, StaffID: staffID, StaffName: "岡田 葵", LastStatus: scheduleview.SyncNever},
 		},
+		AllDayEvents: []scheduleview.AllDayEvent{{
+			ID: scheduleID, StaffID: staffID, StaffName: "岡田 葵",
+			StartDate: civil.Date{Year: 2026, Month: 10, Day: 20}, EndDate: civil.Date{Year: 2026, Month: 10, Day: 22}, Title: "研修",
+		}},
+		UnlistedEventCounts: []scheduleview.UnlistedEventCount{{StaffID: staffID, Count: 2}},
 	}}
 	rec, body := do(t, newRouter(s, nil, nil), http.MethodGet, "/v1/facilities/"+facilityID+"/schedules", "")
 	if rec.Code != http.StatusOK {
@@ -388,6 +399,15 @@ func TestListSchedulesProjected(t *testing.T) {
 		if v, ok := never[key]; !ok || v != nil {
 			t.Errorf("同期していないカレンダーの %s = %v, want null", key, v)
 		}
+	}
+	allDay := body["all_day_events"].([]any)[0].(map[string]any)
+	if allDay["id"] != scheduleID || allDay["staff_id"] != staffID || allDay["staff_name"] != "岡田 葵" ||
+		allDay["start_date"] != "2026-10-20" || allDay["end_date"] != "2026-10-22" || allDay["title"] != "研修" {
+		t.Errorf("終日の予定 = %v", allDay)
+	}
+	count := body["unlisted_event_counts"].([]any)[0].(map[string]any)
+	if count["staff_id"] != staffID || count["count"] != float64(2) {
+		t.Errorf("出せない予定の件数 = %v", count)
 	}
 }
 

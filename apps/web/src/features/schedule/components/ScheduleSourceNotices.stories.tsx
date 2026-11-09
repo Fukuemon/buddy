@@ -2,7 +2,13 @@ import type { Meta, StoryObj } from '@storybook/react-vite'
 import { fn } from 'storybook/test'
 
 import { ScheduleSourceNotices } from './ScheduleSourceNotices'
-import { STORY_NOW, storyCalendarSyncs, storyNeedsReview, storyStaff } from './storyData'
+import {
+  STORY_NOW,
+  storyCalendarSyncs,
+  storyNeedsReview,
+  storyStaff,
+  storyUnlistedEventCounts,
+} from './storyData'
 
 const meta = {
   title: '画面/Schedule/ScheduleSourceNotices',
@@ -44,5 +50,14 @@ export const Cutover: Story = {
       started_by_name: '佐藤 一郎',
       range_start: '2026-10-01',
     },
+  },
+}
+
+/** 表示の期間に、カレンダーに出せない予定がある。件数と職員ごとの件数を出し、Google カレンダーで確認するよう促す。 */
+export const Unlisted: Story = {
+  args: {
+    calendarSyncs: storyCalendarSyncs.slice(0, 1),
+    needsReview: [],
+    unlistedEventCounts: storyUnlistedEventCounts,
   },
 }

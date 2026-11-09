@@ -1510,6 +1510,30 @@ export interface components {
          * @enum {string}
          */
         SourceMode: "google_primary" | "buddy_primary";
+        /** @description Google カレンダーの終日の予定。buddy の予定ではない（#672） */
+        AllDayEvent: {
+            /** @description 一覧を読むたびに同じになる値。繰り返しの回は回ごとに違う値である。予定の ID としては使えない */
+            id: string;
+            staff_id: components["schemas"]["ID"];
+            staff_name: string;
+            /**
+             * Format: date
+             * @description 予定がかかる最初の日
+             */
+            start_date: string;
+            /**
+             * Format: date
+             * @description 予定がかかる最後の日（この日を含む）。1 日の予定では start_date と同じ
+             */
+            end_date: string;
+            /** @description Google の予定のタイトル。空のことがある */
+            title: string;
+        };
+        /** @description 職員の、予定のカレンダーに出せない Google カレンダーの予定の件数。予定の中身は返さない（#672） */
+        UnlistedEventCount: {
+            staff_id: components["schemas"]["ID"];
+            count: number;
+        };
         /** @description 結び付けたカレンダーの同期の状況 */
         CalendarSyncStatus: {
             external_calendar_id: components["schemas"]["ID"];
@@ -3455,6 +3479,20 @@ export interface operations {
                         calendar_syncs: components["schemas"]["CalendarSyncStatus"][];
                         /** @description google_primary の事業所で、予定の正本を buddy に切り替えている間の open の切り替え。無ければ null（ADR-0031） */
                         cutover: components["schemas"]["OpenCalendarCutover"] | null;
+                        /**
+                         * @description google_primary の事業所で、date_from から date_to までの期間に重なる、職員が見てよい職員の Google カレンダーの終日の予定。
+                         *     buddy の予定ではないので、取得、変更、取り消しはできず、照合の対象にもしない。繰り返しの終日の予定は回ごとに返す。
+                         *     buddy_primary の事業所と、schedule_type で絞ったときは空である（#672）
+                         */
+                        all_day_events: components["schemas"]["AllDayEvent"][];
+                        /**
+                         * @description google_primary の事業所で、date_from から date_to までの期間に重なる、職員が見てよい職員の、schedules にも all_day_events にも出せない
+                         *     Google カレンダーの予定の、職員ごとの件数。2 日以上にわたる予定、24 時間以上の予定、開始か終了の日時を読めない予定、長さが 0 以下の予定を数える。
+                         *     繰り返しの予定は、期間に重なる回の数を数える。日時を読めない予定は、開始か終了の読めた方の日で期間に重なるかを決め、
+                         *     どちらも読めなければどの期間でも数える。件数が 1 以上の職員だけを返す。
+                         *     buddy_primary の事業所と、schedule_type で絞ったときは空である（#672）
+                         */
+                        unlisted_event_counts: components["schemas"]["UnlistedEventCount"][];
                     };
                 };
             };

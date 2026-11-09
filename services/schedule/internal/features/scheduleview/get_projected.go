@@ -70,7 +70,7 @@ func (g GetProjected) find(ctx context.Context, facilityID, id string) (projecte
 		return projectedEvent{}, apperr.ErrNotFound
 	}
 	rd := g.deps.Rules.Read(row.Projection)
-	if rd.Kind == EventSkipped {
+	if !rd.Kind.IsSchedule() {
 		return projectedEvent{}, apperr.ErrNotFound
 	}
 	return projectedEvent{row: row, reading: rd}, nil

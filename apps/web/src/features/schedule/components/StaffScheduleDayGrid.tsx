@@ -3,8 +3,10 @@ import { useEffect, useRef, type CSSProperties } from 'react'
 
 import type { Staff } from '#/api/types'
 
+import { allDayEventsOn, type CalendarAllDayEvent } from '../lib/allDayEvents'
 import { addMinutesToTimeKey, formatScheduleTimeRange, toDateKey } from '../lib/dateTime'
 import type { ScheduleCalendarEvent } from '../lib/toCalendarEvents'
+import { AllDayEventLabel } from './AllDayEventLabel'
 import { CancelledMark } from './CancelledMark'
 import { NeedsReviewMark } from './NeedsReviewMark'
 
@@ -35,6 +37,8 @@ export type StaffScheduleDayGridProps = {
   date: string
   staffList: Staff[]
   events: ScheduleCalendarEvent[]
+  /** Google カレンダーの終日の予定。表示する日にかかる予定が 1 件以上あるときだけ、上に留める職員の名前の下に「終日」の欄を出す。省くと出さない。 */
+  allDayEvents?: CalendarAllDayEvent[]
   /** 空いた時間の枠を押したときに呼ぶ。 */
   onSlotClick: (staffId: Staff['id'], timeKey: string) => void
   /** 時間の枠を押して予定を作れる職員か。偽の職員の列の枠は押せない。省くと全ての職員の枠を押せる。 */
@@ -52,6 +56,7 @@ export const StaffScheduleDayGrid = ({
   date,
   staffList,
   events,
+  allDayEvents = [],
   onSlotClick,
   canCreateFor = () => true,
   onEventClick,
@@ -63,6 +68,7 @@ export const StaffScheduleDayGrid = ({
   }, [date])
 
   const nowMinutes = now === undefined ? undefined : minutesInDay(date, now)
+  const allDayToday = allDayEventsOn(allDayEvents, date)
   return (
     <div
       className="h-full snap-x snap-mandatory overflow-auto bg-surface desktop:snap-none"
@@ -74,13 +80,35 @@ export const StaffScheduleDayGrid = ({
         className="grid min-w-max grid-cols-[3rem_repeat(var(--staff-count),minmax(9rem,1fr))] desktop:grid-cols-[4rem_repeat(var(--staff-count),minmax(10rem,1fr))]"
         style={{ '--staff-count': staffList.length } as CSSProperties}
       >
-        <div className="sticky top-0 left-0 z-20 border-b border-border bg-surface" />
+        {/* 終日の予定は、時間の枠を送っても見えるよう、上に留める職員の名前の見出しの中に置く */}
+        <div className="sticky top-0 left-0 z-20 flex flex-col border-b border-border bg-surface">
+          {allDayToday.length > 0 && (
+            <span
+              className="mt-auto pr-2 pb-1.5 text-right text-caption text-text-secondary"
+              data-testid="day-grid-all-day"
+            >
+              終日
+            </span>
+          )}
+        </div>
         {staffList.map((staff) => (
           <div
-            className="sticky top-0 z-10 truncate border-b border-l border-border bg-surface px-2 py-2 text-center text-caption font-bold"
+            className="sticky top-0 z-10 min-w-0 border-b border-l border-border bg-surface px-2 py-2"
             key={staff.id}
           >
-            {staff.name}
+            <div className="truncate text-center text-caption font-bold">{staff.name}</div>
+            {allDayToday.length > 0 && (
+              <div
+                className="mt-1 flex min-h-6 flex-col gap-0.5"
+                data-testid={`day-grid-all-day-${staff.id}`}
+              >
+                {allDayToday
+                  .filter((event) => event.staffId === staff.id)
+                  .map((event) => (
+                    <AllDayEventLabel event={event} key={event.id} />
+                  ))}
+              </div>
+            )}
           </div>
         ))}
 

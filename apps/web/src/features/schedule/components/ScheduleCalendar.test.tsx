@@ -8,13 +8,35 @@ import { stubViewport } from '#/test/stubViewport'
 
 import * as stories from './ScheduleCalendar.stories'
 
-const { Month, Week } = composeStories(stories)
+const { Month, MonthAllDay, Week, WeekAllDay } = composeStories(stories)
 
 afterEach(() => {
   vi.unstubAllGlobals()
 })
 
 describe('ScheduleCalendar', () => {
+  it('週の表示で、終日の予定があるときだけ「終日」の行に職員の名前とタイトルを出し、押しても予定を開かない', async () => {
+    stubViewport(true)
+    const onEventClick = fn()
+    const { unmount } = render(<WeekAllDay onEventClick={onEventClick} />)
+    expect(screen.getByText('終日')).toBeInTheDocument()
+    const off = screen.getByTestId('all-day-event-gcal-allday-1')
+    expect(off).toHaveTextContent('青木 一郎 休み')
+    await userEvent.click(off)
+    expect(onEventClick).not.toHaveBeenCalled()
+    unmount()
+
+    render(<Week />)
+    expect(screen.queryByText('終日')).toBeNull()
+  })
+
+  it('月の表示で、終日の予定を日の枠に出す', () => {
+    render(<MonthAllDay />)
+    expect(screen.getAllByTestId('all-day-event-gcal-allday-2')[0]).toHaveTextContent(
+      '石川 二葉 研修',
+    )
+  })
+
   it('週の表示で、翌日に終わる予定を開始の日と翌日に描き、どちらを押しても同じ予定の ID を渡す', async () => {
     stubViewport(true)
     const onEventClick = fn()

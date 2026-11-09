@@ -3,8 +3,10 @@ import {
   createMockImportPreview,
   createMockImportResult,
   createMockImportedPreview,
+  createMockAllDayEvents,
   createMockCalendarSyncs,
   createMockProjectionSchedules,
+  createMockUnlistedEvents,
   exportOfIssue,
   mockDepartments,
   mockExportIssues,
@@ -60,6 +62,10 @@ const assertFacility = (facilityId: FacilityId) => {
   }
 }
 
+/** date のデバイスの時間帯の日付を `YYYY-MM-DD` で返す。 */
+const toLocalDateKey = (date: Date) =>
+  `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
+
 /** フェイクの API が読めるとみなすカレンダーの ID の末尾。ほかのカレンダーは読めない（calendar_unreadable）。 */
 const FAKE_READABLE_CALENDAR_SUFFIX = '@example.com'
 
@@ -90,6 +96,8 @@ export const createFakeBuddyApi = ({
     ).map((schedule) => [schedule.id, schedule]),
   )
   const calendarSyncs = isGooglePrimary ? (syncs ?? createMockCalendarSyncs(baseDate)) : []
+  const allDayEvents = isGooglePrimary ? createMockAllDayEvents(baseDate) : []
+  const unlistedEvents = isGooglePrimary ? createMockUnlistedEvents(baseDate) : []
   let etagSequence = 0
   const nextETag = () => {
     etagSequence += 1
@@ -286,6 +294,19 @@ export const createFakeBuddyApi = ({
             (includeCancelled === true || schedule.cancel === undefined) &&
             isSelectedStaff(schedule.staffId),
         )
+        // 本物の API と同じく、終日の予定と出せない予定は、期間に重なるものを数える。日付は、ダミーと同じくデバイスの日付で比べる
+        const dateFrom = toLocalDateKey(new Date(fromTime))
+        const dateTo = toLocalDateKey(new Date(toTime - 1))
+        const overlaps = (start: string | null, end: string | null) =>
+          start === null || end === null || (start <= dateTo && end >= dateFrom)
+        const unlistedByStaff = new Map<string, number>()
+        if (mode === 'google_primary') {
+          for (const event of unlistedEvents) {
+            if (isSelectedStaff(event.staffId) && overlaps(event.startDate, event.endDate)) {
+              unlistedByStaff.set(event.staffId, (unlistedByStaff.get(event.staffId) ?? 0) + 1)
+            }
+          }
+        }
         return {
           schedules: all.filter(
             (schedule) =>
@@ -307,6 +328,25 @@ export const createFakeBuddyApi = ({
                     mockStaffList.find((s) => s.id === cutover?.started_by)?.username ?? '',
                   range_start: cutover.range_start,
                 },
+          allDayEvents:
+            mode === 'google_primary'
+              ? allDayEvents
+                  .filter(
+                    (event) =>
+                      isSelectedStaff(event.staff_id) && overlaps(event.start_date, event.end_date),
+                  )
+                  .map((event) => ({
+                    id: event.id,
+                    staffId: event.staff_id,
+                    staffName: event.staff_name,
+                    startDate: event.start_date,
+                    endDate: event.end_date,
+                    title: event.title,
+                  }))
+              : [],
+          unlistedEventCounts: [...unlistedByStaff]
+            .map(([staffId, count]) => ({ staffId, count }))
+            .sort((a, b) => a.staffId.localeCompare(b.staffId)),
         }
       },
       get: async (facilityId, scheduleId) => {

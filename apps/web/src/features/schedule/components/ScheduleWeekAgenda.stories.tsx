@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite'
 import { fn } from 'storybook/test'
 
 import { ScheduleWeekAgenda } from './ScheduleWeekAgenda'
-import { STORY_DATE, storyEvents, storyStaff } from './storyData'
+import { STORY_DATE, storyAllDayEvents, storyEvents, storyStaff } from './storyData'
 
 const meta = {
   title: '画面/Schedule/ScheduleWeekAgenda',
@@ -33,3 +33,6 @@ export const Default: Story = {}
 
 /** 予定の無い週。日の見出しだけを出す。 */
 export const Empty: Story = { args: { events: [] } }
+
+/** Google カレンダーの終日の予定がある週。かかる日ごとに、時刻のある予定の前に「終日」の行を出す。 */
+export const AllDay: Story = { args: { allDayEvents: storyAllDayEvents } }

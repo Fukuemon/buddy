@@ -57,7 +57,7 @@ const expectOk = async (promise: Promise<Result<unknown>>): Promise<void> => {
  * 予定の API を openapi-fetch で呼ぶ BuddyApi を作る。トークンは付けない。
  *
  * schedules.list は、繰り返しの予定を期間の回に分け、occurrenceId の ID を持つ単発の予定として返す。
- * 確認が必要な予定（needsReview）は期間で絞らず、職員の絞り込みだけを当てる。同期の状況も職員で絞る。
+ * 確認が必要な予定（needsReview）は期間で絞らず、職員の絞り込みだけを当てる。同期の状況、終日の予定、出せない予定の件数も職員で絞る。
  * キャンセルした予定は、includeCancelled が true のときだけ cancel 付きで返す。
  * キャンセルした予定は画面で変換できなければ飛ばし、一覧の全体を失敗にしない。
  * schedules.get と schedules.update は、回の ID を受けると、繰り返しの予定のその回を読み、その回を置き換える。
@@ -132,6 +132,8 @@ export const createHttpBuddyApi = ({ baseUrl, fetch }: HttpApiOptions): BuddyApi
           source_mode: sourceMode,
           calendar_syncs: calendarSyncs,
           cutover,
+          all_day_events: allDayEvents,
+          unlisted_event_counts: unlistedEventCounts,
         } = await unwrap(
           client.GET('/v1/facilities/{facility_id}/schedules', {
             params: {
@@ -173,6 +175,19 @@ export const createHttpBuddyApi = ({ baseUrl, fetch }: HttpApiOptions): BuddyApi
           sourceMode,
           calendarSyncs: calendarSyncs.filter((sync) => isSelectedStaff(sync.staff_id)),
           cutover,
+          allDayEvents: allDayEvents
+            .filter((event) => isSelectedStaff(event.staff_id))
+            .map((event) => ({
+              id: event.id,
+              staffId: event.staff_id,
+              staffName: event.staff_name,
+              startDate: event.start_date,
+              endDate: event.end_date,
+              title: event.title,
+            })),
+          unlistedEventCounts: unlistedEventCounts
+            .filter((count) => isSelectedStaff(count.staff_id))
+            .map((count) => ({ staffId: count.staff_id, count: count.count })),
         }
       },
       get: async (facilityId, scheduleId) => {

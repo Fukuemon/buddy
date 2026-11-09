@@ -478,6 +478,68 @@
   font-weight: 700;
 }
 
+/* Google カレンダーの終日の予定（apps/web の AllDayEventLabel）。押せないので、薄い面にし、職員の色を左の線にだけ置く。実装は職員ごとの色の線にする */
+.sc-allday {
+  display: block;
+  overflow: hidden;
+  margin-top: 2px;
+  padding: 2px 6px;
+  border-left: 4px solid var(--wf-line);
+  border-radius: 4px;
+  background: var(--wf-fill);
+  color: var(--wf-ink);
+  font-size: 12px;
+  font-weight: 400;
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 週の表示の終日の行。時刻の格子の上に、時刻の列と同じ幅の「終日」と、7 日分の欄を並べる */
+.sc-allday-row {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: 48px repeat(7, minmax(0, 1fr));
+  border-bottom: 1px solid var(--wf-line-soft);
+}
+
+.sc-allday-row > div {
+  min-width: 0;
+  min-height: 24px;
+  padding: 0 2px 2px;
+  border-right: 1px solid var(--wf-line-soft);
+}
+
+.sc-allday-row > .sc-allday-row__label {
+  padding: 4px 6px 0 0;
+  color: var(--wf-muted);
+  font-size: 12px;
+  text-align: right;
+}
+
+/* 何日かにわたる終日の予定は、かかる日の欄をつないだ 1 本の帯にする */
+.sc-allday-row > .sc-allday-row__span3 {
+  grid-column: span 3;
+}
+
+/* 日の表示の、職員の名前の下の終日の欄。左上の角には「終日」を出す */
+.sc-day > .sc-head--allday-corner {
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-end;
+  padding-right: 8px;
+  color: var(--wf-muted);
+  font-weight: 400;
+}
+
+.sc-day-allday {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-height: 24px;
+  margin-top: 4px;
+}
+
 /* 予定の正本を buddy に切り替えている間の案内 */
 .sc-notice--cutover {
   border-left: 4px solid var(--wf-primary);

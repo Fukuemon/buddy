@@ -363,6 +363,41 @@ export const createMockProjectionSchedules = (base: Date): Schemas['Schedule'][]
 }
 
 /**
+ * google_primary の事業所の、Google カレンダーの終日の予定のダミーを作る。
+ * 青木 一郎の基準日の「休み」と、石川 二葉の基準日の前日から翌日までの「研修」を置く。
+ */
+export const createMockAllDayEvents = (base: Date): Schemas['AllDayEvent'][] => [
+  {
+    id: 'gcal-allday-1',
+    staff_id: mockStaffList[0].id,
+    staff_name: mockStaffList[0].username,
+    start_date: dayAfter(base, 0),
+    end_date: dayAfter(base, 0),
+    title: '休み',
+  },
+  {
+    id: 'gcal-allday-2',
+    staff_id: mockStaffList[1].id,
+    staff_name: mockStaffList[1].username,
+    start_date: dayAfter(base, -1),
+    end_date: dayAfter(base, 1),
+    title: '研修',
+  },
+]
+
+/**
+ * google_primary の事業所の、カレンダーに出せない予定のダミーを作る。予定の API は件数だけを返すので、画面のフェイクが期間で絞れるよう、
+ * 予定ごとに職員と、かかる最初の日と最後の日を持つ。日付の無い予定は、日時を読めない予定で、どの期間でも数える。
+ * 青木 一郎の基準日から 2 日にわたる予定と、上田 三奈の日時を読めない予定を置く。
+ */
+export const createMockUnlistedEvents = (
+  base: Date,
+): { staffId: string; startDate: string | null; endDate: string | null }[] => [
+  { staffId: mockStaffList[0].id, startDate: dayAfter(base, 0), endDate: dayAfter(base, 1) },
+  { staffId: mockStaffList[2].id, startDate: null, endDate: null },
+]
+
+/**
  * google_primary の事業所の、カレンダーの同期の状況のダミーを作る。
  * 青木 一郎は 1 分前に同期でき、石川 二葉は 30 分前から同期に失敗し、上田 三奈はまだ同期していない。
  */
