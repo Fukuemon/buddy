@@ -1,14 +1,14 @@
 import { expect, test } from '@playwright/test'
 
-import { prepareApiReference, routeApiReference } from '../../fixtures/apiReference'
+import { issueAccessToken, routeApiReference } from '../../fixtures/apiReference'
 import { HAYASHI, LEADER, LOGIN_EMAIL, LOGIN_STAFF, TEAM_MEMBER } from '../../fixtures/env'
 import { EVIDENCE_VARIANTS, recordPrEvidence } from '../../fixtures/evidence'
+import { openApiClient, openApiReference } from '../../screens/apiReference'
 import {
   fillApiBody,
   fillApiToken,
   fillApiVariable,
-  openApiClient,
-} from '../../screens/apiReference'
+} from '../../widgets/apiClient/actions/apiClient'
 import { apiClient } from '../../selectors/apiReference'
 
 /** 指定した職員の予定の閲覧（schedule.user.read）。初期のマイグレーションが入れる権限である。 */
@@ -37,7 +37,11 @@ test.describe('職員の管理', () => {
             actor: `${LOGIN_STAFF.name}（マネージャー、職員の管理の権限あり）`,
             variant,
           },
-          prepareApiReference('schedule', LOGIN_EMAIL),
+          async (page) => {
+            await routeApiReference(page)
+            await openApiReference(page, 'schedule')
+            return issueAccessToken(page.request, LOGIN_EMAIL)
+          },
           async ({ page, step, check }, token) => {
             await routeApiReference(page)
             await openApiClient(page, 'schedule', ADD_POLICY)
@@ -95,7 +99,11 @@ test.describe('職員の管理', () => {
             actor: `${LEADER.staff.name}（チームリーダー、職員の管理の権限なし）`,
             variant,
           },
-          prepareApiReference('schedule', LEADER.email),
+          async (page) => {
+            await routeApiReference(page)
+            await openApiReference(page, 'schedule')
+            return issueAccessToken(page.request, LEADER.email)
+          },
           async ({ page, step, check }, token) => {
             await routeApiReference(page)
             await openApiClient(page, 'schedule', ADD_POLICY)

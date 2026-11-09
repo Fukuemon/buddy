@@ -6,7 +6,7 @@ import { EVIDENCE_VARIANTS, recordPrEvidence } from '../../fixtures/evidence'
 import { findGoogleEvent } from '../../fixtures/googleCalendar'
 import { createWeeklyNormalSchedule } from '../../fixtures/schedule'
 import { STAFF_FORM } from '../../fixtures/staff'
-import { linkStaffCalendar, unlinkStaffCalendar } from '../../screens/calendar'
+import { linkStaffCalendar, unlinkStaffCalendar } from '../../setup/calendar'
 import { signInAtBroker } from '../../screens/login'
 import { calendarpitText } from '../../selectors/calendarpit'
 

@@ -11,7 +11,7 @@ import {
   reinstateStaff,
   retireStaff,
 } from '../../fixtures/staff'
-import { linkStaffCalendar } from '../../screens/calendar'
+import { linkStaffCalendar } from '../../setup/calendar'
 import { signInAtBroker } from '../../screens/login'
 
 const ACTOR = `${LOGIN_STAFF.name}（マネージャー、職員の管理の権限あり）`

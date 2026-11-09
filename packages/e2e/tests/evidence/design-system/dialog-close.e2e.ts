@@ -6,6 +6,7 @@ import { newUnitName } from '../../fixtures/organization'
 import { SCHEDULE_DETAIL_URL } from '../../fixtures/schedule'
 import { signInAtBroker } from '../../screens/login'
 import { commonShapeParts } from '../../selectors/commonShape'
+import { dismissBrowserDialog } from '../../widgets/browserDialog/actions/dialog'
 
 const ACTOR = `${LOGIN_STAFF.name}（マネージャー、職員の管理の権限あり）`
 
@@ -167,14 +168,10 @@ test.describe('ダイアログの閉じるボタン', () => {
           await page.getByTestId('schedule-form-title').fill('打ち合わせ')
 
           // ブラウザの確認のダイアログは録画に映らないので、出た文を字幕に出して「キャンセル」で閉じる
-          const confirmed = page.waitForEvent('dialog').then(async (dialog) => {
-            const message = dialog.message()
-            await dialog.dismiss()
-            return message
+          const message = await dismissBrowserDialog(page, async () => {
+            await step('フッターの「キャンセル」を押す')
+            await modal.getByTestId('schedule-new-cancel').click()
           })
-          await step('フッターの「キャンセル」を押す')
-          await modal.getByTestId('schedule-new-cancel').click()
-          const message = await confirmed
           expect(message).toBe('変更が破棄されますがよろしいですか？')
           await step(
             `（撮影のため、ブラウザの確認のダイアログは録画に映らないので、出た文を字幕に出す）確認「${message}」が出たので、キャンセルを押す`,

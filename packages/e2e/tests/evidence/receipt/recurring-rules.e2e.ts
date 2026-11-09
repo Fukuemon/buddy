@@ -7,7 +7,7 @@ import { CALENDARPIT_URL, LEADER, LOGIN_EMAIL, LOGIN_STAFF } from '../../fixture
 import { EVIDENCE_VARIANTS, recordPrEvidence } from '../../fixtures/evidence'
 import { registerPatient } from '../../fixtures/patient'
 import { STAFF_FORM } from '../../fixtures/staff'
-import { linkStaffCalendar, unlinkStaffCalendar } from '../../screens/calendar'
+import { linkStaffCalendar, unlinkStaffCalendar } from '../../setup/calendar'
 import { signInAtBroker } from '../../screens/login'
 import { showAllReceiptRows } from '../../screens/receipt'
 import { calendarpitEvent } from '../../selectors/calendarpit'

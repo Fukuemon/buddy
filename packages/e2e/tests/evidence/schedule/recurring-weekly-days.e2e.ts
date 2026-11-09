@@ -17,7 +17,7 @@ import {
 } from '../../fixtures/googleCalendar'
 import { createWeeklyNormalSchedule } from '../../fixtures/schedule'
 import { STAFF_FORM } from '../../fixtures/staff'
-import { linkStaffCalendar, unlinkStaffCalendar } from '../../screens/calendar'
+import { linkStaffCalendar, unlinkStaffCalendar } from '../../setup/calendar'
 import { signInAtBroker } from '../../screens/login'
 
 /** 今日の Asia/Tokyo の日付から days 日後の日付（YYYY-MM-DD）。 */

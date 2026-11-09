@@ -5,6 +5,7 @@ import { EVIDENCE_VARIANTS, recordPrEvidence } from '../../fixtures/evidence'
 import { signInAtBroker } from '../../screens/login'
 import { showAllReceiptRows } from '../../screens/receipt'
 import { receiptCategoryRowCells, receiptResultRow } from '../../selectors/receipt'
+import { scrollToRightEnd } from '../../widgets/scroll/actions/scroll'
 
 // 照合の API は、compose/receipt-calendars.json の森のカレンダーを calendarpit から読む。
 // 森のカレンダーは 2026 年 11 月の予定を持つ。
@@ -183,9 +184,7 @@ test.describe('照合の結果', () => {
               await check(item.scheduleResult)
 
               await step('（撮影のため、結果の表を右端まで送り、実績の側の列を見せる）')
-              await page.getByTestId('receipt-result-table').evaluate((element) => {
-                element.scrollLeft = element.scrollWidth
-              })
+              await scrollToRightEnd(page.getByTestId('receipt-result-table'))
               await expect(row).toHaveText([
                 item.date,
                 item.patient,

@@ -1,6 +1,6 @@
 import { expect, test, type APIRequestContext, type Page } from '@playwright/test'
 
-import { prepareApiReference, routeApiReference } from '../../fixtures/apiReference'
+import { issueAccessToken, routeApiReference } from '../../fixtures/apiReference'
 import { LOGIN_EMAIL, LOGIN_STAFF, SCHEDULE_URL, SEED_PATIENT } from '../../fixtures/env'
 import { EVIDENCE_VARIANTS, recordPrEvidence } from '../../fixtures/evidence'
 import { createNormalSchedule } from '../../fixtures/schedule'
@@ -12,12 +12,12 @@ import {
   STAFF_FORM,
 } from '../../fixtures/staff'
 import { signInAtBroker } from '../../screens/login'
+import { openApiClient, openApiReference } from '../../screens/apiReference'
 import {
   fillApiBody,
   fillApiToken,
   fillApiVariable,
-  openApiClient,
-} from '../../screens/apiReference'
+} from '../../widgets/apiClient/actions/apiClient'
 import { apiClient } from '../../selectors/apiReference'
 
 /** 訪問しない職員への変更を拒む予定の日。今日より後にする。 */
@@ -151,7 +151,9 @@ test.describe('職員の管理', () => {
             variant,
           },
           async (page) => {
-            const token = await prepareApiReference('schedule', LOGIN_EMAIL)(page)
+            await routeApiReference(page)
+            await openApiReference(page, 'schedule')
+            const token = await issueAccessToken(page.request, LOGIN_EMAIL)
             const companion = await registerNonVisiting(page.request, 'companion')
             const visitType = await masterId(page.request, token, '/v1/schedule_types', '訪問')
             const serviceCode = await masterId(

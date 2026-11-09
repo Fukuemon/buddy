@@ -2,6 +2,7 @@ import { expect, test } from '@playwright/test'
 
 import { LOGIN_STAFF, OFFICE_A_SCHEDULE } from '../../fixtures/env'
 import { PHONE_VIEWPORT } from '../../fixtures/evidence'
+import { scrollToRightEnd } from '../../widgets/scroll/actions/scroll'
 
 /** シードのカンファレンスの翌日。週の一覧の見出しを押して移る先にする。 */
 const NEXT_DAY = '2026-10-21'
@@ -69,9 +70,7 @@ test.describe('予定のカレンダー', () => {
       // 4 人の職員の列は幅 390px に入らないので、横に送れる。送る前に列が並んだことを確かめる
       await expect(grid.getByTestId(`day-grid-staff-${LOGIN_STAFF.id}`)).toBeVisible()
 
-      await grid.evaluate((element) => {
-        element.scrollLeft = element.scrollWidth
-      })
+      await scrollToRightEnd(grid)
 
       await expect(grid.getByTestId(`day-grid-staff-${LOGIN_STAFF.id}`)).not.toBeInViewport()
       await expect(grid.getByTestId('day-grid-times')).toBeInViewport()

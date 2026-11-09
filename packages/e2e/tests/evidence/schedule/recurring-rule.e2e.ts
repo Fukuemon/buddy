@@ -1,10 +1,6 @@
 import { expect, test, type APIRequestContext, type Page } from '@playwright/test'
 
-import {
-  issueAccessToken,
-  routeApiReference,
-  prepareApiReference,
-} from '../../fixtures/apiReference'
+import { issueAccessToken, routeApiReference } from '../../fixtures/apiReference'
 import {
   CALENDARPIT_URL,
   HAYASHI,
@@ -17,13 +13,13 @@ import { EVIDENCE_VARIANTS, recordPrEvidence } from '../../fixtures/evidence'
 import { deleteGoogleEvent, listGoogleEvents } from '../../fixtures/googleCalendar'
 import { createWeeklyNormalSchedule, newScheduleId } from '../../fixtures/schedule'
 import { STAFF_FORM } from '../../fixtures/staff'
+import { openApiClient, openApiReference } from '../../screens/apiReference'
 import {
   fillApiBody,
   fillApiToken,
   fillApiVariable,
-  openApiClient,
-} from '../../screens/apiReference'
-import { linkStaffCalendar, unlinkStaffCalendar } from '../../screens/calendar'
+} from '../../widgets/apiClient/actions/apiClient'
+import { linkStaffCalendar, unlinkStaffCalendar } from '../../setup/calendar'
 import { signInAtBroker } from '../../screens/login'
 import { apiClient } from '../../selectors/apiReference'
 import { calendarpitEvent } from '../../selectors/calendarpit'
@@ -148,7 +144,8 @@ test.describe('予定の API', () => {
             )
             expect(created.status()).toBe(201)
             const { id } = (await created.json()) as { id: string }
-            await prepareApiReference('schedule', null)(page)
+            await routeApiReference(page)
+            await openApiReference(page, 'schedule')
             return { token, id }
           },
           async ({ page, step, check }, { token, id }) => {
@@ -247,7 +244,8 @@ test.describe('予定の API', () => {
             )
             expect(created.status()).toBe(201)
             const etag = await listedEtag(page.request, token, OKADA.facilityId, effective, title)
-            await prepareApiReference('schedule', null)(page)
+            await routeApiReference(page)
+            await openApiReference(page, 'schedule')
             return { token, id, etag }
           },
           async ({ page, step, check }, { token, id, etag }) => {

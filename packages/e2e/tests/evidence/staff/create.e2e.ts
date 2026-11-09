@@ -1,15 +1,15 @@
 import { expect, test } from '@playwright/test'
 
-import { prepareApiReference, routeApiReference } from '../../fixtures/apiReference'
+import { issueAccessToken, routeApiReference } from '../../fixtures/apiReference'
 import { LOGIN_EMAIL, LOGIN_STAFF } from '../../fixtures/env'
 import { EVIDENCE_VARIANTS, recordPrEvidence } from '../../fixtures/evidence'
 import { STAFF_FORM } from '../../fixtures/staff'
+import { openApiClient, openApiReference } from '../../screens/apiReference'
 import {
   fillApiBody,
   fillApiToken,
   fillApiVariable,
-  openApiClient,
-} from '../../screens/apiReference'
+} from '../../widgets/apiClient/actions/apiClient'
 import { apiClient } from '../../selectors/apiReference'
 
 const CREATE_USER = { tag: 'staff', method: 'post', path: '/v1/facilities/{facility_id}/users' }
@@ -46,7 +46,11 @@ test.describe('職員の管理', () => {
               actor: `${LOGIN_STAFF.name}（マネージャー、職員の管理の権限あり）`,
               variant,
             },
-            prepareApiReference('schedule', LOGIN_EMAIL),
+            async (page) => {
+              await routeApiReference(page)
+              await openApiReference(page, 'schedule')
+              return issueAccessToken(page.request, LOGIN_EMAIL)
+            },
             async ({ page, step, check }, token) => {
               await routeApiReference(page)
               await openApiClient(page, 'schedule', CREATE_USER)
