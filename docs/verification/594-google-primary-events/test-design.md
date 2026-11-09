@@ -91,7 +91,7 @@ apps/web/src/features/schedule/components/ScheduleSourceNotices.tsx
 | タイトルが空白だけの予定、訪問のタイトルを読めない予定 | タイトルを読めない予定 | 時刻の格子と、確認が必要な予定（理由つき） |
 | 写せない繰り返しの時刻のある予定 | 訪問か通常 | 最初の回を時刻の格子に出し、確認が必要な予定（理由つき） |
 | 終日の予定 | 終日 | 「終日」の行（かかる全ての日、繰り返しは回ごと） |
-| 写せない繰り返しの終日の予定 | 終日 | 最初の回の日だけの「終日」の行。確認が必要な予定に出ない |
+| 写せない繰り返しの終日の予定 | 終日 | 最初の回の日だけの「終日」の行と、確認が必要な予定（理由つき） |
 | 出せない予定 | 出せない予定 | 出せない予定の件数 |
 
 ### 取り込めない予定は、件数か理由のどちらかで知らせる
@@ -103,7 +103,7 @@ apps/web/src/features/schedule/components/ScheduleSourceNotices.tsx
 ### 写せない繰り返しは最初の回の 1 件にする
 
 時刻のある予定は、最初の回の 1 件にして確認が必要な予定に出す。ADR-0029 のとおりである。  
-終日の予定は、最初の回の 1 件にするが、確認が必要な予定に出さない。2 回目からの回は、どの週にも出ない。
+終日の予定も、最初の回の 1 件にして確認が必要な予定に出す（#972）。2 回目からの回は「終日」の行に出ないが、確認が必要な予定はどの週にも出る。
 
 ## テスト観点
 
@@ -127,7 +127,7 @@ apps/web/src/features/schedule/components/ScheduleSourceNotices.tsx
 | 終日の予定 | 終日の予定 | WHEN 1 日、何日か、回を除外した繰り返しの終日の予定があるとき、THEN かかる日と回の日の「終日」の行に出て、除外した日には出ない SHALL | 高 |
 | 訪問の情報に変換できない予定 | 訪問の情報に変換できない予定 | IF タイトルから利用者かサービスコードを引けないか、タイトルを読めないならば、THEN 予定は格子に出て、確認が必要な予定に理由と一緒に出る SHALL | 高 |
 | カレンダーに出せない予定 | 出せない予定の件数 | IF 時刻を読めない予定か 2 日にわたる予定があるならば、THEN 格子に出ずに職員ごとの件数に数えられ、同じ週のほかの予定は格子に出る SHALL | 高 |
-| 写せない繰り返しの終日の予定 | 写せない繰り返しの終日の予定 | IF 写せない繰り返しの終日の予定があるならば、THEN 回の日の「終日」の行に出るか、確認が必要な予定に理由と一緒に出る SHALL | 高 |
+| 写せない繰り返しの終日の予定 | 写せない繰り返しの終日の予定 | IF 写せない繰り返しの終日の予定があるならば、THEN 最初の回の日の「終日」の行に出て、表示している週によらず、確認が必要な予定に理由と一緒に出る SHALL | 高 |
 
 ## 既存テストとの対応
 
@@ -137,7 +137,7 @@ apps/web/src/features/schedule/components/ScheduleSourceNotices.tsx
 | 終日の予定 | `TestSchedulesListGooglePrimaryAllDayEvents`。#968 の `all-day-week`、`all-day-span`、`all-day-recurring` | 3 種類を 1 つの週で撮る |
 | 訪問の情報に変換できない予定 | `TestSchedulesListGooglePrimaryReviewReasons` | 4 つの理由を画面で撮る |
 | カレンダーに出せない予定 | `TestSchedulesListGooglePrimaryUnlistedCounts`。#968 の `unlisted-time`、`unlisted-multi-day` | 2 種類を 1 つの週で撮る |
-| 写せない繰り返しの終日の予定 | なし | 新しく撮る |
+| 写せない繰り返しの終日の予定 | `TestSchedulesListGooglePrimaryAllDayRecurrence`（#972） | 新しく撮る |
 
 ## 未決事項
 
