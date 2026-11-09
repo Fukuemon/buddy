@@ -64,6 +64,8 @@ erDiagram
   timestamp_with_time_zone updated_at
   integer version
   boolean ends_next_day
+  smallint__ days_of_week
+  smallint interval_weeks
 }
 ```
 

@@ -338,7 +338,7 @@ func (q *Queries) ListStaffAssignedPatients(ctx context.Context, arg ListStaffAs
 }
 
 const listStaffRecurringSchedulesFrom = `-- name: ListStaffRecurringSchedulesFrom :many
-SELECT r.id, r.date, r.end_date, r.start_time, r.end_time
+SELECT r.id, r.date, r.end_date, r.start_time, r.end_time, r.ends_next_day
 FROM recurring_schedules r
 LEFT JOIN visit_infos v ON v.id = r.visit_info_id
 WHERE r.facility_id = $1
@@ -354,11 +354,12 @@ type ListStaffRecurringSchedulesFromParams struct {
 }
 
 type ListStaffRecurringSchedulesFromRow struct {
-	ID        string
-	Date      time.Time
-	EndDate   *time.Time
-	StartTime pgtype.Time
-	EndTime   pgtype.Time
+	ID          string
+	Date        time.Time
+	EndDate     *time.Time
+	StartTime   pgtype.Time
+	EndTime     pgtype.Time
+	EndsNextDay bool
 }
 
 // 職員が予定の職員、主訪問者、同行者のどれかの、from 以降に終わる繰り返しの予定を返す。終了日の無い繰り返しは含める。
@@ -377,6 +378,7 @@ func (q *Queries) ListStaffRecurringSchedulesFrom(ctx context.Context, arg ListS
 			&i.EndDate,
 			&i.StartTime,
 			&i.EndTime,
+			&i.EndsNextDay,
 		); err != nil {
 			return nil, err
 		}
@@ -389,7 +391,7 @@ func (q *Queries) ListStaffRecurringSchedulesFrom(ctx context.Context, arg ListS
 }
 
 const listStaffSchedulesFrom = `-- name: ListStaffSchedulesFrom :many
-SELECT s.id, s.date, s.start_time, s.end_time
+SELECT s.id, s.date, s.start_time, s.end_time, s.ends_next_day
 FROM schedules s
 LEFT JOIN visit_infos v ON v.id = s.visit_info_id
 WHERE s.facility_id = $1
@@ -406,10 +408,11 @@ type ListStaffSchedulesFromParams struct {
 }
 
 type ListStaffSchedulesFromRow struct {
-	ID        string
-	Date      time.Time
-	StartTime pgtype.Time
-	EndTime   pgtype.Time
+	ID          string
+	Date        time.Time
+	StartTime   pgtype.Time
+	EndTime     pgtype.Time
+	EndsNextDay bool
 }
 
 // 職員が予定の職員、主訪問者、同行者のどれかの、from 以降のキャンセルしていない単発の予定を返す。
@@ -427,6 +430,7 @@ func (q *Queries) ListStaffSchedulesFrom(ctx context.Context, arg ListStaffSched
 			&i.Date,
 			&i.StartTime,
 			&i.EndTime,
+			&i.EndsNextDay,
 		); err != nil {
 			return nil, err
 		}

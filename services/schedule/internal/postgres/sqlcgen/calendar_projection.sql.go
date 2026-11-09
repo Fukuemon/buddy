@@ -13,7 +13,7 @@ import (
 const cancelCalendarEventProjectionOccurrences = `-- name: CancelCalendarEventProjectionOccurrences :exec
 UPDATE calendar_event_projections
 SET status = 'cancelled', title = '', start_at = NULL, start_date = NULL, end_at = NULL, end_date = NULL, time_zone = NULL,
-    projected_at = now()
+    time_unreadable = false, projected_at = now()
 WHERE external_calendar_id = $1 AND recurring_event_id = $2 AND status <> 'cancelled'
 `
 
@@ -102,7 +102,7 @@ type FindOpenCalendarCutoverWithStarterRow struct {
 	StartedByName string
 }
 
-// 予定の表示の読み出し（scheduleview）が、事業所の open の切り替えを、始めた職員の名前を付けて読む（ADR-0030）。
+// 予定の表示の読み出し（scheduleview）が、事業所の open の切り替えを、始めた職員の名前を付けて読む（ADR-0031）。
 // 職員の状態（休職、退職）によらず名前を返す。退職しても名前は残るためである。
 func (q *Queries) FindOpenCalendarCutoverWithStarter(ctx context.Context, facilityID string) (FindOpenCalendarCutoverWithStarterRow, error) {
 	row := q.db.QueryRow(ctx, findOpenCalendarCutoverWithStarter, facilityID)
@@ -119,7 +119,7 @@ func (q *Queries) FindOpenCalendarCutoverWithStarter(ctx context.Context, facili
 const getCalendarEventProjectionByListID = `-- name: GetCalendarEventProjectionByListID :one
 SELECT p.external_calendar_id, p.external_event_id, p.facility_id, p.staff_id, p.recurring_event_id, p.original_start_at, p.original_start_date,
        p.status, p.title, p.start_at, p.start_date, p.end_at, p.end_date, p.time_zone, p.recurrence, p.etag, p.google_updated_at,
-       p.last_end_date, p.projected_at, u.username AS staff_name,
+       p.last_end_date, p.projected_at, p.time_unreadable, u.username AS staff_name,
        COALESCE(r.schedule_id, CASE WHEN t.schedule_id IS NULL THEN COALESCE(occurrence_schedule_id(p.external_calendar_id, p.recurring_event_id, p.original_start_at, p.original_start_date), projected_schedule_id(p.external_calendar_id, p.external_event_id))
                                     ELSE COALESCE(detached_occurrence_schedule_id(p.external_calendar_id, p.recurring_event_id, p.original_start_at, p.original_start_date), detached_schedule_id(p.external_calendar_id, p.external_event_id)) END)::text AS schedule_id,
        COALESCE(r.visit_info_id, pr.visit_info_id) AS visit_info_id, vid.patient_id, vid.patient_name, vid.assigned_staff_id, vid.assigned_staff_name,
@@ -169,6 +169,7 @@ type GetCalendarEventProjectionByListIDRow struct {
 	GoogleUpdatedAt    *time.Time
 	LastEndDate        *time.Time
 	ProjectedAt        time.Time
+	TimeUnreadable     bool
 	StaffName          string
 	ScheduleID         string
 	VisitInfoID        *string
@@ -206,6 +207,7 @@ func (q *Queries) GetCalendarEventProjectionByListID(ctx context.Context, arg Ge
 		&i.GoogleUpdatedAt,
 		&i.LastEndDate,
 		&i.ProjectedAt,
+		&i.TimeUnreadable,
 		&i.StaffName,
 		&i.ScheduleID,
 		&i.VisitInfoID,
@@ -224,7 +226,7 @@ func (q *Queries) GetCalendarEventProjectionByListID(ctx context.Context, arg Ge
 const getCalendarEventProjectionByRecord = `-- name: GetCalendarEventProjectionByRecord :one
 SELECT p.external_calendar_id, p.external_event_id, p.facility_id, p.staff_id, p.recurring_event_id, p.original_start_at, p.original_start_date,
        p.status, p.title, p.start_at, p.start_date, p.end_at, p.end_date, p.time_zone, p.recurrence, p.etag, p.google_updated_at,
-       p.last_end_date, p.projected_at, u.username AS staff_name,
+       p.last_end_date, p.projected_at, p.time_unreadable, u.username AS staff_name,
        COALESCE(r.schedule_id, CASE WHEN t.schedule_id IS NULL THEN COALESCE(occurrence_schedule_id(p.external_calendar_id, p.recurring_event_id, p.original_start_at, p.original_start_date), projected_schedule_id(p.external_calendar_id, p.external_event_id))
                                     ELSE COALESCE(detached_occurrence_schedule_id(p.external_calendar_id, p.recurring_event_id, p.original_start_at, p.original_start_date), detached_schedule_id(p.external_calendar_id, p.external_event_id)) END)::text AS schedule_id,
        COALESCE(r.visit_info_id, pr.visit_info_id) AS visit_info_id, vid.patient_id, vid.patient_name, vid.assigned_staff_id, vid.assigned_staff_name,
@@ -265,6 +267,7 @@ type GetCalendarEventProjectionByRecordRow struct {
 	GoogleUpdatedAt    *time.Time
 	LastEndDate        *time.Time
 	ProjectedAt        time.Time
+	TimeUnreadable     bool
 	StaffName          string
 	ScheduleID         string
 	VisitInfoID        *string
@@ -302,6 +305,7 @@ func (q *Queries) GetCalendarEventProjectionByRecord(ctx context.Context, arg Ge
 		&i.GoogleUpdatedAt,
 		&i.LastEndDate,
 		&i.ProjectedAt,
+		&i.TimeUnreadable,
 		&i.StaffName,
 		&i.ScheduleID,
 		&i.VisitInfoID,
@@ -320,7 +324,7 @@ func (q *Queries) GetCalendarEventProjectionByRecord(ctx context.Context, arg Ge
 const listCalendarEventProjectionsByFacility = `-- name: ListCalendarEventProjectionsByFacility :many
 SELECT p.external_calendar_id, p.external_event_id, p.facility_id, p.staff_id, p.recurring_event_id, p.original_start_at, p.original_start_date,
        p.status, p.title, p.start_at, p.start_date, p.end_at, p.end_date, p.time_zone, p.recurrence, p.etag, p.google_updated_at,
-       p.last_end_date, p.projected_at, u.username AS staff_name,
+       p.last_end_date, p.projected_at, p.time_unreadable, u.username AS staff_name,
        COALESCE(r.schedule_id, CASE WHEN t.schedule_id IS NULL THEN COALESCE(occurrence_schedule_id(p.external_calendar_id, p.recurring_event_id, p.original_start_at, p.original_start_date), projected_schedule_id(p.external_calendar_id, p.external_event_id))
                                     ELSE COALESCE(detached_occurrence_schedule_id(p.external_calendar_id, p.recurring_event_id, p.original_start_at, p.original_start_date), detached_schedule_id(p.external_calendar_id, p.external_event_id)) END)::text AS schedule_id,
        COALESCE(r.visit_info_id, pr.visit_info_id) AS visit_info_id, vid.patient_id, vid.patient_name, vid.assigned_staff_id, vid.assigned_staff_name,
@@ -363,6 +367,7 @@ type ListCalendarEventProjectionsByFacilityRow struct {
 	GoogleUpdatedAt    *time.Time
 	LastEndDate        *time.Time
 	ProjectedAt        time.Time
+	TimeUnreadable     bool
 	StaffName          string
 	ScheduleID         string
 	VisitInfoID        *string
@@ -383,7 +388,7 @@ type ListCalendarEventProjectionsByFacilityRow struct {
 // 繰り返しの予定の例外の回で記録の無い行は、展開した回と同じ occurrence_schedule_id である。回を変えても一覧での ID が変わらないためである。
 // その値がほかの予定を指す記録の主キーと同じなら（回を移した後に元のカレンダーに残った回）、detached_occurrence_schedule_id である。
 // 記録のある予定には、記録の確定した版の訪問の情報（visit_info_id）を、名前を付けて読む。保留の版の訪問の情報は読まない。
-// 繰り返しの予定の例外の回で、回の記録が無いか確定した版を持たないときは、親の予定の記録の訪問の情報を読む（ADR-0028）。
+// 繰り返しの予定の例外の回で、回の記録が無いか確定した版を持たないときは、親の予定の記録の訪問の情報を読む（ADR-0029）。
 func (q *Queries) ListCalendarEventProjectionsByFacility(ctx context.Context, arg ListCalendarEventProjectionsByFacilityParams) ([]ListCalendarEventProjectionsByFacilityRow, error) {
 	rows, err := q.db.Query(ctx, listCalendarEventProjectionsByFacility, arg.FacilityID, arg.FromDate)
 	if err != nil {
@@ -413,6 +418,7 @@ func (q *Queries) ListCalendarEventProjectionsByFacility(ctx context.Context, ar
 			&i.GoogleUpdatedAt,
 			&i.LastEndDate,
 			&i.ProjectedAt,
+			&i.TimeUnreadable,
 			&i.StaffName,
 			&i.ScheduleID,
 			&i.VisitInfoID,
@@ -486,12 +492,13 @@ func (q *Queries) ListCalendarSyncStatusesByFacility(ctx context.Context, facili
 const putCalendarEventProjection = `-- name: PutCalendarEventProjection :exec
 INSERT INTO calendar_event_projections (
     external_calendar_id, external_event_id, facility_id, staff_id, recurring_event_id, original_start_at, original_start_date,
-    status, title, start_at, start_date, end_at, end_date, time_zone, recurrence, etag, google_updated_at, last_end_date
+    status, title, start_at, start_date, end_at, end_date, time_zone, recurrence, etag, google_updated_at, last_end_date, time_unreadable
 ) VALUES (
     $1, $2, $3, $4,
     $5, $6, $7,
     $8, $9, $10, $11, $12, $13,
-    $14, $15::text[], $16, $17, $18
+    $14, $15::text[], $16, $17, $18,
+    $19
 )
 ON CONFLICT (external_calendar_id, external_event_id) DO UPDATE SET
     facility_id = EXCLUDED.facility_id, staff_id = EXCLUDED.staff_id, recurring_event_id = EXCLUDED.recurring_event_id,
@@ -499,7 +506,7 @@ ON CONFLICT (external_calendar_id, external_event_id) DO UPDATE SET
     status = EXCLUDED.status, title = EXCLUDED.title, start_at = EXCLUDED.start_at, start_date = EXCLUDED.start_date,
     end_at = EXCLUDED.end_at, end_date = EXCLUDED.end_date, time_zone = EXCLUDED.time_zone, recurrence = EXCLUDED.recurrence,
     etag = EXCLUDED.etag, google_updated_at = EXCLUDED.google_updated_at, last_end_date = EXCLUDED.last_end_date,
-    projected_at = now()
+    time_unreadable = EXCLUDED.time_unreadable, projected_at = now()
 WHERE calendar_event_projections.google_updated_at IS NULL
    OR EXCLUDED.google_updated_at > calendar_event_projections.google_updated_at
 `
@@ -523,11 +530,12 @@ type PutCalendarEventProjectionParams struct {
 	Etag               string
 	GoogleUpdatedAt    *time.Time
 	LastEndDate        *time.Time
+	TimeUnreadable     bool
 }
 
 // 同じカレンダーと Google の予定の ID の行があれば書き直す。同期を何度流しても、1 つの予定は 1 行になる。
 // 書き直すのは、行の Google の更新の時刻が無いか、書く予定の時刻の方が新しいときだけにする。同期と予定の API の書き込みの、
-// 後から届いた古い内容で、新しい内容を上書きしないためである（ADR-0028）。
+// 後から届いた古い内容で、新しい内容を上書きしないためである（ADR-0029）。
 func (q *Queries) PutCalendarEventProjection(ctx context.Context, arg PutCalendarEventProjectionParams) error {
 	_, err := q.db.Exec(ctx, putCalendarEventProjection,
 		arg.ExternalCalendarID,
@@ -548,6 +556,7 @@ func (q *Queries) PutCalendarEventProjection(ctx context.Context, arg PutCalenda
 		arg.Etag,
 		arg.GoogleUpdatedAt,
 		arg.LastEndDate,
+		arg.TimeUnreadable,
 	)
 	return err
 }

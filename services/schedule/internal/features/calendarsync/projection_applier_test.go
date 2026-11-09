@@ -19,8 +19,8 @@ import (
 	"github.com/Fukuemon/buddy/services/schedule/internal/inmem"
 )
 
-// このファイルのテストは、組み立て（assemble）と同じく google_primary の事業所にだけ ProjectionApplier を渡した同期の処理で、
-// Google カレンダーの予定を Projection に写すことと、buddy_primary の事業所のカレンダーを読まないことを確認する（ADR-0028）。
+// このファイルのテストは、組み立て（cmd/calendar-worker）と同じく google_primary の事業所にだけ ProjectionApplier を渡した同期の処理で、
+// Google カレンダーの予定を Projection に写すことと、buddy_primary の事業所のカレンダーを読まないことを確認する（ADR-0029）。
 // 予定の日付は、保持する期間（前々月の初日から）に、テストを流す日によらず入るよう、先の年にする。
 
 // projectionEnv は、Store の事業所 inmem.FacilityID を google_primary にし、同期の処理を newProjectionSyncer で作った syncEnv である。
@@ -304,16 +304,38 @@ func TestSyncStopsProjectingWhenModeChanged(t *testing.T) {
 	}
 }
 
-// TestSyncSkipsUnreadableEventAndProjectsOthers は、日時を読めない予定を写さずに前の行を消し、ほかの予定を写して同期を成功にすることと、
+// TestSyncProjectsUnreadableTime は、開始か終了の日時を読めない予定を、読めた方の日時だけを持つ TimeUnreadable の行に写し、
+// 終わる日を読めた方の日にすることと、どちらも読めない予定は終わる日を持たないことを確認する（#672）。
+func TestSyncProjectsUnreadableTime(t *testing.T) {
+	e := newProjectionEnv(t)
+	e.srv.Put(googleCalID, gevent("start", "担当者会議", "日時ではない", "2099-11-04T11:00:00+09:00"))
+	e.srv.Put(googleCalID, gevent("both", "研修", "日時ではない", "日時ではない"))
+	e.sync(t)
+
+	start := e.mustRow(t, "start")
+	end := time.Date(2099, 11, 4, 11, 0, 0, 0, calendar.Tokyo)
+	if !start.TimeUnreadable || start.Start != (scheduleview.ProjectionTime{}) || start.End.At == nil || !start.End.At.Equal(end) {
+		t.Errorf("開始を読めない予定の行 = %+v", start)
+	}
+	if start.LastEndDate == nil || *start.LastEndDate != (civil.Date{Year: 2099, Month: 11, Day: 4}) {
+		t.Errorf("開始を読めない予定の終わる日 = %v, want 2099-11-04", start.LastEndDate)
+	}
+	both := e.mustRow(t, "both")
+	if !both.TimeUnreadable || both.Start != (scheduleview.ProjectionTime{}) || both.End != (scheduleview.ProjectionTime{}) || both.LastEndDate != nil {
+		t.Errorf("開始も終了も読めない予定の行 = %+v", both)
+	}
+}
+
+// TestSyncSkipsUnreadableEventAndProjectsOthers は、例外の回の元の開始を読めない予定を写さずに前の行を消し、ほかの予定を写して同期を成功にすることと、
 // ログに予定のタイトルと利用者名を書かず、事業所、カレンダー、Google の予定の ID を書くことを確認する。
 func TestSyncSkipsUnreadableEventAndProjectsOthers(t *testing.T) {
 	e := newProjectionEnv(t)
-	bad := gevent("bad", "【訪看I2】利用者A", "2099-11-04T10:00:00+09:00", "2099-11-04T11:00:00+09:00")
+	bad := gexception("bad", "parent", "【訪看I2】利用者A", "2099-11-04T10:00:00+09:00", "2099-11-04T11:00:00+09:00", "2099-11-04T10:00:00+09:00")
 	e.srv.Put(googleCalID, bad)
 	e.sync(t)
 	e.mustRow(t, "bad")
 
-	e.srv.Edit(googleCalID, "bad", func(ev *calendarv3.Event) { ev.Start.DateTime = "日時ではない" })
+	e.srv.Edit(googleCalID, "bad", func(ev *calendarv3.Event) { ev.OriginalStartTime.DateTime = "日時ではない" })
 	e.srv.Put(googleCalID, gevent("good", "【訪看I2】利用者B", "2099-11-05T10:00:00+09:00", "2099-11-05T11:00:00+09:00"))
 	logs := &bytes.Buffer{}
 	syncer := newProjectionSyncer(t, e.syncEnv, inmem.Facilities{Store: e.store},
@@ -347,11 +369,11 @@ func TestSyncProjectionKeepsRetainedPeriod(t *testing.T) {
 		gevent("old", "終わった予定", "2020-01-06T10:00:00+09:00", "2020-01-06T11:00:00+09:00"),
 		weeklyEvent("oldweekly", "終わった繰り返し", "2020-01-06T09:00:00+09:00", "2020-01-06T09:30:00+09:00",
 			"RRULE:FREQ=WEEKLY;BYDAY=MO;UNTIL=20200131T145959Z"),
-		// 隔週は buddy の規則に写せないので、UNTIL で終わる日を決める
+		// 月曜に始まる週の、日曜を含む隔週は buddy の規則に写せないので、UNTIL で終わる日を決める
 		weeklyEvent("oldbiweekly", "終わった隔週", "2020-01-06T09:00:00+09:00", "2020-01-06T09:30:00+09:00",
-			"RRULE:FREQ=WEEKLY;INTERVAL=2;BYDAY=MO;UNTIL=20200131T145959Z"),
+			"RRULE:FREQ=WEEKLY;INTERVAL=2;BYDAY=MO,SU;UNTIL=20200131T145959Z"),
 		weeklyEvent("forever", "終わらない繰り返し", "2020-01-06T09:00:00+09:00", "2020-01-06T09:30:00+09:00", "RRULE:FREQ=WEEKLY;BYDAY=MO"),
-		weeklyEvent("count", "回数の隔週", "2020-01-06T09:00:00+09:00", "2020-01-06T09:30:00+09:00", "RRULE:FREQ=WEEKLY;INTERVAL=2;COUNT=3"),
+		weeklyEvent("count", "回数の、月曜に始まる週の日曜を含む隔週", "2020-01-06T09:00:00+09:00", "2020-01-06T09:30:00+09:00", "RRULE:FREQ=WEEKLY;INTERVAL=2;BYDAY=MO,SU;COUNT=3"),
 		gcancelled("forever_20200113T000000Z", "forever", "2020-01-13T09:00:00+09:00"),
 		gevent("future", "先の予定", "2099-11-04T10:00:00+09:00", "2099-11-04T11:00:00+09:00"),
 	} {

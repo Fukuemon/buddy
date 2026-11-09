@@ -50,7 +50,7 @@ func TestScheduleBodyVisitTitle(t *testing.T) {
 	}
 }
 
-// TestBodyEndsNextDay は、終了が翌日の予定と繰り返しの予定の終了の日時を、予定の日付の翌日から作ることを確認する（ADR-0032）。
+// TestBodyEndsNextDay は、終了が翌日の予定と繰り返しの予定の終了の日時を、予定の日付の翌日から作ることを確認する（ADR-0033）。
 func TestBodyEndsNextDay(t *testing.T) {
 	title := "夜勤"
 	slot := schedule.Slot{
@@ -79,8 +79,10 @@ func TestRecurrenceOfRoundTrip(t *testing.T) {
 		rule schedule.Rule
 		want string
 	}{
-		{"毎週（曜日なし）", schedule.Rule{Frequency: schedule.Weekly}, "RRULE:FREQ=WEEKLY;BYDAY=TU"},
-		{"毎週の曜日", schedule.Rule{Frequency: schedule.Weekly, DayOfWeek: intp(2), EndDate: &end}, "RRULE:FREQ=WEEKLY;BYDAY=TU;UNTIL=20270331T145959Z"},
+		{"毎週（曜日なし）", schedule.Rule{Frequency: schedule.Weekly}, "RRULE:FREQ=WEEKLY;INTERVAL=1;BYDAY=TU;WKST=SU"},
+		{"毎週の曜日", schedule.Rule{Frequency: schedule.Weekly, DaysOfWeek: []int{2}, EndDate: &end}, "RRULE:FREQ=WEEKLY;INTERVAL=1;BYDAY=TU;WKST=SU;UNTIL=20270331T145959Z"},
+		{"隔週の日曜と火曜と木曜", schedule.Rule{Frequency: schedule.Weekly, DaysOfWeek: []int{2, 4, 7}, Interval: 2}, "RRULE:FREQ=WEEKLY;INTERVAL=2;BYDAY=TU,TH,SU;WKST=SU"},
+		{"7 つの曜日の毎週", schedule.Rule{Frequency: schedule.Weekly, DaysOfWeek: []int{1, 2, 3, 4, 5, 6, 7}, Interval: 1}, "RRULE:FREQ=WEEKLY;INTERVAL=1;BYDAY=MO,TU,WE,TH,FR,SA,SU;WKST=SU"},
 		{"毎月の日", schedule.Rule{Frequency: schedule.Monthly, DayOfMonth: intp(10)}, "RRULE:FREQ=MONTHLY;BYMONTHDAY=10"},
 		{"毎月（日なし）", schedule.Rule{Frequency: schedule.Monthly}, "RRULE:FREQ=MONTHLY;BYMONTHDAY=10"},
 		{"毎月の第何週の曜日", schedule.Rule{Frequency: schedule.Monthly, WeekOfMonth: intp(2), DayOfWeek: intp(2)}, "RRULE:FREQ=MONTHLY;BYDAY=2TU"},

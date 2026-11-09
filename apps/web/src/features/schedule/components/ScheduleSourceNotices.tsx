@@ -1,9 +1,12 @@
+import { formatDateKey } from '#/components/dateFormat'
 import type {
+  AllDayEvent,
   CalendarSyncStatus,
   OpenCalendarCutover,
   Schedule,
   SourceMode,
   Staff,
+  UnlistedEventCount,
 } from '#/api/types'
 
 import { SCHEDULE_REVIEW_REASON_LABEL } from '../constants/scheduleLabels'
@@ -17,6 +20,10 @@ export type ScheduleSourceNoticesProps = {
   cutover?: OpenCalendarCutover | null
   /** 確認が必要な予定。期間の外の予定も含む。 */
   needsReview: Schedule[]
+  /** 確認が必要な終日の予定。期間の外の予定も含む。押せないので、詳細を開かない。省くと出さない。 */
+  needsReviewAllDayEvents?: AllDayEvent[]
+  /** 期間に重なる、カレンダーに出せない予定の職員ごとの件数。省くと出さない。 */
+  unlistedEventCounts?: UnlistedEventCount[]
   /** 確認が必要な予定の職員の名前を引く職員。 */
   staffList: Staff[]
   /** 同期が古いかを決める今の時刻。 */
@@ -28,7 +35,8 @@ export type ScheduleSourceNoticesProps = {
 /**
  * Google カレンダーを予定の正本にする事業所（google_primary）で、カレンダーの上に出す通知。
  * Google カレンダーと buddy のどちらでも予定を変えられる案内を常に出し、同期が失敗しているか古いカレンダーがあれば同期の警告を、
- * 確認が必要な予定があれば、予定ごとの日時、職員、理由を出す。予定の正本を buddy に切り替えている間は、切り替え中であることと、
+ * 確認が必要な予定があれば、予定ごとの日時、職員、理由を出す。確認が必要な終日の予定は、時刻のある予定の後に、日付、職員、理由を押せない行で出す。表示の期間にカレンダーに出せない予定があれば、件数と職員ごとの件数を出し、
+ * Google カレンダーで確認するよう促す。予定の中身は出さない。予定の正本を buddy に切り替えている間は、切り替え中であることと、
  * Google カレンダーで予定を変えないよう頼み、buddy でも予定を変えられないことを伝える文と、切り替えを始めた職員と時刻を出す。
  * buddy_primary の事業所では何も出さない。
  */
@@ -37,6 +45,8 @@ export const ScheduleSourceNotices = ({
   calendarSyncs,
   cutover = null,
   needsReview,
+  needsReviewAllDayEvents = [],
+  unlistedEventCounts = [],
   staffList,
   now,
   onOpenSchedule,
@@ -44,6 +54,8 @@ export const ScheduleSourceNotices = ({
   if (sourceMode !== 'google_primary') return null
   const problems = calendarSyncProblemsOf(calendarSyncs, now)
   const staffName = new Map(staffList.map((staff) => [staff.id, staff.name]))
+  const unlistedTotal = unlistedEventCounts.reduce((sum, { count }) => sum + count, 0)
+  const needsReviewTotal = needsReview.length + needsReviewAllDayEvents.length
   return (
     <div className="flex flex-col gap-2">
       <section
@@ -96,13 +108,13 @@ export const ScheduleSourceNotices = ({
           </ul>
         </section>
       )}
-      {needsReview.length > 0 && (
+      {needsReviewTotal > 0 && (
         <section
           className="rounded-8 bg-warning-surface px-4 py-3"
           data-testid="schedule-calendar-needs-review"
         >
           <h2 className="text-label text-warning">
-            確認が必要な予定が {needsReview.length} 件あります
+            確認が必要な予定が {needsReviewTotal} 件あります
           </h2>
           <ul className="mt-1 flex max-h-40 flex-col overflow-auto text-body-dense">
             {needsReview.map((schedule) => (
@@ -121,9 +133,47 @@ export const ScheduleSourceNotices = ({
                 </button>
               </li>
             ))}
+            {needsReviewAllDayEvents.map((event) => (
+              <li
+                className="flex min-h-11 items-center"
+                data-testid={`schedule-calendar-needs-review-all-day-${event.id}`}
+                key={event.id}
+              >
+                {formatDateKey(event.startDate)}
+                {event.endDate === event.startDate
+                  ? ''
+                  : `〜${formatDateKey(event.endDate)}`} 終日{' '}
+                {staffName.get(event.staffId) ?? '職員不明'}:{' '}
+                {event.reviewReason === undefined
+                  ? ''
+                  : SCHEDULE_REVIEW_REASON_LABEL[event.reviewReason]}
+              </li>
+            ))}
           </ul>
           <p className="mt-1 text-body-dense">
             Google カレンダーでタイトルか繰り返しの規則を直してください。
+          </p>
+        </section>
+      )}
+      {unlistedTotal > 0 && (
+        <section
+          className="rounded-8 bg-warning-surface px-4 py-3"
+          data-testid="schedule-calendar-unlisted"
+        >
+          <h2 className="text-label text-warning">
+            カレンダーに出せない予定が {unlistedTotal} 件あります
+          </h2>
+          <ul className="mt-2 flex flex-col gap-1 text-body-dense">
+            {unlistedEventCounts.map(({ staffId, count }) => (
+              <li data-testid={`schedule-calendar-unlisted-${staffId}`} key={staffId}>
+                <span className="font-bold">{staffName.get(staffId) ?? '職員不明'}</span>: {count}{' '}
+                件
+              </li>
+            ))}
+          </ul>
+          <p className="mt-1 text-body-dense">
+            2 日以上にわたる予定、24 時間以上の予定、日時を読めない予定、長さの無い予定は、buddy
+            のカレンダーに出せません。Google カレンダーで確認してください。
           </p>
         </section>
       )}

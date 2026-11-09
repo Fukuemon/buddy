@@ -1,26 +1,36 @@
 import { composeStories } from '@storybook/react-vite'
-import { render, screen, waitFor, within } from '@testing-library/react'
+import { focusManager } from '@tanstack/react-query'
+import { act, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vite-plus/test'
 
+import type { Schedule } from '#/api/types'
+import { ApiError } from '#/api/BuddyApi'
+import { MOCK_FACILITY_ID } from '#/mocks/scheduleData'
 import type { AppRouterParameters } from '#/storybook/withAppRouter'
 
 import * as stories from './ScheduleEditModalContainer.stories'
 
 const {
+  BuddyPrimary,
   Cancelled,
+  Cutover,
   Forbidden,
   GooglePrimary,
+  GooglePrimaryBeforeCutover,
   GooglePrimaryChangedInGoogle,
   GooglePrimaryFromOtherDay,
+  GooglePrimaryNeedsReview,
   GooglePrimaryRecurrenceUnsupported,
   NotFound,
   SuspendedStaff,
+  VisitWithOtherServiceCode,
 } = composeStories(stories)
 
 describe('ScheduleEditModalContainer', () => {
   afterEach(() => {
     vi.restoreAllMocks()
+    focusManager.setFocused(undefined)
   })
 
   it('編集の権限の外の予定の編集の URL では、フォームを出さずに権限が無いことを出す', async () => {
@@ -29,6 +39,36 @@ describe('ScheduleEditModalContainer', () => {
       'この予定を編集する権限がありません。',
     )
     expect(screen.queryByTestId('schedule-edit-submit')).not.toBeInTheDocument()
+  })
+
+  it('開いたときは、利用者のサービスコードによらず、予定のサービスコードと提供時間のままにする', async () => {
+    render(<VisitWithOtherServiceCode />)
+
+    expect(await screen.findByTestId('service-code-訪看I4')).toBeChecked()
+    expect(screen.getByTestId('schedule-form-service-time')).toHaveValue(89)
+  })
+
+  it('利用者を替えると、替えた後の利用者のサービスコードを選び、提供時間をそのコードの上限にする', async () => {
+    render(<VisitWithOtherServiceCode />)
+
+    await userEvent.click(await screen.findByTestId('schedule-field-patient'))
+    await userEvent.click(screen.getByTestId('patient-select-option-patient-2'))
+    await userEvent.click(screen.getByTestId('schedule-field-date-time'))
+
+    expect(screen.getByTestId('service-code-訪看I3')).toBeChecked()
+    expect(screen.getByTestId('schedule-form-service-time')).toHaveValue(59)
+  })
+
+  it('サービスコードを手で選んだ後に利用者を替えても、サービスコードと提供時間を変えない', async () => {
+    render(<VisitWithOtherServiceCode />)
+
+    await userEvent.click(await screen.findByTestId('service-code-医'))
+    await userEvent.click(screen.getByTestId('schedule-field-patient'))
+    await userEvent.click(screen.getByTestId('patient-select-option-patient-2'))
+    await userEvent.click(screen.getByTestId('schedule-field-date-time'))
+
+    expect(screen.getByTestId('service-code-医')).toBeChecked()
+    expect(screen.getByTestId('schedule-form-service-time')).toHaveValue(90)
   })
 
   it('予定が見つからないときは、予定が見つからないことを出す', async () => {
@@ -115,11 +155,123 @@ describe('ScheduleEditModalContainer', () => {
     expect(update.mock.calls.map((call) => call[3])).toEqual(['"etag-schedule-1"', '"etag-latest"'])
   })
 
+  it('確認が必要な予定のほかは、予定の種類のタブを出さない', async () => {
+    render(<GooglePrimary />)
+    expect(await screen.findByTestId('schedule-edit-submit')).toBeInTheDocument()
+    expect(screen.queryByTestId('schedule-kind-tab')).not.toBeInTheDocument()
+  })
+
+  it('訪問にすると、閉じるときに変更を破棄するかの確認を出す', async () => {
+    const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false)
+    render(<GooglePrimaryNeedsReview />)
+
+    await userEvent.click(await screen.findByTestId('schedule-kind-tab-visit'))
+    await userEvent.click(screen.getByTestId('schedule-edit-cancel'))
+
+    expect(confirm).toHaveBeenCalledOnce()
+    expect(screen.getByTestId('schedule-field-patient')).toBeInTheDocument()
+  })
+
+  it('訪問にした後に通常に戻すと、開いたときの値に戻り、閉じるときに確認を出さない', async () => {
+    const confirm = vi.spyOn(window, 'confirm')
+    render(<GooglePrimaryNeedsReview />)
+
+    await userEvent.click(await screen.findByTestId('schedule-kind-tab-visit'))
+    expect(screen.getByTestId('schedule-field-patient')).toBeInTheDocument()
+    await userEvent.click(screen.getByTestId('schedule-kind-tab-normal'))
+    expect(screen.getByTestId('schedule-form-end-time')).toHaveValue('15:29')
+    await userEvent.click(screen.getByTestId('schedule-field-title'))
+    expect(screen.getByTestId('schedule-form-title')).toHaveValue('佐藤 花子 訪看I2')
+    await userEvent.click(screen.getByTestId('schedule-edit-cancel'))
+
+    expect(confirm).not.toHaveBeenCalled()
+  })
+
+  it('訪問の情報を読み取れなかった予定は、訪問にして利用者を選び、訪問の予定として保存する', async () => {
+    const { api } = GooglePrimaryNeedsReview.parameters.appRouter as AppRouterParameters
+    if (api === undefined) throw new Error('story にフェイクの API が無い')
+    // フェイクの API の予定を書き換えると、後のテストで確認の必要な予定でなくなるので、保存は呼ばれたかだけを見る
+    const update = vi
+      .spyOn(api.schedules, 'update')
+      .mockImplementation(async (_facilityId, scheduleId) => ({ id: scheduleId }) as Schedule)
+    render(<GooglePrimaryNeedsReview />)
+
+    expect(await screen.findByTestId('schedule-kind-tab-normal')).toBeChecked()
+    await userEvent.click(screen.getByTestId('schedule-kind-tab-visit'))
+    await userEvent.click(screen.getByTestId('schedule-field-patient'))
+    await userEvent.click(screen.getByTestId('patient-select-option-patient-2'))
+    await userEvent.click(screen.getByTestId('schedule-edit-submit'))
+
+    await waitFor(() => expect(update).toHaveBeenCalledOnce())
+    expect(update.mock.calls[0]?.[2]).toMatchObject({
+      kind: 'visit',
+      staffId: 'staff-2',
+      startsAt: expect.stringContaining('T15:00'),
+      visit: { patientId: 'patient-2' },
+    })
+  })
+
   it('繰り返しの規則を buddy で表せない予定は、フォームを出さずに変えられないことを出す', async () => {
     render(<GooglePrimaryRecurrenceUnsupported />)
     expect(await screen.findByTestId('schedule-edit-recurrence-unsupported')).toHaveTextContent(
       'buddy では変更できません',
     )
     expect(screen.queryByTestId('schedule-edit-submit')).not.toBeInTheDocument()
+  })
+
+  it('予定の正本を切り替えている間に開くと、フォームと保存のボタンを出さずに、切り替えていることと閉じるボタンを出す', async () => {
+    render(<Cutover />)
+    expect(await screen.findByTestId('schedule-edit-cutover')).toHaveTextContent(
+      '予定の正本を buddy に切り替えています。切り替えが終わるまで、予定を作成、変更、キャンセルできません。',
+    )
+    expect(screen.getByTestId('modal-close')).toBeInTheDocument()
+    expect(screen.queryByTestId('schedule-edit-submit')).not.toBeInTheDocument()
+  })
+
+  it('buddy_primary の事業所では、予定の一覧を読まずにフォームを出す', async () => {
+    const { api } = BuddyPrimary.parameters.appRouter as AppRouterParameters
+    if (api === undefined) throw new Error('story にフェイクの API が無い')
+    const list = vi.spyOn(api.schedules, 'list')
+    render(<BuddyPrimary />)
+
+    expect(await screen.findByTestId('schedule-edit-submit')).toBeInTheDocument()
+    expect(list).not.toHaveBeenCalled()
+  })
+
+  it('事業所を読めないときは、フォームを出さずに読み込みの失敗の文を出す', async () => {
+    const { api } = BuddyPrimary.parameters.appRouter as AppRouterParameters
+    if (api === undefined) throw new Error('story にフェイクの API が無い')
+    vi.spyOn(api.facilities, 'get').mockRejectedValue(new ApiError(500, '事業所を読めない'))
+    render(<BuddyPrimary />)
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('予定を取得できませんでした。')
+    expect(screen.queryByTestId('schedule-edit-submit')).not.toBeInTheDocument()
+  })
+
+  it('開いた後に切り替えが始まっても、フォームを残し、保存すると切り替え中の文を出す', async () => {
+    const { api } = GooglePrimaryBeforeCutover.parameters.appRouter as AppRouterParameters
+    if (api === undefined) throw new Error('story にフェイクの API が無い')
+    const list = vi.spyOn(api.schedules, 'list')
+    render(<GooglePrimaryBeforeCutover />)
+    const submit = await screen.findByTestId('schedule-edit-submit')
+
+    await api.calendars.startCutover(MOCK_FACILITY_ID)
+    const listed = list.mock.calls.length
+    // 窓に戻ったときの読み直しで、一覧が切り替えを返しても、開いたときの状態のままにする
+    act(() => {
+      focusManager.setFocused(false)
+      focusManager.setFocused(true)
+    })
+    await waitFor(() => expect(list.mock.calls.length).toBeGreaterThan(listed))
+    await act(async () => {
+      await list.mock.results.at(-1)?.value
+    })
+    expect(screen.queryByTestId('schedule-edit-cutover')).not.toBeInTheDocument()
+
+    await userEvent.click(submit)
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      '予定の正本を buddy に切り替えています。',
+    )
+    expect(screen.getByTestId('schedule-form')).toBeInTheDocument()
   })
 })

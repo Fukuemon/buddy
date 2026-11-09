@@ -48,8 +48,8 @@ const createRecurringSchedule = `-- name: CreateRecurringSchedule :exec
 INSERT INTO recurring_schedules (
     id, facility_id, staff_id, schedule_type_id, date, start_time, end_time,
     visit_info_id, title, description,
-    frequency, day_of_week, day_of_month, week_of_month, end_date, ends_next_day
-) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
+    frequency, day_of_week, day_of_month, week_of_month, end_date, ends_next_day, days_of_week, interval_weeks
+) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)
 `
 
 type CreateRecurringScheduleParams struct {
@@ -69,6 +69,8 @@ type CreateRecurringScheduleParams struct {
 	WeekOfMonth    *int16
 	EndDate        *time.Time
 	EndsNextDay    bool
+	DaysOfWeek     []int16
+	IntervalWeeks  int16
 }
 
 // is_over_time_work は開始の時刻から生成するカラムなので書かない。
@@ -90,6 +92,8 @@ func (q *Queries) CreateRecurringSchedule(ctx context.Context, arg CreateRecurri
 		arg.WeekOfMonth,
 		arg.EndDate,
 		arg.EndsNextDay,
+		arg.DaysOfWeek,
+		arg.IntervalWeeks,
 	)
 	return err
 }
@@ -152,8 +156,78 @@ func (q *Queries) CreateScheduleCancel(ctx context.Context, arg CreateScheduleCa
 	return err
 }
 
+const createScheduleDeletion = `-- name: CreateScheduleDeletion :exec
+INSERT INTO schedule_deletions (id, facility_id, schedule_id, recurring_schedule_id, date, staff_id, deleted_by)
+VALUES ($1, $2, $3, $4, $5, $6, $7)
+`
+
+type CreateScheduleDeletionParams struct {
+	ID                  string
+	FacilityID          string
+	ScheduleID          *string
+	RecurringScheduleID *string
+	Date                time.Time
+	StaffID             string
+	DeletedBy           string
+}
+
+func (q *Queries) CreateScheduleDeletion(ctx context.Context, arg CreateScheduleDeletionParams) error {
+	_, err := q.db.Exec(ctx, createScheduleDeletion,
+		arg.ID,
+		arg.FacilityID,
+		arg.ScheduleID,
+		arg.RecurringScheduleID,
+		arg.Date,
+		arg.StaffID,
+		arg.DeletedBy,
+	)
+	return err
+}
+
+const deleteSchedule = `-- name: DeleteSchedule :one
+DELETE FROM schedules WHERE id = $1 RETURNING visit_info_id
+`
+
+// 書き出しの待ちは外部キーの ON DELETE CASCADE で消える。
+func (q *Queries) DeleteSchedule(ctx context.Context, id string) (*string, error) {
+	row := q.db.QueryRow(ctx, deleteSchedule, id)
+	var visit_info_id *string
+	err := row.Scan(&visit_info_id)
+	return visit_info_id, err
+}
+
+const deleteUnreplacedRecurringScheduleExclusions = `-- name: DeleteUnreplacedRecurringScheduleExclusions :exec
+DELETE FROM recurring_schedule_exclusions e
+WHERE e.recurring_schedule_id = $1 AND e.date >= $2
+  AND NOT EXISTS (
+    SELECT 1 FROM schedules s WHERE s.recurring_schedule_id = e.recurring_schedule_id AND s.original_date = e.date
+  )
+`
+
+type DeleteUnreplacedRecurringScheduleExclusionsParams struct {
+	RecurringScheduleID string
+	FromDate            time.Time
+}
+
+// 置き換えた回の単発の予定がある日は、回が単発の予定と重ならないように残す。
+func (q *Queries) DeleteUnreplacedRecurringScheduleExclusions(ctx context.Context, arg DeleteUnreplacedRecurringScheduleExclusionsParams) error {
+	_, err := q.db.Exec(ctx, deleteUnreplacedRecurringScheduleExclusions, arg.RecurringScheduleID, arg.FromDate)
+	return err
+}
+
+const getDeletedScheduleStaffID = `-- name: GetDeletedScheduleStaffID :one
+SELECT staff_id FROM schedule_deletions WHERE schedule_id = $1
+`
+
+func (q *Queries) GetDeletedScheduleStaffID(ctx context.Context, scheduleID *string) (string, error) {
+	row := q.db.QueryRow(ctx, getDeletedScheduleStaffID, scheduleID)
+	var staff_id string
+	err := row.Scan(&staff_id)
+	return staff_id, err
+}
+
 const getRecurringScheduleDetail = `-- name: GetRecurringScheduleDetail :one
-SELECT id, facility_id, schedule_type_id, schedule_type_code, schedule_type_name, date, start_time, end_time, is_over_time_work, staff_id, staff_name, title, description, frequency, day_of_week, day_of_month, week_of_month, end_date, visit_info_id, patient_id, patient_name, assigned_staff_id, assigned_staff_name, companion_id, companion_name, service_code_id, service_code, created_at, updated_at, version, ends_next_day FROM recurring_schedule_details WHERE id = $1
+SELECT id, facility_id, schedule_type_id, schedule_type_code, schedule_type_name, date, start_time, end_time, is_over_time_work, staff_id, staff_name, title, description, frequency, day_of_week, day_of_month, week_of_month, end_date, visit_info_id, patient_id, patient_name, assigned_staff_id, assigned_staff_name, companion_id, companion_name, service_code_id, service_code, created_at, updated_at, version, ends_next_day, days_of_week, interval_weeks FROM recurring_schedule_details WHERE id = $1
 `
 
 func (q *Queries) GetRecurringScheduleDetail(ctx context.Context, id string) (RecurringScheduleDetail, error) {
@@ -191,6 +265,8 @@ func (q *Queries) GetRecurringScheduleDetail(ctx context.Context, id string) (Re
 		&i.UpdatedAt,
 		&i.Version,
 		&i.EndsNextDay,
+		&i.DaysOfWeek,
+		&i.IntervalWeeks,
 	)
 	return i, err
 }
@@ -320,6 +396,7 @@ const getStoredRecurringSchedule = `-- name: GetStoredRecurringSchedule :one
 SELECT rs.id, rs.facility_id, rs.staff_id, rs.schedule_type_id, rs.date, rs.start_time, rs.end_time, rs.ends_next_day,
        rs.is_over_time_work, rs.visit_info_id, rs.title, rs.description,
        rs.frequency, rs.day_of_week, rs.day_of_month, rs.week_of_month, rs.end_date, rs.version,
+       rs.days_of_week, rs.interval_weeks,
        vi.patient_id, vi.assigned_staff_id, vi.companion_id, vi.service_code_id
 FROM recurring_schedules rs
 LEFT JOIN visit_infos vi ON vi.id = rs.visit_info_id
@@ -345,13 +422,15 @@ type GetStoredRecurringScheduleRow struct {
 	WeekOfMonth     *int16
 	EndDate         *time.Time
 	Version         int32
+	DaysOfWeek      []int16
+	IntervalWeeks   int16
 	PatientID       *string
 	AssignedStaffID *string
 	CompanionID     *string
 	ServiceCodeID   *string
 }
 
-// 予定を書く前の確認に使う繰り返しの予定を読む。種類、職員、訪問の情報の名前は結合しない（ADR-0025）。
+// 予定を書く前の確認に使う繰り返しの予定を読む。種類、職員、訪問の情報の名前は結合しない（ADR-0026）。
 func (q *Queries) GetStoredRecurringSchedule(ctx context.Context, id string) (GetStoredRecurringScheduleRow, error) {
 	row := q.db.QueryRow(ctx, getStoredRecurringSchedule, id)
 	var i GetStoredRecurringScheduleRow
@@ -374,6 +453,8 @@ func (q *Queries) GetStoredRecurringSchedule(ctx context.Context, id string) (Ge
 		&i.WeekOfMonth,
 		&i.EndDate,
 		&i.Version,
+		&i.DaysOfWeek,
+		&i.IntervalWeeks,
 		&i.PatientID,
 		&i.AssignedStaffID,
 		&i.CompanionID,
@@ -415,7 +496,7 @@ type GetStoredScheduleRow struct {
 	Cancelled           bool
 }
 
-// 予定を書く前の確認に使う予定を読む。種類、職員、訪問の情報の名前は結合しない（ADR-0025）。
+// 予定を書く前の確認に使う予定を読む。種類、職員、訪問の情報の名前は結合しない（ADR-0026）。
 func (q *Queries) GetStoredSchedule(ctx context.Context, id string) (GetStoredScheduleRow, error) {
 	row := q.db.QueryRow(ctx, getStoredSchedule, id)
 	var i GetStoredScheduleRow
@@ -445,7 +526,7 @@ func (q *Queries) GetStoredSchedule(ctx context.Context, id string) (GetStoredSc
 }
 
 const listRecurringScheduleDetailsByFacility = `-- name: ListRecurringScheduleDetailsByFacility :many
-SELECT id, facility_id, schedule_type_id, schedule_type_code, schedule_type_name, date, start_time, end_time, is_over_time_work, staff_id, staff_name, title, description, frequency, day_of_week, day_of_month, week_of_month, end_date, visit_info_id, patient_id, patient_name, assigned_staff_id, assigned_staff_name, companion_id, companion_name, service_code_id, service_code, created_at, updated_at, version, ends_next_day FROM recurring_schedule_details
+SELECT id, facility_id, schedule_type_id, schedule_type_code, schedule_type_name, date, start_time, end_time, is_over_time_work, staff_id, staff_name, title, description, frequency, day_of_week, day_of_month, week_of_month, end_date, visit_info_id, patient_id, patient_name, assigned_staff_id, assigned_staff_name, companion_id, companion_name, service_code_id, service_code, created_at, updated_at, version, ends_next_day, days_of_week, interval_weeks FROM recurring_schedule_details
 WHERE facility_id = $1
   AND ($2::text IS NULL OR schedule_type_name = $2)
 ORDER BY
@@ -507,6 +588,8 @@ func (q *Queries) ListRecurringScheduleDetailsByFacility(ctx context.Context, ar
 			&i.UpdatedAt,
 			&i.Version,
 			&i.EndsNextDay,
+			&i.DaysOfWeek,
+			&i.IntervalWeeks,
 		); err != nil {
 			return nil, err
 		}
@@ -538,6 +621,38 @@ func (q *Queries) ListRecurringScheduleExclusions(ctx context.Context, recurring
 			return nil, err
 		}
 		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listReplacedOriginalDates = `-- name: ListReplacedOriginalDates :many
+SELECT original_date::date FROM schedules
+WHERE recurring_schedule_id = $1 AND original_date >= $2
+ORDER BY original_date
+`
+
+type ListReplacedOriginalDatesParams struct {
+	RecurringScheduleID *string
+	FromDate            *time.Time
+}
+
+// 繰り返しの予定の回を置き換えた単発の予定（キャンセルしたものを含む）の、元の回の日付を読む。
+func (q *Queries) ListReplacedOriginalDates(ctx context.Context, arg ListReplacedOriginalDatesParams) ([]time.Time, error) {
+	rows, err := q.db.Query(ctx, listReplacedOriginalDates, arg.RecurringScheduleID, arg.FromDate)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []time.Time{}
+	for rows.Next() {
+		var original_date time.Time
+		if err := rows.Scan(&original_date); err != nil {
+			return nil, err
+		}
+		items = append(items, original_date)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err
@@ -679,6 +794,64 @@ func (q *Queries) LockSchedule(ctx context.Context, id string) (string, error) {
 	var id_2 string
 	err := row.Scan(&id_2)
 	return id_2, err
+}
+
+const moveExternalEventLinkToDeletion = `-- name: MoveExternalEventLinkToDeletion :exec
+UPDATE external_event_links SET deleted_schedule_id = schedule_id, schedule_id = NULL WHERE schedule_id = $1
+`
+
+// 予定の行を消すと予定の対応も消えるので、書き出しが外部の予定を消すまで、削除の監査の記録を指す対応にする（ADR-0040）。
+func (q *Queries) MoveExternalEventLinkToDeletion(ctx context.Context, scheduleID *string) error {
+	_, err := q.db.Exec(ctx, moveExternalEventLinkToDeletion, scheduleID)
+	return err
+}
+
+const scheduleIDDeleted = `-- name: ScheduleIDDeleted :one
+SELECT EXISTS (SELECT 1 FROM schedule_deletions WHERE schedule_id = $1)::boolean
+`
+
+// 削除した予定の ID は、作り直しに使わせない。削除の書き出しの待ちと監査の記録が、同じ ID の別の予定を指さないためである。
+func (q *Queries) ScheduleIDDeleted(ctx context.Context, scheduleID *string) (bool, error) {
+	row := q.db.QueryRow(ctx, scheduleIDDeleted, scheduleID)
+	var column_1 bool
+	err := row.Scan(&column_1)
+	return column_1, err
+}
+
+const updateRecurringScheduleRule = `-- name: UpdateRecurringScheduleRule :exec
+UPDATE recurring_schedules
+SET date = $1, frequency = $2, day_of_week = $3,
+    day_of_month = $4, week_of_month = $5, end_date = $6,
+    days_of_week = $7, interval_weeks = $8,
+    version = version + 1
+WHERE id = $9
+`
+
+type UpdateRecurringScheduleRuleParams struct {
+	Date          time.Time
+	Frequency     string
+	DayOfWeek     *int16
+	DayOfMonth    *int16
+	WeekOfMonth   *int16
+	EndDate       *time.Time
+	DaysOfWeek    []int16
+	IntervalWeeks int16
+	ID            string
+}
+
+func (q *Queries) UpdateRecurringScheduleRule(ctx context.Context, arg UpdateRecurringScheduleRuleParams) error {
+	_, err := q.db.Exec(ctx, updateRecurringScheduleRule,
+		arg.Date,
+		arg.Frequency,
+		arg.DayOfWeek,
+		arg.DayOfMonth,
+		arg.WeekOfMonth,
+		arg.EndDate,
+		arg.DaysOfWeek,
+		arg.IntervalWeeks,
+		arg.ID,
+	)
+	return err
 }
 
 const updateSchedule = `-- name: UpdateSchedule :exec

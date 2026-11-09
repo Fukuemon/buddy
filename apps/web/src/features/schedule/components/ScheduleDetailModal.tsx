@@ -1,5 +1,5 @@
 import type { Patient, Schedule, Staff } from '#/api/types'
-import { Button, Modal } from '@buddy/ui'
+import { ActionMenu, Button, HelpToggle, Modal, StatusBadge } from '@buddy/ui'
 import { useId } from 'react'
 
 import {
@@ -7,7 +7,8 @@ import {
   SCHEDULE_KIND_LABEL,
   SCHEDULE_REVIEW_REASON_LABEL,
 } from '../constants/scheduleLabels'
-import { formatDateTimeRange } from '../lib/dateTime'
+import { formatDateTimeRange, toTokyoDateKey } from '../lib/dateTime'
+import { recurringRuleLabel } from '../lib/recurringRuleLabel'
 import { reviewFixMessage } from '../lib/reviewFix'
 
 export type ScheduleDetailModalProps = {
@@ -16,13 +17,28 @@ export type ScheduleDetailModalProps = {
   patient?: Patient
   /** 編集の画面へ移る。省くと編集のボタンを出さない。編集の権限が無い予定で省く。 */
   onEdit?: () => void
+  /**
+   * 渡すと、「編集」を、「この予定を編集」（onEdit）と「繰り返しを変更」（onChangeRecurrence）が出るメニューにする。繰り返しの予定のまだ変えていない回（recurrence を持つ予定）で渡す。1 回を置き換えた予定は単発の予定として扱い、渡さない。
+   * onEdit を省いたときは使わない。
+   */
+  onChangeRecurrence?: () => void
   /** キャンセルのダイアログを開く。省くとキャンセルのボタンを出さない。キャンセルできない予定で省く。 */
   onCancelSchedule?: () => void
+  /** 削除のダイアログを開く。省くと削除のボタンを出さない。削除できない予定で省く（ADR-0040）。 */
+  onDeleteSchedule?: () => void
   onClose: () => void
 }
 
-const Row = ({ label, children }: { label: string; children: React.ReactNode }) => (
-  <div className="grid grid-cols-[8rem_minmax(0,1fr)] gap-4 py-2">
+const Row = ({
+  label,
+  children,
+  testId,
+}: {
+  label: string
+  children: React.ReactNode
+  testId?: string
+}) => (
+  <div className="grid grid-cols-[8rem_minmax(0,1fr)] gap-4 py-2" data-testid={testId}>
     <dt className="text-caption text-text-secondary">{label}</dt>
     <dd className="whitespace-pre-wrap">{children}</dd>
   </div>
@@ -36,18 +52,22 @@ const SectionHeading = ({ id, children }: { id: string; children: React.ReactNod
 
 /**
  * 予定の詳細をモーダルで出す。
- * 日時を見出しにし、その下に種類と主訪問者（通常の予定では予定者）を、訪問の予定では訪問の情報を、最後にメモをセクションに分けて並べる。メモが空なら、メモのセクションを出さない。
+ * 日時を見出しにし、その下に種類と主訪問者（通常の予定では予定者）を、繰り返しの予定のまだ変えていない回（recurrence を持つ予定）では繰り返しの規則を、訪問の予定では訪問の情報を、最後にメモをセクションに分けて並べる。メモが空なら、メモのセクションを出さない。
  * 見出しと値は、全てのセクションで同じ 1 列の並びにし、値の列の位置をそろえる。
- * 下端の右に「閉じる」、予定をキャンセルするボタン、編集のボタンをこの順に置く。onCancelSchedule と onEdit を省くと、そのボタンを出さない。
- * キャンセルした予定は、先頭にキャンセルの理由を出し、下端を出さない。
- * Google カレンダーの予定（fromGoogleCalendar）は、先頭に、buddy で変えると Google カレンダーにも書く案内を出し、確認が必要な予定なら理由と直し方も出す。
+ * 下端の左端に、予定をキャンセルするボタンと予定を削除するボタンをこの順に赤い文字で置き、右に「閉じる」と編集のボタンをこの順にまとめる。
+ * onCancelSchedule、onDeleteSchedule、onEdit を省くと、そのボタンを出さない。
+ * 予定をキャンセルするボタンと削除するボタンは戻せない操作の起点なので、安全な操作から離して置く。
+ * キャンセルした予定は、先頭にキャンセルの理由を出し、下端を出さない。下端が無いので、右上の × で閉じる。
+ * Google カレンダーの予定（fromGoogleCalendar）は、先頭に「Google カレンダー」の印と ? のヘルプを出し、buddy で変えると Google カレンダーにも書くことを ? の中で伝える。確認が必要な予定なら理由と直し方も出す。
  */
 export const ScheduleDetailModal = ({
   schedule,
   staff,
   patient,
   onEdit,
+  onChangeRecurrence,
   onCancelSchedule,
+  onDeleteSchedule,
   onClose,
 }: ScheduleDetailModalProps) => {
   const visitHeadingId = useId()
@@ -61,6 +81,28 @@ export const ScheduleDetailModal = ({
         schedule.cancel === undefined
           ? (requestClose) => (
               <>
+                {(onCancelSchedule !== undefined || onDeleteSchedule !== undefined) && (
+                  <div className="mr-auto flex flex-wrap gap-2">
+                    {onCancelSchedule !== undefined && (
+                      <Button
+                        data-testid="schedule-detail-cancel-schedule"
+                        onClick={onCancelSchedule}
+                        variant="destructive"
+                      >
+                        予定をキャンセル
+                      </Button>
+                    )}
+                    {onDeleteSchedule !== undefined && (
+                      <Button
+                        data-testid="schedule-detail-delete-schedule"
+                        onClick={onDeleteSchedule}
+                        variant="destructive"
+                      >
+                        予定を削除
+                      </Button>
+                    )}
+                  </div>
+                )}
                 <Button
                   data-testid="schedule-detail-close"
                   onClick={requestClose}
@@ -68,20 +110,31 @@ export const ScheduleDetailModal = ({
                 >
                   閉じる
                 </Button>
-                {onCancelSchedule !== undefined && (
-                  <Button
-                    data-testid="schedule-detail-cancel-schedule"
-                    onClick={onCancelSchedule}
-                    variant="secondary"
-                  >
-                    予定をキャンセル
-                  </Button>
-                )}
-                {onEdit !== undefined && (
-                  <Button data-testid="schedule-detail-edit" onClick={onEdit} variant="secondary">
-                    編集
-                  </Button>
-                )}
+                {onEdit !== undefined &&
+                  (onChangeRecurrence === undefined ? (
+                    <Button data-testid="schedule-detail-edit" onClick={onEdit} variant="secondary">
+                      編集
+                    </Button>
+                  ) : (
+                    <ActionMenu
+                      data-testid="schedule-detail-edit"
+                      items={[
+                        {
+                          label: 'この予定を編集',
+                          onSelect: onEdit,
+                          'data-testid': 'schedule-detail-edit-occurrence',
+                        },
+                        {
+                          label: '繰り返しを変更',
+                          onSelect: onChangeRecurrence,
+                          'data-testid': 'schedule-detail-edit-recurrence',
+                        },
+                      ]}
+                      label="編集"
+                      placement="top"
+                      triggerLabel="編集"
+                    />
+                  ))}
               </>
             )
           : undefined
@@ -90,13 +143,14 @@ export const ScheduleDetailModal = ({
     >
       <div className="flex flex-col gap-6 px-5 py-4">
         {schedule.fromGoogleCalendar === true && (
-          <p
-            className="rounded-8 border border-border px-4 py-3"
-            data-testid="schedule-detail-google-calendar"
-          >
-            Google カレンダーの予定です。buddy で変更かキャンセルすると、Google
-            カレンダーにも書きます。
-          </p>
+          <div className="relative flex items-center gap-1">
+            <StatusBadge data-testid="schedule-detail-google-calendar">
+              Google カレンダー
+            </StatusBadge>
+            <HelpToggle data-testid="schedule-detail-google-calendar-help">
+              buddy で変更かキャンセルすると、Google カレンダーにも書きます。
+            </HelpToggle>
+          </div>
         )}
         {schedule.reviewReason !== undefined && (
           <p
@@ -127,6 +181,14 @@ export const ScheduleDetailModal = ({
             <Row label={schedule.kind === 'visit' ? '主訪問者' : '予定者'}>
               {staff?.name ?? '職員不明'}
             </Row>
+            {schedule.recurrence !== undefined && (
+              <Row label="繰り返し" testId="schedule-detail-recurrence">
+                {recurringRuleLabel(
+                  schedule.recurrence.rule,
+                  toTokyoDateKey(new Date(schedule.startsAt)),
+                )}
+              </Row>
+            )}
           </dl>
         </section>
         {schedule.visit !== undefined && (

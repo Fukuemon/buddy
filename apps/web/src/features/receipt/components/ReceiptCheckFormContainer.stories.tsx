@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { expect, userEvent, within } from 'storybook/test'
+import { expect, fn, userEvent, within } from 'storybook/test'
 
 import { ApiError } from '#/api/BuddyApi'
 import { withAppRouter, type AppRouterParameters } from '#/storybook/withAppRouter'
@@ -49,4 +49,25 @@ export const RowErrors: Story = {
       '実績の CSV の 3 行目の「訪問日」を日付として読めません。',
     )
   },
+}
+
+const slowCheck = fn(async () => {
+  await new Promise((resolve) => setTimeout(resolve, 500))
+  throw new ApiError(500, '照合の API が失敗した')
+})
+
+/** 照合の API が 0.5 秒待ってから 500 を返す。送っている途中に入力を変えられる。照合の API の check は、呼ばれた回数を数える。 */
+export const SlowCheckError: Story = {
+  parameters: route({ receiptApi: { check: slowCheck } }),
+}
+
+/** 画面を開いた後に照合の権限を外された。照合するを押すと、照合の API が 403 を返す。 */
+export const ForbiddenAfterRevoke: Story = {
+  parameters: route({
+    receiptApi: {
+      check: async () => {
+        throw new ApiError(403, '照合の権限がない', [], 'forbidden')
+      },
+    },
+  }),
 }

@@ -31,6 +31,18 @@ export const Default: Story = {}
 /** 送っている間は、確定のボタンに回転の印と送っている間の文字を出し、閉じる操作を全て止める。 */
 export const Submitting: Story = { args: { isSubmitting: true } }
 
+/** 確定の文字に「キャンセル」が入る確認は、閉じる側を「戻る」にし、同じ語のボタンを並べない。 */
+export const CancelAction: Story = {
+  args: {
+    title: 'この予定をキャンセルしますか',
+    testIdPrefix: 'schedule-cancel',
+    submitLabel: '予定をキャンセルする',
+    busyLabel: 'キャンセルしています',
+    cancelLabel: '戻る',
+    children: <p>キャンセルした予定は、カレンダーに残り、理由を見られます。</p>,
+  },
+}
+
 export const WithError: Story = {
   args: {
     error: {

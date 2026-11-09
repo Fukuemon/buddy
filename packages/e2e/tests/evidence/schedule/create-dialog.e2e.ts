@@ -3,6 +3,7 @@ import { expect, test } from '@playwright/test'
 import { LOGIN_EMAIL, LOGIN_STAFF } from '../../fixtures/env'
 import { EVIDENCE_VARIANTS, recordPrEvidence } from '../../fixtures/evidence'
 import { signInAtBroker } from '../../screens/login'
+import { recordBrowserDialogs } from '../../widgets/browserDialog/actions/browserDialog'
 
 test.describe('予定のカレンダー', () => {
   test.describe('予定の作成', () => {
@@ -54,19 +55,15 @@ test.describe('予定のカレンダー', () => {
           },
           async ({ page, step, check }) => {
             // 破棄の確認は window.confirm で、録画に映らない。出た回数を数えて字幕に出す
-            const confirms: string[] = []
-            page.on('dialog', (dialog) => {
-              confirms.push(dialog.message())
-              void dialog.dismiss()
-            })
+            const confirms = recordBrowserDialogs(page)
             await page.goto('/schedule?view=day')
             await expect(page.getByTestId(`day-grid-staff-${LOGIN_STAFF.id}`)).toBeVisible()
             await page.getByTestId('schedule-create-open').click()
             await expect(page.getByTestId('schedule-form-modal')).toBeVisible()
             await step('予定の作成のダイアログを、何も入れずに開いている')
 
-            await step('右上の ×（閉じる）を押す')
-            await page.getByTestId('modal-close').click()
+            await step('フッターの「キャンセル」を押す')
+            await page.getByTestId('schedule-new-cancel').click()
             await expect(page.getByTestId('schedule-form-modal')).toBeHidden()
             await expect(page).toHaveURL(/\/schedule\?(.+&)?view=day/)
             await expect(page.getByTestId(`day-grid-staff-${LOGIN_STAFF.id}`)).toBeVisible()

@@ -272,13 +272,13 @@ func TestCalendarExportWritesStoredSchedules(t *testing.T) {
 		t.Errorf("訪問の予定 = %q, %q, %v - %v", single.Summary, single.Description, single.Start.DateTime, single.End.DateTime)
 	}
 	weekly := eventOf("aoki@example.com", seedRecurring)
-	if weekly.Summary != "週次の申し送り" || !slices.Equal(weekly.Recurrence, []string{"RRULE:FREQ=WEEKLY;BYDAY=MO"}) ||
+	if weekly.Summary != "週次の申し送り" || !slices.Equal(weekly.Recurrence, []string{"RRULE:FREQ=WEEKLY;INTERVAL=1;BYDAY=MO;WKST=SU"}) ||
 		weekly.Start.DateTime != "2026-10-05T17:30:00" {
 		t.Errorf("繰り返しの予定 = %q, %v, %v", weekly.Summary, weekly.Recurrence, weekly.Start.DateTime)
 	}
 }
 
-// TestScheduleWritesEnqueueExports は、シードの事業所で、予定を書く 5 つの操作が DB に書き、
+// TestScheduleWritesEnqueueExports は、シードの事業所で、予定を書く 6 つの操作が DB に書き、
 // 予定の職員がカレンダーを結び付けていれば、書き出しの待ちを積むことを確認する。
 func TestScheduleWritesEnqueueExports(t *testing.T) {
 	base := txContext(t)
@@ -339,4 +339,22 @@ func TestScheduleWritesEnqueueExports(t *testing.T) {
 	}
 	requireQueued(t, calendar.Target{FacilityID: seedFacility, ScheduleID: occ.ID})
 	requireQueued(t, calendar.Target{FacilityID: seedFacility, RecurringScheduleID: rs.ID})
+
+	// 回のキャンセルは、繰り返しの予定の変更を積み、その日を除外する日にする。キャンセルした単発の予定は Google の予定と対応を持たないので積まない
+	c, err := schedule.NewCancelOccurrence(recurring, refs, facilities, schedules, types, nil, outbox, txr, ids).
+		Do(ctx, rs.ID, civil.Date{Year: 2099, Month: 1, Day: 19}, "休み")
+	if err != nil {
+		t.Fatal(err)
+	}
+	requireQueued(t, calendar.Target{FacilityID: seedFacility, RecurringScheduleID: rs.ID})
+	if _, err := exports.Open(ctx, calendar.Target{FacilityID: seedFacility, ScheduleID: c.ScheduleID}); !errors.Is(err, apperr.ErrNotFound) {
+		t.Errorf("キャンセルした回の単発の予定の書き出しの待ち = %v, want 積まない", err)
+	}
+	stored, err := recurring.Get(ctx, rs.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !slices.Contains(stored.ExclusionDates, civil.Date{Year: 2099, Month: 1, Day: 19}) {
+		t.Errorf("回をキャンセルした後の除外する日 = %v", stored.ExclusionDates)
+	}
 }

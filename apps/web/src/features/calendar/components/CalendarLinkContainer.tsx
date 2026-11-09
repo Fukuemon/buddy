@@ -4,6 +4,7 @@ import { useState } from 'react'
 
 import type { Staff } from '#/api/types'
 import { queryKeys } from '#/api/queryKeys'
+import { failedBeforeLoad, hasRefetchFailed, refetchFailedQueries } from '#/api/refetch'
 import { useBuddyApi } from '#/api/useBuddyApi'
 
 import {
@@ -41,7 +42,7 @@ const CalendarLinkContent = () => {
   const [calendarId, setCalendarId] = useState('')
 
   const queries = [staffQuery, calendarsQuery, accountQuery]
-  const failed = queries.find((query) => query.isError)
+  const failed = failedBeforeLoad(queries)
   // 退職した職員は、退職でカレンダーが外れ、結び付けられないので出さない
   const rows: CalendarLinkRow[] = (staffQuery.data ?? [])
     .filter((staff) => staff.status !== 'retired')
@@ -97,8 +98,10 @@ const CalendarLinkContent = () => {
       <CalendarLinkView
         onImport={(staffId) => navigate({ to: '/schedule/import', search: { staff: staffId } })}
         onLink={(staffId) => open('link', staffId)}
+        onRefetch={() => refetchFailedQueries(queries)}
         onRetry={retry}
         onUnlink={(staffId) => open('unlink', staffId)}
+        refetchFailed={hasRefetchFailed(queries)}
         state={state}
       />
       {dialog?.kind === 'link' && selected !== undefined && (

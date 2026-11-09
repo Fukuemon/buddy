@@ -30,6 +30,7 @@ func toExport(e sqlcgen.CalendarExport) calendar.Export {
 			FacilityID:          e.FacilityID,
 			ScheduleID:          deref(e.ScheduleID),
 			RecurringScheduleID: deref(e.RecurringScheduleID),
+			DeletedScheduleID:   deref(e.DeletedScheduleID),
 		},
 		Status:        calendar.ExportStatus(e.Status),
 		Revision:      int(e.Revision),
@@ -49,6 +50,11 @@ func toExport(e sqlcgen.CalendarExport) calendar.Export {
 
 // Enqueue は、t の終わっていない待ちを積み直すか、ID が id の待ちを足す。
 func (r *CalendarExportRepository) Enqueue(ctx context.Context, id string, t calendar.Target) error {
+	if t.DeletedScheduleID != "" {
+		return translate("enqueue deleted schedule export", r.q(ctx).EnqueueDeletedScheduleExport(ctx, sqlcgen.EnqueueDeletedScheduleExportParams{
+			ID: id, FacilityID: t.FacilityID, DeletedScheduleID: &t.DeletedScheduleID,
+		}))
+	}
 	if t.ScheduleID != "" {
 		return translate("enqueue schedule export", r.q(ctx).EnqueueScheduleExport(ctx, sqlcgen.EnqueueScheduleExportParams{
 			ID: id, FacilityID: t.FacilityID, ScheduleID: &t.ScheduleID,
@@ -167,9 +173,10 @@ func (r *CalendarExportRepository) Open(ctx context.Context, t calendar.Target) 
 		e   sqlcgen.CalendarExport
 		err error
 	)
-	if t.ScheduleID != "" {
+	switch {
+	case t.ScheduleID != "":
 		e, err = r.q(ctx).GetOpenScheduleExport(ctx, &t.ScheduleID)
-	} else {
+	default:
 		e, err = r.q(ctx).GetOpenRecurringScheduleExport(ctx, &t.RecurringScheduleID)
 	}
 	if err != nil {

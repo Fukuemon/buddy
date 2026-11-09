@@ -86,7 +86,7 @@ test.describe('確認が必要な予定とカレンダーの連携の画面仕�
       )
     })
 
-    test(`${prefix}確認が必要な予定の一覧のモックで行を押した場合、予定と 2 つの選択肢を入れた予定の確認のダイアログが出て、× で一覧に戻ること`, async ({
+    test(`${prefix}確認が必要な予定の一覧のモックで行を押した場合、予定と 2 つの選択肢を入れた予定の確認のダイアログが出て、閉じるで一覧に戻ること`, async ({
       browser,
     }) => {
       await recordPrEvidence(
@@ -94,7 +94,7 @@ test.describe('確認が必要な予定とカレンダーの連携の画面仕�
         {
           name: 'review-mock-detail',
           title:
-            '行を押すと、予定の日時、職員、理由、予定を開くと、主ボタンの色でない「buddy の内容で書き直す」を入れたダイアログが出る',
+            '行を押すと、予定の日時、職員、理由、予定を開くと、フッターの左端に赤い文字の「buddy の内容で書き直す」と、右に「閉じる」を入れた、× の無いダイアログが出る',
           actor: 'ログインなし',
           variant,
         },
@@ -103,34 +103,35 @@ test.describe('確認が必要な予定とカレンダーの連携の画面仕�
         },
         async ({ page, step, check }) => {
           await page.goto(mockUrl(`${REVIEW}01-list.html`))
-          await step('1 行目の予定（2026/11/04（水）09:00〜09:29）を押す')
+          await step('1 行目の予定（2026年11月4日（水） 09:00〜09:29）を押す')
           await page.getByTestId('calendar-review-row-schedule-schedule-1').click()
           await expect(page).toHaveURL(/05-detail\.html/)
           const dialog = page.getByTestId('calendar-review-dialog')
           await expect(dialog).toBeVisible()
           await expect(page.getByTestId('calendar-review-dialog-datetime')).toHaveText(
-            '2026/11/04（水）09:00〜09:29',
+            '2026年11月4日（水） 09:00〜09:29',
           )
           await expect(page.getByTestId('calendar-review-open-export-1')).toBeVisible()
           await expect(page.getByTestId('calendar-review-dialog')).not.toContainText(
             'Google の内容に合わせる',
           )
-          await expect(page.getByTestId('calendar-review-rewrite-export-1')).not.toHaveClass(
-            /wf-btn--primary/,
+          await expect(page.getByTestId('calendar-review-rewrite-export-1')).toHaveClass(
+            /wf-btn--destructive/,
           )
+          await expect(page.getByTestId('calendar-review-cancel')).toHaveText('閉じる')
           await check(
-            '予定の確認のダイアログ（05-detail.html）に、予定の日時、職員、最後に変わった日時、理由、予定を開くと、主ボタンの色でない「buddy の内容で書き直す」が出て、「Google の内容に合わせる」が無い',
+            '予定の確認のダイアログ（05-detail.html）に、予定の日時、職員、最後に変わった日時、理由、予定を開くと、フッターの左端に赤い文字の「buddy の内容で書き直す」と、右に「閉じる」が出て、右上の × と「Google の内容に合わせる」が無い',
           )
 
-          await step('右上の × を押す')
-          await page.getByTestId('calendar-review-close').click()
+          await step('フッターの「閉じる」を押す')
+          await page.getByTestId('calendar-review-cancel').click()
           await expect(page).toHaveURL(/01-list\.html/)
           await check('一覧のモック（01-list.html）へ戻る')
         },
       )
     })
 
-    test(`${prefix}予定の確認のダイアログのモックで buddy の内容で書き直すを押した場合、赤の確定のボタンの確認のダイアログが出て、キャンセルで予定の確認に戻ること`, async ({
+    test(`${prefix}予定の確認のダイアログのモックで buddy の内容で書き直すを押した場合、赤の確定のボタンの確認のダイアログが出て、戻るで予定の確認に戻ること`, async ({
       browser,
     }) => {
       await recordPrEvidence(
@@ -138,7 +139,7 @@ test.describe('確認が必要な予定とカレンダーの連携の画面仕�
         {
           name: 'review-mock-rewrite',
           title:
-            '書き直すの確認のダイアログは、確定の「書き直す」が赤で、「数十秒のうちに」の文が無く、キャンセルで予定の確認へ戻る',
+            '書き直すの確認のダイアログは、確定の「書き直す」が赤で、「数十秒のうちに」の文が無く、戻るで予定の確認へ戻る',
           actor: 'ログインなし',
           variant,
         },
@@ -156,7 +157,7 @@ test.describe('確認が必要な予定とカレンダーの連携の画面仕�
             '書き直すダイアログ（06-rewrite.html）の確定の「書き直す」が赤で、注意の文に「数十秒のうちに」が無い',
           )
 
-          await step('「キャンセル」を押す')
+          await step('「戻る」を押す')
           await page.getByTestId('calendar-rewrite-cancel').click()
           await expect(page).toHaveURL(/05-detail\.html/)
           await check('予定の確認のダイアログ（05-detail.html）へ戻る')
@@ -448,10 +449,10 @@ test.describe('確認が必要な予定とカレンダーの連携の画面仕�
         async ({ page, check }) => {
           await page.goto(mockUrl(`${LINK}08-not-configured.html`))
           await expect(page.getByTestId('calendar-link-not-configured')).toHaveText(
-            'この事業所では、まだ Google カレンダーを使う準備ができていません。buddy の管理者に設定を頼んでください。',
+            'この事業所では、まだ Google カレンダーを使う準備ができていません。事業所の管理者に、設定を頼んでください。',
           )
           await check(
-            '「この事業所では、まだ Google カレンダーを使う準備ができていません。buddy の管理者に設定を頼んでください。」が出る',
+            '「この事業所では、まだ Google カレンダーを使う準備ができていません。事業所の管理者に、設定を頼んでください。」が出る',
           )
         },
       )

@@ -1,10 +1,11 @@
 import { expect, request, test, type APIRequestContext, type Page } from '@playwright/test'
 
-import { prepareApiReference, routeApiReference } from '../../fixtures/apiReference'
+import { issueAccessToken, routeApiReference } from '../../fixtures/apiReference'
 import { LEADER, LOGIN_STAFF, RECEIPT_TESTDATA, TEAM_MEMBER } from '../../fixtures/env'
 import { EVIDENCE_VARIANTS, recordPrEvidence } from '../../fixtures/evidence'
 import { addPolicy, issueManagerToken, newStaff, registerStaff } from '../../fixtures/staff'
-import { fillApiToken, openApiClient } from '../../screens/apiReference'
+import { openApiClient, openApiReference } from '../../screens/apiReference'
+import { fillApiToken } from '../../widgets/apiClient/actions/apiClient'
 import { signInAtBroker } from '../../screens/login'
 import { apiClient } from '../../selectors/apiReference'
 
@@ -21,7 +22,7 @@ const CLERK_POSITION = '01M69C7BTRKYP0EQD62TQ2KARJ'
 const asManager = async <T>(fn: (api: APIRequestContext, token: string) => Promise<T>) => {
   const api = await request.newContext()
   try {
-    return await fn(api, await issueManagerToken(api))
+    return await fn(api, await issueManagerToken())
   } finally {
     await api.dispose()
   }
@@ -132,7 +133,11 @@ test.describe('照合の権限', () => {
           actor: `${LEADER.staff.name}（チームリーダー、照合の権限なし）`,
           variant,
         },
-        prepareApiReference('receipt', LEADER.email),
+        async (page) => {
+          await routeApiReference(page)
+          await openApiReference(page, 'receipt')
+          return issueAccessToken(page.request, LEADER.email)
+        },
         async ({ page, step, check }, token) => {
           await routeApiReference(page)
           await openApiClient(page, 'receipt', { tag: 'check', method: 'post', path: '/v1/checks' })

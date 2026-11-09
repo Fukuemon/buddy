@@ -227,11 +227,11 @@ func toStatusChange(c staff.StatusChange) openapi.StaffStatusChange {
 func toAssignments(a staff.Assignments) openapi.StaffAssignments {
 	return openapi.StaffAssignments{
 		Schedules: mapSlice(a.Schedules, func(s staff.AssignedSchedule) openapi.StaffAssignments_Schedules {
-			return openapi.StaffAssignments_Schedules{Id: s.ID, Date: s.Date.String(), StartTime: s.StartTime.String(), EndTime: s.EndTime.String()}
+			return openapi.StaffAssignments_Schedules{Id: s.ID, Date: s.Date.String(), StartTime: s.StartTime.String(), EndTime: s.EndTime.String(), EndsNextDay: s.EndsNextDay}
 		}),
 		RecurringSchedules: mapSlice(a.RecurringSchedules, func(r staff.AssignedRecurring) openapi.StaffAssignments_RecurringSchedules {
 			return openapi.StaffAssignments_RecurringSchedules{
-				Id: r.ID, Date: r.Date.String(), EndDate: stringPtr(r.EndDate), StartTime: r.StartTime.String(), EndTime: r.EndTime.String(),
+				Id: r.ID, Date: r.Date.String(), EndDate: stringPtr(r.EndDate), StartTime: r.StartTime.String(), EndTime: r.EndTime.String(), EndsNextDay: r.EndsNextDay,
 			}
 		}),
 		Patients: mapSlice(a.Patients, func(p staff.AssignedPatient) openapi.StaffAssignments_Patients {

@@ -60,3 +60,42 @@ export const WithDisabledItem: Story = {
     )
   },
 }
+
+/**
+ * 文言のボタンで、上に開くメニュー。モーダルの下端の「編集」に使う。
+ * 押せない項目には、押せない理由を補足に出す。
+ */
+export const TextTriggerOpensUp: Story = {
+  decorators: [
+    (Story) => (
+      <div className="flex min-h-64 items-end justify-end p-4">
+        <Story />
+      </div>
+    ),
+  ],
+  args: {
+    label: '編集',
+    triggerLabel: '編集',
+    placement: 'top',
+    'data-testid': 'schedule-edit-menu',
+    items: [
+      { label: 'この予定を編集', onSelect: fn(), 'data-testid': 'schedule-edit-occurrence' },
+      {
+        label: '繰り返しを変更',
+        onSelect: fn(),
+        'data-testid': 'schedule-edit-recurrence',
+        disabled: true,
+        description: '今日より前の回からは、繰り返しを変えられません。',
+      },
+    ],
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    await userEvent.click(canvas.getByRole('button', { name: '編集' }))
+    const item = canvas.getByRole('menuitem', { name: /^繰り返しを変更/ })
+    await expect(item).toHaveAttribute('aria-disabled', 'true')
+    await expect(item).toHaveAccessibleDescription(
+      '今日より前の回からは、繰り返しを変えられません。',
+    )
+  },
+}

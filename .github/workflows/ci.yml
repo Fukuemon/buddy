@@ -188,9 +188,15 @@ jobs:
     runs-on: ${{ fromJSON(vars.RUNS_ON || '"ubuntu-latest"') }}
     timeout-minutes: 30
     # self-hosted runner の機械では、ローカル環境の compose が動いていることがある。
-    # プロジェクトの名前を分け、ポートをローカル環境のデフォルトから全てずらす（CONTRIBUTING.md の Running Locally）
+    # プロジェクトの名前を分け、ポートをローカル環境のデフォルトから全てずらす（CONTRIBUTING.md の Running Locally）。
+    # CI は portless を使わず http://localhost で開くので、ブラウザが開く URL と cookie の設定を渡す（ADR-0036）
     env:
       COMPOSE_PROJECT_NAME: buddy-ci
+      WEB_ORIGIN: http://localhost:13000
+      HYDRA_PUBLIC_ORIGIN: http://localhost:14444
+      BROKER_ORIGIN: http://localhost:18100
+      IDP_ORIGIN: http://localhost:19000
+      SESSION_COOKIE_SECURE: 'false'
       WEB_PORT: '13000'
       SCHEDULE_PORT: '18080'
       RECEIPT_PORT: '18090'
@@ -251,3 +257,20 @@ jobs:
         run: |
           docker image prune -f
           docker builder prune -f --filter until=168h
+
+  # ruleset の必須のチェックにする、全てのジョブの結果をまとめるジョブ。
+  # 飛ばした matrix のジョブは matrix の名前のチェックを報告しないので、必須のチェックを個々のジョブにすると、文書だけの pull request がマージできない。
+  # 失敗か取り消しのジョブがあれば失敗し、成功と飛ばしだけなら成功する。ジョブを足したら needs にも足す。
+  ci-result:
+    needs: [changes, typescript, docs, go, generated, db-docs, e2e]
+    if: always()
+    runs-on: ${{ fromJSON(vars.RUNS_ON || '"ubuntu-latest"') }}
+    timeout-minutes: 5
+    steps:
+      - name: ジョブの結果を出す
+        run: echo "$NEEDS"
+        env:
+          NEEDS: ${{ toJSON(needs) }}
+      - name: 失敗か取り消しのジョブがあれば失敗する
+        if: contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled')
+        run: exit 1

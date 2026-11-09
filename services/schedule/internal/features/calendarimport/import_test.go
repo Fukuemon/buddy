@@ -33,7 +33,7 @@ func TestImport(t *testing.T) {
 		t.Fatalf("予定 %d、繰り返し %d、対応 %d", len(e.store.Schedules), len(e.store.Recurring), len(e.store.Links))
 	}
 	rs := recurringOf(t, e, "weekly")
-	if rs.Rule.Frequency != schedule.Weekly || *rs.Rule.DayOfWeek != 1 || rs.Date != (civil.Date{Year: 2026, Month: 11, Day: 2}) {
+	if rs.Rule.Frequency != schedule.Weekly || !slices.Equal(rs.Rule.DaysOfWeek, []int{1}) || rs.Date != (civil.Date{Year: 2026, Month: 11, Day: 2}) {
 		t.Errorf("繰り返し = %+v", rs)
 	}
 	nov := func(d int) civil.Date { return civil.Date{Year: 2026, Month: 11, Day: d} }
@@ -270,7 +270,7 @@ func TestImportExpandedMovedOutOfRange(t *testing.T) {
 	srv := &gcaltest.Server{
 		Calendars: map[string][][]*calendarv3.Event{googleCalID: {{
 			grecurring(gevent("biweekly", "定例", "2026-11-03T16:00:00+09:00", "2026-11-03T17:00:00+09:00"),
-				"RRULE:FREQ=WEEKLY;INTERVAL=2"),
+				"RRULE:FREQ=WEEKLY;INTERVAL=2;BYDAY=TU,SU"),
 			// 11-17 の回を 12-01 に動かした。Instances は今の日時で絞るので、期間の 11 月には返らない
 			gexception("biweekly_1117", "biweekly", "定例", "2026-12-01T16:00:00+09:00", "2026-12-01T17:00:00+09:00", "2026-11-17T16:00:00+09:00"),
 		}}},
@@ -328,7 +328,7 @@ func TestImportExcludesSkippedReplacement(t *testing.T) {
 	})
 }
 
-// TestImportOvernight は、翌日に終わる 24 時間未満の予定を、終了が翌日の予定として取り込み、2 日にわたる予定を取り込まないことを確認する（ADR-0032）。
+// TestImportOvernight は、翌日に終わる 24 時間未満の予定を、終了が翌日の予定として取り込み、2 日にわたる予定を取り込まないことを確認する（ADR-0033）。
 // 繰り返しの予定は親の予定の印で取り込み、親と印が違う変えた回は、その回の印を持つ置き換えにする。
 func TestImportOvernight(t *testing.T) {
 	e := newEnv(t, &gcaltest.Server{Calendars: map[string][][]*calendarv3.Event{googleCalID: {{
@@ -400,7 +400,7 @@ func TestImportServiceAliases(t *testing.T) {
 	}
 }
 
-// Google カレンダーを予定の正本にする事業所では、手動の取り込みを 409 で拒み、取り込みの記録、予定、予定の対応を書かない（ADR-0025）。
+// Google カレンダーを予定の正本にする事業所では、手動の取り込みを 409 で拒み、取り込みの記録、予定、予定の対応を書かない（ADR-0026）。
 // 読み替えた後に、書くトランザクションの前にモードが変わったときも、同じく拒む。
 func TestImportRejectsGooglePrimary(t *testing.T) {
 	toGooglePrimary := func(s *inmem.Store) {
@@ -441,7 +441,7 @@ func TestImportRejectsGooglePrimary(t *testing.T) {
 }
 
 // TestImportLinksCarryGoogleETags は、取り込みが、取り込んだ全ての予定の対応に、読んだ時点の Google の etag と、
-// 作ったばかりの予定の更新の番号を書くことを確認する。切り替えの完了は、この etag と Google の今の etag を比べる（ADR-0030）。
+// 作ったばかりの予定の更新の番号を書くことを確認する。切り替えの完了は、この etag と Google の今の etag を比べる（ADR-0031）。
 func TestImportLinksCarryGoogleETags(t *testing.T) {
 	e := newEnv(t, fixture())
 	if _, err := e.importDecided(t, e.rng, decisions()); err != nil {

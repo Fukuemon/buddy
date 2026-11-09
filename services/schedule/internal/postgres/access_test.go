@@ -13,6 +13,9 @@ type facilityReader interface {
 }
 
 func TestGetFacilityIDMatchesGet(t *testing.T) {
+	if testDB == nil {
+		t.Skip("PostgreSQL を使うテストは -short では動かさない")
+	}
 	ctx := context.Background()
 	facilityOfGet := func(get func() (string, error)) string {
 		t.Helper()
@@ -68,6 +71,9 @@ func TestGetFacilityIDMatchesGet(t *testing.T) {
 }
 
 func TestGetFacilityIDNotFound(t *testing.T) {
+	if testDB == nil {
+		t.Skip("PostgreSQL を使うテストは -short では動かさない")
+	}
 	readers := map[string]facilityReader{
 		"部署": NewDepartmentRepository(testDB), "チーム": NewTeamRepository(testDB), "役職": NewPositionRepository(testDB),
 		"職員": NewStaffRefRepository(testDB), "利用者": NewPatientRepository(testDB), "予定": NewScheduleRepository(testDB),
@@ -84,6 +90,9 @@ func TestGetFacilityIDNotFound(t *testing.T) {
 }
 
 func TestGetPrincipal(t *testing.T) {
+	if testDB == nil {
+		t.Skip("PostgreSQL を使うテストは -short では動かさない")
+	}
 	ctx := context.Background()
 	r := NewStaffRepository(testDB)
 	d, err := r.Get(ctx, seedMori)

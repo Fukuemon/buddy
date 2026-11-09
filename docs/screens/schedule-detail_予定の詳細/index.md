@@ -1,6 +1,6 @@
 # schedule-detail 予定の詳細
 
-職員が、カレンダーで押した予定 1 件の内容を見て、編集へ進むか、予定をキャンセルする画面。  
+職員が、カレンダーで押した予定 1 件の内容を見て、編集か繰り返しの変更へ進むか、予定をキャンセルか削除する画面。  
 予定のカレンダーの上にモーダルで重ねて出し、閉じるとカレンダーに戻る。
 
 | 項目 | 値 |
@@ -15,6 +15,7 @@
 
 - `apps/web/src/features/schedule/components/ScheduleDetailModal.tsx`
 - `apps/web/src/features/schedule/components/ScheduleCancelDialog.tsx`
+- `apps/web/src/features/schedule/components/ScheduleDeleteDialog.tsx`
 
 ## 構成
 
@@ -23,9 +24,9 @@
     予定の取得が成功し、予定が訪問の予定のとき。  
     職員か利用者が分からないときも同じ見た目で、名前の代わりに「職員不明」「利用者不明」を出す。  
     名前の出し方は、[利用者](#利用者) と [主訪問者](#主訪問者) にある。  
-    予定の職員の予定を編集できない職員には、「予定をキャンセル」と「編集」を出さず、「閉じる」だけを出す。  
-    出す条件は、[予定をキャンセル](#予定をキャンセル) と [編集](#編集) にある。  
-    モックは、予定を編集できる職員の画面を描く。
+    予定の職員の予定を編集できない職員には、「予定をキャンセル」「予定を削除」「編集」を出さず、「閉じる」だけを出す。  
+    出す条件は、[予定をキャンセル](#予定をキャンセル)、[予定を削除](#予定を削除)、[編集](#編集) にある。  
+    モックは、予定を buddy で管理する事業所の今日以降の予定を、予定を編集できる職員が開いた画面を描く。
 
     <iframe class="mock" title="予定の詳細の、訪問の予定" src="mocks/01-visit.html"></iframe>
     <a class="mock-open" href="mocks/01-visit.html" target="_blank">別タブで開く</a>
@@ -35,27 +36,27 @@
     | 1 | 覆い | 覆い | [覆い](#覆い) |
     | 2 | ダイアログ | 予定の詳細のダイアログ | [予定の詳細のダイアログ](#予定の詳細のダイアログ) |
     | 3 | ラベル | ダイアログのタイトル | [ダイアログのタイトル](#ダイアログのタイトル) |
-    | 4 | ボタン | 閉じる | [閉じる](#閉じる) |
-    | 5 | ラベル | 日時 | [日時](#日時) |
-    | 6 | ラベル | 種類 | [種類](#種類) |
-    | 7 | ラベル | 主訪問者 | [主訪問者](#主訪問者) |
-    | 8 | 領域 | 訪問の情報 | [訪問の情報](#訪問の情報) |
-    | 9 | ラベル | 利用者 | [利用者](#利用者) |
-    | 10 | ラベル | サービスコード | [サービスコード](#サービスコード) |
-    | 11 | ラベル | 訪問の区分 | [訪問の区分](#訪問の区分) |
-    | 12 | ラベル | メモ | [メモ](#メモ) |
-    | 13 | ボタン | 下端の閉じる | [下端の閉じる](#下端の閉じる) |
-    | 14 | ボタン | 編集 | [編集](#編集) |
-    | 15 | ボタン | 予定をキャンセル | [予定をキャンセル](#予定をキャンセル) |
+    | 4 | ラベル | 日時 | [日時](#日時) |
+    | 5 | ラベル | 種類 | [種類](#種類) |
+    | 6 | ラベル | 主訪問者 | [主訪問者](#主訪問者) |
+    | 7 | 領域 | 訪問の情報 | [訪問の情報](#訪問の情報) |
+    | 8 | ラベル | 利用者 | [利用者](#利用者) |
+    | 9 | ラベル | サービスコード | [サービスコード](#サービスコード) |
+    | 10 | ラベル | 訪問の区分 | [訪問の区分](#訪問の区分) |
+    | 11 | ラベル | メモ | [メモ](#メモ) |
+    | 12 | ボタン | 予定をキャンセル | [予定をキャンセル](#予定をキャンセル) |
+    | 13 | ボタン | 予定を削除 | [予定を削除](#予定を削除) |
+    | 14 | ボタン | 下端の閉じる | [下端の閉じる](#下端の閉じる) |
+    | 15 | ボタン | 編集 | [編集](#編集) |
 
 === "通常の予定"
 
     予定の取得が成功し、予定が通常の予定のとき。  
     職員が分からないときも同じ見た目で、名前の代わりに「職員不明」を出す。  
     名前の出し方は、[予定者](#予定者) にある。  
-    予定の職員の予定を編集できない職員には、「予定をキャンセル」と「編集」を出さず、「閉じる」だけを出す。  
-    出す条件は、[予定をキャンセル](#予定をキャンセル) と [編集](#編集) にある。  
-    モックは、メモの無い予定を描く。  
+    予定の職員の予定を編集できない職員には、「予定をキャンセル」「予定を削除」「編集」を出さず、「閉じる」だけを出す。  
+    出す条件は、[予定をキャンセル](#予定をキャンセル)、[予定を削除](#予定を削除)、[編集](#編集) にある。  
+    モックは、予定を buddy で管理する事業所の今日以降の予定のうち、メモの無い予定を描く。  
     メモの見出しも出さない。
 
     <iframe class="mock" title="予定の詳細の、通常の予定" src="mocks/02-normal.html"></iframe>
@@ -66,14 +67,14 @@
     | 1 | 覆い | 覆い | [覆い](#覆い) |
     | 2 | ダイアログ | 予定の詳細のダイアログ | [予定の詳細のダイアログ](#予定の詳細のダイアログ) |
     | 3 | ラベル | ダイアログのタイトル | [ダイアログのタイトル](#ダイアログのタイトル) |
-    | 4 | ボタン | 閉じる | [閉じる](#閉じる) |
-    | 5 | ラベル | 日時 | [日時](#日時) |
-    | 6 | ラベル | 種類 | [種類](#種類) |
-    | 7 | ラベル | タイトル | [タイトル](#タイトル) |
-    | 8 | ラベル | 予定者 | [予定者](#予定者) |
-    | 9 | ボタン | 下端の閉じる | [下端の閉じる](#下端の閉じる) |
-    | 10 | ボタン | 編集 | [編集](#編集) |
-    | 11 | ボタン | 予定をキャンセル | [予定をキャンセル](#予定をキャンセル) |
+    | 4 | ラベル | 日時 | [日時](#日時) |
+    | 5 | ラベル | 種類 | [種類](#種類) |
+    | 6 | ラベル | タイトル | [タイトル](#タイトル) |
+    | 7 | ラベル | 予定者 | [予定者](#予定者) |
+    | 8 | ボタン | 予定をキャンセル | [予定をキャンセル](#予定をキャンセル) |
+    | 9 | ボタン | 予定を削除 | [予定を削除](#予定を削除) |
+    | 10 | ボタン | 下端の閉じる | [下端の閉じる](#下端の閉じる) |
+    | 11 | ボタン | 編集 | [編集](#編集) |
 
 === "読み込み中"
 
@@ -165,11 +166,13 @@
 === "Google カレンダーの予定"
 
     予定を Google カレンダーで管理する事業所で、職員が Google カレンダーで作った予定を開いたとき。  
-    先頭に、buddy で変えると Google カレンダーにも書くことの案内を出す。  
+    先頭に、「Google カレンダー」の印と ? のヘルプを出す。  
+    buddy で変えると Google カレンダーにも書くことの説明は、? を押すと出る。  
     予定を編集できる職員には、buddy で管理する事業所の予定と同じく「予定をキャンセル」と「編集」を出す。  
+    「予定を削除」は出さない。  
     予定の正本を切り替えている間は、「予定をキャンセル」と「編集」を出さない。  
     モックは、訪問の予定を描く。  
-    通常の予定は、「通常の予定」の状態の行の並びに、案内を足したものになる。
+    通常の予定は、「通常の予定」の状態の行の並びに、印とヘルプを足したものになる。
 
     <iframe class="mock" title="予定の詳細の、Google カレンダーの予定" src="mocks/08-google-calendar.html"></iframe>
     <a class="mock-open" href="mocks/08-google-calendar.html" target="_blank">別タブで開く</a>
@@ -179,8 +182,8 @@
     | 1 | 覆い | 覆い | [覆い](#覆い) |
     | 2 | ダイアログ | 予定の詳細のダイアログ | [予定の詳細のダイアログ](#予定の詳細のダイアログ) |
     | 3 | ラベル | ダイアログのタイトル | [ダイアログのタイトル](#ダイアログのタイトル) |
-    | 4 | ボタン | 閉じる | [閉じる](#閉じる) |
-    | 5 | ラベル | Google カレンダーの案内 | [Google カレンダーの案内](#google-カレンダーの案内) |
+    | 4 | ラベル | Google カレンダーの印 | [Google カレンダーの印](#google-カレンダーの印) |
+    | 5 | ボタン | Google カレンダーのヘルプ | [Google カレンダーのヘルプ](#google-カレンダーのヘルプ) |
     | 6 | ラベル | 日時 | [日時](#日時) |
     | 7 | ラベル | 種類 | [種類](#種類) |
     | 8 | ラベル | 主訪問者 | [主訪問者](#主訪問者) |
@@ -188,15 +191,15 @@
     | 10 | ラベル | 利用者 | [利用者](#利用者) |
     | 11 | ラベル | サービスコード | [サービスコード](#サービスコード) |
     | 12 | ラベル | 訪問の区分 | [訪問の区分](#訪問の区分) |
-    | 13 | ボタン | 下端の閉じる | [下端の閉じる](#下端の閉じる) |
-    | 14 | ボタン | 予定をキャンセル | [予定をキャンセル](#予定をキャンセル) |
+    | 13 | ボタン | 予定をキャンセル | [予定をキャンセル](#予定をキャンセル) |
+    | 14 | ボタン | 下端の閉じる | [下端の閉じる](#下端の閉じる) |
     | 15 | ボタン | 編集 | [編集](#編集) |
 
 === "確認が必要な Google カレンダーの予定"
 
     Google カレンダーの予定のうち、buddy の予定として読めなかった予定を開いたとき。  
     予定のカレンダーの確認が必要な予定の通知からも開く。  
-    Google カレンダーの案内の下に、確認が必要な理由を出す。  
+    「Google カレンダー」の印の下に、確認が必要な理由を出す。  
     繰り返しの規則を buddy で表せない予定のほかは、通常の予定として出し、タイトルに Google カレンダーのタイトルを出す。  
     繰り返しの規則を buddy で表せない予定には、「予定をキャンセル」と「編集」を出さない。  
     モックは、タイトルの利用者が見つからない予定を、予定を編集できる職員が開いたときを描く。
@@ -209,15 +212,15 @@
     | 1 | 覆い | 覆い | [覆い](#覆い) |
     | 2 | ダイアログ | 予定の詳細のダイアログ | [予定の詳細のダイアログ](#予定の詳細のダイアログ) |
     | 3 | ラベル | ダイアログのタイトル | [ダイアログのタイトル](#ダイアログのタイトル) |
-    | 4 | ボタン | 閉じる | [閉じる](#閉じる) |
-    | 5 | ラベル | Google カレンダーの案内 | [Google カレンダーの案内](#google-カレンダーの案内) |
+    | 4 | ラベル | Google カレンダーの印 | [Google カレンダーの印](#google-カレンダーの印) |
+    | 5 | ボタン | Google カレンダーのヘルプ | [Google カレンダーのヘルプ](#google-カレンダーのヘルプ) |
     | 6 | ラベル | 確認が必要な理由 | [確認が必要な理由](#確認が必要な理由) |
     | 7 | ラベル | 日時 | [日時](#日時) |
     | 8 | ラベル | 種類 | [種類](#種類) |
     | 9 | ラベル | タイトル | [タイトル](#タイトル) |
     | 10 | ラベル | 予定者 | [予定者](#予定者) |
-    | 11 | ボタン | 下端の閉じる | [下端の閉じる](#下端の閉じる) |
-    | 12 | ボタン | 予定をキャンセル | [予定をキャンセル](#予定をキャンセル) |
+    | 11 | ボタン | 予定をキャンセル | [予定をキャンセル](#予定をキャンセル) |
+    | 12 | ボタン | 下端の閉じる | [下端の閉じる](#下端の閉じる) |
     | 13 | ボタン | 編集 | [編集](#編集) |
 
 === "キャンセルのダイアログ"
@@ -282,6 +285,130 @@
     | 8 | ボタン | キャンセル | [キャンセル](#キャンセル) |
     | 9 | ボタン | 予定をキャンセルする | [予定をキャンセルする](#予定をキャンセルする) |
 
+=== "繰り返しの予定の回"
+
+    繰り返しの予定の、まだ変えていない回を開いたとき。  
+    主訪問者（通常の予定では予定者）の下に、今の繰り返しの規則を [繰り返し](#繰り返し) の行に出す。  
+    予定を編集できる職員には、[編集](#編集) を、押すと上に開くメニューのボタンにして出す。  
+    今日より前の回でも同じである。  
+    「予定を削除」は、今日以降の回にだけ出し、押すとその回だけを削除する確認のダイアログを開く。  
+    1 回だけ変えた回は単発の予定として扱い、「訪問の予定」か「通常の予定」の状態で出す。  
+    ほかの要素は、「訪問の予定」か「通常の予定」の状態と同じである。  
+    モックは、予定を buddy で管理する事業所の、毎週月曜の訪問の予定の 11月9日（月）の回を、今日がその日のときに描く。
+
+    <iframe class="mock" title="予定の詳細の、繰り返しの予定の回" src="mocks/13-recurring.html"></iframe>
+    <a class="mock-open" href="mocks/13-recurring.html" target="_blank">別タブで開く</a>
+
+    | 番号 | 種別 | 要素名 | 仕様 |
+    | --- | --- | --- | --- |
+    | 1 | 覆い | 覆い | [覆い](#覆い) |
+    | 2 | ダイアログ | 予定の詳細のダイアログ | [予定の詳細のダイアログ](#予定の詳細のダイアログ) |
+    | 3 | ラベル | ダイアログのタイトル | [ダイアログのタイトル](#ダイアログのタイトル) |
+    | 4 | ラベル | 日時 | [日時](#日時) |
+    | 5 | ラベル | 種類 | [種類](#種類) |
+    | 6 | ラベル | 主訪問者 | [主訪問者](#主訪問者) |
+    | 7 | ラベル | 繰り返し | [繰り返し](#繰り返し) |
+    | 8 | 領域 | 訪問の情報 | [訪問の情報](#訪問の情報) |
+    | 9 | ラベル | 利用者 | [利用者](#利用者) |
+    | 10 | ラベル | サービスコード | [サービスコード](#サービスコード) |
+    | 11 | ラベル | 訪問の区分 | [訪問の区分](#訪問の区分) |
+    | 12 | ラベル | メモ | [メモ](#メモ) |
+    | 13 | ボタン | 予定をキャンセル | [予定をキャンセル](#予定をキャンセル) |
+    | 14 | ボタン | 予定を削除 | [予定を削除](#予定を削除) |
+    | 15 | ボタン | 下端の閉じる | [下端の閉じる](#下端の閉じる) |
+    | 16 | ボタン | 編集 | [編集](#編集) |
+
+=== "編集のメニュー"
+
+    「繰り返しの予定の回」の状態で、「編集」を押したとき。  
+    「編集」の上に、その回だけを変えるか、繰り返しを変えるかを選ぶメニューを開く。  
+    メニューの外を押すか、Escape キーを押すと、メニューを閉じて「繰り返しの予定の回」の状態に戻る。
+
+    <iframe class="mock" title="予定の詳細の、編集のメニュー" src="mocks/14-edit-menu.html"></iframe>
+    <a class="mock-open" href="mocks/14-edit-menu.html" target="_blank">別タブで開く</a>
+
+    | 番号 | 種別 | 要素名 | 仕様 |
+    | --- | --- | --- | --- |
+    | 1 | 覆い | 覆い | [覆い](#覆い) |
+    | 2 | ダイアログ | 予定の詳細のダイアログ | [予定の詳細のダイアログ](#予定の詳細のダイアログ) |
+    | 3 | ラベル | ダイアログのタイトル | [ダイアログのタイトル](#ダイアログのタイトル) |
+    | 4 | ラベル | 日時 | [日時](#日時) |
+    | 5 | ラベル | 種類 | [種類](#種類) |
+    | 6 | ラベル | 主訪問者 | [主訪問者](#主訪問者) |
+    | 7 | ラベル | 繰り返し | [繰り返し](#繰り返し) |
+    | 8 | 領域 | 訪問の情報 | [訪問の情報](#訪問の情報) |
+    | 9 | ラベル | 利用者 | [利用者](#利用者) |
+    | 10 | ラベル | サービスコード | [サービスコード](#サービスコード) |
+    | 11 | ラベル | 訪問の区分 | [訪問の区分](#訪問の区分) |
+    | 12 | ラベル | メモ | [メモ](#メモ) |
+    | 13 | ボタン | 予定をキャンセル | [予定をキャンセル](#予定をキャンセル) |
+    | 14 | ボタン | 予定を削除 | [予定を削除](#予定を削除) |
+    | 15 | ボタン | 下端の閉じる | [下端の閉じる](#下端の閉じる) |
+    | 16 | ボタン | 編集 | [編集](#編集) |
+    | 17 | 領域 | 編集のメニュー | [編集のメニュー](#編集のメニュー) |
+    | 18 | ボタン | この予定を編集 | [この予定を編集](#この予定を編集) |
+    | 19 | ボタン | 繰り返しを変更 | [繰り返しを変更](#繰り返しを変更) |
+
+=== "削除のダイアログ"
+
+    予定の詳細で「予定を削除」を押したとき。  
+    予定の詳細の上に、削除の確認のダイアログを重ねる。  
+    理由の欄は無く、ダイアログの「予定を削除する」は開いた直後から押せる。  
+    繰り返しの予定のまだ変えていない回では、その回だけを消すことを説明の文で示す。  
+    モックは、予定を buddy で管理する事業所の、今日以降の訪問の予定を開いたときを描く。
+
+    <iframe class="mock" title="予定の詳細の、削除のダイアログ" src="mocks/15-delete.html"></iframe>
+    <a class="mock-open" href="mocks/15-delete.html" target="_blank">別タブで開く</a>
+
+    | 番号 | 種別 | 要素名 | 仕様 |
+    | --- | --- | --- | --- |
+    | 1 | 覆い | 削除のダイアログの覆い | [削除のダイアログの覆い](#削除のダイアログの覆い) |
+    | 2 | ダイアログ | 削除のダイアログ | [削除のダイアログ](#削除のダイアログ) |
+    | 3 | ラベル | 削除のダイアログのタイトル | [削除のダイアログのタイトル](#削除のダイアログのタイトル) |
+    | 4 | ラベル | 削除する予定の日時 | [削除する予定の日時](#削除する予定の日時) |
+    | 5 | ラベル | 削除の説明 | [削除の説明](#削除の説明) |
+    | 6 | ボタン | 削除のダイアログのキャンセル | [削除のダイアログのキャンセル](#削除のダイアログのキャンセル) |
+    | 7 | ボタン | 予定を削除する | [予定を削除する](#予定を削除する) |
+
+=== "削除の送信中"
+
+    ダイアログの「予定を削除する」を押し、終わるのを待っているとき。  
+    ダイアログを閉じられない。
+
+    <iframe class="mock" title="予定の詳細の、削除の送信中" src="mocks/16-deleting.html"></iframe>
+    <a class="mock-open" href="mocks/16-deleting.html" target="_blank">別タブで開く</a>
+
+    | 番号 | 種別 | 要素名 | 仕様 |
+    | --- | --- | --- | --- |
+    | 1 | 覆い | 削除のダイアログの覆い | [削除のダイアログの覆い](#削除のダイアログの覆い) |
+    | 2 | ダイアログ | 削除のダイアログ | [削除のダイアログ](#削除のダイアログ) |
+    | 3 | ラベル | 削除のダイアログのタイトル | [削除のダイアログのタイトル](#削除のダイアログのタイトル) |
+    | 4 | ラベル | 削除する予定の日時 | [削除する予定の日時](#削除する予定の日時) |
+    | 5 | ラベル | 削除の説明 | [削除の説明](#削除の説明) |
+    | 6 | ボタン | 削除のダイアログのキャンセル | [削除のダイアログのキャンセル](#削除のダイアログのキャンセル) |
+    | 7 | ボタン | 予定を削除する | [予定を削除する](#予定を削除する) |
+
+=== "削除の失敗"
+
+    予定を削除できなかったとき。  
+    ダイアログを開いたままにする。  
+    文は、[削除の失敗の文](#削除の失敗の文) にある。  
+    モックは、ダイアログを開いた後に、予定がキャンセルか変更されていたときを描く。
+
+    <iframe class="mock" title="予定の詳細の、削除の失敗" src="mocks/17-delete-error.html"></iframe>
+    <a class="mock-open" href="mocks/17-delete-error.html" target="_blank">別タブで開く</a>
+
+    | 番号 | 種別 | 要素名 | 仕様 |
+    | --- | --- | --- | --- |
+    | 1 | 覆い | 削除のダイアログの覆い | [削除のダイアログの覆い](#削除のダイアログの覆い) |
+    | 2 | ダイアログ | 削除のダイアログ | [削除のダイアログ](#削除のダイアログ) |
+    | 3 | ラベル | 削除のダイアログのタイトル | [削除のダイアログのタイトル](#削除のダイアログのタイトル) |
+    | 4 | ラベル | 削除する予定の日時 | [削除する予定の日時](#削除する予定の日時) |
+    | 5 | ラベル | 削除の説明 | [削除の説明](#削除の説明) |
+    | 6 | メッセージ | 削除の失敗の文 | [削除の失敗の文](#削除の失敗の文) |
+    | 7 | ボタン | 削除のダイアログのキャンセル | [削除のダイアログのキャンセル](#削除のダイアログのキャンセル) |
+    | 8 | ボタン | 予定を削除する | [予定を削除する](#予定を削除する) |
+
 ## 覆い
 
 **概要**: ダイアログの背後の予定のカレンダーを、暗くぼかして覆う覆い。
@@ -301,10 +428,13 @@
 **概要**: 予定 1 件の内容を出すダイアログ。  
 幅 768px 未満では、画面いっぱいに出す。
 
-**値のソース**: 上端の左にダイアログのタイトル、右上に閉じるボタン、本文に項目の名前と値の行、下端の右に閉じる、予定をキャンセル、編集のボタンをこの順に置く。
+**値のソース**: 上端の左にダイアログのタイトル、本文に項目の名前と値の行を置く。  
+下端は、左に予定をキャンセルと予定を削除のボタンをこの順に置き、右に閉じると編集のボタンをこの順にまとめる。  
+下端を出す状態では、右上に閉じるボタン（×）を置かない。  
+下端を出さない「読み込み中」「見つからない」「読み込みの失敗」「キャンセルした予定」「見る権限が無い」の状態だけは、右上に閉じるボタンを置く。
 
 本文は、日時の見出しの下に、種類、タイトル、主訪問者か予定者の段、訪問の情報の段、メモの段の順に並べる。  
-Google カレンダーの予定では、日時の見出しの上に、Google カレンダーの案内と、確認が必要な理由をこの順に置く。  
+Google カレンダーの予定では、日時の見出しの上に、Google カレンダーの印とヘルプを横に並べた段と、確認が必要な理由をこの順に置く。  
 キャンセルした予定では、日時の見出しの上にキャンセルの理由を置く。  
 予定を読めなかったときは、本文に読み込みの失敗の文だけを出す。
 
@@ -313,17 +443,18 @@ Google カレンダーの予定では、日時の見出しの上に、Google カ
 
 **カタログ**: [ScheduleDetailModal の Visit](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-scheduledetailmodal--visit)、[ScheduleDetailModalContainer の Loading](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-scheduledetailmodalcontainer--loading)、[ScheduleDetailModalContainer の Failed](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-scheduledetailmodalcontainer--failed)
 
-**操作**: Escape キーを押すと、[閉じる](#閉じる) を押したときと同じく閉じる。
+**操作**: Escape キーを押すと、下端を出す状態では [下端の閉じる](#下端の閉じる) を、下端を出さない状態では [閉じる](#閉じる) を押したときと同じく閉じる。
 
 ## 閉じる
 
-**概要**: ダイアログを閉じて、予定のカレンダーに戻るボタン。  
-読み込み中と失敗のときも押せる。
+**概要**: 下端を出さない状態で、ダイアログを閉じて予定のカレンダーに戻るボタン。  
+「読み込み中」「見つからない」「読み込みの失敗」「キャンセルした予定」「見る権限が無い」の状態で、右上に出す。  
+下端を出す状態では出さず、[下端の閉じる](#下端の閉じる) で閉じる。
 
 **値のソース**: 「×」の印。  
 読み上げの名前は「閉じる」。
 
-**カタログ**: [ScheduleDetailModal の Visit](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-scheduledetailmodal--visit)、[ScheduleDetailModalContainer の Loading](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-scheduledetailmodalcontainer--loading)、[ScheduleDetailModalContainer の Failed](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-scheduledetailmodalcontainer--failed)
+**カタログ**: [ScheduleDetailModalContainer の Loading](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-scheduledetailmodalcontainer--loading)、[ScheduleDetailModalContainer の Failed](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-scheduledetailmodalcontainer--failed)
 
 **操作**: 押すと、確認を出さずに `/schedule` に戻る。
 
@@ -369,26 +500,42 @@ Google カレンダーの予定では、日時の見出しの上に、Google カ
 
 **カタログ**: [ScheduleDetailModal の Cancelled](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-scheduledetailmodal--cancelled)
 
-## Google カレンダーの案内
+## Google カレンダーの印
 
-**概要**: Google カレンダーの予定であることと、buddy で変えると Google カレンダーにも書くことを伝えるラベル。
+**概要**: 開いた予定が Google カレンダーの予定であることを示すラベル。
 
-**値のソース**: 次の文言。  
-枠線で囲み、警告の色にしない。  
-本文の先頭に出す。
+**値のソース**: 「Google カレンダー」の文字の状態の印。  
+枠だけの印にし、警告の色にしない。  
+本文の先頭に出し、右に [Google カレンダーのヘルプ](#google-カレンダーのヘルプ) を置く。
+
+**カタログ**: [ScheduleDetailModalContainer の GoogleCalendar](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-scheduledetailmodalcontainer--google-calendar)
+
+## Google カレンダーのヘルプ
+
+**概要**: buddy で変えると Google カレンダーにも書くことを示すボタン。  
+[Google カレンダーの印](#google-カレンダーの印) の右に出す。  
+毎回は要らない説明なので、? を押したときだけ出す。
+
+**値のソース**: ? のボタン。  
+読み上げる名前は「ヘルプ」。  
+押すと、印の下に次の説明を出す。
 
 | 文言 |
 | --- |
-| 「Google カレンダーの予定です。buddy で変更かキャンセルすると、Google カレンダーにも書きます。」 |
+| 「buddy で変更かキャンセルすると、Google カレンダーにも書きます。」 |
 
 **カタログ**: [ScheduleDetailModalContainer の GoogleCalendar](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-scheduledetailmodalcontainer--google-calendar)
+
+**操作**: 押すと、印の下に説明を出す。
+
+1. もう一度押すか、説明の外を押すか、Escape キーを押すと閉じる。
 
 ## 確認が必要な理由
 
 **概要**: Google カレンダーの予定を buddy の予定として読めなかった理由と、直し方を示すラベル。
 
 **値のソース**: 次の 3 つを続けた 1 つの段落。  
-[Google カレンダーの案内](#google-カレンダーの案内) の下に、警告の色の帯で出す。  
+[Google カレンダーの印](#google-カレンダーの印) の下に、警告の色の帯で出す。  
 理由の文は、[予定のカレンダーの通知の予定](../schedule-calendar_予定のカレンダー/index.md#通知の予定) と同じである。
 
 | 箇所 | 文言 |
@@ -401,7 +548,7 @@ Google カレンダーの予定では、日時の見出しの上に、Google カ
 | --- | --- |
 | タイトルの利用者かサービス内容が、buddy の訪問の情報と違う | 「buddy で保存し直すと、Google カレンダーのタイトルを buddy の訪問の情報に合わせて書き直します。」 |
 | 繰り返しの規則を buddy で表せない | 「Google カレンダーで繰り返しの規則を直してください。」 |
-| ほかの理由 | 「Google カレンダーでタイトルを直してください。」 |
+| 訪問の情報を読み取れなかった（タイトルの利用者が見つからない、同じ名前の利用者が 2 人以上いる、サービス内容が見つからない、タイトルを読めない） | 「buddy で編集して訪問の情報を入れるか、Google カレンダーでタイトルを直してください。」 |
 
 **カタログ**: [ScheduleDetailModalContainer の GoogleCalendarNeedsReview](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-scheduledetailmodalcontainer--google-calendar-needs-review)。  
 繰り返しの規則を buddy で表せない予定は [ScheduleDetailModalContainer の GoogleCalendarRecurrenceUnsupported](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-scheduledetailmodalcontainer--google-calendar-recurrence-unsupported)
@@ -498,6 +645,34 @@ Google カレンダーの予定では、日時の見出しの上に、Google カ
 
 **カタログ**: [ScheduleDetailModal の Normal](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-scheduledetailmodal--normal)
 
+## 繰り返し
+
+**概要**: 開いた回の繰り返しの予定の、今の規則を示すラベル。  
+繰り返しを変える前に、今の曜日と間隔を確認するためである。
+
+**値のソース**: 規則を、[繰り返しの変更](../schedule-recurrence_繰り返しの変更/index.md) の選択肢と同じ形で書く。
+
+| 規則 | 文言の例 |
+| --- | --- |
+| 毎週 | 「毎週 火曜日」「隔週 月曜日、木曜日」「3 週ごと 火曜日」 |
+| 7 つの曜日で間隔 1 の毎週 | 「毎日」 |
+| 毎月の日にち | 「毎月 9 日」 |
+| 毎月の第何週の曜日 | 「毎月 第 2 月曜日」 |
+
+- 毎週の間隔は、1 週を「毎週」、2 週を「隔週」、3 週以上を「3 週ごと」の形で書く。
+- 毎週の曜日は、月曜から日曜の順に「、」でつなぐ。
+- 7 つの曜日で間隔が 1 の毎週は、毎日の繰り返しなので「毎日」と書く。間隔が 2 以上なら、7 つの曜日でも「隔週 月曜日、火曜日、…、日曜日」の形で書く。
+  - 「毎日」は [ScheduleDetailModal の RecurringDaily](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-scheduledetailmodal--recurring-daily) にある。
+- 終了日があれば、後ろに「（〇〇〇〇年〇月〇日まで）」の形で、終了日の年、月、日を付ける。
+- ADR-0038: [繰り返しの規則に、毎週の複数の曜日と間隔を足し、終わりは終了日だけで持つ](../../adr/0038-recurring-rule-scope.md)
+
+**表示**: 次の全てに当てはまるとき。
+
+- 開いた予定が、繰り返しの予定のまだ変えていない回である
+  - 1 回だけ変えた回とキャンセルした回は、単発の予定として扱うので出さない。
+
+**カタログ**: [ScheduleDetailModal の Recurring](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-scheduledetailmodal--recurring)
+
 ## メモ
 
 **概要**: 予定のメモを示す領域。
@@ -516,7 +691,7 @@ Google カレンダーの予定では、日時の見出しの上に、Google カ
 ## 下端の閉じる
 
 **概要**: ダイアログを閉じて、予定のカレンダーに戻るボタン。  
-上端の [閉じる](#閉じる) と同じく働く。  
+下端を出さない状態の [閉じる](#閉じる) と同じく働く。  
 [編集](#編集) を出さない職員にも出す。
 
 **値のソース**: 「閉じる」
@@ -526,14 +701,17 @@ Google カレンダーの予定では、日時の見出しの上に、Google カ
 - 開いた予定が、キャンセルした予定でない
   - キャンセルした予定では下端を出さず、上端の閉じるボタンだけで閉じる。
 
-**操作**: 押すと、[閉じる](#閉じる) を押したときと同じく、確認を出さずに `/schedule` に戻る。
+**操作**: 押すか Escape キーを押すと、[閉じる](#閉じる) を押したときと同じく、確認を出さずに `/schedule` に戻る。
 
 ## 編集
 
 **概要**: 開いた予定の編集へ進むボタン。  
+繰り返しの予定のまだ変えていない回では、その回だけを変えるか、繰り返しを変えるかを選ぶ [編集のメニュー](#編集のメニュー) を開くボタンにする。  
 予定を buddy で管理する事業所と、Google カレンダーで管理する事業所のどちらでも出す。
 
-**値のソース**: 「編集」
+**値のソース**: 「編集」  
+繰り返しの予定のまだ変えていない回では、文言の右に上向きの印を付ける。  
+メニューを開いているかは、読み上げで伝える。
 
 **表示**: 次の全てに当てはまるとき。
 
@@ -548,11 +726,65 @@ Google カレンダーの予定では、日時の見出しの上に、Google カ
   - チームを対象にする権限で判定するときは、職員の一覧を読み終えるまで出さない。予定の職員のチームが分からないためである。職員の一覧を読めなかったときも出さない。
 
 **カタログ**: [ScheduleDetailModal の Visit](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-scheduledetailmodal--visit)、[ScheduleDetailModalContainer の ReadOnly](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-scheduledetailmodalcontainer--read-only)。  
-Google カレンダーの予定は [ScheduleDetailModalContainer の GoogleCalendar](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-scheduledetailmodalcontainer--google-calendar)、[ScheduleDetailModalContainer の GoogleCalendarCutover](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-scheduledetailmodalcontainer--google-calendar-cutover)
+Google カレンダーの予定は [ScheduleDetailModalContainer の GoogleCalendar](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-scheduledetailmodalcontainer--google-calendar)、[ScheduleDetailModalContainer の GoogleCalendarCutover](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-scheduledetailmodalcontainer--google-calendar-cutover)。  
+繰り返しの予定の回は [ScheduleDetailModalContainer の RecurringOccurrence](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-scheduledetailmodalcontainer--recurring-occurrence)。  
+1 回だけ変えた回は [ScheduleDetailModalContainer の RecurringReplaced](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-scheduledetailmodalcontainer--recurring-replaced)
 
-**操作**: 押すと予定の編集を開く。
+**操作**:
+
+- 繰り返しの予定のまだ変えていない回のほかで押すと、予定の編集を開く。
+  - URL は `/schedule/{予定の id}/edit` にし、search params の `view`、`date`、`staff`、`cancelled` を引き継ぐ。
+  - 履歴に積む。
+- 繰り返しの予定のまだ変えていない回で押すと、[編集のメニュー](#編集のメニュー) を開き、「編集のメニュー」の状態にする。
+  - メニューを開いているときに押すと、メニューを閉じる。
+  - URL は変えない。
+
+## 編集のメニュー
+
+**概要**: 繰り返しの予定のまだ変えていない回で、その回だけを変えるか、繰り返しを変えるかを選ぶメニューの領域。  
+[編集](#編集) の上に開き、右端を「編集」にそろえる。  
+下端の下に場所が無いためである。
+
+**値のソース**: [この予定を編集](#この予定を編集) と [繰り返しを変更](#繰り返しを変更) をこの順に並べる。  
+読み上げの名前は「編集」。  
+開くと、最初の項目にフォーカスを移す。
+
+**カタログ**: [ScheduleDetailModalContainer の RecurringOccurrenceMenu](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-scheduledetailmodalcontainer--recurring-occurrence-menu)、[ScheduleDetailModalContainer の RecurringPastMenu](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-scheduledetailmodalcontainer--recurring-past-menu)
+
+**操作**: メニューの外を押すか、Escape キーを押すと、メニューを閉じて「繰り返しの予定の回」の状態に戻る。
+
+1. Escape キーでは、フォーカスを「編集」に戻す。
+2. Escape キーでは、予定の詳細は閉じない。
+
+## この予定を編集
+
+**概要**: 開いた回だけを変える予定の編集へ進む、[編集のメニュー](#編集のメニュー) の項目のボタン。
+
+**値のソース**: 「この予定を編集」
+
+**カタログ**: [ScheduleDetailModalContainer の RecurringOccurrenceMenu](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-scheduledetailmodalcontainer--recurring-occurrence-menu)
+
+**操作**: 押すと、メニューを閉じ、予定の編集を開く。
 
 1. URL は `/schedule/{予定の id}/edit` にし、search params の `view`、`date`、`staff`、`cancelled` を引き継ぐ。
+2. 履歴に積む。
+3. 予定の編集で保存すると、その回だけが変わり、その回は 1 回だけ変えた回になる。
+
+## 繰り返しを変更
+
+**概要**: 開いた回の日以降の回の繰り返しを変える [繰り返しの変更](../schedule-recurrence_繰り返しの変更/index.md) へ進む、[編集のメニュー](#編集のメニュー) の項目のボタン。
+
+**値のソース**: 「繰り返しを変更」  
+今日より前の回でも押せる。  
+今日より前の回から開くと、繰り返しの変更は今日以降の回を変える。
+
+- ADR-0037: [繰り返しの予定の規則の変更](../../adr/0037-recurring-rule-change.md)
+
+**カタログ**: [ScheduleDetailModalContainer の RecurringOccurrenceMenu](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-scheduledetailmodalcontainer--recurring-occurrence-menu)、[ScheduleDetailModalContainer の RecurringPastMenu](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-scheduledetailmodalcontainer--recurring-past-menu)
+
+**操作**: 押すと、メニューを閉じ、繰り返しの変更を開く。
+
+1. URL は `/schedule/{予定の id}/recurrence` にし、search params の `view`、`date`、`staff`、`cancelled` を引き継ぐ。
 2. 履歴に積む。
 
 ## 予定をキャンセル
@@ -560,7 +792,11 @@ Google カレンダーの予定は [ScheduleDetailModalContainer の GoogleCalen
 **概要**: 予定をキャンセルする前に、理由を入れる [キャンセルのダイアログ](#キャンセルのダイアログ) を開くボタン。  
 予定を buddy で管理する事業所と、Google カレンダーで管理する事業所のどちらでも出す。
 
-**値のソース**: 「予定をキャンセル」
+**値のソース**: 「予定をキャンセル」。  
+白い面に赤い文字で出す。  
+下端の左端に置き、[下端の閉じる](#下端の閉じる) と [編集](#編集) から離す。  
+戻せない操作の起点を、よく使う閉じると編集の隣に並べると、押し間違えやすいためである。  
+右隣には [予定を削除](#予定を削除) を置く。
 
 **表示**: 次の全てに当てはまるとき。
 
@@ -570,16 +806,51 @@ Google カレンダーの予定は [ScheduleDetailModalContainer の GoogleCalen
   - 切り替えている間は、予定を変えられないためである。
 - 開いた予定が、繰り返しの規則を buddy で表せない予定でない
   - 繰り返しの規則は、Google カレンダーで直すためである。
-- 開いた予定が、予定を buddy で管理する事業所の繰り返しの予定の 1 回でない
-  - 繰り返しの予定の 1 回だけをキャンセルする操作が無いためである。
 - ログインした職員が、開いた予定の職員の予定を編集できる
   - 判定は [編集](#編集) と同じく、[権限の確認](#権限の確認) にある。
 
-**カタログ**: [ScheduleDetailModalContainer の GoogleCalendar](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-scheduledetailmodalcontainer--google-calendar)、[ScheduleDetailModalContainer の GoogleCalendarCutover](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-scheduledetailmodalcontainer--google-calendar-cutover)
+**カタログ**: [ScheduleDetailModal の Visit](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-scheduledetailmodal--visit)。  
+Google カレンダーの予定は [ScheduleDetailModalContainer の GoogleCalendar](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-scheduledetailmodalcontainer--google-calendar)、[ScheduleDetailModalContainer の GoogleCalendarCutover](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-scheduledetailmodalcontainer--google-calendar-cutover)
 
 **操作**: 押すと、予定の詳細の上に [キャンセルのダイアログ](#キャンセルのダイアログ) を開き、「キャンセルのダイアログ」の状態にする。
 
 1. 前に開いたときのキャンセルの失敗の文は消す。
+2. URL は変えない。
+
+## 予定を削除
+
+**概要**: 誤って入れた予定を消す前に、[削除のダイアログ](#削除のダイアログ) を開くボタン。  
+予定を buddy で管理する事業所でだけ出す。  
+繰り返しの予定のまだ変えていない回でも、1 回だけ変えた回でも、条件に当てはまれば出す。
+
+**値のソース**: 「予定を削除」。  
+白い面に赤い文字で出す。  
+下端の左に、[予定をキャンセル](#予定をキャンセル) の右隣に置き、[下端の閉じる](#下端の閉じる) と [編集](#編集) から離す。
+
+- ADR-0040: [誤って入れた予定を、キャンセルと別の削除で消し、開始の日が今日以降の有効な予定に限り、監査の記録だけを残す](../../adr/0040-schedule-deletion.md)
+
+**表示**: 次の全てに当てはまるとき。
+
+- 開いた予定が、キャンセルした予定でない
+  - キャンセルは戻せない業務の記録で、削除で消せるとキャンセルの一覧を信用できなくなるためである。
+- 事業所が、予定の正本を buddy に切り替えている途中でない
+  - 切り替えている間は、予定を変えられないためである。
+- 開いた予定が、繰り返しの規則を buddy で表せない予定でない
+  - 繰り返しの規則は、Google カレンダーで直すためである。
+- ログインした職員が、開いた予定の職員の予定を編集できる
+  - 判定は [予定をキャンセル](#予定をキャンセル) と同じく、[権限の確認](#権限の確認) にある。誤って入れた予定を直す職員は、予定を直す職員と同じだからである。
+- 事業所が、予定を buddy で管理する事業所である
+  - Google カレンダーで管理する事業所では、キャンセルが Google カレンダーの予定を消すので、キャンセルと削除を分けなくてよいためである。
+- 開いた予定の開始の日が、今日以降である
+  - 照合が読む過去の予定を変えないためである。今日より前の誤った予定は、キャンセルで残す。
+  - 開始の日と今日は、日本の時刻（Asia/Tokyo）で数える。
+
+**カタログ**: [ScheduleDetailModalContainer の Visit](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-scheduledetailmodalcontainer--visit)。  
+今日より前の予定で出ないことは [ScheduleDetailModalContainer の PastSchedule](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-scheduledetailmodalcontainer--past-schedule)
+
+**操作**: 押すと、予定の詳細の上に [削除のダイアログ](#削除のダイアログ) を開き、「削除のダイアログ」の状態にする。
+
+1. 前に開いたときの削除の失敗の文は消す。
 2. URL は変えない。
 
 ## 読み込み中の表示
@@ -618,7 +889,7 @@ Google カレンダーの予定は [ScheduleDetailModalContainer の GoogleCalen
 
 **カタログ**: [ConfirmDialog の Default](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/パターン-confirmdialog--default)
 
-**操作**: 押すと、[キャンセル](#キャンセル) を押したときと同じく、何も変えずに予定の詳細に戻る。
+**操作**: 押すと、[キャンセル](#キャンセル)（「戻る」）を押したときと同じく、何も変えずに予定の詳細に戻る。
 
 1. キャンセルを送っている間は、押しても閉じない。
 
@@ -628,13 +899,13 @@ Google カレンダーの予定は [ScheduleDetailModalContainer の GoogleCalen
 キャンセルした予定は戻せないので、確定の前に毎回出す。
 
 **値のソース**: 本文に、ダイアログのタイトル、キャンセルする予定の日時、キャンセルの説明、キャンセルの理由の欄をこの順に置く。  
-下端の右に、「キャンセル」と「予定をキャンセルする」をこの順に置く。  
+下端の右に、「戻る」と「予定をキャンセルする」をこの順に置く。  
 × は置かない。  
 予定の詳細の上に重ねて出す。
 
 **カタログ**: [ConfirmDialog の Default](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/パターン-confirmdialog--default)
 
-**操作**: Escape キーを押すと、[キャンセル](#キャンセル) を押したときと同じく、何も変えずに予定の詳細に戻る。
+**操作**: Escape キーを押すと、[キャンセル](#キャンセル)（「戻る」）を押したときと同じく、何も変えずに予定の詳細に戻る。
 
 1. キャンセルを送っている間は閉じない。
 
@@ -655,7 +926,7 @@ Google カレンダーの予定は [ScheduleDetailModalContainer の GoogleCalen
 **概要**: どの予定をキャンセルするかを示すラベル。
 
 **値のソース**: 予定の日時。  
-形は [日時](#日時) と同じく、`2026年10月20日（火） 09:00〜09:29` にする。
+形は [日時](#日時) と同じく、`2026年11月20日（金） 09:00〜09:29` にする。
 
 **カタログ**: [ConfirmDialog の Default](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/パターン-confirmdialog--default)
 
@@ -720,13 +991,14 @@ Google カレンダーの予定は [ScheduleDetailModalContainer の GoogleCalen
 
 **概要**: 予定をキャンセルせずに、キャンセルのダイアログを閉じるボタン。
 
-**値のソース**: 「キャンセル」
+**値のソース**: 「戻る」。  
+確定のボタンの「予定をキャンセルする」と同じ語のボタンを並べると、どちらが予定を取り消すのかを読み違えやすいので、「キャンセル」にしない。
 
 **活性**: 次の全てに当てはまるとき。
 
 - 職員が、キャンセルを送っている途中でない
 
-**カタログ**: [ConfirmDialog の Default](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/パターン-confirmdialog--default)、[ConfirmDialog の Submitting](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/パターン-confirmdialog--submitting)
+**カタログ**: [ConfirmDialog の CancelAction](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/パターン-confirmdialog--cancel-action)、[ConfirmDialog の Submitting](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/パターン-confirmdialog--submitting)
 
 **操作**: 押すか Escape キーを押すと、何も変えずにダイアログを閉じ、予定の詳細に戻る。
 
@@ -760,6 +1032,135 @@ Google カレンダーの予定は [ScheduleDetailModalContainer の GoogleCalen
 2. 失敗したら、「キャンセルの失敗」の状態にし、[キャンセルの失敗の文](#キャンセルの失敗の文) に理由を出す。
    - ダイアログを開いたままにし、入れた理由を残す。
 
+## 削除のダイアログの覆い
+
+**概要**: 削除のダイアログの後ろの予定の詳細を覆い、ダイアログの外を押せなくする覆い。
+
+**値のソース**: 文言は無い。
+
+**カタログ**: [ConfirmDialog の Default](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/パターン-confirmdialog--default)
+
+**操作**: 押すと、[削除のダイアログのキャンセル](#削除のダイアログのキャンセル)（「戻る」）を押したときと同じく、何も変えずに予定の詳細に戻る。
+
+1. 削除を送っている間は、押しても閉じない。
+
+## 削除のダイアログ
+
+**概要**: 誤って入れた予定を削除する前に確認するダイアログ。  
+削除した予定は元に戻せないので、確定の前に毎回出す。
+
+**値のソース**: 本文に、ダイアログのタイトル、削除する予定の日時、削除の説明をこの順に置く。  
+理由の欄は置かない。  
+下端の右に、「戻る」と「予定を削除する」をこの順に置く。  
+× は置かない。  
+予定の詳細の上に重ねて出す。
+
+**カタログ**: [ScheduleDetailModalContainer の DeleteDialog](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-scheduledetailmodalcontainer--delete-dialog)、[ScheduleDetailModalContainer の DeleteFailed](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-scheduledetailmodalcontainer--delete-failed)
+
+**操作**: Escape キーを押すと、[削除のダイアログのキャンセル](#削除のダイアログのキャンセル)（「戻る」）を押したときと同じく、何も変えずに予定の詳細に戻る。
+
+1. 削除を送っている間は閉じない。
+
+## 削除のダイアログのタイトル
+
+**概要**: 何を確認するダイアログかを、問いの形で示すラベル。
+
+**値のソース**: 次の文言。
+
+| 文言 |
+| --- |
+| 「この予定を削除しますか」 |
+
+**カタログ**: [ConfirmDialog の Default](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/パターン-confirmdialog--default)
+
+## 削除する予定の日時
+
+**概要**: どの予定を削除するかを示すラベル。
+
+**値のソース**: 予定の日時。  
+形は [キャンセルする予定の日時](#キャンセルする予定の日時) と同じく、`2026年11月20日（金） 09:00〜09:29` にする。
+
+**カタログ**: [ConfirmDialog の Default](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/パターン-confirmdialog--default)
+
+## 削除の説明
+
+**概要**: 削除すると予定がどうなり、取りやめた予定はキャンセルすることを示すラベル。  
+取り消せない操作の確認なので、毎回出す。
+
+**値のソース**: 開いた予定が繰り返しの予定のまだ変えていない回かで、次の文を出す。
+
+| 開いた予定 | 文言 |
+| --- | --- |
+| 繰り返しの予定のまだ変えていない回 | 「繰り返しの予定のうち、この日の回だけを消します。ほかの回は残ります。削除した回は元に戻せません。予定を取りやめたときは、削除せずにキャンセルしてください。」 |
+| ほかの予定（単発の予定と、1 回だけ変えた回） | 「誤って入れた予定を消します。削除した予定はカレンダーに出ず、元に戻せません。予定を取りやめたときは、削除せずにキャンセルしてください。」 |
+
+**カタログ**: [ConfirmDialog の Default](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/パターン-confirmdialog--default)。  
+繰り返しの予定の回は [ScheduleDetailModalContainer の DeleteRecurringOccurrence](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-scheduledetailmodalcontainer--delete-recurring-occurrence)
+
+## 削除の失敗の文
+
+**概要**: 予定を削除できなかったことと、職員が次にすることを伝えるメッセージ。
+
+**値のソース**: 失敗ごとに次の文を出す。  
+読み上げでは警告として扱う。  
+下端のボタンの上に、幅いっぱいで出す。  
+ダイアログを閉じて開き直すと消える。
+
+| 失敗 | 文 |
+| --- | --- |
+| 画面を開いた後に、予定を編集する権限を外された | 「この操作をする権限がありません。」 |
+| 予定が見つからない | 「予定が見つかりません。カレンダーに戻って、予定を確認してください。」 |
+| 予定がキャンセルされていたか、回がすでに変更、キャンセル、削除されていた | 「予定がキャンセルか変更されていたので、削除できませんでした。予定を開き直してください。」 |
+| 開始の日が今日より前になっていたか、繰り返しの規則が変わり回が無くなっていた | 「予定が変更されたか、今日より前になったので、削除できませんでした。予定を開き直してください。」 |
+| 事業所が、予定を Google カレンダーで管理している | 「この事業所の予定は Google カレンダーで管理しています。予定は Google カレンダーで作成、変更してください。」 |
+| ほかの失敗と、つながらない | 「予定を削除できませんでした。」 |
+
+- 文と、その要因の対応は [API との対応の状態と失敗の要因](api.md#状態と失敗の要因) にある。
+
+**カタログ**: [ScheduleDetailModalContainer の DeleteFailed](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-scheduledetailmodalcontainer--delete-failed)、[ConfirmDialog の WithError](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/パターン-confirmdialog--with-error)
+
+## 削除のダイアログのキャンセル
+
+**概要**: 予定を削除せずに、削除のダイアログを閉じるボタン。
+
+**値のソース**: 「戻る」。  
+「キャンセル」と並べると、予定のキャンセルと読み違えやすいので、「キャンセル」にしない。
+
+**活性**: 次の全てに当てはまるとき。
+
+- 職員が、削除を送っている途中でない
+
+**カタログ**: [ConfirmDialog の CancelAction](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/パターン-confirmdialog--cancel-action)、[ConfirmDialog の Submitting](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/パターン-confirmdialog--submitting)
+
+**操作**: 押すか Escape キーを押すと、何も変えずにダイアログを閉じ、予定の詳細に戻る。
+
+## 予定を削除する
+
+**概要**: 開いた予定を削除するボタン。
+
+**値のソース**: 次の文言。  
+削除した予定は元に戻せないので、データを失う操作の赤い色にする。  
+送っている間は、文字の前に回転の印を出す。
+
+| 時点 | 文言 |
+| --- | --- |
+| 送る前 | 「予定を削除する」 |
+| 送っている間 | 「削除しています」 |
+
+**活性**: 次の全てに当てはまるとき。
+
+- 職員が、削除を送っている途中でない
+
+**カタログ**: [ConfirmDialog の Default](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/パターン-confirmdialog--default)、[ConfirmDialog の Submitting](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/パターン-confirmdialog--submitting)
+
+**操作**: 押すと、「削除の送信中」の状態にし、予定を削除する。
+
+1. 成功したら、ダイアログと予定の詳細を閉じ、`/schedule` に戻り、予定のカレンダーの予定を読み直す。
+   - search params の `view`、`date`、`staff`、`cancelled` は引き継ぐ。
+   - 成功の文は出さない。
+2. 失敗したら、「削除の失敗」の状態にし、[削除の失敗の文](#削除の失敗の文) に理由を出す。
+   - ダイアログを開いたままにする。
+
 ## 全体動作
 
 ### 初期処理
@@ -774,8 +1175,9 @@ Google カレンダーの予定は [ScheduleDetailModalContainer の GoogleCalen
 
 - 読み終える前は、[閉じる](#閉じる) だけを押せる。
 - 読めた後は、閉じるのと、予定を編集できる職員では予定のキャンセルと編集ができる。
+  - 予定を buddy で管理する事業所の、開始の日が今日以降の予定では、予定の削除もできる。
 - 読めなかった後は、閉じるだけができる。
-- キャンセルのダイアログを開いている間は、ダイアログの中だけを押せる。
+- キャンセルのダイアログと削除のダイアログを開いている間は、ダイアログの中だけを押せる。
 
 フォーカスは、次のように動く。
 
@@ -792,6 +1194,13 @@ URL で直接開いたときも同じである。
 
 繰り返しの予定の 1 回を開くと、その回の詳細を出す。  
 URL の予定の id は、回ごとの id である。
+繰り返しの予定の 1 回も、単発の予定と同じく「予定をキャンセル」でキャンセルできる。  
+キャンセルした回は、キャンセルした予定になり、ほかの回は残る。  
+開始の日が今日以降の回は、「予定を削除」で、その回だけを削除できる。  
+削除した回はカレンダーに出なくなり、ほかの回は残る。  
+まだ変えていない回は「繰り返しの予定の回」の状態で出し、今の繰り返しの規則を出す。  
+「編集」のメニューから、その回だけの編集か、繰り返しの変更を選べる。  
+1 回だけ変えた回とキャンセルした回は、単発の予定として扱い、繰り返しの変更を出さない。
 
 予定を Google カレンダーで管理する事業所では、予定 1 件を直に読まない。  
 URL の search params の `view` と `date` の表示の期間の予定と、確認が必要な予定を読み、その中から URL の予定を探す。  
@@ -801,7 +1210,7 @@ URL の search params の `view` と `date` の表示の期間の予定と、確
 
 ### URL の search params からの復元
 
-search params の `view`、`date`、`staff`、`cancelled` は、閉じたとき、編集へ進むとき、予定をキャンセルした後に引き継ぐ。  
+search params の `view`、`date`、`staff`、`cancelled` は、閉じたとき、編集か繰り返しの変更へ進むとき、予定をキャンセルか削除した後に引き継ぐ。  
 読めない値は、予定のカレンダーと同じ規則でデフォルト値に置き換える。
 
 ### 入力の確認と送信
@@ -811,8 +1220,10 @@ search params の `view`、`date`、`staff`、`cancelled` は、閉じたとき�
 - 予定を Google カレンダーで管理する事業所では、キャンセルすると、buddy が Google カレンダーの予定を消す。
   - Google カレンダーに書けたときだけ成功になる。
   - キャンセルのダイアログを開いたときの予定と比べ、Google カレンダーで予定が変わっていれば、キャンセルせずに失敗にする。
-  - 書き込みの扱いは、[ADR-0028](../../adr/0028-google-calendar-sync.md) にある。
+  - 書き込みの扱いは、[ADR-0029](../../adr/0029-google-calendar-sync.md) にある。
 - キャンセルを拒まれたときと、つながらないときは、「キャンセルの失敗」の状態にし、[キャンセルの失敗の文](#キャンセルの失敗の文) を出す。
+- [予定を削除する](#予定を削除する) は、入れる欄が無いので、送っている間のほかは常に押せる。
+- 削除を拒まれたときと、つながらないときは、「削除の失敗」の状態にし、[削除の失敗の文](#削除の失敗の文) を出す。
 
 ### 変えた後の表示
 
@@ -821,6 +1232,11 @@ search params の `view`、`date`、`staff`、`cancelled` は、閉じたとき�
 - 予定を buddy で管理する事業所では、キャンセルした予定は、カレンダーで「キャンセルした予定を出す」を選んでいるときだけ出る。
   - 開くと「キャンセルした予定」の状態になり、入れた理由を出す。
 - 予定を Google カレンダーで管理する事業所では、Google カレンダーから予定を消すので、キャンセルの理由は残らない。
+
+予定を削除すると、予定の詳細を閉じ、予定のカレンダーの予定を読み直した結果を出す。
+
+- 削除した予定は、カレンダーで「キャンセルした予定を出す」を選んでいるときも出ない。
+- 繰り返しの予定の回を削除すると、その回だけが消え、ほかの回は残る。
 
 ### 権限の確認
 
@@ -832,11 +1248,15 @@ search params の `view`、`date`、`staff`、`cancelled` は、閉じたとき�
   - 自分の予定: 自分の予定の編集
   - ほかの職員の予定: 事業所の全ての予定の編集、指定した職員の予定の編集、指定したチームの職員の予定の編集
 - 指定したチームの職員の予定の編集で判定するときは、職員の一覧を読み終えるまで [編集](#編集) を出さない。
-- 編集できない予定では、[予定をキャンセル](#予定をキャンセル) と [編集](#編集) を出さず、下端に [下端の閉じる](#下端の閉じる) だけを出す。
+- 編集できない予定では、[予定をキャンセル](#予定をキャンセル)、[予定を削除](#予定を削除)、[編集](#編集) を出さず、下端に [下端の閉じる](#下端の閉じる) だけを出す。
 - [予定をキャンセル](#予定をキャンセル) は、[編集](#編集) と同じ権限で出す。
+- [予定を削除](#予定を削除) も、[編集](#編集) と同じ権限で出す。
+  - 予定を Google カレンダーで管理する事業所の予定と、開始の日が今日より前の予定では、権限によらず出さない。
+- [編集のメニュー](#編集のメニュー) の 2 つの項目は、[編集](#編集) と同じ権限で出す。項目ごとに出し分けない。
 - Google カレンダーの予定でも、同じ権限で [予定をキャンセル](#予定をキャンセル) と [編集](#編集) を出す。
   - 予定の正本を切り替えている間と、繰り返しの規則を buddy で表せない予定では、権限によらず出さない。
 - 画面を開いた後に予定を編集する権限を外された職員が「予定をキャンセルする」を押すと、「キャンセルの失敗」の状態にし、「この操作をする権限がありません。」を出す。
+- 画面を開いた後に予定を編集する権限を外された職員が「予定を削除する」を押すと、「削除の失敗」の状態にし、「この操作をする権限がありません。」を出す。
 
 ## 未決
 

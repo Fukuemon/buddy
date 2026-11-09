@@ -42,11 +42,12 @@ viewpoints:
       - facilities
   - id: schedules
     name: 予定と訪問
-    desc: 予定と、訪問のときの訪問の情報と区分、予定の取り消し
+    desc: 予定と、訪問のときの訪問の情報と区分、予定の取り消し、誤って入れた予定の削除の監査の記録
     tables:
       - schedules
       - schedule_types
       - schedule_cancels
+      - schedule_deletions
       - visit_infos
       - visit_categories
       - visit_info_visit_categories
@@ -83,6 +84,7 @@ viewpoints:
       - calendar_cutovers
       - calendar_cutover_skips
       - calendar_exports
+      - schedule_deletions
       - schedules
       - recurring_schedules
       - users

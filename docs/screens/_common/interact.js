@@ -8,10 +8,10 @@
  * - data-choice="<組の名前>": 押すと is-on を付け、同じ組のほかの要素から外す。ラジオボタンとチップに使う。
  * - data-panel="<名前>": 開閉する要素。data-open="<名前>" を押すと開き、開いていれば閉じる。data-close="<名前>" を押すと閉じる。
  *   開いている間は panel に is-open を付け、開くボタンの aria-expanded を true にする。デバイスを切り替えると閉じる。
- *   開くと panel の中の最初のフォーカスできる要素へ、閉じると開くボタンへフォーカスを移す。
+ *   開くと panel の中の最初のフォーカスできる要素へ、閉じると開くボタンへフォーカスを移す。外を押して閉じたときは、フォーカスを動かさない。
  *   data-panel-modal も付けた panel を開いて見えている間は、panel の外の要素に構成番号の印を出さない。
  *   data-panel-dismiss も付けた panel は、panel と開くボタンの外を押すか、Escape キーを押すと閉じる。メニューに使う。
- *   data-panel-wide も付けた panel は、幅 768px 以上では形を切り替えるだけで、フォーカスを開くボタンに残す。
+ *   data-panel-wide も付けた panel は、幅 768px 以上では形を切り替えるだけで、フォーカスを開くボタンに残し、外の印も隠さない。
  *   値が collapse の panel は、幅 768px 以上では is-open でたたむので、開くボタンの aria-expanded を is-open の逆にする。
  *   値が expand の panel は、幅 768px 以上では is-open で広げるので、aria-expanded は is-open のままにする。
  * - data-escape: Escape キーで押す。見えている要素だけを押す。
@@ -84,16 +84,18 @@
     for (const panel of screen.querySelectorAll('[data-panel]')) syncExpanded(panel)
   }
 
-  function setPanel(panel, isOpen) {
+  /** panel を開閉する。moveFocus が false なら、フォーカスを動かさない */
+  function setPanel(panel, isOpen, moveFocus = true) {
     panel.classList.toggle('is-open', isOpen)
     syncExpanded(panel)
-    // 予定のカレンダーの左の欄は、幅 768px 以上では is-open でたたむので、見えているときだけ印を隠す
-    if (panel.hasAttribute('data-panel-modal')) coverMarkers(panel, isOpen && isVisible(panel))
+    // data-panel-wide の panel は、幅 768px 以上では形を切り替えるだけで外を覆わないので、印を隠さない
+    if (panel.hasAttribute('data-panel-modal'))
+      coverMarkers(panel, isOpen && isVisible(panel) && !isWide(panel))
     const target =
       isOpen && !isWide(panel)
         ? [...panel.querySelectorAll(FOCUSABLE)].find(isVisible)
         : openers(panel).find(isVisible)
-    target?.focus()
+    if (moveFocus) target?.focus()
   }
 
   /** 開いた panel の外の要素の data-m を data-m-covered に移し、閉じたら戻す */
@@ -135,13 +137,16 @@
     mockRefresh()
   }
 
-  /** 開いている data-panel-dismiss の panel のうち、except の中に無いものを閉じる。閉じたら true を返す */
+  /**
+   * 開いている data-panel-dismiss の panel のうち、except の中に無いものを閉じる。閉じたら true を返す。
+   * 外を押して閉じるとき（except があるとき）は、押した要素に移ったフォーカスを開くボタンへ戻さない
+   */
   function dismissPanels(except) {
     let closed = false
     for (const panel of screen.querySelectorAll('[data-panel-dismiss].is-open')) {
       const name = CSS.escape(panel.dataset.panel)
       if (except?.closest(`[data-panel="${name}"], [data-open="${name}"]`)) continue
-      setPanel(panel, false)
+      setPanel(panel, false, !except)
       closed = true
     }
     if (closed) mockRefresh()

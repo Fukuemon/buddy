@@ -648,7 +648,7 @@ export interface paths {
          * @description 事業所の単発の予定と繰り返しの予定のうち、職員が見てよい予定を返す。見てよくない職員の予定は除く。
          *     sort_field と sort_order は許可した値だけを受け付け、ほかの値は 400 を返す。date_from と date_to は単発の予定だけを、予定の日付（開始の日）で絞る。
          *     date_from の前の日に始まり、date_from に終わる ends_next_day の予定も返す。
-         *     Google カレンダーを予定の正本にする事業所（google_primary）では、同期が写した Google カレンダーの予定（Projection）を読む（ADR-0028）。
+         *     Google カレンダーを予定の正本にする事業所（google_primary）では、同期が写した Google カレンダーの予定（Projection）を読む（ADR-0029）。
          *     繰り返しの予定は、date_from から date_to までの回に展開し、回ごとに単発の予定（source が google_calendar）として返す。recurring_schedules は空である。
          *     date_from か date_to を省くと、Projection を保持する期間（前々月の初日から 3 か月後の月末）の端を使う。
          *     外したカレンダーの予定は返さない。buddy の繰り返しの規則に写せない繰り返しの予定は、最初の回の日時の 1 件にし、review_reason を付けて返す。
@@ -661,7 +661,7 @@ export interface paths {
         /**
          * 単発の予定を作る
          * @description buddy_primary の事業所では、buddy の予定のテーブルに予定を作る。
-         *     google_primary の事業所では、予定の職員のカレンダーに Google カレンダーの予定を作り、書けたときだけ成功を返す（ADR-0028）。
+         *     google_primary の事業所では、予定の職員のカレンダーに Google カレンダーの予定を作り、書けたときだけ成功を返す（ADR-0029）。
          *     訪問の情報は buddy に持ち、Google の予定のタイトルは `【サービス内容】利用者名` にする。応答の source は google_calendar である。
          *     google_primary の事業所では id が必須で、同じ id で送り直しても Google の予定は 1 つのままである。
          *     Google の予定が送った内容と同じなら成功を返し、違えば 409（google_event_changed）を返す。
@@ -685,7 +685,7 @@ export interface paths {
         /**
          * 繰り返しの予定を作る
          * @description buddy_primary の事業所では、buddy の繰り返しの予定のテーブルに予定を作る。
-         *     google_primary の事業所では、予定の職員のカレンダーに、RRULE の繰り返しの予定を 1 つ作り、書けたときだけ成功を返す（ADR-0028）。
+         *     google_primary の事業所では、予定の職員のカレンダーに、RRULE の繰り返しの予定を 1 つ作り、書けたときだけ成功を返す（ADR-0029）。
          *     訪問の情報は buddy に持ち、手順、送り直し、409 と 503 の code は createSchedule と同じである。id が必須である。
          */
         post: operations["createRecurringSchedule"];
@@ -704,7 +704,7 @@ export interface paths {
         };
         /**
          * 単発の予定を取得する
-         * @description google_primary の事業所では、一覧（listSchedules）の id で、Projection の単発の予定を一覧と同じ内容で返す（ADR-0028）。
+         * @description google_primary の事業所では、一覧（listSchedules）の id で、Projection の単発の予定を一覧と同じ内容で返す（ADR-0029）。
          *     繰り返しの予定の回は、一覧と同じ id と内容で返す。取り消した予定と、繰り返しの予定の全体は返さない。
          */
         get: operations["getSchedule"];
@@ -712,13 +712,21 @@ export interface paths {
          * 単発の予定を置き換える
          * @description 予定の枠を本文の内容に置き換える。訪問の情報は、本文の内容で作り直す。
          *     繰り返しの予定の回を置き換えた予定は、元の繰り返しの予定への結び付きを保つ。
-         *     google_primary の事業所では、Google カレンダーの予定を書き換え、書けたときだけ成功を返す（ADR-0028）。
+         *     google_primary の事業所では、Google カレンダーの予定を書き換え、書けたときだけ成功を返す（ADR-0029）。
          *     etag が必須で、Google に If-Match で付ける。読んだ後に Google で予定が変わっていれば 409（google_event_changed）を返し、Google の予定を変えない。
          *     Google で作った予定に訪問の情報を足すと、buddy に訪問の情報を持つ。予定の職員を替えると、予定を新しい職員のカレンダーに移す。
          */
         put: operations["updateSchedule"];
         post?: never;
-        delete?: never;
+        /**
+         * 誤って入れた単発の予定を削除する
+         * @description buddy_primary の事業所で、開始の日が今日（Asia/Tokyo）以降の有効な単発の予定を削除する（ADR-0040）。キャンセルと別の操作で、理由を持たない。
+         *     削除した予定は、listSchedules と getSchedule に出ず、戻せない。予定の行は消し、監査の記録だけを残す。
+         *     繰り返しの予定の回を置き換えた予定を削除しても、元の回に戻さない。その日は exclusion_dates のまま残る。
+         *     Google カレンダーへの書き出しが有効なら、書き出しが Google の予定を消す。
+         *     削除の可否は、キャンセルと同じく、予定の職員の予定を編集する権限で判定する。
+         */
+        delete: operations["deleteSchedule"];
         options?: never;
         head?: never;
         patch?: never;
@@ -735,7 +743,7 @@ export interface paths {
         put?: never;
         /**
          * 単発の予定をキャンセルする
-         * @description google_primary の事業所では、Google カレンダーの予定を消し、消せたときだけ成功を返す（ADR-0028）。
+         * @description google_primary の事業所では、Google カレンダーの予定を消し、消せたときだけ成功を返す（ADR-0029）。
          *     etag が必須で、Google に If-Match で付ける。理由は Google に書けないので保存せず、応答のキャンセルの id は予定の id と同じである。
          *     消した予定は一覧に出さず、buddy に持つ訪問の情報も消す。
          */
@@ -763,6 +771,34 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/schedules/recurring/{recurring_schedule_id}/rule": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * 繰り返しの予定の規則を、適用の日以降の回について変える
+         * @description 規則を、effective_date 以降の回にだけ当てる（ADR-0037）。今日より前の回は変えない。
+         *     元の繰り返しの予定に effective_date より前の回があれば、元の繰り返しの予定の終了日を effective_date の前の日にし、
+         *     effective_date 以降で新しい規則が当たる最初の日を最初の日付にした、新しい繰り返しの予定を作る。時刻、職員、訪問の情報は元の繰り返しの予定から写す。
+         *     effective_date より前の回が無ければ、分けずに規則と最初の日付を書き換える。終了日だけを変えるときも、分けずに終了日を書き換える。
+         *     適用の日以降（終了日だけの変更では新しい終了日の後）の置き換えた回は、単発の予定として残し、取り消した回は新しい規則に引き継がない。
+         *     google_primary の事業所では、recurring_schedule_id は changeOccurrence と同じ繰り返しの予定の id で、
+         *     変えた例外の回を同じカレンダーの単発の予定に作り直してから、親の予定の RRULE を書く。
+         *     google_primary の事業所では、effective_date より前の回が無いときも、新しい親の予定を id で作って元の親の予定を消すので、id が変わる。
+         *     応答は、effective_date 以降の回を持つ繰り返しの予定である。分けたときは新しい繰り返しの予定で、id が変わる。
+         */
+        put: operations["changeRecurringRule"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/schedules/recurring/{recurring_schedule_id}/occurrences": {
         parameters: {
             query?: never;
@@ -777,12 +813,61 @@ export interface paths {
          * @description 繰り返しの予定の original_date の回を、本文の内容の単発の予定に置き換える。
          *     元の回は exclusion_dates に加わり、作った予定は recurring_schedule_id で元の繰り返しの予定を指す。
          *     google_primary の事業所では、recurring_schedule_id は Google カレンダーの繰り返しの予定の id（createRecurringSchedule の応答の id）である。
-         *     Google の回（events.instances で読んだ回）を例外の回として書き換え、親の予定の EXDATE は変えない（ADR-0028）。
+         *     Google の回（events.instances で読んだ回）を例外の回として書き換え、親の予定の EXDATE は変えない（ADR-0029）。
          *     応答の予定の id は、回の listSchedules での id で、回を変える前と同じである。
          *     予定の職員を替えると、元のカレンダーの回を取り消し、新しい職員のカレンダーに単発の予定を作る。
          *     訪問の情報は繰り返しの予定のものを引き継ぎ、変えたときだけ回に持つ。409 と 503 の code は updateSchedule と同じである。
          */
         post: operations["changeOccurrence"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schedules/recurring/{recurring_schedule_id}/occurrences/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 繰り返しの予定の 1 回をキャンセルする
+         * @description buddy_primary の事業所で、繰り返しの予定の original_date の回を、繰り返しの予定と同じ内容の単発の予定にし、理由を付けてキャンセルする。
+         *     元の回は exclusion_dates に加わり、作った予定は recurring_schedule_id で元の繰り返しの予定を指す。
+         *     キャンセルした予定は、listSchedules の include_cancelled で返る。応答のキャンセルの schedule_id は、作った予定の id である。
+         *     置き換えた後の回は単発の予定なので、cancelSchedule でキャンセルする。
+         *     google_primary の事業所の回は、cancelSchedule で回の id を指してキャンセルする。
+         */
+        post: operations["cancelOccurrence"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schedules/recurring/{recurring_schedule_id}/occurrences/delete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 誤って入れた繰り返しの予定の 1 回を削除する
+         * @description buddy_primary の事業所で、繰り返しの予定の original_date の回を削除する（ADR-0040）。元の回は exclusion_dates に加わり、単発の予定は作らない。
+         *     削除した回は listSchedules に出ず、戻せない。監査の記録だけを残す。
+         *     削除した日は、changeRecurringRule で規則を変えたときに新しい規則に引き継がず、新しい規則の回が当たれば回を出す。
+         *     置き換えた後の回は単発の予定なので、deleteSchedule で削除する。繰り返しの予定そのものは削除できない。
+         *     Google カレンダーへの書き出しが有効なら、書き出しがその日を親の予定の EXDATE にする。
+         *     google_primary の事業所では、何も読まずに 409（google_primary）で拒む。
+         */
+        post: operations["deleteOccurrence"];
         delete?: never;
         options?: never;
         head?: never;
@@ -798,7 +883,7 @@ export interface paths {
         };
         /**
          * カレンダーを共有する相手のサービスアカウントを取得する
-         * @description 職員が Google カレンダーを共有する相手の、この事業所のサービスアカウントのメールアドレスを返す。サービスアカウントは事業所ごとにある（ADR-0029）。職員の管理の権限（staff.manage）を持つ職員だけが呼べる。
+         * @description 職員が Google カレンダーを共有する相手の、この事業所のサービスアカウントのメールアドレスを返す。サービスアカウントは事業所ごとにある（ADR-0030）。職員の管理の権限（staff.manage）を持つ職員だけが呼べる。
          */
         get: operations["getCalendarServiceAccount"];
         put?: never;
@@ -970,7 +1055,7 @@ export interface paths {
         };
         /**
          * 予定の正本の切り替えの状況を取得する
-         * @description 事業所の open の切り替えと、外していない全てのカレンダーの同期の状況と、この切り替えで最後に成功した取り込みを返す（ADR-0030）。
+         * @description 事業所の open の切り替えと、外していない全てのカレンダーの同期の状況と、この切り替えで最後に成功した取り込みを返す（ADR-0031）。
          *     open の切り替えが無ければ、cutover は null で、カレンダーの last_import は null である。
          *     職員の管理の権限（staff.manage）を持つ職員だけが呼べる。
          */
@@ -994,7 +1079,7 @@ export interface paths {
         put?: never;
         /**
          * 予定の正本の切り替えを始める
-         * @description Google カレンダーを予定の正本にする事業所（google_primary）で、予定の正本を buddy に切り替える作業（切り替え）を始める（ADR-0030）。
+         * @description Google カレンダーを予定の正本にする事業所（google_primary）で、予定の正本を buddy に切り替える作業（切り替え）を始める（ADR-0031）。
          *     取り込みの期間は、今の Asia/Tokyo の月の初日から先の全てで、終わりを持たない。
          *     始めると、カレンダーごとに、取り込みのプレビューと確定（期間は range_start が切り替えの range_start、range_end が null）で取り込む。
          *     画面と照合は、切り替えの間も Google カレンダーの予定の写し（Projection）を読む。
@@ -1020,7 +1105,7 @@ export interface paths {
         put?: never;
         /**
          * 予定の正本の切り替えを完了する
-         * @description Google カレンダーを切り替えの月の初日から先の全てで読み直し、事業所の行を排他のロックで取って、カレンダーごとに次の 3 つを確認する（ADR-0030）。
+         * @description Google カレンダーを切り替えの月の初日から先の全てで読み直し、事業所の行を排他のロックで取って、カレンダーごとに次の 3 つを確認する（ADR-0031）。
          *     確認の前に、buddy から Google カレンダーに書いた結果がまだ分からない予定（保留の版）があれば、何も書かずに 409（google_write_pending）を返す。
          *     最後の取り込みの後に同期が成功している。読み直した予定が全て、予定の対応を持つか取り込まないと決めた予定で、規則に写せない繰り返しの予定が残っていない。
          *     予定の対応の etag と Google の etag が同じである。
@@ -1046,7 +1131,7 @@ export interface paths {
         put?: never;
         /**
          * 予定の正本の切り替えをやめる
-         * @description この切り替えの取り込みで作った buddy の予定、繰り返しの予定、訪問の情報、予定の対応を消し、切り替えを canceled にする（ADR-0030）。
+         * @description この切り替えの取り込みで作った buddy の予定、繰り返しの予定、訪問の情報、予定の対応を消し、切り替えを canceled にする（ADR-0031）。
          *     事業所は Google カレンダーを予定の正本にしたままで、画面と照合は Projection を読み続ける。やめた後に、もう一度始められる。
          *     職員の管理の権限（staff.manage）を持つ職員だけが呼べる。
          */
@@ -1196,6 +1281,8 @@ export interface components {
                 date: components["schemas"]["Date"];
                 start_time: components["schemas"]["Time"];
                 end_time: components["schemas"]["Time"];
+                /** @description date の翌日の end_time に終わる予定のとき true */
+                ends_next_day: boolean;
             }[];
             /** @description その日以降に終わる繰り返しの予定。終了日の無い繰り返しを含める。最初の回の日時の順 */
             recurring_schedules: {
@@ -1209,6 +1296,8 @@ export interface components {
                 end_date: string | null;
                 start_time: components["schemas"]["Time"];
                 end_time: components["schemas"]["Time"];
+                /** @description 全ての回が、回の日付の翌日の end_time に終わるとき true */
+                ends_next_day: boolean;
             }[];
             /** @description 職員が主に担当する利用中の利用者。利用の終了の利用者は含めない（ADR-0005）。名前の順 */
             patients: {
@@ -1271,6 +1360,8 @@ export interface components {
                 date: components["schemas"]["Date"];
                 start_time: components["schemas"]["Time"];
                 end_time: components["schemas"]["Time"];
+                /** @description date の翌日の end_time に終わる予定のとき true */
+                ends_next_day: boolean;
             }[];
             /** @description その日以降に終わる繰り返しの予定。終了日の無い繰り返しを含める。最初の回の日時の順 */
             recurring_schedules: {
@@ -1284,6 +1375,8 @@ export interface components {
                 end_date: string | null;
                 start_time: components["schemas"]["Time"];
                 end_time: components["schemas"]["Time"];
+                /** @description 全ての回が、回の日付の翌日の end_time に終わるとき true */
+                ends_next_day: boolean;
             }[];
         };
         EndServiceConflict: components["schemas"]["Error"] & {
@@ -1364,8 +1457,16 @@ export interface components {
             staff_name: string;
             title: string | null;
             description: string | null;
-            /** @description 繰り返しの予定の 1 回を置き換えた予定のとき、元の繰り返しの予定 */
+            /**
+             * @description 繰り返しの予定の 1 回を置き換えた予定のとき、元の繰り返しの予定。
+             *     google_primary の事業所で、繰り返しの親を展開した回のときは、親の予定の一覧での ID で、changeRecurringRule の recurring_schedule_id に使う
+             */
             recurring_schedule_id: (string & components["schemas"]["ID"]) | null;
+            /**
+             * @description google_primary の事業所で、繰り返しの親を展開した回のときの、親の繰り返しの規則。ほかの予定では null である。
+             *     指定しない項目は、親の最初の日付の曜日や日から決まり、展開した回の日付の曜日や日と同じである（ADR-0037）
+             */
+            recurring_rule?: components["schemas"]["RecurringRule"] | null;
             visit_info: components["schemas"]["VisitInfo"] | null;
             cancel: components["schemas"]["Cancel"] | null;
             /**
@@ -1400,15 +1501,44 @@ export interface components {
          *     patient_not_found、patient_ambiguous、service_code_not_found、title_unreadable の予定は、訪問の情報（visit_info）を空にし、
          *     Google のタイトルを title に入れた通常の予定として返す。
          *     title_mismatch は、buddy で訪問の情報を入力した予定のうち、Google でタイトルを変え、タイトルの利用者かサービス内容が
-         *     buddy の訪問の情報と違う予定である。訪問の情報は buddy の内容で返す（ADR-0028）。
+         *     buddy の訪問の情報と違う予定である。訪問の情報は buddy の内容で返す（ADR-0029）。
          * @enum {string}
          */
         ScheduleReviewReason: "recurrence_unsupported" | "patient_not_found" | "patient_ambiguous" | "service_code_not_found" | "title_unreadable" | "title_mismatch";
         /**
-         * @description 事業所の予定の正本。google_primary は Google カレンダー、buddy_primary は buddy である（ADR-0028）
+         * @description 事業所の予定の正本。google_primary は Google カレンダー、buddy_primary は buddy である（ADR-0029）
          * @enum {string}
          */
         SourceMode: "google_primary" | "buddy_primary";
+        /** @description Google カレンダーの終日の予定。buddy の予定ではない（#672） */
+        AllDayEvent: {
+            /** @description 一覧を読むたびに同じになる値。繰り返しの回は回ごとに違う値である。予定の ID としては使えない */
+            id: string;
+            staff_id: components["schemas"]["ID"];
+            staff_name: string;
+            /**
+             * Format: date
+             * @description 予定がかかる最初の日
+             */
+            start_date: string;
+            /**
+             * Format: date
+             * @description 予定がかかる最後の日（この日を含む）。1 日の予定では start_date と同じ
+             */
+            end_date: string;
+            /** @description Google の予定のタイトル。空のことがある */
+            title: string;
+            /**
+             * @description 確認が必要な理由。無ければ null。buddy の繰り返しの規則に写せない繰り返しの終日の予定は、最初の回の 1 件にし、
+             *     recurrence_unsupported を付ける（#972）
+             */
+            review_reason: (string & components["schemas"]["ScheduleReviewReason"]) | null;
+        };
+        /** @description 職員の、予定のカレンダーに出せない Google カレンダーの予定の件数。予定の中身は返さない（#672） */
+        UnlistedEventCount: {
+            staff_id: components["schemas"]["ID"];
+            count: number;
+        };
         /** @description 結び付けたカレンダーの同期の状況 */
         CalendarSyncStatus: {
             external_calendar_id: components["schemas"]["ID"];
@@ -1433,14 +1563,26 @@ export interface components {
             last_error: "unreadable" | "unavailable" | "apply" | null;
         };
         /**
-         * @description weekly は day_of_week だけを、monthly は day_of_month だけか、week_of_month と day_of_week の組を指定できる。
+         * @description weekly は days_of_week と interval だけを、monthly は day_of_month だけか、week_of_month と day_of_week の組を指定できる。
          *     指定しない項目は、最初の日付の曜日や日から決める。
          *     最初の日付が規則の回に当たらない組み合わせ（火曜の最初の日付に毎週の月曜など）は、入力のエラーにする。
+         *     weekly の回は、日曜に始まる週で数え、最初の日付を含む週を 1 週目として、1 週目から interval の倍数だけ後の週の days_of_week の曜日にある（ADR-0038）。
+         *     繰り返しの終わりは end_date だけで持ち、回数は持たない。
          */
         RecurringRule: {
             /** @enum {string} */
             frequency: "weekly" | "monthly";
-            /** @description 1 が月曜、7 が日曜 */
+            /**
+             * @description weekly の曜日。1 が月曜、7 が日曜で、重ならない 1 つ以上の曜日を指定する。省くと最初の日付の曜日の 1 つにする。
+             *     レスポンスでは、weekly は月曜から日曜の順に並べて必ず返し、monthly は null である
+             */
+            days_of_week?: number[] | null;
+            /**
+             * @description weekly の間隔の週の数。1 が毎週、2 が隔週である。weekly で省くと 1 にする。monthly には指定できない（1 も 400 になる）。
+             *     レスポンスでは、weekly は必ず返し、monthly は null である
+             */
+            interval?: number | null;
+            /** @description monthly の week_of_month の週の曜日。1 が月曜、7 が日曜。weekly には指定できない */
             day_of_week?: number | null;
             day_of_month?: number | null;
             week_of_month?: number | null;
@@ -1511,7 +1653,7 @@ export interface components {
              *     forbidden はサービスアカウントがカレンダーに書けない、rejected は Google が予定の内容を受け付けなかった（400）、
              *     unavailable は Google に届かないか一時的なエラーが続いた、unappliable は Google カレンダーの変更を buddy の予定に読み替えられない
              *     （終日にした予定、タイトルの利用者を引けない予定、繰り返しの予定そのものの変更）。
-             *     not_buddy_primary は事業所が buddy を予定の正本にしていないので、書かずに保留にした（ADR-0028）
+             *     not_buddy_primary は事業所が buddy を予定の正本にしていないので、書かずに保留にした（ADR-0029）
              * @enum {string|null}
              */
             error_code: "precondition_failed" | "not_found" | "forbidden" | "rejected" | "unavailable" | "unappliable" | "not_buddy_primary" | null;
@@ -1550,7 +1692,7 @@ export interface components {
             last_import: components["schemas"]["ImportRun"] | null;
         };
         /**
-         * @description 事業所に open の予定の正本の切り替えがあるときは、range_start を切り替えの range_start にし、range_end を省くか null にする（ADR-0030）。
+         * @description 事業所に open の予定の正本の切り替えがあるときは、range_start を切り替えの range_start にし、range_end を省くか null にする（ADR-0031）。
          *     ほかの期間は 400 になる。open の切り替えが無いときは、range_end を省けない。
          */
         ImportRange: {
@@ -1662,7 +1804,7 @@ export interface components {
             /** @description 前の取り込みで取り込んでいて、今回は書かなかった予定の数 */
             already_imported_count: number;
         };
-        /** @description 事業所の予定の正本を Google カレンダーから buddy に切り替える作業の記録（ADR-0030） */
+        /** @description 事業所の予定の正本を Google カレンダーから buddy に切り替える作業の記録（ADR-0031） */
         CalendarCutover: {
             id: components["schemas"]["ID"];
             facility_id: components["schemas"]["ID"];
@@ -2597,7 +2739,8 @@ export interface operations {
                      *             "id": "01M3TC5H00QV17BC0J9V3393ZP",
                      *             "date": "2026-11-02",
                      *             "start_time": "09:00",
-                     *             "end_time": "10:00"
+                     *             "end_time": "10:00",
+                     *             "ends_next_day": false
                      *           }
                      *         ],
                      *         "recurring_schedules": [],
@@ -2823,7 +2966,8 @@ export interface operations {
                      *             "id": "01M3TC5H00QV17BC0J9V3393ZP",
                      *             "date": "2026-11-02",
                      *             "start_time": "09:00",
-                     *             "end_time": "10:00"
+                     *             "end_time": "10:00",
+                     *             "ends_next_day": false
                      *           }
                      *         ],
                      *         "recurring_schedules": [],
@@ -3159,7 +3303,8 @@ export interface operations {
                      *             "id": "01M3TC5H00QV17BC0J9V3393ZP",
                      *             "date": "2026-11-02",
                      *             "start_time": "09:00",
-                     *             "end_time": "10:00"
+                     *             "end_time": "10:00",
+                     *             "ends_next_day": false
                      *           }
                      *         ],
                      *         "recurring_schedules": []
@@ -3337,8 +3482,24 @@ export interface operations {
                          *     最新でないとみなす時間は画面が決める。
                          */
                         calendar_syncs: components["schemas"]["CalendarSyncStatus"][];
-                        /** @description google_primary の事業所で、予定の正本を buddy に切り替えている間の open の切り替え。無ければ null（ADR-0030） */
+                        /** @description google_primary の事業所で、予定の正本を buddy に切り替えている間の open の切り替え。無ければ null（ADR-0031） */
                         cutover: components["schemas"]["OpenCalendarCutover"] | null;
+                        /**
+                         * @description google_primary の事業所で、date_from から date_to までの期間に重なる、職員が見てよい職員の Google カレンダーの終日の予定。
+                         *     buddy の予定ではないので、取得、変更、取り消しはできず、照合の対象にもしない。繰り返しの終日の予定は回ごとに返す。
+                         *     buddy の繰り返しの規則に写せない繰り返しの終日の予定は、回が期間に重なりうる間、最初の回の 1 件にし、review_reason を付けて返す。
+                         *     最初の回は期間の外のことがある（#972）。
+                         *     buddy_primary の事業所と、schedule_type で絞ったときは空である（#672）
+                         */
+                        all_day_events: components["schemas"]["AllDayEvent"][];
+                        /**
+                         * @description google_primary の事業所で、date_from から date_to までの期間に重なる、職員が見てよい職員の、schedules にも all_day_events にも出せない
+                         *     Google カレンダーの予定の、職員ごとの件数。2 日以上にわたる予定、24 時間以上の予定、開始か終了の日時を読めない予定、長さが 0 以下の予定を数える。
+                         *     繰り返しの予定は、期間に重なる回の数を数える。日時を読めない予定は、開始か終了の読めた方の日で期間に重なるかを決め、
+                         *     どちらも読めなければどの期間でも数える。件数が 1 以上の職員だけを返す。
+                         *     buddy_primary の事業所と、schedule_type で絞ったときは空である（#672）
+                         */
+                        unlisted_event_counts: components["schemas"]["UnlistedEventCount"][];
                     };
                 };
             };
@@ -3556,6 +3717,51 @@ export interface operations {
             };
         };
     };
+    deleteSchedule: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schedule_id: components["parameters"]["ScheduleID"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 削除した */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 開始の日が今日より前の予定である */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            /**
+             * @description キャンセル済み（conflict）か、事業所が google_primary である（google_primary）。
+             *     google_primary の事業所では、予定を読まずに拒む。
+             */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            500: components["responses"]["InternalError"];
+        };
+    };
     cancelSchedule: {
         parameters: {
             query?: never;
@@ -3641,6 +3847,76 @@ export interface operations {
             500: components["responses"]["InternalError"];
         };
     };
+    changeRecurringRule: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                recurring_schedule_id: components["parameters"]["RecurringScheduleID"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    recurring_rule: components["schemas"]["RecurringRule"];
+                    /**
+                     * Format: date
+                     * @description 適用の日。今日（Asia/Tokyo）以降に限る。規則の終了日のほかの項目を変えるときは必須で、終了日だけを変えるときは読まない
+                     */
+                    effective_date?: string;
+                    /**
+                     * Format: date
+                     * @description 新しい規則の 1 週目を決める日（ADR-0038）。分けるときは、この日を含む週を 1 週目にして毎週の間隔を数え、
+                     *     effective_date 以降で新しい規則が当たる最初の日を最初の日付にする。画面は開いた回の日を送る。
+                     *     元の繰り返しの最初の日付以降、effective_date 以前に限る。省くと effective_date を使う。終了日だけを変えるときは読まない
+                     */
+                    first_week_date?: string;
+                    /**
+                     * @description 繰り返しの予定を分けるときの、新しい繰り返しの予定の ID（ULID）。google_primary の事業所で規則を変えるときは必須で、
+                     *     Google の予定の ID をこの ID から決める。buddy_primary の事業所では読まない。
+                     */
+                    id?: components["schemas"]["ID"];
+                    /** @description 画面が読んだ親の予定の etag。google_primary の事業所では必須で、buddy_primary の事業所では読まない */
+                    etag?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description effective_date 以降の回を持つ繰り返しの予定 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecurringSchedule"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            /** @description 事業所が予定を書けない。google_primary の事業所では、updateSchedule の 409 と同じ code も返す。 */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            500: components["responses"]["InternalError"];
+            /** @description google_primary の事業所で、Google カレンダーに書けない。code は createSchedule の 503 と同じである */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
     changeOccurrence: {
         parameters: {
             query?: never;
@@ -3697,6 +3973,105 @@ export interface operations {
                     "application/json": components["schemas"]["Error"];
                 };
             };
+        };
+    };
+    cancelOccurrence: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                recurring_schedule_id: components["parameters"]["RecurringScheduleID"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /**
+                     * Format: date
+                     * @description キャンセルする回の日付。繰り返しの規則に当たる日に限る
+                     */
+                    original_date: string;
+                    reason: string;
+                };
+            };
+        };
+        responses: {
+            /** @description キャンセル */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Cancel"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            /** @description その回はすでに置き換えたかキャンセルした（conflict）か、事業所が google_primary である（google_primary）。 */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            500: components["responses"]["InternalError"];
+        };
+    };
+    deleteOccurrence: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                recurring_schedule_id: components["parameters"]["RecurringScheduleID"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /**
+                     * Format: date
+                     * @description 削除する回の日付。繰り返しの規則に当たる、今日（Asia/Tokyo）以降の日に限る
+                     */
+                    original_date: string;
+                };
+            };
+        };
+        responses: {
+            /** @description 削除した */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description original_date が繰り返しの規則に当たらないか、今日より前である */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            /** @description その回はすでに置き換えたか、キャンセルしたか、削除した（conflict）か、事業所が google_primary である（google_primary）。 */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            500: components["responses"]["InternalError"];
         };
     };
     getCalendarServiceAccount: {

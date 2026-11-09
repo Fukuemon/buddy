@@ -44,7 +44,7 @@ buddy のコードと設定は、特定のデプロイ先を前提にしない�
 ## Calendar Worker
 
 Google カレンダーの書き出しと同期は、予定の API と同じイメージの `calendar-worker` が、役割ごとのプロセスで動かす。  
-ADR-0031: [Google カレンダーの書き出しと同期を、予定の API と同じイメージの Worker のコマンドで役割ごとに動かし、繰り返しを Worker のコマンドに集める](../docs/adr/0031-calendar-worker.md)
+ADR-0032: [Google カレンダーの書き出しと同期を、予定の API と同じイメージの Worker のコマンドで役割ごとに動かし、繰り返しを Worker のコマンドに集める](../docs/adr/0032-calendar-worker.md)
 
 - 役割は `calendar-worker export`（書き出し）と `calendar-worker sync`（同期）で、1 つのプロセスは 1 つの役割だけを持つ。
 - 常駐で動かすか、`--once` を付けて定期的に起動するかは、インフラのリポジトリが決める。
@@ -56,7 +56,7 @@ ADR-0031: [Google カレンダーの書き出しと同期を、予定の API と
   - 復旧のために DB を直す必要はない。
 - 同期の Worker は、Google カレンダーを予定の正本にする事業所（`google_primary`）のカレンダーだけを取る。
   - buddy を正本にする事業所（`buddy_primary`）のカレンダーは読まない。
-  - ADR-0028: [Google カレンダーとの連携を、事業所ごとの正本のモードで分ける](../docs/adr/0028-google-calendar-sync.md)
+  - ADR-0029: [Google カレンダーとの連携を、事業所ごとの正本のモードで分ける](../docs/adr/0029-google-calendar-sync.md)
 - 処理の回数、成功と失敗、滞留は、Worker のログ（`component` が `calendar-export` か `calendar-sync`）から見る。
   - メトリクスは、インフラの側でこのログから作る。
 
@@ -117,7 +117,7 @@ Worker は、待ちかカレンダーを取って処理する 1 回（バッチ�
   - ブローカーでは、上流の IdP の client secret のファイル（`UPSTREAM_IDP_CLIENT_SECRETS_FILE`）と、token_hook のヘッダーの値（`TOKEN_HOOK_KEY`）もシークレットである。
 - Google のサービスアカウントのキーは作らず、どこにも置かない。
   - API は、Application Default Credentials で認証し、事業所のサービスアカウントの権限を借用する。
-  - ADR-0029: [職員のカレンダーを、事業所ごとのサービスアカウントへの共有で読み書きする](../docs/adr/0029-google-calendar-service-accounts.md)
+  - ADR-0030: [職員のカレンダーを、事業所ごとのサービスアカウントへの共有で読み書きする](../docs/adr/0030-google-calendar-service-accounts.md)
 - 組織とサービスアカウントの対応のファイル（`GOOGLE_CALENDAR_SERVICE_ACCOUNTS_FILE`）は、buddy のリポジトリに置かない。
   - シークレットではないが、サービスアカウントのメールアドレスを持つためである。
   - 照合の対象のカレンダーのファイル（`GOOGLE_CALENDARS_FILE`）も、職員のカレンダー ID を持つので同じ扱いにする。
@@ -143,7 +143,7 @@ Worker は、待ちかカレンダーを取って処理する 1 回（バッチ�
    - 予定の API が予定を書き出すので、閲覧だけの権限では足りない。
    - 「予定の変更」の共有だけで、ドメイン全体の委任なしに予定を書けるかは、未確認である。PRD の [Open Questions](../docs/PRD.md#open-questions) にある。
      - 確認するまで、本番で書き出しを有効にしない。
-   - ADR-0029: [職員のカレンダーを、事業所ごとのサービスアカウントへの共有で読み書きする](../docs/adr/0029-google-calendar-service-accounts.md)
+   - ADR-0030: [職員のカレンダーを、事業所ごとのサービスアカウントへの共有で読み書きする](../docs/adr/0030-google-calendar-service-accounts.md)
 
 事業所のアカウントに切り替える前の 1 つのアカウントに共有したカレンダーは、切り替えると読めなくなる。  
 職員が事業所のアカウントに共有し直した後に、運営側は前のアカウントへの共有を外してもらい、前のアカウントを止める。
@@ -157,7 +157,7 @@ Google カレンダーを予定の正本にする事業所（`google_primary`）
 その日のうちに完了できなければ、切り替えを「やめる」で終え、別の日に始めからやり直す。  
 切り替えの間は、職員が buddy から予定を作成、変更、取り消しできないためである。  
 予定の API は、`open` の切り替えを自動の期限で止めないので、マネージャーが完了するか、やめるまで切り替えは続く。  
-ADR-0030: [事業所の予定の正本を、期間のある切り替えの記録で Google カレンダーから buddy へ移す](../docs/adr/0030-calendar-cutover.md)
+ADR-0031: [事業所の予定の正本を、期間のある切り替えの記録で Google カレンダーから buddy へ移す](../docs/adr/0031-calendar-cutover.md)
 
 1. 始める前に、事業所の職員に、切り替えが終わるまで Google カレンダーと buddy で予定を作成、変更しないよう頼む。
    - 業務時間外の始める日時と、その日のうちの終わる見込みの日時を伝える。
@@ -193,6 +193,7 @@ GitHub のランナーに戻すときは、`gh variable delete RUNS_ON -R Fukuem
 
 - self-hosted runner の機械では、ローカル環境の compose が動いていることがある。
   - CI の E2E は、compose のプロジェクトの名前を `buddy-ci` にし、ポートを全てずらして起動する。ずらしたポートは `.github/workflows/ci.yml` の `e2e` のジョブにある。
+  - CI の E2E は portless を使わず、`http://localhost:<ポート>` で動く。ブラウザが開く URL（`*_ORIGIN`）と `SESSION_COOKIE_SECURE=false` も、同じジョブが渡す（ADR-0036）。
 - self-hosted runner は、E2E のジョブの後に、タグの無い Docker のイメージと 7 日より古いビルドのキャッシュを消す。
   - Docker は runner の機械のローカル環境と共有なので、ローカル環境のものも消える。
 - self-hosted runner は、runner の `.env` で Go、pnpm、mise、Playwright のキャッシュの配置先を `~/actions-runner/_cache` に分ける。

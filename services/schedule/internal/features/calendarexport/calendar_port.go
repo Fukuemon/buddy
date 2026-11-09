@@ -43,6 +43,8 @@ type ExportCalendars interface {
 	LinkBySchedule(ctx context.Context, scheduleID string) (calendar.EventLink, error)
 	// LinkByRecurringSchedule は、繰り返しの予定 recurringScheduleID の予定の対応を返す。無いときは apperr.ErrNotFound を返す。
 	LinkByRecurringSchedule(ctx context.Context, recurringScheduleID string) (calendar.EventLink, error)
+	// LinkByDeletedSchedule は、削除した単発の予定 scheduleID の予定の対応を返す。無いときは apperr.ErrNotFound を返す。
+	LinkByDeletedSchedule(ctx context.Context, scheduleID string) (calendar.EventLink, error)
 	Get(ctx context.Context, id string) (calendar.ExternalCalendar, error)
 }
 

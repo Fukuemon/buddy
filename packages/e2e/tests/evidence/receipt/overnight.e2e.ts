@@ -6,7 +6,9 @@ import { LEADER, LOGIN_EMAIL, LOGIN_STAFF } from '../../fixtures/env'
 import { EVIDENCE_VARIANTS, recordPrEvidence } from '../../fixtures/evidence'
 import { createGoogleEvent } from '../../fixtures/googleCalendar'
 import { signInAtBroker } from '../../screens/login'
+import { showAllReceiptRows } from '../../screens/receipt'
 import { receiptCategoryRowCells } from '../../selectors/receipt'
+import { scrollToRightEnd } from '../../widgets/scroll/actions/scroll'
 
 const ACTOR = `${LOGIN_STAFF.name}（マネージャー）`
 
@@ -58,10 +60,9 @@ const checkWithCsv = async (page: Page, schedules: string, visits: string) => {
 }
 
 /** 結果の表を右端まで送り、実績の側の列を見せる。 */
-const scrollToVisitColumns = (page: Page) =>
-  page.getByTestId('receipt-result-table').evaluate((element) => {
-    element.scrollLeft = element.scrollWidth
-  })
+const scrollToVisitColumns = async (page: Page) => {
+  await scrollToRightEnd(page.getByTestId('receipt-result-table'))
+}
 
 test.describe('照合の結果', () => {
   test.describe('日をまたぐ訪問', () => {
@@ -94,11 +95,14 @@ test.describe('照合の結果', () => {
             await step('予定と実績のダミーの CSV を選び、照合する')
             await checkWithCsv(page, schedules, visits)
             await expect(page.getByTestId('receipt-check-error')).toHaveCount(0)
-            const cells = receiptCategoryRowCells(page, 'match', '2024-04-01', '利用者A')
+            await step('表示する行を「全ての行」に切り替える')
+            await showAllReceiptRows(page)
+            const cells = receiptCategoryRowCells(page, 'match', '2024年4月1日（月）', '利用者A')
             await expect(cells).toHaveText([
-              '2024-04-01',
+              '2024年4月1日（月）',
               '利用者A',
               '職員B',
+              '',
               '医',
               '23:00',
               '00:30',
@@ -149,19 +153,26 @@ test.describe('照合の結果', () => {
             await expect(page.getByTestId('receipt-category-visit_only')).toHaveText(
               '実績のみ（1 件）',
             )
+            await step('表示する行を「全ての行」に切り替える')
+            await showAllReceiptRows(page)
             await expect(
-              receiptCategoryRowCells(page, 'match', '2024-04-01', '利用者C'),
-            ).toHaveCount(12)
+              receiptCategoryRowCells(page, 'match', '2024年4月1日（月）', '利用者C'),
+            ).toHaveCount(13)
             await check(
               '照合の全体が止まらずに結果の画面が開き、利用者C の日をまたがない行は整合データに入る',
             )
 
-            const cells = receiptCategoryRowCells(page, 'visit_only', '2024-04-01', '利用者D')
+            const cells = receiptCategoryRowCells(
+              page,
+              'visit_only',
+              '2024年4月1日（月）',
+              '利用者D',
+            )
             await step('（撮影のため、結果の表を右端まで送り、実績の側の列を見せる）')
             await scrollToVisitColumns(page)
-            await expect(cells.nth(8)).toHaveText('22:00')
-            await expect(cells.nth(9)).toHaveText('01:00')
-            await expect(cells.nth(10)).toHaveText('180')
+            await expect(cells.nth(9)).toHaveText('22:00')
+            await expect(cells.nth(10)).toHaveText('01:00')
+            await expect(cells.nth(11)).toHaveText('180')
             await check(
               '利用者D の 2024-04-01 の行が実績のみに入り、実績の側は 22:00〜01:00、180 分である',
             )
@@ -205,11 +216,14 @@ test.describe('照合の結果', () => {
               '2026 年 11 月の Google カレンダー',
             )
             await expect(page.getByTestId('receipt-warnings')).toHaveCount(0)
-            const cells = receiptCategoryRowCells(page, 'match', '2026-11-20', '見本一郎')
+            await step('表示する行を「全ての行」に切り替える')
+            await showAllReceiptRows(page)
+            const cells = receiptCategoryRowCells(page, 'match', '2026年11月20日（金）', '見本一郎')
             await expect(cells).toHaveText([
-              '2026-11-20',
+              '2026年11月20日（金）',
               '見本一郎',
               LEADER.staff.name,
+              '',
               '医',
               '23:00',
               '00:30',

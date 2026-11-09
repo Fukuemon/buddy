@@ -1,5 +1,5 @@
 import { composeStories } from '@storybook/react-vite'
-import { render, screen } from '@testing-library/react'
+import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { fn } from 'storybook/test'
 import { describe, expect, it } from 'vite-plus/test'
@@ -7,9 +7,27 @@ import { describe, expect, it } from 'vite-plus/test'
 import * as stories from './StaffScheduleDayGrid.stories'
 import { storyStaff } from './storyData'
 
-const { Default, NextDayOfOvernight, WithNow } = composeStories(stories)
+const { AllDay, Default, NextDayOfOvernight, WithNow } = composeStories(stories)
 
 describe('StaffScheduleDayGrid', () => {
+  it('終日の予定がある日は職員の名前の下の「終日」の欄に予定を置き、押しても予定を開かない', async () => {
+    const onEventClick = fn()
+    render(<AllDay onEventClick={onEventClick} />)
+    expect(screen.getByTestId('day-grid-all-day')).toHaveTextContent('終日')
+    const off = screen.getByTestId('all-day-event-gcal-allday-1')
+    expect(screen.getByTestId('day-grid-all-day-staff-1')).toContainElement(off)
+    expect(off).toHaveTextContent('休み')
+    expect(screen.getByTestId('day-grid-all-day-staff-2')).toHaveTextContent('研修')
+    expect(within(off).queryByRole('button')).toBeNull()
+    await userEvent.click(off)
+    expect(onEventClick).not.toHaveBeenCalled()
+  })
+
+  it('終日の予定が無い日は「終日」の欄を出さない', () => {
+    render(<Default />)
+    expect(screen.queryByTestId('day-grid-all-day')).toBeNull()
+  })
+
   it('職員ごとの列に予定を置き、押すと予定の ID を渡す', async () => {
     const onEventClick = fn()
     render(<Default onEventClick={onEventClick} />)
@@ -47,13 +65,13 @@ describe('StaffScheduleDayGrid', () => {
     const { unmount } = render(<Default />)
     const startDay = screen.getByTestId('schedule-event-schedule-7')
     expect([startDay.style.top, startDay.style.height]).toEqual(['1936px', '176px'])
-    expect(startDay).toHaveTextContent('22:00-翌 01:00 夜勤')
+    expect(startDay).toHaveTextContent('22:00〜翌 01:00 夜勤')
     unmount()
 
     render(<NextDayOfOvernight />)
     const nextDay = screen.getByTestId('schedule-event-schedule-7')
     expect([nextDay.style.top, nextDay.style.height]).toEqual(['0px', '88px'])
-    expect(nextDay).toHaveTextContent('22:00-翌 01:00 夜勤')
+    expect(nextDay).toHaveTextContent('22:00〜翌 01:00 夜勤')
     expect(screen.queryByTestId('schedule-event-schedule-1')).not.toBeInTheDocument()
   })
 
@@ -92,7 +110,7 @@ describe('StaffScheduleDayGrid', () => {
     expect(button).toHaveAccessibleName(/^キャンセル、/)
     expect(screen.getByText('キャンセル、')).toHaveClass('sr-only')
     expect(screen.getByTestId('schedule-event-e1-cancelled')).toHaveClass('line-through')
-    expect(screen.getByTestId('schedule-event-e1-cancelled')).toHaveTextContent('09:00-09:30 訪問')
+    expect(screen.getByTestId('schedule-event-e1-cancelled')).toHaveTextContent('09:00〜09:30 訪問')
   })
 
   it('確認が必要な予定に「要確認」の印を付ける', () => {
@@ -109,5 +127,23 @@ describe('StaffScheduleDayGrid', () => {
     render(<Default events={[event]} />)
     expect(screen.getByTestId('schedule-event-e1')).toHaveAccessibleName(/^要確認、09:00/)
     expect(screen.getByTestId('schedule-event-e1-needs-review')).toHaveTextContent('要確認')
+  })
+
+  it('「要確認」の印を時刻と同じ行に置き、狭い幅でもタイトルを 2 行目に収める', () => {
+    const event = {
+      id: 'e1',
+      title: '佐藤 花子 訪看I2',
+      staffId: 'staff-1',
+      start: '2026-10-20T09:00:00+09:00',
+      end: '2026-10-20T09:30:00+09:00',
+      color: 'red',
+      isCancelled: false,
+      needsReview: true,
+    }
+    render(<Default events={[event]} />)
+    const timeLine = screen
+      .getByTestId('schedule-event-e1-needs-review')
+      .closest<HTMLElement>('.block')
+    expect(timeLine?.textContent).toBe('要確認、09:00〜09:30')
   })
 })

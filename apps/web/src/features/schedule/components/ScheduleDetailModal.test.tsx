@@ -6,7 +6,8 @@ import { describe, expect, it } from 'vite-plus/test'
 
 import * as stories from './ScheduleDetailModal.stories'
 
-const { Visit, Normal, Cancelled } = composeStories(stories)
+const { Visit, Normal, Cancelled, Recurring, RecurringDaily, RecurringBiweeklyAllDays } =
+  composeStories(stories)
 
 describe('ScheduleDetailModal', () => {
   it('訪問の予定は利用者とサービスコードを出す', () => {
@@ -31,14 +32,41 @@ describe('ScheduleDetailModal', () => {
     expect(onEdit).toHaveBeenCalledOnce()
   })
 
-  it('下端の閉じるは、編集の左に置き、押すと onClose を呼ぶ', async () => {
+  it('下端の閉じるは、編集の左に置き、押すと onClose を呼ぶ。右上に × を出さない', async () => {
     const onClose = fn()
     render(<Normal onClose={onClose} />)
     const close = screen.getByTestId('schedule-detail-close')
     const edit = screen.getByTestId('schedule-detail-edit')
     expect(close.compareDocumentPosition(edit) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    expect(screen.queryByTestId('modal-close')).not.toBeInTheDocument()
     await userEvent.click(close)
     expect(onClose).toHaveBeenCalledOnce()
+  })
+
+  it('予定をキャンセルするボタンは、赤い文字の destructive にして下端の先頭に置き、「閉じる」と編集をその後に並べる', async () => {
+    const onCancelSchedule = fn()
+    render(<Normal onCancelSchedule={onCancelSchedule} />)
+    const cancel = screen.getByTestId('schedule-detail-cancel-schedule')
+    const close = screen.getByTestId('schedule-detail-close')
+    expect(cancel).toHaveClass('text-danger')
+    expect(cancel.parentElement).toHaveClass('mr-auto')
+    expect(cancel.compareDocumentPosition(close) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    await userEvent.click(cancel)
+    expect(onCancelSchedule).toHaveBeenCalledOnce()
+  })
+
+  it('予定を削除するボタンは、赤い文字の destructive にしてキャンセルの右に置き、押すと onDeleteSchedule を呼ぶ', async () => {
+    const onDeleteSchedule = fn()
+    render(<Normal onCancelSchedule={fn()} onDeleteSchedule={onDeleteSchedule} />)
+    const cancel = screen.getByTestId('schedule-detail-cancel-schedule')
+    const remove = screen.getByTestId('schedule-detail-delete-schedule')
+    const close = screen.getByTestId('schedule-detail-close')
+    expect(remove).toHaveClass('text-danger')
+    expect(remove.parentElement).toBe(cancel.parentElement)
+    expect(cancel.compareDocumentPosition(remove) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    expect(remove.compareDocumentPosition(close) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    await userEvent.click(remove)
+    expect(onDeleteSchedule).toHaveBeenCalledOnce()
   })
 
   it('メモが空の予定は、メモの見出しごと出さない', () => {
@@ -48,12 +76,66 @@ describe('ScheduleDetailModal', () => {
     expect(screen.queryByText('なし')).not.toBeInTheDocument()
   })
 
-  it('キャンセルした予定は理由を出し、下端の閉じると編集のボタンを出さない', () => {
-    render(<Cancelled />)
+  it('キャンセルした予定は理由を出し、下端の閉じると編集のボタンを出さず、右上の × で閉じる', async () => {
+    const onClose = fn()
+    render(<Cancelled onClose={onClose} />)
     expect(screen.getByTestId('schedule-detail-cancel')).toHaveTextContent(
       'キャンセルした予定です。理由: 利用者の体調不良',
     )
     expect(screen.queryByTestId('schedule-detail-close')).not.toBeInTheDocument()
     expect(screen.queryByTestId('schedule-detail-edit')).not.toBeInTheDocument()
+    await userEvent.click(screen.getByTestId('modal-close'))
+    expect(onClose).toHaveBeenCalledOnce()
+  })
+
+  it('繰り返しの予定のまだ変えていない回は、「繰り返し」の行に規則を出す', () => {
+    render(<Recurring />)
+    expect(screen.getByTestId('schedule-detail-recurrence')).toHaveTextContent(
+      '繰り返し隔週 月曜日、木曜日',
+    )
+  })
+
+  it('7 つの曜日の毎週は「毎日」と出し、隔週は曜日を並べる', () => {
+    const { unmount } = render(<RecurringDaily />)
+    expect(screen.getByTestId('schedule-detail-recurrence')).toHaveTextContent(
+      '繰り返し毎日（2027年3月31日（水）まで）',
+    )
+    unmount()
+    render(<RecurringBiweeklyAllDays />)
+    expect(screen.getByTestId('schedule-detail-recurrence')).toHaveTextContent(
+      '繰り返し隔週 月曜日、火曜日、水曜日、木曜日、金曜日、土曜日、日曜日',
+    )
+  })
+
+  it('終了日のある毎月の規則は、終了日を後ろに付けて出す', () => {
+    const schedule = Recurring.args.schedule!
+    render(
+      <Recurring
+        schedule={{
+          ...schedule,
+          recurrence: {
+            recurringScheduleId: 'recurring-1',
+            rule: {
+              frequency: 'monthly',
+              daysOfWeek: null,
+              interval: null,
+              dayOfWeek: 1,
+              dayOfMonth: null,
+              weekOfMonth: 2,
+              endDate: '2027-03-31',
+            },
+          },
+        }}
+      />,
+    )
+    expect(screen.getByTestId('schedule-detail-recurrence')).toHaveTextContent(
+      '毎月 第 2 月曜日（2027年3月31日（水）まで）',
+    )
+  })
+
+  it('単発の予定と、1 回を置き換えた予定（recurrence を持たない予定）は、「繰り返し」の行を出さない', () => {
+    render(<Visit />)
+    expect(screen.queryByTestId('schedule-detail-recurrence')).not.toBeInTheDocument()
+    expect(screen.queryByText('繰り返し')).not.toBeInTheDocument()
   })
 })

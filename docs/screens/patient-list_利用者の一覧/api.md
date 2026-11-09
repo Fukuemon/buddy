@@ -53,6 +53,8 @@
 | 8 | メニュー | `site-nav-toggle` |
 | 9 | メニュー | `site-nav-toggle` |
 | 7 | メニュー | `site-nav-toggle` |
+| 14 | 最新の情報の読み込みの失敗の文 | `refetch-error` |
+| 15 | 最新の情報を読み直す | `refetch-retry` |
 
 - ヘルプの説明の `patient-list-help-text` と、権限が無いことの入れ物の `page-forbidden` は、構成要素の表に載せないので、この表に載せない。
 

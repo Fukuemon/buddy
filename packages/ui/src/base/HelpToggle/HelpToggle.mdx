@@ -9,25 +9,15 @@ import * as Stories from './HelpToggle.stories'
 
 見出しの右に置く ? のヘルプ。押すと見出しの下に 1〜2 文の説明を開く。
 
-## 使う場面
+## 規則
 
-- 画面やダイアログの見出しが何を指すかを、見出しの近くで補う
+規則の本文は、デザインシステムの文書の次のセクションにある。
 
-## 使わない場面
-
-- 操作の手順のような、読みながら操作する説明（`MoreText` を使う）
-- エラーや注意。常に見える文で出す
-- 操作に欠かせない説明。隠さずに出す
-
-## Do
-
-- 見出しと並べる親の要素に `relative` を付ける。説明はその下の左端にそろう
-- 説明は 1〜2 文にする
-
-## Don't
-
-- 説明の中にリンクやボタンを置く
-- 1 つの見出しに 2 つ置く
+- 使う場面、使わない場面、キーボードの操作: コンポーネントの文書（`packages/ui/design/components.md`）の「コンポーネントの選び方」の `HelpToggle` の行
+- 使い方の規則と Do と Don't: コンポーネントの文書の「コンポーネントごとの規則」の「`HelpToggle`、`MoreText`」
+- 当たる原則: DESIGN.md の「画面を作るときの原則」の次の ID
+  - `TARGET-SIZE`
+  - `FOCUS-ONE`
 
 ## 状態
 
@@ -38,13 +28,6 @@ import * as Stories from './HelpToggle.stories'
 ### 開いた状態
 
 <Canvas of={Stories.Open} />
-
-## キーボードの操作
-
-- Tab で ? のボタンに移り、Enter と Space で開閉する
-- Esc で閉じる。ダイアログの中で押しても、ダイアログは閉じない
-- 説明の外を押すと閉じる
-- ボタンの `aria-expanded` で開閉を、`aria-controls` で説明を伝える
 
 ## props
 

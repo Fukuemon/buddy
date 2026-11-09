@@ -35,6 +35,7 @@ export type StoryRouteId =
   | '/schedule/new'
   | '/schedule/$scheduleId/'
   | '/schedule/$scheduleId/edit'
+  | '/schedule/$scheduleId/recurrence'
   | '/receipt/'
   | '/receipt/result'
   | '/schedule_/link'
@@ -116,6 +117,11 @@ const createStoryRouter = (Story: StoryFn, params: AppRouterParameters) => {
     getParentRoute: () => schedule,
     path: '$scheduleId/edit',
     component: atScheduleId('/schedule/$scheduleId/edit'),
+  })
+  const scheduleRecurrence = createRoute({
+    getParentRoute: () => schedule,
+    path: '$scheduleId/recurrence',
+    component: atScheduleId('/schedule/$scheduleId/recurrence'),
   })
   const receipt = createRoute({
     getParentRoute: () => root,
@@ -200,7 +206,7 @@ const createStoryRouter = (Story: StoryFn, params: AppRouterParameters) => {
 
   const router = createRouter({
     routeTree: root.addChildren([
-      schedule.addChildren([scheduleNew, scheduleDetail, scheduleEdit]),
+      schedule.addChildren([scheduleNew, scheduleDetail, scheduleEdit, scheduleRecurrence]),
       receipt,
       receiptResult,
       scheduleLink,
@@ -281,6 +287,9 @@ const buddyApiOf = (operation: () => Promise<never>): BuddyApi => ({
     create: operation,
     update: operation,
     cancel: operation,
+    delete: operation,
+    createRecurring: operation,
+    changeRule: operation,
   },
   staff: {
     list: operation,
@@ -327,6 +336,21 @@ const buddyApiOf = (operation: () => Promise<never>): BuddyApi => ({
     cancelCutover: operation,
   },
 })
+
+/**
+ * 2 回目の呼び出しだけ status が 500 の ApiError で失敗する操作を作る。1 回目と 3 回目からは operation の結果を返す。
+ * 読み終えた後に読み直して読めなかったときと、その後に読み直して読めたときを見るために使う。
+ */
+export const failOnSecondCall = <Args extends unknown[], Result>(
+  operation: (...args: Args) => Promise<Result>,
+): ((...args: Args) => Promise<Result>) => {
+  let calls = 0
+  return async (...args) => {
+    calls += 1
+    if (calls === 2) throw new ApiError(500, '読み直しで読めない')
+    return operation(...args)
+  }
+}
 
 /** 全ての操作が status の ApiError で失敗するフェイクの API を作る。 */
 export const failingBuddyApi = (status = 500): BuddyApi =>

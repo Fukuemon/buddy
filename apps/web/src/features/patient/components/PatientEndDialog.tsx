@@ -3,7 +3,11 @@ import type { ReactNode } from 'react'
 
 import type { PatientRecord, PatientSchedules } from '#/api/types'
 
-import { formatRemainingRecurring, formatRemainingSchedule, hasNoSchedules } from '../lib/format'
+import {
+  formatRemainingRecurringParts,
+  formatRemainingScheduleParts,
+  hasNoSchedules,
+} from '../lib/format'
 
 export type PatientEndDialogProps = {
   patient: PatientRecord
@@ -15,6 +19,31 @@ export type PatientEndDialogProps = {
   errorMessage?: string
   onSubmit: () => void
   onCancel: () => void
+}
+
+/** 残る単発の予定の日時。折り返すときも、時刻の範囲（`22:00〜翌 01:00` を含む）は 1 行に保つ。 */
+const ScheduleText = ({ schedule }: { schedule: PatientSchedules['schedules'][number] }) => {
+  const { date, time } = formatRemainingScheduleParts(schedule)
+  return (
+    <>
+      {date} <span className="whitespace-nowrap">{time}</span>
+    </>
+  )
+}
+
+/** 残る繰り返しの予定の期間と時刻の範囲。折り返すときも、時刻の範囲（`22:00〜翌 01:00` を含む）は 1 行に保つ。 */
+const RecurringText = ({
+  recurring,
+}: {
+  recurring: PatientSchedules['recurring_schedules'][number]
+}) => {
+  const { period, time } = formatRemainingRecurringParts(recurring)
+  return (
+    <>
+      {period}
+      <span className="whitespace-nowrap">{time}</span>
+    </>
+  )
 }
 
 const Group = ({ label, children }: { label: string; children: ReactNode }) => (
@@ -67,7 +96,7 @@ const RemainingList = ({
                 data-testid={`patient-end-schedule-${schedule.id}`}
                 href={`/schedule/${schedule.id}`}
               >
-                {formatRemainingSchedule(schedule)}
+                <ScheduleText schedule={schedule} />
               </a>
             </li>
           ))}
@@ -77,7 +106,7 @@ const RemainingList = ({
         <Group label={`繰り返しの予定（${schedules.recurring_schedules.length} 件）`}>
           {schedules.recurring_schedules.map((recurring) => (
             <li data-testid={`patient-end-recurring-${recurring.id}`} key={recurring.id}>
-              {formatRemainingRecurring(recurring)}
+              <RecurringText recurring={recurring} />
             </li>
           ))}
         </Group>

@@ -9,13 +9,20 @@ import * as stories from './ScheduleDetailModalContainer.stories'
 
 const {
   Cancelled,
+  DeleteDialog,
+  DeleteFailed,
+  DeleteRecurringOccurrence,
   Forbidden,
   GoogleCalendar,
   GoogleCalendarCutover,
   GoogleCalendarNeedsReview,
   GoogleCalendarRecurrenceUnsupported,
   NotFound,
+  PastSchedule,
   ReadOnly,
+  RecurringOccurrence,
+  RecurringPastMenu,
+  RecurringReplaced,
   Visit,
 } = composeStories(stories)
 
@@ -48,10 +55,17 @@ describe('ScheduleDetailModalContainer', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent('この予定を見る権限がありません。')
   })
 
-  it('Google カレンダーの予定は、buddy で変えると Google カレンダーにも書く案内と、編集とキャンセルのボタンを出す', async () => {
+  it('Google カレンダーの予定は、「Google カレンダー」の印と、書き込みの説明を入れた ? と、編集とキャンセルのボタンを出す', async () => {
     render(<GoogleCalendar />)
-    expect(await screen.findByTestId('schedule-detail-google-calendar')).toHaveTextContent(
-      'Google カレンダーの予定です。buddy で変更かキャンセルすると、Google カレンダーにも書きます。',
+    expect((await screen.findByTestId('schedule-detail-google-calendar')).textContent).toBe(
+      'Google カレンダー',
+    )
+    const helpText = screen.getByTestId('schedule-detail-google-calendar-help-text')
+    expect(helpText).not.toBeVisible()
+    await userEvent.click(screen.getByTestId('schedule-detail-google-calendar-help'))
+    expect(helpText).toBeVisible()
+    expect(helpText).toHaveTextContent(
+      'buddy で変更かキャンセルすると、Google カレンダーにも書きます。',
     )
     expect(screen.getByTestId('schedule-detail-datetime')).toBeInTheDocument()
     expect(screen.getByTestId('schedule-detail-edit')).toBeInTheDocument()
@@ -82,6 +96,18 @@ describe('ScheduleDetailModalContainer', () => {
     expect(screen.queryByTestId('schedule-detail-cancel-schedule')).not.toBeInTheDocument()
   })
 
+  it('キャンセルの確認のダイアログは、閉じる側を「戻る」にし、押すと予定をキャンセルせずに詳細に戻る', async () => {
+    render(<Visit />)
+    await userEvent.click(await screen.findByTestId('schedule-detail-cancel-schedule'))
+    expect(screen.getByTestId('schedule-cancel-cancel').textContent).toBe('戻る')
+    expect(screen.getByTestId('schedule-cancel-submit')).toHaveTextContent('予定をキャンセルする')
+
+    await userEvent.click(screen.getByTestId('schedule-cancel-cancel'))
+    expect(screen.queryByTestId('schedule-cancel-dialog')).not.toBeInTheDocument()
+    expect(screen.getByTestId('schedule-detail-cancel-schedule')).toBeInTheDocument()
+    expect(screen.queryByTestId('schedule-detail-cancel')).not.toBeInTheDocument()
+  })
+
   it('予定をキャンセルすると、理由と詳細を開いたときの etag を送り、Google カレンダーの予定は理由を残さないことを示す', async () => {
     const { api } = GoogleCalendar.parameters.appRouter as AppRouterParameters
     if (api === undefined) throw new Error('story にフェイクの API が無い')
@@ -103,5 +129,101 @@ describe('ScheduleDetailModalContainer', () => {
       '利用者の都合',
       '"etag-schedule-3"',
     ])
+  })
+
+  it('単発の予定では、「編集」をメニューにせず、押すと編集の画面へ移るボタンにする', async () => {
+    render(<Visit />)
+    expect(await screen.findByTestId('schedule-detail-edit')).not.toHaveAttribute('aria-haspopup')
+  })
+
+  it('繰り返しの予定の回では、「編集」を押すと「この予定を編集」と「繰り返しを変更」のメニューを出す', async () => {
+    render(<RecurringOccurrence />)
+    await userEvent.click(await screen.findByTestId('schedule-detail-edit'))
+    expect(screen.getByTestId('schedule-detail-edit-occurrence')).toHaveTextContent(
+      'この予定を編集',
+    )
+    expect(screen.getByTestId('schedule-detail-edit-recurrence')).not.toHaveAttribute(
+      'aria-disabled',
+    )
+  })
+
+  it('今日より前の回でも、「繰り返しを変更」を押せる', async () => {
+    render(<RecurringPastMenu />)
+    await userEvent.click(await screen.findByTestId('schedule-detail-edit'))
+    const item = await screen.findByTestId('schedule-detail-edit-recurrence')
+    expect(item).not.toHaveAttribute('aria-disabled')
+    expect(item.textContent).toBe('繰り返しを変更')
+  })
+
+  it('1 回を置き換えた予定は、単発の予定と同じく、メニューにせず「編集」のボタンだけを出す', async () => {
+    render(<RecurringReplaced />)
+    expect(await screen.findByTestId('schedule-detail-edit')).not.toHaveAttribute('aria-haspopup')
+    expect(screen.queryByTestId('schedule-detail-edit-recurrence')).not.toBeInTheDocument()
+  })
+
+  it('削除できる予定には、キャンセルの右に「予定を削除」を出す', async () => {
+    render(<Visit />)
+    const cancel = await screen.findByTestId('schedule-detail-cancel-schedule')
+    const remove = screen.getByTestId('schedule-detail-delete-schedule')
+    expect(remove.textContent).toBe('予定を削除')
+    expect(cancel.compareDocumentPosition(remove) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  })
+
+  it('今日より前の予定、キャンセルした予定、Google カレンダーの事業所の予定、編集の権限の外の予定には、削除を出さない', async () => {
+    for (const Story of [PastSchedule, Cancelled, GoogleCalendarNeedsReview, ReadOnly]) {
+      const { unmount } = render(<Story />)
+      expect(await screen.findByTestId('schedule-detail-datetime')).toBeInTheDocument()
+      expect(screen.queryByTestId('schedule-detail-delete-schedule')).not.toBeInTheDocument()
+      unmount()
+    }
+  })
+
+  it('削除の確認のダイアログは、閉じる側を「戻る」にし、押すと予定を削除せずに詳細に戻る', async () => {
+    render(<DeleteDialog />)
+    await userEvent.click(await screen.findByTestId('schedule-detail-delete-schedule'))
+    expect(screen.getByTestId('schedule-delete-dialog')).toHaveTextContent('この予定を削除しますか')
+    expect(screen.getByTestId('schedule-delete-description')).toHaveTextContent(
+      '誤って入れた予定を消します。削除した予定はカレンダーに出ず、元に戻せません。',
+    )
+    expect(screen.getByTestId('schedule-delete-cancel').textContent).toBe('戻る')
+    expect(screen.getByTestId('schedule-delete-submit')).toHaveTextContent('予定を削除する')
+
+    await userEvent.click(screen.getByTestId('schedule-delete-cancel'))
+    expect(screen.queryByTestId('schedule-delete-dialog')).not.toBeInTheDocument()
+    expect(screen.getByTestId('schedule-detail-delete-schedule')).toBeInTheDocument()
+  })
+
+  it('繰り返しの予定の回を削除すると、その回だけを消すことを示し、回の ID で削除する', async () => {
+    const { api } = DeleteRecurringOccurrence.parameters.appRouter as AppRouterParameters
+    if (api === undefined) throw new Error('story にフェイクの API が無い')
+    const remove = vi.spyOn(api.schedules, 'delete').mockResolvedValue()
+    render(<DeleteRecurringOccurrence />)
+    await userEvent.click(await screen.findByTestId('schedule-detail-delete-schedule'))
+
+    expect(screen.getByTestId('schedule-delete-description')).toHaveTextContent(
+      '繰り返しの予定のうち、この日の回だけを消します。ほかの回は残ります。',
+    )
+    await userEvent.click(screen.getByTestId('schedule-delete-submit'))
+    await waitFor(() => expect(remove).toHaveBeenCalledOnce())
+    expect(remove.mock.calls[0]?.[1]).toBe('recurring-occurrence')
+    await waitFor(() =>
+      expect(screen.queryByTestId('schedule-detail-modal')).not.toBeInTheDocument(),
+    )
+    expect(screen.queryByTestId('schedule-delete-dialog')).not.toBeInTheDocument()
+  })
+
+  it('削除を拒まれると、ダイアログを開いたまま理由の文を出し、閉じて開き直すと文を消す', async () => {
+    render(<DeleteFailed />)
+    await userEvent.click(await screen.findByTestId('schedule-detail-delete-schedule'))
+    await userEvent.click(screen.getByTestId('schedule-delete-submit'))
+    expect(await screen.findByTestId('schedule-delete-error')).toHaveTextContent(
+      '予定がキャンセルか変更されていたので、削除できませんでした。予定を開き直してください。',
+    )
+    expect(screen.getByTestId('schedule-delete-dialog')).toBeInTheDocument()
+
+    await userEvent.click(screen.getByTestId('schedule-delete-cancel'))
+    await userEvent.click(screen.getByTestId('schedule-detail-delete-schedule'))
+    expect(screen.getByTestId('schedule-delete-dialog')).toBeInTheDocument()
+    expect(screen.queryByTestId('schedule-delete-error')).not.toBeInTheDocument()
   })
 })

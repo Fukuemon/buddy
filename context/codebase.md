@@ -32,21 +32,21 @@ status: stable
     - 訪問と予定: `servicecode`、`visit`、`schedule`、`scheduleview`
     - 外部のカレンダー: `calendar`、`calendarimport`、`calendarsync`、`calendarexport`、`calendarwrite`
   - DB と HTTP のアダプタ（`postgres`、`httpapi`）は 1 つずつ置く。
-  - ADR-0020: [予定の API を機能ごとのパッケージに分ける](../docs/adr/0020-schedule-api-packages.md)
+  - ADR-0021: [予定の API を機能ごとのパッケージに分ける](../docs/adr/0021-schedule-api-packages.md)
   - 機能のパッケージは `internal/features/` に置く。
-    - アダプタ、共通のパッケージ、`access`、`principal`、`config`、`assemble` は `internal/` の直下に置く。
+    - アダプタ、共通のパッケージ、`access`、`principal`、`config` は `internal/` の直下に置く。
   - `internal/` の直下のパッケージは次のとおり。
     - アダプタ: `httpapi`（HTTP）、`postgres`（DB）、`gcal`（Google カレンダー）、`broker`（ID ブローカーの内部の API）、`ulid`（ID の発行）
     - 共通のパッケージ: `apperr`、`tx`、`kernel`、`civil`
     - 認証と認可: `access`、`principal`
     - 設定: `config`
-    - 組み立て: `assemble`
     - テストのためのメモリ上の実装: `inmem`
     - 機能のパッケージ: `features/`（予定の API の 12 の機能）
+  - 依存の組み立ては `internal/` に置かず、各 `cmd` に置く。
   - OIDC の ID トークンの検証は、`packages/go/oidc` を使う。
   - 機能のパッケージの中は、手順（操作ごとの型）、規則の関数、集約の単位のリポジトリに分ける。
-  - ADR-0020: [予定の API を機能ごとのパッケージに分ける](../docs/adr/0020-schedule-api-packages.md)
-  - ADR-0023: [Go の API の操作を、使う依存だけを持つ操作ごとの型にする](../docs/adr/0023-go-operation-types.md)
+  - ADR-0021: [予定の API を機能ごとのパッケージに分ける](../docs/adr/0021-schedule-api-packages.md)
+  - ADR-0024: [Go の API の操作を、使う依存だけを持つ操作ごとの型にする](../docs/adr/0024-go-operation-types.md)
 - `services/receipt` では、照合の段（読み込み、正規化、対の作成、判定）ごとにパッケージを分ける。
 
 ## Dependency Rules
@@ -58,7 +58,7 @@ status: stable
   - `packages/go` は `services/` を import しない。
   - サービスコードの表記と提供時間の範囲は、`packages/go/servicecode` に置く。照合の API と予定の API は、この表を写さない。
     - 照合だけの規則（予定の終了時間の調整、予定と実績のサービス内容の対応）は、照合の API の `servicerule` に置く。
-    - ADR-0022: [サービスの規則を packages/go/servicecode に置き、予定の API のサービスコードを visit から servicecode の機能に分ける](../docs/adr/0022-service-code-rules.md)
+    - ADR-0023: [サービスの規則を packages/go/servicecode に置き、予定の API のサービスコードを visit から servicecode の機能に分ける](../docs/adr/0023-service-code-rules.md)
 - web は `@buddy/ui` に依存してよい。
   - `packages/ui` から `apps/` へは依存しない。
 - web は `@buddy/broker` の `AuthCard` と `loginFailedMessage` だけに依存してよい。`apps/broker` は `@buddy/ui` に依存し、web には依存しない。
@@ -74,16 +74,16 @@ status: stable
   - 機能のパッケージの間は、`organization`、`staff`、`servicecode`、`patient`、`visit`、`schedule`、`scheduleview`、`calendar` の順にだけ import する。
     - サービスコードは `servicecode` に、訪問の区分は `visit` に置く。`visit` は利用者を `patient` から受ける。
     - `scheduleview` は `schedule` まで import してよい。`calendarsync` は、Projection を書くために `scheduleview` を import してよい。
-    - ADR-0025: [予定の書き込みのモデルを schedule に、読み取りのモデルを scheduleview に置く](../docs/adr/0025-schedule-write-read-models.md)
+    - ADR-0026: [予定の書き込みのモデルを schedule に、読み取りのモデルを scheduleview に置く](../docs/adr/0026-schedule-write-read-models.md)
     - `calendarimport`、`calendarsync`、`calendarexport` は `calendar` まで import してよく、3 つの間では import しない。
     - `calendarwrite` は、`google_primary` の事業所で buddy から Google カレンダーに予定を書くために、`calendar` まで import してよい。`calendarimport`、`calendarsync`、`calendarexport` を import せず、ほかの機能のパッケージから import されない。
-      - ADR-0028: [Google カレンダーとの連携を、事業所ごとの正本のモードで分ける](../docs/adr/0028-google-calendar-sync.md)
-    - ADR-0020: [予定の API を機能ごとのパッケージに分ける](../docs/adr/0020-schedule-api-packages.md)
-  - `principal` は `organization` と `staff` に依存し、`schedule`、`scheduleview`、`calendarimport`、`access`、`httpapi`、`assemble` から使う。
+      - ADR-0029: [Google カレンダーとの連携を、事業所ごとの正本のモードで分ける](../docs/adr/0029-google-calendar-sync.md)
+    - ADR-0021: [予定の API を機能ごとのパッケージに分ける](../docs/adr/0021-schedule-api-packages.md)
+  - `principal` は `organization` と `staff` に依存し、`schedule`、`scheduleview`、`calendarimport`、`access`、`httpapi`、`cmd/api` から使う。
   - 機能のパッケージは、自分の集約のリポジトリのインターフェースと、使う側で定義したインターフェースだけに依存する。
     - ほかの機能のデータを読むだけなら、`kernel.Finder` か 1〜2 のメソッドにする。
     - ほかの機能の集約を 1 つのトランザクションで書くかロックするなら（`calendarimport` の `Recurring`、各機能の `FacilityLock`）、使うメソッドだけを並べた 1 つのインターフェースにする。
-      - ADR-0020: [予定の API を機能ごとのパッケージに分ける](../docs/adr/0020-schedule-api-packages.md)
+      - ADR-0021: [予定の API を機能ごとのパッケージに分ける](../docs/adr/0021-schedule-api-packages.md)
     - ほかの機能のリポジトリのインターフェースは import しない。
     - トランザクションは `tx.Transactor` で受ける。
     - アダプタを import しない。
@@ -92,19 +92,21 @@ status: stable
       - パスの ID が指すリソースの事業所は、各リポジトリの `GetFacilityID` で事業所の ID だけを読む。
       - 職員は、認可に要る項目だけを持つ `principal.Staff` で読む。
   - `config` は DB のアダプタを import しない。
-    - `assemble` と `cmd/migrate` が `config` の値をアダプタの設定にコピーする。
+    - `cmd` が `config` の値をアダプタの設定にコピーする。
+  - `config` は `packages/go/oidc` を import しない。
+    - `config` は OIDC の値を自分の型で持ち、`cmd/api` が `oidc.Config` にコピーする。
   - `postgres`、`ulid`、`gcal`、`broker` は、機能のパッケージと `access` のインターフェースを実装する。
-  - `packages/go/oidc` の ID トークンの検証は、`assemble` が `httpapi` の `TokenVerifier` に包んで渡す。
+  - `packages/go/oidc` の ID トークンの検証は、`cmd/api` が `httpapi` の `TokenVerifier` に包んで渡す。
     - `httpapi` から `postgres` と `packages/go/oidc` を import するのは、テストのファイルだけにする。
     - `httpapi` は、パスの ID の形の確認に `ulid` を使う。
   - `inmem` を import するのは、テストのファイルだけにする。
-  - 全ての機能のパッケージとアダプタを import してよいのは、`assemble` だけにする。
-    - `assemble` を import するのは `cmd` だけにする。
-    - `cmd/api` と `cmd/calendar-worker` は、機能のパッケージ、アダプタ、`access`、`principal` を import しない。`assemble` が作った値で、`cmd/api` はサーバーを、`cmd/calendar-worker` は書き出しか同期の処理を起動する。
-    - プロセスの寿命（設定の読み込み、シグナル、DB とサーバーの開始と停止）は `cmd` が持つ。`assemble` は依存のグラフを作る部分だけを持つ。
-      - `assemble` のファイルは、API と Worker が共有するもの（`assemble.go`）、API だけが使うもの（`api.go`）、Worker だけが使うもの（`worker.go`）に分ける。
-    - 照合の API と ID ブローカーには、`assemble` に当たるパッケージを作らない。組み立てを共有する別の実行の単位が無いためである。組み立ては `main` のパッケージの中で、責務ごとのファイルに分ける。
-    - ADR-0020: [予定の API を機能ごとのパッケージに分ける](../docs/adr/0020-schedule-api-packages.md)
+  - 依存の組み立ては、各 `cmd` の `main` のパッケージに手で書き、DI のツールを使わない。
+    - `cmd/api` は `handler.go` で、`cmd/calendar-worker` は `worker.go` で組み立てる。各 `cmd` は、自分が使う機能のパッケージとアダプタだけを import する。
+    - `cmd/calendar-worker` は、`httpapi`、`broker`、`access`、`packages/go/oidc` を import しない。Worker は HTTP の層を持たず、リクエストの認可と ID ブローカーの呼び出しをしないためである。
+    - プロセスの寿命（設定の読み込み、シグナル、DB とサーバーの開始と停止）は `main.go` が持つ。組み立てのファイルは、依存のグラフを作る部分だけを持つ。
+    - 組み立てのファイルには、ID ブローカーの `server.go` と同じく、役割の名前を付ける。`wire.go` は google/wire が使う名前なので使わない。
+    - 照合の API と ID ブローカーも、組み立てを `main` のパッケージの中に置き、責務ごとのファイルに分ける。
+    - ADR-0021: [予定の API を機能ごとのパッケージに分ける](../docs/adr/0021-schedule-api-packages.md)
 - `services/receipt` の依存は、`record`、`civil`、`servicerule` を末端にして、読み込み（`csvio`）、正規化、対の作成、判定、つなぐ段（`check`）、データソース、HTTP の順の 1 方向に限る。
   - 正規化と判定はサービスの規則（`servicerule` と `packages/go/servicecode`）を、データソースは Google カレンダー（`gcal`）を使う。
   - 照合の権限の確認（`permission`）は、HTTP と同じ段に置き、`httpapi` から使う。
@@ -117,7 +119,7 @@ status: stable
   - 予定の API の共通のパッケージから、標準ライブラリと共通のパッケージ以外（外のモジュールを含む）への import
   - 予定の API の `access` から機能のパッケージへの import
   - 予定の API の `httpapi` と `config` から `postgres` への import、`httpapi` から `packages/go/oidc` への import、テストのファイル以外から `inmem` への import
-  - 予定の API の `cmd/api` と `cmd/calendar-worker` から機能のパッケージ、アダプタ、`access`、`principal` への import と、`cmd` 以外から `assemble` への import
+  - 予定の API の `cmd/calendar-worker` から `httpapi`、`broker`、`access`、`packages/go/oidc` への import と、`config` から `packages/go/oidc` への import
   - 照合の API の段の順
   - ID ブローカーの `staff`、`postgres`、`login`、`internalapi` の向き
 - depguard は、テストのファイルを対象の外にする。
@@ -156,7 +158,7 @@ status: stable
 - web の route のファイル（`src/routes/`）は、URL と Container か機能の画面のコンポーネントを結び、search params の検証、SSR の有無、loader の prefetch だけを持つ。
   - 画面の枠（ヘッダー、ナビゲーション、照合待ちのバッジ、余白を付けた `main`）は、`routes/__root.tsx` の component が包む。route のファイルは枠を描かない。
     - 左の欄を持つ画面（予定の画面）は、route の `staticData` の `ownsSiteLayout` を true にし、機能の Layout が `SiteLayoutContainer` を使う。
-    - ADR-0027: [web の画面の枠を root の route の component で包み、左の欄を持つ画面だけを staticData で外す](../docs/adr/0027-web-site-frame-in-root-route.md)
+    - ADR-0028: [web の画面の枠を root の route の component で包み、左の欄を持つ画面だけを staticData で外す](../docs/adr/0028-web-site-frame-in-root-route.md)
   - 見出しとリード文は、機能のコンポーネントに置く。
   - 画面のコードは `features/<機能>/` に置く。URL の階層と機能の境界が一致しないためである。
     - たとえば `/schedule/import`、`/schedule/link`、`/schedule/review` の画面は、calendar の機能にある。
@@ -180,7 +182,7 @@ status: stable
   - `runtime.ts` は、プロセスで 1 つの依存（設定、セッションの保存先、OIDC のクライアント）と MSW の起動だけを持つ。
   - `auth.ts` はログインとログアウト、`session.ts` はセッションの読み取りと更新を持つ。
 - web のダミーデータの正本と MSW の handler は `src/mocks/` に置く。
-  - ADR-0026: [web の画面の型を API の型と分けて持ち、ダミーデータを API の形で 1 か所に置く](../docs/adr/0026-web-view-types.md)
+  - ADR-0027: [web の画面の型を API の型と分けて持ち、ダミーデータを API の形で 1 か所に置く](../docs/adr/0027-web-view-types.md)
 - ライブラリの開発用のコンポーネント（TanStack Query の devtools など）は `src/integrations/` に置く。
 - Storybook の decorator は `src/storybook/`、テストの setup と MSW のサーバーは `src/test/` に置く。
 - web のコンポーネントの配置先は、業務の名前を持つか、引数とキーボードの操作が汎用の形か、使う機能の数で決める。
@@ -194,7 +196,7 @@ status: stable
 
   - 汎用の形のものは、今は 1 つの機能だけが使っていても `@buddy/ui` に置く。
     - 後から使う機能が増えたときに、移さずに済む。
-  - `@buddy/ui` に置くときは、Base か Case かを [DESIGN.md](../packages/ui/DESIGN.md) の基準で決める。
+  - `@buddy/ui` に置くときは、Base か Case かを [デザインシステムのコンポーネントの文書](../packages/ui/design/components.md) の基準で決める。
   - `src/components/` の中は、役割でディレクトリを分ける。
     - `layout/` は画面の枠（ヘッダー、ナビゲーション）、`page/` はページの本文に置く定型のもの（リード文、エラーと権限が無いときの文）を置く。
     - ディレクトリは、同じ役割のものが 3 つ以上あるときだけ作る。1〜2 個で作ると、後から入るものでディレクトリの意味がずれる。
@@ -206,8 +208,8 @@ status: stable
   - 画面の中のボタンとダイアログは `PermissionGuard` で出し分け、Container に権限の三項演算子を書かない。
   - 権限のキー、`hasPermission`、`requirePermission` は `src/api/permissions.ts` に、`PermissionGuard` は `src/components/` に置く。
   - 予定の 7 つの権限による予定ごとの判定は、機能のコードに置く。
-- デザインシステムの文書は `packages/ui/DESIGN.md` にある。
-  - 画面とコンポーネントのコード（`apps/web/src`、`apps/broker/src`、`packages/ui/src`）を書く前に読む。
+- デザインシステムの文書は、`packages/ui/DESIGN.md` と、`packages/ui/design/` のトークン、コンポーネント、カタログの 3 つの文書にある。
+  - 画面とコンポーネントのコード（`apps/web/src`、`apps/broker/src`、`packages/ui/src`）を書く前に、4 つの文書を全て読む。
 - ID ブローカーの画面は `apps/broker/src/pages.tsx` に書き、`pnpm --filter @buddy/broker generate` で生成し直して、生成物を同じコミットに入れる。
   - 画面の HTML と CSS を `services/broker` に手で書かない。
 - `services/schedule` のハンドラは `internal/httpapi` に、生成したインターフェースのメソッドとして書く。
@@ -226,13 +228,13 @@ status: stable
     - コンストラクタは `New<操作>` にし、使う依存を引数で受けて値を返す。
     - 実行のメソッドは `Do` にする。
     - 操作の型の名前が集約や読み取りのモデルの型と重なるときは、集約や読み取りのモデルの型を名詞に改める。
-    - 全ての依存を知るのは、組み立ての場所（`internal/assemble`）だけにする。
-      - `assemble` は、`httpapi` の `<機能>App` ごとに、その束を作る関数を 1 つ置く。
+    - 全ての依存を知るのは、組み立ての場所（各 `cmd`）だけにする。
+      - `cmd/api` の組み立ては、`httpapi` の `<機能>App` ごとに、その束を作る関数を 1 つ置く。
       - 操作の型は `httpapi` に依存しないので、API と Worker のどちらの実行単位でも作れる。
     - 操作を束ねるのは、使う側の `httpapi` の `<機能>App`（`StaffApp`）で、操作の `Do` のメソッド値を関数のフィールドに持つ。
   - 複数の操作が使う補助は、使う依存を引数で受けるパッケージの関数にし、`<まとまり>_app.go`（`status_change_app.go`）に置く。
     - 自分の依存をフィールドに持つ補助の型は型のまま残し、使う操作の型と常駐の処理がフィールドに持つ。
-  - ADR-0023: [Go の API の操作を、使う依存だけを持つ操作ごとの型にする](../docs/adr/0023-go-operation-types.md)
+  - ADR-0024: [Go の API の操作を、使う依存だけを持つ操作ごとの型にする](../docs/adr/0024-go-operation-types.md)
   - ほかの機能と外部のシステムのインターフェースは、使う側のパッケージの `<相手>_port.go`（`identity_port.go`）に置く。
     - `<相手>` は、ほかの機能の名前（`staff_port.go`、`schedule_port.go`）か、外部のシステムの名前（`google_calendar_port.go`、`identity_port.go`）にする。
     - 1 つの相手のインターフェースは、1 つのファイルにまとめる。
@@ -247,11 +249,11 @@ status: stable
   - パッケージのドキュメントコメントと、複数の集約が使う定数は、パッケージの名前のファイル（`organization.go`、`visit.go`）に置く。
   - 常駐の処理と、操作の型のほかに操作を持つ型は、同じ機能のパッケージに、型の名前のファイル（`exporter.go`、`syncer.go`、`visit` の `writer.go`）で置く。
     - 常駐の処理の型は、1 回の取得と処理（`ExportDue`、`SyncDue`）だけを持つ。次のバッチをいつ呼ぶか（常駐と 1 回の繰り返し）は、`cmd/calendar-worker` の `loop.go` に置く。
-    - ADR-0031: [Google カレンダーの書き出しと同期を、予定の API と同じイメージの Worker のコマンドで役割ごとに動かし、繰り返しを Worker のコマンドに集める](../docs/adr/0031-calendar-worker.md)
+    - ADR-0032: [Google カレンダーの書き出しと同期を、予定の API と同じイメージの Worker のコマンドで役割ごとに動かし、繰り返しを Worker のコマンドに集める](../docs/adr/0032-calendar-worker.md)
   - テストは、確認する対象のファイルの名前に `_test` を付けたファイルに置く。
     - 複数の操作を 1 つの観点でまとめて確認するテストは、観点の名前のファイル（`calendar` の `accounts_test.go`、`schedule` の `authorization_test.go`）に置く。
     - 観点に名前が付かないものは `app_test.go` に置く。
-  - ADR-0024: [Go の API のパッケージをフラットに保ち、ファイルの名前の末尾の語で役割を表す](../docs/adr/0024-go-file-names.md)
+  - ADR-0025: [Go の API のパッケージをフラットに保ち、ファイルの名前の末尾の語で役割を表す](../docs/adr/0025-go-file-names.md)
 - 新しい Go の API で機能が 2 つ以上あるときは、機能のパッケージを `internal/features/<機能>/` に置く。
   - 機能が 1 つの API（照合の API、ID ブローカー）は、`features/` を作らない。
 - `services/receipt` に照合の段を足すときは、段ごとに `internal/` の下にパッケージを作り、`check` でつなぐ。

@@ -10,11 +10,12 @@ import { getCalendarRange } from '../lib/calendarRange'
 import { toDateKey } from '../lib/dateTime'
 import {
   SCHEDULE_NOT_FOUND_MESSAGE,
+  scheduleDeleteErrorMessage,
   scheduleLoadErrorMessage,
   scheduleSubmitErrorMessage,
 } from '../lib/errorMessage'
 import { canEditScheduleOf } from '../lib/schedulePermission'
-import { canCancelSchedule, canChangeSchedule } from '../lib/scheduleWritable'
+import { canChangeSchedule, canDeleteSchedule } from '../lib/scheduleWritable'
 import {
   facilityQueryOptions,
   patientListQueryOptions,
@@ -22,15 +23,18 @@ import {
   scheduleQueryOptions,
   staffListQueryOptions,
   useCancelSchedule,
+  useDeleteSchedule,
 } from '../queries'
-import { pickCalendarSearch } from '../schema/scheduleSearch'
+import { pickCalendarSearch, resolveCalendarView } from '../schema/scheduleSearch'
 import { ScheduleCancelDialog } from './ScheduleCancelDialog'
+import { ScheduleDeleteDialog } from './ScheduleDeleteDialog'
 import { ScheduleDetailModal } from './ScheduleDetailModal'
 
 /**
  * 予定を 1 件取り、詳細のモーダルに出す。閉じるとカレンダーに戻る。
  * ログインした職員が予定の職員の予定を編集できないときは、編集とキャンセルのボタンを出さない。
  * キャンセルのボタンは、理由を入れるダイアログを開き、開いたときの予定の etag でキャンセルする。キャンセルするとカレンダーに戻る。
+ * 削除のボタンは、予定を buddy で管理する事業所の、開始の日が今日以降の予定にだけ出し（canDeleteSchedule）、確認のダイアログの後に削除してカレンダーに戻る。
  * 職員の一覧を読み終えるまでは予定の職員のチームが分からないので、チームを対象にする権限では編集のボタンを出さない。
  *
  * Google カレンダーを予定の正本にする事業所（google_primary）の予定には 1 件の取得が無いので、カレンダーの search params の期間の
@@ -41,11 +45,15 @@ export const ScheduleDetailModalContainer = ({ scheduleId }: { scheduleId: Sched
   const navigate = useNavigate()
   const search = useSearch({ from: '/schedule' })
   const calendarSearch = pickCalendarSearch(search)
+  const close = () => navigate({ to: '/schedule', search: calendarSearch })
   const { api, facilityId, viewer } = useBuddyApi()
-  const [today] = useState(() => toDateKey(new Date()))
+  const [openedAt] = useState(() => new Date())
+  const today = toDateKey(openedAt)
   // キャンセルのダイアログを開いた時点の予定の etag。開いていなければ undefined である
   const [cancelETag, setCancelETag] = useState<string | null>()
   const cancelSchedule = useCancelSchedule(scheduleId)
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false)
+  const deleteSchedule = useDeleteSchedule(scheduleId, close)
 
   const facilityQuery = useQuery(facilityQueryOptions(api, facilityId))
   const sourceMode = facilityQuery.data?.sourceMode
@@ -55,15 +63,13 @@ export const ScheduleDetailModalContainer = ({ scheduleId }: { scheduleId: Sched
   })
   const listQuery = useQuery({
     ...scheduleListQueryOptions(api, facilityId, {
-      ...getCalendarRange(search.view, search.date ?? today),
+      ...getCalendarRange(resolveCalendarView(search.view), search.date ?? today),
       includeCancelled: search.cancelled,
     }),
     enabled: sourceMode === 'google_primary',
   })
   const staffQuery = useQuery(staffListQueryOptions(api, facilityId))
   const patientsQuery = useQuery(patientListQueryOptions(api, facilityId))
-
-  const close = () => navigate({ to: '/schedule', search: calendarSearch })
 
   const activeQuery = sourceMode === 'google_primary' ? listQuery : scheduleQuery
   const error = facilityQuery.isError ? facilityQuery.error : activeQuery.error
@@ -99,12 +105,15 @@ export const ScheduleDetailModalContainer = ({ scheduleId }: { scheduleId: Sched
   const cutover = sourceMode === 'google_primary' ? (listed?.cutover ?? null) : null
   const isEditor = canEditScheduleOf(viewer, { id: schedule.staffId, teamId: staff?.teamId ?? '' })
   const canEdit = isEditor && canChangeSchedule(schedule, cutover)
-  const canCancel = isEditor && canCancelSchedule(schedule, cutover)
+  const canDelete =
+    isEditor &&
+    sourceMode !== undefined &&
+    canDeleteSchedule(schedule, sourceMode, cutover, openedAt)
   return (
     <>
       <ScheduleDetailModal
         onCancelSchedule={
-          canCancel
+          canEdit
             ? () => {
                 cancelSchedule.reset()
                 setCancelETag(schedule.etag ?? null)
@@ -112,6 +121,24 @@ export const ScheduleDetailModalContainer = ({ scheduleId }: { scheduleId: Sched
             : undefined
         }
         onClose={close}
+        onDeleteSchedule={
+          canDelete
+            ? () => {
+                deleteSchedule.reset()
+                setIsDeleteOpen(true)
+              }
+            : undefined
+        }
+        onChangeRecurrence={
+          schedule.recurrence === undefined
+            ? undefined
+            : () =>
+                navigate({
+                  to: '/schedule/$scheduleId/recurrence',
+                  params: { scheduleId },
+                  search: calendarSearch,
+                })
+        }
         onEdit={
           canEdit
             ? () =>
@@ -139,6 +166,17 @@ export const ScheduleDetailModalContainer = ({ scheduleId }: { scheduleId: Sched
             await cancelSchedule.mutateAsync({ reason, etag: cancelETag })
             await close()
           }}
+          schedule={schedule}
+        />
+      )}
+      {isDeleteOpen && (
+        <ScheduleDeleteDialog
+          errorMessage={
+            deleteSchedule.isError ? scheduleDeleteErrorMessage(deleteSchedule.error) : undefined
+          }
+          isSubmitting={deleteSchedule.isPending}
+          onCancel={() => setIsDeleteOpen(false)}
+          onSubmit={() => deleteSchedule.mutate()}
           schedule={schedule}
         />
       )}

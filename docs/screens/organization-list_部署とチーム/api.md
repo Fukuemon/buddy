@@ -32,7 +32,7 @@
 | 職員が、作るか保存を送っている途中である | 作成か編集を送る mutation の `isPending` が `true`（`OrganizationUnitDialog` の `isSubmitting`） |
 
 - 一覧と、無いことの文の出し分けは、`OrganizationListView.tsx` の `rows.length === 0` にある。
-- 送っている間は、名前と色の欄に `disabled` を、閉じるとキャンセルに押せない印を付ける。覆いと Escape キーでも閉じない。
+- 送っている間は、名前と色の欄に `disabled` を、キャンセルに押せない印を付ける。覆いと Escape キーでも閉じない。
   - 欄は `OrganizationUnitDialog.tsx`、ボタンと覆いは packages/ui の `InputDialog`、`DialogSubmit`、`Dialog` が決める。
 
 ## 要素の testid
@@ -55,17 +55,15 @@
 | 14 | チームの行 | `organization-list-team-row-{チームの id}` |
 | 15 | チーム | `organization-list-team-name-{チームの id}` |
 | 16 | 編集 | `organization-list-team-edit-{チームの id}` |
-| 3 | 閉じる | `organization-list-department-close` |
-| 3 | 閉じる | `organization-list-team-close` |
-| 4 | 名前 | `organization-list-department-name` |
-| 4 | 名前 | `organization-list-team-name` |
-| 5 | 色 | `organization-list-team-color` |
-| 5 | キャンセル | `organization-list-department-cancel` |
-| 6 | キャンセル | `organization-list-team-cancel` |
-| 6 | 作る、保存 | `organization-list-department-submit` |
-| 7 | 作る、保存 | `organization-list-team-submit` |
-| 8 | 入力の誤りの文 | `organization-list-team-error-name` |
-| 8 | 保存の失敗の文 | `organization-list-team-submit-error` |
+| 3 | 名前 | `organization-list-department-name` |
+| 3 | 名前 | `organization-list-team-name` |
+| 4 | 色 | `organization-list-team-color` |
+| 4 | キャンセル | `organization-list-department-cancel` |
+| 5 | キャンセル | `organization-list-team-cancel` |
+| 5 | 作る、保存 | `organization-list-department-submit` |
+| 6 | 作る、保存 | `organization-list-team-submit` |
+| 7 | 入力の誤りの文 | `organization-list-team-error-name` |
+| 7 | 保存の失敗の文 | `organization-list-team-submit-error` |
 | 6 | 読み込み中の表示 | `organization-list-loading` |
 | 6 | 読み込みの失敗の文 | `organization-list-error` |
 | 7 | 読み直す | `organization-list-retry` |
@@ -74,6 +72,8 @@
 | 12 | メニュー | `site-nav-toggle` |
 | 7 | メニュー | `site-nav-toggle` |
 | 8 | メニュー | `site-nav-toggle` |
+| 18 | 最新の情報の読み込みの失敗の文 | `refetch-error` |
+| 19 | 最新の情報を読み直す | `refetch-retry` |
 
 - 部署のダイアログとチームのダイアログは、testid の始まりだけが違うので、行を分ける。入力の誤りの文と保存の失敗の文は、部署のダイアログでは `organization-list-department-error-name` と `organization-list-department-submit-error` になる。モックはチームのダイアログだけを描く。
 - 色の選択肢は `organization-list-team-color-{色}` である。
@@ -105,5 +105,6 @@
 | 保存の失敗 | 「この部署が見つかりません。閉じてから、開き直してください。」か、「この部署」を「このチーム」にした文 | `updateDepartment`、`updateTeam` が 404 |
 | 保存の失敗 | 「この操作をする権限がありません。」 | 4 つの書き込みの操作が 403 |
 | 保存の失敗 | 「保存できませんでした。時間をおいて、もう一度保存してください。」 | 409、404、403 のほかの失敗、API に届かない |
+| 最新の情報の読み込みの失敗 | 「最新の情報を読み込めませんでした。」 | 読み終えた後に読み直して、`listDepartments` か `listTeams` が失敗、API に届かない。403 と 404 も含む |
 
 - 文を選ぶ処理は `apps/web/src/features/organization/lib/errorMessage.ts` の `submitErrorMessage` にある。

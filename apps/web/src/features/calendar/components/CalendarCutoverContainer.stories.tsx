@@ -6,6 +6,7 @@ import { createFakeBuddyApi } from '#/api/fake/fakeBuddyApi'
 import type { CalendarSyncStatus } from '#/api/types'
 import { MOCK_FACILITY_ID } from '#/mocks/scheduleData'
 import {
+  failOnSecondCall,
   failingBuddyApi,
   pendingBuddyApi,
   withAppRouter,
@@ -28,7 +29,7 @@ const synced = (id: string, staffId: string, name: string): CalendarSyncStatus =
 })
 
 /** Google カレンダーを予定の正本にし、結び付けた 2 人のカレンダーの最後の同期が成功している事業所のフェイクの API。 */
-const googlePrimaryApi = (): BuddyApi =>
+export const googlePrimaryApi = (): BuddyApi =>
   createFakeBuddyApi({
     baseDate: new Date('2026-11-05T09:00:00+09:00'),
     sourceMode: 'google_primary',
@@ -39,7 +40,7 @@ const googlePrimaryApi = (): BuddyApi =>
   })
 
 /** 切り替えを始めたフェイクの API。startCutover は待たずに状態を変える。 */
-const openApi = (): BuddyApi => {
+export const openApi = (): BuddyApi => {
   const api = googlePrimaryApi()
   void api.calendars.startCutover(MOCK_FACILITY_ID)
   return api
@@ -99,3 +100,18 @@ export const BuddyPrimary: Story = { parameters: route({ api: createFakeBuddyApi
 export const Loading: Story = { parameters: route({ api: pendingBuddyApi() }) }
 
 export const LoadError: Story = { parameters: route({ api: failingBuddyApi() }) }
+
+/** 切り替えの状況を、2 回目だけ読めないフェイクの API を作る。 */
+export const refetchFailingApi = (): BuddyApi => {
+  const base = googlePrimaryApi()
+  return {
+    ...base,
+    calendars: {
+      ...base.calendars,
+      cutoverStatus: failOnSecondCall((...args) => base.calendars.cutoverStatus(...args)),
+    },
+  }
+}
+
+/** 読み終えた後に読み直して、切り替えの状況を読めない。表示を残し、見出しの下に失敗の文と読み直すを出す。 */
+export const RefetchError: Story = { parameters: route({ api: refetchFailingApi() }) }

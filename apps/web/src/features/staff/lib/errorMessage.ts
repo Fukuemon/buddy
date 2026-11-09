@@ -15,6 +15,18 @@ export const DETAIL_NOT_FOUND_MESSAGE = '職員が見つかりません。職員
 export const OPTIONS_LOAD_ERROR_MESSAGE =
   '部署、チーム、役職を読み込めませんでした。閉じてから、開き直してください。'
 
+/** 職員の詳細で、プロフィールの編集の部署とチームを読めなかったときの文。 */
+export const PROFILE_OPTIONS_LOAD_ERROR_MESSAGE =
+  '部署とチームを読み込めませんでした。閉じてから、開き直してください。'
+
+/** 職員の詳細で、役職を変えるの役職を読めなかったときの文。 */
+export const POSITION_OPTIONS_LOAD_ERROR_MESSAGE =
+  '役職を読み込めませんでした。閉じてから、開き直してください。'
+
+/** 職員の詳細の権限のタブで、全ての権限か役職を読めなかったときの文。 */
+export const POLICIES_LOAD_ERROR_MESSAGE =
+  '権限を読み込めませんでした。時間をおいて、読み直してください。'
+
 /**
  * 職員の登録と、基本の情報の保存を拒まれたときの文。verb は「登録」か「保存」で、届かなかったときの文に入る。
  * 409 は、登録では同じメールアドレスの職員がいるとき、保存では退職した職員のときである。

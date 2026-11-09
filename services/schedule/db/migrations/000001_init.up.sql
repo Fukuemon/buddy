@@ -1,4 +1,4 @@
--- ADR-0021 で見直した表を、1 本の初期のマイグレーションで作る。
+-- ADR-0022 で見直した表を、1 本の初期のマイグレーションで作る。
 -- ID は ULID の文字列で、バイトの順で比べる。形の CHECK は主キーだけに付け、外部キーの列は主キーの値しか入らないので重ねない。
 -- 名前の列は既定の決定的な照合順序のままにし、完全に一致する値だけを同じとみなす。
 -- 事業所の中の参照は (facility_id, id) の複合の外部キーで指し、別の事業所の行を指せないようにする。
@@ -312,7 +312,7 @@ CREATE TABLE schedule_cancels (
     CONSTRAINT schedule_cancels_schedule_fkey FOREIGN KEY (schedule_id) REFERENCES schedules (id) ON DELETE CASCADE
 );
 
--- Google カレンダーの取り込み（ADR-0028 の取り込み）の表。外部の予定の題名と本文は利用者の名前を含むので保存しない。
+-- Google カレンダーの取り込み（ADR-0029 の取り込み）の表。外部の予定の題名と本文は利用者の名前を含むので保存しない。
 
 CREATE TABLE external_calendars (
     id                   text COLLATE "C" NOT NULL CHECK (id ~ '^[0-7][0-9A-HJKMNP-TV-Z]{25}$'),

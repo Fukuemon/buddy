@@ -11,7 +11,7 @@ import {
   reinstateStaff,
   retireStaff,
 } from '../../fixtures/staff'
-import { linkStaffCalendar } from '../../screens/calendar'
+import { linkStaffCalendar } from '../../setup/calendar'
 import { signInAtBroker } from '../../screens/login'
 
 const ACTOR = `${LOGIN_STAFF.name}（マネージャー、職員の管理の権限あり）`
@@ -29,7 +29,7 @@ const prepareStaffWithCalendar = async (page: Page, label: string): Promise<Staf
   await page.goto('/schedule/link')
   await signInAtBroker(page, LOGIN_EMAIL)
   const staff = newStaff(label)
-  const token = await issueManagerToken(page.request)
+  const token = await issueManagerToken()
   const registered = await registerStaff(page.request, token, staff)
   expect(registered.status()).toBe(201)
   const { id } = (await registered.json()) as { id: string }

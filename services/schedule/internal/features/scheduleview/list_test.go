@@ -2,6 +2,7 @@ package scheduleview_test
 
 import (
 	"errors"
+	"maps"
 	"reflect"
 	"regexp"
 	"slices"
@@ -301,6 +302,47 @@ func TestSchedulesListGooglePrimaryExpandsRecurrence(t *testing.T) {
 	}
 }
 
+// TestSchedulesListGooglePrimaryOccurrenceRule は、繰り返しの親を展開した回が、親の一覧での ID と親の規則を持ち、
+// 変えた回（例外の回）と単発の予定は持たないことを確認する。画面は、展開した回から規則の変更を送る（ADR-0037）。
+func TestSchedulesListGooglePrimaryOccurrenceRule(t *testing.T) {
+	s := googleStore()
+	putEvent(s, targetCalendarID, "weekly", "定例", tokyo(10, 5, 9), 60, func(p *scheduleview.Projection) {
+		p.Recurrence = []string{"RRULE:FREQ=WEEKLY;UNTIL=20261231T235959Z"}
+		p.LastEndDate = nil
+	})
+	putEvent(s, targetCalendarID, "weekly_20261019", "定例（変更）", tokyo(10, 20, 11), 60, func(p *scheduleview.Projection) {
+		orig := tokyo(10, 19, 9)
+		p.RecurringEventID, p.OriginalStart = "weekly", scheduleview.ProjectionTime{At: &orig}
+	})
+	putEvent(s, targetCalendarID, "single", "会議", tokyo(10, 7, 13), 60, nil)
+
+	list, err := newSchedules(s).List(editorCtx(), facilityID, october())
+	if err != nil {
+		t.Fatal(err)
+	}
+	parentID := scheduleview.ProjectedScheduleID(targetCalendarID, "weekly")
+	got := map[string]string{}
+	for _, d := range list.Schedules {
+		key := d.Date.String() + " " + *d.Title
+		switch {
+		case d.RecurringScheduleID == nil && d.Rule == nil:
+			got[key] = "なし"
+		case d.RecurringScheduleID != nil && *d.RecurringScheduleID == parentID && d.Rule != nil &&
+			d.Rule.Frequency == schedule.Weekly && d.Rule.EndDate != nil && d.Rule.EndDate.String() == "2026-12-31":
+			got[key] = "親"
+		default:
+			got[key] = "違う"
+		}
+	}
+	want := map[string]string{
+		"2026-10-05 定例": "親", "2026-10-12 定例": "親", "2026-10-26 定例": "親",
+		"2026-10-20 定例（変更）": "なし", "2026-10-07 会議": "なし",
+	}
+	if !maps.Equal(got, want) {
+		t.Errorf("回の親と規則 = %v, want %v", got, want)
+	}
+}
+
 // TestSchedulesListGooglePrimaryHidesCancelled は、Google で取り消した単発の予定と繰り返しの親を一覧に出さず、取り消した親の例外の回も
 // 出さないことと、取り消しを写した後に、Google の更新の時刻が古い取り消す前の内容を写しても、予定が一覧に戻らないことを確認する。
 func TestSchedulesListGooglePrimaryHidesCancelled(t *testing.T) {
@@ -345,7 +387,7 @@ var ulidPattern = regexp.MustCompile(`^[0-7][0-9A-HJKMNP-TV-Z]{25}$`)
 func TestSchedulesListGooglePrimaryReviewReasons(t *testing.T) {
 	s := googleStore()
 	putEvent(s, targetCalendarID, "biweekly", "隔週の会議", tokyo(9, 7, 10), 60, func(p *scheduleview.Projection) {
-		p.Recurrence = []string{"RRULE:FREQ=WEEKLY;INTERVAL=2"}
+		p.Recurrence = []string{"RRULE:FREQ=WEEKLY;INTERVAL=2;BYDAY=MO,SU"}
 		p.LastEndDate = nil
 	})
 	putEvent(s, targetCalendarID, "visit", "【"+visitCode+"】"+patientName, tokyo(10, 20, 9), 60, nil)
@@ -384,7 +426,7 @@ func TestSchedulesListGooglePrimaryReviewReasons(t *testing.T) {
 }
 
 // TestSchedulesListGooglePrimaryCutover は、google_primary の事業所の一覧が、open の切り替えの間だけ切り替えを返し、
-// 切り替えを始めた職員の ID と名前を、職員が退職していても返すことと、切り替えの間も Projection を読むことを確認する（ADR-0030）。
+// 切り替えを始めた職員の ID と名前を、職員が退職していても返すことと、切り替えの間も Projection を読むことを確認する（ADR-0031）。
 func TestSchedulesListGooglePrimaryCutover(t *testing.T) {
 	s := googleStore()
 	putEvent(s, ownCalendarID, "own", "研修", tokyo(10, 20, 13), 60, nil)

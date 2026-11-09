@@ -3,7 +3,7 @@
 ---
 type: feature-design
 title: 予定の管理
-description: 予定の API のコードの構成、テーブルの構成（ER）、認証から事業所の確認までの流れ、繰り返しの予定、予定の変更とキャンセル。職員の管理、権限、Google カレンダーとの連携は別の Design Doc にある
+description: 予定の API のコードの構成、テーブルの構成（ER）、認証から事業所の確認までの流れ、繰り返しの予定、予定の変更、キャンセル、削除。職員の管理、権限、Google カレンダーとの連携は別の Design Doc にある
 status: stable
 governs: services/schedule
 verified_commit: 4e53ca5
@@ -24,7 +24,7 @@ verified_commit: 4e53ca5
   - 職員の登録、休職、復職、退職の設計は [職員の管理の Design Doc](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/internal/features/staff/DesignDoc.md) にある
 - 権限、役職のデフォルトの権限、職員ごとの権限とその対象
   - 設計は [権限の Design Doc](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/internal/access/DesignDoc.md) にある
-- 単発の予定、繰り返しの予定と繰り返しの規則、予定のキャンセル
+- 単発の予定、繰り返しの予定と繰り返しの規則、予定のキャンセルと削除
 - 職員と Google カレンダーの結び付けと、Google カレンダーの予定の取り込み、buddy の予定の Google カレンダーへの書き出し、Google カレンダーの変更の buddy の予定への反映
   - 設計は [Google カレンダーとの連携の Design Doc](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/internal/features/calendar/DesignDoc.md) にある
 - 訪問の情報、サービスコード、訪問の区分
@@ -42,56 +42,55 @@ verified_commit: 4e53ca5
 
 ### コードの構成
 
-パッケージの分け方は ADR-0020 と ADR-0025 で決めた。  
+パッケージの分け方は ADR-0021 と ADR-0026 で決めた。  
 依存してよい向きは [コードベースの構造](https://github.com/Fukuemon/buddy/blob/develop/context/codebase.md) にある。
 
-- ADR-0020: [予定の API を機能ごとのパッケージに分ける](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0020-schedule-api-packages.md)
-- ADR-0025: [予定の書き込みのモデルを schedule に、読み取りのモデルを scheduleview に置く](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0025-schedule-write-read-models.md)
+- ADR-0021: [予定の API を機能ごとのパッケージに分ける](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0021-schedule-api-packages.md)
+- ADR-0026: [予定の書き込みのモデルを schedule に、読み取りのモデルを scheduleview に置く](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0026-schedule-write-read-models.md)
 
 - `internal/features/` には、次の機能のパッケージを置く。
   - `organization`、`staff`、`servicecode`、`patient`、`visit`、`schedule`、`scheduleview`
   - Google カレンダーとの連携: `calendar`、`calendarimport`、`calendarsync`、`calendarexport`
 - `internal/` の直下には、アダプタ（`httpapi`、`postgres`、`gcal`、`broker`、`ulid`）と共通のパッケージ（`apperr`、`tx`、`kernel`、`civil`）を置く。
-  - `access`、`principal`、`config`、`assemble`、テストの `inmem` も、`internal/` の直下に置く。
-- `assemble` は、リポジトリ、HTTP のハンドラ、書き出しの `Exporter`、同期の `Syncer` を組み立てる。
-  - `cmd/api` は、`assemble` が作った値で、HTTP のサーバーを起動する。
-  - ADR-0020: [予定の API を機能ごとのパッケージに分ける](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0020-schedule-api-packages.md)
-  - `cmd/calendar-worker` は、`assemble` が作った `Exporter` の `ExportDue` か `Syncer` の `SyncDue` を、役割（`export`、`sync`）ごとのプロセスで、常駐か 1 回の形で繰り返し呼ぶ。
+  - `access`、`principal`、`config`、テストの `inmem` も、`internal/` の直下に置く。
+- 依存の組み立ては、各 `cmd` に置く。
+  - `cmd/api` は、`handler.go` でリポジトリと HTTP のハンドラを組み立て、`main.go` で HTTP のサーバーを起動する。
+  - ADR-0021: [予定の API を機能ごとのパッケージに分ける](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0021-schedule-api-packages.md)
+  - `cmd/calendar-worker` は、`worker.go` で書き出しの `Exporter` と同期の `Syncer` を組み立てる。
+    - `main.go` は、`Exporter` の `ExportDue` か `Syncer` の `SyncDue` を、役割（`export`、`sync`）ごとのプロセスで、常駐か 1 回の形で繰り返し呼ぶ。
     - 常駐も 1 回の形も、取れるものが無くなるまで呼ぶ。常駐は、その後に間隔を待つ。
-    - `cmd/api` と同じイメージに入れ、HTTP のポートを持たない。
-    - ADR-0031: [Google カレンダーの書き出しと同期を、予定の API と同じイメージの Worker のコマンドで役割ごとに動かし、繰り返しを Worker のコマンドに集める](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0031-calendar-worker.md)
+    - `cmd/api` と同じイメージに入れ、HTTP のポートを持たない。HTTP の層と OIDC の検証を import しない。
+    - ADR-0032: [Google カレンダーの書き出しと同期を、予定の API と同じイメージの Worker のコマンドで役割ごとに動かし、繰り返しを Worker のコマンドに集める](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0032-calendar-worker.md)
 
-次の図は、2 つのコマンドが `assemble` を通して機能のパッケージとアダプタを使う構成を示す。  
+次の図は、2 つのコマンドが、それぞれの組み立てのファイルで機能のパッケージとアダプタを使う構成を示す。  
 矢印は、呼ぶ向きか、組み立てる向きである。  
 依存してよい向きの規則は、[コードベースの構造](https://github.com/Fukuemon/buddy/blob/develop/context/codebase.md) にある。
 
 ```mermaid
 flowchart TB
-  subgraph cmd["cmd"]
-    api["cmd/api<br/>[component]<br/>HTTP のサーバーの開始と停止"]
-    worker["cmd/calendar-worker<br/>[component]<br/>main.go、loop.go の resident と drain"]
+  subgraph api["cmd/api"]
+    apimain["main.go<br/>[component]<br/>HTTP のサーバーの開始と停止"]
+    apihandler["handler.go<br/>[component]<br/>newRepositories、openAccounts、newHandler"]
   end
-  subgraph assemble["assemble"]
-    asmapi["api.go<br/>[component]<br/>NewHandler"]
-    asmworker["worker.go<br/>[component]<br/>NewExporter、NewSyncer"]
-    asmshared["assemble.go<br/>[component]<br/>OpenDB、NewRepositories、NewCalendarAccounts"]
+  subgraph worker["cmd/calendar-worker"]
+    workermain["main.go、loop.go<br/>[component]<br/>役割の選択、resident と drain"]
+    workerasm["worker.go<br/>[component]<br/>openAccounts、newExporter、newSyncer"]
   end
   httpapi["httpapi<br/>[component]<br/>HTTP のハンドラ"]
   features["機能のパッケージ<br/>[component]<br/>organization、staff、patient、schedule、scheduleview、calendar、calendarimport、calendarexport、calendarsync など"]
   adapters["アダプタ<br/>[component]<br/>postgres、gcal、broker、ulid"]
-  api -- "ハンドラを作らせ、サーバーを起動する" --> asmapi
-  api -- "DB を開き、リポジトリとカレンダーのアカウントを作らせる" --> asmshared
-  worker -- "ExportDue か SyncDue を作らせ、取れるものが無くなるまで呼ぶ" --> asmworker
-  worker -- "DB を開き、リポジトリとカレンダーのアカウントを作らせる" --> asmshared
-  asmapi -- "組み立てる" --> httpapi
-  asmapi -- "操作の型を組み立てる" --> features
-  asmworker -- "Exporter と Syncer を組み立てる" --> features
-  asmshared -- "組み立てる" --> adapters
+  apimain -- "DB を開き、ハンドラを作らせ、サーバーを起動する" --> apihandler
+  workermain -- "DB を開き、ExportDue か SyncDue を作らせ、取れるものが無くなるまで呼ぶ" --> workerasm
+  apihandler -- "組み立てる" --> httpapi
+  apihandler -- "操作の型を組み立てる" --> features
+  apihandler -- "組み立てる" --> adapters
+  workerasm -- "Exporter と Syncer を組み立てる" --> features
+  workerasm -- "postgres、gcal、ulid だけを組み立てる" --> adapters
   httpapi -- "操作を呼ぶ" --> features
   adapters -- "インターフェースを実装する" --> features
 ```
 
-`kernel` は、ADR-0020 の「`apperr` と同じ段の小さなパッケージ」に当たる。  
+`kernel` は、ADR-0021 の「`apperr` と同じ段の小さなパッケージ」に当たる。  
 `kernel.Finder[T]` は、ID で 1 件を読むメソッドを 1 つだけ持つインターフェースである。  
 機能のパッケージは、ほかの機能のエンティティをこの形で受ける。  
 同じ形のインターフェースを機能ごとに書かずに済ませるためである。
@@ -101,10 +100,10 @@ flowchart TB
 ### テーブルの構成
 
 カラム、制約、インデックスは、マイグレーションから生成した[テーブル定義書](https://github.com/Fukuemon/buddy/blob/develop/docs/db/schedule/README.md)にある。  
-DB は PostgreSQL 18 で、マイグレーションの作り方は ADR-0021 で決めた。  
+DB は PostgreSQL 18 で、マイグレーションの作り方は ADR-0022 で決めた。  
 テーブルとカラムの説明は、マイグレーションの `COMMENT ON` に書く。
 
-- ADR-0021: [予定の API の DB を PostgreSQL にし、見直したテーブルでマイグレーションを作り直す](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0021-schedule-api-postgresql.md)
+- ADR-0022: [予定の API の DB を PostgreSQL にし、見直したテーブルでマイグレーションを作り直す](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0022-schedule-api-postgresql.md)
 
 次の図は、予定の API の全てのテーブルと、その間の関係を示す。
 
@@ -134,6 +133,9 @@ erDiagram
   recurring_schedules ||--o{ recurring_schedule_exclusions : "除外する日"
   recurring_schedules |o--o{ schedules : "1 回だけ置き換えた予定"
   schedules ||--o| schedule_cancels : "取り消される"
+  facilities ||--o{ schedule_deletions : "削除の監査の記録"
+  recurring_schedules |o--o{ schedule_deletions : "削除した回"
+  users ||--o{ schedule_deletions : "削除した職員"
   schedules |o--o| visit_infos : "訪問の情報"
   recurring_schedules |o--o| visit_infos : "訪問の情報"
   patients ||--o{ visit_infos : "訪問される"
@@ -159,6 +161,8 @@ erDiagram
   facilities ||--o{ calendar_exports : "持つ"
   schedules |o--o{ calendar_exports : "書き出しの待ち"
   recurring_schedules |o--o{ calendar_exports : "書き出しの待ち"
+  schedule_deletions |o--o| external_event_links : "削除した予定の対応"
+  schedule_deletions |o--o{ calendar_exports : "削除の書き出しの待ち"
 ```
 
 #### 全てのテーブルの規則
@@ -178,7 +182,7 @@ erDiagram
 予定と繰り返しの予定の `date` は開始の日で、翌日に終わる予定は `ends_next_day` を true にする。  
 日付で絞る一覧、インデックス（`facility_id`、`date`、`start_time`）、繰り返しの規則は、開始の日のまま使う。
 
-- ADR-0032: [日をまたぐ予定を、開始の日の予定に「終了が翌日か」の印を付けて持つ](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0032-overnight-schedule.md)
+- ADR-0033: [日をまたぐ予定を、開始の日の予定に「終了が翌日か」の印を付けて持つ](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0033-overnight-schedule.md)
 
 時刻の CHECK は、`ends_next_day` が false なら `start_time < end_time` を、true なら `end_time < start_time` を求める。  
 開始と終了の時刻が同じ予定は、どちらでも拒む。
@@ -202,7 +206,7 @@ NULL を許し、値があれば一意にする。
 マイグレーションで足したときに今ある事業所を `buddy_primary` にし、後から足す事業所のデフォルトを `google_primary` にする。  
 値による書き込みの制限は [事業所の正本のモードと予定の書き込み](#事業所の正本のモードと予定の書き込み) にある。
 
-- ADR-0028: [Google カレンダーとの連携を、事業所ごとの正本のモードで分ける](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0028-google-calendar-sync.md)
+- ADR-0029: [Google カレンダーとの連携を、事業所ごとの正本のモードで分ける](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0029-google-calendar-sync.md)
 
 `teams.color` は、チームの色を持つ。  
 値と選び方は [チームの色](#チームの色) にある。
@@ -277,7 +281,7 @@ CHECK が 8 つ以外を拒み、API は 400 を返す。
   - `staff.manage` を持つ職員だけが呼べる。
 - 色を足す前からあるチームには、マイグレーションで、事業所ごとに名前の順で表の順に入れた。
   - 9 個目からは表の先頭に戻る。
-- 色の選び方とコントラストは、[デザインシステム](https://github.com/Fukuemon/buddy/blob/develop/packages/ui/DESIGN.md) のチームの色にある。
+- 色の選び方とコントラストは、[デザインシステムのトークンの文書のチームの色](https://github.com/Fukuemon/buddy/blob/develop/packages/ui/design/tokens.md#チームの色) にある。
 
 ### 権限のレコード
 
@@ -413,21 +417,54 @@ sequenceDiagram
 
 ### 繰り返しの予定
 
-- 繰り返しの予定は、最初の回の日付（`recurring_schedules.date`）と、同じレコードの規則のカラム（`frequency` から `end_date`）で回を決める。
+- 繰り返しの予定は、最初の回の日付（`recurring_schedules.date`）と、同じレコードの規則のカラムで回を決める。
+  - 規則のカラムは、`frequency`、`days_of_week`、`interval_weeks`、`day_of_week`、`day_of_month`、`week_of_month`、`end_date` である。
   - 頻度ごとのカラムの組み合わせは CHECK で確認する。
 - 繰り返しの規則は次の 3 つ。
-  - `weekly`: `day_of_week` の曜日ごと
+  - `weekly`: `days_of_week` の曜日ごと。日曜に始まる週で数え、最初の日付を含む週から `interval_weeks` の倍数だけ後の週に回がある
+    - `days_of_week` は重ならない曜日を月曜から日曜の順に並べ、`interval_weeks` は 1〜52 である。重なりと並びの順は、CHECK ではなくアプリが確認する
+    - `days_of_week` が NULL の行は、前のバージョンのアプリが書いた行で、`day_of_week` か最初の日付の曜日の 1 つの曜日として読む。切り戻した後も、前のバージョンのアプリが毎週の行を書けるためである
+    - API の `RecurringRule` は、毎週の曜日を `days_of_week` で、間隔を `interval` で持つ。`day_of_week` は毎月の `week_of_month` と組でだけ使う
+    - ADR-0038: [繰り返しの規則に、毎週の複数の曜日と間隔を足し、終わりは終了日だけで持つ](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0038-recurring-rule-scope.md)
   - `monthly` で `day_of_month` がある: 毎月のその日。その日がない月は回にしない
   - `monthly` で `week_of_month` と `day_of_week` がある: 毎月の n 回目のその曜日。
     - n は日から `(日 - 1) / 7 + 1` で決め、1 から 5 を受ける。5 回目のない月は回にしない
 - 繰り返しの 1 回だけを変えるときは、その日を `recurring_schedule_exclusions` に足し、`recurring_schedule_id` と元の回の日付（`original_date`）で元を指す単発の予定を作る。
   - 2 つのカラムは組で持ち、同じ回は 1 度だけ置き換えられる（一意の制約）。
+- 繰り返しの 1 回だけをキャンセルするとき（`cancelOccurrence`）は、回の置き換えと同じ 1 つのトランザクションで、その日を除外する日に足し、元を指す単発の予定を作り、その予定にキャンセルを付ける。
+  - 作る予定は、繰り返しの予定の枠を回の日付にしたもので、繰り返しの予定の訪問の情報を写した新しい訪問の情報を持つ。訪問の情報の ID は予定ごとに一意である（`schedules_visit_info_key`）。
+  - 内容を変えないので、休職と退職の職員と利用の終了の利用者を確認しない。
+  - 回を消さずにキャンセルした予定として残すのは、単発の予定のキャンセルと同じく理由を残し、「キャンセルした予定を出す」でカレンダーに出すためである。
+  - 置き換えた後の回は単発の予定なので、単発の予定のキャンセル（`cancelSchedule`）でキャンセルする。`cancelOccurrence` は、その回をすでに置き換えたので 409（`conflict`）で拒む。
+- 繰り返しの 1 回だけを削除するとき（`deleteOccurrence`）は、その日を除外する日に足し、監査の記録を書くだけで、単発の予定を作らない（[削除](#削除)）。
+  - 置き換えた後の回は単発の予定なので、`deleteSchedule` で削除する。`deleteOccurrence` は、その日をすでに除外したので 409（`conflict`）で拒む。
 - 予定の一覧の API は、単発の予定と繰り返しの予定を別々に返す。
   - 繰り返しの予定を期間の回に展開しない。
   - `date_from` と `date_to` は単発の予定だけを、予定の日付で絞る。
   - `date_from` の前の日に始まり、`ends_next_day` が true の単発の予定も返す。期間の初日に、前の日の夜から続く予定があるためである。
 - 繰り返しの予定の `ends_next_day` は、全ての回に当たる。
   - 回の置き換えで作った単発の予定は、自分の `ends_next_day` を持つ。
+
+規則の変更（`changeRecurringRule`、`schedule.ChangeRule`）は、適用の日以降の回にだけ当てる。  
+当て方は、両方の正本のモードで使う `schedule.PlanRuleChange` が、今の繰り返しの予定、適用の日、新しい規則、今日から決める。
+
+- ADR-0037: [繰り返しの予定の規則の変更を、適用の日以降の回にだけ当て、繰り返しの予定を適用の日で分ける](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0037-recurring-rule-change.md)
+
+| 当て方 | 条件 | `buddy_primary` で書くもの |
+| --- | --- | --- |
+| 分ける（`RuleChangeSplit`） | 最初の日付が適用の日より前 | 元の行の `end_date` を適用の日の前の日にし、新しい行を作る。訪問の情報の行は、元の訪問の情報を写して新しく作る |
+| 書き換える（`RuleChangeInPlace`） | 最初の日付が適用の日以降 | 同じ行の `date` と規則のカラムを書き換え、置き換えた回の無い除外する日を消す |
+| 終了日だけ（`RuleChangeEndDate`） | 規則が終了日のほかに同じ（頻度、間隔、曜日の集まり、日、週が同じ） | 同じ行の `end_date` を書き換え、新しい終了日の後の、置き換えた回の無い除外する日を消す |
+
+- 新しい規則の毎週の間隔は、数え始める日を含む週を 1 週目にして数える。数え始める日は、分けるときは `first_week_date`（省いたときは適用の日）、書き換えるときは元の最初の日付である。新しい最初の日付は、1 週目から数えて、適用の日以降で新しい規則が当たる最初の日にする。
+  - `first_week_date` は、元の最初の日付以降、適用の日以前に限る。画面は開いた回の日を送る（ADR-0038）。
+
+- 回を削除した日は、置き換えた回の単発の予定を持たない除外する日なので、書き換えるときと終了日だけのときは消し、分けるときは新しい繰り返しの予定に足さない。新しい規則の回が当たれば、その日に回が出る。置き換えた回を削除した後の元の日も同じである（ADR-0040）。
+- 置き換えた回の単発の予定は、元の繰り返しの予定を指したまま残す。除外する日も、回が単発の予定と重ならないように残す。
+  - 分けるときは、適用の日以降の置き換えた回の元の日に新しい規則が当たれば、その日を新しい繰り返しの予定の除外する日に足す（`ReplacedDates`）。その日の訪問は職員が移したので、新しい規則の回を出さない。
+- 分けたときは、元と新しい繰り返しの予定の両方を書き出しの待ちに積む。書き出しは、元の予定の RRULE を `UNTIL` で終え、新しい予定を Google に作る。
+- 新しい繰り返しの予定の職員と訪問の情報の職員は、休職か退職でも同じ役割のまま写せる。回の置き換えと同じである。利用の終了の利用者は、新しい繰り返しの予定の最初の日付が今日以降なので写せず、400 になる。
+- `google_primary` の手順は [Google カレンダーとの連携の Design Doc の繰り返しの予定の書き込み](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/internal/features/calendar/DesignDoc.md#繰り返しの予定の書き込み) にある。
 
 ### 予定の変更
 
@@ -444,7 +481,7 @@ sequenceDiagram
 書き込みのモデルは、予定の枠、訪問の情報の ID、キャンセルの有無、更新の番号を持ち、種類、職員、訪問の情報の名前を結合しない。  
 名前を結合した予定（`scheduleview.Detail`、`scheduleview.RecurringDetail`）は、`scheduleview` だけが読み取りのモデルとして返す。
 
-- ADR-0025: [予定の書き込みのモデルを schedule に、読み取りのモデルを scheduleview に置く](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0025-schedule-write-read-models.md)
+- ADR-0026: [予定の書き込みのモデルを schedule に、読み取りのモデルを scheduleview に置く](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0026-schedule-write-read-models.md)
 
 予定の作成、変更、繰り返しの予定の作成、回の置き換えの操作は、書いた予定を名前を結合しない形（`schedule.Schedule`、`schedule.RecurringSchedule`）で返す。  
 `httpapi` は、書いたトランザクションを終えた後に、`scheduleview` の `Get` か `GetRecurring` で予定を読み直し、レスポンスを作る。  
@@ -453,22 +490,24 @@ sequenceDiagram
 ### 事業所の正本のモードと予定の書き込み
 
 予定の API が buddy の予定のテーブルに予定を書けるのは、予定の正本のモードが `buddy_primary` の事業所だけである。  
-予定の作成、変更、キャンセル、繰り返しの予定の作成、回の置き換えの 5 つの操作は、トランザクションの中で事業所の行を共有のロックで読む（`schedule.FacilityLock` の `GetForShare`）。  
+予定を書く 9 つの操作は、トランザクションの中で事業所の行を共有のロックで読む（`schedule.FacilityLock` の `GetForShare`）。  
+9 つは、予定の作成、変更、キャンセル、削除、繰り返しの予定の作成、回の置き換え、回のキャンセル、回の削除、規則の変更である。  
 読んだ事業所のモードは、`schedule.RequireWritable` で確認する。  
 `google_primary` の事業所では、何も書かずに 409（`google_primary`）を返す。  
 Google カレンダーの手動の取り込みの確定も、同じ規則で拒む（[Google カレンダーとの連携の Design Doc](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/internal/features/calendar/DesignDoc.md#google-カレンダーの取り込み)）。  
 例外として、`open` の予定の正本の切り替えがある `google_primary` の事業所では、切り替えの取り込みだけを書ける（`calendarimport` の `requireImportable`）。  
 `google_primary` の事業所の単発の予定の作成、変更、キャンセルは、`httpapi` が `schedule` でなく `calendarwrite` を呼び、Google カレンダーに書く。  
+回のキャンセル、削除、回の削除は、`httpapi` が職員の事業所のモードを先に確認し、`google_primary` なら予定を読まずに 409（`google_primary`）を返す。`google_primary` の予定の ID は予定の写しの ID で、`schedule` に渡すと 404 になるためである。  
 手順は [Google カレンダーとの連携の Design Doc の Google カレンダーへの書き込み](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/internal/features/calendar/DesignDoc.md#google-カレンダーへの書き込み) にある。  
 切り替えの手順は [Google カレンダーとの連携の Design Doc の予定の正本の切り替え](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/internal/features/calendar/DesignDoc.md#予定の正本の切り替え) にある。
 
 ロックは、事業所が決まった時点で最初に取る。  
 予定の作成と繰り返しの予定の作成は、パスの事業所の行のロックから始める。  
-予定の変更、キャンセル、回の置き換えは、予定か繰り返しの予定の行を排他のロックで読んでから、その事業所の行を共有のロックで読む。  
+予定の変更、キャンセル、削除、回の置き換え、回のキャンセル、回の削除、規則の変更は、予定か繰り返しの予定の行を排他のロックで読んでから、その事業所の行を共有のロックで読む。  
 予定の行から事業所が決まるので、予定の行、事業所の行の順にする。  
-モードを切り替える切り替えの完了は、ADR-0025 のとおり事業所の行に排他のロックを取るので、確認した後に書き終えるまでモードは変わらない。
+モードを切り替える切り替えの完了は、ADR-0026 のとおり事業所の行に排他のロックを取るので、確認した後に書き終えるまでモードは変わらない。
 
-- ADR-0025: [予定の書き込みのモデルを schedule に、読み取りのモデルを scheduleview に置く](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0025-schedule-write-read-models.md)
+- ADR-0026: [予定の書き込みのモデルを schedule に、読み取りのモデルを scheduleview に置く](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0026-schedule-write-read-models.md)
 
 ### 予定の一覧の読み元
 
@@ -478,7 +517,7 @@ Google カレンダーの手動の取り込みの確定も、同じ規則で拒�
 どちらの読み元でも `scheduleview.Detail` の同じ型で返すので、画面と照合は読み元を知らずに予定を出せる。  
 予定には読み元（`source`）を付け、画面は `google_calendar` の予定に変更の操作を出さない。
 
-- ADR-0025: [予定の書き込みのモデルを schedule に、読み取りのモデルを scheduleview に置く](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0025-schedule-write-read-models.md)
+- ADR-0026: [予定の書き込みのモデルを schedule に、読み取りのモデルを scheduleview に置く](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0026-schedule-write-read-models.md)
 
 `google_primary` の事業所の一覧は、次の順で Projection を読む。
 
@@ -490,7 +529,12 @@ Google カレンダーの手動の取り込みの確定も、同じ規則で拒�
    - 行の事業所が一覧の事業所と違う行も除く。
 4. 行を、取り込みと同じ読み替えの規則（`calendar.Classify`）で、buddy の予定の日付と時刻に読み替える。
    - 読み替えの規則は `calendar` にあり、`scheduleview` は `calendar` を import できない。組み立ての場所が、`calendar.ProjectionRules` を `scheduleview.EventRules` として渡す。
-   - 終日の予定、日をまたぐ予定、時刻を読めない予定、長さが 0 以下の予定は、取り込みと同じく一覧に出さない。
+   - 終日の予定、2 日以上にわたる予定、24 時間以上の予定、日時を読めない予定、長さが 0 以下の予定は、取り込みと同じく予定（`schedules`）に出さない。
+   - 終日の予定は、期間に重なるものを終日の予定（`all_day_events`）として返す。何日かにわたる予定は、かかる最初の日と最後の日を返す。
+   - ほかの出せない予定は、中身を返さず、期間に重なるものを職員ごとの件数（`unlisted_event_counts`）にする。日時を読めない予定は、開始か終了の読めた方の日で期間に重なるかを決め、どちらも読めなければどの期間でも数える。
+   - 繰り返しの終日の予定と出せない予定も、手順 5 と同じ規則で回に展開し、期間に重なる回を返すか数える。
+   - 予定の種類（`schedule_type`）で絞ったときは、終日の予定と件数を返さない。どちらも予定の種類を持たないためである。
+   - #672: [終日の予定と、出せない予定の件数を出す](https://github.com/Fukuemon/buddy/issues/672)
 5. 繰り返しの親の行は、取り込みと同じ規則（`calendar.RuleFromRecurrence`）で buddy の繰り返しの規則に写し、期間の回に展開する。
    - 除外する日（EXDATE）と、例外の回が置き換えた元の日の回は作らない。
    - 変えた回は、例外の回の行を単発の予定と同じく読み替える。取り消した回は出さない。
@@ -501,7 +545,7 @@ Google カレンダーの手動の取り込みの確定も、同じ規則で拒�
    - 保留の版の訪問の情報（`pending_visit_info_id`）は使わない。確定した版の無い記録と、訪問の情報を持たない記録（通常の予定）の予定は、記録の無い予定と同じくタイトルを読み替える。
    - タイトルの利用者名とサービス内容が、記録の訪問の情報の利用者とサービスコードと違うときは、理由（`title_mismatch`）を付ける。Google でタイトルを変えた予定が当たり、訪問のタイトルを読めない予定も含む。
    - 比べる前に、取り込みと同じ規則（`gcaltitle.NormalizeClient`、`ServiceKey`）で表記をそろえる。
-   - ADR-0028: [Google カレンダーとの連携を、事業所ごとの正本のモードで分ける](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0028-google-calendar-sync.md)
+   - ADR-0029: [Google カレンダーとの連携を、事業所ごとの正本のモードで分ける](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0029-google-calendar-sync.md)
 7. 記録の訪問の情報が無い訪問のタイトルの予定は、タイトルのサービス内容と利用者名で、サービスコードのマスタと事業所の利用者（利用の終了を除く）を引く。
    - 引けた予定は、利用者とサービスコードの訪問の情報を付けた訪問の予定にする。主訪問者は予定の職員にし、同行者と訪問の区分は付けない。
    - 引けない予定は、訪問の情報を付けず、Google のタイトルの通常の予定にして、理由（`service_code_not_found`、`patient_not_found`、`patient_ambiguous`）を付ける。タイトルを読めない予定には `title_unreadable` を付ける。
@@ -555,12 +599,51 @@ Google カレンダーの取り込みの確定、同期の予定ごとのトラ�
 ### キャンセル
 
 予定をキャンセルすると、`schedule_cancels` に理由とともに 1 レコードを足す。  
-キャンセルした予定は、API のレスポンスの `cancel` に理由を持つ。
+キャンセルした予定は、API のレスポンスの `cancel` に理由を持つ。  
+繰り返しの予定の 1 回のキャンセルは、回をキャンセルした単発の予定にする（[繰り返しの予定](#繰り返しの予定)）。
 
 予定のカレンダーは、職員が「キャンセルした予定を出す」を選んだときだけ、キャンセルした予定を出す。  
 予定の詳細は、キャンセルの理由を出し、編集へ進ませない。  
 予定の編集は、キャンセルした予定のフォームを出さない。  
 キャンセルした予定を変えると、予定の API が 409 で拒むためである。
+
+### 削除
+
+誤って入れた予定は、キャンセルと別の削除（`deleteSchedule`、`deleteOccurrence`）で消す。削除は理由を持たず、戻せない。
+
+- ADR-0040: [誤って入れた予定を、キャンセルと別の削除で消し、開始の日が今日以降の有効な予定に限り、監査の記録だけを残す](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0040-schedule-deletion.md)
+
+削除できるのは、`buddy_primary` の事業所の、開始の日が今日（Asia/Tokyo）以降の有効な予定だけである。  
+可否はキャンセルと同じく、予定の職員の予定を編集する権限で判定する。  
+確認は次の順に行う。
+
+1. 予定か繰り返しの予定の行を排他のロックで読み、事業所の行を共有のロックで読む（[事業所の正本のモードと予定の書き込み](#事業所の正本のモードと予定の書き込み)）。
+2. 予定の職員の予定を編集する権限を確認する。
+3. 単発の予定はキャンセル済みでないこと、回の削除は日が規則の回に当たることを確認する。
+4. 開始の日（回の削除では回の日）が今日以降であることを確認する。
+
+単発の予定の削除（`schedule.Delete`）は、1 つのトランザクションで次を行う。
+
+1. `schedule_deletions` に、操作した職員、予定の ID、開始の日、予定の職員を書く。時刻は DB が決める。
+2. 予定の対応（`external_event_links`）を、`schedule_id` から `deleted_schedule_id` に付け替える。
+3. 予定の行を消し、訪問の情報の行を消す。終わっていない書き出しの待ちは、外部キーの `ON DELETE CASCADE` で消える。
+4. 削除した予定の書き出しの待ち（`calendar_exports.deleted_schedule_id`）を、予定の変更と同じ条件で積む。
+
+予定の行に削除済みの印を付けて残さないのは、一覧、照合、取り込みの読み取りに、削除済みを外す条件を足さずに済むためである。  
+予定の対応を付け替えて残すのは、予定の行と一緒に消すと、書き出しが Google の予定を消せないためである。書き出しは、Google の予定を消してから予定の対応を消す（[Google カレンダーとの連携の Design Doc の書き出し](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/internal/features/calendar/DesignDoc.md#google-カレンダーへの書き出し)）。  
+監査の記録は、消した時点の訪問の情報と利用者を持たず、画面に出さない。
+
+回を置き換えた単発の予定を削除しても、元の回の除外する日は消さない。その日の予定が無くなり、元の回は出ない。
+
+削除した予定の ID は、予定の作成（`createSchedule` の `id`）で使い直せず、409（`conflict`）で拒む。削除の書き出しの待ちと監査の記録が、同じ ID の別の予定を指さないためである。
+
+回の削除（`schedule.DeleteOccurrence`）は、1 つのトランザクションで次を行う。
+
+1. その日を `recurring_schedule_exclusions` に足す。
+2. `schedule_deletions` に、繰り返しの予定の ID と回の日を書く。
+3. 繰り返しの予定の書き出しの待ちを積む。
+
+単発の予定を作らないので、削除した回は一覧に出ない。キャンセルした回と違い、「キャンセルした予定を出す」を選んでも出ない。
 
 ### 予定の画面の読み込みと保存
 
@@ -588,10 +671,11 @@ Google カレンダーの取り込みの確定、同期の予定ごとのトラ�
 | 400 | `invalid_input` | クエリを読めない、パスの ID が ULID でない、リクエストが `openapi.yaml` の定義に合わない、本文の値が規則に合わない、本文が指す参照が見つからないか別の事業所のもの | - |
 | 400 | `invalid_input` | 休職か退職の職員か、訪問しない職員に、予定か担当を新しく割り振った | [休職と退職の職員と、訪問しない職員への割り振り](#休職と退職の職員と訪問しない職員への割り振り) |
 | 400 | `invalid_input` | 利用の終了の利用者を、予定の利用者に新しく指した | [利用の終了の利用者への予定](#利用の終了の利用者への予定) |
+| 400 | `invalid_input` | 開始の日が今日より前の予定か回を削除しようとした | [削除](#削除) |
 | 401 | `unauthenticated` | トークンが無いか、検証に失敗した | [認証から事業所の確認までの流れ](#認証から事業所の確認までの流れ) |
 | 403 | `forbidden` | 職員を特定できない、職員が休職か退職している、事業所が違う、権限で許されない | [認証から事業所の確認までの流れ](#認証から事業所の確認までの流れ) |
 | 404 | `not_found` | パスで指したリソースが無い | - |
-| 409 | `conflict` | 一意の値が重なる、キャンセル済みの予定を変えるかキャンセルする、繰り返しの回をすでに置き換えた | - |
+| 409 | `conflict` | 一意の値が重なる、キャンセル済みの予定を変えるか、キャンセルするか、削除する、繰り返しの回をすでに置き換えたか、キャンセルしたか、削除した | - |
 | 409 | `conflict`（職員）、`staff_has_assignments` | 職員の管理で拒む原因 | [職員の管理の Design Doc の Interface](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/internal/features/staff/DesignDoc.md#interface) |
 | 409 | `patient_has_schedules` | 利用の終了にする利用者に、その日以降の予定か繰り返しの予定が残る。本文の `schedules` に残る一覧を持つ | [利用者の変更、利用の終了、利用の再開](#利用者の変更利用の終了利用の再開) |
 | 409 | `calendar_taken`、`calendar_already_linked`、`staff_has_calendar` | カレンダーを結び付けられない原因 | [Google カレンダーとの連携の Design Doc](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/internal/features/calendar/DesignDoc.md) |

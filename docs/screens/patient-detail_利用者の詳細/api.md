@@ -18,8 +18,8 @@
 | サービスの選択 | 選択肢 | `ServiceCodeRecord`（`serviceCodes.list` の戻り値） | `listServiceCodes` の `ServiceCode` |
 | 担当の職員の選択、再開の担当の職員 | 選択肢 | `StaffRecord`（`staff.listRecords` の戻り値）のうち `status` が `active` で、`visits` が `true` の職員 | `listUsers` の `Staff` のうち `status` が `active` で、`visits` が `true` の職員 |
 | 残る予定の一覧 | 残る予定と繰り返しの予定 | `PatientSchedules`（`patients.remainingSchedules` の戻り値か、`patients.endService` が拒まれたときの `schedules`） | `getPatientRemainingSchedules` の `PatientSchedules`。拒まれたときは `endPatientService` の 409 の `EndServiceConflict.schedules` |
-| 残る予定 | 日付と時間 | `PatientSchedules.schedules[]` | `PatientSchedules.schedules[]` の `id`、`date`、`start_time`、`end_time` |
-| 残る繰り返しの予定 | 最初の回の日付、終了日、時間 | `PatientSchedules.recurring_schedules[]` | `PatientSchedules.recurring_schedules[]` の `date`、`end_date`、`start_time`、`end_time` |
+| 残る予定 | 日付と時間 | `PatientSchedules.schedules[]` | `PatientSchedules.schedules[]` の `id`、`date`、`start_time`、`end_time`、`ends_next_day` |
+| 残る繰り返しの予定 | 最初の回の日付、終了日、時間 | `PatientSchedules.recurring_schedules[]` | `PatientSchedules.recurring_schedules[]` の `date`、`end_date`、`start_time`、`end_time`、`ends_next_day` |
 | ダイアログの利用を再開する | 送る担当の職員 | `patients.resumeService` の引数の `assignedStaffId` | `resumePatientService` の本文の `assigned_staff_id` |
 | 読み込みの失敗の文 | 見つからないか | `ApiError.status` | `getPatient` の 404 |
 
@@ -40,9 +40,10 @@
 | 開いた利用者の今の担当の職員が、退職した職員である | `PatientRecord.assigned_staff_id` で引いた `StaffRecord.status` が `retired` |
 | 開いた利用者の今の担当の職員が、訪問しない職員である | `PatientRecord.assigned_staff_id` で引いた `StaffRecord.visits` が `false` |
 | 職員が、再開の担当の職員を選んでいる | `PatientResumeDialog` の選んだ職員の id が空の文字列でない |
+| 再開の担当の職員の欄が、空である | `PatientResumeDialog` の選んだ職員の id が空の文字列 |
 | 開いた利用者が、見つからなかった利用者である | `getPatient` の `ApiError.status` が 404（`PatientDetailContainer` の `canRetry` が `false`） |
 
-- 送っている間は、ダイアログの入力の欄に `disabled` を、閉じるとキャンセルに押せない印を付ける。覆いと Escape キーでも閉じない。
+- 送っている間は、ダイアログの入力の欄に `disabled` を、キャンセルに押せない印を付ける。覆いと Escape キーでも閉じない。
   - 欄は `PatientFormFields.tsx` と `PatientResumeDialog.tsx` が決める。
   - ボタンと覆いは packages/ui の `InputDialog`、`ConfirmDialog`、`DialogSubmit`、`Dialog` が決める。
 - 保存は、2 つの選択肢を読み終えるまで押せない（`PatientEditDialog.tsx` の `canSubmit`）。
@@ -69,14 +70,13 @@
 | 10 | 利用の状態 | `patient-detail-status-text` |
 | 11 | 利用を再開する | `patient-detail-resume` |
 | 2 | 利用者の編集のダイアログ | `patient-detail-edit-dialog` |
-| 3 | 閉じる | `patient-detail-edit-close` |
-| 4 | 名前の入力 | `patient-detail-name-input` |
-| 5 | サービスの選択 | `patient-detail-service-input` |
-| 6 | 希望の時間帯の選択 | `patient-detail-time-input` |
-| 7 | 希望する担当の性別の選択 | `patient-detail-gender-input` |
-| 8 | 担当の職員の選択 | `patient-detail-staff-input` |
-| 10 | キャンセル | `patient-detail-edit-cancel` |
-| 11 | 保存 | `patient-detail-save` |
+| 3 | 名前の入力 | `patient-detail-name-input` |
+| 4 | サービスの選択 | `patient-detail-service-input` |
+| 5 | 希望の時間帯の選択 | `patient-detail-time-input` |
+| 6 | 希望する担当の性別の選択 | `patient-detail-gender-input` |
+| 7 | 担当の職員の選択 | `patient-detail-staff-input` |
+| 9 | キャンセル | `patient-detail-edit-cancel` |
+| 10 | 保存 | `patient-detail-save` |
 | 2 | 利用の終了のダイアログ | `patient-end-dialog` |
 | 4 | 残る予定の一覧 | `patient-end-schedules` |
 | 5 | 残る予定 | `patient-end-schedule-{予定の id}` |
@@ -90,6 +90,7 @@
 | 5 | 今の担当の職員の注意 | `patient-resume-staff-note` |
 | 6 | キャンセル | `patient-resume-cancel` |
 | 7 | ダイアログの利用を再開する | `patient-resume-submit` |
+| 8 | ダイアログの利用を再開するの条件の文 | `patient-resume-submit-hint` |
 | 5 | 読み込み中の表示 | `patient-detail-loading` |
 | 5 | 読み込みの失敗の文 | `patient-detail-error` |
 | 6 | 読み直す | `patient-detail-retry` |
@@ -99,6 +100,8 @@
 | 12 | メニュー | `site-nav-toggle` |
 | 6 | メニュー | `site-nav-toggle` |
 | 7 | メニュー | `site-nav-toggle` |
+| 10 | 最新の情報の読み込みの失敗の文 | `refetch-error` |
+| 11 | 最新の情報を読み直す | `refetch-retry` |
 
 - 利用の状態の `patient-detail-status-text` は、モックでは値の欄に、実装では値の欄の中の文に付く。どちらも同じ文を指す。
 - メニューの項目の並びの `patient-detail-menu-list` と、編集のフォームの `patient-detail-profile-form` は、構成要素の表に載せないので、この表に載せない。
@@ -144,6 +147,7 @@
 | 利用の再開 | 「この操作をする権限がありません。」 | `resumePatientService` が 403 |
 | 利用の再開 | 「利用を再開できませんでした。時間をおいて、もう一度再開してください。」 | `resumePatientService` が 400、403 のほかの失敗、API に届かない |
 | 利用の再開 | 「サービスと職員を読み込めませんでした。閉じてから、開き直してください。」 | `listUsers` が失敗、API に届かない |
+| 最新の情報の読み込みの失敗 | 「最新の情報を読み込めませんでした。」 | 読み終えた後に読み直して、`getPatient` が失敗、API に届かない。403 と 404 も含む |
 
 - 文を選ぶ処理は `apps/web/src/features/patient/lib/errorMessage.ts` にある。
   - 保存は `patientSubmitErrorMessage`、利用の終了は `endServiceErrorMessage`、利用の再開は `resumeServiceErrorMessage` が選ぶ。

@@ -1,7 +1,7 @@
 -- 開発とテストに使うダミーデータ。実在の事業所、人、連絡先を入れない。
 -- 予定の種類、サービスコード、訪問の区分、権限は、全ての環境で同じ値なので初期のマイグレーションが入れる。
 
--- 予定の正本のモードは、シードの 2 つの事業所を buddy_primary（buddy が正本）にし、今の動作で確認する（ADR-0028）。
+-- 予定の正本のモードは、シードの 2 つの事業所を buddy_primary（buddy が正本）にし、今の動作で確認する（ADR-0029）。
 INSERT INTO facilities (id, name, org_id, source_mode) VALUES
     ('01M3TC5H00QV17BC0J9V3393ZP', 'サンプル訪問看護ステーション', 'org-sample', 'buddy_primary');
 
@@ -95,9 +95,9 @@ INSERT INTO schedules (id, facility_id, staff_id, schedule_type_id, date, start_
      '2026-10-21', '09:30:00', '10:00:00', NULL, NULL, '01M3TC6ACG2Z0J6Y2DFBS8QRR9', NULL, '初回の訪問');
 
 INSERT INTO recurring_schedules (id, facility_id, staff_id, schedule_type_id, date, start_time, end_time,
-                                 visit_info_id, title, description, frequency, day_of_week, day_of_month, week_of_month, end_date) VALUES
+                                 visit_info_id, title, description, frequency, days_of_week, interval_weeks, end_date) VALUES
     ('01M3TC6E9G4N8Q2R5T7V9W1X3Y', '01M3TC5H00QV17BC0J9V3393ZP', '01M3TC5TRG5200KYWTZW6ER3WN', '01M3TC68E05E1N46YCCBT6ZQB2',
-     '2026-10-05', '17:30:00', '18:00:00', NULL, '週次の申し送り', NULL, 'weekly', 1, NULL, NULL, NULL);
+     '2026-10-05', '17:30:00', '18:00:00', NULL, '週次の申し送り', NULL, 'weekly', '{1}', 1, NULL);
 
 -- 2 つ目の事業所。ログインした職員に、自分の事業所の予定だけが出ることを確認するのに使う。
 INSERT INTO facilities (id, name, org_id, source_mode) VALUES
@@ -182,7 +182,7 @@ INSERT INTO user_policies (id, facility_id, user_id, policy_id) VALUES
     ('01MA0GP000000000000000GP04', '01MA0GP0000000000000000FAC', '01MA0GP0000000000000000STF', '01M5E5GP6Q8BQYNWN66QHJF60J'),
     ('01MA0GP000000000000000GP05', '01MA0GP0000000000000000FAC', '01MA0GP0000000000000000STF', '01M69C7BNKSXX7PPWX7SWZGFWK');
 
--- 4 つ目の事業所。Google カレンダーを予定の正本にし（google_primary）、予定の正本の切り替えを確認するのに使う（ADR-0028、ADR-0030）。
+-- 4 つ目の事業所。Google カレンダーを予定の正本にし（google_primary）、予定の正本の切り替えを確認するのに使う（ADR-0029、ADR-0031）。
 -- 切り替えを完了すると buddy_primary に移り、戻せないので、3 つ目の事業所と分ける。
 INSERT INTO facilities (id, name, org_id, source_mode) VALUES
     ('01MA0CT0000000000000000FAC', 'サンプル第四訪問看護ステーション', 'org-sample-d', 'google_primary');

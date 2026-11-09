@@ -21,7 +21,8 @@ export type ScheduleCancelDialogProps = {
 /**
  * 予定をキャンセルする前に、キャンセルの理由を入れる確認のダイアログ。
  * 理由を入れるまで、キャンセルするボタンを押せない。キャンセルは戻せないので、確定のボタンを危険な操作の色にする。
- * Google カレンダーの予定（fromGoogleCalendar）は、Google カレンダーから予定を消し、理由を保存しないことを示す（ADR-0028）。
+ * 閉じる側のボタンは「戻る」にし、確定の「予定をキャンセルする」と同じ語のボタンを並べない。
+ * Google カレンダーの予定（fromGoogleCalendar）は、Google カレンダーから予定を消し、理由を保存しないことを示す（ADR-0029）。
  */
 export const ScheduleCancelDialog = ({
   schedule,
@@ -35,6 +36,7 @@ export const ScheduleCancelDialog = ({
   return (
     <ConfirmDialog
       busyLabel="キャンセルしています"
+      cancelLabel="戻る"
       canSubmit={reason.length > 0 && reason.length <= REASON_MAX_LENGTH}
       error={
         errorMessage === undefined

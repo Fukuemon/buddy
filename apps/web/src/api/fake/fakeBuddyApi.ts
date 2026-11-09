@@ -3,8 +3,10 @@ import {
   createMockImportPreview,
   createMockImportResult,
   createMockImportedPreview,
+  createMockAllDayEvents,
   createMockCalendarSyncs,
   createMockProjectionSchedules,
+  createMockUnlistedEvents,
   exportOfIssue,
   mockDepartments,
   mockExportIssues,
@@ -31,10 +33,11 @@ import type {
   TeamInput,
 } from '../types'
 import { MOCK_FACILITY_ID } from '#/mocks/scheduleData'
-import { fromApiSchedule } from '../http/scheduleMapper'
+import { occurrenceId } from '../http/recurrence'
+import { fromApiAllDayEvent, fromApiSchedule } from '../http/scheduleMapper'
 import { FAKE_VIEWER, createFakeSchedules, fakeTeams } from './fixtures'
 import { createFakePatientApi, createFakePatientRecords } from './fakePatientApi'
-import { createFakeStaffApi } from './fakeStaffApi'
+import { createFakeStaffApi, localDate } from './fakeStaffApi'
 
 /** createFakeBuddyApi の設定。 */
 export type FakeBuddyApiOptions = {
@@ -58,6 +61,10 @@ const assertFacility = (facilityId: FacilityId) => {
     throw new ApiError(403, `事業所 ${facilityId} の操作は許可されていません`)
   }
 }
+
+/** date のデバイスの時間帯の日付を `YYYY-MM-DD` で返す。 */
+const toLocalDateKey = (date: Date) =>
+  `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
 
 /** フェイクの API が読めるとみなすカレンダーの ID の末尾。ほかのカレンダーは読めない（calendar_unreadable）。 */
 const FAKE_READABLE_CALENDAR_SUFFIX = '@example.com'
@@ -89,6 +96,8 @@ export const createFakeBuddyApi = ({
     ).map((schedule) => [schedule.id, schedule]),
   )
   const calendarSyncs = isGooglePrimary ? (syncs ?? createMockCalendarSyncs(baseDate)) : []
+  const allDayEvents = isGooglePrimary ? createMockAllDayEvents(baseDate) : []
+  const unlistedEvents = isGooglePrimary ? createMockUnlistedEvents(baseDate) : []
   let etagSequence = 0
   const nextETag = () => {
     etagSequence += 1
@@ -285,6 +294,19 @@ export const createFakeBuddyApi = ({
             (includeCancelled === true || schedule.cancel === undefined) &&
             isSelectedStaff(schedule.staffId),
         )
+        // 本物の API と同じく、終日の予定と出せない予定は、期間に重なるものを数える。日付は、ダミーと同じくデバイスの日付で比べる
+        const dateFrom = toLocalDateKey(new Date(fromTime))
+        const dateTo = toLocalDateKey(new Date(toTime - 1))
+        const overlaps = (start: string | null, end: string | null) =>
+          start === null || end === null || (start <= dateTo && end >= dateFrom)
+        const unlistedByStaff = new Map<string, number>()
+        if (mode === 'google_primary') {
+          for (const event of unlistedEvents) {
+            if (isSelectedStaff(event.staffId) && overlaps(event.startDate, event.endDate)) {
+              unlistedByStaff.set(event.staffId, (unlistedByStaff.get(event.staffId) ?? 0) + 1)
+            }
+          }
+        }
         return {
           schedules: all.filter(
             (schedule) =>
@@ -306,6 +328,26 @@ export const createFakeBuddyApi = ({
                     mockStaffList.find((s) => s.id === cutover?.started_by)?.username ?? '',
                   range_start: cutover.range_start,
                 },
+          allDayEvents:
+            mode === 'google_primary'
+              ? allDayEvents
+                  .filter(
+                    (event) =>
+                      isSelectedStaff(event.staff_id) && overlaps(event.start_date, event.end_date),
+                  )
+                  .map(fromApiAllDayEvent)
+              : [],
+          needsReviewAllDayEvents:
+            mode === 'google_primary'
+              ? allDayEvents
+                  .filter(
+                    (event) => isSelectedStaff(event.staff_id) && event.review_reason !== null,
+                  )
+                  .map(fromApiAllDayEvent)
+              : [],
+          unlistedEventCounts: [...unlistedByStaff]
+            .map(([staffId, count]) => ({ staffId, count }))
+            .sort((a, b) => a.staffId.localeCompare(b.staffId)),
         }
       },
       get: async (facilityId, scheduleId) => {
@@ -347,6 +389,66 @@ export const createFakeBuddyApi = ({
         // 本物の API と同じく、google_primary の事業所では Google カレンダーの予定を消し、理由は残さない
         if (mode === 'google_primary') schedules.delete(scheduleId)
         else schedules.set(scheduleId, { ...current, cancel: { reason } })
+      },
+      // 本物の API と同じく、google_primary の事業所、キャンセル済みの予定、開始の日が今日より前の予定の削除を拒む（ADR-0040）
+      delete: async (facilityId, scheduleId) => {
+        assertFacility(facilityId)
+        if (mode === 'google_primary') {
+          throw new ApiError(
+            409,
+            'この事業所の予定は Google カレンダーで管理しています。予定は Google カレンダーで作成、変更してください',
+            [],
+            'google_primary',
+          )
+        }
+        const current = findSchedule(scheduleId)
+        if (current.cancel !== undefined) {
+          throw new ApiError(409, 'キャンセル済みの予定は削除できません', [], 'conflict')
+        }
+        // 本物の API は Asia/Tokyo の今日と比べる。フェイクは端末の時刻帯の今日と比べる
+        if (current.startsAt.slice(0, 10) < localDate(baseDate)) {
+          throw new ApiError(400, '今日より前の予定は削除できません', [], 'invalid_input')
+        }
+        schedules.delete(scheduleId)
+      },
+      // フェイクの予定は回を規則から求めないので、適用の日以降の回の規則だけを書き換え、回の日は動かさない
+      // 回を求めず、最初の回だけを、繰り返しの予定を指す予定として置く
+      createRecurring: async (facilityId, input, rule, id) => {
+        assertFacility(facilityId)
+        assertWritable()
+        const date = input.startsAt.slice(0, 10)
+        const first = occurrenceId(id, date)
+        if (!schedules.has(first)) {
+          schedules.set(
+            first,
+            toWritten({
+              ...input,
+              id: first,
+              facilityId,
+              recurrence: { recurringScheduleId: id, rule },
+            }),
+          )
+        }
+        return { id, date }
+      },
+      changeRule: async (facilityId, recurringScheduleId, { effectiveDate, rule, id }, etag) => {
+        assertFacility(facilityId)
+        assertWritable()
+        const occurrences = [...schedules.values()].filter(
+          (schedule) => schedule.recurrence?.recurringScheduleId === recurringScheduleId,
+        )
+        if (occurrences.length === 0) {
+          throw new ApiError(404, `繰り返しの予定 ${recurringScheduleId} が見つかりません`)
+        }
+        assertETag(occurrences[0], etag)
+        for (const schedule of occurrences) {
+          if (schedule.startsAt.slice(0, 10) < effectiveDate) continue
+          schedules.set(schedule.id, {
+            ...schedule,
+            recurrence: { recurringScheduleId: id, rule },
+          })
+        }
+        return { id, date: effectiveDate }
       },
     },
     ...staffApi,

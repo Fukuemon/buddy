@@ -181,14 +181,19 @@ export const mockVisitCategories: Schemas['VisitCategory'][] = [
   { id: 'category-hospital', name: '入院' },
 ]
 
-const patient = (id: string, name: string): Schemas['Patient'] => ({
+/** 利用者。サービスコードを省くと訪看I2 にする。 */
+const patient = (
+  id: string,
+  name: string,
+  [serviceCodeId, serviceCode]: [string, string] = ['code-i2', '訪看I2'],
+): Schemas['Patient'] => ({
   id,
   facility_id: MOCK_FACILITY_ID,
   name,
   preferred_time: '午前',
   preferred_gender: '女性',
-  service_code_id: 'code-i2',
-  service_code: '訪看I2',
+  service_code_id: serviceCodeId,
+  service_code: serviceCode,
   assigned_staff_id: 'staff-1',
   assigned_staff_name: '青木 一郎',
   ended_at: null,
@@ -197,7 +202,7 @@ const patient = (id: string, name: string): Schemas['Patient'] => ({
 
 export const mockPatients: Schemas['Patient'][] = [
   patient('patient-1', '加藤 春子'),
-  patient('patient-2', '木村 夏夫'),
+  patient('patient-2', '木村 夏夫', ['code-i3', '訪看I3']),
   patient('patient-3', '久保 秋代'),
   patient('patient-4', '小林 冬馬'),
   { ...patient('patient-ended', '近藤 晴美'), ended_at: '2026-10-01T00:00:00Z' },
@@ -356,6 +361,43 @@ export const createMockProjectionSchedules = (base: Date): Schemas['Schedule'][]
     ),
   ]
 }
+
+/**
+ * google_primary の事業所の、Google カレンダーの終日の予定のダミーを作る。
+ * 青木 一郎の基準日の「休み」と、石川 二葉の基準日の前日から翌日までの「研修」を置く。
+ */
+export const createMockAllDayEvents = (base: Date): Schemas['AllDayEvent'][] => [
+  {
+    id: 'gcal-allday-1',
+    staff_id: mockStaffList[0].id,
+    staff_name: mockStaffList[0].username,
+    start_date: dayAfter(base, 0),
+    end_date: dayAfter(base, 0),
+    title: '休み',
+    review_reason: null,
+  },
+  {
+    id: 'gcal-allday-2',
+    staff_id: mockStaffList[1].id,
+    staff_name: mockStaffList[1].username,
+    start_date: dayAfter(base, -1),
+    end_date: dayAfter(base, 1),
+    title: '研修',
+    review_reason: null,
+  },
+]
+
+/**
+ * google_primary の事業所の、カレンダーに出せない予定のダミーを作る。予定の API は件数だけを返すので、画面のフェイクが期間で絞れるよう、
+ * 予定ごとに職員と、かかる最初の日と最後の日を持つ。日付の無い予定は、日時を読めない予定で、どの期間でも数える。
+ * 青木 一郎の基準日から 2 日にわたる予定と、上田 三奈の日時を読めない予定を置く。
+ */
+export const createMockUnlistedEvents = (
+  base: Date,
+): { staffId: string; startDate: string | null; endDate: string | null }[] => [
+  { staffId: mockStaffList[0].id, startDate: dayAfter(base, 0), endDate: dayAfter(base, 1) },
+  { staffId: mockStaffList[2].id, startDate: null, endDate: null },
+]
 
 /**
  * google_primary の事業所の、カレンダーの同期の状況のダミーを作る。
@@ -610,7 +652,9 @@ export const createMockImportPreview = (
       reason: 'patient_ambiguous',
       recurrence: {
         frequency: 'weekly',
-        day_of_week: 3,
+        days_of_week: [3],
+        interval: 1,
+        day_of_week: null,
         day_of_month: null,
         week_of_month: null,
         end_date: null,
@@ -707,7 +751,7 @@ export const createMockImportResult = (
 }
 
 /**
- * 予定の正本の切り替えの間のプレビューの結果。期間は終わりを持たず、隔週の繰り返しの予定を、規則を buddy に写せない確認が必要な予定にする。
+ * 予定の正本の切り替えの間のプレビューの結果。期間は終わりを持たず、2 日ごとの繰り返しの予定を、規則を buddy に写せない確認が必要な予定にする。
  * 取り込んだ後に Google で変わった予定が 1 件ある。
  */
 export const createMockCutoverPreview = (rangeStart: string): Schemas['ImportPreview'] => {

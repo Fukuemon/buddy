@@ -10,11 +10,9 @@ import (
 	"strconv"
 	"strings"
 	"time"
-
-	"github.com/Fukuemon/buddy/packages/go/oidc"
 )
 
-// DB は、DB への接続の値である。DB のアダプタの設定は、assemble と cmd/migrate がこの値から作る。
+// DB は、DB への接続の値である。DB のアダプタの設定は、cmd がこの値から作る。
 type DB struct {
 	Host     string
 	Port     string
@@ -55,11 +53,21 @@ type Broker struct {
 	Audience string
 }
 
+// OIDC は、予定の API が access token を検証する設定である。OIDC の検証の設定は、cmd/api がこの値から作る。
+type OIDC struct {
+	// Issuer は、Hydra の Issuer の URL で、トークンの iss と一致させる。
+	Issuer string
+	// Audience は、トークンの aud に含まれることを求める値である。
+	Audience string
+	// OrgClaim は、組織の ID を持つクレームの名前である。
+	OrgClaim string
+}
+
 // API は、予定の API の HTTP サーバーの設定である。
 type API struct {
 	Port         string
 	DB           DB
-	OIDC         oidc.Config
+	OIDC         OIDC
 	AllowOrigins []string
 	LogLevel     slog.Level
 	Calendar     Calendar
@@ -94,7 +102,7 @@ type Worker struct {
 //   - BROKER_CLIENT_SECRET: Hydra に登録した予定の API のクライアントの secret
 //   - BROKER_AUDIENCE: 内部の API を呼ぶ access token の aud。デフォルトは broker
 //   - GOOGLE_CALENDAR_SERVICE_ACCOUNTS_FILE: 組織の ID と、その事業所の職員がカレンダーを共有するサービスアカウントの対応（JSON）のパス。
-//     空なら Google カレンダーを読まない。Application Default Credentials で認証し、事業所のサービスアカウントになりすます（ADR-0029）
+//     空なら Google カレンダーを読まない。Application Default Credentials で認証し、事業所のサービスアカウントになりすます（ADR-0030）
 //   - GOOGLE_CALENDAR_ENDPOINT: Calendar API の代わりに呼ぶ URL。ローカル環境の calendarpit で試すためのもので、GOOGLE_APPLICATION_CREDENTIALS を渡したときだけ、その認証情報をなりすまさずに全ての事業所で使い、渡さなければ認証をしない。
 //     GOOGLE_CALENDAR_SERVICE_ACCOUNTS_FILE と一緒に渡す
 //   - GOOGLE_CALENDAR_EXPORT_ENABLED: true なら、予定を Google カレンダーに書き出す。デフォルトは false。
@@ -152,7 +160,7 @@ func load(getenv func(string) string, includesAPI bool) (API, error) {
 	c := API{
 		Port: get("PORT", "8080"),
 		DB:   dbOf(getenv),
-		OIDC: oidc.Config{
+		OIDC: OIDC{
 			Issuer:   getenv("OIDC_ISSUER"),
 			Audience: getenv("OIDC_AUDIENCE"),
 			OrgClaim: get("OIDC_ORG_CLAIM", "org_id"),

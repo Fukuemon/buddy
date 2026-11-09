@@ -50,12 +50,9 @@
   color: var(--buddy-color-warning);
 }
 
-/* Google カレンダーの予定で、先頭に出す案内（apps/web の ScheduleDetailModal の枠線の帯） */
+/* Google カレンダーの予定で、先頭に出す「Google カレンダー」の印と ? のヘルプの段（apps/web の ScheduleDetailModal の StatusBadge と HelpToggle） */
 .sd-google {
   margin: 0 0 16px;
-  padding: 12px 16px;
-  border: 1px solid var(--wf-line-soft);
-  border-radius: var(--wf-radius);
 }
 
 /* 確認が必要な予定の理由（apps/web の ScheduleDetailModal の warning-surface の帯） */
@@ -65,6 +62,25 @@
   border-radius: var(--wf-radius);
   background: var(--wf-warning-surface);
   color: var(--wf-warning);
+}
+
+/* 繰り返しの予定の回の「編集」。文言の右に上向きの印を置く（packages/ui の ActionMenu の triggerLabel） */
+.sd-menu-button {
+  gap: 8px;
+}
+
+/* 下端の「編集」のメニューは、下に場所が無いのでボタンの上に開く（ActionMenu の placement の top） */
+.sd-menu--top {
+  top: auto;
+  bottom: calc(100% + 4px);
+}
+
+/*
+ * 下端の左に「予定をキャンセル」と「予定を削除」の 2 つの起点を並べる。
+ * wireframe.css は起点の全てに margin-right: auto を当てるので、後ろに起点が続くものは外し、左に並ぶ最後の起点だけで閉じると編集から離す
+ */
+.wf-modal__footer > .wf-btn--destructive:has(+ .wf-btn--destructive) {
+  margin-right: 0;
 }
 
 /* キャンセルの理由の欄の placeholder。apps/web の TextareaField と同じ薄い色にする */

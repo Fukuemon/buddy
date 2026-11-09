@@ -19,10 +19,9 @@
             <div aria-hidden="true" aria-label="予定の詳細" class="wf-modal" data-testid="schedule-detail-modal" role="dialog">
               <div class="wf-modal__header">
                 <h2 class="wf-modal__title wf-dialog__title">予定の詳細</h2>
-                <span aria-label="閉じる" class="wf-btn wf-btn--icon" data-testid="modal-close">×</span>
               </div>
               <div class="wf-modal__body">
-                <h3 class="sd-datetime" data-testid="schedule-detail-datetime">2026年10月20日（火） 09:00〜09:29</h3>
+                <h3 class="sd-datetime" data-testid="schedule-detail-datetime">2026年11月20日（金） 09:00〜09:29</h3>
                 <dl class="wf-rows sd-rows">
                   <div class="wf-row">
                     <dt>種類</dt>
@@ -52,8 +51,9 @@
                 </section>
               </div>
               <div class="wf-modal__footer">
+                <span class="wf-btn wf-btn--destructive" data-testid="schedule-detail-cancel-schedule">予定をキャンセル</span>
+                <span class="wf-btn wf-btn--destructive" data-testid="schedule-detail-delete-schedule">予定を削除</span>
                 <span class="wf-btn" data-testid="schedule-detail-close">閉じる</span>
-                <span class="wf-btn" data-testid="schedule-detail-cancel-schedule">予定をキャンセル</span>
                 <span class="wf-btn" data-testid="schedule-detail-edit">編集</span>
               </div>
             </div>
@@ -62,7 +62,7 @@
           <div class="wf-dialog wf-dialog--narrow" role="alertdialog" aria-modal="true" aria-labelledby="cancel-title" data-m="2" data-testid="schedule-cancel-dialog">
             <div class="wf-dialog__body">
               <h2 class="wf-heading" id="cancel-title" data-m="3">この予定をキャンセルしますか</h2>
-              <p data-m="4" data-testid="schedule-cancel-datetime">2026年10月20日（火） 09:00〜09:29</p>
+              <p data-m="4" data-testid="schedule-cancel-datetime">2026年11月20日（金） 09:00〜09:29</p>
               <p data-m="5" data-testid="schedule-cancel-description">キャンセルした予定は、キャンセルした予定を出すとカレンダーに残り、理由を見られます。</p>
               <div class="wf-field">
                 <span class="wf-label">キャンセルの理由</span>
@@ -72,7 +72,7 @@
               </div>
             </div>
             <div class="wf-dialog__footer">
-              <span class="wf-btn" aria-disabled="true" data-m="7" data-testid="schedule-cancel-cancel">キャンセル</span>
+              <span class="wf-btn" aria-disabled="true" data-m="7" data-testid="schedule-cancel-cancel">戻る</span>
               <span class="wf-btn wf-btn--danger wf-btn--busy" aria-busy="true" aria-disabled="true" data-m="8" data-testid="schedule-cancel-submit">キャンセルしています</span>
             </div>
           </div>

@@ -3,7 +3,11 @@ import type { ReactNode } from 'react'
 
 import type { StaffAssignments } from '#/api/types'
 
-import { formatRemainingRecurring, formatRemainingSchedule, hasNoAssignments } from '../lib/format'
+import {
+  formatRemainingRecurringParts,
+  formatRemainingScheduleParts,
+  hasNoAssignments,
+} from '../lib/format'
 
 export type StaffAssignmentListProps = {
   /** 休職、退職、訪問しない職員への変更で、見出しの文と testid の接頭辞（`staff-leave`、`staff-retire`、`staff-non-visiting`）を変える。 */
@@ -21,6 +25,31 @@ const LEAD: Record<StaffAssignmentListProps['kind'], string> = {
     '今日以降の予定と担当の利用者が残っています。別の職員に割り振り直してから、退職にしてください。',
   'non-visiting':
     '今日以降の予定と担当の利用者が残っています。別の職員に割り振り直してから、訪問しない職員にしてください。',
+}
+
+/** 残る単発の予定の日時。折り返すときも、時刻の範囲（`22:00〜翌 01:00` を含む）は 1 行に保つ。 */
+const ScheduleText = ({ schedule }: { schedule: StaffAssignments['schedules'][number] }) => {
+  const { date, time } = formatRemainingScheduleParts(schedule)
+  return (
+    <>
+      {date} <span className="whitespace-nowrap">{time}</span>
+    </>
+  )
+}
+
+/** 残る繰り返しの予定の期間と時刻の範囲。折り返すときも、時刻の範囲（`22:00〜翌 01:00` を含む）は 1 行に保つ。 */
+const RecurringText = ({
+  recurring,
+}: {
+  recurring: StaffAssignments['recurring_schedules'][number]
+}) => {
+  const { period, time } = formatRemainingRecurringParts(recurring)
+  return (
+    <>
+      {period}
+      <span className="whitespace-nowrap">{time}</span>
+    </>
+  )
 }
 
 const Group = ({ label, children }: { label: string; children: ReactNode }) => (
@@ -73,7 +102,7 @@ export const StaffAssignmentList = ({
                 data-testid={`staff-${kind}-assignment-schedule-${schedule.id}`}
                 href={`/schedule/${schedule.id}`}
               >
-                {formatRemainingSchedule(schedule)}
+                <ScheduleText schedule={schedule} />
               </a>
             </li>
           ))}
@@ -86,7 +115,7 @@ export const StaffAssignmentList = ({
               data-testid={`staff-${kind}-assignment-recurring-${recurring.id}`}
               key={recurring.id}
             >
-              {formatRemainingRecurring(recurring)}
+              <RecurringText recurring={recurring} />
             </li>
           ))}
         </Group>

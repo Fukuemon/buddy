@@ -10,11 +10,11 @@ import (
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendar"
 )
 
-// retainedMonths は、Projection に行を残す期間の始まりを、今月から何か月前の初日にするかである。照合で前月の予定を読むためである（ADR-0028）。
+// retainedMonths は、Projection に行を残す期間の始まりを、今月から何か月前の初日にするかである。照合で前月の予定を読むためである（ADR-0029）。
 const retainedMonths = 2
 
 // projectionApplier は、Google カレンダーを予定の正本にする事業所（google_primary）で、Google カレンダーの予定の変更を
-// 予定の写し（Projection）に写す（ADR-0028）。予定の対応（EventLink）の有無によらず、Google で新しく作った予定も写す。
+// 予定の写し（Projection）に写す（ADR-0029）。予定の対応（EventLink）の有無によらず、Google で新しく作った予定も写す。
 //   - 新しい予定と変わった予定は、カレンダーと Google の予定の ID の組の行に書く。同じ予定を何度読んでも、行は 1 つになる。
 //     行を書き直すのは、Google の更新の時刻が行より新しいときだけである（Projections.Put）。
 //   - 取り消した単発の予定と繰り返しの親の予定は、行を消さず、取り消しの状態にした行に写す。行を消すと、予定の API の書き込みが
@@ -25,7 +25,7 @@ const retainedMonths = 2
 //     増分の取得は、変わっていない予定を返さないので、期間に入ったときに写せないためである。
 //   - 日時を読めない予定は、写さずに行を消し、事業所、カレンダー、Google の予定の ID だけをログに書く。ほかの予定は写し続ける。
 //
-// 写す前に、予定の API が書いた予定の保留の版を確定する（ADR-0028）。予定の extendedProperties.private の buddy の予定の ID の記録が、
+// 写す前に、予定の API が書いた予定の保留の版を確定する（ADR-0029）。予定の extendedProperties.private の buddy の予定の ID の記録が、
 // 保留の版を書く予定（calendar.EventRecord.PendingLocation）がこのカレンダーのこの予定で、版が保留の版と同じなら、calendar.ConfirmPending で確定する。版が違っても、取り消した予定でも、
 // 保留の版を消さない。読んだ予定が、予定の API が Google に書く前のものであることがあるためで、消すのは読み戻し（Syncer.ReadBackDue）である。
 type projectionApplier struct {
@@ -38,7 +38,7 @@ type projectionApplier struct {
 
 // NewProjectionApplier は、今の時刻を time.Now で読み、Google カレンダーの予定の変更を projections に写す Applier を作る。
 // 保留の版を確定するときに、records の記録を書き、使われなくなった訪問の情報を visits で消す。
-// 組み立て（assemble）が、google_primary の事業所の Applier として Syncer に渡す。
+// 組み立て（cmd/calendar-worker）が、google_primary の事業所の Applier として Syncer に渡す。
 func NewProjectionApplier(projections Projections, records calendar.EventRecords, visits calendar.UnusedVisits, log *slog.Logger) Applier {
 	return projectionApplier{projections: projections, records: records, visits: visits, now: time.Now, log: log}
 }

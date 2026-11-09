@@ -8,7 +8,6 @@
 
 # APM dependencies
 apm_modules/
-/.agents/skills/attach-evidence/
 /.agents/skills/capture-browser-evidence/
 /.agents/skills/design-test-cases/
 /.agents/skills/publish-docs-site/
@@ -30,7 +29,6 @@ apm_modules/
 /.agents/skills/write-verification-spec/
 /.claude/hooks/core/
 /.claude/hooks/docs/
-/.claude/skills/attach-evidence/
 /.claude/skills/capture-browser-evidence/
 /.claude/skills/design-test-cases/
 /.claude/skills/publish-docs-site/
@@ -73,3 +71,23 @@ packages/e2e/playwright-report/
 
 # worktree ごとのポートの組。.config/wt.toml が書く
 .env
+/.agents/skills/capture-pull-request/
+/.claude/skills/capture-pull-request/
+/.agents/skills/design-playbook/
+/.agents/skills/review-by-viewpoints/
+/.agents/skills/run-playbook/
+/.agents/skills/run-session/
+/.claude/agents/review-architecture.md
+/.claude/agents/review-performance.md
+/.claude/agents/review-quality.md
+/.claude/agents/review-security.md
+/.claude/agents/review-spec.md
+/.claude/skills/design-playbook/
+/.claude/skills/review-by-viewpoints/
+/.claude/skills/run-playbook/
+/.claude/skills/run-session/
+/.codex/agents/review-architecture.toml
+/.codex/agents/review-performance.toml
+/.codex/agents/review-quality.toml
+/.codex/agents/review-security.toml
+/.codex/agents/review-spec.toml

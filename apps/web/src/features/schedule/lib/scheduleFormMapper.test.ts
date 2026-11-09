@@ -6,6 +6,7 @@ import { mockServiceCodes } from '#/mocks/scheduleData'
 import {
   createScheduleFormValues,
   defaultServiceCode,
+  patientServiceCode,
   toScheduleFormValues,
   toScheduleInput,
   visitEndOfInput,
@@ -31,6 +32,24 @@ describe('defaultServiceCode', () => {
     const preventive = serviceCode('code-p2', '予防看I2')
     expect(defaultServiceCode([preventive, serviceCode('code-m', '医')])).toBe(preventive)
     expect(defaultServiceCode([])).toBeUndefined()
+  })
+})
+
+describe('patientServiceCode', () => {
+  const patient = (code: string) => ({ id: 'patient-1', name: '利用者 A', serviceCode: code })
+
+  it('利用者のサービスコードと同じ表記のサービスコードを返す', () => {
+    const visit = serviceCode('code-i2', '訪看I2')
+    const third = serviceCode('code-i3', '訪看I3')
+    expect(patientServiceCode(patient('訪看I3'), [visit, third])).toBe(third)
+  })
+
+  it('利用者のサービスコードが一覧に無ければ、訪看I2 を、それも無ければ一覧の先頭を返す', () => {
+    const preventive = serviceCode('code-p2', '予防看I2')
+    const visit = serviceCode('code-i2', '訪看I2')
+    expect(patientServiceCode(patient('訪看I9'), [preventive, visit])).toBe(visit)
+    expect(patientServiceCode(patient('訪看I9'), [preventive])).toBe(preventive)
+    expect(patientServiceCode(patient('訪看I9'), [])).toBeUndefined()
   })
 })
 

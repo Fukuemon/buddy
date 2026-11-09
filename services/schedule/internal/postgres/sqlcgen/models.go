@@ -74,9 +74,11 @@ type CalendarEventProjection struct {
 	LastEndDate *time.Time
 	// 同期が行を書いた時刻
 	ProjectedAt time.Time
+	// 開始か終了の日時を読めない予定のとき true。読めた方の日時か日付だけを持つ。予定のカレンダーは、出せない予定の件数に数える
+	TimeUnreadable bool
 }
 
-// google_primary の事業所で、予定の API が Google カレンダーに書いた予定の、訪問の情報と書き込みの保留の版（ADR-0028）。通常の予定も保留の版を持つために行を作る
+// google_primary の事業所で、予定の API が Google カレンダーに書いた予定の、訪問の情報と書き込みの保留の版（ADR-0029）。通常の予定も保留の版を持つために行を作る
 type CalendarEventRecord struct {
 	// buddy の予定の ID。画面が作成のリクエストに付ける。Google の予定の ID はこの ID から決める
 	ScheduleID string
@@ -130,6 +132,8 @@ type CalendarExport struct {
 	FinishedAt *time.Time
 	CreatedAt  time.Time
 	UpdatedAt  time.Time
+	// 削除した単発の予定の ID。外部の予定を消す待ち（ADR-0040）
+	DeletedScheduleID *string
 }
 
 // 外部のカレンダーごとの同期の状態
@@ -194,6 +198,8 @@ type ExternalEventLink struct {
 	SyncedVersion *int32
 	// 切り替えの取り込みで作った対応のとき、その切り替え。切り替えをやめると、この対応と予定を消す
 	CutoverID *string
+	// 削除した単発の予定の ID。書き出しが外部の予定を消すまで対応を残す（ADR-0040）
+	DeletedScheduleID *string
 }
 
 // 訪問看護の事業所
@@ -302,7 +308,7 @@ type RecurringSchedule struct {
 	IsOverTimeWork bool
 	// weekly、monthly
 	Frequency string
-	// 1（月曜）から 7
+	// 1（月曜）から 7。毎月の week_of_month と組で使う。前のバージョンのアプリは毎週の曜日にも書く
 	DayOfWeek *int16
 	// 1 から 31
 	DayOfMonth *int16
@@ -316,6 +322,10 @@ type RecurringSchedule struct {
 	Version int32
 	// 終了が翌日か。全ての回が同じ値を持つ
 	EndsNextDay bool
+	// 毎週の、重ならない 1（月曜）から 7 の曜日を月曜から日曜の順に並べたもの。毎月は NULL。毎週の NULL は day_of_week か最初の日付の曜日として読む
+	DaysOfWeek []int16
+	// 毎週の間隔の週の数。1 が毎週、2 が隔週。日曜に始まる週で、最初の日付を含む週から数える。毎月は 1
+	IntervalWeeks int16
 }
 
 type RecurringScheduleDetail struct {
@@ -350,6 +360,8 @@ type RecurringScheduleDetail struct {
 	UpdatedAt         time.Time
 	Version           int32
 	EndsNextDay       bool
+	DaysOfWeek        []int16
+	IntervalWeeks     int16
 }
 
 // 繰り返しの予定のうち、回にしない日
@@ -392,6 +404,24 @@ type ScheduleCancel struct {
 	Reason     string
 	CreatedAt  time.Time
 	UpdatedAt  time.Time
+}
+
+// 誤って入れた予定を削除した監査の記録（ADR-0040）。画面に出さない。消した時点の内容（訪問の情報と利用者）は持たない
+type ScheduleDeletion struct {
+	ID         string
+	FacilityID string
+	// 削除した単発の予定の ID。回の削除では NULL
+	ScheduleID *string
+	// 回を削除した繰り返しの予定。単発の予定の削除では NULL
+	RecurringScheduleID *string
+	// 単発の予定の開始の日か、削除した回の日
+	Date time.Time
+	// 削除した予定の職員
+	StaffID string
+	// 削除した職員
+	DeletedBy string
+	// 削除した時刻
+	DeletedAt time.Time
 }
 
 type ScheduleDetail struct {

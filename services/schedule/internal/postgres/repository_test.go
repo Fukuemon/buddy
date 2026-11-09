@@ -589,16 +589,47 @@ func TestPatientSchedules(t *testing.T) {
 	got, err := rd.From(ctx, seedFacility, seedPatient, from)
 	if err != nil || len(got.Schedules) != 1 || got.Schedules[0].ID != seedVisitSchedule || got.Schedules[0].StartTime != (civil.Time{Hour: 9, Minute: 30}) ||
 		len(got.RecurringSchedules) != 0 {
-		t.Errorf("当日から = %+v, %v, want 訪問の予定 1 件", got, err)
+		t.Fatalf("当日から = %+v, %v, want 訪問の予定 1 件", got, err)
 	}
 	if got, err := rd.From(ctx, seedFacility, seedPatient, civil.Date{Year: 2026, Month: 10, Day: 22}); err != nil || !got.IsEmpty() {
 		t.Errorf("翌日から = %+v, %v, want なし", got, err)
 	}
+	if got.Schedules[0].EndsNextDay {
+		t.Errorf("同じ日に終わる予定の EndsNextDay = true, want false（#923）")
+	}
+	tx := ctx.Value(txKey{}).(pgx.Tx)
+	if _, err := tx.Exec(ctx, "UPDATE schedules SET start_time = '22:00', end_time = '01:00', ends_next_day = true WHERE id = $1", seedVisitSchedule); err != nil {
+		t.Fatal(err)
+	}
+	if got, err := rd.From(ctx, seedFacility, seedPatient, from); err != nil || len(got.Schedules) != 1 || !got.Schedules[0].EndsNextDay {
+		t.Errorf("翌日に終わる予定 = %+v, %v, want EndsNextDay が true（#923）", got, err)
+	}
+	info := visit.Info{
+		ID: "01M3TD000000000000000000J0", FacilityID: seedFacility, PatientID: seedPatient, AssignedStaffID: seedMori,
+		ServiceCodeID: seedServiceCode,
+	}
+	if err := NewVisitInfoRepository(testDB).Create(ctx, info); err != nil {
+		t.Fatal(err)
+	}
+	rs := schedule.RecurringSchedule{
+		ID: "01M3TD000000000000000000J1",
+		Slot: schedule.Slot{
+			FacilityID: seedFacility, StaffID: seedMori, TypeID: seedVisitType, Date: from,
+			StartTime: civil.Time{Hour: 22}, EndTime: civil.Time{Hour: 1}, EndsNextDay: true, VisitInfoID: &info.ID,
+		},
+		Rule: schedule.Rule{Frequency: schedule.Weekly},
+	}
+	if err := NewRecurringScheduleRepository(testDB).Create(ctx, rs); err != nil {
+		t.Fatal(err)
+	}
+	if got, err := rd.From(ctx, seedFacility, seedPatient, from); err != nil || len(got.RecurringSchedules) != 1 || !got.RecurringSchedules[0].EndsNextDay {
+		t.Errorf("翌日に終わる繰り返しの予定 = %+v, %v, want EndsNextDay が true（#923）", got.RecurringSchedules, err)
+	}
 	if err := NewScheduleRepository(testDB).CreateCancel(ctx, schedule.Cancellation{ID: "01M3TD00000000000000000033", ScheduleID: seedVisitSchedule, Reason: "中止"}); err != nil {
 		t.Fatal(err)
 	}
-	if got, err := rd.From(ctx, seedFacility, seedPatient, from); err != nil || !got.IsEmpty() {
-		t.Errorf("キャンセルの後 = %+v, %v, want なし", got, err)
+	if got, err := rd.From(ctx, seedFacility, seedPatient, from); err != nil || len(got.Schedules) != 0 {
+		t.Errorf("キャンセルの後の単発の予定 = %+v, %v, want なし", got.Schedules, err)
 	}
 }
 
@@ -720,7 +751,7 @@ func TestScheduleList(t *testing.T) {
 }
 
 // TestScheduleEndsNextDay は、翌日に終わる予定の印を保存して読み、期間の一覧が前の日に始まる印の付いた予定も返し、
-// 時刻の制約が印に合わない予定を拒むことを確認する（ADR-0032）。
+// 時刻の制約が印に合わない予定を拒むことを確認する（ADR-0033）。
 func TestScheduleEndsNextDay(t *testing.T) {
 	ctx := txContext(t)
 	r := NewScheduleRepository(testDB)
@@ -747,6 +778,15 @@ func TestScheduleEndsNextDay(t *testing.T) {
 	}
 	if !got.EndsNextDay || got.Date != nov1 || got.EndTime != (civil.Time{Hour: 1}) || !got.IsOverTimeWork {
 		t.Errorf("got %+v", got.Slot)
+	}
+	assigned, err := NewStaffAssignmentReader(testDB).From(ctx, seedFacility, seedHayashi, nov1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, s := range assigned.Schedules {
+		if s.EndsNextDay != (s.ID == overnight.ID) {
+			t.Errorf("残る予定 %s の EndsNextDay = %v", s.ID, s.EndsNextDay)
+		}
 	}
 
 	rows, err := r.ListByFacility(ctx, seedFacility, scheduleview.ListQuery{DateFrom: &nov2, DateTo: &nov2, Sort: kernel.Sort{Field: "date"}})
@@ -821,6 +861,18 @@ func TestRecurringScheduleEndsNextDay(t *testing.T) {
 			t.Errorf("%s の EndsNextDay = %v", d.ID, d.EndsNextDay)
 		}
 	}
+	assigned, err := NewStaffAssignmentReader(testDB).From(ctx, seedFacility, seedMori, rs.Date)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !slices.ContainsFunc(assigned.RecurringSchedules, func(r staff.AssignedRecurring) bool { return r.ID == rs.ID && r.EndsNextDay }) {
+		t.Errorf("残る繰り返しの予定 = %+v, want %s の EndsNextDay が true", assigned.RecurringSchedules, rs.ID)
+	}
+	for _, r := range assigned.RecurringSchedules {
+		if r.ID != rs.ID && r.EndsNextDay {
+			t.Errorf("残る繰り返しの予定 %s の EndsNextDay = true", r.ID)
+		}
+	}
 
 	rs.ID, rs.EndsNextDay = "01M3TD000000000000000000H1", false
 	if err := r.Create(ctx, rs); !errors.Is(err, apperr.ErrInvalidInput) {
@@ -876,6 +928,66 @@ func TestRecurringScheduleAndExclusion(t *testing.T) {
 	}
 	if !list[0].IsOverTimeWork || len(list[0].ExclusionDates) != 0 {
 		t.Errorf("seed recurring = %+v", list[0])
+	}
+}
+
+// TestRecurringScheduleUpdateRule は、規則の書き換えが最初の日付、規則、更新の番号を変え、
+// 除外する日の削除が、置き換えた回の単発の予定がある日と、from より前の日を残すことを確認する（ADR-0037）。
+func TestRecurringScheduleUpdateRule(t *testing.T) {
+	ctx := txContext(t)
+	r := NewRecurringScheduleRepository(testDB)
+	rs := schedule.RecurringSchedule{
+		ID: "01M3TD00000000000000000051",
+		Slot: schedule.Slot{
+			FacilityID: seedFacility, StaffID: seedMori, TypeID: seedNormalType,
+			Date: civil.Date{Year: 2026, Month: 11, Day: 2}, StartTime: civil.Time{Hour: 13}, EndTime: civil.Time{Hour: 14},
+			Title: ptr("定例"),
+		},
+		Rule: schedule.Rule{Frequency: schedule.Weekly, DaysOfWeek: []int{1}},
+	}
+	if err := r.Create(ctx, rs); err != nil {
+		t.Fatal(err)
+	}
+	before, replacedDay, cancelledDay := civil.Date{Year: 2026, Month: 11, Day: 2}, civil.Date{Year: 2026, Month: 11, Day: 9}, civil.Date{Year: 2026, Month: 11, Day: 16}
+	for _, d := range []civil.Date{before, replacedDay, cancelledDay} {
+		if err := r.AddExclusion(ctx, rs.ID, d); err != nil {
+			t.Fatal(err)
+		}
+	}
+	replaced := schedule.Schedule{ID: "01M3TD000000000000000000E2", Slot: rs.Slot, RecurringScheduleID: &rs.ID, OriginalDate: &replacedDay}
+	replaced.Date = replacedDay
+	if err := NewScheduleRepository(testDB).Create(ctx, replaced); err != nil {
+		t.Fatal(err)
+	}
+	v0, err := r.Get(ctx, rs.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got, err := r.ReplacedDates(ctx, rs.ID, before); err != nil || !reflect.DeepEqual(got, []civil.Date{replacedDay}) {
+		t.Errorf("ReplacedDates = %v, %v, want [%v]", got, err, replacedDay)
+	}
+	if got, err := r.ReplacedDates(ctx, rs.ID, cancelledDay); err != nil || len(got) != 0 {
+		t.Errorf("%v 以降の ReplacedDates = %v, %v, want 無し", cancelledDay, got, err)
+	}
+
+	changed := rs
+	changed.Date = civil.Date{Year: 2026, Month: 11, Day: 3}
+	changed.Rule = schedule.Rule{Frequency: schedule.Weekly, DaysOfWeek: []int{2}, Interval: 1, EndDate: &civil.Date{Year: 2027, Month: 3, Day: 30}}
+	if err := r.UpdateRule(ctx, changed); err != nil {
+		t.Fatal(err)
+	}
+	if err := r.RemoveUnreplacedExclusions(ctx, rs.ID, replacedDay); err != nil {
+		t.Fatal(err)
+	}
+	got, err := r.Get(ctx, rs.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.Date != changed.Date || !reflect.DeepEqual(got.Rule, changed.Rule) || got.Version != v0.Version+1 || *got.Title != "定例" {
+		t.Errorf("書き換えた繰り返しの予定 = %+v, want 最初の日付 %v、規則 %+v、番号 %d", got, changed.Date, changed.Rule, v0.Version+1)
+	}
+	if want := []civil.Date{before, replacedDay}; !reflect.DeepEqual(got.ExclusionDates, want) {
+		t.Errorf("ExclusionDates = %v, want %v", got.ExclusionDates, want)
 	}
 }
 

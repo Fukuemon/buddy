@@ -5,6 +5,7 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"github.com/Fukuemon/buddy/services/schedule/internal/apperr"
 	"github.com/Fukuemon/buddy/services/schedule/internal/civil"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/schedule"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/scheduleview"
@@ -56,7 +57,14 @@ func NewScheduleRepository(pool *pgxpool.Pool) *ScheduleRepository {
 
 // Create は、予定を書く。IsOverTimeWork は書かず、DB が開始の時刻から生成する。参照先（事業所、職員、予定の種類、繰り返しの予定、訪問の情報）が無いか、値がカラムの制約に合わないときは apperr.ErrInvalidInput のエラーを返す。
 func (r *ScheduleRepository) Create(ctx context.Context, s schedule.Schedule) error {
-	err := r.q(ctx).CreateSchedule(ctx, sqlcgen.CreateScheduleParams{
+	deleted, err := r.q(ctx).ScheduleIDDeleted(ctx, &s.ID)
+	if err != nil {
+		return translate("check deleted schedule id", err)
+	}
+	if deleted {
+		return apperr.ErrConflict
+	}
+	err = r.q(ctx).CreateSchedule(ctx, sqlcgen.CreateScheduleParams{
 		ID:                  s.ID,
 		FacilityID:          s.FacilityID,
 		StaffID:             s.StaffID,
@@ -262,6 +270,38 @@ func (r *ScheduleRepository) CreateCancel(ctx context.Context, c schedule.Cancel
 	return translate("bump schedule version", r.q(ctx).BumpScheduleVersion(ctx, c.ScheduleID))
 }
 
+// Delete は、監査の記録 d を書き、予定の対応を監査の記録に付け替えてから、予定 d.ScheduleID の行と訪問の情報を消す。
+// 呼び出し側が、同じトランザクションの GetForUpdate で予定があることを確かめてから呼ぶ。削除した予定をもう一度渡すと、監査の記録の一意の制約で apperr.ErrConflict を返す。
+func (r *ScheduleRepository) Delete(ctx context.Context, d schedule.Deletion) error {
+	if err := createDeletion(ctx, r.q(ctx), d); err != nil {
+		return err
+	}
+	if err := r.q(ctx).MoveExternalEventLinkToDeletion(ctx, &d.ScheduleID); err != nil {
+		return translate("move external event link to deletion", err)
+	}
+	visitInfoID, err := r.q(ctx).DeleteSchedule(ctx, d.ScheduleID)
+	if err != nil {
+		return translate("delete schedule", err)
+	}
+	if visitInfoID == nil {
+		return nil
+	}
+	return translate("delete visit info", r.q(ctx).DeleteUnusedVisitInfo(ctx, *visitInfoID))
+}
+
+// StaffOfDeleted は、calendarexport.DeletedSchedules を実装する。
+func (r *ScheduleRepository) StaffOfDeleted(ctx context.Context, scheduleID string) (string, error) {
+	id, err := r.q(ctx).GetDeletedScheduleStaffID(ctx, &scheduleID)
+	return id, translate("get deleted schedule staff", err)
+}
+
+func createDeletion(ctx context.Context, q *sqlcgen.Queries, d schedule.Deletion) error {
+	return translate("create schedule deletion", q.CreateScheduleDeletion(ctx, sqlcgen.CreateScheduleDeletionParams{
+		ID: d.ID, FacilityID: d.FacilityID, ScheduleID: optional(d.ScheduleID), RecurringScheduleID: optional(d.RecurringScheduleID),
+		Date: d.Date.Time(), StaffID: d.StaffID, DeletedBy: d.DeletedBy,
+	}))
+}
+
 // RecurringScheduleRepository は、schedule.RecurringRepository と scheduleview.RecurringSchedules を実装する。
 type RecurringScheduleRepository struct{ conn }
 
@@ -288,16 +328,12 @@ func (r *RecurringScheduleRepository) Create(ctx context.Context, rs schedule.Re
 		Frequency:      string(rs.Rule.Frequency),
 		EndDate:        nullDate(rs.Rule.EndDate),
 	}
-	var err error
-	if params.DayOfWeek, err = nullInt16(rs.Rule.DayOfWeek); err != nil {
+	c, err := ruleColumnsOf(rs.Rule)
+	if err != nil {
 		return err
 	}
-	if params.DayOfMonth, err = nullInt16(rs.Rule.DayOfMonth); err != nil {
-		return err
-	}
-	if params.WeekOfMonth, err = nullInt16(rs.Rule.WeekOfMonth); err != nil {
-		return err
-	}
+	params.DayOfWeek, params.DayOfMonth, params.WeekOfMonth = c.dayOfWeek, c.dayOfMonth, c.weekOfMonth
+	params.DaysOfWeek, params.IntervalWeeks = c.daysOfWeek, c.intervalWeeks
 	return translate("create recurring schedule", r.q(ctx).CreateRecurringSchedule(ctx, params))
 }
 
@@ -335,13 +371,10 @@ func (r *RecurringScheduleRepository) GetForUpdate(ctx context.Context, id strin
 				Description:    s.Description,
 				IsOverTimeWork: s.IsOverTimeWork,
 			},
-			Rule: schedule.Rule{
-				Frequency:   schedule.Frequency(s.Frequency),
-				DayOfWeek:   intPtr(s.DayOfWeek),
-				DayOfMonth:  intPtr(s.DayOfMonth),
-				WeekOfMonth: intPtr(s.WeekOfMonth),
-				EndDate:     datePtr(s.EndDate),
-			},
+			Rule: ruleColumns{
+				dayOfWeek: s.DayOfWeek, dayOfMonth: s.DayOfMonth, weekOfMonth: s.WeekOfMonth,
+				daysOfWeek: s.DaysOfWeek, intervalWeeks: s.IntervalWeeks,
+			}.rule(s.Frequency, datePtr(s.EndDate), civil.DateOf(s.Date)),
 		},
 		Visit:   v,
 		Version: int(s.Version),
@@ -421,13 +454,10 @@ func (r *RecurringScheduleRepository) recurringDetails(ctx context.Context, rows
 					Description:    s.Description,
 					IsOverTimeWork: s.IsOverTimeWork,
 				},
-				Rule: schedule.Rule{
-					Frequency:   schedule.Frequency(s.Frequency),
-					DayOfWeek:   intPtr(s.DayOfWeek),
-					DayOfMonth:  intPtr(s.DayOfMonth),
-					WeekOfMonth: intPtr(s.WeekOfMonth),
-					EndDate:     datePtr(s.EndDate),
-				},
+				Rule: ruleColumns{
+					dayOfWeek: s.DayOfWeek, dayOfMonth: s.DayOfMonth, weekOfMonth: s.WeekOfMonth,
+					daysOfWeek: s.DaysOfWeek, intervalWeeks: s.IntervalWeeks,
+				}.rule(s.Frequency, datePtr(s.EndDate), civil.DateOf(s.Date)),
 			},
 			TypeName:  schedule.TypeName(s.ScheduleTypeName),
 			StaffName: s.StaffName,
@@ -456,6 +486,119 @@ func (r *RecurringScheduleRepository) AddExclusion(ctx context.Context, recurrin
 		return translate("add recurring schedule exclusion", err)
 	}
 	return translate("bump recurring schedule version", r.q(ctx).BumpRecurringScheduleVersion(ctx, recurringScheduleID))
+}
+
+// DeleteOccurrence は、繰り返しの予定 d.RecurringScheduleID の除外する日に d.Date を足し、監査の記録 d を書く。
+// 同じ日付をすでに除外しているときは apperr.ErrConflict を返す。
+func (r *RecurringScheduleRepository) DeleteOccurrence(ctx context.Context, d schedule.Deletion) error {
+	if err := r.AddExclusion(ctx, d.RecurringScheduleID, d.Date); err != nil {
+		return err
+	}
+	return createDeletion(ctx, r.q(ctx), d)
+}
+
+// UpdateRule は、繰り返しの予定 rs.ID の最初の日付と規則を rs の値で上書きし、更新の番号を 1 つ増やす。
+// 値がカラムの制約に合わないときは apperr.ErrInvalidInput のエラーを返す。繰り返しの予定が無くてもエラーにしない。
+func (r *RecurringScheduleRepository) UpdateRule(ctx context.Context, rs schedule.RecurringSchedule) error {
+	params := sqlcgen.UpdateRecurringScheduleRuleParams{
+		ID: rs.ID, Date: rs.Date.Time(), Frequency: string(rs.Rule.Frequency), EndDate: nullDate(rs.Rule.EndDate),
+	}
+	c, err := ruleColumnsOf(rs.Rule)
+	if err != nil {
+		return err
+	}
+	params.DayOfWeek, params.DayOfMonth, params.WeekOfMonth = c.dayOfWeek, c.dayOfMonth, c.weekOfMonth
+	params.DaysOfWeek, params.IntervalWeeks = c.daysOfWeek, c.intervalWeeks
+	return translate("update recurring schedule rule", r.q(ctx).UpdateRecurringScheduleRule(ctx, params))
+}
+
+// ruleColumns は、繰り返しの予定の行の、繰り返しの規則の列である。
+type ruleColumns struct {
+	dayOfWeek, dayOfMonth, weekOfMonth *int16
+	daysOfWeek                         []int16
+	intervalWeeks                      int16
+}
+
+// ruleColumnsOf は、規則 r を行の列にする。毎週の曜日は days_of_week に、間隔は interval_weeks に書き、day_of_week には書かない。
+// 曜日の並びの無い毎週の規則は、days_of_week を NULL にし、読むときに最初の日付の曜日にする。
+// 毎月の interval_weeks は 1 である。値がカラムの型に収まらないときは apperr.ErrInvalidInput のエラーを返す。
+func ruleColumnsOf(r schedule.Rule) (ruleColumns, error) {
+	c := ruleColumns{intervalWeeks: 1}
+	var err error
+	if c.dayOfWeek, err = nullInt16(r.DayOfWeek); err != nil {
+		return ruleColumns{}, err
+	}
+	if c.dayOfMonth, err = nullInt16(r.DayOfMonth); err != nil {
+		return ruleColumns{}, err
+	}
+	if c.weekOfMonth, err = nullInt16(r.WeekOfMonth); err != nil {
+		return ruleColumns{}, err
+	}
+	if r.Frequency != schedule.Weekly {
+		return c, nil
+	}
+	if len(r.DaysOfWeek) > 0 {
+		c.daysOfWeek = make([]int16, len(r.DaysOfWeek))
+	}
+	for i, d := range r.DaysOfWeek {
+		v, err := nullInt16(&d)
+		if err != nil {
+			return ruleColumns{}, err
+		}
+		c.daysOfWeek[i] = *v
+	}
+	interval := max(r.Interval, 1)
+	v, err := nullInt16(&interval)
+	if err != nil {
+		return ruleColumns{}, err
+	}
+	c.intervalWeeks = *v
+	return c, nil
+}
+
+// rule は、行の列を、頻度 frequency と終了日 end の規則にする。
+// 毎週の days_of_week が NULL の行は、前のバージョンが書いた行で、day_of_week の曜日か、それも無ければ最初の日付 first の曜日の 1 つの並びにする。
+func (c ruleColumns) rule(frequency string, end *civil.Date, first civil.Date) schedule.Rule {
+	r := schedule.Rule{
+		Frequency: schedule.Frequency(frequency), DayOfWeek: intPtr(c.dayOfWeek), DayOfMonth: intPtr(c.dayOfMonth),
+		WeekOfMonth: intPtr(c.weekOfMonth), EndDate: end,
+	}
+	if r.Frequency != schedule.Weekly {
+		return r
+	}
+	r.Interval = max(int(c.intervalWeeks), 1)
+	switch {
+	case len(c.daysOfWeek) > 0:
+		r.DaysOfWeek = make([]int, len(c.daysOfWeek))
+		for i, d := range c.daysOfWeek {
+			r.DaysOfWeek[i] = int(d)
+		}
+	case r.DayOfWeek != nil:
+		r.DaysOfWeek = []int{*r.DayOfWeek}
+	}
+	r.DayOfWeek = nil
+	return r.WithDays(first)
+}
+
+// RemoveUnreplacedExclusions は、繰り返しの予定 recurringScheduleID の from 以降の除外する日のうち、置き換えた回の単発の予定が無い日を消す。
+func (r *RecurringScheduleRepository) RemoveUnreplacedExclusions(ctx context.Context, recurringScheduleID string, from civil.Date) error {
+	return translate("delete unreplaced recurring schedule exclusions", r.q(ctx).DeleteUnreplacedRecurringScheduleExclusions(ctx,
+		sqlcgen.DeleteUnreplacedRecurringScheduleExclusionsParams{RecurringScheduleID: recurringScheduleID, FromDate: from.Time()}))
+}
+
+// ReplacedDates は、繰り返しの予定 recurringScheduleID の回を置き換えた単発の予定のうち、元の回の日付が from 以降のものの日付を、古い順に返す。
+func (r *RecurringScheduleRepository) ReplacedDates(ctx context.Context, recurringScheduleID string, from civil.Date) ([]civil.Date, error) {
+	rows, err := r.q(ctx).ListReplacedOriginalDates(ctx, sqlcgen.ListReplacedOriginalDatesParams{
+		RecurringScheduleID: &recurringScheduleID, FromDate: ptr(from.Time()),
+	})
+	if err != nil {
+		return nil, translate("list replaced original dates", err)
+	}
+	out := make([]civil.Date, len(rows))
+	for i, d := range rows {
+		out[i] = civil.DateOf(d)
+	}
+	return out, nil
 }
 
 func visitInfoIDs[T any](rows []T, id func(T) *string) []string {

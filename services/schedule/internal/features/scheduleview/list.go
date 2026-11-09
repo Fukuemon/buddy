@@ -45,7 +45,7 @@ func NewList(facilities kernel.Finder[organization.Facility], schedules Schedule
 }
 
 // Do は、事業所の予定のうち、見てよい職員の予定を返す。事業所が見つからないときは apperr.ErrNotFound を返す。
-// buddy_primary の事業所では buddy の予定のテーブルを、google_primary の事業所では Projection を読む（ADR-0025）。
+// buddy_primary の事業所では buddy の予定のテーブルを、google_primary の事業所では Projection を読む（ADR-0026）。
 func (s List) Do(ctx context.Context, facilityID string, q ListQuery) (Listing, error) {
 	if err := q.Validate(); err != nil {
 		return Listing{}, err
@@ -74,10 +74,12 @@ func (s List) Do(ctx context.Context, facilityID string, q ListQuery) (Listing, 
 		return Listing{}, err
 	}
 	return Listing{
-		Schedules:          filter(single, func(d Detail) bool { return readable(d.StaffID) }),
-		RecurringSchedules: filter(recurring, func(d RecurringDetail) bool { return readable(d.StaffID) }),
-		SourceMode:         f.SourceMode,
-		CalendarSyncs:      []CalendarSync{},
+		Schedules:           filter(single, func(d Detail) bool { return readable(d.StaffID) }),
+		RecurringSchedules:  filter(recurring, func(d RecurringDetail) bool { return readable(d.StaffID) }),
+		SourceMode:          f.SourceMode,
+		CalendarSyncs:       []CalendarSync{},
+		AllDayEvents:        []AllDayEvent{},
+		UnlistedEventCounts: []UnlistedEventCount{},
 	}, nil
 }
 
@@ -122,6 +124,10 @@ func (s List) listProjected(ctx context.Context, f organization.Facility, q List
 		}
 	}
 	sortDetails(details, q.Sort)
+	only := calendarOnly{allDay: []AllDayEvent{}, unlisted: []UnlistedEventCount{}}
+	if q.TypeName == nil {
+		only = collectCalendarOnly(rows, s.projected.Rules, from, to)
+	}
 	syncs, err := s.projected.Syncs.ListSyncsByFacility(ctx, f.ID)
 	if err != nil {
 		return Listing{}, err
@@ -133,15 +139,17 @@ func (s List) listProjected(ctx context.Context, f organization.Facility, q List
 		}
 	}
 	return Listing{
-		Schedules:          details,
-		RecurringSchedules: []RecurringDetail{},
-		SourceMode:         f.SourceMode,
-		CalendarSyncs:      filter(syncs, func(c CalendarSync) bool { return readable(c.StaffID) }),
-		Cutover:            cutover,
+		Schedules:           details,
+		RecurringSchedules:  []RecurringDetail{},
+		SourceMode:          f.SourceMode,
+		CalendarSyncs:       filter(syncs, func(c CalendarSync) bool { return readable(c.StaffID) }),
+		Cutover:             cutover,
+		AllDayEvents:        only.allDay,
+		UnlistedEventCounts: only.unlisted,
 	}, nil
 }
 
-// retainedMonthsBefore と retainedMonthsAfter は、Projection を保持する期間（前々月の初日から 3 か月後の月末）の、今月からの月の数である（ADR-0028）。
+// retainedMonthsBefore と retainedMonthsAfter は、Projection を保持する期間（前々月の初日から 3 か月後の月末）の、今月からの月の数である（ADR-0029）。
 const (
 	retainedMonthsBefore = 2
 	retainedMonthsAfter  = 3
@@ -228,6 +236,11 @@ func (b projectionBuilder) detail(e projectedEvent) Detail {
 		Source: SourceGoogleCalendar,
 	}
 	d.ETag = e.row.ETag
+	// 別の職員へ移した後に残った回（left）は、移した予定と別の回として扱うので、親の規則を付けない
+	if e.rule != nil && !e.left {
+		parentID := e.row.ScheduleID
+		d.RecurringScheduleID, d.Rule = &parentID, e.rule
+	}
 	if strings.TrimSpace(rd.Title) != "" {
 		title := rd.Title
 		d.Title = &title

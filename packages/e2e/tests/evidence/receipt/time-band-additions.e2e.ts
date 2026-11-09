@@ -5,6 +5,7 @@ import { expect, test, type Page } from '@playwright/test'
 import { LOGIN_EMAIL, LOGIN_STAFF } from '../../fixtures/env'
 import { EVIDENCE_VARIANTS, recordPrEvidence } from '../../fixtures/evidence'
 import { signInAtBroker } from '../../screens/login'
+import { showAllReceiptRows } from '../../screens/receipt'
 import { receiptCategoryRowCells } from '../../selectors/receipt'
 
 const ACTOR = `${LOGIN_STAFF.name}（マネージャー）`
@@ -40,14 +41,14 @@ const VISITS = [
 ].join('\n')
 
 /** 結果の表の列のうち、加算の列の位置。列の順は画面仕様書の結果の表にある。 */
-const ADDITION_COLUMN = 11
+const ADDITION_COLUMN = 12
 
 test.describe('照合の結果', () => {
   test.describe('時間帯の加算', () => {
     for (const variant of EVIDENCE_VARIANTS) {
       const prefix = variant.label ? `${variant.label}: ` : ''
 
-      test(`${prefix}予定の開始が19時で実績の加算が夜間だけの行を照合した場合、整合に入り加算に※が付かないこと`, async ({
+      test(`${prefix}予定の開始が19時で実績の加算が夜間だけの行を照合した場合、整合に入り加算に印が付かないこと`, async ({
         browser,
       }, testInfo) => {
         const schedules = testInfo.outputPath('schedules.csv')
@@ -59,7 +60,7 @@ test.describe('照合の結果', () => {
           {
             name: 'receipt-night-addition-match',
             title:
-              '予定の開始が 19:00 で実績の加算が夜間だけの行は、整合に入り、加算に ※ が付かない',
+              '予定の開始が 19:00 で実績の加算が夜間だけの行は、整合に入り、加算に印が付かない',
             actor: ACTOR,
             variant,
           },
@@ -72,17 +73,19 @@ test.describe('照合の結果', () => {
 
             await step('予定と実績のダミーの CSV を選び、照合する')
             await check(page, schedules, visits)
-            const cells = receiptCategoryRowCells(page, 'match', '2024-04-01', '利用者A')
+            await step('表示する行を「全ての行」に切り替える')
+            await showAllReceiptRows(page)
+            const cells = receiptCategoryRowCells(page, 'match', '2024年4月1日（月）', '利用者A')
             await step('結果の表を、加算の列が見えるまで右へ送る')
             await cells.nth(ADDITION_COLUMN).scrollIntoViewIfNeeded()
-            await expect(cells.nth(4)).toHaveText('19:00')
+            await expect(cells.nth(5)).toHaveText('19:00')
             await expect(cells.nth(ADDITION_COLUMN)).toHaveText('夜間')
-            await shot('利用者A の行が整合データに入り、加算は「夜間」で ※ が付かない')
+            await shot('利用者A の行が整合データに入り、加算は「夜間」で印が付かない')
           },
         )
       })
 
-      test(`${prefix}予定の開始が10時で実績の加算が夜間の行を照合した場合、不整合に入り加算に※が付くこと`, async ({
+      test(`${prefix}予定の開始が10時で実績の加算が夜間の行を照合した場合、不整合に入り加算に不一致の印が付くこと`, async ({
         browser,
       }, testInfo) => {
         const schedules = testInfo.outputPath('schedules.csv')
@@ -93,7 +96,8 @@ test.describe('照合の結果', () => {
           browser,
           {
             name: 'receipt-night-addition-mismatch',
-            title: '予定の開始が 10:00 で実績の加算が夜間の行は、不整合に入り、加算に ※ が付く',
+            title:
+              '予定の開始が 10:00 で実績の加算が夜間の行は、不整合に入り、加算に不一致の印が付く',
             actor: ACTOR,
             variant,
           },
@@ -106,12 +110,12 @@ test.describe('照合の結果', () => {
 
             await step('予定と実績のダミーの CSV を選び、照合する')
             await check(page, schedules, visits)
-            const cells = receiptCategoryRowCells(page, 'mismatch', '2024-04-01', '利用者C')
+            const cells = receiptCategoryRowCells(page, 'mismatch', '2024年4月1日（月）', '利用者C')
             await step('結果の表を、加算の列が見えるまで右へ送る')
             await cells.nth(ADDITION_COLUMN).scrollIntoViewIfNeeded()
-            await expect(cells.nth(4)).toHaveText('10:00')
-            await expect(cells.nth(ADDITION_COLUMN)).toHaveText('夜間 ※')
-            await shot('利用者C の行が不整合データに入り、加算に「夜間 ※」と出る')
+            await expect(cells.nth(5)).toHaveText('10:00')
+            await expect(cells.nth(ADDITION_COLUMN)).toHaveText('夜間（不一致）')
+            await shot('利用者C の行が不整合データに入り、加算の「夜間」に不一致の印が付く')
           },
         )
       })

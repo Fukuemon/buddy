@@ -3,6 +3,7 @@ import { useState } from 'react'
 
 import type { Department, Team } from '#/api/types'
 import { queryKeys } from '#/api/queryKeys'
+import { refetchFailedQueries, screenLoadStatus } from '#/api/refetch'
 import { useBuddyApi } from '#/api/useBuddyApi'
 import { nextTeamColor } from '#/components/teamColor'
 
@@ -34,12 +35,18 @@ const OrganizationListContent = () => {
   const [editing, setEditing] = useState<Editing>()
   const [submittedName, setSubmittedName] = useState('')
 
+  const load = screenLoadStatus([departments, teams])
   const state: OrganizationListViewState =
-    departments.isError || teams.isError
-      ? { status: 'error', message: LOAD_ERROR_MESSAGE }
-      : departments.isPending || teams.isPending
-        ? { status: 'loading' }
-        : { status: 'ready', departments: byName(departments.data), teams: byName(teams.data) }
+    load.status === 'ready' && departments.data !== undefined && teams.data !== undefined
+      ? {
+          status: 'ready',
+          departments: byName(departments.data),
+          teams: byName(teams.data),
+          refetchFailed: load.refetchFailed,
+        }
+      : load.status === 'error'
+        ? { status: 'error', message: LOAD_ERROR_MESSAGE }
+        : { status: 'loading' }
 
   const open = (next: Editing) => {
     saveDepartment.reset()
@@ -72,6 +79,7 @@ const OrganizationListContent = () => {
         onCreateTeam={() => open({ kind: 'team', defaultColor: nextTeamColor(teams.data ?? []) })}
         onEditDepartment={(target) => open({ kind: 'department', target })}
         onEditTeam={(target) => open({ kind: 'team', target, defaultColor: target.color })}
+        onRefetch={() => refetchFailedQueries([departments, teams])}
         onRetry={() =>
           Promise.all([
             queryClient.resetQueries({ queryKey: queryKeys.departments(facilityId) }),

@@ -103,7 +103,11 @@ func flowRouterOn(mode organization.SourceMode, accounts calendar.Accounts) (htt
 		Create:           schedule.NewCreate(facilities, schedules, types, refs, facilities, visits, nil, nil, tx, ids).Do,
 		CreateRecurring:  schedule.NewCreateRecurring(facilities, types, refs, facilities, visits, nil, recurring, nil, tx, ids).Do,
 		ChangeOccurrence: schedule.NewChangeOccurrence(recurring, refs, facilities, schedules, types, visits, nil, nil, tx, ids).Do,
+		ChangeRule:       schedule.NewChangeRule(recurring, refs, facilities, types, visits, nil, nil, tx, ids).Do,
 		Cancel:           schedule.NewCancel(schedules, refs, facilities, nil, tx, ids).Do,
+		CancelOccurrence: schedule.NewCancelOccurrence(recurring, refs, facilities, schedules, types, visits, nil, tx, ids).Do,
+		Delete:           schedule.NewDelete(schedules, refs, facilities, nil, nil, tx, ids).Do,
+		DeleteOccurrence: schedule.NewDeleteOccurrence(recurring, refs, facilities, nil, nil, tx, ids).Do,
 		Update:           schedule.NewUpdate(schedules, refs, facilities, types, visits, nil, nil, tx).Do,
 	}
 	auth := flowAuth{svc: access.NewService(access.Deps{Resources: map[access.Resource]access.FacilityReader{
@@ -119,6 +123,8 @@ func flowRouterOn(mode organization.SourceMode, accounts calendar.Accounts) (htt
 		CreateRecurring: calendarwrite.NewCreateRecurring(facilities, projections, types, refs, inmem.Staff{Store: s},
 			visits, inmem.VisitInfos{Store: s}, calendars, records, projections, accounts, nil, tx).Do,
 		ChangeOccurrence: calendarwrite.NewChangeOccurrence(facilities, projections, types, refs, inmem.Staff{Store: s},
+			visits, inmem.VisitInfos{Store: s}, calendars, records, projections, accounts, ids, slog.New(slog.DiscardHandler), nil, tx).Do,
+		ChangeRule: calendarwrite.NewChangeRule(facilities, projections, types, refs, inmem.Staff{Store: s},
 			visits, inmem.VisitInfos{Store: s}, calendars, records, projections, accounts, ids, slog.New(slog.DiscardHandler), nil, tx).Do,
 	}
 	org := httpapi.OrganizationApp{GetFacility: organization.NewGetFacility(facilities).Do}
@@ -363,7 +369,7 @@ func TestUpdateAndCancelScheduleGooglePrimary(t *testing.T) {
 
 // TestScheduleWritesRejectOpenCutover は、google_primary の事業所に open の切り替えがあると、createSchedule、updateSchedule、
 // cancelSchedule、createRecurringSchedule、changeOccurrence が 409 の cutover_open を返し、Google カレンダーに書かないことと、
-// listSchedules が切り替えを始めた職員の ID と名前と時刻を返すことを確認する（ADR-0030）。
+// listSchedules が切り替えを始めた職員の ID と名前と時刻を返すことを確認する（ADR-0031）。
 func TestScheduleWritesRejectOpenCutover(t *testing.T) {
 	const (
 		calendarAddr = "staff@example.com"

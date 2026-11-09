@@ -37,8 +37,8 @@ ORDER BY
 INSERT INTO recurring_schedules (
     id, facility_id, staff_id, schedule_type_id, date, start_time, end_time,
     visit_info_id, title, description,
-    frequency, day_of_week, day_of_month, week_of_month, end_date, ends_next_day
-) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16);
+    frequency, day_of_week, day_of_month, week_of_month, end_date, ends_next_day, days_of_week, interval_weeks
+) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18);
 
 -- name: GetRecurringScheduleDetail :one
 SELECT * FROM recurring_schedule_details WHERE id = $1;
@@ -60,6 +60,28 @@ ORDER BY
 
 -- name: AddRecurringScheduleExclusion :exec
 INSERT INTO recurring_schedule_exclusions (recurring_schedule_id, date) VALUES ($1, $2);
+
+-- name: UpdateRecurringScheduleRule :exec
+UPDATE recurring_schedules
+SET date = sqlc.arg(date), frequency = sqlc.arg(frequency), day_of_week = sqlc.narg(day_of_week),
+    day_of_month = sqlc.narg(day_of_month), week_of_month = sqlc.narg(week_of_month), end_date = sqlc.narg(end_date),
+    days_of_week = sqlc.narg(days_of_week), interval_weeks = sqlc.arg(interval_weeks),
+    version = version + 1
+WHERE id = sqlc.arg(id);
+
+-- name: DeleteUnreplacedRecurringScheduleExclusions :exec
+-- 置き換えた回の単発の予定がある日は、回が単発の予定と重ならないように残す。
+DELETE FROM recurring_schedule_exclusions e
+WHERE e.recurring_schedule_id = sqlc.arg(recurring_schedule_id) AND e.date >= sqlc.arg(from_date)
+  AND NOT EXISTS (
+    SELECT 1 FROM schedules s WHERE s.recurring_schedule_id = e.recurring_schedule_id AND s.original_date = e.date
+  );
+
+-- name: ListReplacedOriginalDates :many
+-- 繰り返しの予定の回を置き換えた単発の予定（キャンセルしたものを含む）の、元の回の日付を読む。
+SELECT original_date::date FROM schedules
+WHERE recurring_schedule_id = sqlc.arg(recurring_schedule_id) AND original_date >= sqlc.arg(from_date)
+ORDER BY original_date;
 
 -- name: ListRecurringScheduleExclusions :many
 SELECT recurring_schedule_id, date
@@ -94,7 +116,7 @@ SELECT id FROM recurring_schedules WHERE id = $1 FOR UPDATE;
 SELECT id FROM schedules WHERE recurring_schedule_id = $1 AND original_date = $2;
 
 -- name: GetStoredSchedule :one
--- 予定を書く前の確認に使う予定を読む。種類、職員、訪問の情報の名前は結合しない（ADR-0025）。
+-- 予定を書く前の確認に使う予定を読む。種類、職員、訪問の情報の名前は結合しない（ADR-0026）。
 SELECT s.id, s.facility_id, s.staff_id, s.schedule_type_id, s.date, s.start_time, s.end_time, s.ends_next_day,
        s.is_over_time_work, s.recurring_schedule_id, s.original_date, s.visit_info_id, s.title, s.description, s.version,
        vi.patient_id, vi.assigned_staff_id, vi.companion_id, vi.service_code_id,
@@ -104,10 +126,11 @@ LEFT JOIN visit_infos vi ON vi.id = s.visit_info_id
 WHERE s.id = $1;
 
 -- name: GetStoredRecurringSchedule :one
--- 予定を書く前の確認に使う繰り返しの予定を読む。種類、職員、訪問の情報の名前は結合しない（ADR-0025）。
+-- 予定を書く前の確認に使う繰り返しの予定を読む。種類、職員、訪問の情報の名前は結合しない（ADR-0026）。
 SELECT rs.id, rs.facility_id, rs.staff_id, rs.schedule_type_id, rs.date, rs.start_time, rs.end_time, rs.ends_next_day,
        rs.is_over_time_work, rs.visit_info_id, rs.title, rs.description,
        rs.frequency, rs.day_of_week, rs.day_of_month, rs.week_of_month, rs.end_date, rs.version,
+       rs.days_of_week, rs.interval_weeks,
        vi.patient_id, vi.assigned_staff_id, vi.companion_id, vi.service_code_id
 FROM recurring_schedules rs
 LEFT JOIN visit_infos vi ON vi.id = rs.visit_info_id
@@ -142,3 +165,22 @@ SELECT p.facility_id FROM calendar_event_projections p WHERE projected_schedule_
 UNION ALL
 SELECT p.facility_id FROM calendar_event_projections p WHERE detached_schedule_id(p.external_calendar_id, p.external_event_id) = $1
 LIMIT 1;
+
+-- name: CreateScheduleDeletion :exec
+INSERT INTO schedule_deletions (id, facility_id, schedule_id, recurring_schedule_id, date, staff_id, deleted_by)
+VALUES (sqlc.arg(id), sqlc.arg(facility_id), sqlc.narg(schedule_id), sqlc.narg(recurring_schedule_id), sqlc.arg(date), sqlc.arg(staff_id), sqlc.arg(deleted_by));
+
+-- name: MoveExternalEventLinkToDeletion :exec
+-- 予定の行を消すと予定の対応も消えるので、書き出しが外部の予定を消すまで、削除の監査の記録を指す対応にする（ADR-0040）。
+UPDATE external_event_links SET deleted_schedule_id = schedule_id, schedule_id = NULL WHERE schedule_id = $1;
+
+-- name: DeleteSchedule :one
+-- 書き出しの待ちは外部キーの ON DELETE CASCADE で消える。
+DELETE FROM schedules WHERE id = $1 RETURNING visit_info_id;
+
+-- name: GetDeletedScheduleStaffID :one
+SELECT staff_id FROM schedule_deletions WHERE schedule_id = $1;
+
+-- name: ScheduleIDDeleted :one
+-- 削除した予定の ID は、作り直しに使わせない。削除の書き出しの待ちと監査の記録が、同じ ID の別の予定を指さないためである。
+SELECT EXISTS (SELECT 1 FROM schedule_deletions WHERE schedule_id = $1)::boolean;

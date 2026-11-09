@@ -4,7 +4,6 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/binary"
-	"slices"
 	"time"
 
 	"github.com/Fukuemon/buddy/services/schedule/internal/civil"
@@ -24,13 +23,13 @@ const (
 )
 
 // ProjectionTime は、Projection の予定の開始、終了、元の開始である。終日の予定は Date だけを、時刻のある予定は At だけを持つ。
-// 取り消した回の開始と終了は、どちらも持たない。
+// 取り消した回の開始と終了と、日時を読めない予定（Projection.TimeUnreadable）の読めなかった方は、どちらも持たない。
 type ProjectionTime struct {
 	At   *time.Time
 	Date *civil.Date
 }
 
-// Projection は、Google カレンダーを予定の正本にする事業所（google_primary）の、Google カレンダーの 1 つの予定の写しである（ADR-0028）。
+// Projection は、Google カレンダーを予定の正本にする事業所（google_primary）の、Google カレンダーの 1 つの予定の写しである（ADR-0029）。
 // calendarsync の同期の処理だけが書き、scheduleview だけが読む。繰り返しの予定は展開せず、親の予定と例外の回を別の行に持つ。
 // 説明、場所、参加者、作成者と主催者のメール、添付は持たない。タイトルは利用者名を含むが、表示と照合に要るので持つ。
 type Projection struct {
@@ -59,6 +58,9 @@ type Projection struct {
 	// LastEndDate は、Asia/Tokyo で予定が終わる日で、繰り返しの予定は最後の回が終わる日、取り消した回は元の開始の日である。
 	// 終わりの無い繰り返しと、規則から最後の回を決められない繰り返しでは nil である。保持する期間より前に終わった行を消すのに使う。
 	LastEndDate *civil.Date
+	// TimeUnreadable は、Google の予定の開始か終了の日時を読めないときに true である。Start と End は読めた方だけを持ち、
+	// どちらも読めなければ両方とも空である。予定のカレンダーは、出せない予定の件数に数える。
+	TimeUnreadable bool
 	// ProjectedAt は、同期が行を書いた時刻である。
 	ProjectedAt time.Time
 }
@@ -100,6 +102,8 @@ type projectedEvent struct {
 	occurrence civil.Date
 	// unsupported は、buddy の繰り返しの規則に写せない繰り返しの親を、最初の回の 1 件にしたときに true である。
 	unsupported bool
+	// rule は、繰り返しの親を展開した回の、親の繰り返しの規則で、展開した回でなければ nil である。
+	rule *schedule.Rule
 	// left は、展開した回の OccurrenceScheduleID が、ほかの予定を指す記録の主キーと同じときに true である。回を別の職員の
 	// カレンダーに移した後に、元のカレンダーの回を Google から消せずに残ったときに当たる。一覧での ID を DetachedOccurrenceScheduleID にする。
 	left bool
@@ -112,33 +116,15 @@ type projectedEvent struct {
 // 取り消した単発の予定と繰り返しの親は返さず、取り消した親の例外の回も返さない。
 // 展開した回の残った回（left）は、markLeft で決める。
 func expandProjections(rows []ProjectionDetail, rules EventRules, from, to civil.Date) []projectedEvent {
-	replaced := map[string]map[civil.Date]bool{}
-	cancelled := map[string]bool{}
-	for _, r := range rows {
-		if r.Status == ProjectionCancelled && !r.IsException() {
-			cancelled[r.ExternalCalendarID+"\x00"+r.EventID] = true
-		}
-		if !r.IsException() {
-			continue
-		}
-		d, ok := r.OriginalStart.day()
-		if !ok {
-			continue
-		}
-		key := r.ExternalCalendarID + "\x00" + r.RecurringEventID
-		if replaced[key] == nil {
-			replaced[key] = map[civil.Date]bool{}
-		}
-		replaced[key][d] = true
-	}
+	ex := exceptionsOf(rows)
 	var out []projectedEvent
 	for _, r := range rows {
 		switch {
-		case r.Status != ProjectionConfirmed, r.IsException() && cancelled[r.ExternalCalendarID+"\x00"+r.RecurringEventID]:
+		case !ex.listable(r):
 		case r.IsParent():
-			out = append(out, expandParent(r, rules, replaced[r.ExternalCalendarID+"\x00"+r.EventID], from, to)...)
+			out = append(out, expandParent(r, rules, ex.replacedOf(r), from, to)...)
 		default:
-			if rd := rules.Read(r.Projection); rd.Kind != EventSkipped && startsIn(rd, from, to) {
+			if rd := rules.Read(r.Projection); rd.Kind.IsSchedule() && startsIn(rd, from, to) {
 				out = append(out, projectedEvent{row: r, reading: rd})
 			}
 		}
@@ -149,7 +135,7 @@ func expandProjections(rows []ProjectionDetail, rules EventRules, from, to civil
 // expandParent は、繰り返しの親の予定 r を、from から to までの回に展開する。replaced は、例外の回が置き換えた元の日である。
 func expandParent(r ProjectionDetail, rules EventRules, replaced map[civil.Date]bool, from, to civil.Date) []projectedEvent {
 	first := rules.Read(r.Projection)
-	if first.Kind == EventSkipped {
+	if !first.Kind.IsSchedule() {
 		return nil
 	}
 	rule, exclusions, err := rules.Recurrence(r.Projection)
@@ -159,22 +145,18 @@ func expandParent(r ProjectionDetail, rules EventRules, replaced map[civil.Date]
 		}
 		return []projectedEvent{{row: r, reading: first, unsupported: true}}
 	}
-	rs := schedule.RecurringSchedule{Slot: schedule.Slot{Date: first.Date}, Rule: rule}
 	var out []projectedEvent
-	for d := dayBefore(from); !d.After(to); d = civil.DateOf(d.Time().AddDate(0, 0, 1)) {
-		if !rs.HasOccurrenceOn(d) || replaced[d] || slices.Contains(exclusions, d) {
-			continue
-		}
+	for _, d := range occurrenceDays(first.Date, rule, exclusions, replaced, dayBefore(from), to) {
 		occ := first
 		occ.Date = d
 		if startsIn(occ, from, to) {
-			out = append(out, projectedEvent{row: r, reading: occ, occurrence: d})
+			out = append(out, projectedEvent{row: r, reading: occ, occurrence: d, rule: &rule})
 		}
 	}
 	return out
 }
 
-// startsIn は、rd が from から to までの日に始まるか、from の前の日に始まり from に終わる予定かを返す（ADR-0032）。
+// startsIn は、rd が from から to までの日に始まるか、from の前の日に始まり from に終わる予定かを返す（ADR-0033）。
 func startsIn(rd EventReading, from, to civil.Date) bool {
 	if rd.EndsNextDay && rd.Date == dayBefore(from) {
 		return true
@@ -237,7 +219,7 @@ func movedAway(e projectedEvent, recs map[string]RecordedEvent) bool {
 }
 
 // OccurrenceScheduleID は、結び付けたカレンダー externalCalendarID の繰り返しの予定 parentEventID の、元の規則で d に始まる回の、
-// 一覧での予定の ID を返す。展開した回と、回を変えた例外の回の記録の無い行に使い、回を変えても ID が変わらない（ADR-0028）。
+// 一覧での予定の ID を返す。展開した回と、回を変えた例外の回の記録の無い行に使い、回を変えても ID が変わらない（ADR-0029）。
 // ProjectedScheduleID と同じ形で作り、DB の関数 occurrence_schedule_id も同じ値を返す。
 func OccurrenceScheduleID(externalCalendarID, parentEventID string, d civil.Date) string {
 	return hashID(externalCalendarID + "\x00" + parentEventID + "\x00" + d.String())
@@ -304,7 +286,7 @@ func findOccurrence(ctx context.Context, recorded RecordedEvents, facilityID str
 	return projectedEvent{}, false, nil
 }
 
-// RetainedRange は、今の時刻 now の、Projection を保持する期間（前々月の初日から 3 か月後の月末）の最初の日と最後の日を返す（ADR-0028）。
+// RetainedRange は、今の時刻 now の、Projection を保持する期間（前々月の初日から 3 か月後の月末）の最初の日と最後の日を返す（ADR-0029）。
 // 一覧での ID から繰り返しの回を引くときに、親を展開する期間にする。
 func RetainedRange(now time.Time) (civil.Date, civil.Date) {
 	return projectionRange(ListQuery{}, now)

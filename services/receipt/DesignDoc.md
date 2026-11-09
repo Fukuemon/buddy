@@ -31,7 +31,7 @@ verified_commit: dcf8e78
   - 予定は職員が Google カレンダーに入れる
 - 職員の権限。
   - 照合の権限は予定の API が持ち、照合の API は照合のたびに問い合わせる
-- 結果の記号、区分の区切りの行、結果の CSV の書き出し。
+- 結果の印と、結果の CSV の書き出し。
   - 画面（apps/web）が JSON から作る
 - 上げた CSV と結果の保存
 - 電子カルテへの書き戻し
@@ -65,7 +65,7 @@ verified_commit: dcf8e78
   - ADR-0010: [2 つの Go の API が共有するコードを、別の module にまとめる](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0010-go-shared-module.md)
 - タイトルの解釈と利用者名の表記をそろえる処理は、予定の API と共有する `packages/go/gcaltitle` を使う
 - サービス内容の表記をそろえる処理と、サービス内容ごとの許容範囲の表は、予定の API と共有する `packages/go/servicecode` を使う
-  - ADR-0022: [サービスの規則を packages/go/servicecode に置き、予定の API のサービスコードを visit から servicecode の機能に分ける](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0022-service-code-rules.md)
+  - ADR-0023: [サービスの規則を packages/go/servicecode に置き、予定の API のサービスコードを visit から servicecode の機能に分ける](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0023-service-code-rules.md)
 - 組織ごとのサービスアカウントで Calendar API を呼ぶクライアントは、予定の API と共有する `packages/go/gcalauth` を使う
 
 ### 処理の流れ
@@ -130,7 +130,7 @@ Google カレンダーは、今も職員が予定を入れる場所なので、�
 
 - 認証は Application Default Credentials で、カレンダーの組織のサービスアカウントになりすました token で読む。
   - スコープは `calendar.readonly` だけにする。
-  - ADR-0029: [職員のカレンダーを、事業所ごとのサービスアカウントへの共有で読み書きする](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0029-google-calendar-service-accounts.md)
+  - ADR-0030: [職員のカレンダーを、事業所ごとのサービスアカウントへの共有で読み書きする](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0030-google-calendar-service-accounts.md)
   - Application Default Credentials が事業所のサービスアカウントそのものとして動くとき（そのアカウントになりすました認証情報か、そのアカウントのキー）は、重ねてなりすまさない。サービスアカウント自身へのトークン作成者のロールを求めないためである。
     - 見分けは、認証情報のファイルの `client_email` か、なりすます先の URL のメールアドレスで行う。
   - `GOOGLE_CALENDAR_ENDPOINT` で Calendar API の代わりにフェイク（ローカル環境の calendarpit）を呼ぶときは、なりすまさない。フェイクはなりすましの token を出せないためである。
@@ -167,7 +167,7 @@ Google カレンダーは、今も職員が予定を入れる場所なので、�
 - 終了が開始の翌日で、長さが 24 時間未満の予定も使う。
   - 翌日の 0:00 に終わる予定も同じである。
   - この予定の終了時間は開始時間より前になり、正規化が翌日に終わる訪問として読む。
-  - ADR-0032: [日をまたぐ予定を、開始の日の予定に「終了が翌日か」の印を付けて持ち、取り込み、カレンダー、照合で扱う](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0032-overnight-schedule.md#照合の訪問日仮の決定)
+  - ADR-0033: [日をまたぐ予定を、開始の日の予定に「終了が翌日か」の印を付けて持ち、取り込み、カレンダー、照合で扱う](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0033-overnight-schedule.md#照合の訪問日仮の決定)
 - 開始と終了の日時は、秒を切り捨てて分までにする。
 - 提供時間は、秒を切り捨てた終了の日時から、秒を切り捨てた開始の日時を引いた分にする。
   - 秒を含む予定でも、提供時間は開始時間と終了時間の差と同じ整数になる。`invalid_duration` の警告にはならない。
@@ -236,7 +236,7 @@ Google カレンダーは、今も職員が予定を入れる場所なので、�
    - 主訪問者の空白は残す。
 
 終了時間が開始時間より前の行は、訪問日の翌日のその時刻に終わる訪問として読む。  
-訪問日は開始の日のままにする（[ADR-0032](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0032-overnight-schedule.md#照合の訪問日仮の決定)）。  
+訪問日は開始の日のままにする（[ADR-0033](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0033-overnight-schedule.md#照合の訪問日仮の決定)）。  
 開始時間と終了時間が同じ行は、日をまたがない 0 分の行として読む。
 
 予定だけに、次を適用する。
@@ -330,20 +330,19 @@ API は、判定の結果だけを JSON で返す。
 ### 画面が JSON から作る表示
 
 画面（apps/web）は、結果の JSON から次の表示を作る。  
-記号の規則は API ではなく画面が持ち、[reportCells.ts](https://github.com/Fukuemon/buddy/blob/develop/apps/web/src/features/receipt/lib/reportCells.ts) が作る。
+印の規則は API ではなく画面が持ち、[reportCells.ts](https://github.com/Fukuemon/buddy/blob/develop/apps/web/src/features/receipt/lib/reportCells.ts) が作る。
 
-- 不整合の行では、次の値の後ろに不一致の印を付ける。
-  - 開始時間かサービス内容の判定が規則に合わないときは、その項目の両側の値
-  - 提供時間の値が両側で違うときは、両側の提供時間。許容範囲に入っていても付ける
-  - 許容範囲に入らない終了時間と提供時間。許容範囲があれば「 (20~29)」を続ける
-- 不整合の行で、加算が規則に合わないときは、加算の後ろに「 ※」を付ける。
-- 整合の行で、提供時間の値が両側で違うときは、両側の提供時間に注意の印「 ※」と許容範囲を付ける。
-  - 終了時間の値が両側で違うときは、両側の終了時間に「 ※」を付ける。
-- 片側がない欄と、提供時間が空の欄は「データなし」と表示する。
-- 結果の CSV では、区分ごとに、区分の名前と `---` を並べた区切りの行を区分の行の前に置く。
-  - 行の無い区分にも置く。
-- 結果の CSV は、画面が同じ表示を書き出す。
-- 不一致の印は、元のツールに合わせて「 ❌」にする。
+- 結果の表は、`checks` から行ごとの判定の一覧を作り、印と「確認すること」の文をその一覧から決める。
+  - 不一致は、区分を不整合にした項目である。開始時間、サービス内容、終了時間と提供時間の許容範囲、加算が当たる。
+  - 注意は、区分を決めないが予定と実績の値が違う項目である。提供時間の値の違い（`duration_equal`）と、終了時間の値の違い（`end_equal`）が当たる。行の区分によらず付ける。
+  - 1 つのセルが不一致と注意の両方に当たるときは、不一致だけにする。
+  - 印を付けるセル、アイコン、文は、[照合の結果の画面仕様書の結果の表](https://github.com/Fukuemon/buddy/blob/develop/docs/screens/receipt-result_照合の結果/index.md#結果の表) と [確認すること](https://github.com/Fukuemon/buddy/blob/develop/docs/screens/receipt-result_照合の結果/index.md#確認すること) にある。
+- 片側がない欄は空にし、提供時間が空の欄は「データなし」と表示する。
+- 結果の CSV は、1 行に 1 つの対を書き、値に印を混ぜない。Excel で区分を絞り込み、値のまま並べ替えるためである。
+  - 先頭の列に区分の名前を、最後の列に「確認すること」を置く。確認することは、結果の表と同じ判定の一覧の文に「不一致: 」「注意: 」を前に付け、「 / 」でつなぐ。
+  - 片側がない欄と、提供時間が空の欄は空にする。
+  - 行は `rows` の順のまま並べ、区分の区切りの行は置かない。
+  - 元のツールの記号つきの CSV は、元の Python との比較だけが `tools/parity/report` で書く（[Verification](#verification)）。
 
 ### 画面の照合の流れ
 

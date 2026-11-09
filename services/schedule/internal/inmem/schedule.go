@@ -34,6 +34,11 @@ type Schedules struct{ *Store }
 
 // Create は、schedule.Repository の Create を実装する。
 func (s Schedules) Create(_ context.Context, sc schedule.Schedule) error {
+	for _, d := range s.Deletions {
+		if d.ScheduleID == sc.ID {
+			return apperr.ErrConflict
+		}
+	}
 	s.Schedules[sc.ID] = scheduleview.Detail{Schedule: sc, TypeName: s.Types[sc.TypeID].Name, Version: 1}
 	return nil
 }
@@ -93,6 +98,41 @@ func (s Schedules) CreateCancel(_ context.Context, c schedule.Cancellation) erro
 	return nil
 }
 
+// Delete は、schedule.Repository の Delete を実装する。予定の書き出しの待ちは、外部キーの ON DELETE CASCADE と同じく消す。
+func (s Schedules) Delete(_ context.Context, d schedule.Deletion) error {
+	sc, ok := s.Schedules[d.ScheduleID]
+	if !ok {
+		return apperr.ErrNotFound
+	}
+	s.Deletions = append(s.Deletions, d)
+	for id, l := range s.Links {
+		if l.ScheduleID != nil && *l.ScheduleID == d.ScheduleID {
+			l.ScheduleID, l.DeletedScheduleID = nil, &d.ScheduleID
+			s.Links[id] = l
+		}
+	}
+	for id, e := range s.Exports {
+		if e.ScheduleID == d.ScheduleID {
+			delete(s.Exports, id)
+		}
+	}
+	delete(s.Schedules, d.ScheduleID)
+	if sc.VisitInfoID != nil {
+		delete(s.Infos, *sc.VisitInfoID)
+	}
+	return nil
+}
+
+// StaffOfDeleted は、calendarexport.DeletedSchedules を実装する。
+func (s Schedules) StaffOfDeleted(_ context.Context, scheduleID string) (string, error) {
+	for _, d := range s.Deletions {
+		if d.ScheduleID == scheduleID {
+			return d.StaffID, nil
+		}
+	}
+	return "", apperr.ErrNotFound
+}
+
 // ReplacementOf は、繰り返しの予定の d の回を置き換えた単発の予定を、名前を結合しない書き込みのモデルで返す。
 func (s Schedules) ReplacementOf(ctx context.Context, recurringScheduleID string, d civil.Date) (schedule.Stored, error) {
 	for id, sc := range s.Schedules {
@@ -139,6 +179,54 @@ func (s RecurringSchedules) ListByFacility(_ context.Context, facilityID string,
 	return out, nil
 }
 
+// UpdateRule は、schedule.RecurringRepository の UpdateRule を実装する。
+func (s RecurringSchedules) UpdateRule(_ context.Context, rs schedule.RecurringSchedule) error {
+	d, ok := s.Recurring[rs.ID]
+	if !ok {
+		return nil
+	}
+	d.Date = rs.Date
+	d.Rule = rs.Rule
+	d.Version++
+	s.Recurring[rs.ID] = d
+	return nil
+}
+
+// RemoveUnreplacedExclusions は、schedule.RecurringRepository の RemoveUnreplacedExclusions を実装する。
+func (s RecurringSchedules) RemoveUnreplacedExclusions(_ context.Context, id string, from civil.Date) error {
+	d, ok := s.Recurring[id]
+	if !ok {
+		return nil
+	}
+	replaced := map[civil.Date]bool{}
+	for _, sc := range s.Schedules {
+		if sc.RecurringScheduleID != nil && *sc.RecurringScheduleID == id && sc.OriginalDate != nil {
+			replaced[*sc.OriginalDate] = true
+		}
+	}
+	kept := []civil.Date{}
+	for _, e := range d.ExclusionDates {
+		if e.Before(from) || replaced[e] {
+			kept = append(kept, e)
+		}
+	}
+	d.ExclusionDates = kept
+	s.Recurring[id] = d
+	return nil
+}
+
+// ReplacedDates は、schedule.RecurringRepository の ReplacedDates を実装する。
+func (s RecurringSchedules) ReplacedDates(_ context.Context, id string, from civil.Date) ([]civil.Date, error) {
+	var out []civil.Date
+	for _, sc := range s.Schedules {
+		if sc.RecurringScheduleID != nil && *sc.RecurringScheduleID == id && sc.OriginalDate != nil && !sc.OriginalDate.Before(from) {
+			out = append(out, *sc.OriginalDate)
+		}
+	}
+	slices.SortFunc(out, func(a, b civil.Date) int { return a.Time().Compare(b.Time()) })
+	return out, nil
+}
+
 // AddExclusion は、繰り返しの予定から d の回を除外する。除外済みなら apperr.ErrConflict を返す。
 func (s RecurringSchedules) AddExclusion(_ context.Context, id string, d civil.Date) error {
 	rs := s.Recurring[id]
@@ -150,5 +238,14 @@ func (s RecurringSchedules) AddExclusion(_ context.Context, id string, d civil.D
 	rs.ExclusionDates = append(rs.ExclusionDates, d)
 	rs.Version++
 	s.Recurring[id] = rs
+	return nil
+}
+
+// DeleteOccurrence は、schedule.RecurringRepository の DeleteOccurrence を実装する。
+func (s RecurringSchedules) DeleteOccurrence(ctx context.Context, d schedule.Deletion) error {
+	if err := s.AddExclusion(ctx, d.RecurringScheduleID, d.Date); err != nil {
+		return err
+	}
+	s.Deletions = append(s.Deletions, d)
 	return nil
 }

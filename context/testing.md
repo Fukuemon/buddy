@@ -53,7 +53,7 @@ E2E の Google Calendar API の置き換えでの、calendarpit の使い方は�
 
 - 予定の API は、calendarpit の予定を読み書きする。
   - 最初の予定は `compose/calendarpit/fixture.json` にある。
-  - 書いた予定と token は volume に残り、`docker compose down -v` で消える。
+  - 書いた予定と token は volume に残り、`portless compose down -v` で消える。
   - 予定は calendarpit の管理の画面で見る。
 - E2E は、calendarpit の管理の API で予定を読んで直す。
   - 中継の `gcalhold` が、Google の変更を予定の API に渡さないようにする。

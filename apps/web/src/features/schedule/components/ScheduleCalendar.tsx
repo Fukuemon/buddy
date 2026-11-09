@@ -10,8 +10,16 @@ import { useEffect, useRef, useState } from 'react'
 import { useIsDesktop } from '@buddy/ui'
 
 import type { CalendarView } from '../constants/calendarView'
-import { nextDayPrefix, toDateKey, toTimeKey, WEEKDAYS } from '../lib/dateTime'
+import type { CalendarAllDayEvent } from '../lib/allDayEvents'
+import {
+  addDaysToDateKey,
+  formatScheduleTimeRange,
+  toDateKey,
+  toTimeKey,
+  WEEKDAYS,
+} from '../lib/dateTime'
 import type { ScheduleCalendarEvent } from '../lib/toCalendarEvents'
+import { AllDayEventLabel } from './AllDayEventLabel'
 import { CancelledMark } from './CancelledMark'
 import { NeedsReviewMark } from './NeedsReviewMark'
 
@@ -26,17 +34,12 @@ const FULL_CALENDAR_VIEW = {
  */
 const WIDE_DAY_HEADER_MIN_WIDTH_PX = 680
 
-const hourMinute = (date: Date) =>
-  `${date.getHours()}:${String(date.getMinutes()).padStart(2, '0')}`
-
 /**
- * 週の表示の予定に出す時刻の文を、`9:00 - 9:30` の形で返す。翌日に終わる予定は、開始の日と翌日の両方に予定の全体の時刻を `22:00 - 翌 1:00` の形で出す。
+ * 週の表示の予定に出す時刻の文を、`09:00〜09:30` の形で返す。翌日に終わる予定は、開始の日と翌日の両方に予定の全体の時刻を `22:00〜翌 01:00` の形で出す。
  * FullCalendar 7 の日本語の時刻の文は `9時00分～9時30分` の形で、区切りを変えるオプションが無いので、ここで作る。
  */
 const eventTimeText = (start: Date | null, end: Date | null, timeText: string) =>
-  start === null || end === null
-    ? timeText
-    : `${hourMinute(start)} - ${nextDayPrefix(start, end)}${hourMinute(end)}`
+  start === null || end === null ? timeText : formatScheduleTimeRange(start, end)
 
 /** 時刻の見出しの `data-time` に入れる `HH:mm:ss`。E2E の spec が時刻の見出しを指すのに使う。 */
 const slotTime = (milliseconds: number) => {
@@ -50,6 +53,10 @@ export type ScheduleCalendarProps = {
   /** 表示の基準の日付。`YYYY-MM-DD` */
   date: string
   events: ScheduleCalendarEvent[]
+  /**
+   * Google カレンダーの終日の予定。押せない。週の表示では、1 件以上あるときだけ時刻の格子の上に「終日」の行を出す。省くと出さない。
+   */
+  allDayEvents?: CalendarAllDayEvent[]
   /** 空いた日や時間を押したときに呼ぶ。月の表示では timeKey がない。 */
   onDateClick: (dateKey: string, timeKey?: string) => void
   onEventClick: (scheduleId: string) => void
@@ -63,9 +70,11 @@ export const ScheduleCalendar = ({
   view,
   date,
   events,
+  allDayEvents = [],
   onDateClick,
   onEventClick,
 }: ScheduleCalendarProps) => {
+  const allDayById = new Map(allDayEvents.map((event) => [event.id, event]))
   const containerRef = useRef<HTMLDivElement>(null)
   const isDesktop = useIsDesktop()
   // 枠の幅を測れない間（jsdom と描く前）は、枠の幅では 2 行に切り替えない
@@ -92,7 +101,8 @@ export const ScheduleCalendar = ({
       ref={containerRef}
     >
       <FullCalendar
-        allDaySlot={false}
+        allDayText="終日"
+        allDaySlot={allDayEvents.length > 0}
         dateClick={(arg) =>
           onDateClick(toDateKey(arg.date), arg.allDay ? undefined : toTimeKey(arg.date))
         }
@@ -117,8 +127,13 @@ export const ScheduleCalendar = ({
         dayLaneClass="schedule-calendar-week-column"
         eventClass="schedule-calendar-event"
         eventDisplay="block"
-        eventClick={(arg) => onEventClick(arg.event.id)}
+        eventClick={(arg) => {
+          if (!arg.event.allDay) onEventClick(arg.event.id)
+        }}
         eventContent={(arg) => {
+          const allDay = arg.event.allDay ? allDayById.get(arg.event.id) : undefined
+          if (allDay !== undefined)
+            return <AllDayEventLabel className="w-full min-w-0" event={allDay} withStaffName />
           const isCancelled = arg.event.extendedProps.isCancelled === true
           return (
             <span
@@ -141,22 +156,35 @@ export const ScheduleCalendar = ({
             </span>
           )
         }}
-        events={events.map((event) => ({
-          id: event.id,
-          title: event.title,
-          start: event.start,
-          end: event.end,
-          // FullCalendar 7 の予定は枠と背景に同じ色を使うので、キャンセルした予定は職員の色を枠に残し、背景を CSS で薄い色にする
-          color: event.color,
-          className: event.isCancelled ? 'schedule-calendar-event-cancelled' : undefined,
-          contrastColor: event.isCancelled
-            ? 'var(--buddy-color-text-secondary)'
-            : 'var(--buddy-color-text-inverse)',
-          extendedProps: {
-            isCancelled: event.isCancelled,
-            needsReview: event.needsReview,
-          },
-        }))}
+        events={[
+          ...events.map((event) => ({
+            id: event.id,
+            title: event.title,
+            start: event.start,
+            end: event.end,
+            // FullCalendar 7 の予定は枠と背景に同じ色を使うので、キャンセルした予定は職員の色を枠に残し、背景を CSS で薄い色にする
+            color: event.color,
+            className: event.isCancelled ? 'schedule-calendar-event-cancelled' : undefined,
+            contrastColor: event.isCancelled
+              ? 'var(--buddy-color-text-secondary)'
+              : 'var(--buddy-color-text-inverse)',
+            extendedProps: {
+              isCancelled: event.isCancelled,
+              needsReview: event.needsReview,
+            },
+          })),
+          ...allDayEvents.map((event) => ({
+            id: event.id,
+            title: event.title,
+            start: event.startDate,
+            // FullCalendar の終日の予定の終わりは、Google と同じく終わる日の翌日である
+            end: addDaysToDateKey(event.endDate, 1),
+            allDay: true,
+            className: 'schedule-calendar-all-day-event',
+            color: 'transparent',
+            contrastColor: 'var(--buddy-color-text)',
+          })),
+        ]}
         headerToolbar={false}
         height="100%"
         initialDate={date}

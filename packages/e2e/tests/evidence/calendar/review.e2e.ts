@@ -9,7 +9,7 @@ import {
   shiftGoogleEvent,
 } from '../../fixtures/googleCalendar'
 import { SCHEDULE_DETAIL_URL, scheduleIdFromUrl } from '../../fixtures/schedule'
-import { linkStaffCalendar, unlinkStaffCalendar } from '../../screens/calendar'
+import { linkStaffCalendar, unlinkStaffCalendar } from '../../setup/calendar'
 import { signInAtBroker } from '../../screens/login'
 import { calendarpitEvent } from '../../selectors/calendarpit'
 
@@ -248,7 +248,7 @@ test.describe('確認が必要な予定', () => {
             await page.goto(url)
             await expect(row(page)).toBeVisible()
             await step(
-              '確認が必要な予定の画面（Storybook の CalendarReviewContainer の Default）を開いている\n江藤 四郎の 2026/11/06（金）15:00〜16:29 は、buddy でキャンセルした後に Google カレンダーで変えられた単発の予定である（架空のデータの export-5）',
+              '確認が必要な予定の画面（Storybook の CalendarReviewContainer の Default）を開いている\n江藤 四郎の 2026年11月6日（金） 15:00〜16:29 は、buddy でキャンセルした後に Google カレンダーで変えられた単発の予定である（架空のデータの export-5）',
             )
 
             await row(page).scrollIntoViewIfNeeded()
@@ -274,7 +274,7 @@ test.describe('確認が必要な予定', () => {
         )
       })
 
-      test(`${prefix}キャンセルした単発の予定のダイアログで buddy の内容で書き直すを押した場合、Google カレンダーの予定を消すことが分かるダイアログが出て、キャンセルで予定のダイアログに戻ること`, async ({
+      test(`${prefix}キャンセルした単発の予定のダイアログで buddy の内容で書き直すを押した場合、Google カレンダーの予定を消すことが分かるダイアログが出て、戻るで予定のダイアログに戻ること`, async ({
         browser,
       }) => {
         const url = storyUrl('画面-calendar-calendarreviewcontainer--default')
@@ -286,7 +286,7 @@ test.describe('確認が必要な予定', () => {
           {
             name: 'calendar-review-cancelled-rewrite',
             title:
-              'buddy でキャンセルした単発の予定のダイアログで「buddy の内容で書き直す」を押すと、Google カレンダーの予定を消すことが分かるダイアログが出て、「キャンセル」で予定のダイアログに戻る',
+              'buddy でキャンセルした単発の予定のダイアログで「buddy の内容で書き直す」を押すと、Google カレンダーの予定を消すことが分かるダイアログが出て、「戻る」で予定のダイアログに戻る',
             actor: 'ログインなし（Storybook の story）',
             variant,
           },
@@ -297,7 +297,7 @@ test.describe('確認が必要な予定', () => {
             await page.goto(url)
             await expect(row(page)).toBeVisible()
             await step(
-              '確認が必要な予定の画面（Storybook の CalendarReviewContainer の Default）を開いている\n江藤 四郎の 2026/11/06（金）15:00〜16:29 は、buddy でキャンセルした後に Google カレンダーで変えられた単発の予定である（架空のデータの export-5）',
+              '確認が必要な予定の画面（Storybook の CalendarReviewContainer の Default）を開いている\n江藤 四郎の 2026年11月6日（金） 15:00〜16:29 は、buddy でキャンセルした後に Google カレンダーで変えられた単発の予定である（架空のデータの export-5）',
             )
 
             await row(page).scrollIntoViewIfNeeded()
@@ -305,7 +305,7 @@ test.describe('確認が必要な予定', () => {
             await row(page).click()
             await reviewDialog(page).getByTestId('calendar-review-rewrite-export-5').click()
             await expect(dialog(page).getByTestId('calendar-rewrite-target')).toHaveText(
-              '2026/11/06（金）15:00〜16:29、江藤 四郎',
+              '2026年11月6日（金） 15:00〜16:29、江藤 四郎',
             )
             await expect(dialog(page).getByTestId('calendar-rewrite-notice')).toHaveText(
               'buddy でキャンセルした予定なので、Google カレンダーの予定を消します。Google カレンダーで直したタイトルと日時も消えます。',
@@ -317,12 +317,12 @@ test.describe('確認が必要な予定', () => {
               '予定のダイアログに替わって書き直すダイアログが出て、「buddy でキャンセルした予定なので、Google カレンダーの予定を消します。…」の注意が出て、「消された予定は作り直します。」が出ない。「書き直す」は赤い',
             )
 
-            await step('書き直さずに「キャンセル」を押す')
+            await step('書き直さずに「戻る」を押す')
             await dialog(page).getByTestId('calendar-rewrite-cancel').click()
             await expect(dialog(page)).toBeHidden()
             await expect(
               reviewDialog(page).getByTestId('calendar-review-dialog-datetime'),
-            ).toHaveText('2026/11/06（金）15:00〜16:29')
+            ).toHaveText('2026年11月6日（金） 15:00〜16:29')
             await check('書き直すダイアログが閉じ、江藤 四郎の予定の確認のダイアログに戻る')
           },
         )
@@ -356,7 +356,7 @@ test.describe('確認が必要な予定', () => {
             await page.goto(url)
             await expect(row(page)).toBeVisible()
             await step(
-              '確認が必要な予定の画面（Storybook の CalendarReviewContainer の Default）を開いている\n石川 二葉の 2026/11/03（火）から毎回 10:00〜11:00 は、Google カレンダーで消された繰り返しの予定である（架空のデータの recurring-1）',
+              '確認が必要な予定の画面（Storybook の CalendarReviewContainer の Default）を開いている\n石川 二葉の 2026年11月3日（火）から毎回 10:00〜11:00 は、Google カレンダーで消された繰り返しの予定である（架空のデータの recurring-1）',
             )
 
             await step(
@@ -365,17 +365,17 @@ test.describe('確認が必要な予定', () => {
             await row(page).scrollIntoViewIfNeeded()
             await row(page).hover()
             await expect(row(page).getByTestId(/^calendar-review-datetime-/)).toHaveText(
-              '2026/11/03（火）から毎回 10:00〜11:00',
+              '2026年11月3日（火）から毎回 10:00〜11:00',
             )
             await expect(row(page)).toContainText('石川 二葉')
             await check(
-              '指した行が、石川 二葉の「2026/11/03（火）から毎回 10:00〜11:00」の行である',
+              '指した行が、石川 二葉の「2026年11月3日（火）から毎回 10:00〜11:00」の行である',
             )
 
             await step('指した行を押す')
             await row(page).click()
             await expect(dialog(page).getByTestId('calendar-review-dialog-datetime')).toHaveText(
-              '2026/11/03（火）から毎回 10:00〜11:00',
+              '2026年11月3日（火）から毎回 10:00〜11:00',
             )
             await expect(dialog(page).getByTestId(/^calendar-review-rewrite-/)).toBeVisible()
             await expect(dialog(page).getByTestId(/^calendar-review-open-/)).toHaveCount(0)

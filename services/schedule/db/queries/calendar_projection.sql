@@ -1,15 +1,16 @@
 -- name: PutCalendarEventProjection :exec
 -- 同じカレンダーと Google の予定の ID の行があれば書き直す。同期を何度流しても、1 つの予定は 1 行になる。
 -- 書き直すのは、行の Google の更新の時刻が無いか、書く予定の時刻の方が新しいときだけにする。同期と予定の API の書き込みの、
--- 後から届いた古い内容で、新しい内容を上書きしないためである（ADR-0028）。
+-- 後から届いた古い内容で、新しい内容を上書きしないためである（ADR-0029）。
 INSERT INTO calendar_event_projections (
     external_calendar_id, external_event_id, facility_id, staff_id, recurring_event_id, original_start_at, original_start_date,
-    status, title, start_at, start_date, end_at, end_date, time_zone, recurrence, etag, google_updated_at, last_end_date
+    status, title, start_at, start_date, end_at, end_date, time_zone, recurrence, etag, google_updated_at, last_end_date, time_unreadable
 ) VALUES (
     sqlc.arg(external_calendar_id), sqlc.arg(external_event_id), sqlc.arg(facility_id), sqlc.arg(staff_id),
     sqlc.narg(recurring_event_id), sqlc.narg(original_start_at), sqlc.narg(original_start_date),
     sqlc.arg(status), sqlc.arg(title), sqlc.narg(start_at), sqlc.narg(start_date), sqlc.narg(end_at), sqlc.narg(end_date),
-    sqlc.narg(time_zone), sqlc.arg(recurrence)::text[], sqlc.arg(etag), sqlc.narg(google_updated_at), sqlc.narg(last_end_date)
+    sqlc.narg(time_zone), sqlc.arg(recurrence)::text[], sqlc.arg(etag), sqlc.narg(google_updated_at), sqlc.narg(last_end_date),
+    sqlc.arg(time_unreadable)
 )
 ON CONFLICT (external_calendar_id, external_event_id) DO UPDATE SET
     facility_id = EXCLUDED.facility_id, staff_id = EXCLUDED.staff_id, recurring_event_id = EXCLUDED.recurring_event_id,
@@ -17,7 +18,7 @@ ON CONFLICT (external_calendar_id, external_event_id) DO UPDATE SET
     status = EXCLUDED.status, title = EXCLUDED.title, start_at = EXCLUDED.start_at, start_date = EXCLUDED.start_date,
     end_at = EXCLUDED.end_at, end_date = EXCLUDED.end_date, time_zone = EXCLUDED.time_zone, recurrence = EXCLUDED.recurrence,
     etag = EXCLUDED.etag, google_updated_at = EXCLUDED.google_updated_at, last_end_date = EXCLUDED.last_end_date,
-    projected_at = now()
+    time_unreadable = EXCLUDED.time_unreadable, projected_at = now()
 WHERE calendar_event_projections.google_updated_at IS NULL
    OR EXCLUDED.google_updated_at > calendar_event_projections.google_updated_at;
 
@@ -26,7 +27,7 @@ WHERE calendar_event_projections.google_updated_at IS NULL
 -- 例外の回を予定の表示に出さないためである。元の開始と終わる日は残す。
 UPDATE calendar_event_projections
 SET status = 'cancelled', title = '', start_at = NULL, start_date = NULL, end_at = NULL, end_date = NULL, time_zone = NULL,
-    projected_at = now()
+    time_unreadable = false, projected_at = now()
 WHERE external_calendar_id = sqlc.arg(external_calendar_id) AND recurring_event_id = sqlc.arg(parent_event_id) AND status <> 'cancelled';
 
 -- name: DeleteCalendarEventProjection :exec
@@ -54,10 +55,10 @@ WHERE external_calendar_id = sqlc.arg(external_calendar_id) AND last_end_date < 
 -- 繰り返しの予定の例外の回で記録の無い行は、展開した回と同じ occurrence_schedule_id である。回を変えても一覧での ID が変わらないためである。
 -- その値がほかの予定を指す記録の主キーと同じなら（回を移した後に元のカレンダーに残った回）、detached_occurrence_schedule_id である。
 -- 記録のある予定には、記録の確定した版の訪問の情報（visit_info_id）を、名前を付けて読む。保留の版の訪問の情報は読まない。
--- 繰り返しの予定の例外の回で、回の記録が無いか確定した版を持たないときは、親の予定の記録の訪問の情報を読む（ADR-0028）。
+-- 繰り返しの予定の例外の回で、回の記録が無いか確定した版を持たないときは、親の予定の記録の訪問の情報を読む（ADR-0029）。
 SELECT p.external_calendar_id, p.external_event_id, p.facility_id, p.staff_id, p.recurring_event_id, p.original_start_at, p.original_start_date,
        p.status, p.title, p.start_at, p.start_date, p.end_at, p.end_date, p.time_zone, p.recurrence, p.etag, p.google_updated_at,
-       p.last_end_date, p.projected_at, u.username AS staff_name,
+       p.last_end_date, p.projected_at, p.time_unreadable, u.username AS staff_name,
        COALESCE(r.schedule_id, CASE WHEN t.schedule_id IS NULL THEN COALESCE(occurrence_schedule_id(p.external_calendar_id, p.recurring_event_id, p.original_start_at, p.original_start_date), projected_schedule_id(p.external_calendar_id, p.external_event_id))
                                     ELSE COALESCE(detached_occurrence_schedule_id(p.external_calendar_id, p.recurring_event_id, p.original_start_at, p.original_start_date), detached_schedule_id(p.external_calendar_id, p.external_event_id)) END)::text AS schedule_id,
        COALESCE(r.visit_info_id, pr.visit_info_id) AS visit_info_id, vid.patient_id, vid.patient_name, vid.assigned_staff_id, vid.assigned_staff_name,
@@ -78,7 +79,7 @@ ORDER BY p.external_calendar_id, p.external_event_id;
 -- 予定の ID が記録の予定の ID の予定を、記録が指すカレンダーと Google の予定の ID の行で読む。列は ListCalendarEventProjectionsByFacility と同じである。
 SELECT p.external_calendar_id, p.external_event_id, p.facility_id, p.staff_id, p.recurring_event_id, p.original_start_at, p.original_start_date,
        p.status, p.title, p.start_at, p.start_date, p.end_at, p.end_date, p.time_zone, p.recurrence, p.etag, p.google_updated_at,
-       p.last_end_date, p.projected_at, u.username AS staff_name,
+       p.last_end_date, p.projected_at, p.time_unreadable, u.username AS staff_name,
        COALESCE(r.schedule_id, CASE WHEN t.schedule_id IS NULL THEN COALESCE(occurrence_schedule_id(p.external_calendar_id, p.recurring_event_id, p.original_start_at, p.original_start_date), projected_schedule_id(p.external_calendar_id, p.external_event_id))
                                     ELSE COALESCE(detached_occurrence_schedule_id(p.external_calendar_id, p.recurring_event_id, p.original_start_at, p.original_start_date), detached_schedule_id(p.external_calendar_id, p.external_event_id)) END)::text AS schedule_id,
        COALESCE(r.visit_info_id, pr.visit_info_id) AS visit_info_id, vid.patient_id, vid.patient_name, vid.assigned_staff_id, vid.assigned_staff_name,
@@ -97,7 +98,7 @@ WHERE r.schedule_id = sqlc.arg(schedule_id) AND p.facility_id = sqlc.arg(facilit
 -- 記録の無い予定を、一覧での予定の ID（projected_schedule_id、detached_schedule_id、例外の回の occurrence_schedule_id か detached_occurrence_schedule_id）で読む。列は ListCalendarEventProjectionsByFacility と同じである。
 SELECT p.external_calendar_id, p.external_event_id, p.facility_id, p.staff_id, p.recurring_event_id, p.original_start_at, p.original_start_date,
        p.status, p.title, p.start_at, p.start_date, p.end_at, p.end_date, p.time_zone, p.recurrence, p.etag, p.google_updated_at,
-       p.last_end_date, p.projected_at, u.username AS staff_name,
+       p.last_end_date, p.projected_at, p.time_unreadable, u.username AS staff_name,
        COALESCE(r.schedule_id, CASE WHEN t.schedule_id IS NULL THEN COALESCE(occurrence_schedule_id(p.external_calendar_id, p.recurring_event_id, p.original_start_at, p.original_start_date), projected_schedule_id(p.external_calendar_id, p.external_event_id))
                                     ELSE COALESCE(detached_occurrence_schedule_id(p.external_calendar_id, p.recurring_event_id, p.original_start_at, p.original_start_date), detached_schedule_id(p.external_calendar_id, p.external_event_id)) END)::text AS schedule_id,
        COALESCE(r.visit_info_id, pr.visit_info_id) AS visit_info_id, vid.patient_id, vid.patient_name, vid.assigned_staff_id, vid.assigned_staff_name,
@@ -122,7 +123,7 @@ ORDER BY p.external_calendar_id, p.external_event_id
 LIMIT 1;
 
 -- name: FindOpenCalendarCutoverWithStarter :one
--- 予定の表示の読み出し（scheduleview）が、事業所の open の切り替えを、始めた職員の名前を付けて読む（ADR-0030）。
+-- 予定の表示の読み出し（scheduleview）が、事業所の open の切り替えを、始めた職員の名前を付けて読む（ADR-0031）。
 -- 職員の状態（休職、退職）によらず名前を返す。退職しても名前は残るためである。
 SELECT c.started_at, c.range_start, c.started_by, u.username AS started_by_name
 FROM calendar_cutovers c

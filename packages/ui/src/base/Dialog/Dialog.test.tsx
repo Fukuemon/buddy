@@ -4,9 +4,10 @@ import { fn } from 'storybook/test'
 import { describe, expect, it } from 'vite-plus/test'
 import { userEvent } from 'vite-plus/test/browser/context'
 
+import { Dialog, DialogHeader } from './Dialog'
 import * as stories from './Dialog.stories'
 
-const { Default, WithError, Submitting } = composeStories(stories)
+const { Default, WithError, Submitting, OperationsOnly, WithCloseButton } = composeStories(stories)
 
 describe('Dialog', () => {
   it('モーダルのダイアログとして開き、タイトルを名前にする', () => {
@@ -79,16 +80,41 @@ describe('Dialog', () => {
     expect(onClose).not.toHaveBeenCalled()
   })
 
+  it('ヘッダーに onClose を渡さないと、閉じるボタンを出さない', () => {
+    render(<Default />)
+    expect(screen.queryByRole('button', { name: '閉じる' })).toBeNull()
+  })
+
+  it('操作を並べるダイアログは、× を置かず、データを失う操作の起点を先頭に、フッターの「閉じる」をその後に置く', () => {
+    render(<OperationsOnly />)
+    const closeButtons = screen.getAllByRole('button', { name: '閉じる' })
+    expect(closeButtons).toHaveLength(1)
+    const rewrite = screen.getByRole('button', { name: 'buddy の内容で書き直す' })
+    expect(rewrite).toHaveClass('text-danger')
+    expect(
+      rewrite.compareDocumentPosition(closeButtons[0]!) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy()
+  })
+
   it('ヘッダーの閉じるボタンで onClose を呼ぶ', async () => {
     const onClose = fn()
-    render(<Default onClose={onClose} />)
+    render(<WithCloseButton onClose={onClose} />)
     await userEvent.click(screen.getByRole('button', { name: '閉じる' }))
     expect(onClose).toHaveBeenCalledTimes(1)
   })
 
   it('isCloseDisabled の間は、ヘッダーの閉じるボタンを押しても onClose を呼ばない', async () => {
     const onClose = fn()
-    render(<Submitting onClose={onClose} />)
+    render(
+      <Dialog labelledBy="closing-title" onClose={onClose}>
+        <DialogHeader
+          isCloseDisabled
+          onClose={onClose}
+          title="予定の理由"
+          titleId="closing-title"
+        />
+      </Dialog>,
+    )
     const close = screen.getByRole('button', { name: '閉じる' })
     expect(close).toHaveAttribute('aria-disabled', 'true')
     // Playwright は aria-disabled の要素を押せないものとして待つので、force で押す
@@ -104,7 +130,7 @@ describe('Dialog', () => {
   })
 
   it('閉じるボタンは 44×44 px 以上を押せる', () => {
-    render(<Default />)
+    render(<WithCloseButton />)
     const rect = screen.getByRole('button', { name: '閉じる' }).getBoundingClientRect()
     expect(rect.width).toBeGreaterThanOrEqual(44)
     expect(rect.height).toBeGreaterThanOrEqual(44)

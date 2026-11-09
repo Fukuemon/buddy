@@ -45,7 +45,8 @@ describe('ScheduleFormModal', () => {
       staffId: 'staff-3',
       scheduleDate: '2026-10-20',
       startTime: '09:00',
-      serviceTime: 29,
+      serviceCode: '訪看I3',
+      serviceTime: 59,
     })
   })
 
@@ -75,7 +76,7 @@ describe('ScheduleFormModal', () => {
     render(<Visit />)
     await userEvent.clear(screen.getByTestId('schedule-form-service-time'))
     expect(screen.getByTestId('schedule-field-date-time')).toHaveTextContent(
-      '2026-10-20 09:00 - -（- 分、訪看I2）',
+      '2026年10月20日（火） 09:00〜-（- 分、訪看I2）',
     )
   })
 
@@ -83,7 +84,7 @@ describe('ScheduleFormModal', () => {
     render(<Visit />)
     await userEvent.clear(screen.getByTestId('schedule-form-start-time'))
     expect(screen.getByTestId('schedule-field-date-time')).toHaveTextContent(
-      '2026-10-20 - -（29 分、訪看I2）',
+      '2026年10月20日（火） -〜-（29 分、訪看I2）',
     )
     expect(screen.getByTestId('schedule-form-end-time')).toHaveTextContent('終了時間 -')
   })
@@ -95,7 +96,7 @@ describe('ScheduleFormModal', () => {
     await userEvent.type(screen.getByTestId('schedule-form-start-time'), '23:00')
     expect(screen.getByTestId('schedule-form-end-time')).toHaveTextContent('終了時間 翌 00:30')
     expect(screen.getByTestId('schedule-field-date-time')).toHaveTextContent(
-      '2026-10-20 23:00 - 翌 00:30（90 分、医）',
+      '2026年10月20日（火） 23:00〜翌 00:30（90 分、医）',
     )
   })
 
@@ -121,7 +122,7 @@ describe('ScheduleFormModal', () => {
       expect(screen.queryByText('終了時間は開始時間より後にしてください')).not.toBeInTheDocument(),
     )
     expect(screen.getByTestId('schedule-field-date-time')).toHaveTextContent(
-      '2026-10-20 22:00 - 翌 01:00',
+      '2026年10月20日（火） 22:00〜翌 01:00',
     )
     await userEvent.click(screen.getByTestId('schedule-create-submit'))
     await waitFor(() => expect(onSubmit).toHaveBeenCalledOnce())
@@ -143,14 +144,13 @@ describe('ScheduleFormModal', () => {
     expect(onKindChange).toHaveBeenCalledWith('visit')
   })
 
-  it('ヘッダーには、タイトル、種類のタブ、閉じるボタンの順に並べる', () => {
+  it('ヘッダーには、タイトル、種類のタブの順に並べ、閉じるボタンを置かない', () => {
     render(<Visit onKindChange={fn()} />)
-    const close = screen.getByTestId('modal-close')
     const title = screen.getByRole('heading', { name: '予定の作成' })
     const kindTab = screen.getByTestId('schedule-kind-tab')
 
     expect(title.compareDocumentPosition(kindTab) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
-    expect(kindTab.compareDocumentPosition(close) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    expect(screen.queryByTestId('modal-close')).not.toBeInTheDocument()
   })
 
   it('送信の失敗の文を出す', () => {

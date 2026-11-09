@@ -1,4 +1,13 @@
-import type { Schedule, ScheduleInput, ScheduleKind, ServiceCodeRecord, Staff } from '#/api/types'
+import type {
+  Patient,
+  Schedule,
+  ScheduleInput,
+  ScheduleKind,
+  ServiceCodeRecord,
+  Staff,
+} from '#/api/types'
+
+import { formatDateKey } from '#/components/dateFormat'
 
 import type { ScheduleFormValues } from '../schema/scheduleForm'
 import {
@@ -23,6 +32,13 @@ const DEFAULT_SERVICE_CODE = '訪看I2'
 export const defaultServiceCode = (serviceCodes: readonly ServiceCodeRecord[]) =>
   serviceCodes.find((code) => code.code.normalize('NFKC') === DEFAULT_SERVICE_CODE) ??
   serviceCodes[0]
+
+/**
+ * 利用者を選んだときに選ぶサービスコードを返す。
+ * serviceCodes から利用者のサービスコードと同じ表記のものを探し、無ければ defaultServiceCode の値を返す。一覧が空なら undefined を返す。
+ */
+export const patientServiceCode = (patient: Patient, serviceCodes: readonly ServiceCodeRecord[]) =>
+  serviceCodes.find((code) => code.code === patient.serviceCode) ?? defaultServiceCode(serviceCodes)
 
 /** createScheduleFormValues の引数。time を省くと 9 時、staffId を省くと未選択にする。serviceCode を省くとサービスコードを未選択にする。 */
 type ScheduleFormDefaults = {
@@ -114,6 +130,12 @@ export const visitEndOfInput = (startTime?: string, serviceTime?: number) =>
   isTimeKey(startTime) && Number.isFinite(serviceTime)
     ? endOfDuration(startTime, serviceTime as number)
     : undefined
+
+/** 要約の日付。`YYYY-MM-DD` なら `2026年11月9日（月）` の形にし、入力の途中の値はそのまま返す。 */
+export const formatScheduleDate = (scheduleDate?: string) =>
+  scheduleDate !== undefined && /^\d{4}-\d{2}-\d{2}$/.test(scheduleDate)
+    ? formatDateKey(scheduleDate)
+    : (scheduleDate ?? '')
 
 /** 終了の時刻を、翌日なら「翌 00:30」、当日なら「00:30」の形にする。 */
 export const formatEndTime = ({ endTime, endsNextDay }: ScheduleEnd) =>

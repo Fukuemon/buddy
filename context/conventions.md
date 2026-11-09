@@ -1,7 +1,7 @@
 ---
 type: context
 title: コードと文書の規約
-description: 命名、コメント、文書と API の定義の書き方のうちこのリポジトリだけの規則、共有の設定、自動チェックの除外。lint で検出できる規則は書かない
+description: 命名、コメント、文書と API の定義の書き方のうちこのリポジトリだけの規則、画面の日付と時刻の書き方、共有の設定、自動チェックの除外。lint で検出できる規則は書かない
 status: stable
 ---
 
@@ -19,7 +19,8 @@ status: stable
 - web の import は、同じ機能か同じディレクトリの中では相対のパスで書き、それをまたぐときは `#/` のエイリアスで書く。
   - tsconfig の `@/` は使わない。
 - Go のテストのためのフェイクは、`<パッケージ>test` のパッケージに置く（`oidctest`、`gcaltest`）。
-- API の operationId は、lowerCamel の「動詞と名詞」にする。動詞は `get`、`list`、`create`、`update`、`cancel`、`change`、`add`、`remove`、`start`、`end`、`resume`、`retire`、`reinstate` から選ぶ。
+- API の operationId は、lowerCamel の「動詞と名詞」にする。動詞は `get`、`list`、`create`、`update`、`cancel`、`delete`、`change`、`add`、`remove`、`start`、`end`、`resume`、`retire`、`reinstate` から選ぶ。
+  - `delete` は、行を消して戻せない操作に使い、理由を残す取り消しの `cancel` と分ける（`deleteSchedule`、ADR-0040）。
   - `add` と `remove` は、職員に権限を足す、外すのように、リソースの結び付きを足して外す操作に使う（`addUserPolicy`、`removeUserPolicy`）。
 - API のパスは `/v1` の下の複数形の snake_case にする。
   - 事業所に属する一覧と作成は `/v1/facilities/{facility_id}/<リソース>`、1 件は `/v1/<リソース>/{<リソース>_id}` に置く。
@@ -45,7 +46,7 @@ API の操作を呼ぶ関数とリポジトリのメソッドは、operationId �
 
 | 操作 | 動詞 | 例 | 書き込みか読み取りか |
 | --- | --- | --- | --- |
-| 保存された状態を変える | operationId の動詞（`create`、`update`、`cancel`、`change`、`add`、`remove`、`start`、`end`、`resume`、`retire`、`reinstate`） | `CreateTeam`、`Retire` | 書き込み |
+| 保存された状態を変える | operationId の動詞（`create`、`update`、`cancel`、`delete`、`change`、`add`、`remove`、`start`、`end`、`resume`、`retire`、`reinstate`） | `CreateTeam`、`Retire` | 書き込み |
 | ID で 1 件を取る | `get` | `GetFacility`、`getSchedule` | 読み取り |
 | 一覧を取る | `list` | `ListDepartments`、`listRecords` | 読み取り |
 | ID 以外の値で探し、見つからないことがある | `find` | `FindByEmail`、`findCalendar` | 読み取り |
@@ -62,7 +63,7 @@ API の操作を呼ぶ関数とリポジトリのメソッドは、operationId �
 | 画面のイベントを受ける | props は `on<イベント>`、コンポーネントの中の関数は `handle<イベント>` | `onSubmit`、`handleSubmit` | 状態を読み書きしない |
 
 - 書き込みと読み取りは、動詞だけで区別する。読み取りの DB と、その同期は持たない。
-  - ADR-0024: [Go の API のパッケージをフラットに保ち、ファイルの名前の末尾の語で役割を表す](../docs/adr/0024-go-file-names.md)
+  - ADR-0025: [Go の API のパッケージをフラットに保ち、ファイルの名前の末尾の語で役割を表す](../docs/adr/0025-go-file-names.md)
 
 - `fetch`、`build`、`make`、`convert` は使わない。HTTP で取るときも `get` と `list` にする。
   - Fetch API の `fetch` を包む関数（`fetchWithAccessToken`）は、包む関数の名前を残す。
@@ -142,6 +143,29 @@ buddy だけの規則は次のとおり。
 - 見出しのアンカーは、日本語のまま残す（`zensical.toml` の toc の slugify）。
   - 見出しを変えるときは、ほかの文書からのリンクを探して直す。
 - 画面仕様書の画面 ID の規則は [画面仕様書の目次](../docs/screens/index.md) の「画面の ID の規則」に、ページのセクションの規則は [画面仕様書の規約](../docs/screens/rules.md) の「仕様書のページ」にある。
+
+## 画面の文言
+
+### 日付と時刻
+
+画面に出す日付と時刻は、次の形にする。  
+一覧、表、カレンダーの予定のように幅が狭いところも、同じ形にし、別の形を作らない。
+
+| 対象 | 形 | 例 |
+| --- | --- | --- |
+| 日付 | 年、月、日と、括弧で囲んだ曜日 | `2026年11月9日（月）` |
+| 同じ画面で年が分かるところの日付 | 年を省く | `11月9日（月）` |
+| 時刻 | 時と分を 2 桁にする | `09:00` |
+| 時刻の範囲 | 開始と終了を `〜` でつなぐ | `09:00〜09:29` |
+| 翌日に終わる時刻の範囲 | 終了の時刻の前に `翌 ` を付ける | `22:00〜翌 01:00` |
+| 前の日に始まる時刻の範囲 | 開始の時刻の前に `前日 ` を付ける | `前日 22:00〜01:00` |
+| 日付と時刻 | 日付と時刻を半角の空白でつなぐ | `2026年11月9日（月） 09:00〜09:29`、`2026年10月20日（火） 15:42` |
+| 日付の範囲 | 両側を日付の形にし、`〜` でつなぐ | `2026年11月1日（日）〜2026年11月30日（月）` |
+| 終わりの無い日付の範囲 | 終わりの側を空ける | `2026年11月1日（日）〜` |
+
+- 形を作る処理は `apps/web/src/components/dateFormat.ts` にある。画面ごとに形を作らず、この処理を呼ぶ。
+- ダウンロードするファイル（照合の結果の CSV）の日付は、この形にしない。読み込む側の形に合わせる。
+- 日付と時刻の入力の欄（`input type="date"`、`type="time"`）の表示は、ブラウザの言語で決まるので、対象にしない。
 
 ## API Definitions
 

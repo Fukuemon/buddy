@@ -7,7 +7,7 @@ import type {
 /** 事業所の ID。API の `/v1/facilities/{facility_id}` に入る。 */
 export type FacilityId = string
 
-/** 事業所の予定の正本。google_primary は Google カレンダー、buddy_primary は buddy である（ADR-0028）。 */
+/** 事業所の予定の正本。google_primary は Google カレンダー、buddy_primary は buddy である（ADR-0029）。 */
 export type SourceMode = ScheduleComponents['schemas']['SourceMode']
 
 /** 事業所。API の型の ID、名前、予定の正本だけを使う。 */
@@ -86,8 +86,10 @@ export type Staff = {
   nonVisiting?: true
 }
 
-/** 利用者。API の型の ID と名前と、利用の終了かだけを使う。 */
+/** 利用者。API の型の ID、名前、サービスコードと、利用の終了かだけを使う。 */
 export type Patient = Pick<ScheduleComponents['schemas']['Patient'], 'id' | 'name'> & {
+  /** 利用者のサービスコードの表記。API の service_code を、そのまま使う。 */
+  serviceCode: ServiceCode
   /** 利用の終了の利用者は true を持つ。利用中の利用者は持たない（ADR-0005）。 */
   ended?: true
 }
@@ -128,7 +130,7 @@ export type Schedule = {
   cancel?: { reason: string }
   /**
    * google_primary の事業所で、同期が写した Google カレンダーの予定（Projection）のときだけ true を持つ。
-   * buddy から変えると、予定の API が Google カレンダーに書く（ADR-0028）。
+   * buddy から変えると、予定の API が Google カレンダーに書く（ADR-0029）。
    */
   fromGoogleCalendar?: true
   /**
@@ -136,13 +138,41 @@ export type Schedule = {
    * 繰り返しの予定の展開した回では、親の予定の etag である。buddy の予定には無い。
    */
   etag?: string
-  /**
-   * buddy_primary の事業所で、画面が繰り返しの予定から展開した回のときだけ true を持つ。
-   * 予定の API に回のキャンセルが無いので、画面はこの回のキャンセルを出さない。
-   */
-  recurringOccurrence?: true
   /** Google カレンダーの予定のうち、buddy の予定に読み替えられず確認が必要な予定のときだけ、その理由を持つ。 */
   reviewReason?: ScheduleReviewReason
+  /**
+   * 繰り返しの予定のまだ変えていない回のときだけ、繰り返しの予定の ID と今の規則を持つ。規則の変更（changeRecurringRule）に使う。
+   * 1 回だけ変えた回とキャンセルした回は、単発の予定に替わっているので持たない。
+   */
+  recurrence?: { recurringScheduleId: string; rule: RecurringRule }
+}
+
+/** 繰り返しの規則。予定の API の RecurringRule と同じ組み合わせで、null の項目は最初の日付の曜日や日から決まる。 */
+export type RecurringRule = {
+  frequency: 'weekly' | 'monthly'
+  /** 毎週の、重ならない曜日を月曜から日曜の順に並べたもの。1 が月曜、7 が日曜。毎月は null。 */
+  daysOfWeek: number[] | null
+  /** 毎週の間隔の週の数。1 が毎週、2 が隔週。毎月は null。 */
+  interval: number | null
+  /** 毎月の第何週の曜日の曜日。1 が月曜、7 が日曜。毎週は null。 */
+  dayOfWeek: number | null
+  dayOfMonth: number | null
+  weekOfMonth: number | null
+  /** この日を含む YYYY-MM-DD。 */
+  endDate: string | null
+}
+
+/** 繰り返しの規則の変更。effectiveDate（YYYY-MM-DD）以降の回に rule を当てる（ADR-0037）。 */
+export type RecurringRuleChange = {
+  effectiveDate: string
+  /**
+   * 新しい規則の 1 週目を決める日（YYYY-MM-DD）。分けるときは、この日を含む週から毎週の間隔を数える（ADR-0038）。
+   * 画面は開いた回の日を渡す。省くと effectiveDate を使う。
+   */
+  firstWeekDate?: string
+  rule: RecurringRule
+  /** 繰り返しの予定を分けるときの、新しい繰り返しの予定の ID。送り直しでも同じ値を渡す。 */
+  id: string
 }
 
 /** Google カレンダーの予定を、buddy の予定に読み替えられなかった理由。予定の API の ScheduleReviewReason をそのまま使う。 */
@@ -165,12 +195,45 @@ export type ScheduleList = {
   calendarSyncs: CalendarSyncStatus[]
   /** google_primary の事業所で、予定の正本を buddy に切り替えている間の open の切り替え。無ければ null である。 */
   cutover: OpenCalendarCutover | null
+  /** google_primary の事業所の、期間に重なる Google カレンダーの終日の予定。職員の絞り込みを当てる。buddy_primary の事業所では空である。 */
+  allDayEvents: AllDayEvent[]
+  /** 終日の予定のうち、確認が必要な予定（reviewReason を持つ予定）。期間で絞らず、職員の絞り込みだけを当てる（#972）。 */
+  needsReviewAllDayEvents: AllDayEvent[]
+  /**
+   * google_primary の事業所の、期間に重なる、カレンダーに出せない Google カレンダーの予定の職員ごとの件数。
+   * 職員の絞り込みを当て、件数が 1 以上の職員だけを持つ。buddy_primary の事業所では空である。
+   */
+  unlistedEventCounts: UnlistedEventCount[]
+}
+
+/** Google カレンダーの終日の予定。buddy の予定ではないので、開くことも変えることもできない。 */
+export type AllDayEvent = {
+  id: string
+  staffId: Staff['id']
+  staffName: string
+  /** 予定がかかる最初の日の YYYY-MM-DD。 */
+  startDate: string
+  /** 予定がかかる最後の日（この日を含む）の YYYY-MM-DD。 */
+  endDate: string
+  /** Google の予定のタイトル。空のことがある。 */
+  title: string
+  /**
+   * 確認が必要な理由。無ければ持たない。繰り返しの規則を buddy で表せない予定は、最初の回の 1 件で recurrence_unsupported を持ち、
+   * 表示の期間の外のことがある。
+   */
+  reviewReason?: ScheduleReviewReason
+}
+
+/** 職員の、カレンダーに出せない Google カレンダーの予定の件数。 */
+export type UnlistedEventCount = {
+  staffId: Staff['id']
+  count: number
 }
 
 /** 予定の作成と更新で送る値。 */
 export type ScheduleInput = Omit<
   Schedule,
-  'id' | 'facilityId' | 'fromGoogleCalendar' | 'etag' | 'recurringOccurrence' | 'reviewReason'
+  'id' | 'facilityId' | 'fromGoogleCalendar' | 'etag' | 'reviewReason' | 'recurrence'
 >
 
 /** 予定の一覧の条件。 */

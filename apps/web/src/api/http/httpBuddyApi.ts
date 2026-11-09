@@ -11,6 +11,7 @@ import {
   previousDate,
 } from './recurrence'
 import {
+  fromApiAllDayEvent,
   fromApiFacility,
   fromApiPatient,
   fromApiSchedule,
@@ -18,6 +19,7 @@ import {
   fromApiTeam,
   keepCurrentVisit,
   splitDateTime,
+  toApiRecurringRule,
   toSlotRequest,
 } from './scheduleMapper'
 
@@ -56,10 +58,12 @@ const expectOk = async (promise: Promise<Result<unknown>>): Promise<void> => {
  * 予定の API を openapi-fetch で呼ぶ BuddyApi を作る。トークンは付けない。
  *
  * schedules.list は、繰り返しの予定を期間の回に分け、occurrenceId の ID を持つ単発の予定として返す。
- * 確認が必要な予定（needsReview）は期間で絞らず、職員の絞り込みだけを当てる。同期の状況も職員で絞る。
+ * 確認が必要な予定（needsReview）は期間で絞らず、職員の絞り込みだけを当てる。同期の状況、終日の予定、出せない予定の件数も職員で絞る。
  * キャンセルした予定は、includeCancelled が true のときだけ cancel 付きで返す。
  * キャンセルした予定は画面で変換できなければ飛ばし、一覧の全体を失敗にしない。
  * schedules.get と schedules.update は、回の ID を受けると、繰り返しの予定のその回を読み、その回を置き換える。
+ * schedules.cancel は、回の ID を受けると、繰り返しの予定のその回をキャンセルする。
+ * schedules.delete は、回の ID を受けると、繰り返しの予定のその回を削除する。
  * schedules.update は、今の予定を読んでから置き換え、画面が持たない同行者などを keepCurrentVisit で引き継ぐ。
  * etag は、画面が予定を読んだときの値を送り、今の予定を読み直した値は送らない。読んだ後の Google カレンダーでの変更を見落とさないためである。
  * schedules.create は、画面が決めた id を送る。
@@ -129,6 +133,8 @@ export const createHttpBuddyApi = ({ baseUrl, fetch }: HttpApiOptions): BuddyApi
           source_mode: sourceMode,
           calendar_syncs: calendarSyncs,
           cutover,
+          all_day_events: allDayEvents,
+          unlisted_event_counts: unlistedEventCounts,
         } = await unwrap(
           client.GET('/v1/facilities/{facility_id}/schedules', {
             params: {
@@ -160,6 +166,9 @@ export const createHttpBuddyApi = ({ baseUrl, fetch }: HttpApiOptions): BuddyApi
             }
           })
           .filter((schedule) => isSelectedStaff(schedule.staffId))
+        const selectedAllDayEvents = allDayEvents
+          .filter((event) => isSelectedStaff(event.staff_id))
+          .map(fromApiAllDayEvent)
         return {
           schedules: all.filter(
             (schedule) =>
@@ -170,6 +179,14 @@ export const createHttpBuddyApi = ({ baseUrl, fetch }: HttpApiOptions): BuddyApi
           sourceMode,
           calendarSyncs: calendarSyncs.filter((sync) => isSelectedStaff(sync.staff_id)),
           cutover,
+          allDayEvents: selectedAllDayEvents,
+          // 繰り返しの規則を写せない終日の予定も最初の回の日付で返り、期間の外のことがあるので、期間で絞らない
+          needsReviewAllDayEvents: selectedAllDayEvents.filter(
+            (event) => event.reviewReason !== undefined,
+          ),
+          unlistedEventCounts: unlistedEventCounts
+            .filter((count) => isSelectedStaff(count.staff_id))
+            .map((count) => ({ staffId: count.staff_id, count: count.count })),
         }
       },
       get: async (facilityId, scheduleId) => {
@@ -233,12 +250,72 @@ export const createHttpBuddyApi = ({ baseUrl, fetch }: HttpApiOptions): BuddyApi
         return fromApiSchedule(updated)
       },
       cancel: async (_facilityId, scheduleId, reason, etag) => {
+        const occurrence = parseOccurrenceId(scheduleId)
+        if (occurrence !== undefined) {
+          await unwrap(
+            client.POST('/v1/schedules/recurring/{recurring_schedule_id}/occurrences/cancel', {
+              params: { path: { recurring_schedule_id: occurrence.recurringId } },
+              body: { original_date: occurrence.date, reason },
+            }),
+          )
+          return
+        }
         await unwrap(
           client.POST('/v1/schedules/{schedule_id}/cancel', {
             params: { path: { schedule_id: scheduleId } },
             body: etag === null ? { reason } : { reason, etag },
           }),
         )
+      },
+      delete: async (_facilityId, scheduleId) => {
+        const occurrence = parseOccurrenceId(scheduleId)
+        if (occurrence !== undefined) {
+          await expectOk(
+            client.POST('/v1/schedules/recurring/{recurring_schedule_id}/occurrences/delete', {
+              params: { path: { recurring_schedule_id: occurrence.recurringId } },
+              body: { original_date: occurrence.date },
+            }),
+          )
+          return
+        }
+        await expectOk(
+          client.DELETE('/v1/schedules/{schedule_id}', {
+            params: { path: { schedule_id: scheduleId } },
+          }),
+        )
+      },
+      createRecurring: async (facilityId, input, rule, id) => {
+        const created = await unwrap(
+          client.POST('/v1/facilities/{facility_id}/schedules/recurring', {
+            params: { path: { facility_id: facilityId } },
+            body: {
+              ...toSlotRequest(input, await listMasters()),
+              recurring_rule: toApiRecurringRule(rule),
+              id,
+            },
+          }),
+        )
+        return { id: created.id, date: created.date }
+      },
+      changeRule: async (
+        _facilityId,
+        recurringScheduleId,
+        { effectiveDate, firstWeekDate, rule, id },
+        etag,
+      ) => {
+        const body = {
+          effective_date: effectiveDate,
+          ...(firstWeekDate === undefined ? {} : { first_week_date: firstWeekDate }),
+          recurring_rule: toApiRecurringRule(rule),
+          id,
+        }
+        const changed = await unwrap(
+          client.PUT('/v1/schedules/recurring/{recurring_schedule_id}/rule', {
+            params: { path: { recurring_schedule_id: recurringScheduleId } },
+            body: etag === null ? body : { ...body, etag },
+          }),
+        )
+        return { id: changed.id, date: changed.date }
       },
     },
     staff: {

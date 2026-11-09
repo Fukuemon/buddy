@@ -125,7 +125,7 @@ test.describe('職員の管理の画面仕様書のモック', () => {
           await expect(page.getByTestId('staff-list-count')).toHaveText('2 人')
           await expect(page.getByTestId('staff-list-leave-return-{職員の id}')).toHaveText([
             '戻る予定の日なし',
-            '2027/04/01 に戻る予定',
+            '2027年4月1日（木）に戻る予定',
           ])
           await check(
             '「休職の職員」のモック（02-on-leave.html）へ移り、休職の「2 人」と、「戻る予定の日」のカラムが出る',
@@ -154,7 +154,7 @@ test.describe('職員の管理の画面仕様書のモック', () => {
           await expect(page.getByTestId('staff-list-filter-status')).toHaveText('状態: 退職')
           await expect(page.getByTestId('staff-list-count')).toHaveText('1 人')
           await expect(page.getByTestId('staff-list-retired-on-{職員の id}')).toHaveText(
-            '2026/09/30 に退職',
+            '2026年9月30日（水）に退職',
           )
           await check(
             '「退職の職員」のモック（03-retired.html）へ移り、退職の「1 人」と、「退職した日」のカラムが出る',
@@ -215,7 +215,7 @@ test.describe('職員の管理の画面仕様書のモック', () => {
       )
     })
 
-    test(`${prefix}職員の登録のモックを開いた場合、入力のダイアログの形で出て、閉じるで一覧へ戻ること`, async ({
+    test(`${prefix}職員の登録のモックを開いた場合、入力のダイアログの形で出て、Escape で一覧へ戻ること`, async ({
       browser,
     }) => {
       await recordMock(
@@ -224,22 +224,21 @@ test.describe('職員の管理の画面仕様書のモック', () => {
         {
           name: 'staff-new-dialog',
           title:
-            '職員の登録は、× を右上に、? をタイトルの右に、キャンセルと登録をフッターの右に置く',
+            '職員の登録は、× を置かず、? をタイトルの右に、キャンセルと登録をフッターの右に置く',
           file: `${NEW}/01-initial.html`,
         },
         async ({ page, step, check }) => {
           await expect(page.getByTestId('staff-new-dialog')).toBeVisible()
-          await expect(page.getByTestId('staff-new-close')).toBeVisible()
           await expect(page.getByTestId('staff-new-cancel')).toHaveText('キャンセル')
-          await check('入力のダイアログに、×、?、キャンセル、登録が出る')
+          await check('入力のダイアログに、?、キャンセル、登録が出て、右上に × が無い')
 
           await step('? を押す')
           await page.getByTestId('staff-new-help').click()
           await expect(page.getByTestId('staff-new-help-text')).toBeVisible()
           await check('タイトルの下に、いつから使えるかの説明が出る')
 
-          await step('× を押す')
-          await page.getByTestId('staff-new-close').click()
+          await step('Escape キーを押す')
+          await page.keyboard.press('Escape')
           await expect(page).toHaveURL(/staff-list_.+\/01-list\.html/)
           await check('職員の一覧のモック（01-list.html）へ戻る')
         },
@@ -346,7 +345,7 @@ test.describe('職員の管理の画面仕様書のモック', () => {
       )
     })
 
-    test(`${prefix}職員の詳細のモックで編集を押した場合、プロフィールの編集のダイアログが開き、閉じるで戻ること`, async ({
+    test(`${prefix}職員の詳細のモックで編集を押した場合、プロフィールの編集のダイアログが開き、キャンセルで戻ること`, async ({
       browser,
     }) => {
       await recordMock(
@@ -354,7 +353,7 @@ test.describe('職員の管理の画面仕様書のモック', () => {
         variant,
         {
           name: 'staff-detail-edit',
-          title: '編集を押すとプロフィールの編集のダイアログが開き、× で閉じる',
+          title: '編集を押すとプロフィールの編集のダイアログが開き、フッターのキャンセルで閉じる',
           file: `${DETAIL}/01-detail.html`,
         },
         async ({ page, step, check }) => {
@@ -366,8 +365,8 @@ test.describe('職員の管理の画面仕様書のモック', () => {
             'プロフィールの編集のダイアログ（04-edit.html）に、名前、メールアドレス、電話番号、部署、チームが出る',
           )
 
-          await step('× を押す')
-          await page.getByTestId('staff-detail-edit-close').click()
+          await step('フッターの「キャンセル」を押す')
+          await page.getByTestId('staff-detail-edit-cancel').click()
           await expect(page).toHaveURL(/01-detail\.html/)
           await check('プロフィール（01-detail.html）へ戻る')
         },
@@ -524,7 +523,7 @@ test.describe('職員の管理の画面仕様書のモック', () => {
           await page.getByTestId('staff-leave-submit').click()
           await expect(page).toHaveURL(/09-on-leave\.html/)
           await expect(page.getByTestId('staff-detail-status')).toHaveText(
-            '休職（2027/04/01 に戻る予定）',
+            '休職（2027年4月1日（木）に戻る予定）',
           )
           await check('休職の職員（09-on-leave.html）になる')
 
@@ -549,7 +548,7 @@ test.describe('職員の管理の画面仕様書のモック', () => {
         },
         async ({ page, step, check }) => {
           await expect(page.getByTestId('staff-detail-status')).toHaveText(
-            '休職（2027/04/01 に戻る予定）',
+            '休職（2027年4月1日（木）に戻る予定）',
           )
           await step('「復職にする」を押す')
           await page.getByTestId('staff-detail-reinstate').click()
@@ -574,10 +573,10 @@ test.describe('職員の管理の画面仕様書のモック', () => {
         },
         async ({ page, check }) => {
           await expect(page.getByTestId('staff-detail-status')).toHaveText(
-            '休職（2027/04/01 に戻る予定）',
+            '休職（2027年4月1日（木）に戻る予定）',
           )
           await expect(page.getByTestId('staff-detail-status-text')).toHaveText(
-            '2026/10/31 から休職です。戻る予定の日に自動では戻りません。',
+            '2026年10月31日（土）から休職です。戻る予定の日に自動では戻りません。',
           )
           await check('休職の職員（09-on-leave.html）の在籍の行が、戻る予定の日を繰り返さない')
         },
@@ -631,7 +630,9 @@ test.describe('職員の管理の画面仕様書のモック', () => {
           await step('「退職にする」を押す')
           await page.getByTestId('staff-retire-submit').click()
           await expect(page).toHaveURL(/13-retired\.html/)
-          await expect(page.getByTestId('staff-detail-status')).toHaveText('退職（2026/09/30）')
+          await expect(page.getByTestId('staff-detail-status')).toHaveText(
+            '退職（2026年9月30日（水））',
+          )
           await expect(page.getByTestId('staff-detail-edit')).toHaveCount(0)
           await expect(page.getByTestId('staff-detail-menu')).toHaveCount(0)
           await check('退職した職員（13-retired.html）になり、編集と「…」が出ない')

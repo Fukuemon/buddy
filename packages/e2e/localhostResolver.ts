@@ -3,7 +3,7 @@ import dns from 'node:dns'
 /**
  * Node.js の名前の解決で、`*.localhost` を loopback のアドレスに引くようにする。
  *
- * worktree の環境は、portless の `https://<サービス>.<プロジェクト>.localhost` で動く（ADR-0034）。
+ * ローカル環境は、portless の `https://<サービス>.<プロジェクト>.localhost` で動く（ADR-0036）。
  * ブラウザは `*.localhost` を自分で loopback に引くが、macOS の Node.js は `/etc/hosts` に無い名前を引けない。
  * Playwright の request は、名前を引くたびに `dns.promises.lookup` を呼ぶので、ここを差し替える。
  * `*.localhost` 以外の名前は、元の関数に渡す。

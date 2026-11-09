@@ -3,7 +3,12 @@ import type { Meta, StoryObj } from '@storybook/react-vite'
 import { ApiError, type BuddyApi } from '#/api/BuddyApi'
 import { createFakeBuddyApi } from '#/api/fake/fakeBuddyApi'
 import { FAKE_VIEWER } from '#/api/fake/fixtures'
-import { pendingBuddyApi, withAppRouter, type AppRouterParameters } from '#/storybook/withAppRouter'
+import {
+  failOnSecondCall,
+  pendingBuddyApi,
+  withAppRouter,
+  type AppRouterParameters,
+} from '#/storybook/withAppRouter'
 
 import { StaffDetailContainer } from './StaffDetailContainer'
 
@@ -183,7 +188,64 @@ export const SlowReinstateRefused: Story = {
   }),
 }
 
-/** 部署の選択肢を読み終えるまで 8 秒かかる。読んでいる間も、プロフィールの編集を保存できる。 */
+/** 全ての権限を、1 回目は読めず、2 回目からは読める。権限のタブに失敗の文と読み直すを出し、読み直すと一覧を出す。 */
+export const PoliciesLoadError: Story = {
+  parameters: route('staff-2', {
+    api: ((): BuddyApi => {
+      const base = createFakeBuddyApi()
+      let calls = 0
+      return {
+        ...base,
+        policies: {
+          ...base.policies,
+          list: async (...args) => {
+            calls += 1
+            if (calls === 1) throw new ApiError(500, '権限を読めない')
+            return base.policies.list(...args)
+          },
+        },
+      }
+    })(),
+  }),
+}
+
+/** 役職を読めない。権限のタブに失敗の文と読み直すを出し、役職を変えるダイアログに失敗の文を出す。 */
+export const PositionsLoadError: Story = {
+  parameters: route('staff-2', {
+    api: ((): BuddyApi => {
+      const base = createFakeBuddyApi()
+      return {
+        ...base,
+        positions: {
+          ...base.positions,
+          list: async () => {
+            throw new ApiError(500, '役職を読めない')
+          },
+        },
+      }
+    })(),
+  }),
+}
+
+/** 部署を読めない。プロフィールの編集に失敗の文を出し、保存を押せなくする。 */
+export const DepartmentsLoadError: Story = {
+  parameters: route('staff-2', {
+    api: ((): BuddyApi => {
+      const base = createFakeBuddyApi()
+      return {
+        ...base,
+        departments: {
+          ...base.departments,
+          list: async () => {
+            throw new ApiError(500, '部署を読めない')
+          },
+        },
+      }
+    })(),
+  }),
+}
+
+/** 部署の選択肢を読み終えるまで 8 秒かかる。読んでいる間は、プロフィールの編集を保存できない。 */
 export const SlowDepartments: Story = {
   parameters: route('staff-2', {
     api: ((): BuddyApi => {
@@ -235,3 +297,15 @@ export const NotFound: Story = {
     },
   }),
 }
+
+/** 職員を、2 回目だけ読めないフェイクの API を作る。 */
+export const refetchFailingApi = (): BuddyApi => {
+  const base = createFakeBuddyApi()
+  return {
+    ...base,
+    staff: { ...base.staff, get: failOnSecondCall((...args) => base.staff.get(...args)) },
+  }
+}
+
+/** 読み終えた後に読み直して、職員を読めない。詳細を残し、見出しの下に失敗の文と読み直すを出す。 */
+export const RefetchError: Story = { parameters: route('staff-2', { api: refetchFailingApi() }) }

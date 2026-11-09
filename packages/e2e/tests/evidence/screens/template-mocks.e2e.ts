@@ -78,7 +78,7 @@ test.describe('画面仕様書のテンプレートのモック', () => {
       )
     })
 
-    test(`${prefix}一覧のモックで登録を押した場合、× が右上にあり、フッターの右にキャンセルと主ボタンがある入力のダイアログが出て、× で一覧に戻ること`, async ({
+    test(`${prefix}一覧のモックで登録を押した場合、× が無く、フッターの右にキャンセルと主ボタンがある入力のダイアログが出て、Escape で一覧に戻ること`, async ({
       browser,
     }) => {
       await recordPrEvidence(
@@ -86,7 +86,7 @@ test.describe('画面仕様書のテンプレートのモック', () => {
         {
           name: 'template-form-dialog',
           title:
-            '入力のダイアログは、× を右上に、フッターの右に「キャンセル」と主ボタンを置き、× で閉じる',
+            '入力のダイアログは × を置かず、フッターの右に「キャンセル」と主ボタンを置き、Escape で閉じる',
           actor: 'ログインなし',
           variant,
         },
@@ -103,15 +103,15 @@ test.describe('画面仕様書のテンプレートのモック', () => {
           await t.create.click()
           await expect(page).toHaveURL(/_template\/mocks\/02-form\.html/)
           await expect(t.formDialog).toBeVisible()
-          await expect(t.formClose).toBeVisible()
+          await expect(t.formClose).toHaveCount(0)
           await expect(t.formCancel).toHaveText('キャンセル')
           await expect(t.formSubmit).toHaveClass(/wf-btn--primary/)
           await check(
-            '入力のダイアログのモック（02-form.html）へ移り、× が右上に、フッターの右に「キャンセル」と主ボタンがある',
+            '入力のダイアログのモック（02-form.html）へ移り、× が無く、フッターの右に「キャンセル」と主ボタンがある',
           )
 
-          await step('× を押す')
-          await t.formClose.click()
+          await step('Escape キーを押す')
+          await page.keyboard.press('Escape')
           await expect(page).toHaveURL(/_template\/mocks\/01-initial\.html/)
           await expect(t.table).toBeVisible()
           await check('一覧のモック（01-initial.html）へ戻る')

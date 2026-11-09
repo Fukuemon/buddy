@@ -4,6 +4,7 @@ import { useState } from 'react'
 
 import type { ImportRange, Staff } from '#/api/types'
 import { queryKeys } from '#/api/queryKeys'
+import { failedBeforeLoad, hasRefetchFailed, refetchFailedQueries } from '#/api/refetch'
 import { useBuddyApi } from '#/api/useBuddyApi'
 
 import {
@@ -71,7 +72,8 @@ const CalendarImportContent = ({ staffId, onStaffChange }: CalendarImportContain
     .sort((a, b) => a.staff.name.localeCompare(b.staff.name, 'ja'))
   const current = options.find((o) => o.staff.id === selected) ?? options[0]
 
-  const failed = [calendarsQuery, staffQuery, cutoverQuery].find((query) => query.isError)
+  const screenQueries = [calendarsQuery, staffQuery, cutoverQuery]
+  const failed = failedBeforeLoad(screenQueries)
   const state: CalendarImportViewState =
     failed !== undefined
       ? { status: 'error', message: loadErrorMessage(failed.error, IMPORT_LOAD_ERROR_MESSAGE) }
@@ -108,7 +110,12 @@ const CalendarImportContent = ({ staffId, onStaffChange }: CalendarImportContain
   const decisions = previewed === undefined ? [] : toDecisions(previewed.needs_review, choices)
 
   return (
-    <CalendarImportView onRetry={retry} state={state}>
+    <CalendarImportView
+      onRefetch={() => refetchFailedQueries(screenQueries)}
+      onRetry={retry}
+      refetchFailed={hasRefetchFailed(screenQueries)}
+      state={state}
+    >
       {current !== undefined && (
         <>
           <CalendarImportForm

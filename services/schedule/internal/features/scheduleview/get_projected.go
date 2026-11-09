@@ -9,7 +9,7 @@ import (
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/schedule"
 )
 
-// GetProjected は、google_primary の事業所の Projection の単発の予定を、一覧と同じ ID と内容で返す（ADR-0028）。
+// GetProjected は、google_primary の事業所の Projection の単発の予定を、一覧と同じ ID と内容で返す（ADR-0029）。
 type GetProjected struct {
 	deps  ProjectionDeps
 	staff StaffRefs
@@ -70,7 +70,7 @@ func (g GetProjected) find(ctx context.Context, facilityID, id string) (projecte
 		return projectedEvent{}, apperr.ErrNotFound
 	}
 	rd := g.deps.Rules.Read(row.Projection)
-	if rd.Kind == EventSkipped {
+	if !rd.Kind.IsSchedule() {
 		return projectedEvent{}, apperr.ErrNotFound
 	}
 	return projectedEvent{row: row, reading: rd}, nil

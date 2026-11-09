@@ -1,8 +1,9 @@
 import { ActionMenu, type ActionMenuItem, Avatar, Button, Loading, StatusBadge } from '@buddy/ui'
 import { clsx } from 'clsx'
-import { useId, useState, type ReactNode } from 'react'
+import { useId, type ReactNode } from 'react'
 
 import type { Policy, Position, StaffDetail } from '#/api/types'
+import { RefetchErrorMessage } from '#/components/page/RefetchErrorMessage'
 
 import {
   employmentText,
@@ -17,15 +18,32 @@ import { groupPolicies } from '../lib/policyChanges'
 export type StaffDetailViewState =
   | { status: 'loading' }
   | { status: 'error'; message: string; canRetry: boolean }
-  | { status: 'ready'; staff: StaffDetail }
+  | {
+      status: 'ready'
+      staff: StaffDetail
+      /** 読み終えた後に読み直して、職員を読めなかったか。 */
+      refetchFailed?: boolean
+    }
+
+/** 職員の詳細のタブ。profile は役職と在籍の状態を含むプロフィール、policies は付いている権限の一覧である。 */
+export type StaffDetailTab = 'profile' | 'policies'
 
 export type StaffDetailViewProps = {
   state: StaffDetailViewState
+  /** 出すタブ。プロフィールの保存、休職、復職、退職の後にプロフィールへ戻すため、画面の外で持つ。 */
+  tab: StaffDetailTab
+  onTabChange: (tab: StaffDetailTab) => void
   onRetry: () => void
+  /** 読み終えた後に読めなかった職員を読み直す。 */
+  onRefetch?: () => void
   /** ログインした職員の詳細か。自分は休職と退職にできないので、「…」のメニューを出さない。 */
   isSelf: boolean
-  /** 全ての権限を、権限の一覧の並びで渡す。読み終えるまでは undefined にする。 */
+  /** 全ての権限を、権限の一覧の並びで渡す。全ての権限と役職を読み終えるまでは undefined にする。 */
   policies?: readonly Policy[]
+  /** 全ての権限か役職を読めなかったときの文。権限の一覧の位置に、読み直すと一緒に出す。 */
+  policiesLoadError?: string
+  /** 読めなかった全ての権限と役職を読み直す。 */
+  onRetryPolicies?: () => void
   /** 職員の今の役職。付いた理由を出すのに使う。 */
   position?: Position
   /** 権限の対象の、職員とチームの ID から名前を引く表。 */
@@ -74,7 +92,13 @@ export const StaffDetailView = (props: StaffDetailViewProps) => {
           )}
         </div>
       )}
-      {state.status === 'ready' && <StaffDetailBody {...props} staff={state.staff} />}
+      {state.status === 'ready' && (
+        <StaffDetailBody
+          {...props}
+          refetchFailed={state.refetchFailed === true}
+          staff={state.staff}
+        />
+      )}
     </div>
   )
 }
@@ -83,6 +107,8 @@ const StaffDetailBody = ({
   staff,
   isSelf,
   policies,
+  policiesLoadError,
+  onRetryPolicies,
   position,
   targetNames,
   onEdit,
@@ -93,9 +119,12 @@ const StaffDetailBody = ({
   onReinstate,
   isReinstating,
   reinstateErrorMessage,
-}: StaffDetailViewProps & { staff: StaffDetail }) => {
+  onRefetch,
+  refetchFailed,
+  tab,
+  onTabChange,
+}: StaffDetailViewProps & { staff: StaffDetail; refetchFailed: boolean }) => {
   const tabsId = useId()
-  const [tab, setTab] = useState<'profile' | 'policies'>('profile')
   const canChange = staff.status !== 'retired'
   const menuItems: ActionMenuItem[] =
     staff.status === 'on_leave'
@@ -165,6 +194,7 @@ const StaffDetailBody = ({
           </div>
         )}
       </div>
+      {refetchFailed && onRefetch !== undefined && <RefetchErrorMessage onRetry={onRefetch} />}
       {reinstateErrorMessage !== undefined && (
         <p
           className="border-l-4 border-danger bg-danger-surface px-3 py-2 text-body text-danger"
@@ -190,7 +220,7 @@ const StaffDetailBody = ({
             data-testid={`staff-detail-tab-${id}`}
             id={`${tabsId}-${id}-tab`}
             key={id}
-            onClick={() => setTab(id)}
+            onClick={() => onTabChange(id)}
             role="tab"
             type="button"
           >
@@ -230,7 +260,25 @@ const StaffDetailBody = ({
               </Button>
             )}
           </div>
-          {policies === undefined ? (
+          {policiesLoadError !== undefined ? (
+            <div className="flex flex-col items-start gap-3">
+              <p
+                className="text-body text-danger"
+                data-testid="staff-detail-policies-error"
+                role="alert"
+              >
+                {policiesLoadError}
+              </p>
+              <Button
+                data-testid="staff-detail-policies-retry"
+                onClick={onRetryPolicies}
+                size="S"
+                variant="secondary"
+              >
+                読み直す
+              </Button>
+            </div>
+          ) : policies === undefined ? (
             <Loading description="読み込んでいます" />
           ) : (
             <PolicyList

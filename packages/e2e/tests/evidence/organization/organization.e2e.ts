@@ -13,7 +13,7 @@ const LEADER_ACTOR = `${LEADER.staff.name}（チームリーダー、職員の�
 const prepareBlueTeamWithStaff = async (page: Page) => {
   await page.goto('/organization')
   await signInAtBroker(page, LOGIN_EMAIL)
-  const token = await issueManagerToken(page.request)
+  const token = await issueManagerToken()
   const teamName = newUnitName('色')
   const teamId = await createTeam(page.request, token, { name: teamName, color: 'blue' })
   const staff = newStaff('team-color')

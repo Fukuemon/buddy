@@ -11,6 +11,8 @@ type FieldFrameProps = {
   /** エラーの文の要素の id。中の入力欄の aria-describedby に同じ値を渡す。 */
   errorId: string
   isWide?: boolean
+  /** true なら、見出しを読み上げだけに残して見せず、枠の高さを 44px にする。見出しを欄の外に置くときに使う。 */
+  isLabelHidden?: boolean
   children: ReactNode
 }
 
@@ -25,18 +27,26 @@ export const FieldFrame = ({
   error,
   errorId,
   isWide = false,
+  isLabelHidden = false,
   children,
 }: FieldFrameProps) => (
   <div className={clsx('font-normal', isWide ? 'w-full' : 'w-80')}>
     <label
       className={clsx(
-        'relative flex h-14 cursor-pointer flex-col justify-center px-4 transition duration-100 has-[:disabled]:cursor-default',
+        'relative flex cursor-pointer flex-col justify-center px-4 transition duration-100 has-[:disabled]:cursor-default',
+        isLabelHidden ? 'h-11' : 'h-14',
         fieldBoxClassName,
         'focus-within:bg-primary-surface',
       )}
       htmlFor={htmlFor}
     >
-      <span className="pointer-events-none text-caption text-text-secondary">{label}</span>
+      <span
+        className={
+          isLabelHidden ? 'sr-only' : 'pointer-events-none text-caption text-text-secondary'
+        }
+      >
+        {label}
+      </span>
       {children}
       {icon !== undefined && (
         <span className="pointer-events-none absolute inset-y-0 right-1.5 my-auto grid size-10 place-items-center">

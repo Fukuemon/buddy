@@ -22,6 +22,8 @@ import type {
   Position,
   ReceiptReport,
   ReceiptCsvError,
+  RecurringRule,
+  RecurringRuleChange,
   Schedule,
   ScheduleInput,
   ScheduleList,
@@ -101,7 +103,7 @@ export interface BuddyApi {
   }
   /**
    * 予定。google_primary の事業所では、list と get は同期が写した Google カレンダーの予定（fromGoogleCalendar が true、etag を持つ）を返し、
-   * create、update、cancel は Google カレンダーに書き、書けたときだけ成功する（ADR-0028）。
+   * create、update、cancel は Google カレンダーに書き、書けたときだけ成功する（ADR-0029）。
    * 書けないときは、予定の API の code（google_event_changed、google_write_pending、cutover_open など）を持つ ApiError を投げる。
    */
   schedules: {
@@ -132,6 +134,34 @@ export interface BuddyApi {
       reason: string,
       etag: string | null,
     ): Promise<void>
+    /**
+     * 誤って入れた予定を削除する（ADR-0040）。キャンセルと違い、理由を持たず、削除した予定は一覧と取得に出ない。
+     * 回の ID を受けると、繰り返しの予定のその回を削除する。削除できるのは buddy_primary の事業所の、開始の日が今日以降の有効な予定だけである。
+     * 予定がなければ status が 404 の、今日より前の予定なら status が 400 の、キャンセル済みなら status が 409 の、
+     * google_primary の事業所なら status が 409 で code が google_primary の ApiError を投げる。
+     */
+    delete(facilityId: FacilityId, scheduleId: Schedule['id']): Promise<void>
+    /**
+     * input の日時を最初の回にし、規則 rule で繰り返す、ID が id の繰り返しの予定を作る。作った繰り返しの予定の ID と最初の日付を返す。
+     * input の開始の日付が rule の回に当たらないときは、status が 400 の ApiError を投げる。id の扱いは create と同じである。
+     */
+    createRecurring(
+      facilityId: FacilityId,
+      input: ScheduleInput,
+      rule: RecurringRule,
+      id: string,
+    ): Promise<{ id: string; date: string }>
+    /**
+     * 繰り返しの予定 recurringScheduleId（Schedule.recurrence.recurringScheduleId）の規則を、change.effectiveDate 以降の回について変える（ADR-0037）。
+     * etag は、画面が回を読んだときの etag（親の予定の etag）で、google_primary の事業所では必須である。buddy の予定では null を渡す。
+     * 変えた後の、effectiveDate 以降の回を持つ繰り返しの予定の ID と最初の日付を返す。分けたときは新しい繰り返しの予定である。
+     */
+    changeRule(
+      facilityId: FacilityId,
+      recurringScheduleId: string,
+      change: RecurringRuleChange,
+      etag: string | null,
+    ): Promise<{ id: string; date: string }>
   }
   /**
    * 職員。list のほかは職員の管理の画面が使う。

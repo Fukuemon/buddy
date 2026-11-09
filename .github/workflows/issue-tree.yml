@@ -1,0 +1,30 @@
+# 要求とタスクの親子が規則に合わない issue を、scripts/check-issue-tree.mjs で週に 1 回一覧する。issue は書き換えない。
+# 合わない issue があるとジョブが失敗する。失敗の通知を、issue の棚卸しの合図にする。手順は CONTRIBUTING.md の Issues and Pull Requests にある。
+# issue の状態はコードの変更と関係なく変わるので、pull request では流さない。schedule はデフォルトのブランチ（develop）で流れる。
+
+name: issue の親子
+
+on:
+  schedule:
+    - cron: '0 0 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: read
+
+jobs:
+  check:
+    # public の間は self-hosted のランナーを使わない
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+      - run: node scripts/check-issue-tree.mjs
+        env:
+          GH_TOKEN: ${{ github.token }}

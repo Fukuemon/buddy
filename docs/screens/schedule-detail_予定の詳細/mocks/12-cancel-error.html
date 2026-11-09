@@ -19,10 +19,14 @@
             <div aria-hidden="true" aria-label="予定の詳細" class="wf-modal" data-testid="schedule-detail-modal" role="dialog">
               <div class="wf-modal__header">
                 <h2 class="wf-modal__title wf-dialog__title">予定の詳細</h2>
-                <span aria-label="閉じる" class="wf-btn wf-btn--icon" data-testid="modal-close">×</span>
               </div>
               <div class="wf-modal__body">
-                <p class="sd-google" data-testid="schedule-detail-google-calendar">Google カレンダーの予定です。buddy で変更かキャンセルすると、Google カレンダーにも書きます。</p>
+                <div class="wf-title sd-google">
+                  <span class="wf-status" data-testid="schedule-detail-google-calendar">Google カレンダー</span>
+                  <span class="wf-help">
+                    <span class="wf-btn wf-btn--icon wf-help__toggle" aria-label="ヘルプ" data-testid="schedule-detail-google-calendar-help">?</span>
+                  </span>
+                </div>
                 <h3 class="sd-datetime" data-testid="schedule-detail-datetime">2026年10月20日（火） 09:00〜09:29</h3>
                 <dl class="wf-rows sd-rows">
                   <div class="wf-row">
@@ -53,8 +57,8 @@
                 </section>
               </div>
               <div class="wf-modal__footer">
+                <span class="wf-btn wf-btn--destructive" data-testid="schedule-detail-cancel-schedule">予定をキャンセル</span>
                 <span class="wf-btn" data-testid="schedule-detail-close">閉じる</span>
-                <span class="wf-btn" data-testid="schedule-detail-cancel-schedule">予定をキャンセル</span>
                 <span class="wf-btn" data-testid="schedule-detail-edit">編集</span>
               </div>
             </div>
@@ -74,7 +78,7 @@
             </div>
             <div class="wf-dialog__footer">
               <p class="wf-alert" role="alert" data-m="7" data-testid="schedule-cancel-error">Google カレンダーに書けませんでした。時間をおいて、やり直してください。</p>
-              <span class="wf-btn" data-escape data-m="8" data-testid="schedule-cancel-cancel" data-go="08-google-calendar.html">キャンセル</span>
+              <span class="wf-btn" data-escape data-m="8" data-testid="schedule-cancel-cancel" data-go="08-google-calendar.html">戻る</span>
               <span class="wf-btn wf-btn--danger" data-m="9" data-testid="schedule-cancel-submit" data-go="11-cancelling.html">予定をキャンセルする</span>
             </div>
           </div>

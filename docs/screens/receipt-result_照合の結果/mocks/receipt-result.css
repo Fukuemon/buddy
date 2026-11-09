@@ -26,12 +26,64 @@
   background: var(--wf-fill);
 }
 
-.rc-ng {
+.rc-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 24px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.rc-legend li,
+.rc-findings li,
+.rc-mark__value {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.rc-icon {
+  flex: none;
+}
+
+.rc-icon--mismatch {
+  color: var(--wf-danger);
+}
+
+.rc-icon--note {
+  color: var(--wf-warning);
+}
+
+/* 印のあるセルは、値の前に重さのアイコンを置き、面の色を変える（apps/web の ReceiptResultTable と同じ） */
+.rc-mark {
+  display: inline-flex;
+  flex-direction: column;
+  padding: 0 4px;
+  border-radius: 4px;
+}
+
+.rc-mark--mismatch {
   background: var(--wf-danger-surface);
 }
 
-.rc-note {
+.rc-mark--note {
   background: var(--wf-warning-surface);
+}
+
+.rc-range {
+  font-size: 14px;
+}
+
+/* 確認することの文は折り返す */
+.rc-findings {
+  display: grid;
+  gap: 4px;
+  min-width: 16rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  white-space: normal;
 }
 
 .rc-empty {
@@ -90,4 +142,8 @@
     max-width: 8rem;
     white-space: normal;
   }
+}
+
+.rc-row-view {
+  justify-self: start;
 }

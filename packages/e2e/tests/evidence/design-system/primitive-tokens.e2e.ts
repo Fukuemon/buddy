@@ -8,6 +8,7 @@ import {
   storyUrl,
 } from '../../fixtures/evidence'
 import { pageBody, pageHeading } from '../../selectors/page'
+import { wheel } from '../../widgets/scroll/actions/scroll'
 
 const ACTOR = 'ログインなし（Storybook の story）'
 const COLOR_DOCS_URL = `${STORYBOOK_URL}/iframe.html?id=${encodeURIComponent('トークン-色--docs')}&viewMode=docs`
@@ -83,11 +84,11 @@ test.describe('デザインシステムのトークン', () => {
           async ({ page, step, check }) => {
             await openColorDocs(page)
             await step('カタログの「トークン/色」のページを開いている')
-            await page.mouse.wheel(0, 900)
+            await wheel(page, { y: 900 })
             await step('面と線、状態の色、区別の色の見本を下へ送って見る')
-            await page.mouse.wheel(0, 900)
+            await wheel(page, { y: 900 })
             const { count, digest } = await tokenDigest(page)
-            await page.mouse.wheel(0, -1800)
+            await wheel(page, { y: -1800 })
             await check(
               `（撮影のため、録画で見分けにくい値を出す）トークン ${count} 個の解決した値の SHA-256 の先頭は ${digest}。改修の前後で同じ`,
             )

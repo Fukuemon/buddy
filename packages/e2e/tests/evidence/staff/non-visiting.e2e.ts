@@ -1,6 +1,6 @@
 import { expect, test, type APIRequestContext, type Page } from '@playwright/test'
 
-import { prepareApiReference, routeApiReference } from '../../fixtures/apiReference'
+import { issueAccessToken, routeApiReference } from '../../fixtures/apiReference'
 import { LOGIN_EMAIL, LOGIN_STAFF, SCHEDULE_URL, SEED_PATIENT } from '../../fixtures/env'
 import { EVIDENCE_VARIANTS, recordPrEvidence } from '../../fixtures/evidence'
 import { createNormalSchedule } from '../../fixtures/schedule'
@@ -12,12 +12,12 @@ import {
   STAFF_FORM,
 } from '../../fixtures/staff'
 import { signInAtBroker } from '../../screens/login'
+import { openApiClient, openApiReference } from '../../screens/apiReference'
 import {
   fillApiBody,
   fillApiToken,
   fillApiVariable,
-  openApiClient,
-} from '../../screens/apiReference'
+} from '../../widgets/apiClient/actions/apiClient'
 import { apiClient } from '../../selectors/apiReference'
 
 /** 訪問しない職員への変更を拒む予定の日。今日より後にする。 */
@@ -42,7 +42,7 @@ const signInManager = async (page: Page) => {
 
 /** マネージャーのトークンで、職員を 1 人登録して訪問しない職員にし、ID と名前を返す。 */
 const registerNonVisiting = async (request: APIRequestContext, label: string) => {
-  const token = await issueManagerToken(request)
+  const token = await issueManagerToken()
   const staff = newStaff(label)
   const id = await registerStaffId(request, token, staff)
   const res = await setNonVisiting(request, token, id)
@@ -151,7 +151,9 @@ test.describe('職員の管理', () => {
             variant,
           },
           async (page) => {
-            const token = await prepareApiReference('schedule', LOGIN_EMAIL)(page)
+            await routeApiReference(page)
+            await openApiReference(page, 'schedule')
+            const token = await issueAccessToken(page.request, LOGIN_EMAIL)
             const companion = await registerNonVisiting(page.request, 'companion')
             const visitType = await masterId(page.request, token, '/v1/schedule_types', '訪問')
             const serviceCode = await masterId(
@@ -255,7 +257,7 @@ test.describe('職員の管理', () => {
           },
           async (page) => {
             await signInManager(page)
-            const token = await issueManagerToken(page.request)
+            const token = await issueManagerToken()
             const staff = newStaff('register-calendar')
             const res = await page.request.post(
               `${SCHEDULE_URL}/v1/facilities/${STAFF_FORM.facilityId}/users`,
@@ -306,11 +308,7 @@ test.describe('職員の管理', () => {
           async (page) => {
             await signInManager(page)
             const staff = newStaff('edit')
-            const id = await registerStaffId(
-              page.request,
-              await issueManagerToken(page.request),
-              staff,
-            )
+            const id = await registerStaffId(page.request, await issueManagerToken(), staff)
             return { id, name: staff.name }
           },
           async ({ page, step, check }, { id, name }) => {
@@ -348,7 +346,7 @@ test.describe('職員の管理', () => {
           },
           async (page) => {
             await signInManager(page)
-            const token = await issueManagerToken(page.request)
+            const token = await issueManagerToken()
             const staff = newStaff('refused')
             const id = await registerStaffId(page.request, token, staff)
             const res = await createNormalSchedule(page.request, token, STAFF_FORM.facilityId, {

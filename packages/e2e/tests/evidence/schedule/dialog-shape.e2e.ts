@@ -37,29 +37,26 @@ const openDetail = async (page: Page, title: string) => {
   return page.getByTestId('schedule-detail-modal')
 }
 
-/** × がタイトルより右にあり、ダイアログの右上にあることを確認する。 */
-const expectCloseAtTopRight = async (modal: Locator) => {
-  const close = await modal.getByTestId('modal-close').boundingBox()
+/** タイトルがダイアログの左上にあり、右上に × が無いことを確認する。 */
+const expectTitleWithoutClose = async (modal: Locator) => {
   const title = await commonShapeParts(modal).title.boundingBox()
   const box = await modal.boundingBox()
-  expect(close?.x ?? 0).toBeGreaterThan((title?.x ?? 0) + (title?.width ?? 0))
-  expect((box?.x ?? 0) + (box?.width ?? 0) - ((close?.x ?? 0) + (close?.width ?? 0))).toBeLessThan(
-    24,
-  )
+  expect((title?.x ?? 0) - (box?.x ?? 0)).toBeLessThan(40)
+  await expect(modal.getByTestId('modal-close')).toHaveCount(0)
 }
 
 test.describe('予定のダイアログ', () => {
   for (const variant of EVIDENCE_VARIANTS) {
     const prefix = variant.label ? `${variant.label}: ` : ''
 
-    test(`${prefix}予定の作成のダイアログを開いた場合、× が右上にあり、フッターにキャンセルがあること`, async ({
+    test(`${prefix}予定の作成のダイアログを開いた場合、右上に × が無く、フッターにキャンセルがあること`, async ({
       browser,
     }) => {
       await recordPrEvidence(
         browser,
         {
           name: 'schedule-new-dialog-shape',
-          title: '予定の作成のダイアログを開き、× とキャンセルの位置を見て、キャンセルで閉じる',
+          title: '予定の作成のダイアログを開き、右上とキャンセルの位置を見て、キャンセルで閉じる',
           actor: ACTOR,
           variant,
         },
@@ -73,10 +70,10 @@ test.describe('予定のダイアログ', () => {
           await page.getByTestId('schedule-create-open').click()
           const modal = page.getByTestId('schedule-form-modal')
           await expect(modal).toBeVisible()
-          await expectCloseAtTopRight(modal)
+          await expectTitleWithoutClose(modal)
           await expect(modal.getByTestId('schedule-new-cancel')).toBeVisible()
           await check(
-            '「予定の作成」のダイアログの右上に × があり、フッターの右に「キャンセル」と「作成」がこの順に並ぶ',
+            '「予定の作成」のダイアログの右上に × が無く、フッターの右に「キャンセル」と「作成」がこの順に並ぶ',
           )
 
           await step('入力を変えずに「キャンセル」を押す')
@@ -87,14 +84,14 @@ test.describe('予定のダイアログ', () => {
       )
     })
 
-    test(`${prefix}予定の詳細のダイアログを開いた場合、× が右上にあり、フッターに閉じるがあること`, async ({
+    test(`${prefix}予定の詳細のダイアログを開いた場合、右上に × が無く、フッターに閉じるがあること`, async ({
       browser,
     }) => {
       await recordPrEvidence(
         browser,
         {
           name: 'schedule-detail-dialog-shape',
-          title: '予定の詳細のダイアログを開き、× と閉じるの位置を見て、閉じるで閉じる',
+          title: '予定の詳細のダイアログを開き、右上と閉じるの位置を見て、閉じるで閉じる',
           actor: ACTOR,
           variant,
         },
@@ -103,10 +100,10 @@ test.describe('予定のダイアログ', () => {
           await step(`日の表示で、${LOGIN_STAFF.name} の「${title}」を押す`)
           const modal = await openDetail(page, title)
           await expect(modal).toBeVisible()
-          await expectCloseAtTopRight(modal)
+          await expectTitleWithoutClose(modal)
           await expect(modal.getByTestId('schedule-detail-close')).toBeVisible()
           await check(
-            '「予定の詳細」のダイアログの右上に × があり、フッターの右に「閉じる」と「編集」がこの順に並ぶ',
+            '「予定の詳細」のダイアログの右上に × が無く、フッターの右に「閉じる」と「編集」がこの順に並ぶ',
           )
 
           await step('フッターの「閉じる」を押す')
@@ -117,14 +114,15 @@ test.describe('予定のダイアログ', () => {
       )
     })
 
-    test(`${prefix}予定の編集のダイアログを開いた場合、× が右上にあり、フッターにキャンセルがあること`, async ({
+    test(`${prefix}予定の編集のダイアログを開いた場合、右上に × が無く、フッターにキャンセルがあること`, async ({
       browser,
     }) => {
       await recordPrEvidence(
         browser,
         {
           name: 'schedule-edit-dialog-shape',
-          title: '予定の編集のダイアログを開き、× とキャンセルの位置を見て、キャンセルで詳細に戻る',
+          title:
+            '予定の編集のダイアログを開き、右上とキャンセルの位置を見て、キャンセルで詳細に戻る',
           actor: ACTOR,
           variant,
         },
@@ -135,9 +133,9 @@ test.describe('予定のダイアログ', () => {
           await detail.getByTestId('schedule-detail-edit').click()
           const modal = page.getByTestId('schedule-form-modal')
           await expect(modal.getByTestId('schedule-edit-cancel')).toBeVisible()
-          await expectCloseAtTopRight(modal)
+          await expectTitleWithoutClose(modal)
           await check(
-            '「予定の編集」のダイアログの右上に × があり、フッターの右に「キャンセル」と「保存」がこの順に並ぶ',
+            '「予定の編集」のダイアログの右上に × が無く、フッターの右に「キャンセル」と「保存」がこの順に並ぶ',
           )
 
           await step('入力を変えずに「キャンセル」を押す')
