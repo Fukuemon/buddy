@@ -364,7 +364,7 @@
 
 | 選択肢 | 11月9日（月）の回を開いたとき |
 | --- | --- |
-| 今の規則の、曜日の並び。今の規則が複数の曜日の毎週のときだけ出す | 隔週の月曜と木曜なら「隔週 月曜日、木曜日」 |
+| 今の規則の、曜日の並び。今の規則が複数の曜日の毎週のときだけ出す | 隔週の月曜と木曜なら「隔週 月曜日、木曜日」。7 つの曜日で間隔が 1 なら「毎日」 |
 | 毎週の、開いた回の曜日 | 「毎週 月曜日」。今の規則が隔週なら「隔週 月曜日」、3 週ごとなら「3 週ごと 月曜日」 |
 | 毎月の、開いた回の日 | 「毎月 9 日」 |
 | 毎月の、開いた回の第何週の曜日 | 「毎月 第 2 月曜日」 |
@@ -375,6 +375,7 @@
 - 毎週の選択肢は、[間隔](#間隔) の値で送る。間隔が 1 なら「毎週」、2 なら「隔週」、3 以上なら「3 週ごと」の形で出す。
   - 間隔の初期値は今の規則の間隔で、今の規則が毎月なら 1 である。曜日の選択肢を選んでも、間隔は 1 に戻さない（ADR-0038）。
   - 今の規則の選択肢と間隔の文言は、[RecurringRuleFields の BiweeklyDays](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-recurringrulefields--biweekly-days) にある。
+  - 7 つの曜日の今の規則の「毎日」は、[RecurringRuleFields の Daily](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-recurringrulefields--daily) にある。
   - 3 週ごとの文言は、[RecurringRuleFields の EveryThreeWeeks](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-recurringrulefields--every-three-weeks) にある。
 
 **カタログ**: [RecurringRuleFields の Weekly](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-recurringrulefields--weekly)、[RecurringRuleFields の Custom](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-schedule-recurringrulefields--custom)

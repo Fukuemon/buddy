@@ -33,11 +33,15 @@ export type RepetitionValues = Pick<
  * 繰り返しの欄の値を、終了日を除いた繰り返しの文にする（ADR-0038）。
  * 「毎週 火曜日」「隔週 月曜日、木曜日」「3 週ごと 火曜日」「毎月 9 日」「毎月 第 2 月曜日」の形である。
  * 毎週の曜日は、重なりを除いて月曜から日曜の順に並べる。
+ * 7 つの曜日の毎週は、毎日を表す形なので「毎日」にする。隔週と 3 週ごと以上は、7 つの曜日でも曜日を並べる。
  * 繰り返しの変更の選択肢と、予定の詳細と予定の作成の繰り返しの文は、この文から作る。
  */
 export const repetitionLabel = (values: RepetitionValues) => {
   if (values.frequency === 'weekly') {
-    return `${weeklyIntervalLabel(values.interval)} ${weeklyDaysOf(values).map(weekdayLabel).join('、')}`
+    const interval = weeklyIntervalLabel(values.interval)
+    const days = weeklyDaysOf(values)
+    if (interval === '毎週' && days.length === ISO_WEEKDAYS.length) return '毎日'
+    return `${interval} ${days.map(weekdayLabel).join('、')}`
   }
   if (values.monthlyBy === 'day') return `毎月 ${values.dayOfMonth} 日`
   return `毎月 第 ${values.weekOfMonth} ${weekdayLabel(values.dayOfWeek)}`
