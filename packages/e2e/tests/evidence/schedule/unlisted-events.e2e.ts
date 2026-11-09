@@ -1,5 +1,6 @@
 import { type APIRequestContext, type Page, expect, test } from '@playwright/test'
 
+import { addDays, dayLabel, sundayOfWeek } from '../../fixtures/date'
 import { OKADA } from '../../fixtures/env'
 import { EVIDENCE_VARIANTS, recordPrEvidence } from '../../fixtures/evidence'
 import {
@@ -14,29 +15,6 @@ import { signInAtBroker } from '../../screens/login'
 import { calendarAllDayRowLabel, calendarTimeLabel } from '../../selectors/scheduleCalendar'
 
 const ACTOR = `${OKADA.staff.name}（Google カレンダーを正本にする事業所のマネージャー）`
-
-/** 日付（YYYY-MM-DD）の days 日後の日付。 */
-const addDays = (date: string, days: number) => {
-  const d = new Date(`${date}T00:00:00Z`)
-  d.setUTCDate(d.getUTCDate() + days)
-  return d.toISOString().slice(0, 10)
-}
-
-/**
- * 今日（Asia/Tokyo）の週の日曜から weeks 週後の週の日曜の日付。予定のカレンダーの週は日曜に始まる。
- * test ごとに週を分け、ほかの test の予定と重ならないようにする。終日の予定の spec の週とも重ねない。
- */
-const sundayOfWeek = (weeks: number) => {
-  const today = new Date(Date.now() + 9 * 60 * 60 * 1000)
-  const sunday = addDays(today.toISOString().slice(0, 10), -today.getUTCDay())
-  return addDays(sunday, weeks * 7)
-}
-
-/** 日付（YYYY-MM-DD）を、字幕に出す「11月24日（火）」の形にする。 */
-const dayLabel = (date: string) => {
-  const d = new Date(`${date}T00:00:00Z`)
-  return `${d.getUTCMonth() + 1}月${d.getUTCDate()}日（${'日月火水木金土'[d.getUTCDay()]}）`
-}
 
 /**
  * 予定のタイトルの後ろに付ける、今の時刻のミリ秒の下 3 桁。走らせるたびに違うタイトルにする。

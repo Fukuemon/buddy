@@ -1,5 +1,6 @@
 import type { APIRequestContext } from '@playwright/test'
 
+import { addDays } from './date'
 import { CALENDARPIT_URL, GCALHOLD_URL } from './env'
 
 /** calendarpit の予定のうち、spec が見る項目。 */
@@ -129,13 +130,6 @@ export const createGoogleEvent = async (
   })
   await ensureOk(res, '予定を作れない')
   return (await res.json()) as GoogleEvent
-}
-
-/** 日付（YYYY-MM-DD）の days 日後の日付を返す。 */
-const addDays = (date: string, days: number) => {
-  const d = new Date(`${date}T00:00:00Z`)
-  d.setUTCDate(d.getUTCDate() + days)
-  return d.toISOString().slice(0, 10)
 }
 
 /**

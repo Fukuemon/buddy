@@ -1,6 +1,7 @@
 import { type APIRequestContext, type Page, expect, test } from '@playwright/test'
 
 import { issueAccessToken } from '../../fixtures/apiReference'
+import { addDays, dayLabel, sundayOfWeek } from '../../fixtures/date'
 import { LEADER, LOGIN_EMAIL, LOGIN_STAFF, OKADA } from '../../fixtures/env'
 import { EVIDENCE_VARIANTS, PHONE_VIEWPORT, recordPrEvidence } from '../../fixtures/evidence'
 import {
@@ -11,34 +12,12 @@ import {
 import { createNormalSchedule, SCHEDULE_DETAIL_URL } from '../../fixtures/schedule'
 import { STAFF_FORM } from '../../fixtures/staff'
 import { signInAtBroker } from '../../screens/login'
+import { openDay } from '../../screens/scheduleCalendar'
 import { calendarAllDayRowLabel, calendarTimeLabel } from '../../selectors/scheduleCalendar'
 import { wheel } from '../../widgets/scroll/actions/scroll'
 
 const OKADA_ACTOR = `${OKADA.staff.name}（Google カレンダーを正本にする事業所のマネージャー）`
 const AOKI_ACTOR = `${LOGIN_STAFF.name}（buddy を正本にする事業所のマネージャー）`
-
-/** 日付（YYYY-MM-DD）の days 日後の日付。 */
-const addDays = (date: string, days: number) => {
-  const d = new Date(`${date}T00:00:00Z`)
-  d.setUTCDate(d.getUTCDate() + days)
-  return d.toISOString().slice(0, 10)
-}
-
-/**
- * 今日（Asia/Tokyo）の週の日曜から weeks 週後の週の日曜の日付。予定のカレンダーの週は日曜に始まる。
- * test ごとに週を分け、ほかの test の予定と重ならないようにする。
- */
-const sundayOfWeek = (weeks: number) => {
-  const today = new Date(Date.now() + 9 * 60 * 60 * 1000)
-  const sunday = addDays(today.toISOString().slice(0, 10), -today.getUTCDay())
-  return addDays(sunday, weeks * 7)
-}
-
-/** 日付（YYYY-MM-DD）を、字幕に出す「11月24日（火）」の形にする。 */
-const dayLabel = (date: string) => {
-  const d = new Date(`${date}T00:00:00Z`)
-  return `${d.getUTCMonth() + 1}月${d.getUTCDate()}日（${'日月火水木金土'[d.getUTCDay()]}）`
-}
 
 /**
  * 予定のタイトルの後ろに付ける、今の時刻のミリ秒の下 3 桁。走らせるたびに違うタイトルにする。
@@ -210,7 +189,7 @@ test.describe('予定のカレンダー', () => {
 
               for (const day of days) {
                 await step(`日の表示で ${dayLabel(day)} を開く`)
-                await page.goto(`/schedule?view=day&date=${day}`)
+                await openDay(page, day, OKADA.staff.id)
                 await expect(page.getByTestId(`day-grid-all-day-${OKADA.staff.id}`)).toContainText(
                   title,
                 )
