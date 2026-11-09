@@ -1,6 +1,6 @@
 import type { Page } from '@playwright/test'
 
-import { waitForBrowserDialog } from '../waits/dialog'
+import { waitForBrowserDialog } from '../waits/browserDialog'
 
 /**
  * open を呼んで出たブラウザの確認のダイアログを「キャンセル」で閉じ、ダイアログの文を返す。

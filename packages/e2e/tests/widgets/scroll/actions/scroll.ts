@@ -1,21 +1,23 @@
 import type { Locator, Page } from '@playwright/test'
 
-import { watchScrollIdle } from '../waits/scrollIdle'
+import { watchScrollIdle } from '../waits/scroll'
 
 /**
  * 横にスクロールする要素を右端まで送り、スクロールが止まるまで待つ。
+ * 既に右端にあって送れなかったときは、待たずに返る。
  *
  * @param target overflow で横にスクロールする要素
- * @returns 送った後の scrollLeft。送れなかったときは 0 になる
+ * @returns 送った後の scrollLeft。送れなかったときは送る前の値になる
  */
 export const scrollToRightEnd = async (target: Locator): Promise<number> => {
   const idle = await watchScrollIdle(target.page())
-  const scrolled = await target.evaluate((element) => {
+  const { before, after } = await target.evaluate((element) => {
+    const start = element.scrollLeft
     element.scrollLeft = element.scrollWidth
-    return element.scrollLeft
+    return { before: start, after: element.scrollLeft }
   })
-  await idle()
-  return scrolled
+  if (after !== before) await idle()
+  return after
 }
 
 /**

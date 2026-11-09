@@ -6,7 +6,7 @@ import { EVIDENCE_VARIANTS, recordPrEvidence } from '../../fixtures/evidence'
 import { listScheduleTitles } from '../../fixtures/schedule'
 import { STAFF_FORM } from '../../fixtures/staff'
 import { signInAtBroker } from '../../screens/login'
-import { dismissBrowserDialog } from '../../widgets/browserDialog/actions/dialog'
+import { dismissBrowserDialog } from '../../widgets/browserDialog/actions/browserDialog'
 
 const ACTOR = `${LOGIN_STAFF.name}（マネージャー）`
 

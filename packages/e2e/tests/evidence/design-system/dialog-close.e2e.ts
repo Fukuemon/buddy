@@ -6,7 +6,7 @@ import { newUnitName } from '../../fixtures/organization'
 import { SCHEDULE_DETAIL_URL } from '../../fixtures/schedule'
 import { signInAtBroker } from '../../screens/login'
 import { commonShapeParts } from '../../selectors/commonShape'
-import { dismissBrowserDialog } from '../../widgets/browserDialog/actions/dialog'
+import { dismissBrowserDialog } from '../../widgets/browserDialog/actions/browserDialog'
 
 const ACTOR = `${LOGIN_STAFF.name}（マネージャー、職員の管理の権限あり）`
 
