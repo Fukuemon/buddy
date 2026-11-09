@@ -27,8 +27,8 @@
 | 権限の保存 | 足す権限と対象 | `PolicyChange` の `add`（`staff.addPolicy` の引数） | `addUserPolicy` の本文の `policy_id`、`target_user_ids`、`target_team_ids` |
 | 権限の保存 | 外す権限 | `PolicyChange` の `remove`（`staff.removePolicy` の引数） | `removeUserPolicy` のパスの `user_policy_id` |
 | 残る予定と担当の一覧 | 残る予定、繰り返しの予定、担当の利用者 | `StaffAssignments`（`staff.remainingAssignments` の戻り値、`staff.retire` と `staff.update` の拒まれた結果） | `getUserRemainingAssignments` の `StaffAssignments`。退職を拒んだときは `retireUser` の、訪問しない職員への変更を拒んだときは `updateUser` の 409 の `RetireConflict.assignments` |
-| 残る予定 | 日付と時間 | `StaffAssignments.schedules[]` | `StaffAssignments.schedules[]` の `id`、`date`、`start_time`、`end_time` |
-| 残る繰り返しの予定 | 最初の回の日付、終了日、時間 | `StaffAssignments.recurring_schedules[]` | `StaffAssignments.recurring_schedules[]` の `date`、`end_date`、`start_time`、`end_time` |
+| 残る予定 | 日付と時間 | `StaffAssignments.schedules[]` | `StaffAssignments.schedules[]` の `id`、`date`、`start_time`、`end_time`、`ends_next_day` |
+| 残る繰り返しの予定 | 最初の回の日付、終了日、時間 | `StaffAssignments.recurring_schedules[]` | `StaffAssignments.recurring_schedules[]` の `date`、`end_date`、`start_time`、`end_time`、`ends_next_day` |
 | 残る担当の利用者 | 利用者の名前 | `StaffAssignments.patients[]` | `StaffAssignments.patients[].name` |
 | 戻る予定の日 | 送る日付 | `staff.startLeave` の引数 | `startUserLeave` の本文の `return_date` |
 | 休職にする、退職にする | 出すか | `Viewer.staffId` | `getMe` の `id` と `StaffDetail.id` が違うか |

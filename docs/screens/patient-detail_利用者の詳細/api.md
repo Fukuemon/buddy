@@ -18,8 +18,8 @@
 | サービスの選択 | 選択肢 | `ServiceCodeRecord`（`serviceCodes.list` の戻り値） | `listServiceCodes` の `ServiceCode` |
 | 担当の職員の選択、再開の担当の職員 | 選択肢 | `StaffRecord`（`staff.listRecords` の戻り値）のうち `status` が `active` で、`visits` が `true` の職員 | `listUsers` の `Staff` のうち `status` が `active` で、`visits` が `true` の職員 |
 | 残る予定の一覧 | 残る予定と繰り返しの予定 | `PatientSchedules`（`patients.remainingSchedules` の戻り値か、`patients.endService` が拒まれたときの `schedules`） | `getPatientRemainingSchedules` の `PatientSchedules`。拒まれたときは `endPatientService` の 409 の `EndServiceConflict.schedules` |
-| 残る予定 | 日付と時間 | `PatientSchedules.schedules[]` | `PatientSchedules.schedules[]` の `id`、`date`、`start_time`、`end_time` |
-| 残る繰り返しの予定 | 最初の回の日付、終了日、時間 | `PatientSchedules.recurring_schedules[]` | `PatientSchedules.recurring_schedules[]` の `date`、`end_date`、`start_time`、`end_time` |
+| 残る予定 | 日付と時間 | `PatientSchedules.schedules[]` | `PatientSchedules.schedules[]` の `id`、`date`、`start_time`、`end_time`、`ends_next_day` |
+| 残る繰り返しの予定 | 最初の回の日付、終了日、時間 | `PatientSchedules.recurring_schedules[]` | `PatientSchedules.recurring_schedules[]` の `date`、`end_date`、`start_time`、`end_time`、`ends_next_day` |
 | ダイアログの利用を再開する | 送る担当の職員 | `patients.resumeService` の引数の `assignedStaffId` | `resumePatientService` の本文の `assigned_staff_id` |
 | 読み込みの失敗の文 | 見つからないか | `ApiError.status` | `getPatient` の 404 |
 
