@@ -138,6 +138,10 @@ export const ScheduleCalendarContainer = ({
     patientsQuery.data ?? [],
   )
   const allDayEvents = toCalendarAllDayEvents(schedulesQuery.data?.allDayEvents ?? [], staffList)
+  // 時刻のある予定と終日の予定と同じく、休職と退職の職員と訪問しない職員の件数は出さない
+  const unlistedEventCounts = (schedulesQuery.data?.unlistedEventCounts ?? []).filter((count) =>
+    staffList.some((staff) => staff.id === count.staffId),
+  )
 
   return (
     <div className="flex h-full flex-col">
@@ -164,7 +168,7 @@ export const ScheduleCalendarContainer = ({
             calendarSyncs={schedulesQuery.data?.calendarSyncs ?? []}
             cutover={schedulesQuery.data?.cutover ?? null}
             needsReview={schedulesQuery.data?.needsReview ?? []}
-            unlistedEventCounts={schedulesQuery.data?.unlistedEventCounts ?? []}
+            unlistedEventCounts={unlistedEventCounts}
             onOpenSchedule={openDetail}
             sourceMode={sourceMode}
             staffList={allStaff}
