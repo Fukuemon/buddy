@@ -739,12 +739,12 @@ dependencies:
   materialization_repo_url: Fukuemon/agent-playbooks
   name: playbooks
   host: github.com
-  resolved_commit: bd81133c6aa4aae6fc64710c3ecf11a6869617e8
-  resolved_ref: playbooks-v0.3.0
-  version: 0.3.0
+  resolved_commit: 5a4653c1dcabe22c5bfa786bb45c3625458fd39b
+  resolved_ref: playbooks-v0.3.1
+  version: 0.3.1
   virtual_path: packages/playbooks
   is_virtual: true
-  package_type: skill_bundle
+  package_type: marketplace_plugin
   deployed_files:
   - .agents/skills/design-playbook
   - .agents/skills/design-playbook/SKILL.md
@@ -806,7 +806,7 @@ dependencies:
     .agents/skills/run-playbook/playbooks/bug-fix.md: sha256:bb2eb56a02f5758d6dd38a24de69eef462ce526e9b02e9ba20eb1ac44f5d0305
     .agents/skills/run-playbook/playbooks/correct.md: sha256:1b1f2541e2e607a8246b550f407ead350a2a7aef430583af5fa80c3c3f200d16
     .agents/skills/run-playbook/playbooks/design-system.md: sha256:58ece2bae41971877e8e84a4b89e12dc11c21c871ff248a075e9b7fcd4df9c79
-    .agents/skills/run-playbook/playbooks/feature.md: sha256:a7a6c05c47e7baddd98588e64d562416cb694e183bef489eec44b3bfdcd4750d
+    .agents/skills/run-playbook/playbooks/feature.md: sha256:3fc4947c4a7250f492066cab828f6b8f4d69b60609f12585904634987332d79d
     .agents/skills/run-playbook/playbooks/investigation.md: sha256:b3e6d71a7e218b717e1f9fe636904effccdb7f4e7485aa718f6911ff813874f4
     .agents/skills/run-playbook/playbooks/opening-a-pr.md: sha256:3eeb2d0295398ed0bb959a72affecbd83ff9e5fdb1862122d2915e7002ab6a86
     .agents/skills/run-playbook/playbooks/pr-follow-up.md: sha256:123a0bef26eac968ead82345ef818e13d1a066eb1c6c514eb263855512f7b51b
@@ -831,7 +831,7 @@ dependencies:
     .claude/skills/run-playbook/playbooks/bug-fix.md: sha256:bb2eb56a02f5758d6dd38a24de69eef462ce526e9b02e9ba20eb1ac44f5d0305
     .claude/skills/run-playbook/playbooks/correct.md: sha256:1b1f2541e2e607a8246b550f407ead350a2a7aef430583af5fa80c3c3f200d16
     .claude/skills/run-playbook/playbooks/design-system.md: sha256:58ece2bae41971877e8e84a4b89e12dc11c21c871ff248a075e9b7fcd4df9c79
-    .claude/skills/run-playbook/playbooks/feature.md: sha256:a7a6c05c47e7baddd98588e64d562416cb694e183bef489eec44b3bfdcd4750d
+    .claude/skills/run-playbook/playbooks/feature.md: sha256:3fc4947c4a7250f492066cab828f6b8f4d69b60609f12585904634987332d79d
     .claude/skills/run-playbook/playbooks/investigation.md: sha256:b3e6d71a7e218b717e1f9fe636904effccdb7f4e7485aa718f6911ff813874f4
     .claude/skills/run-playbook/playbooks/opening-a-pr.md: sha256:3eeb2d0295398ed0bb959a72affecbd83ff9e5fdb1862122d2915e7002ab6a86
     .claude/skills/run-playbook/playbooks/pr-follow-up.md: sha256:123a0bef26eac968ead82345ef818e13d1a066eb1c6c514eb263855512f7b51b
@@ -851,18 +851,18 @@ dependencies:
     .claude/skills/run-playbook/rules/decision-log.md: sha256:c1d82317e2b2608ff270ab191cb2f67ffe2d24835c253d6231bd57c4a1b44a42
     .claude/skills/run-playbook/rules/pre-granted-permission.md: sha256:9fa73d459302c3d9145c6df7a780981716580e185b8cb8456d02621469e0a732
     .claude/skills/run-playbook/rules/workers-and-subagents.md: sha256:b42d4f6d199bea5e3f79c92b585c6c2fb589fb6af8334600ff03ea5664ee97dd
-  content_hash: sha256:bcb232d9c9f2d55f306f6c6ab9b5f93979b984143eb7e6dff375e922e7ee86a6
+  content_hash: sha256:bd0b5d45dee4f30248541fc601e7cc1f7f27a77172570094b4060df1b8123b54
   declared_license: MIT
 - repo_url: fukuemon/agent-playbooks
   materialization_repo_url: Fukuemon/agent-playbooks
   name: review
   host: github.com
-  resolved_commit: bd81133c6aa4aae6fc64710c3ecf11a6869617e8
-  resolved_ref: review-v0.1.0
-  version: 0.1.0
+  resolved_commit: 5a4653c1dcabe22c5bfa786bb45c3625458fd39b
+  resolved_ref: review-v0.1.1
+  version: 0.1.1
   virtual_path: packages/review
   is_virtual: true
-  package_type: skill_bundle
+  package_type: marketplace_plugin
   deployed_files:
   - .agents/skills/review-by-viewpoints
   - .agents/skills/review-by-viewpoints/SKILL.md
@@ -879,19 +879,19 @@ dependencies:
   - .codex/agents/review-security.toml
   - .codex/agents/review-spec.toml
   deployed_file_hashes:
-    .agents/skills/review-by-viewpoints/SKILL.md: sha256:d9ae4bc1c858f41e4a296483add02ca80de1b8fbd419b1b8e0d12f7297cac677
+    .agents/skills/review-by-viewpoints/SKILL.md: sha256:dc4256420dcfec160469f8ebb652eb4f0bd40f64d0487a7a1c0f5f47f4d2daff
     .claude/agents/review-architecture.md: sha256:10c77680598b2518082d728e7e0d06d74cd9691de29013792a7cecabad7195e2
     .claude/agents/review-performance.md: sha256:c228790e5ba6f20228878723e5c308a2bb5be2c8e7ca8e5816237ff033df3bbf
     .claude/agents/review-quality.md: sha256:9c079219dd8e7745cd233d1acce8cc191b5cae6c72c6e4f7242a641cf3802f1f
     .claude/agents/review-security.md: sha256:1cf1759be6fb9a06252f2cee7559628623cc9e6674a2a60242307e9d5b213e2d
     .claude/agents/review-spec.md: sha256:3ae841fbb39876e0056f0883866f979ca55758f847df1ed271c0e8f94a9f6d6b
-    .claude/skills/review-by-viewpoints/SKILL.md: sha256:d9ae4bc1c858f41e4a296483add02ca80de1b8fbd419b1b8e0d12f7297cac677
+    .claude/skills/review-by-viewpoints/SKILL.md: sha256:dc4256420dcfec160469f8ebb652eb4f0bd40f64d0487a7a1c0f5f47f4d2daff
     .codex/agents/review-architecture.toml: sha256:0c0e87bb1534983be158d2f7297f1d9bc7c45e24cebf259ffcfdbb34a1f58526
     .codex/agents/review-performance.toml: sha256:745b54fa5d3e452d7bd03aa066ae4c1315f33302af3323593daef1c3381cf465
     .codex/agents/review-quality.toml: sha256:51ff804228bebb94310931fc662866b4ed34aabce736d5f995ab7479c5b0518c
     .codex/agents/review-security.toml: sha256:e49af2e62386b52bc3d9eaa994f0ec9bad683398d03c9602b9319f0523d57668
     .codex/agents/review-spec.toml: sha256:9d8815ef58bb204e28e6b53f0c70b98acc492a0a827f60c0d6af3543086fa791
-  content_hash: sha256:dce5e79c3bdde456519488e61a8b5e152486213ed6e66cb65fea222fe0e4e0b1
+  content_hash: sha256:ff6c65f636f69203a5dd96af75905e616ba1944c0876f311f82299944bffb4ec
   declared_license: MIT
 - repo_url: fukuemon/agent-playbooks
   materialization_repo_url: Fukuemon/agent-playbooks
@@ -1428,7 +1428,7 @@ deployments:
   owners:
   - fukuemon/agent-playbooks/packages/review
   active_owner: fukuemon/agent-playbooks/packages/review
-  content_hash: sha256:d9ae4bc1c858f41e4a296483add02ca80de1b8fbd419b1b8e0d12f7297cac677
+  content_hash: sha256:dc4256420dcfec160469f8ebb652eb4f0bd40f64d0487a7a1c0f5f47f4d2daff
 - kind: project-relative
   target: claude
   value: .claude/skills/run-playbook
@@ -1482,7 +1482,7 @@ deployments:
   owners:
   - fukuemon/agent-playbooks/packages/playbooks
   active_owner: fukuemon/agent-playbooks/packages/playbooks
-  content_hash: sha256:a7a6c05c47e7baddd98588e64d562416cb694e183bef489eec44b3bfdcd4750d
+  content_hash: sha256:3fc4947c4a7250f492066cab828f6b8f4d69b60609f12585904634987332d79d
 - kind: project-relative
   target: claude
   value: .claude/skills/run-playbook/playbooks/investigation.md
@@ -3165,7 +3165,7 @@ deployments:
   owners:
   - fukuemon/agent-playbooks/packages/review
   active_owner: fukuemon/agent-playbooks/packages/review
-  content_hash: sha256:d9ae4bc1c858f41e4a296483add02ca80de1b8fbd419b1b8e0d12f7297cac677
+  content_hash: sha256:dc4256420dcfec160469f8ebb652eb4f0bd40f64d0487a7a1c0f5f47f4d2daff
 - kind: project-relative
   target: codex
   value: .agents/skills/run-playbook
@@ -3219,7 +3219,7 @@ deployments:
   owners:
   - fukuemon/agent-playbooks/packages/playbooks
   active_owner: fukuemon/agent-playbooks/packages/playbooks
-  content_hash: sha256:a7a6c05c47e7baddd98588e64d562416cb694e183bef489eec44b3bfdcd4750d
+  content_hash: sha256:3fc4947c4a7250f492066cab828f6b8f4d69b60609f12585904634987332d79d
 - kind: project-relative
   target: codex
   value: .agents/skills/run-playbook/playbooks/investigation.md
