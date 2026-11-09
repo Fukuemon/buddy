@@ -11,15 +11,15 @@ import {
   replaceOccurrence,
 } from '../../fixtures/schedule'
 import { STAFF_FORM } from '../../fixtures/staff'
+import { openApiClient } from '../../screens/apiReference'
+import { signInAtBroker } from '../../screens/login'
+import { apiClient } from '../../selectors/apiReference'
+import { linkStaffCalendar, unlinkStaffCalendar } from '../../setup/calendar'
 import {
   fillApiBody,
   fillApiToken,
   fillApiVariable,
-  openApiClient,
-} from '../../screens/apiReference'
-import { linkStaffCalendar, unlinkStaffCalendar } from '../../screens/calendar'
-import { signInAtBroker } from '../../screens/login'
-import { apiClient } from '../../selectors/apiReference'
+} from '../../widgets/apiClient/actions/apiClient'
 
 /** 今日の Asia/Tokyo の日付から days 日後の日付（YYYY-MM-DD）。 */
 const daysFromToday = (days: number) =>
