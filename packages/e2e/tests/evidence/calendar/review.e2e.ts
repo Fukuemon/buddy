@@ -9,7 +9,7 @@ import {
   shiftGoogleEvent,
 } from '../../fixtures/googleCalendar'
 import { SCHEDULE_DETAIL_URL, scheduleIdFromUrl } from '../../fixtures/schedule'
-import { linkStaffCalendar, unlinkStaffCalendar } from '../../screens/calendar'
+import { linkStaffCalendar, unlinkStaffCalendar } from '../../setup/calendar'
 import { signInAtBroker } from '../../screens/login'
 import { calendarpitEvent } from '../../selectors/calendarpit'
 

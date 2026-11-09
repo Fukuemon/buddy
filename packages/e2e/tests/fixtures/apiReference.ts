@@ -90,17 +90,3 @@ export const issueAccessToken = async (request: APIRequestContext, email: string
   if (!token.ok()) throw new Error(`Hydra からトークンを取れない: ${token.status()}`)
   return ((await token.json()) as { access_token: string }).access_token
 }
-
-/**
- * recordPrEvidence の prepare に渡す。API の参照のページを開いてから、email で入った職員のトークンを取って返す。
- * 録画は、このページの origin の sessionStorage を持ち越して始まる。
- *
- * @param api docs/api/ のページの名前
- * @param email compose のブローカーにログインするメール。トークンを使わない spec は null にする
- */
-export const prepareApiReference =
-  (api: 'schedule' | 'receipt', email: string | null) => async (page: Page) => {
-    await routeApiReference(page)
-    await page.goto(`${API_REFERENCE_ORIGIN}/api/${api}.html`)
-    return email === null ? '' : issueAccessToken(page.request, email)
-  }

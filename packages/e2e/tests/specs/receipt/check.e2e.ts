@@ -1,10 +1,10 @@
-import { readFile } from 'node:fs/promises'
-
 import { expect, test, type Page } from '@playwright/test'
 
 import { LEADER, RECEIPT_TESTDATA } from '../../fixtures/env'
 import { showAllReceiptRows } from '../../screens/receipt'
 import { receiptCategoryRowCells, receiptResultRow } from '../../selectors/receipt'
+import { downloadFile } from '../../widgets/download/actions/download'
+import { scrollToRightEnd } from '../../widgets/scroll/actions/scroll'
 
 // 照合の API は、compose/receipt-calendars.json の森のカレンダーを calendarpit から読む。
 // calendarpit の森のカレンダー（compose/calendarpit/fixture.json）は 2026 年 11 月の予定を持つ。
@@ -50,10 +50,7 @@ test.describe('照合の結果', () => {
     }) => {
       await page.setViewportSize({ width: 390, height: 844 })
       const table = page.getByTestId('receipt-result-table')
-      const scrolled = await table.evaluate((element) => {
-        element.scrollLeft = element.scrollWidth
-        return element.scrollLeft
-      })
+      const scrolled = await scrollToRightEnd(table)
       expect(scrolled).toBeGreaterThan(0)
 
       const tableBox = await table.boundingBox()
@@ -66,11 +63,7 @@ test.describe('照合の結果', () => {
     test('結果の CSV をダウンロードした場合、BOM 付きの UTF-8 で区分と確認することの列を持ち、区切りの行を持たないこと', async ({
       page,
     }) => {
-      const download = page.waitForEvent('download')
-      await page.getByTestId('receipt-download').click()
-      const file = await (await download).path()
-
-      const bytes = await readFile(file)
+      const bytes = await downloadFile(page.getByTestId('receipt-download'))
       expect([...bytes.subarray(0, 3)]).toEqual([0xef, 0xbb, 0xbf])
       const csv = bytes.subarray(3).toString('utf8')
       expect(csv).toMatch(/^区分,訪問日,利用者名,主訪問者,[^\r\n]*,加算,確認すること\r\n/)

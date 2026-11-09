@@ -8,6 +8,7 @@ import { createGoogleEvent } from '../../fixtures/googleCalendar'
 import { signInAtBroker } from '../../screens/login'
 import { showAllReceiptRows } from '../../screens/receipt'
 import { receiptCategoryRowCells } from '../../selectors/receipt'
+import { scrollToRightEnd } from '../../widgets/scroll/actions/scroll'
 
 const ACTOR = `${LOGIN_STAFF.name}（マネージャー）`
 
@@ -59,10 +60,9 @@ const checkWithCsv = async (page: Page, schedules: string, visits: string) => {
 }
 
 /** 結果の表を右端まで送り、実績の側の列を見せる。 */
-const scrollToVisitColumns = (page: Page) =>
-  page.getByTestId('receipt-result-table').evaluate((element) => {
-    element.scrollLeft = element.scrollWidth
-  })
+const scrollToVisitColumns = async (page: Page) => {
+  await scrollToRightEnd(page.getByTestId('receipt-result-table'))
+}
 
 test.describe('照合の結果', () => {
   test.describe('日をまたぐ訪問', () => {

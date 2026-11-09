@@ -6,6 +6,7 @@ import { EVIDENCE_VARIANTS, recordPrEvidence } from '../../fixtures/evidence'
 import { listScheduleTitles } from '../../fixtures/schedule'
 import { STAFF_FORM } from '../../fixtures/staff'
 import { signInAtBroker } from '../../screens/login'
+import { dismissBrowserDialog } from '../../widgets/browserDialog/actions/browserDialog'
 
 const ACTOR = `${LOGIN_STAFF.name}（マネージャー）`
 
@@ -91,14 +92,10 @@ test.describe('予定のカレンダー', () => {
             await check('訪問の予定のフォームに、変えた日付が残る')
 
             // ブラウザの確認のダイアログは録画に映らないので、出た文を字幕に出して「キャンセル」で閉じる
-            const confirmed = page.waitForEvent('dialog').then(async (dialog) => {
-              const message = dialog.message()
-              await dialog.dismiss()
-              return message
+            const message = await dismissBrowserDialog(page, async () => {
+              await step('フッターの「キャンセル」を押す')
+              await page.getByTestId('schedule-new-cancel').click()
             })
-            await step('フッターの「キャンセル」を押す')
-            await page.getByTestId('schedule-new-cancel').click()
-            const message = await confirmed
             expect(message).toBe('変更が破棄されますがよろしいですか？')
             await step(
               `（撮影のため、ブラウザの確認のダイアログは録画に映らないので、出た文を字幕に出す）確認「${message}」が出たので、キャンセルを押す`,

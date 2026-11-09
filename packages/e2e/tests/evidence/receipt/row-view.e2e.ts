@@ -1,4 +1,4 @@
-import { readFile, writeFile } from 'node:fs/promises'
+import { writeFile } from 'node:fs/promises'
 
 import { expect, test, type Page } from '@playwright/test'
 
@@ -6,6 +6,7 @@ import { LOGIN_EMAIL, LOGIN_STAFF } from '../../fixtures/env'
 import { EVIDENCE_VARIANTS, recordPrEvidence } from '../../fixtures/evidence'
 import { signInAtBroker } from '../../screens/login'
 import { receiptResultRow } from '../../selectors/receipt'
+import { downloadFile } from '../../widgets/download/actions/download'
 
 const ACTOR = `${LOGIN_STAFF.name}（マネージャー）`
 
@@ -268,9 +269,7 @@ test.describe('照合の結果', () => {
             await expect(receiptResultRow(page, '利用者G')).toHaveCount(0)
 
             await step('「確認が要る行」を出したまま、「CSV をダウンロード」を押す')
-            const download = page.waitForEvent('download')
-            await page.getByTestId('receipt-download').click()
-            const csv = await readFile(await (await download).path(), 'utf8')
+            const csv = (await downloadFile(page.getByTestId('receipt-download'))).toString('utf8')
             const rows = csv.split('\r\n').filter((line) => line.includes(',2024-04-01,'))
             expect(rows).toHaveLength(4)
             expect(csv).toContain(',2024-04-01,利用者G,')

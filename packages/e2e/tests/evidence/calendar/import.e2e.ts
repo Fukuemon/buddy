@@ -2,7 +2,7 @@ import { expect, test, type Page } from '@playwright/test'
 
 import { LEADER, LOGIN_EMAIL, LOGIN_STAFF, SEED_PATIENT } from '../../fixtures/env'
 import { EVIDENCE_VARIANTS, recordPrEvidence } from '../../fixtures/evidence'
-import { linkStaffCalendar, unlinkStaffCalendar } from '../../screens/calendar'
+import { linkStaffCalendar, unlinkStaffCalendar } from '../../setup/calendar'
 import { signInAtBroker } from '../../screens/login'
 import { pageBody } from '../../selectors/page'
 

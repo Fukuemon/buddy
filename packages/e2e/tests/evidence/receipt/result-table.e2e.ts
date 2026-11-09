@@ -6,6 +6,7 @@ import { LOGIN_EMAIL, LOGIN_STAFF, RECEIPT_TESTDATA } from '../../fixtures/env'
 import { EVIDENCE_VARIANTS, PHONE_VIEWPORT, recordPrEvidence } from '../../fixtures/evidence'
 import { signInAtBroker } from '../../screens/login'
 import { receiptResultHeaderCells, receiptResultRow } from '../../selectors/receipt'
+import { wheel } from '../../widgets/scroll/actions/scroll'
 
 const ACTOR = `${LOGIN_STAFF.name}（マネージャー）`
 
@@ -72,7 +73,7 @@ test.describe('照合の結果', () => {
             await step('結果の表を右端まで送る')
             const table = page.getByTestId('receipt-result-table')
             await table.hover()
-            await page.mouse.wheel(2000, 0)
+            await wheel(page, { x: 2000 })
             await expect(label).toBeInViewport()
             const tableBox = await table.boundingBox()
             const labelBox = await label.boundingBox()
@@ -116,7 +117,7 @@ test.describe('照合の結果', () => {
 
             await step('結果の表を右端まで送る')
             await table.hover()
-            await page.mouse.wheel(2000, 0)
+            await wheel(page, { x: 2000 })
             // 送った後も、3 列目（主訪問者）は表の外へ出て、2 列目までは表の左端からの位置を変えない
             await expect(staff).not.toBeInViewport()
             // 訪問日の列の左端と表の左端のずれと、利用者名の列の左端と訪問日の列の右端のずれの大きい方

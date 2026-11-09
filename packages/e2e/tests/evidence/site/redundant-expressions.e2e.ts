@@ -11,7 +11,7 @@ import {
 import { EVIDENCE_VARIANTS, recordPrEvidence } from '../../fixtures/evidence'
 import { findSchedule } from '../../fixtures/externalCalendar'
 import { issueManagerToken, STAFF_FORM } from '../../fixtures/staff'
-import { linkStaffCalendar, unlinkStaffCalendar } from '../../screens/calendar'
+import { linkStaffCalendar, unlinkStaffCalendar } from '../../setup/calendar'
 import { signInAtBroker } from '../../screens/login'
 import { receiptCategoryRowCells } from '../../selectors/receipt'
 

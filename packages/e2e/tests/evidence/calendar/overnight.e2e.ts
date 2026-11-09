@@ -15,7 +15,7 @@ import { EVIDENCE_VARIANTS, recordPrEvidence, storyUrl } from '../../fixtures/ev
 import { createGoogleEvent, findGoogleEvent } from '../../fixtures/googleCalendar'
 import { detailDateTimeText } from '../../fixtures/schedule'
 import { STAFF_FORM } from '../../fixtures/staff'
-import { linkStaffCalendar, unlinkStaffCalendar } from '../../screens/calendar'
+import { linkStaffCalendar, unlinkStaffCalendar } from '../../setup/calendar'
 import { signInAtBroker } from '../../screens/login'
 import { calendarpitEvent } from '../../selectors/calendarpit'
 
