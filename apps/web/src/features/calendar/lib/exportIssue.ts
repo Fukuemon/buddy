@@ -8,17 +8,28 @@ type ExportIssueState = Pick<
 >
 
 /**
+ * 確認が必要な予定の日時を、日付の側（「2026年11月4日（水）」、繰り返しは「2026年11月3日（火）から毎回」）と
+ * 時刻の範囲（「10:00〜11:00」、終了が翌日なら「22:00〜翌 01:00」）に分けて返す。表が時刻の範囲を 1 行に保つのに使う。
+ */
+export const formatExportIssueDateTimeParts = (issue: CalendarExportIssue) => {
+  const date = formatDateKey(issue.date)
+  return {
+    date: issue.recurring_schedule_id === null ? date : `${date}から毎回`,
+    time: formatTimeRange(
+      issue.start_time,
+      issue.end_time,
+      issue.ends_next_day ? 'nextDay' : 'sameDay',
+    ),
+  }
+}
+
+/**
  * 確認が必要な予定の日時を「2026年11月4日（水） 10:00〜11:00」の形にする。終了が翌日の予定は「22:00〜翌 01:00」にする。
  * 繰り返しの予定は、最初の回の日付に「から毎回」を付ける。
  */
 export const formatExportIssueDateTime = (issue: CalendarExportIssue) => {
-  const time = formatTimeRange(
-    issue.start_time,
-    issue.end_time,
-    issue.ends_next_day ? 'nextDay' : 'sameDay',
-  )
-  const date = formatDateKey(issue.date)
-  return issue.recurring_schedule_id === null ? `${date} ${time}` : `${date}から毎回 ${time}`
+  const { date, time } = formatExportIssueDateTimeParts(issue)
+  return `${date} ${time}`
 }
 
 /**

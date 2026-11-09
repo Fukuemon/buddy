@@ -2,7 +2,7 @@ import { RowTable, RowTableRow } from '@buddy/ui'
 
 import type { CalendarExportIssue } from '#/api/types'
 
-import { exportIssueReason, formatExportIssueDateTime } from '../lib/exportIssue'
+import { exportIssueReason, formatExportIssueDateTimeParts } from '../lib/exportIssue'
 import { formatDateTime } from '../lib/format'
 
 export type CalendarReviewTableProps = {
@@ -11,23 +11,21 @@ export type CalendarReviewTableProps = {
   onSelect: (exportId: CalendarExportIssue['id']) => void
 }
 
+/** 予定の日時。PC の幅で折り返すときも、時刻の範囲（`22:00〜翌 01:00` を含む）は 1 行に保つ。 */
+const DateTimeText = ({ issue }: { issue: CalendarExportIssue }) => {
+  const { date, time } = formatExportIssueDateTimeParts(issue)
+  return (
+    <>
+      {date} <span className="whitespace-nowrap">{time}</span>
+    </>
+  )
+}
+
 /**
  * 行の testid。予定ごとに 1 行なので、単発の予定は予定の ID で、繰り返しの予定は繰り返しの予定の ID で作る。
  * 書き出しの ID は画面にも予定の応答にも出ないので、E2E は予定の ID で行を指す。
  * 両方の ID が無い書き出しは API の制約で起きないが、起きても行が区別できるよう書き出しの ID で作る。
  */
-/** 予定の日時。PC の幅で折り返すときも、時刻の範囲（最後の空白の後ろ）は 1 行に保つ。 */
-const DateTimeText = ({ issue }: { issue: CalendarExportIssue }) => {
-  const text = formatExportIssueDateTime(issue)
-  const timeStart = text.lastIndexOf(' ') + 1
-  return (
-    <>
-      {text.slice(0, timeStart)}
-      <span className="whitespace-nowrap">{text.slice(timeStart)}</span>
-    </>
-  )
-}
-
 const rowTestId = (issue: CalendarExportIssue) =>
   issue.schedule_id !== null
     ? `calendar-review-row-schedule-${issue.schedule_id}`

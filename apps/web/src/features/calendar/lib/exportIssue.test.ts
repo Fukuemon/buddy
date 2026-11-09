@@ -6,6 +6,7 @@ import {
   exportIssueReason,
   exportIssueReasonDetail,
   formatExportIssueDateTime,
+  formatExportIssueDateTimeParts,
   isCancelledSingleIssue,
 } from './exportIssue'
 
@@ -136,5 +137,21 @@ describe('formatExportIssueDateTime', () => {
         ends_next_day: true,
       }),
     ).toBe('2026年11月4日（水） 22:00〜翌 01:00')
+  })
+})
+
+describe('formatExportIssueDateTimeParts', () => {
+  const issue = mockExportIssues[0]!
+  it('繰り返しの予定は、日付の側に「から毎回」を付け、翌日の印を時刻の範囲の側に入れる', () => {
+    expect(
+      formatExportIssueDateTimeParts({
+        ...issue,
+        date: '2026-11-03',
+        start_time: '22:00',
+        end_time: '01:00',
+        ends_next_day: true,
+        recurring_schedule_id: 'recurring-1',
+      }),
+    ).toEqual({ date: '2026年11月3日（火）から毎回', time: '22:00〜翌 01:00' })
   })
 })
