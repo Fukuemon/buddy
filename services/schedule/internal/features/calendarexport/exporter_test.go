@@ -82,6 +82,8 @@ type scheduleOps struct {
 	Cancel           func(ctx context.Context, scheduleID, reason string) (schedule.Cancellation, error)
 	CancelOccurrence func(ctx context.Context, recurringScheduleID string, originalDate civil.Date, reason string) (schedule.Cancellation, error)
 	Update           func(ctx context.Context, scheduleID string, in schedule.SlotInput) (schedule.Schedule, error)
+	Delete           func(ctx context.Context, scheduleID string) error
+	DeleteOccurrence func(ctx context.Context, recurringScheduleID string, originalDate civil.Date) error
 }
 
 // writerOf は、事業所によらず w で書く calendar.WriterFor を返し、引かれた事業所を used に足す。
@@ -90,6 +92,11 @@ func writerOf(w calendar.EventWriter, used *[]string) calendar.WriterFor {
 		*used = append(*used, facilityID)
 		return w, nil
 	}
+}
+
+// exportToday は、書き出しのテストの今日（2026-11-04）の時刻を返す。規則の変更と削除は、今日より前の予定を変えないためである。
+func exportToday() time.Time {
+	return civil.Date{Year: 2026, Month: 11, Day: 4}.Time().Add(9 * time.Hour)
 }
 
 func newExportEnv(t *testing.T) exportEnv {
@@ -116,11 +123,12 @@ func newExportEnv(t *testing.T) exportEnv {
 		Create:           schedule.NewCreate(facilities, schedules, types, refs, facilities, nil, nil, outbox, tx, ids).Do,
 		CreateRecurring:  schedule.NewCreateRecurring(facilities, types, refs, facilities, nil, nil, recurring, outbox, tx, ids).Do,
 		ChangeOccurrence: schedule.NewChangeOccurrence(recurring, refs, facilities, schedules, types, nil, nil, outbox, tx, ids).Do,
-		// 規則の変更は今日より前の回を変えないので、今日を 2026-11-04 に決める
-		ChangeRule:       schedule.NewChangeRule(recurring, refs, facilities, types, nil, func() time.Time { return civil.Date{Year: 2026, Month: 11, Day: 4}.Time().Add(9 * time.Hour) }, outbox, tx, ids).Do,
+		ChangeRule:       schedule.NewChangeRule(recurring, refs, facilities, types, nil, exportToday, outbox, tx, ids).Do,
 		Cancel:           schedule.NewCancel(schedules, refs, facilities, outbox, tx, ids).Do,
 		CancelOccurrence: schedule.NewCancelOccurrence(recurring, refs, facilities, schedules, types, nil, outbox, tx, ids).Do,
 		Update:           schedule.NewUpdate(schedules, refs, facilities, types, nil, nil, outbox, tx).Do,
+		Delete:           schedule.NewDelete(schedules, refs, facilities, exportToday, outbox, tx, ids).Do,
+		DeleteOccurrence: schedule.NewDeleteOccurrence(recurring, refs, facilities, exportToday, outbox, tx, ids).Do,
 	}
 	writers, logs := &[]string{}, &bytes.Buffer{}
 	exporter := calendarexport.NewExporter(calendarexport.ExporterDeps{

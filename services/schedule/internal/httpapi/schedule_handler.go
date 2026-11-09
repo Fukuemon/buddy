@@ -361,11 +361,7 @@ func (s server) CancelOccurrence(ctx context.Context, req openapi.CancelOccurren
 	if err != nil {
 		return nil, err
 	}
-	f, err := s.staffFacility(ctx)
-	if err != nil {
-		return nil, err
-	}
-	if err := schedule.RequireWritable(f); err != nil {
+	if err := s.requireStaffFacilityWritable(ctx); err != nil {
 		return nil, err
 	}
 	c, err := s.u.Schedules.CancelOccurrence(ctx, req.RecurringScheduleId, original, req.Body.Reason)
@@ -373,6 +369,42 @@ func (s server) CancelOccurrence(ctx context.Context, req openapi.CancelOccurren
 		return nil, err
 	}
 	return openapi.CancelOccurrence201JSONResponse(toCancel(c)), nil
+}
+
+// DeleteSchedule は、schedule の削除を呼ぶ。google_primary の事業所では、何も読まずに 409（google_primary）で拒む（ADR-0040）。
+// google_primary の事業所の予定の ID は Projection の ID で、schedule に渡すと 404 になるためである。
+func (s server) DeleteSchedule(ctx context.Context, req openapi.DeleteScheduleRequestObject) (openapi.DeleteScheduleResponseObject, error) {
+	if err := s.requireStaffFacilityWritable(ctx); err != nil {
+		return nil, err
+	}
+	if err := s.u.Schedules.Delete(ctx, req.ScheduleId); err != nil {
+		return nil, err
+	}
+	return openapi.DeleteSchedule204Response{}, nil
+}
+
+// DeleteOccurrence は、schedule の回の削除を呼ぶ。google_primary の事業所では、CancelOccurrence と同じく何も読まずに 409（google_primary）で拒む。
+func (s server) DeleteOccurrence(ctx context.Context, req openapi.DeleteOccurrenceRequestObject) (openapi.DeleteOccurrenceResponseObject, error) {
+	original, err := bodyDate(req.Body.OriginalDate)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.requireStaffFacilityWritable(ctx); err != nil {
+		return nil, err
+	}
+	if err := s.u.Schedules.DeleteOccurrence(ctx, req.RecurringScheduleId, original); err != nil {
+		return nil, err
+	}
+	return openapi.DeleteOccurrence204Response{}, nil
+}
+
+// requireStaffFacilityWritable は、職員の事業所の予定を buddy から書けるかを確認する。
+func (s server) requireStaffFacilityWritable(ctx context.Context) error {
+	f, err := s.staffFacility(ctx)
+	if err != nil {
+		return err
+	}
+	return schedule.RequireWritable(f)
 }
 
 // staffFacility は、認証のミドルウェアが特定した職員の事業所を返す。パスに事業所の無い予定の操作が、正本のモードを読むのに使う。

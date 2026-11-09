@@ -26,4 +26,7 @@ type ScheduleApp struct {
 	Cancel           func(ctx context.Context, scheduleID, reason string) (schedule.Cancellation, error)
 	CancelOccurrence func(ctx context.Context, recurringScheduleID string, originalDate civil.Date, reason string) (schedule.Cancellation, error)
 	Update           func(ctx context.Context, scheduleID string, in schedule.SlotInput) (schedule.Schedule, error)
+	// Delete と DeleteOccurrence は、誤って入れた単発の予定と、繰り返しの予定の 1 回を削除する（ADR-0040）。
+	Delete           func(ctx context.Context, scheduleID string) error
+	DeleteOccurrence func(ctx context.Context, recurringScheduleID string, originalDate civil.Date) error
 }

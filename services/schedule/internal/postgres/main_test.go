@@ -243,7 +243,7 @@ func TestMigrateDownAndUp(t *testing.T) {
 	if err := MigrateUp(cfg); err != nil {
 		t.Fatal(err)
 	}
-	if err := MigrateDown(cfg, 20); err != nil {
+	if err := MigrateDown(cfg, 21); err != nil {
 		t.Fatal(err)
 	}
 	pool, err := Open(ctx, cfg)
@@ -284,8 +284,8 @@ func TestMigrateReceiptCheckPolicy(t *testing.T) {
 	if err := MigrateUp(cfg); err != nil {
 		t.Fatal(err)
 	}
-	// 後に続く職員の訪問するか（000010）、終了が翌日の予定（000011）、事業所の正本のモード（000012）、予定の写し（000013）、切り替え（000014）、予定の写しの取り消しの行（000015）、Google カレンダーに書いた予定の記録（000016）、記録の読み戻し（000017）、予定を移す書き込みと一覧での予定の ID（000018）、繰り返しの回の一覧での予定の ID（000019）、毎週の複数の曜日と間隔（000020）のマイグレーションと合わせて戻す
-	if err := MigrateDown(cfg, 12); err != nil {
+	// 後に続く職員の訪問するか（000010）、終了が翌日の予定（000011）、事業所の正本のモード（000012）、予定の写し（000013）、切り替え（000014）、予定の写しの取り消しの行（000015）、Google カレンダーに書いた予定の記録（000016）、記録の読み戻し（000017）、予定を移す書き込みと一覧での予定の ID（000018）、繰り返しの回の一覧での予定の ID（000019）、毎週の複数の曜日と間隔（000020）、予定の削除（000021）のマイグレーションと合わせて戻す
+	if err := MigrateDown(cfg, 13); err != nil {
 		t.Fatal(err)
 	}
 	pool, err := Open(ctx, cfg)
@@ -377,7 +377,7 @@ func TestMigrateReceiptCheckPolicy(t *testing.T) {
 	}
 
 	// 戻しても事務の役職は残り、照合の権限だけが消える。
-	if err := MigrateDown(cfg, 12); err != nil {
+	if err := MigrateDown(cfg, 13); err != nil {
 		t.Fatal(err)
 	}
 	if got, want := clerkPolicies(t, pool, facility), []string{"schedule.all.edit", "schedule.all.read"}; !slices.Equal(got, want) {
@@ -417,8 +417,8 @@ func TestMigrateTeamColor(t *testing.T) {
 	if err := MigrateUp(cfg); err != nil {
 		t.Fatal(err)
 	}
-	// 後に続く照合の権限（000009）、職員の訪問するか（000010）、終了が翌日の予定（000011）、事業所の正本のモード（000012）、予定の写し（000013）、切り替え（000014）、予定の写しの取り消しの行（000015）、Google カレンダーに書いた予定の記録（000016）、記録の読み戻し（000017）、予定を移す書き込みと一覧での予定の ID（000018）、繰り返しの回の一覧での予定の ID（000019）、毎週の複数の曜日と間隔（000020）のマイグレーションと合わせて戻す
-	if err := MigrateDown(cfg, 13); err != nil {
+	// 後に続く照合の権限（000009）、職員の訪問するか（000010）、終了が翌日の予定（000011）、事業所の正本のモード（000012）、予定の写し（000013）、切り替え（000014）、予定の写しの取り消しの行（000015）、Google カレンダーに書いた予定の記録（000016）、記録の読み戻し（000017）、予定を移す書き込みと一覧での予定の ID（000018）、繰り返しの回の一覧での予定の ID（000019）、毎週の複数の曜日と間隔（000020）、予定の削除（000021）のマイグレーションと合わせて戻す
+	if err := MigrateDown(cfg, 14); err != nil {
 		t.Fatal(err)
 	}
 	pool, err := Open(ctx, cfg)
@@ -476,7 +476,7 @@ func TestMigrateRecurringWeeklyDays(t *testing.T) {
 	if err := MigrateUp(cfg); err != nil {
 		t.Fatal(err)
 	}
-	if err := MigrateDown(cfg, 1); err != nil {
+	if err := MigrateDown(cfg, 2); err != nil {
 		t.Fatal(err)
 	}
 	pool, err := Open(ctx, cfg)
@@ -586,7 +586,7 @@ func TestMigrateFacilitySourceMode(t *testing.T) {
 	if err := MigrateUp(cfg); err != nil {
 		t.Fatal(err)
 	}
-	if err := MigrateDown(cfg, 9); err != nil {
+	if err := MigrateDown(cfg, 10); err != nil {
 		t.Fatal(err)
 	}
 	pool, err := Open(ctx, cfg)
