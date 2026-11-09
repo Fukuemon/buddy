@@ -31,6 +31,8 @@ const config = defineConfig({
     include: ['src/**/*.test.{ts,tsx}'],
     setupFiles: ['src/test/setup.ts'],
     css: false,
+    // 既定の CPU の数より 1 少ないワーカーでは、ほかの処理と並べて流したときに CPU が足りず、findBy の待ちを超えて落ちる（#894）
+    maxWorkers: '50%',
   },
 })
 
