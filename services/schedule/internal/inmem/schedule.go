@@ -119,7 +119,7 @@ func (s Schedules) Delete(_ context.Context, d schedule.Deletion) error {
 		case e.Status == calendar.ExportSucceeded:
 			delete(s.Exports, id)
 		default:
-			if e.Status != calendar.ExportPending {
+			if e.Status != calendar.ExportPending || e.LockedUntil == nil || !e.LockedUntil.After(time.Now()) {
 				e.Attempts = 0
 			}
 			e.ScheduleID, e.DeletedScheduleID, e.Status, e.ErrorCode, e.NextAttemptAt = "", d.ScheduleID, calendar.ExportPending, nil, time.Now()

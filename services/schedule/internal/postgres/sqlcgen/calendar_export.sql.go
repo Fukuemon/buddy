@@ -395,13 +395,14 @@ func (q *Queries) MarkCalendarExportWriting(ctx context.Context, arg MarkCalenda
 const moveScheduleExportToDeletion = `-- name: MoveScheduleExportToDeletion :exec
 UPDATE calendar_exports
 SET deleted_schedule_id = schedule_id, schedule_id = NULL, revision = revision + 1, status = 'pending',
-    attempts = CASE WHEN status = 'pending' THEN attempts ELSE 0 END, error_code = NULL, next_attempt_at = now()
+    attempts = CASE WHEN status = 'pending' AND locked_until > now() THEN attempts ELSE 0 END, error_code = NULL, next_attempt_at = now()
 WHERE schedule_id = $1 AND status <> 'succeeded'
 `
 
 // 予定の行を消す前に、終わっていない待ちを削除の待ちに付け替える（#964）。予定の行を消すと、待ちは ON DELETE CASCADE で消えるためである。
 // 付け替えた待ちは、書いている処理の lease が解けるまで取られないので、作っている途中の外部の予定を、作り終えた後に消せる。
-// 削除は外部の変更より優先するので、確認が必要な待ちも pending に戻す。書いている処理の結果は、revision の違いで捨てられる。
+// 削除は外部の変更より優先するので、確認が必要な待ちも pending に戻し、書き直しの回数を数え直す。
+// 書いている処理が lease を持つ待ちだけは回数を保つ。その処理の Finish が、取ったときの回数と比べて revision の違いを見つけ、Release で数え直すためである。
 func (q *Queries) MoveScheduleExportToDeletion(ctx context.Context, scheduleID *string) error {
 	_, err := q.db.Exec(ctx, moveScheduleExportToDeletion, scheduleID)
 	return err

@@ -110,6 +110,88 @@ func TestScheduleDeleteInDB(t *testing.T) {
 	}
 }
 
+// TestScheduleDeleteMovesPendingExport は、予定の削除が、書いている処理が lease を持つ待ちの書き直しの回数を保ち、
+// 書き直しの間隔を空けている待ちの回数を数え直すことを確認する。前者は、書いている処理の Finish が回数で自分の待ちと分かるためである。
+func TestScheduleDeleteMovesPendingExport(t *testing.T) {
+	cases := []struct {
+		name   string
+		locked string
+		want   int
+	}{
+		{"書いている処理が lease を持つ", "now() + interval '1 minute'", 4},
+		{"書き直しの間隔を空けている", "NULL", 0},
+		{"lease が切れている", "now() - interval '1 second'", 0},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			ctx := txContext(t)
+			schedules, exports := NewScheduleRepository(testDB), NewCalendarExportRepository(testDB)
+			const exportID = "01M3TD000000000000000000X8"
+			cur, err := schedules.Get(ctx, seedVisitSchedule)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if err := exports.Enqueue(ctx, exportID, calendar.Target{FacilityID: seedFacility, ScheduleID: seedVisitSchedule}); err != nil {
+				t.Fatal(err)
+			}
+			tx := ctx.Value(txKey{}).(pgx.Tx)
+			if _, err := tx.Exec(ctx, "UPDATE calendar_exports SET attempts = 4, locked_until = "+tc.locked+" WHERE id = $1", exportID); err != nil {
+				t.Fatal(err)
+			}
+			if err := schedules.Delete(ctx, schedule.Deletion{ID: "01M3TD000000000000000000D9", FacilityID: seedFacility, ScheduleID: seedVisitSchedule,
+				Date: cur.Date, StaffID: cur.StaffID, DeletedBy: seedMori}); err != nil {
+				t.Fatal(err)
+			}
+			e, err := exports.Get(ctx, exportID)
+			if err != nil || e.DeletedScheduleID != seedVisitSchedule || e.Status != calendar.ExportPending || e.Attempts != tc.want {
+				t.Errorf("付け替えた待ち = %+v, %v, want 回数 %d の pending の削除の待ち", e, err, tc.want)
+			}
+		})
+	}
+}
+
+// TestCalendarExportMarkWriting は、作ろうとしたカレンダーを、取ったときの回数が今の回数と同じ待ちにだけ書くことを確認する。
+func TestCalendarExportMarkWriting(t *testing.T) {
+	ctx := txContext(t)
+	calendars, exports := NewCalendarRepository(testDB), NewCalendarExportRepository(testDB)
+	const (
+		calID    = "01M3TD000000000000000000C2"
+		exportID = "01M3TD000000000000000000X9"
+	)
+	if err := calendars.Create(ctx, calendar.ExternalCalendar{ID: calID, FacilityID: seedFacility, StaffID: seedMori, Provider: calendar.ProviderGoogle, CalendarID: "mori@example.com"}); err != nil {
+		t.Fatal(err)
+	}
+	if err := exports.Enqueue(ctx, exportID, calendar.Target{FacilityID: seedFacility, ScheduleID: seedVisitSchedule}); err != nil {
+		t.Fatal(err)
+	}
+	tx := ctx.Value(txKey{}).(pgx.Tx)
+	if _, err := tx.Exec(ctx, "UPDATE calendar_exports SET attempts = 2 WHERE id = $1", exportID); err != nil {
+		t.Fatal(err)
+	}
+	if err := exports.MarkWriting(ctx, calendar.Export{ID: exportID, Attempts: 1}, calID); !errors.Is(err, apperr.ErrConflict) {
+		t.Errorf("取り直された待ちへの MarkWriting: err = %v, want ErrConflict", err)
+	}
+	if e, _ := exports.Get(ctx, exportID); e.WritingCalendarID != "" {
+		t.Errorf("取り直された待ちに書いた: %q", e.WritingCalendarID)
+	}
+	e, err := exports.Get(ctx, exportID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := exports.MarkWriting(ctx, e, calID); err != nil {
+		t.Fatal(err)
+	}
+	if got, _ := exports.Get(ctx, exportID); got.WritingCalendarID != calID {
+		t.Errorf("作ろうとしたカレンダー = %q, want %s", got.WritingCalendarID, calID)
+	}
+	if err := exports.Finish(ctx, e, calendar.ExportResult{Status: calendar.ExportSucceeded}); err != nil {
+		t.Fatal(err)
+	}
+	if got, _ := exports.Get(ctx, exportID); got.Status != calendar.ExportSucceeded || got.WritingCalendarID != "" {
+		t.Errorf("書き終えた待ち = %+v, want 作ろうとしたカレンダーを空にする", got)
+	}
+}
+
 // TestRecurringDeleteOccurrenceInDB は、回の削除が除外する日と監査の記録を書き、同じ日の 2 度目を ErrConflict で拒むことを確認する。
 func TestRecurringDeleteOccurrenceInDB(t *testing.T) {
 	ctx := txContext(t)
