@@ -202,11 +202,19 @@ test.describe('予定のカレンダー', () => {
               await page.setViewportSize(PHONE_VIEWPORT)
               await page.goto(`/schedule?view=week&date=${days[0]}`)
               await expect(page.getByTestId('schedule-agenda')).toBeVisible()
-              for (const day of days) {
-                const row = page.getByTestId(new RegExp(`^all-day-event-.+-${day}$`))
-                await expect(row).toContainText(title)
+              // 行の testid は予定の API の内部の ID を含み spec から組み立てられないので、タイトルで絞った行を日の順に読む
+              const rows = page.getByTestId(/^all-day-event-/).filter({ hasText: title })
+              await expect(rows).toHaveCount(days.length)
+              const headingTop = async (day: string) =>
+                (await page.getByTestId(`schedule-agenda-day-${day}`).boundingBox())?.y ?? NaN
+              for (const [i, day] of days.entries()) {
+                const row = rows.nth(i)
                 await expect(row).toBeInViewport()
                 await expect(page.getByTestId(`schedule-agenda-day-${day}`)).toBeInViewport()
+                const rowTop = (await row.boundingBox())?.y ?? NaN
+                // 行が、その日の見出しの下で、次の日の見出しより上にあることで、どの日の行かを確認する
+                expect(rowTop).toBeGreaterThan(await headingTop(day))
+                expect(rowTop).toBeLessThan(await headingTop(addDays(day, 1)))
               }
               await check(
                 `週の一覧の ${days.map(dayLabel).join('、')} のそれぞれの日の見出しの下に「${title}」が出る`,
