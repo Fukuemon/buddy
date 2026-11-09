@@ -234,13 +234,13 @@ func (s StaffAssignments) From(_ context.Context, facilityID, staffID string, fr
 		if _, cancelled := s.Cancels[id]; cancelled || d.FacilityID != facilityID || d.Date.Before(from) || !assigned(d.Slot, d.VisitInfoID) {
 			continue
 		}
-		out.Schedules = append(out.Schedules, staff.AssignedSchedule{ID: id, Date: d.Date, StartTime: d.StartTime, EndTime: d.EndTime})
+		out.Schedules = append(out.Schedules, staff.AssignedSchedule{ID: id, Date: d.Date, StartTime: d.StartTime, EndTime: d.EndTime, EndsNextDay: d.EndsNextDay})
 	}
 	for id, d := range s.Recurring {
 		if d.FacilityID != facilityID || (d.Rule.EndDate != nil && d.Rule.EndDate.Before(from)) || !assigned(d.Slot, d.VisitInfoID) {
 			continue
 		}
-		out.RecurringSchedules = append(out.RecurringSchedules, staff.AssignedRecurring{ID: id, Date: d.Date, EndDate: d.Rule.EndDate, StartTime: d.StartTime, EndTime: d.EndTime})
+		out.RecurringSchedules = append(out.RecurringSchedules, staff.AssignedRecurring{ID: id, Date: d.Date, EndDate: d.Rule.EndDate, StartTime: d.StartTime, EndTime: d.EndTime, EndsNextDay: d.EndsNextDay})
 	}
 	for id, p := range s.Patients {
 		if p.FacilityID == facilityID && p.AssignedStaffID == staffID && !p.IsEnded() {

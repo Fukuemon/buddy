@@ -27,8 +27,35 @@ func (s VisitInfos) DeleteIfUnused(_ context.Context, id string) error {
 			return nil
 		}
 	}
+	for _, r := range s.Records {
+		if (r.VisitInfoID != nil && *r.VisitInfoID == id) || (r.Pending != nil && r.Pending.VisitInfoID != nil && *r.Pending.VisitInfoID == id) {
+			return nil
+		}
+	}
 	delete(s.Infos, id)
 	return nil
+}
+
+// GetDetail は、calendarwrite.VisitDetails の GetDetail を実装する。名前は、利用者、職員、サービスコード、区分のマスタから引く。
+func (s VisitInfos) GetDetail(_ context.Context, id string) (visit.Detail, error) {
+	i, err := get(s.Infos, id)
+	if err != nil {
+		return visit.Detail{}, err
+	}
+	d := visit.Detail{
+		ID: i.ID, PatientID: i.PatientID, PatientName: s.Patients[i.PatientID].Name,
+		AssignedStaffID: i.AssignedStaffID, AssignedStaffName: s.Staff[i.AssignedStaffID].Username,
+		CompanionID: i.CompanionID, ServiceCodeID: i.ServiceCodeID, ServiceCode: s.Codes[i.ServiceCodeID].Code,
+		Categories: []visit.Category{},
+	}
+	if i.CompanionID != nil {
+		name := s.Staff[*i.CompanionID].Username
+		d.CompanionName = &name
+	}
+	for _, c := range i.CategoryIDs {
+		d.Categories = append(d.Categories, s.Categories[c])
+	}
+	return d, nil
 }
 
 // VisitCategories は、visit.CategoryRepository のメモリ上の実装である。

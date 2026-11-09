@@ -12,6 +12,7 @@
 | `schedule-new` | `/schedule/new` | [予定の作成](schedule-new_予定の作成/index.md) |
 | `schedule-detail` | `/schedule/$scheduleId` | [予定の詳細](schedule-detail_予定の詳細/index.md) |
 | `schedule-edit` | `/schedule/$scheduleId/edit` | [予定の編集](schedule-edit_予定の編集/index.md) |
+| `schedule-recurrence` | `/schedule/$scheduleId/recurrence` | [繰り返しの変更](schedule-recurrence_繰り返しの変更/index.md) |
 | `schedule-link` | `/schedule/link` | [カレンダーの連携](schedule-link_カレンダーの連携/index.md) |
 | `schedule-import` | `/schedule/import` | [予定の取り込み](schedule-import_予定の取り込み/index.md) |
 | `schedule-review` | `/schedule/review` | [確認が必要な予定](schedule-review_確認が必要な予定/index.md) |
@@ -27,7 +28,7 @@
 | `receipt-result` | `/receipt/result` | [照合の結果](receipt-result_照合の結果/index.md) |
 | `account-login` | `/auth/login` | [ログイン](account-login_ログイン/index.md) |
 | `account-error` | `/auth/error` | [ログインの失敗](account-error_ログインの失敗/index.md) |
-| `account-profile` | 未決 | プロフィールの仕様書は無い |
+| `account-profile` | `/me` | [自分の情報](account-profile_自分の情報/index.md) |
 
 - 役職と権限の対応は、[PRD の役職ごとの権限](../PRD.md#役職ごとの権限) にある。
 - 予定の作成、詳細、編集は、予定のカレンダーの上にモーダルとして重ねて出す。
@@ -61,6 +62,7 @@
 | `import` | 外部のサービスからの取り込み |
 | `review` | 人が確認して決める必要があるものの一覧 |
 | `cutover` | 正本の切り替え |
+| `recurrence` | 繰り返しの規則の変更 |
 | `login`、`profile`、`error` | `account` のドメインだけで使う。`error` はログインの失敗 |
 
 - 固有の URL を持つものを 1 つの画面に数える。
@@ -74,7 +76,7 @@
 ## 画面の間の遷移
 
 ログインした後の画面は、左端のナビゲーションで互いに移れる。  
-ナビゲーションは、見出し「予定」の下にカレンダー、取り込み、要確認、連携を並べ、見出し「照合」の下に照合を、見出し「職員」の下に職員と部署とチームを、見出し「利用者」の下に利用者を並べる。  
+ナビゲーションの見出しと項目、出す職員は、[職員の一覧のナビゲーション](staff-list_職員の一覧/index.md#ナビゲーション) にある。  
 予定と照合の画面の間の遷移は次のとおり。
 
 ```mermaid
@@ -84,6 +86,7 @@ flowchart TB
   create["予定の作成<br/>/schedule/new"]
   detail["予定の詳細<br/>/schedule/$scheduleId"]
   edit["予定の編集<br/>/schedule/$scheduleId/edit"]
+  recurrence["繰り返しの変更<br/>/schedule/$scheduleId/recurrence"]
   upload["照合<br/>/receipt"]
   result["照合の結果<br/>/receipt/result"]
   root -- "リダイレクト" --> calendar
@@ -91,9 +94,12 @@ flowchart TB
   create -- "作成に成功、閉じる" --> calendar
   calendar -- "予定を押す" --> detail
   detail -- "閉じる" --> calendar
-  detail -- "編集" --> edit
+  detail -- "編集、繰り返しの回の「この予定を編集」" --> edit
   edit -- "保存に成功、閉じる" --> detail
   edit -- "取得の失敗から閉じる" --> calendar
+  detail -- "繰り返しの回の「繰り返しを変更」" --> recurrence
+  recurrence -- "保存に成功" --> calendar
+  recurrence -- "閉じる" --> detail
   calendar -- "ナビゲーションの「照合」" --> upload
   upload -- "ナビゲーションの「カレンダー」" --> calendar
   upload -- "照合に成功" --> result
@@ -101,7 +107,6 @@ flowchart TB
   result -- "ナビゲーションの「カレンダー」" --> calendar
 ```
 
-ナビゲーションの取り込み、要確認、連携が出るのは、職員の管理の権限を持つ職員だけである。  
 カレンダーの連携、予定の取り込み、確認が必要な予定の画面にも、同じナビゲーションを出す。  
 職員の管理の権限を持つ職員が使う、Google カレンダーとの連携の画面の間の遷移は次のとおり。  
 図には、ナビゲーションによる遷移のうち、予定のカレンダーとの間の遷移だけを描く。
@@ -129,7 +134,6 @@ flowchart TB
   review -- "ナビゲーションの「カレンダー」" --> calendar
 ```
 
-ナビゲーションの見出し「職員」のまとまりも、職員の管理の権限を持つ職員にだけ出す。  
 職員の画面の間の遷移は次のとおり。  
 図には、ナビゲーションによる遷移のうち、予定のカレンダーとの間の遷移だけを描く。
 
@@ -153,7 +157,6 @@ flowchart TB
 部署とチームの画面は、見出し「職員」の下の「部署とチーム」から開く。  
 部署とチームの作成と編集は URL を持たないダイアログで、画面の間の遷移は無い。
 
-ナビゲーションの見出し「利用者」のまとまりも、職員の管理の権限を持つ職員にだけ出す。  
 利用者の画面の間の遷移は次のとおり。  
 図には、ナビゲーションによる遷移のうち、予定のカレンダーとの間の遷移だけを描く。
 
@@ -173,6 +176,9 @@ flowchart TB
   patient -- "利用の終了の確認の、残る予定" --> scheduleDetail
   list -- "ナビゲーションの「カレンダー」" --> calendar
 ```
+
+自分の情報の画面は、ヘッダーを出す全ての画面の、アカウントのメニューの「自分の情報」から開く。  
+職員の管理の権限を持つ職員は、自分の情報の「職員の詳細を開く」で、自分の職員の詳細へ移れる。
 
 ログアウトすると `/` へ移り、ログインしていないので、`/` からそのままログインへ進む。  
 ログインした後は、`/` を経て予定のカレンダーに戻る。  

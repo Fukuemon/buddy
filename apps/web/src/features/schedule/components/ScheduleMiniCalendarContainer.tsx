@@ -2,6 +2,7 @@ import { useNavigate, useSearch } from '@tanstack/react-router'
 import { useState } from 'react'
 
 import { toDateKey } from '../lib/dateTime'
+import { resolveCalendarView } from '../schema/scheduleSearch'
 import { ScheduleMiniCalendar } from './ScheduleMiniCalendar'
 
 export type ScheduleMiniCalendarContainerProps = {
@@ -25,7 +26,7 @@ export const ScheduleMiniCalendarContainer = ({
         onSelected?.()
       }}
       today={today}
-      view={search.view}
+      view={resolveCalendarView(search.view)}
     />
   )
 }

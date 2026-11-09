@@ -84,6 +84,7 @@ export const createFakePatientApi = ({
           date: s.startsAt.slice(0, 10),
           start_time: s.startsAt.slice(11, 16),
           end_time: s.endsAt.slice(11, 16),
+          ends_next_day: s.endsAt.slice(0, 10) !== s.startsAt.slice(0, 10),
         })),
       recurring_schedules: [],
     }

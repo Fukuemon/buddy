@@ -2,6 +2,8 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 
 import { queryKeys } from '#/api/queryKeys'
+import { failedBeforeLoad, hasRefetchFailed, refetchFailedQueries } from '#/api/refetch'
+import type { CalendarCutover } from '#/api/types'
 import { useBuddyApi } from '#/api/useBuddyApi'
 
 import {
@@ -31,9 +33,11 @@ export const CalendarCutoverContainer = () => {
   const start = useStartCutover()
   const complete = useCompleteCutover()
   const cancel = useCancelCutover()
-  const [isCancelOpen, setIsCancelOpen] = useState(false)
+  // やめる前の確認を開いた切り替え。ほかの画面でやめた後に始め直した切り替えでは、ダイアログを開かない
+  const [cancelTargetId, setCancelTargetId] = useState<CalendarCutover['id'] | null>(null)
 
-  const failed = [facilityQuery, cutoverQuery].find((query) => query.isError)
+  const screenQueries = [facilityQuery, cutoverQuery]
+  const failed = failedBeforeLoad(screenQueries)
   const completion = complete.data
   const open = cutoverQuery.data?.cutover ?? null
   const state: CalendarCutoverViewState =
@@ -65,12 +69,14 @@ export const CalendarCutoverContainer = () => {
         isStarting={start.isPending}
         onCancel={() => {
           cancel.reset()
-          setIsCancelOpen(true)
+          setCancelTargetId(open?.id ?? null)
         }}
         onComplete={() => {
           if (open !== null) complete.mutate(open.id)
         }}
+        onRefetch={() => refetchFailedQueries(screenQueries)}
         onRetry={retry}
+        refetchFailed={hasRefetchFailed(screenQueries)}
         onStart={() => {
           complete.reset()
           start.mutate()
@@ -79,16 +85,17 @@ export const CalendarCutoverContainer = () => {
         state={state}
         unmet={completion !== undefined && 'unmet' in completion ? completion.unmet : undefined}
       />
-      {isCancelOpen && open !== null && (
+      {open !== null && cancelTargetId === open.id && (
         <CalendarCutoverCancelDialog
           errorMessage={cancel.isError ? cutoverErrorMessage(cancel.error) : undefined}
           isSubmitting={cancel.isPending}
-          onCancel={() => setIsCancelOpen(false)}
+          onCancel={() => setCancelTargetId(null)}
           onSubmit={() =>
             cancel.mutate(open.id, {
               onSuccess: () => {
-                setIsCancelOpen(false)
+                setCancelTargetId(null)
                 complete.reset()
+                start.reset()
               },
             })
           }

@@ -135,7 +135,7 @@ ORDER BY u.id;
 
 -- name: ListStaffSchedulesFrom :many
 -- 職員が予定の職員、主訪問者、同行者のどれかの、from 以降のキャンセルしていない単発の予定を返す。
-SELECT s.id, s.date, s.start_time, s.end_time
+SELECT s.id, s.date, s.start_time, s.end_time, s.ends_next_day
 FROM schedules s
 LEFT JOIN visit_infos v ON v.id = s.visit_info_id
 WHERE s.facility_id = sqlc.arg(facility_id)
@@ -146,7 +146,7 @@ ORDER BY s.date, s.start_time, s.id;
 
 -- name: ListStaffRecurringSchedulesFrom :many
 -- 職員が予定の職員、主訪問者、同行者のどれかの、from 以降に終わる繰り返しの予定を返す。終了日の無い繰り返しは含める。
-SELECT r.id, r.date, r.end_date, r.start_time, r.end_time
+SELECT r.id, r.date, r.end_date, r.start_time, r.end_time, r.ends_next_day
 FROM recurring_schedules r
 LEFT JOIN visit_infos v ON v.id = r.visit_info_id
 WHERE r.facility_id = sqlc.arg(facility_id)
@@ -155,7 +155,7 @@ WHERE r.facility_id = sqlc.arg(facility_id)
 ORDER BY r.date, r.start_time, r.id;
 
 -- name: ListStaffAssignedPatients :many
--- 利用の終了の利用者は、担当に数えない（ADR-0021）。
+-- 利用の終了の利用者は、担当に数えない（ADR-0005）。
 SELECT id, name FROM patients WHERE facility_id = $1 AND assigned_staff_id = $2 AND ended_at IS NULL ORDER BY name, id;
 
 -- name: GetUserRef :one

@@ -9,22 +9,15 @@ import * as Stories from './SearchBox.stories'
 
 一覧を語で絞り込む検索欄。入力のたびに `onSearch` を呼ぶ。
 
-## 使う場面
+## 規則
 
-- 職員や利用者の一覧を、名前の語で絞り込む
+規則の本文は、デザインシステムの文書の次のセクションにある。
 
-## 使わない場面
-
-- 決まった選択肢から選ぶ（`SegmentedControl` か選択肢のカード）
-
-## Do
-
-- `aria-label` に何を検索するかを書く（例は「職員を検索」）
-- 間引きが要るときは呼び出す側で行う
-
-## Don't
-
-- プレースホルダーだけで用途を伝える
+- 使う場面、使わない場面、キーボードの操作: コンポーネントの文書（`packages/ui/design/components.md`）の「コンポーネントの選び方」の `SearchBox` の行
+- 使い方の規則と Do と Don't: コンポーネントの文書の「コンポーネントごとの規則」の「`SearchBox`」
+- 枠と面の状態（hover、フォーカス、無効）: コンポーネントの文書の「入力の欄の状態」
+- 当たる原則: DESIGN.md の「画面を作るときの原則」の次の ID
+  - `FOCUS-ONE`
 
 ## 状態
 
@@ -38,8 +31,6 @@ import * as Stories from './SearchBox.stories'
 
 ### hover
 
-枠を黒にする。
-
 <Canvas of={Stories.Hover} />
 
 ### フォーカス
@@ -52,14 +43,7 @@ import * as Stories from './SearchBox.stories'
 
 ### 無効で hover
 
-枠の色を変えない。
-
 <Canvas of={Stories.DisabledHover} />
-
-## キーボードの操作
-
-- Tab で欄に移る
-- Esc で語を消す。見えるラベルがないので `aria-label` を渡す
 
 ## props
 

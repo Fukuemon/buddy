@@ -26,6 +26,12 @@ type Detail struct {
 	Source Source
 	// ReviewReason は、Projection の予定のうち、確認が必要な予定の理由で、ほかの予定では空である。
 	ReviewReason ReviewReason
+	// ETag は、Projection の予定と Google カレンダーに書いた予定の、Google の etag である。繰り返しの予定の展開した回では、親の予定の etag である。buddy の予定では空である。
+	// 画面は、予定を変えるか取り消すときに、読んだ etag を送る。
+	ETag string
+	// Rule は、google_primary の事業所で、繰り返しの親を展開した回の、親の繰り返しの規則である。ほかの予定では nil である。
+	// このとき RecurringScheduleID は、親の予定の一覧での ID で、画面はこの 2 つで規則の変更（changeRecurringRule）を送る（ADR-0037）。
+	Rule *schedule.Rule
 }
 
 // Source は、予定の読み元である。
@@ -54,6 +60,9 @@ const (
 	ReviewServiceCodeNotFound ReviewReason = "service_code_not_found"
 	// ReviewTitleUnreadable は、タイトルが空白だけか、訪問のタイトルを読めない予定である。
 	ReviewTitleUnreadable ReviewReason = "title_unreadable"
+	// ReviewTitleMismatch は、buddy の DB に訪問の情報がある予定のうち、タイトルの利用者かサービス内容が訪問の情報と違う予定である。
+	// Google でタイトルを変えたときに当たる。訪問の情報は DB の内容で返す（ADR-0029）。
+	ReviewTitleMismatch ReviewReason = "title_mismatch"
 )
 
 // RecurringDetail は、繰り返しの予定と、種類、職員、訪問の情報の名前と、除外した日付である。Visit は、ないときに nil である。
@@ -78,7 +87,7 @@ func ParseSort(field, order string) (kernel.Sort, error) {
 }
 
 // ListQuery は、予定の一覧の絞り込みと並べ替えである。nil の絞り込みは使わない。
-// DateFrom と DateTo は、予定の日付（開始の日）で両端を含む。DateFrom の前の日に始まり DateFrom に終わる予定も含む（ADR-0023）。
+// DateFrom と DateTo は、予定の日付（開始の日）で両端を含む。DateFrom の前の日に始まり DateFrom に終わる予定も含む（ADR-0033）。
 // 繰り返しの予定には、日付の絞り込みを使わない。
 type ListQuery struct {
 	TypeName *schedule.TypeName
@@ -103,6 +112,12 @@ type Listing struct {
 	RecurringSchedules []RecurringDetail
 	SourceMode         organization.SourceMode
 	CalendarSyncs      []CalendarSync
-	// Cutover は、google_primary の事業所の open の切り替えで、無ければ nil である。画面は「切り替え中」を出す（ADR-0035）。
+	// Cutover は、google_primary の事業所の open の切り替えで、無ければ nil である。画面は「切り替え中」を出す（ADR-0031）。
 	Cutover *OpenCutover
+	// AllDayEvents は、google_primary の事業所で、期間に重なる見てよい職員の終日の予定である。buddy_primary の事業所と、
+	// 予定の種類で絞ったときは空である（#672）。
+	AllDayEvents []AllDayEvent
+	// UnlistedEventCounts は、google_primary の事業所で、期間に重なる見てよい職員の、一覧に出せない予定の職員ごとの件数である。
+	// buddy_primary の事業所と、予定の種類で絞ったときは空である（#672）。
+	UnlistedEventCounts []UnlistedEventCount
 }

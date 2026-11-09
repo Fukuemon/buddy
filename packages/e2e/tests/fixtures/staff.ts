@@ -1,7 +1,7 @@
-import type { APIRequestContext } from '@playwright/test'
+import { request as apiRequest, type APIRequestContext } from '@playwright/test'
 
 import { issueAccessToken } from './apiReference'
-import { LOGIN_EMAIL, SCHEDULE_URL } from './env'
+import { BASE_URL, LOGIN_EMAIL, SCHEDULE_URL } from './env'
 
 /** 取り直すまでの時間。Hydra の access token の有効期間（5 分）より短くする。 */
 const TOKEN_REUSE_MS = 4 * 60 * 1000
@@ -11,10 +11,22 @@ let managerToken: { value: string; issuedAt: number } | undefined
 /**
  * マネージャー（LOGIN_EMAIL）の access token を返す。ブローカーはメールごとにログインの試行の回数を数えるので、
  * worker の中で 1 つを使い回し、TOKEN_REUSE_MS を過ぎたら取り直す。
+ * トークンは、ログインの状態を持たない新しい request の context で取る。spec の request が別の職員の Hydra のセッションを持つと、
+ * Hydra がその職員のログインを覚えていて、マネージャーのトークンを取れないためである。
+ * テストの中で作る context は、project と test.use の storageState を引き継ぐので、空の storageState を明示する。
+ * 証明書のエラーの扱いは、playwright.config.ts の use と同じにする。
  */
-export const issueManagerToken = async (request: APIRequestContext) => {
+export const issueManagerToken = async () => {
   if (managerToken === undefined || Date.now() - managerToken.issuedAt > TOKEN_REUSE_MS) {
-    managerToken = { value: await issueAccessToken(request, LOGIN_EMAIL), issuedAt: Date.now() }
+    const context = await apiRequest.newContext({
+      storageState: { cookies: [], origins: [] },
+      ignoreHTTPSErrors: BASE_URL.startsWith('https://'),
+    })
+    try {
+      managerToken = { value: await issueAccessToken(context, LOGIN_EMAIL), issuedAt: Date.now() }
+    } finally {
+      await context.dispose()
+    }
   }
   return managerToken.value
 }
@@ -153,7 +165,7 @@ export const updateStaff = (
   })
 
 /**
- * 職員 userId を、名前、部署、チームを変えずに訪問しない職員にし（ADR-0022）、レスポンスを返す。
+ * 職員 userId を、名前、部署、チームを変えずに訪問しない職員にし（ADR-0006）、レスポンスを返す。
  * 電話番号は消す。今日以降の予定か担当の利用者が残れば、予定の API が 409 を返す。
  */
 export const setNonVisiting = async (request: APIRequestContext, token: string, userId: string) => {

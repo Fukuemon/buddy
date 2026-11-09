@@ -23,6 +23,8 @@ type LoginTransaction = { codeVerifier: string; nonce: string; returnTo: string 
 export type AuthDeps = SessionDeps & {
   /** cookie に Secure を付けるか。 */
   usesSecureCookie: boolean
+  /** ブラウザが開く web のオリジン。あれば、ログインとログアウトの戻り先の URL のオリジンをこれにする。 */
+  publicUrl?: string
   /** access token の職員を予定の API の GET /v1/me で引く。 */
   getMe: (accessToken: string) => Promise<MeResult>
 }
@@ -34,6 +36,16 @@ const loginKey = (state: string) => `login:${state}`
 const cookie = (deps: AuthDeps, name: string, value: string, maxAge: number) => {
   const secure = deps.usesSecureCookie ? '; Secure' : ''
   return `${name}=${encodeURIComponent(value)}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${maxAge}${secure}`
+}
+
+/**
+ * リクエストの URL を、ブラウザが開く URL にする。publicUrl があれば、オリジン（スキーム、ホスト、ポート）をそれに置き換える。
+ * publicUrl にポートが無ければ、リクエストの URL のポートも外す。
+ */
+const browserUrlOf = (request: Request, deps: AuthDeps) => {
+  const url = new URL(request.url)
+  if (deps.publicUrl === undefined) return url
+  return new URL(url.pathname + url.search, new URL(deps.publicUrl).origin)
 }
 
 const redirect = (location: string, cookies: string[] = []) => {
@@ -69,7 +81,7 @@ export const safeReturnTo = (value: string | null) => {
  * ログインの失敗の画面から入り直すときに使う。Hydra は失敗した職員のログインのセッションも保っているので、使うと同じ職員に戻ってしまう。
  */
 export const startLogin = async (request: Request, deps: AuthDeps): Promise<Response> => {
-  const url = new URL(request.url)
+  const url = browserUrlOf(request, deps)
   const state = randomState()
   const nonce = randomNonce()
   const codeVerifier = randomCodeVerifier()
@@ -99,7 +111,7 @@ export const startLogin = async (request: Request, deps: AuthDeps): Promise<Resp
  * 職員が事業所に登録されていなければ /auth/error?reason=forbidden へリダイレクトする。
  */
 export const finishLogin = async (request: Request, deps: AuthDeps): Promise<Response> => {
-  const url = new URL(request.url)
+  const url = browserUrlOf(request, deps)
   const clearLogin = cookie(deps, LOGIN_COOKIE, '', 0)
   const fail = (reason: 'failed' | 'forbidden' | 'too_many_attempts', cause: string) => {
     console.warn(JSON.stringify({ msg: 'login failed', reason, cause }))
@@ -162,7 +174,7 @@ export const logout = async (request: Request, deps: AuthDeps): Promise<Response
   if (session?.idToken === undefined) return redirect('/', [clearSession])
   const endSessionUrl = deps.oidc.endSessionUrl({
     idTokenHint: session.idToken,
-    postLogoutRedirectUri: new URL('/', request.url).toString(),
+    postLogoutRedirectUri: new URL('/', browserUrlOf(request, deps)).toString(),
   })
   return redirect(endSessionUrl.toString(), [clearSession])
 }

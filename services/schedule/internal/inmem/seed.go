@@ -47,7 +47,7 @@ func Seeded() *Store {
 	s.Recurring[RecurringID] = scheduleview.RecurringDetail{RecurringSchedule: schedule.RecurringSchedule{
 		ID:   RecurringID,
 		Slot: schedule.Slot{FacilityID: FacilityID, StaffID: StaffID, Date: civil.Date{Year: 2026, Month: 10, Day: 5}},
-		Rule: schedule.Rule{Frequency: schedule.Weekly},
+		Rule: schedule.Rule{Frequency: schedule.Weekly, DaysOfWeek: []int{1}, Interval: 1},
 	}}
 	return s
 }

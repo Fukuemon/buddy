@@ -1,4 +1,4 @@
-import type { Page } from '@playwright/test'
+import type { Locator, Page } from '@playwright/test'
 
 /** 照合の結果の表で、利用者名を含む行。行には testid が無い。 */
 export const receiptResultRow = (page: Page, patient: string) =>
@@ -34,3 +34,7 @@ export const receiptCheckErrorItems = (page: Page) =>
 /** 照合の結果の「照合に使わなかった予定」の、予定ごとの項目。項目には testid が無い。 */
 export const receiptWarningItems = (page: Page) =>
   page.getByTestId('receipt-warnings').getByRole('listitem')
+
+/** 照合の結果の表の、確認することのセルの文。1 つの文が 1 つの項目である。項目には testid が無い。 */
+export const receiptFindingItems = (findingsCell: Locator) =>
+  findingsCell.getByTestId('receipt-findings').getByRole('listitem')

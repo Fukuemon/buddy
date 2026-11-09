@@ -25,7 +25,7 @@ test.describe('予定のカレンダー', () => {
             variant,
           },
           async (page) => {
-            const token = await issueManagerToken(request)
+            const token = await issueManagerToken()
             const registered = await registerPatient(request, token, STAFF_FORM.facilityId, {
               name: ENDED_PATIENT,
               assignedStaffId: LOGIN_STAFF.id,

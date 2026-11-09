@@ -5,8 +5,8 @@ import { savedLoginPath } from '@fukuemon/e2e-kit/auth'
 
 const root = fileURLToPath(new URL('../../../..', import.meta.url))
 
-/** 画面の URL。デフォルトはルートの compose の web である。 */
-export const BASE_URL = process.env.E2E_BASE_URL ?? 'http://localhost:3000'
+/** 画面の URL。デフォルトは main の checkout の compose の web である。 */
+export const BASE_URL = process.env.E2E_BASE_URL ?? 'https://web.buddy.localhost'
 
 /**
  * ブローカーのログインの画面で入れるメール。ブローカーのシードの青木 陽菜を指す。
@@ -66,6 +66,8 @@ export const OFFICE_CLERK = {
 export const OKADA = {
   email: 'aoi.okada@example.com',
   staff: { id: '01MA0GP0000000000000000STF', name: '岡田 葵' },
+  /** シードの 3 つ目の事業所（google_primary）の ID。 */
+  facilityId: '01MA0GP0000000000000000FAC',
   calendarId: 'aoi.okada@example.com',
   /** シードで岡田に結び付けたカレンダー（external_calendars）の ID。同期の状況の行を指すのに使う。 */
   externalCalendarId: '01MA0GP0000000000000000GCA',
@@ -78,16 +80,22 @@ export const OKADA = {
 export const ISHIDA = {
   email: 'ren.ishida@example.com',
   staff: { id: '01MA0CT0000000000000000STF', name: '石田 蓮' },
+  /** シードの 4 つ目の事業所（google_primary）の ID。 */
+  facilityId: '01MA0CT0000000000000000FAC',
   calendarId: 'ren.ishida@example.com',
 }
 
 /** シードの職員の佐藤。Google カレンダーとの同期の spec が、佐藤にカレンダーを結び付ける。 */
 export const SATO = { ...TEAM_MEMBER, calendarId: 'misaki.sato@example.com' }
 
-/** シードの職員の林。Google カレンダーへの書き出しの spec が、林にカレンダーを結び付ける。 */
+/**
+ * シードの職員の林。Google カレンダーへの書き出しの spec が、林にカレンダーを結び付ける。
+ * 林はメンバーで、自分の予定の編集と、森の予定の閲覧の権限を持つ。森の予定は見られるが、編集できない。
+ */
 export const HAYASHI = {
   id: '01M3TC5WQ08KWBZX85WAZ1C4N7',
   name: '林 さくら',
+  email: 'sakura.hayashi@example.com',
   calendarId: 'sakura.hayashi@example.com',
 }
 
@@ -95,31 +103,36 @@ export const HAYASHI = {
  * compose の calendarpit の URL。spec は、予定の API が書いた予定を、管理の API で読んで確認し、Google の側で直す。
  * デフォルトはルートの compose の calendarpit である。
  */
-export const CALENDARPIT_URL = process.env.E2E_CALENDARPIT_URL ?? 'http://localhost:4173'
+export const CALENDARPIT_URL =
+  process.env.E2E_CALENDARPIT_URL ?? 'https://calendarpit.buddy.localhost'
 
 /** compose の予定の API の URL。API の参照のページから送ったリクエストを、ここへ送り直す。 */
-export const SCHEDULE_URL = process.env.E2E_SCHEDULE_URL ?? 'http://localhost:8080'
+export const SCHEDULE_URL = process.env.E2E_SCHEDULE_URL ?? 'https://schedule.buddy.localhost'
 
 /** compose の照合の API の URL。API の参照のページから送ったリクエストを、ここへ送り直す。 */
-export const RECEIPT_URL = process.env.E2E_RECEIPT_URL ?? 'http://localhost:8090'
+export const RECEIPT_URL = process.env.E2E_RECEIPT_URL ?? 'https://receipt.buddy.localhost'
 
 /** compose のブローカーのログインの画面の URL。内部の API をこのポートで受けないことを確認するのに使う。 */
-export const BROKER_URL = process.env.E2E_BROKER_URL ?? 'http://localhost:8100'
+export const BROKER_URL = process.env.E2E_BROKER_URL ?? 'https://broker.buddy.localhost'
 
 /** compose のブローカーの内部の API の URL。内部の API がトークンなしの呼び出しを拒むことを確認するのに使う。 */
-export const BROKER_INTERNAL_URL = process.env.E2E_BROKER_INTERNAL_URL ?? 'http://localhost:8101'
+export const BROKER_INTERNAL_URL =
+  process.env.E2E_BROKER_INTERNAL_URL ?? 'https://8081.broker.buddy.localhost'
 
 /** compose の Hydra の URL。API の参照のページで撮る spec が、ここからトークンを取る。 */
-export const HYDRA_URL = process.env.E2E_HYDRA_URL ?? 'http://localhost:4444'
+export const HYDRA_URL = process.env.E2E_HYDRA_URL ?? 'https://hydra.buddy.localhost'
 
 /** compose の、予定の API と calendarpit の間の中継の URL。デフォルトはルートの compose の gcalhold である。 */
-export const GCALHOLD_URL = process.env.E2E_GCALHOLD_URL ?? 'http://localhost:8085'
+export const GCALHOLD_URL = process.env.E2E_GCALHOLD_URL ?? 'https://gcalhold.buddy.localhost'
 
 /** compose の compose/google-calendar-service-accounts.json が、シードの事業所の組織に割り当てたダミーのサービスアカウント。 */
 export const FACILITY_SERVICE_ACCOUNT = 'buddy-org-sample@example.iam.gserviceaccount.com'
 
-/** シードの利用者。訪問の予定を作るときに選ぶ。 */
+/** シードの利用者。訪問の予定を作るときに選ぶ。利用者のサービスコードは訪看I2 である。 */
 export const SEED_PATIENT = { id: '01M3TC66FGZVK39Y7GRVZSGWS1', name: '見本 一郎' }
+
+/** シードの、サービスコードが訪看I3 の利用者。利用者を選んだときのサービスコードの初期値を確認するのに使う。 */
+export const SEED_PATIENT_I3 = { id: '01M3TC67EREWP3ED55WDTKD23Z', name: '見本 二葉' }
 
 /** ログインの状態を保存するディレクトリ。Git で追跡しない。 */
 const AUTH_DIR = path.join(root, 'packages/e2e/.auth')

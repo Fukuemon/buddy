@@ -33,10 +33,11 @@ var weekdays = map[string]int{"MO": 1, "TU": 2, "WE": 3, "TH": 4, "FR": 5, "SA":
 //
 // 出典: https://datatracker.ietf.org/doc/html/rfc5545#section-3.3.10
 //
-// 写せるのは、間隔が 1 の FREQ=WEEKLY で BYDAY が 1 つか無いもの、FREQ=MONTHLY で BYMONTHDAY が 1 つのもの、
-// FREQ=MONTHLY で BYDAY が 1〜5 の週の曜日 1 つのもの、BY の無い FREQ=MONTHLY だけである。
+// 写せるのは、間隔が 1〜52 の FREQ=WEEKLY で BYDAY が数字の無い 1 つ以上の曜日か無いもの、BY の無い間隔が 1 の FREQ=DAILY（7 つの曜日の毎週にする）、
+// FREQ=MONTHLY で BYMONTHDAY が 1 つのもの、FREQ=MONTHLY で BYDAY が 1〜5 の週の曜日 1 つのもの、BY の無い FREQ=MONTHLY だけである（ADR-0039）。
+// 間隔が 2 以上で曜日が複数の毎週は、WKST の週の区切りが buddy の日曜に始まる週と同じ曜日の組を作るときだけ写す（weekStartMatches）。
 // UNTIL はその時刻までに始まる最後の回の日付を、COUNT は最後の回の日付を終了日にする。EXDATE は Asia/Tokyo の日付にする。
-// ほかの形（隔週、複数の曜日、最終週、RDATE、ほかの FREQ）、最初の日付が回に当たらない規則、回の無い規則、
+// ほかの形（最終週、BYSETPOS、RDATE、間隔が 2 以上の毎日、毎月の間隔、ほかの FREQ）、最初の日付が回に当たらない規則、回の無い規則、
 // 終日か開始の日時を読めない予定、読めない行では、ErrNeedsExpansion を包んだエラーを返す。
 func RuleFromRecurrence(parent Event) (Recurrence, error) {
 	first, start, err := tokyoStart(parent.Start)
@@ -79,6 +80,7 @@ func RuleFromRecurrence(parent Event) (Recurrence, error) {
 	if err != nil {
 		return Recurrence{}, expansion("%v", err)
 	}
+	rule = rule.WithDays(first)
 	rs := schedule.RecurringSchedule{Slot: schedule.Slot{Date: first}, Rule: rule}
 	if !rs.HasOccurrenceOn(first) {
 		return Recurrence{}, expansion("最初の日付 %s が規則の回に当たらない", first)
@@ -113,7 +115,15 @@ func sortedUniqueDates(dates []civil.Date) []civil.Date {
 }
 
 // tokyoStart は、w が Asia/Tokyo の日時なら、その日付と時刻を返す。
+// 終日の予定の開始（日付だけの w）は、その日付の 0:00 にする。暦の日付なので、タイムゾーンを問わない。
 func tokyoStart(w When) (civil.Date, civil.Time, error) {
+	if w.DateTime == "" && w.Date != "" {
+		d, err := civil.ParseDate(w.Date)
+		if err != nil {
+			return civil.Date{}, civil.Time{}, expansion("開始の日付 %q を読めない", w.Date)
+		}
+		return d, civil.Time{}, nil
+	}
 	t, err := w.Instant()
 	if err != nil {
 		return civil.Date{}, civil.Time{}, expansion("開始の日時 %q を読めない", w.DateTime)
@@ -146,15 +156,18 @@ func parseRRule(value string) (rule schedule.Rule, until string, count int, err 
 		}
 		parts[k] = strings.ToUpper(v)
 	}
-	for k, v := range parts {
+	for k := range parts {
 		switch k {
-		case "FREQ", "BYDAY", "BYMONTHDAY", "UNTIL", "COUNT", "WKST":
-		case "INTERVAL":
-			if v != "1" {
-				return schedule.Rule{}, "", 0, expansion("INTERVAL=%s は写せない", v)
-			}
+		case "FREQ", "BYDAY", "BYMONTHDAY", "UNTIL", "COUNT", "WKST", "INTERVAL":
 		default:
 			return schedule.Rule{}, "", 0, expansion("%s は写せない", k)
+		}
+	}
+	interval := 1
+	if v, ok := parts["INTERVAL"]; ok {
+		interval, err = strconv.Atoi(v)
+		if err != nil || interval < 1 {
+			return schedule.Rule{}, "", 0, expansion("INTERVAL=%s を読めない", v)
 		}
 	}
 	if parts["UNTIL"] != "" && parts["COUNT"] != "" {
@@ -169,18 +182,35 @@ func parseRRule(value string) (rule schedule.Rule, until string, count int, err 
 	byday, bymonthday := parts["BYDAY"], parts["BYMONTHDAY"]
 	switch parts["FREQ"] {
 	case "WEEKLY":
-		rule.Frequency = schedule.Weekly
+		rule.Frequency, rule.Interval = schedule.Weekly, interval
 		if bymonthday != "" {
 			return schedule.Rule{}, "", 0, expansion("毎週の BYMONTHDAY は写せない")
 		}
 		if byday != "" {
-			dow, ok := weekdays[byday]
-			if !ok {
-				return schedule.Rule{}, "", 0, expansion("毎週の BYDAY=%s は写せない", byday)
+			for _, code := range strings.Split(byday, ",") {
+				dow, ok := weekdays[code]
+				if !ok {
+					return schedule.Rule{}, "", 0, expansion("毎週の BYDAY=%s は写せない", byday)
+				}
+				// RFC 5545 では重なる曜日も 1 つの曜日と同じ回なので、重ねずに写す
+				if !slices.Contains(rule.DaysOfWeek, dow) {
+					rule.DaysOfWeek = append(rule.DaysOfWeek, dow)
+				}
 			}
-			rule.DayOfWeek = &dow
 		}
+		if !weekStartMatches(parts["WKST"], interval, rule.DaysOfWeek) {
+			return schedule.Rule{}, "", 0, expansion("WKST=%s の INTERVAL=%d;BYDAY=%s は写せない", parts["WKST"], interval, byday)
+		}
+	case "DAILY":
+		if interval != 1 || byday != "" || bymonthday != "" {
+			return schedule.Rule{}, "", 0, expansion("間隔が 1 でないか BY の付く毎日は写せない")
+		}
+		// 毎日は、7 つの曜日の毎週にする（ADR-0039）
+		rule.Frequency, rule.Interval, rule.DaysOfWeek = schedule.Weekly, 1, []int{1, 2, 3, 4, 5, 6, 7}
 	case "MONTHLY":
+		if interval != 1 {
+			return schedule.Rule{}, "", 0, expansion("毎月の INTERVAL=%d は写せない", interval)
+		}
 		rule.Frequency = schedule.Monthly
 		switch {
 		case byday != "" && bymonthday != "":
@@ -204,6 +234,25 @@ func parseRRule(value string) (rule schedule.Rule, until string, count int, err 
 		return schedule.Rule{}, "", 0, expansion("FREQ=%s は写せない", parts["FREQ"])
 	}
 	return rule, parts["UNTIL"], count, nil
+}
+
+// weekStartMatches は、週の始まり wkst（空はデフォルトの月曜）で数える間隔 interval の毎週の曜日 days の回が、
+// buddy の日曜に始まる週で数える回と同じかを返す（ADR-0039）。
+// WKST で回が変わるのは、間隔が 2 以上で曜日が複数のときだけである。月曜に始まる週は日曜だけが前の週に入るので、日曜が無ければ同じ回になる。
+//
+// 出典: https://datatracker.ietf.org/doc/html/rfc5545#section-3.3.10
+func weekStartMatches(wkst string, interval int, days []int) bool {
+	if interval == 1 || len(days) <= 1 {
+		return true
+	}
+	switch wkst {
+	case "SU":
+		return true
+	case "", "MO":
+		return !slices.Contains(days, 7)
+	default:
+		return false
+	}
 }
 
 // untilDate は、UNTIL の時刻までに start に始まる最後の回の日付を返す。

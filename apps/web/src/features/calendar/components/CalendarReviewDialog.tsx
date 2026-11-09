@@ -1,5 +1,5 @@
 import { Button, Dialog, DialogBody, DialogFooter, DialogHeader } from '@buddy/ui'
-import { useId, type ReactNode } from 'react'
+import { useId, useRef, type ReactNode } from 'react'
 
 import type { CalendarExportIssue } from '#/api/types'
 
@@ -14,14 +14,9 @@ export type CalendarReviewDialogProps = {
   issue: CalendarExportIssue
   /** 単発の予定の詳細を開く。繰り返しの予定には出さない。 */
   onOpenSchedule: (scheduleId: string) => void
-  /**
-   * Google カレンダーの内容に合わせる確認のダイアログを開く。acceptable の予定にだけ出す。
-   * 省くと出さない。予定の API が合わせる操作を拒む buddy_primary の事業所で省く。
-   */
-  onAccept?: () => void
   /** buddy の内容で書き直す確認のダイアログを開く。 */
   onRewrite: () => void
-  /** ×、覆い、Escape キーで呼ぶ。 */
+  /** 「閉じる」、覆い、Escape キーで呼ぶ。 */
   onClose: () => void
 }
 
@@ -34,26 +29,28 @@ const Row = ({ label, children }: { label: string; children: ReactNode }) => (
 
 /**
  * 一覧で押した予定の日時、職員、理由を示し、その予定で選べる操作をフッターに並べるダイアログ。
- * どちらの操作でも片方の変更が消えるので、片方を勧めないよう、どちらも主ボタンの色にしない。「キャンセル」は置かず、× で閉じる。
+ * 書き直すと Google カレンダーでの変更が消えるので、書き直すボタンを赤い文字にしてフッターの左端に 1 つだけ置き、「閉じる」から離す。
+ * フッターの「閉じる」で閉じ、右上に × を置かない。
  */
 export const CalendarReviewDialog = ({
   issue,
   onOpenSchedule,
-  onAccept,
   onRewrite,
   onClose,
 }: CalendarReviewDialogProps) => {
   const titleId = useId()
+  // 予定を開くが無い繰り返しの予定で、最初の押せる要素の書き直すにフォーカスが移らないようにする
+  const closeRef = useRef<HTMLButtonElement>(null)
   const detail = exportIssueReasonDetail(issue)
   const scheduleId = issue.schedule_id
   return (
-    <Dialog data-testid="calendar-review-dialog" labelledBy={titleId} onClose={onClose}>
-      <DialogHeader
-        closeTestId="calendar-review-close"
-        onClose={onClose}
-        title="食い違った予定"
-        titleId={titleId}
-      />
+    <Dialog
+      data-testid="calendar-review-dialog"
+      initialFocusRef={closeRef}
+      labelledBy={titleId}
+      onClose={onClose}
+    >
+      <DialogHeader title="食い違った予定" titleId={titleId} />
       <DialogBody>
         <dl className="text-body">
           <Row label="予定の日時">
@@ -82,23 +79,23 @@ export const CalendarReviewDialog = ({
         )}
       </DialogBody>
       <DialogFooter>
-        {issue.acceptable && onAccept !== undefined && (
-          <Button
-            data-testid={`calendar-review-accept-${issue.id}`}
-            onClick={onAccept}
-            size="S"
-            variant="secondary"
-          >
-            Google の内容に合わせる
-          </Button>
-        )}
         <Button
+          className="mr-auto"
           data-testid={`calendar-review-rewrite-${issue.id}`}
           onClick={onRewrite}
           size="S"
-          variant="secondary"
+          variant="destructive"
         >
           buddy の内容で書き直す
+        </Button>
+        <Button
+          data-testid="calendar-review-cancel"
+          onClick={onClose}
+          ref={closeRef}
+          size="S"
+          variant="secondary"
+        >
+          閉じる
         </Button>
       </DialogFooter>
     </Dialog>

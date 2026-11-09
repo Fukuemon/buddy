@@ -8,6 +8,7 @@ import (
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendar"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendarimport"
 	"github.com/Fukuemon/buddy/services/schedule/internal/httpapi/openapi"
+	"github.com/Fukuemon/buddy/services/schedule/internal/principal"
 )
 
 func toImportRun(r calendar.ImportRun) openapi.ImportRun {
@@ -138,6 +139,24 @@ func (s server) ListExternalCalendars(ctx context.Context, req openapi.ListExter
 	return openapi.ListExternalCalendars200JSONResponse{Items: mapSlice(cs, toExternalCalendar)}, nil
 }
 
+// GetMyExternalCalendar は、認証のミドルウェアが特定した職員に結び付いたカレンダーを返す。
+func (s server) GetMyExternalCalendar(ctx context.Context, _ openapi.GetMyExternalCalendarRequestObject) (openapi.GetMyExternalCalendarResponseObject, error) {
+	p, ok := principal.From(ctx)
+	if !ok {
+		return nil, errors.New("認証のミドルウェアを通らずに GET /v1/me/external_calendar を呼びました")
+	}
+	c, err := s.u.Calendars.Mine(ctx, p.Staff.FacilityID, p.Staff.ID)
+	if err != nil {
+		return nil, err
+	}
+	var out openapi.GetMyExternalCalendar200JSONResponse
+	if c != nil {
+		ec := toExternalCalendar(*c)
+		out.ExternalCalendar = &ec
+	}
+	return out, nil
+}
+
 func (s server) CreateExternalCalendar(ctx context.Context, req openapi.CreateExternalCalendarRequestObject) (openapi.CreateExternalCalendarResponseObject, error) {
 	c, err := s.u.Calendars.Link(ctx, req.FacilityId, req.Body.StaffId, req.Body.CalendarId)
 	if err != nil {
@@ -265,14 +284,6 @@ func (s server) CreateCalendarExportRetry(ctx context.Context, req openapi.Creat
 		return nil, err
 	}
 	return openapi.CreateCalendarExportRetry202JSONResponse(toCalendarExport(e)), nil
-}
-
-func (s server) CreateCalendarExportAcceptance(ctx context.Context, req openapi.CreateCalendarExportAcceptanceRequestObject) (openapi.CreateCalendarExportAcceptanceResponseObject, error) {
-	e, err := s.u.Calendars.AcceptExport(ctx, req.CalendarExportId)
-	if err != nil {
-		return nil, err
-	}
-	return openapi.CreateCalendarExportAcceptance200JSONResponse(toCalendarExport(e)), nil
 }
 
 func toCalendarCutover(c calendarimport.Cutover) openapi.CalendarCutover {

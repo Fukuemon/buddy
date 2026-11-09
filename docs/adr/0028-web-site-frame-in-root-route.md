@@ -39,8 +39,8 @@ web の画面の枠は、ヘッダー、ナビゲーション、照合待ちの�
 | URL に出ないレイアウトの route（`_app.tsx`）で包み、画面の route をその子にする | 枠を出す画面と出さない画面を、ファイルの配置先で分けられる | 全ての画面の route のファイル名と ID が変わり、機能のコードの `useSearch({ from })` と `useNavigate({ from })` の 14 か所と、route の ID を読むテストを書き換える。予定の画面の左の欄は、この選択肢でも別の扱いが要る |
 | route のファイルごとに枠を組み立てる（今まで） | route のファイルを読めば、画面の全体が分かる | 同じ組み立てが 12 か所にあり、余白がずれた。バッジを全ての route が渡す |
 
-- ADR-0025 は、権限でレイアウトの route をまとめる形を採らなかった。枠だけのレイアウトは権限と関係しないので、その判断の対象の外である。
-  - ADR-0025: [web の画面の権限の確認を、route の beforeLoad と PermissionGuard で宣言し、1 つの関数で評価する](0025-web-permission-checks.md)
+- ADR-0008 は、権限でレイアウトの route をまとめる形を採らなかった。枠だけのレイアウトは権限と関係しないので、その判断の対象の外である。
+  - ADR-0008: [web の画面の権限の確認を、route の beforeLoad と PermissionGuard で宣言し、1 つの関数で評価する](0008-web-permission-checks.md)
 
 ## Consequences
 

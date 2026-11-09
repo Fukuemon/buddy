@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 
+import { Select } from '../Select/Select'
 import { FormField, formFieldControlClassName } from './FormField'
 
 const meta = {
@@ -28,10 +29,10 @@ export const WithHint: Story = {
     label: '担当の職員',
     hint: '休職と退職の職員は選べません。',
     children: (field) => (
-      <select {...field} className={formFieldControlClassName} data-testid="form-field-input">
+      <Select {...field} data-testid="form-field-input">
         <option value="">選んでください</option>
         <option value="staff-1">青木 一郎</option>
-      </select>
+      </Select>
     ),
   },
 }

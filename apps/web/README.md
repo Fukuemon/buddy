@@ -26,7 +26,7 @@ pnpm --filter @buddy/web dev
 ```
 
 開発サーバーは `http://localhost:3000` で待ち受ける。  
-ルートの compose の web も 3000 を使うので、compose の全体を起動しているときは `docker compose stop web` で止めてから起動する。  
+ルートの compose の web は、portless が選んだポートで待ち受けるので、3000 と重ならない。  
 フェイクの API はブラウザのメモリにデータを持つため、ページを読み直すと作った予定は消える。
 
 BFF の処理をローカルの開発サーバーで確認するときは、`dev:msw` で起動する。  
@@ -34,10 +34,13 @@ BFF の処理をローカルの開発サーバーで確認するときは、`dev
 セッションは、compose の Valkey に置く。  
 2 つの API へのリクエストは、MSW の handler（`src/mocks/`）が受ける。  
 Go の API と PostgreSQL は立てない。  
-設定は `.env.msw` にある。
+設定は `.env.msw` にある。  
+`.env.msw` は、IdP のフェイクを `localhost:9000` で、Valkey を `localhost:6379` で読む。  
+portless は compose の IdP のフェイクのポートを選び直すので、IdP のフェイクだけを、`docker compose` で別のプロジェクトの名前と 9000 番で起動する。  
+Valkey は、main の checkout の compose のものを使う。main の checkout の compose を起動していないときは、`valkey` も一緒に起動する。
 
 ```sh
-docker compose up -d --wait idp valkey
+IDP_PORT=9000 docker compose -p buddy-msw up -d --wait idp
 pnpm --filter @buddy/web dev:msw
 ```
 
@@ -79,7 +82,7 @@ route は、`src/routes/` のファイルから TanStack Router が生成する�
 - `/auth/login` は、Hydra の認可のエンドポイントへリダイレクトする。
 - `/auth/callback` は、トークンを取り、予定の API の `GET /v1/me` で職員と事業所を引いてセッションを作る。
 - セッションは Valkey に置き、ブラウザには署名つきの cookie でセッションの ID だけを渡す。
-  - ADR-0001: [認証を OIDC のブローカーと BFF のサーバー側のセッションにする](../../docs/adr/0001-auth.md)
+  - ADR-0001: [認証を OIDC のブローカーと BFF のサーバー側のセッションにし、職員の身元をブローカーが、権限と業務のデータを予定の API が持つ](../../docs/adr/0001-auth.md)
 - 画面の API の呼び出しは、server function（`src/api/bff/serverFns.ts`）を通る。
   - サーバーは、画面が渡した事業所の代わりに、セッションの事業所を使う。
 - access token の期限が 1 分を切ったら、refresh token で更新する。
@@ -113,9 +116,9 @@ BFF の照合の server function（`checkReceiptFn`）が、照合の API のク
 照合の画面（`/receipt`）と結果の画面（`/receipt/result`）は `src/features/receipt/` にある。  
 画面の仕様は `docs/screens/receipt-upload_照合/` と `docs/screens/receipt-result_照合の結果/` にある。
 
-- 結果の表の印（❌、※、許容範囲）と CSV は、`src/features/receipt/lib/reportCells.ts` が作る。
-  - 印の付け方と値の引用は、照合の API の `tools/parity/report` と同じにし、同じ期待値のテストで確認する。
-  - 行の区切りだけは、Excel で開くために CRLF にした。Go は LF を使う。
+- 結果の表の印（不一致と注意のアイコン、許容範囲）、確認することの文、CSV は、`src/features/receipt/lib/reportCells.ts` が作る。
+  - CSV は値に印を混ぜず、区分と確認することの列を持つ。照合の API の `tools/parity/report` の記号つきの CSV とは形が違う。
+  - 値の引用は Go の encoding/csv と同じにし、行の区切りは、Excel で開くために CRLF にした。
 - ファイルの合計の上限は、照合の API の `MAX_UPLOAD_BYTES` のデフォルト値（10 MiB）から multipart の分の 64 KiB を引いた値にする。
   - `src/start.ts` は、server function の本文を読む前に、10 MiB を超えるものと長さの分からないものを 413 で拒む。
 - フェイクの API（`fake`）の照合は、入力によらず `src/mocks/receiptData.ts` の `mockReceiptReport` を返す。
@@ -137,4 +140,4 @@ BFF の照合の server function（`checkReceiptFn`）が、照合の API のク
 
 - [画面仕様書](../../docs/screens/index.md): 画面ごとの表示と操作、構成要素の `data-testid`
 - [全体の Design Doc](../../docs/design/DesignDoc.md): 画面と BFF の責務、認証とセッション
-- [デザインシステム](../../packages/ui/DESIGN.md): トークンと、Base と Case のコンポーネント
+- [デザインシステム](../../packages/ui/DESIGN.md): 画面を作るときの原則と手順。トークンと、Base と Case のコンポーネントの規則は `packages/ui/design/` にある

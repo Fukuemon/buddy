@@ -10,11 +10,10 @@ import (
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendar"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendarexport"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendarimport"
-	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendarsync"
 	"github.com/Fukuemon/buddy/services/schedule/internal/postgres/sqlcgen"
 )
 
-// CalendarRepository は、calendar.Repository、calendarimport.Calendars、calendarsync.Calendars、calendarexport.ExportCalendars と calendarexport.ExporterCalendars を実装する。
+// CalendarRepository は、calendar.Repository、calendarimport.Calendars、calendarexport.ExportCalendars と calendarexport.ExporterCalendars を実装する。
 type CalendarRepository struct{ conn }
 
 // NewCalendarRepository は CalendarRepository を作る。
@@ -25,7 +24,6 @@ func NewCalendarRepository(pool *pgxpool.Pool) *CalendarRepository {
 var (
 	_ calendar.Repository              = (*CalendarRepository)(nil)
 	_ calendarimport.Calendars         = (*CalendarRepository)(nil)
-	_ calendarsync.Calendars           = (*CalendarRepository)(nil)
 	_ calendarexport.ExportCalendars   = (*CalendarRepository)(nil)
 	_ calendarexport.ExporterCalendars = (*CalendarRepository)(nil)
 )
@@ -203,6 +201,7 @@ func toLink(l sqlcgen.ExternalEventLink) calendar.EventLink {
 		ETag:                l.Etag,
 		ScheduleID:          l.ScheduleID,
 		RecurringScheduleID: l.RecurringScheduleID,
+		DeletedScheduleID:   l.DeletedScheduleID,
 		CutoverID:           l.CutoverID,
 	}
 	if l.SyncedVersion != nil {
@@ -237,20 +236,18 @@ func (r *CalendarRepository) LinkBySchedule(ctx context.Context, scheduleID stri
 	return toLink(l), nil
 }
 
-// LinkByEvent は、カレンダー externalCalendarID の外部の予定 eventID の予定の対応を返す。無いときは apperr.ErrNotFound を返す。
-func (r *CalendarRepository) LinkByEvent(ctx context.Context, externalCalendarID, eventID string) (calendar.EventLink, error) {
-	l, err := r.q(ctx).GetExternalEventLinkByEvent(ctx, sqlcgen.GetExternalEventLinkByEventParams{
-		ExternalCalendarID: externalCalendarID, ExternalEventID: eventID,
-	})
+// LinkByRecurringSchedule は、繰り返しの予定 recurringScheduleID の予定の対応を返す。無いときは apperr.ErrNotFound を返す。
+func (r *CalendarRepository) LinkByRecurringSchedule(ctx context.Context, recurringScheduleID string) (calendar.EventLink, error) {
+	l, err := r.q(ctx).GetExternalEventLinkByRecurringSchedule(ctx, &recurringScheduleID)
 	if err != nil {
 		return calendar.EventLink{}, translate("get external event link", err)
 	}
 	return toLink(l), nil
 }
 
-// LinkByRecurringSchedule は、繰り返しの予定 recurringScheduleID の予定の対応を返す。無いときは apperr.ErrNotFound を返す。
-func (r *CalendarRepository) LinkByRecurringSchedule(ctx context.Context, recurringScheduleID string) (calendar.EventLink, error) {
-	l, err := r.q(ctx).GetExternalEventLinkByRecurringSchedule(ctx, &recurringScheduleID)
+// LinkByDeletedSchedule は、削除した単発の予定 scheduleID の予定の対応を返す。無いときは apperr.ErrNotFound を返す。
+func (r *CalendarRepository) LinkByDeletedSchedule(ctx context.Context, scheduleID string) (calendar.EventLink, error) {
+	l, err := r.q(ctx).GetExternalEventLinkByDeletedSchedule(ctx, &scheduleID)
 	if err != nil {
 		return calendar.EventLink{}, translate("get external event link", err)
 	}

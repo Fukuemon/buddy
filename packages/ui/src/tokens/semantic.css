@@ -1,83 +1,69 @@
 /*
- * buddy の意味のトークン。値は持たず、DADS の基本のトークンを参照するだけにする。
- * 例外は surface-canvas だけで、DADS に無い値を直に持つ（docs/adr/0015-key-color-and-canvas.md）。
- * DADS の基本のトークンは @digital-go-jp/design-tokens の dist/tokens.css が :root に定義する。
- * コンポーネントと画面は、この層を Tailwind のユーティリティ（theme.css）を通して使い、DADS の名前を直に書かない。
+ * buddy のセマンティックトークン。値は持たず、プリミティブトークン（primitive.css）を参照するだけにする。
+ * 例外は surface-canvas だけで、プリミティブトークンに無い値を直に持つ（docs/adr/0013-design-system-primitive-tokens.md）。
+ * コンポーネントと画面は、この層を Tailwind のユーティリティ（theme.css）を通して使い、プリミティブトークンの名前を直に書かない。
  */
 
-@import '@digital-go-jp/design-tokens/dist/tokens.css';
+@import './primitive.css';
 
 :root {
-  /* DADS のキーの色を、もともとのデザイン案のくすんだ青に色相が近い light-blue に当て直す（ADR-0015） */
-  --color-key-50: var(--color-primitive-light-blue-50);
-  --color-key-100: var(--color-primitive-light-blue-100);
-  --color-key-200: var(--color-primitive-light-blue-200);
-  --color-key-300: var(--color-primitive-light-blue-300);
-  --color-key-400: var(--color-primitive-light-blue-400);
-  --color-key-500: var(--color-primitive-light-blue-500);
-  --color-key-600: var(--color-primitive-light-blue-600);
-  --color-key-700: var(--color-primitive-light-blue-700);
-  --color-key-800: var(--color-primitive-light-blue-800);
-  --color-key-900: var(--color-primitive-light-blue-900);
-  --color-key-1000: var(--color-primitive-light-blue-1000);
-  --color-key-1100: var(--color-primitive-light-blue-1100);
-  --color-key-1200: var(--color-primitive-light-blue-1200);
-
-  --buddy-color-surface: var(--color-neutral-white);
+  --buddy-color-surface: var(--buddy-primitive-color-neutral-white);
   /* 画面の背景。もともとのデザイン案のわずかに温かい白で、白の surface（カード、ダイアログ、入力欄）と並べて使う */
   --buddy-color-surface-canvas: #fdfcfb;
-  --buddy-color-surface-subtle: var(--color-neutral-solid-gray-50);
-  --buddy-color-surface-disabled: var(--color-neutral-solid-gray-100);
-  --buddy-color-overlay: var(--color-neutral-opacity-gray-500);
+  --buddy-color-surface-subtle: var(--buddy-primitive-color-neutral-solid-gray-50);
+  --buddy-color-surface-disabled: var(--buddy-primitive-color-neutral-solid-gray-100);
+  --buddy-color-overlay: var(--buddy-primitive-color-neutral-opacity-gray-500);
 
   /* 文字: 白の面の上で 4.5:1 以上。disabled だけは WCAG 1.4.3 の対象外 */
-  --buddy-color-text: var(--color-neutral-solid-gray-900);
-  --buddy-color-text-secondary: var(--color-neutral-solid-gray-600);
-  --buddy-color-text-disabled: var(--color-neutral-solid-gray-420);
-  --buddy-color-text-inverse: var(--color-neutral-white);
+  --buddy-color-text: var(--buddy-primitive-color-neutral-solid-gray-900);
+  --buddy-color-text-secondary: var(--buddy-primitive-color-neutral-solid-gray-600);
+  --buddy-color-text-disabled: var(--buddy-primitive-color-neutral-solid-gray-420);
+  --buddy-color-text-inverse: var(--buddy-primitive-color-neutral-white);
 
   /* 線: field は入力欄と押せる枠の境界で 3:1 以上。border は飾りの区切り */
-  --buddy-color-border: var(--color-neutral-solid-gray-100);
-  --buddy-color-border-field: var(--color-neutral-solid-gray-600);
+  --buddy-color-border: var(--buddy-primitive-color-neutral-solid-gray-100);
+  /* 表の見出しの行とデータの行の区切り。DADS のテーブルの見出しの黒の線 */
+  --buddy-color-border-strong: var(--buddy-primitive-color-neutral-black);
+  --buddy-color-border-field: var(--buddy-primitive-color-neutral-solid-gray-600);
   /* 入力の欄にマウスを乗せたときの枠。DADS のインプットテキストの hover と同じ黒 */
-  --buddy-color-border-field-hover: var(--color-neutral-black);
+  --buddy-color-border-field-hover: var(--buddy-primitive-color-neutral-black);
 
   /* 状態の色: 文字の色と、同じ系統の薄い面の組。面の上の文字でも 4.5:1 以上 */
-  --buddy-color-primary: var(--color-key-800);
-  --buddy-color-primary-surface: var(--color-key-50);
-  --buddy-color-danger: var(--color-primitive-red-900);
-  --buddy-color-danger-surface: var(--color-primitive-red-50);
+  --buddy-color-primary: var(--buddy-primitive-color-light-blue-800);
+  --buddy-color-primary-surface: var(--buddy-primitive-color-light-blue-50);
+  --buddy-color-danger: var(--buddy-primitive-color-red-900);
+  --buddy-color-danger-surface: var(--buddy-primitive-color-red-50);
   /* 誤りのある入力の欄にマウスを乗せたときの枠。DADS のインプットテキストの誤りの hover と同じ red-1000 */
-  --buddy-color-danger-hover: var(--color-primitive-red-1000);
-  --buddy-color-warning: var(--color-primitive-orange-900);
-  --buddy-color-warning-surface: var(--color-primitive-orange-50);
-  --buddy-color-success: var(--color-primitive-green-800);
-  --buddy-color-success-surface: var(--color-primitive-green-50);
+  --buddy-color-danger-hover: var(--buddy-primitive-color-red-1000);
+  --buddy-color-warning: var(--buddy-primitive-color-orange-900);
+  --buddy-color-warning-surface: var(--buddy-primitive-color-orange-50);
+  --buddy-color-success: var(--buddy-primitive-color-green-800);
+  --buddy-color-success-surface: var(--buddy-primitive-color-green-50);
 
   /* フォーカス: DADS の指針の 2 重の表示。要素に接する黄色の輪と、その外の黒の枠 */
-  --buddy-color-focus-outline: var(--color-neutral-black);
-  --buddy-color-focus-halo: var(--color-primitive-yellow-300);
+  --buddy-color-focus-outline: var(--buddy-primitive-color-neutral-black);
+  --buddy-color-focus-halo: var(--buddy-primitive-color-yellow-300);
 
   /* 区別の色: 職員のように、意味を持たない並びを色で分ける。白の文字で 4.5:1 以上
      primary と状態の色に近い青、緑、橙、赤は、人数の少ない事業所で使わないよう後ろに置く */
-  --buddy-color-categorical-1: var(--color-primitive-purple-800);
-  --buddy-color-categorical-2: var(--color-primitive-cyan-900);
-  --buddy-color-categorical-3: var(--color-primitive-magenta-800);
-  --buddy-color-categorical-4: var(--color-primitive-lime-900);
-  --buddy-color-categorical-5: var(--color-primitive-yellow-1000);
-  --buddy-color-categorical-6: var(--color-primitive-blue-800);
-  --buddy-color-categorical-7: var(--color-primitive-green-800);
-  --buddy-color-categorical-8: var(--color-primitive-orange-900);
-  --buddy-color-categorical-9: var(--color-primitive-red-900);
-  --buddy-color-categorical-10: var(--color-primitive-light-blue-900);
+  --buddy-color-categorical-1: var(--buddy-primitive-color-purple-800);
+  --buddy-color-categorical-2: var(--buddy-primitive-color-cyan-900);
+  --buddy-color-categorical-3: var(--buddy-primitive-color-magenta-800);
+  --buddy-color-categorical-4: var(--buddy-primitive-color-lime-900);
+  --buddy-color-categorical-5: var(--buddy-primitive-color-yellow-1000);
+  --buddy-color-categorical-6: var(--buddy-primitive-color-blue-800);
+  --buddy-color-categorical-7: var(--buddy-primitive-color-green-800);
+  --buddy-color-categorical-8: var(--buddy-primitive-color-orange-900);
+  --buddy-color-categorical-9: var(--buddy-primitive-color-red-900);
+  --buddy-color-categorical-10: var(--buddy-primitive-color-light-blue-900);
 
-  /* チームの色: 名前の横の点。名前の後ろの部分は、予定の API がチームに持つ値と同じ。選び方は DESIGN.md の「チームの色」にある */
-  --buddy-color-team-blue: var(--color-primitive-blue-500);
-  --buddy-color-team-orange: var(--color-primitive-orange-700);
-  --buddy-color-team-magenta: var(--color-primitive-magenta-600);
-  --buddy-color-team-cyan: var(--color-primitive-cyan-700);
-  --buddy-color-team-yellow: var(--color-primitive-yellow-800);
-  --buddy-color-team-purple: var(--color-primitive-purple-500);
-  --buddy-color-team-green: var(--color-primitive-green-600);
-  --buddy-color-team-lime: var(--color-primitive-lime-800);
+  /* チームの色: 名前の横の点。名前の後ろの部分は、予定の API がチームに持つ値と同じ。選び方は packages/ui/design/tokens.md の「チームの色」にある */
+  --buddy-color-team-blue: var(--buddy-primitive-color-blue-500);
+  --buddy-color-team-orange: var(--buddy-primitive-color-orange-700);
+  --buddy-color-team-magenta: var(--buddy-primitive-color-magenta-600);
+  --buddy-color-team-cyan: var(--buddy-primitive-color-cyan-700);
+  --buddy-color-team-yellow: var(--buddy-primitive-color-yellow-800);
+  --buddy-color-team-purple: var(--buddy-primitive-color-purple-500);
+  --buddy-color-team-green: var(--buddy-primitive-color-green-600);
+  --buddy-color-team-lime: var(--buddy-primitive-color-lime-800);
 }

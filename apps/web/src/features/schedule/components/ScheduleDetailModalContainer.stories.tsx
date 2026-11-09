@@ -1,5 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
+import { userEvent, within } from 'storybook/test'
 
+import { ApiError, type BuddyApi } from '#/api/BuddyApi'
 import { createFakeBuddyApi } from '#/api/fake/fakeBuddyApi'
 import {
   failingBuddyApi,
@@ -9,7 +11,7 @@ import {
 } from '#/storybook/withAppRouter'
 
 import { ScheduleDetailModalContainer } from './ScheduleDetailModalContainer'
-import { selfEditViewer } from './storyData'
+import { cutoverBuddyApi, recurringOccurrenceApi, selfEditViewer } from './storyData'
 
 const route = (appRouter: Partial<AppRouterParameters>) => ({
   appRouter: { route: '/schedule/$scheduleId/', url: '/schedule/schedule-1', ...appRouter },
@@ -52,7 +54,7 @@ export const ReadOnly: Story = {
 /** 見る権限の無い予定。読み直しても変わらないので、権限が無いことを出す。 */
 export const Forbidden: Story = { parameters: route({ api: failingBuddyApi(403) }) }
 
-/** Google カレンダーを予定の正本にする事業所の予定。一覧から引いて出し、Google カレンダーで変更する案内を出し、編集のボタンを出さない。 */
+/** Google カレンダーを予定の正本にする事業所の予定。一覧から引いて出し、buddy で変えると Google カレンダーにも書く案内と、編集とキャンセルのボタンを出す。 */
 export const GoogleCalendar: Story = {
   parameters: route({
     url: '/schedule/gcal-schedule-3',
@@ -68,10 +70,89 @@ export const GoogleCalendarNeedsReview: Story = {
   }),
 }
 
-/** 繰り返しの規則を写せない予定。最初の回が表示の期間の外でも、確認が必要な予定から引いて出す。 */
+/** 繰り返しの規則を写せない予定。最初の回が表示の期間の外でも、確認が必要な予定から引いて出す。編集とキャンセルのボタンを出さない。 */
 export const GoogleCalendarRecurrenceUnsupported: Story = {
   parameters: route({
     url: '/schedule/gcal-review-3',
     api: createFakeBuddyApi({ sourceMode: 'google_primary' }),
   }),
+}
+
+/** 予定の正本を buddy に切り替えている事業所の予定。編集とキャンセルのボタンを出さない。 */
+export const GoogleCalendarCutover: Story = {
+  parameters: route({ url: '/schedule/gcal-schedule-3', api: cutoverBuddyApi() }),
+}
+
+/** 「編集」のメニューを開く。 */
+const openEditMenu = async ({ canvasElement }: { canvasElement: HTMLElement }) => {
+  const canvas = within(canvasElement.ownerDocument.body)
+  await userEvent.click(await canvas.findByTestId('schedule-detail-edit'))
+}
+
+/** 明日の、繰り返しの予定の回。「編集」を押すと、「この予定を編集」と「繰り返しを変更」のメニューを出す。 */
+export const RecurringOccurrence: Story = {
+  parameters: route({ url: '/schedule/recurring-occurrence', api: recurringOccurrenceApi(1) }),
+}
+
+/** 明日の回で「編集」のメニューを開いた。どちらの項目も押せる。 */
+export const RecurringOccurrenceMenu: Story = {
+  parameters: route({ url: '/schedule/recurring-occurrence', api: recurringOccurrenceApi(1) }),
+  play: openEditMenu,
+}
+
+/** 昨日の回で「編集」のメニューを開いた。今日より前の回でも、どちらの項目も押せる（繰り返しの変更は今日から当てる）。 */
+export const RecurringPastMenu: Story = {
+  parameters: route({ url: '/schedule/recurring-occurrence', api: recurringOccurrenceApi(-1) }),
+  play: openEditMenu,
+}
+
+/** 1 回を置き換えた予定。単発の予定として扱い、メニューにせず「編集」のボタンだけを出す。 */
+export const RecurringReplaced: Story = {
+  parameters: route({
+    url: '/schedule/replaced-occurrence',
+    api: recurringOccurrenceApi(1, { replaced: true }),
+  }),
+}
+
+/** 今日より前の予定（2 日前の研修）。編集とキャンセルのボタンは出し、削除のボタンは出さない（ADR-0040）。 */
+export const PastSchedule: Story = { parameters: route({ url: '/schedule/schedule-5' }) }
+
+/** 削除のダイアログを開く。 */
+const openDeleteDialog = async ({ canvasElement }: { canvasElement: HTMLElement }) => {
+  const canvas = within(canvasElement.ownerDocument.body)
+  await userEvent.click(await canvas.findByTestId('schedule-detail-delete-schedule'))
+}
+
+/** 今日の訪問の予定で、削除の確認のダイアログを開いた。 */
+export const DeleteDialog: Story = { play: openDeleteDialog }
+
+/** 明日の、繰り返しの予定の回で、削除の確認のダイアログを開いた。その回だけを消すことを示す。 */
+export const DeleteRecurringOccurrence: Story = {
+  parameters: route({ url: '/schedule/recurring-occurrence', api: recurringOccurrenceApi(1) }),
+  play: openDeleteDialog,
+}
+
+/** 開いた後に、ほかの職員が予定をキャンセルしていた API。削除は 409（conflict）で拒まれる。 */
+const deleteConflictApi = (): BuddyApi => {
+  const api = createFakeBuddyApi()
+  return {
+    ...api,
+    schedules: {
+      ...api.schedules,
+      delete: async () => {
+        throw new ApiError(409, 'キャンセル済みの予定は削除できません', [], 'conflict')
+      },
+    },
+  }
+}
+
+/** 削除を拒まれた。ダイアログを開いたまま、理由の文を出す。 */
+export const DeleteFailed: Story = {
+  parameters: route({ api: deleteConflictApi() }),
+  play: async (context) => {
+    await openDeleteDialog(context)
+    const canvas = within(context.canvasElement.ownerDocument.body)
+    await userEvent.click(await canvas.findByTestId('schedule-delete-submit'))
+    await canvas.findByTestId('schedule-delete-error')
+  },
 }

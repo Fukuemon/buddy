@@ -3,6 +3,7 @@ import { useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
 
 import { queryKeys } from '#/api/queryKeys'
+import { refetchFailedQueries, screenLoadStatus } from '#/api/refetch'
 import { useBuddyApi } from '#/api/useBuddyApi'
 
 import { LIST_LOAD_ERROR_MESSAGE } from '../lib/errorMessage'
@@ -17,19 +18,24 @@ const PatientListContent = () => {
   const [filter, setFilter] = useState(DEFAULT_PATIENT_LIST_FILTER)
   const records = useQuery(patientRecordsQueryOptions(api, facilityId))
   const staff = useQuery(staffRecordsQueryOptions(api, facilityId))
-  const isLoading = records.isPending || staff.isPending
-  const isError = records.isError || staff.isError
-  const state: PatientListViewState = isError
-    ? { status: 'error', message: LIST_LOAD_ERROR_MESSAGE }
-    : isLoading
-      ? { status: 'loading' }
-      : { status: 'ready', patients: filterPatients(records.data, filter) }
+  const load = screenLoadStatus([records, staff])
+  const state: PatientListViewState =
+    load.status === 'ready' && records.data !== undefined
+      ? {
+          status: 'ready',
+          patients: filterPatients(records.data, filter),
+          refetchFailed: load.refetchFailed,
+        }
+      : load.status === 'error'
+        ? { status: 'error', message: LIST_LOAD_ERROR_MESSAGE }
+        : { status: 'loading' }
   return (
     <PatientListView
       filter={filter}
       onCreate={() => navigate({ to: '/patients/new' })}
       onFilterChange={setFilter}
       onFilterClear={() => setFilter(DEFAULT_PATIENT_LIST_FILTER)}
+      onRefetch={() => refetchFailedQueries([records, staff])}
       onRetry={() =>
         Promise.all([
           queryClient.resetQueries({ queryKey: queryKeys.patients.records(facilityId) }),

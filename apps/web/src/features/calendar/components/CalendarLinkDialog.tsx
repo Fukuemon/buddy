@@ -36,12 +36,15 @@ export const CalendarLinkDialog = ({
   onClose,
 }: CalendarLinkDialogProps) => {
   const inputId = useId()
+  const checkHintId = useId()
   const checking = checkStatus === 'checking'
   return (
     <InputDialog
       busyLabel="結び付ける"
       canSubmit={checkStatus === 'readable'}
-      closeTestId="calendar-link-dialog-close"
+      submitHint={
+        checking ? undefined : '「読めるか確認する」で読めることを確認すると、結び付けられます。'
+      }
       isSubmitting={isSubmitting}
       onClose={onClose}
       onSubmit={onSubmit}
@@ -76,8 +79,9 @@ export const CalendarLinkDialog = ({
           value={calendarId}
         />
       </div>
-      <div>
+      <div className="flex flex-wrap items-center gap-3">
         <Button
+          aria-describedby={calendarId.trim() === '' ? checkHintId : undefined}
           data-testid="calendar-link-check"
           disabled={calendarId.trim() === '' || checking || isSubmitting}
           onClick={onCheck}
@@ -86,6 +90,15 @@ export const CalendarLinkDialog = ({
         >
           <BusyLabel busy={checking}>読めるか確認する</BusyLabel>
         </Button>
+        {calendarId.trim() === '' && (
+          <span
+            className="text-caption text-text-secondary"
+            data-testid="calendar-link-check-hint"
+            id={checkHintId}
+          >
+            カレンダーの ID を入れると確認できます。
+          </span>
+        )}
       </div>
       {checkStatus === 'readable' && (
         <output

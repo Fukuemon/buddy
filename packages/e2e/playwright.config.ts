@@ -1,10 +1,14 @@
 import { defineConfig, devices } from '@playwright/test'
 
+import { resolveLocalhostToLoopback } from './localhostResolver'
 import { BASE_URL, LOGIN_STATE, TIMEZONE_ID } from './tests/fixtures/env'
 import { TIMEOUT_MS } from './tests/fixtures/timeouts'
 
+// 設定は、test の runner と worker のそれぞれで読まれるので、両方のプロセスで差し替わる
+resolveLocalhostToLoopback()
+
 /**
- * ルートの compose で立てた全体に向けて流す。先に `docker compose up --build --wait` で起動しておく。
+ * ルートの compose で立てた全体に向けて流す。先に `portless compose up -d --build --wait` で起動しておく。
  * spec は職員ごとのログインの状態のファイルを共有するので、worker は 1 つにする（kit の ensureSavedLogin のドキュメントコメント）。
  * evidence の project はエビデンスの動画を撮る spec を流す。`pnpm e2e` と CI は e2e の project だけを流し、evidence は `pnpm --filter @buddy/e2e evidence` で流す。
  */
@@ -27,6 +31,9 @@ export default defineConfig({
     actionTimeout: TIMEOUT_MS.action,
     navigationTimeout: TIMEOUT_MS.navigation,
     trace: 'retain-on-failure',
+    // ローカル環境の portless の証明書は、管理者の権限が無いとシステムに信頼させられない（ADR-0036）。
+    // ローカルの環境だけに向けて流すので、https の URL のときは証明書のエラーを無視する
+    ignoreHTTPSErrors: BASE_URL.startsWith('https://'),
   },
   projects: [
     { name: 'setup', testMatch: /setup\/.*\.setup\.ts/ },

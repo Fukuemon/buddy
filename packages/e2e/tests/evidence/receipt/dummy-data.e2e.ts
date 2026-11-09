@@ -19,7 +19,7 @@ const expectMockReport = async (page: Page) => {
   for (const category of ['mismatch', 'schedule_only', 'visit_only', 'match'] as const)
     await expect(page.getByTestId(`receipt-category-label-${category}`)).toContainText('（1 件）')
   await expect(
-    receiptCategoryRowCells(page, 'mismatch', '2024-04-01', '加藤 春子').first(),
+    receiptCategoryRowCells(page, 'mismatch', '2024年4月1日（月）', '加藤 春子').first(),
   ).toBeVisible()
   await expect(receiptWarningItems(page)).toHaveCount(1)
 }

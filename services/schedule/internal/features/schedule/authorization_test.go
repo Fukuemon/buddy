@@ -89,7 +89,7 @@ func TestSchedulesAuthorization(t *testing.T) {
 			own.StaffID = viewerID
 			_, err := uc.Create(ctx, facilityID, other)
 			checkAllowed(t, "ほかの職員の予定の Create", err, tt.editOther)
-			_, err = uc.CreateRecurring(ctx, facilityID, other, schedule.RuleInput{Frequency: schedule.Weekly, DayOfWeek: ptr(2)})
+			_, err = uc.CreateRecurring(ctx, facilityID, other, schedule.RuleInput{Frequency: schedule.Weekly, DaysOfWeek: []int{2}})
 			checkAllowed(t, "ほかの職員の予定の CreateRecurring", err, tt.editOther)
 			_, err = uc.Create(ctx, facilityID, own)
 			checkAllowed(t, "自分の予定の Create", err, tt.editSelf)

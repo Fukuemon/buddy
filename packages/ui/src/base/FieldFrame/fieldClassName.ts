@@ -1,6 +1,6 @@
 /*
  * 入力の欄の枠の見た目。デフォルト、hover、フォーカス、無効、エラーの状態を、全ての入力のコンポーネントでそろえる。
- * 見た目は DADS のインプットテキストに合わせる（packages/ui/DESIGN.md の「入力の欄の状態」）。
+ * 見た目は DADS のインプットテキストに合わせる（packages/ui/design/components.md の「入力の欄の状態」）。
  * 枠は ring（box-shadow）ではなく border で引く。focus-ring の黄色の縁が box-shadow なので、ring で引くと上書きし合う。
  */
 

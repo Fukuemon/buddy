@@ -4,11 +4,25 @@ import userEvent from '@testing-library/user-event'
 import { fn } from 'storybook/test'
 import { describe, expect, it } from 'vite-plus/test'
 
+import { formatDateTime } from '../lib/dateTime'
 import * as stories from './ScheduleSourceNotices.stories'
 
-const { BuddyPrimary, Cutover, Default, GuideOnly } = composeStories(stories)
+const { BuddyPrimary, Cutover, Default, GuideOnly, Unlisted } = composeStories(stories)
 
 describe('ScheduleSourceNotices', () => {
+  it('カレンダーに出せない予定があれば、件数、職員ごとの件数、Google カレンダーで確認する案内を出す', () => {
+    render(<Unlisted />)
+    const notice = screen.getByTestId('schedule-calendar-unlisted')
+    expect(notice).toHaveTextContent('カレンダーに出せない予定が 3 件あります')
+    expect(within(notice).getByTestId('schedule-calendar-unlisted-staff-1')).toHaveTextContent(
+      '青木 一郎: 2 件',
+    )
+    expect(within(notice).getByTestId('schedule-calendar-unlisted-staff-3')).toHaveTextContent(
+      '上田 三奈: 1 件',
+    )
+    expect(notice).toHaveTextContent('Google カレンダーで確認してください。')
+  })
+
   it('同期に失敗したカレンダーと、まだ同期していないカレンダーを、職員と最後に同期できた時刻とともに出す', () => {
     render(<Default />)
     const warning = screen.getByTestId('schedule-calendar-sync-warning')
@@ -28,7 +42,7 @@ describe('ScheduleSourceNotices', () => {
     const onOpenSchedule = fn()
     render(<Default onOpenSchedule={onOpenSchedule} />)
     const notice = screen.getByTestId('schedule-calendar-needs-review')
-    expect(notice).toHaveTextContent('確認が必要な予定が 3 件あります')
+    expect(notice).toHaveTextContent('確認が必要な予定が 4 件あります')
     expect(notice).toHaveTextContent(
       'Google カレンダーでタイトルか繰り返しの規則を直してください。',
     )
@@ -40,13 +54,49 @@ describe('ScheduleSourceNotices', () => {
     expect(onOpenSchedule).toHaveBeenCalledWith('gcal-review-1')
   })
 
+  it('繰り返しの規則を buddy で表せない終日の予定を、最初の回の日付、職員、理由で並べ、押せない行にする', () => {
+    render(<Default />)
+    const item = within(screen.getByTestId('schedule-calendar-needs-review')).getByTestId(
+      'schedule-calendar-needs-review-all-day-gcal-allday-unsupported',
+    )
+    expect(item).toHaveTextContent(
+      '2026年10月5日（月） 終日 青木 一郎: 繰り返しの規則を buddy で表せないため、最初の回だけを表示しています',
+    )
+    expect(within(item).queryByRole('button')).toBeNull()
+  })
+
+  it('何日かにわたる終日の予定は、最初の日から最後の日までを出し、確認が必要な予定の件数に数える', () => {
+    render(
+      <Default
+        needsReview={[]}
+        needsReviewAllDayEvents={[
+          {
+            id: 'span',
+            staffId: 'staff-2',
+            staffName: '石川 二葉',
+            startDate: '2026-10-05',
+            endDate: '2026-10-06',
+            title: '研修',
+            reviewReason: 'recurrence_unsupported',
+          },
+        ]}
+      />,
+    )
+    const notice = screen.getByTestId('schedule-calendar-needs-review')
+    expect(notice).toHaveTextContent('確認が必要な予定が 1 件あります')
+    expect(
+      within(notice).getByTestId('schedule-calendar-needs-review-all-day-span'),
+    ).toHaveTextContent('2026年10月5日（月）〜2026年10月6日（火） 終日 石川 二葉:')
+  })
+
   it('同期が新しく確認が必要な予定も無ければ、案内だけを出す', () => {
     render(<GuideOnly />)
     expect(screen.getByTestId('schedule-calendar-google-primary')).toHaveTextContent(
-      '予定は Google カレンダーで管理しています',
+      'Google カレンダーと buddy のどちらでも作成、変更できます',
     )
     expect(screen.queryByTestId('schedule-calendar-sync-warning')).toBeNull()
     expect(screen.queryByTestId('schedule-calendar-needs-review')).toBeNull()
+    expect(screen.queryByTestId('schedule-calendar-unlisted')).toBeNull()
   })
 
   it('buddy_primary の事業所では何も出さない', () => {
@@ -54,11 +104,15 @@ describe('ScheduleSourceNotices', () => {
     expect(container).toBeEmptyDOMElement()
   })
 
-  it('予定の正本を buddy に切り替えている間は、切り替え中であることと、Google カレンダーで予定を変えないよう頼む文を出す', () => {
+  it('予定の正本を buddy に切り替えている間は、切り替え中であることと、予定を変えられないことを伝える文と、始めた職員と時刻を出す', () => {
     render(<Cutover />)
     const notice = screen.getByTestId('schedule-calendar-cutover')
     expect(notice).toHaveTextContent('予定の正本を buddy に切り替えています')
     expect(notice).toHaveTextContent('Google カレンダーで予定を作成、変更しないでください')
+    expect(notice).toHaveTextContent('buddy でも予定を作成、変更できません')
+    expect(within(notice).getByTestId('schedule-calendar-cutover-started')).toHaveTextContent(
+      `開始: 佐藤 一郎、${formatDateTime(new Date('2026-10-05T00:00:00Z'))}`,
+    )
   })
 
   it('切り替えていないときは、切り替え中を出さない', () => {

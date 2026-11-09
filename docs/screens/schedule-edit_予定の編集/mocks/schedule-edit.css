@@ -1,5 +1,15 @@
 /* 予定の編集のモックだけの見た目。共通の見た目は _common/wireframe.css にある */
 
+/* 予定の種類のタブ。確認が必要な Google カレンダーの予定でだけ、タイトルの右に出す（予定の作成と同じ幅） */
+.se-kind {
+  flex: 0 1 240px;
+  margin-left: auto;
+}
+
+.se-kind .wf-tab {
+  flex: 1;
+}
+
 /* 入力の欄と、その下の誤りの文を縦に積む（packages/ui の FieldFrame と同じ） */
 .se-field {
   display: grid;
@@ -28,4 +38,38 @@
 /* 権限が無いことの文。危険の色にせず、本文の色で出す（apps/web の ScheduleEditModalContainer と同じ） */
 .se-message {
   margin: 0;
+}
+
+/* Google カレンダーの最新の予定。フォームの上に注意の色の面で出す（apps/web の ScheduleLatestNotice と同じ） */
+.se-latest {
+  margin: 0 0 16px;
+  padding: 12px 16px;
+  border-radius: var(--wf-radius);
+  background: var(--wf-warning-surface);
+}
+
+.se-latest__title {
+  margin: 0;
+  color: var(--wf-warning);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.se-latest__rows {
+  display: grid;
+  grid-template-columns: 6rem minmax(0, 1fr);
+  gap: 4px 16px;
+  margin: 8px 0 0;
+}
+
+.se-latest__rows dt {
+  color: var(--wf-muted);
+}
+
+.se-latest__rows dd {
+  margin: 0;
+}
+
+.se-latest__text {
+  margin: 8px 0 0;
 }

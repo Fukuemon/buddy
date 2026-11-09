@@ -144,7 +144,7 @@ test.describe('予定のカレンダー', () => {
             await page.getByTestId('schedule-form-end-time').fill('01:00')
             await page.getByTestId('schedule-form-ends-next-day').check()
             await expect(page.getByTestId('schedule-field-date-time')).toContainText(
-              '22:00 - 翌 01:00',
+              '22:00〜翌 01:00',
             )
 
             await step('「作成」を押す')

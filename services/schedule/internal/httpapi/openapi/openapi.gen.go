@@ -86,31 +86,37 @@ func (e CalendarCutoverCalendarLastStatus) Valid() bool {
 
 // Defines values for CalendarCutoverIncompleteCode.
 const (
-	CalendarCutoverIncompleteCodeCalendarAlreadyLinked     CalendarCutoverIncompleteCode = "calendar_already_linked"
-	CalendarCutoverIncompleteCodeCalendarNotConfigured     CalendarCutoverIncompleteCode = "calendar_not_configured"
-	CalendarCutoverIncompleteCodeCalendarTaken             CalendarCutoverIncompleteCode = "calendar_taken"
-	CalendarCutoverIncompleteCodeCalendarUnavailable       CalendarCutoverIncompleteCode = "calendar_unavailable"
-	CalendarCutoverIncompleteCodeCalendarUnreadable        CalendarCutoverIncompleteCode = "calendar_unreadable"
-	CalendarCutoverIncompleteCodeConflict                  CalendarCutoverIncompleteCode = "conflict"
-	CalendarCutoverIncompleteCodeCutoverIncomplete         CalendarCutoverIncompleteCode = "cutover_incomplete"
-	CalendarCutoverIncompleteCodeCutoverNotGooglePrimary   CalendarCutoverIncompleteCode = "cutover_not_google_primary"
-	CalendarCutoverIncompleteCodeCutoverNotOpen            CalendarCutoverIncompleteCode = "cutover_not_open"
-	CalendarCutoverIncompleteCodeCutoverOpen               CalendarCutoverIncompleteCode = "cutover_open"
-	CalendarCutoverIncompleteCodeCutoverSyncNotReady       CalendarCutoverIncompleteCode = "cutover_sync_not_ready"
-	CalendarCutoverIncompleteCodeExportNotAcceptable       CalendarCutoverIncompleteCode = "export_not_acceptable"
-	CalendarCutoverIncompleteCodeExportNotInReview         CalendarCutoverIncompleteCode = "export_not_in_review"
-	CalendarCutoverIncompleteCodeExternalChangeUnappliable CalendarCutoverIncompleteCode = "external_change_unappliable"
-	CalendarCutoverIncompleteCodeForbidden                 CalendarCutoverIncompleteCode = "forbidden"
-	CalendarCutoverIncompleteCodeGooglePrimary             CalendarCutoverIncompleteCode = "google_primary"
-	CalendarCutoverIncompleteCodeImportPreviewChanged      CalendarCutoverIncompleteCode = "import_preview_changed"
-	CalendarCutoverIncompleteCodeImportRunning             CalendarCutoverIncompleteCode = "import_running"
-	CalendarCutoverIncompleteCodeInternal                  CalendarCutoverIncompleteCode = "internal"
-	CalendarCutoverIncompleteCodeInvalidInput              CalendarCutoverIncompleteCode = "invalid_input"
-	CalendarCutoverIncompleteCodeNotFound                  CalendarCutoverIncompleteCode = "not_found"
-	CalendarCutoverIncompleteCodePatientHasSchedules       CalendarCutoverIncompleteCode = "patient_has_schedules"
-	CalendarCutoverIncompleteCodeStaffHasAssignments       CalendarCutoverIncompleteCode = "staff_has_assignments"
-	CalendarCutoverIncompleteCodeStaffHasCalendar          CalendarCutoverIncompleteCode = "staff_has_calendar"
-	CalendarCutoverIncompleteCodeUnauthenticated           CalendarCutoverIncompleteCode = "unauthenticated"
+	CalendarCutoverIncompleteCodeCalendarAlreadyLinked    CalendarCutoverIncompleteCode = "calendar_already_linked"
+	CalendarCutoverIncompleteCodeCalendarNotConfigured    CalendarCutoverIncompleteCode = "calendar_not_configured"
+	CalendarCutoverIncompleteCodeCalendarNotLinked        CalendarCutoverIncompleteCode = "calendar_not_linked"
+	CalendarCutoverIncompleteCodeCalendarTaken            CalendarCutoverIncompleteCode = "calendar_taken"
+	CalendarCutoverIncompleteCodeCalendarUnavailable      CalendarCutoverIncompleteCode = "calendar_unavailable"
+	CalendarCutoverIncompleteCodeCalendarUnreadable       CalendarCutoverIncompleteCode = "calendar_unreadable"
+	CalendarCutoverIncompleteCodeConflict                 CalendarCutoverIncompleteCode = "conflict"
+	CalendarCutoverIncompleteCodeCutoverIncomplete        CalendarCutoverIncompleteCode = "cutover_incomplete"
+	CalendarCutoverIncompleteCodeCutoverNotGooglePrimary  CalendarCutoverIncompleteCode = "cutover_not_google_primary"
+	CalendarCutoverIncompleteCodeCutoverNotOpen           CalendarCutoverIncompleteCode = "cutover_not_open"
+	CalendarCutoverIncompleteCodeCutoverOpen              CalendarCutoverIncompleteCode = "cutover_open"
+	CalendarCutoverIncompleteCodeCutoverSyncNotReady      CalendarCutoverIncompleteCode = "cutover_sync_not_ready"
+	CalendarCutoverIncompleteCodeExportNotInReview        CalendarCutoverIncompleteCode = "export_not_in_review"
+	CalendarCutoverIncompleteCodeForbidden                CalendarCutoverIncompleteCode = "forbidden"
+	CalendarCutoverIncompleteCodeGoogleCalendarUnwritable CalendarCutoverIncompleteCode = "google_calendar_unwritable"
+	CalendarCutoverIncompleteCodeGoogleEventChanged       CalendarCutoverIncompleteCode = "google_event_changed"
+	CalendarCutoverIncompleteCodeGoogleEventNotFound      CalendarCutoverIncompleteCode = "google_event_not_found"
+	CalendarCutoverIncompleteCodeGoogleEventRejected      CalendarCutoverIncompleteCode = "google_event_rejected"
+	CalendarCutoverIncompleteCodeGooglePrimary            CalendarCutoverIncompleteCode = "google_primary"
+	CalendarCutoverIncompleteCodeGoogleUnavailable        CalendarCutoverIncompleteCode = "google_unavailable"
+	CalendarCutoverIncompleteCodeGoogleWritePending       CalendarCutoverIncompleteCode = "google_write_pending"
+	CalendarCutoverIncompleteCodeGoogleWriteUnknown       CalendarCutoverIncompleteCode = "google_write_unknown"
+	CalendarCutoverIncompleteCodeImportPreviewChanged     CalendarCutoverIncompleteCode = "import_preview_changed"
+	CalendarCutoverIncompleteCodeImportRunning            CalendarCutoverIncompleteCode = "import_running"
+	CalendarCutoverIncompleteCodeInternal                 CalendarCutoverIncompleteCode = "internal"
+	CalendarCutoverIncompleteCodeInvalidInput             CalendarCutoverIncompleteCode = "invalid_input"
+	CalendarCutoverIncompleteCodeNotFound                 CalendarCutoverIncompleteCode = "not_found"
+	CalendarCutoverIncompleteCodePatientHasSchedules      CalendarCutoverIncompleteCode = "patient_has_schedules"
+	CalendarCutoverIncompleteCodeStaffHasAssignments      CalendarCutoverIncompleteCode = "staff_has_assignments"
+	CalendarCutoverIncompleteCodeStaffHasCalendar         CalendarCutoverIncompleteCode = "staff_has_calendar"
+	CalendarCutoverIncompleteCodeUnauthenticated          CalendarCutoverIncompleteCode = "unauthenticated"
 )
 
 // Valid indicates whether the value is a known member of the CalendarCutoverIncompleteCode enum.
@@ -119,6 +125,8 @@ func (e CalendarCutoverIncompleteCode) Valid() bool {
 	case CalendarCutoverIncompleteCodeCalendarAlreadyLinked:
 		return true
 	case CalendarCutoverIncompleteCodeCalendarNotConfigured:
+		return true
+	case CalendarCutoverIncompleteCodeCalendarNotLinked:
 		return true
 	case CalendarCutoverIncompleteCodeCalendarTaken:
 		return true
@@ -138,15 +146,25 @@ func (e CalendarCutoverIncompleteCode) Valid() bool {
 		return true
 	case CalendarCutoverIncompleteCodeCutoverSyncNotReady:
 		return true
-	case CalendarCutoverIncompleteCodeExportNotAcceptable:
-		return true
 	case CalendarCutoverIncompleteCodeExportNotInReview:
-		return true
-	case CalendarCutoverIncompleteCodeExternalChangeUnappliable:
 		return true
 	case CalendarCutoverIncompleteCodeForbidden:
 		return true
+	case CalendarCutoverIncompleteCodeGoogleCalendarUnwritable:
+		return true
+	case CalendarCutoverIncompleteCodeGoogleEventChanged:
+		return true
+	case CalendarCutoverIncompleteCodeGoogleEventNotFound:
+		return true
+	case CalendarCutoverIncompleteCodeGoogleEventRejected:
+		return true
 	case CalendarCutoverIncompleteCodeGooglePrimary:
+		return true
+	case CalendarCutoverIncompleteCodeGoogleUnavailable:
+		return true
+	case CalendarCutoverIncompleteCodeGoogleWritePending:
+		return true
+	case CalendarCutoverIncompleteCodeGoogleWriteUnknown:
 		return true
 	case CalendarCutoverIncompleteCodeImportPreviewChanged:
 		return true
@@ -380,31 +398,37 @@ func (e CalendarSyncStatusLastStatus) Valid() bool {
 
 // Defines values for EndServiceConflictCode.
 const (
-	EndServiceConflictCodeCalendarAlreadyLinked     EndServiceConflictCode = "calendar_already_linked"
-	EndServiceConflictCodeCalendarNotConfigured     EndServiceConflictCode = "calendar_not_configured"
-	EndServiceConflictCodeCalendarTaken             EndServiceConflictCode = "calendar_taken"
-	EndServiceConflictCodeCalendarUnavailable       EndServiceConflictCode = "calendar_unavailable"
-	EndServiceConflictCodeCalendarUnreadable        EndServiceConflictCode = "calendar_unreadable"
-	EndServiceConflictCodeConflict                  EndServiceConflictCode = "conflict"
-	EndServiceConflictCodeCutoverIncomplete         EndServiceConflictCode = "cutover_incomplete"
-	EndServiceConflictCodeCutoverNotGooglePrimary   EndServiceConflictCode = "cutover_not_google_primary"
-	EndServiceConflictCodeCutoverNotOpen            EndServiceConflictCode = "cutover_not_open"
-	EndServiceConflictCodeCutoverOpen               EndServiceConflictCode = "cutover_open"
-	EndServiceConflictCodeCutoverSyncNotReady       EndServiceConflictCode = "cutover_sync_not_ready"
-	EndServiceConflictCodeExportNotAcceptable       EndServiceConflictCode = "export_not_acceptable"
-	EndServiceConflictCodeExportNotInReview         EndServiceConflictCode = "export_not_in_review"
-	EndServiceConflictCodeExternalChangeUnappliable EndServiceConflictCode = "external_change_unappliable"
-	EndServiceConflictCodeForbidden                 EndServiceConflictCode = "forbidden"
-	EndServiceConflictCodeGooglePrimary             EndServiceConflictCode = "google_primary"
-	EndServiceConflictCodeImportPreviewChanged      EndServiceConflictCode = "import_preview_changed"
-	EndServiceConflictCodeImportRunning             EndServiceConflictCode = "import_running"
-	EndServiceConflictCodeInternal                  EndServiceConflictCode = "internal"
-	EndServiceConflictCodeInvalidInput              EndServiceConflictCode = "invalid_input"
-	EndServiceConflictCodeNotFound                  EndServiceConflictCode = "not_found"
-	EndServiceConflictCodePatientHasSchedules       EndServiceConflictCode = "patient_has_schedules"
-	EndServiceConflictCodeStaffHasAssignments       EndServiceConflictCode = "staff_has_assignments"
-	EndServiceConflictCodeStaffHasCalendar          EndServiceConflictCode = "staff_has_calendar"
-	EndServiceConflictCodeUnauthenticated           EndServiceConflictCode = "unauthenticated"
+	EndServiceConflictCodeCalendarAlreadyLinked    EndServiceConflictCode = "calendar_already_linked"
+	EndServiceConflictCodeCalendarNotConfigured    EndServiceConflictCode = "calendar_not_configured"
+	EndServiceConflictCodeCalendarNotLinked        EndServiceConflictCode = "calendar_not_linked"
+	EndServiceConflictCodeCalendarTaken            EndServiceConflictCode = "calendar_taken"
+	EndServiceConflictCodeCalendarUnavailable      EndServiceConflictCode = "calendar_unavailable"
+	EndServiceConflictCodeCalendarUnreadable       EndServiceConflictCode = "calendar_unreadable"
+	EndServiceConflictCodeConflict                 EndServiceConflictCode = "conflict"
+	EndServiceConflictCodeCutoverIncomplete        EndServiceConflictCode = "cutover_incomplete"
+	EndServiceConflictCodeCutoverNotGooglePrimary  EndServiceConflictCode = "cutover_not_google_primary"
+	EndServiceConflictCodeCutoverNotOpen           EndServiceConflictCode = "cutover_not_open"
+	EndServiceConflictCodeCutoverOpen              EndServiceConflictCode = "cutover_open"
+	EndServiceConflictCodeCutoverSyncNotReady      EndServiceConflictCode = "cutover_sync_not_ready"
+	EndServiceConflictCodeExportNotInReview        EndServiceConflictCode = "export_not_in_review"
+	EndServiceConflictCodeForbidden                EndServiceConflictCode = "forbidden"
+	EndServiceConflictCodeGoogleCalendarUnwritable EndServiceConflictCode = "google_calendar_unwritable"
+	EndServiceConflictCodeGoogleEventChanged       EndServiceConflictCode = "google_event_changed"
+	EndServiceConflictCodeGoogleEventNotFound      EndServiceConflictCode = "google_event_not_found"
+	EndServiceConflictCodeGoogleEventRejected      EndServiceConflictCode = "google_event_rejected"
+	EndServiceConflictCodeGooglePrimary            EndServiceConflictCode = "google_primary"
+	EndServiceConflictCodeGoogleUnavailable        EndServiceConflictCode = "google_unavailable"
+	EndServiceConflictCodeGoogleWritePending       EndServiceConflictCode = "google_write_pending"
+	EndServiceConflictCodeGoogleWriteUnknown       EndServiceConflictCode = "google_write_unknown"
+	EndServiceConflictCodeImportPreviewChanged     EndServiceConflictCode = "import_preview_changed"
+	EndServiceConflictCodeImportRunning            EndServiceConflictCode = "import_running"
+	EndServiceConflictCodeInternal                 EndServiceConflictCode = "internal"
+	EndServiceConflictCodeInvalidInput             EndServiceConflictCode = "invalid_input"
+	EndServiceConflictCodeNotFound                 EndServiceConflictCode = "not_found"
+	EndServiceConflictCodePatientHasSchedules      EndServiceConflictCode = "patient_has_schedules"
+	EndServiceConflictCodeStaffHasAssignments      EndServiceConflictCode = "staff_has_assignments"
+	EndServiceConflictCodeStaffHasCalendar         EndServiceConflictCode = "staff_has_calendar"
+	EndServiceConflictCodeUnauthenticated          EndServiceConflictCode = "unauthenticated"
 )
 
 // Valid indicates whether the value is a known member of the EndServiceConflictCode enum.
@@ -413,6 +437,8 @@ func (e EndServiceConflictCode) Valid() bool {
 	case EndServiceConflictCodeCalendarAlreadyLinked:
 		return true
 	case EndServiceConflictCodeCalendarNotConfigured:
+		return true
+	case EndServiceConflictCodeCalendarNotLinked:
 		return true
 	case EndServiceConflictCodeCalendarTaken:
 		return true
@@ -432,15 +458,25 @@ func (e EndServiceConflictCode) Valid() bool {
 		return true
 	case EndServiceConflictCodeCutoverSyncNotReady:
 		return true
-	case EndServiceConflictCodeExportNotAcceptable:
-		return true
 	case EndServiceConflictCodeExportNotInReview:
-		return true
-	case EndServiceConflictCodeExternalChangeUnappliable:
 		return true
 	case EndServiceConflictCodeForbidden:
 		return true
+	case EndServiceConflictCodeGoogleCalendarUnwritable:
+		return true
+	case EndServiceConflictCodeGoogleEventChanged:
+		return true
+	case EndServiceConflictCodeGoogleEventNotFound:
+		return true
+	case EndServiceConflictCodeGoogleEventRejected:
+		return true
 	case EndServiceConflictCodeGooglePrimary:
+		return true
+	case EndServiceConflictCodeGoogleUnavailable:
+		return true
+	case EndServiceConflictCodeGoogleWritePending:
+		return true
+	case EndServiceConflictCodeGoogleWriteUnknown:
 		return true
 	case EndServiceConflictCodeImportPreviewChanged:
 		return true
@@ -467,31 +503,37 @@ func (e EndServiceConflictCode) Valid() bool {
 
 // Defines values for ErrorCode.
 const (
-	ErrorCodeCalendarAlreadyLinked     ErrorCode = "calendar_already_linked"
-	ErrorCodeCalendarNotConfigured     ErrorCode = "calendar_not_configured"
-	ErrorCodeCalendarTaken             ErrorCode = "calendar_taken"
-	ErrorCodeCalendarUnavailable       ErrorCode = "calendar_unavailable"
-	ErrorCodeCalendarUnreadable        ErrorCode = "calendar_unreadable"
-	ErrorCodeConflict                  ErrorCode = "conflict"
-	ErrorCodeCutoverIncomplete         ErrorCode = "cutover_incomplete"
-	ErrorCodeCutoverNotGooglePrimary   ErrorCode = "cutover_not_google_primary"
-	ErrorCodeCutoverNotOpen            ErrorCode = "cutover_not_open"
-	ErrorCodeCutoverOpen               ErrorCode = "cutover_open"
-	ErrorCodeCutoverSyncNotReady       ErrorCode = "cutover_sync_not_ready"
-	ErrorCodeExportNotAcceptable       ErrorCode = "export_not_acceptable"
-	ErrorCodeExportNotInReview         ErrorCode = "export_not_in_review"
-	ErrorCodeExternalChangeUnappliable ErrorCode = "external_change_unappliable"
-	ErrorCodeForbidden                 ErrorCode = "forbidden"
-	ErrorCodeGooglePrimary             ErrorCode = "google_primary"
-	ErrorCodeImportPreviewChanged      ErrorCode = "import_preview_changed"
-	ErrorCodeImportRunning             ErrorCode = "import_running"
-	ErrorCodeInternal                  ErrorCode = "internal"
-	ErrorCodeInvalidInput              ErrorCode = "invalid_input"
-	ErrorCodeNotFound                  ErrorCode = "not_found"
-	ErrorCodePatientHasSchedules       ErrorCode = "patient_has_schedules"
-	ErrorCodeStaffHasAssignments       ErrorCode = "staff_has_assignments"
-	ErrorCodeStaffHasCalendar          ErrorCode = "staff_has_calendar"
-	ErrorCodeUnauthenticated           ErrorCode = "unauthenticated"
+	ErrorCodeCalendarAlreadyLinked    ErrorCode = "calendar_already_linked"
+	ErrorCodeCalendarNotConfigured    ErrorCode = "calendar_not_configured"
+	ErrorCodeCalendarNotLinked        ErrorCode = "calendar_not_linked"
+	ErrorCodeCalendarTaken            ErrorCode = "calendar_taken"
+	ErrorCodeCalendarUnavailable      ErrorCode = "calendar_unavailable"
+	ErrorCodeCalendarUnreadable       ErrorCode = "calendar_unreadable"
+	ErrorCodeConflict                 ErrorCode = "conflict"
+	ErrorCodeCutoverIncomplete        ErrorCode = "cutover_incomplete"
+	ErrorCodeCutoverNotGooglePrimary  ErrorCode = "cutover_not_google_primary"
+	ErrorCodeCutoverNotOpen           ErrorCode = "cutover_not_open"
+	ErrorCodeCutoverOpen              ErrorCode = "cutover_open"
+	ErrorCodeCutoverSyncNotReady      ErrorCode = "cutover_sync_not_ready"
+	ErrorCodeExportNotInReview        ErrorCode = "export_not_in_review"
+	ErrorCodeForbidden                ErrorCode = "forbidden"
+	ErrorCodeGoogleCalendarUnwritable ErrorCode = "google_calendar_unwritable"
+	ErrorCodeGoogleEventChanged       ErrorCode = "google_event_changed"
+	ErrorCodeGoogleEventNotFound      ErrorCode = "google_event_not_found"
+	ErrorCodeGoogleEventRejected      ErrorCode = "google_event_rejected"
+	ErrorCodeGooglePrimary            ErrorCode = "google_primary"
+	ErrorCodeGoogleUnavailable        ErrorCode = "google_unavailable"
+	ErrorCodeGoogleWritePending       ErrorCode = "google_write_pending"
+	ErrorCodeGoogleWriteUnknown       ErrorCode = "google_write_unknown"
+	ErrorCodeImportPreviewChanged     ErrorCode = "import_preview_changed"
+	ErrorCodeImportRunning            ErrorCode = "import_running"
+	ErrorCodeInternal                 ErrorCode = "internal"
+	ErrorCodeInvalidInput             ErrorCode = "invalid_input"
+	ErrorCodeNotFound                 ErrorCode = "not_found"
+	ErrorCodePatientHasSchedules      ErrorCode = "patient_has_schedules"
+	ErrorCodeStaffHasAssignments      ErrorCode = "staff_has_assignments"
+	ErrorCodeStaffHasCalendar         ErrorCode = "staff_has_calendar"
+	ErrorCodeUnauthenticated          ErrorCode = "unauthenticated"
 )
 
 // Valid indicates whether the value is a known member of the ErrorCode enum.
@@ -500,6 +542,8 @@ func (e ErrorCode) Valid() bool {
 	case ErrorCodeCalendarAlreadyLinked:
 		return true
 	case ErrorCodeCalendarNotConfigured:
+		return true
+	case ErrorCodeCalendarNotLinked:
 		return true
 	case ErrorCodeCalendarTaken:
 		return true
@@ -519,15 +563,25 @@ func (e ErrorCode) Valid() bool {
 		return true
 	case ErrorCodeCutoverSyncNotReady:
 		return true
-	case ErrorCodeExportNotAcceptable:
-		return true
 	case ErrorCodeExportNotInReview:
-		return true
-	case ErrorCodeExternalChangeUnappliable:
 		return true
 	case ErrorCodeForbidden:
 		return true
+	case ErrorCodeGoogleCalendarUnwritable:
+		return true
+	case ErrorCodeGoogleEventChanged:
+		return true
+	case ErrorCodeGoogleEventNotFound:
+		return true
+	case ErrorCodeGoogleEventRejected:
+		return true
 	case ErrorCodeGooglePrimary:
+		return true
+	case ErrorCodeGoogleUnavailable:
+		return true
+	case ErrorCodeGoogleWritePending:
+		return true
+	case ErrorCodeGoogleWriteUnknown:
 		return true
 	case ErrorCodeImportPreviewChanged:
 		return true
@@ -761,31 +815,37 @@ func (e RecurringRuleFrequency) Valid() bool {
 
 // Defines values for RetireConflictCode.
 const (
-	RetireConflictCodeCalendarAlreadyLinked     RetireConflictCode = "calendar_already_linked"
-	RetireConflictCodeCalendarNotConfigured     RetireConflictCode = "calendar_not_configured"
-	RetireConflictCodeCalendarTaken             RetireConflictCode = "calendar_taken"
-	RetireConflictCodeCalendarUnavailable       RetireConflictCode = "calendar_unavailable"
-	RetireConflictCodeCalendarUnreadable        RetireConflictCode = "calendar_unreadable"
-	RetireConflictCodeConflict                  RetireConflictCode = "conflict"
-	RetireConflictCodeCutoverIncomplete         RetireConflictCode = "cutover_incomplete"
-	RetireConflictCodeCutoverNotGooglePrimary   RetireConflictCode = "cutover_not_google_primary"
-	RetireConflictCodeCutoverNotOpen            RetireConflictCode = "cutover_not_open"
-	RetireConflictCodeCutoverOpen               RetireConflictCode = "cutover_open"
-	RetireConflictCodeCutoverSyncNotReady       RetireConflictCode = "cutover_sync_not_ready"
-	RetireConflictCodeExportNotAcceptable       RetireConflictCode = "export_not_acceptable"
-	RetireConflictCodeExportNotInReview         RetireConflictCode = "export_not_in_review"
-	RetireConflictCodeExternalChangeUnappliable RetireConflictCode = "external_change_unappliable"
-	RetireConflictCodeForbidden                 RetireConflictCode = "forbidden"
-	RetireConflictCodeGooglePrimary             RetireConflictCode = "google_primary"
-	RetireConflictCodeImportPreviewChanged      RetireConflictCode = "import_preview_changed"
-	RetireConflictCodeImportRunning             RetireConflictCode = "import_running"
-	RetireConflictCodeInternal                  RetireConflictCode = "internal"
-	RetireConflictCodeInvalidInput              RetireConflictCode = "invalid_input"
-	RetireConflictCodeNotFound                  RetireConflictCode = "not_found"
-	RetireConflictCodePatientHasSchedules       RetireConflictCode = "patient_has_schedules"
-	RetireConflictCodeStaffHasAssignments       RetireConflictCode = "staff_has_assignments"
-	RetireConflictCodeStaffHasCalendar          RetireConflictCode = "staff_has_calendar"
-	RetireConflictCodeUnauthenticated           RetireConflictCode = "unauthenticated"
+	RetireConflictCodeCalendarAlreadyLinked    RetireConflictCode = "calendar_already_linked"
+	RetireConflictCodeCalendarNotConfigured    RetireConflictCode = "calendar_not_configured"
+	RetireConflictCodeCalendarNotLinked        RetireConflictCode = "calendar_not_linked"
+	RetireConflictCodeCalendarTaken            RetireConflictCode = "calendar_taken"
+	RetireConflictCodeCalendarUnavailable      RetireConflictCode = "calendar_unavailable"
+	RetireConflictCodeCalendarUnreadable       RetireConflictCode = "calendar_unreadable"
+	RetireConflictCodeConflict                 RetireConflictCode = "conflict"
+	RetireConflictCodeCutoverIncomplete        RetireConflictCode = "cutover_incomplete"
+	RetireConflictCodeCutoverNotGooglePrimary  RetireConflictCode = "cutover_not_google_primary"
+	RetireConflictCodeCutoverNotOpen           RetireConflictCode = "cutover_not_open"
+	RetireConflictCodeCutoverOpen              RetireConflictCode = "cutover_open"
+	RetireConflictCodeCutoverSyncNotReady      RetireConflictCode = "cutover_sync_not_ready"
+	RetireConflictCodeExportNotInReview        RetireConflictCode = "export_not_in_review"
+	RetireConflictCodeForbidden                RetireConflictCode = "forbidden"
+	RetireConflictCodeGoogleCalendarUnwritable RetireConflictCode = "google_calendar_unwritable"
+	RetireConflictCodeGoogleEventChanged       RetireConflictCode = "google_event_changed"
+	RetireConflictCodeGoogleEventNotFound      RetireConflictCode = "google_event_not_found"
+	RetireConflictCodeGoogleEventRejected      RetireConflictCode = "google_event_rejected"
+	RetireConflictCodeGooglePrimary            RetireConflictCode = "google_primary"
+	RetireConflictCodeGoogleUnavailable        RetireConflictCode = "google_unavailable"
+	RetireConflictCodeGoogleWritePending       RetireConflictCode = "google_write_pending"
+	RetireConflictCodeGoogleWriteUnknown       RetireConflictCode = "google_write_unknown"
+	RetireConflictCodeImportPreviewChanged     RetireConflictCode = "import_preview_changed"
+	RetireConflictCodeImportRunning            RetireConflictCode = "import_running"
+	RetireConflictCodeInternal                 RetireConflictCode = "internal"
+	RetireConflictCodeInvalidInput             RetireConflictCode = "invalid_input"
+	RetireConflictCodeNotFound                 RetireConflictCode = "not_found"
+	RetireConflictCodePatientHasSchedules      RetireConflictCode = "patient_has_schedules"
+	RetireConflictCodeStaffHasAssignments      RetireConflictCode = "staff_has_assignments"
+	RetireConflictCodeStaffHasCalendar         RetireConflictCode = "staff_has_calendar"
+	RetireConflictCodeUnauthenticated          RetireConflictCode = "unauthenticated"
 )
 
 // Valid indicates whether the value is a known member of the RetireConflictCode enum.
@@ -794,6 +854,8 @@ func (e RetireConflictCode) Valid() bool {
 	case RetireConflictCodeCalendarAlreadyLinked:
 		return true
 	case RetireConflictCodeCalendarNotConfigured:
+		return true
+	case RetireConflictCodeCalendarNotLinked:
 		return true
 	case RetireConflictCodeCalendarTaken:
 		return true
@@ -813,15 +875,25 @@ func (e RetireConflictCode) Valid() bool {
 		return true
 	case RetireConflictCodeCutoverSyncNotReady:
 		return true
-	case RetireConflictCodeExportNotAcceptable:
-		return true
 	case RetireConflictCodeExportNotInReview:
-		return true
-	case RetireConflictCodeExternalChangeUnappliable:
 		return true
 	case RetireConflictCodeForbidden:
 		return true
+	case RetireConflictCodeGoogleCalendarUnwritable:
+		return true
+	case RetireConflictCodeGoogleEventChanged:
+		return true
+	case RetireConflictCodeGoogleEventNotFound:
+		return true
+	case RetireConflictCodeGoogleEventRejected:
+		return true
 	case RetireConflictCodeGooglePrimary:
+		return true
+	case RetireConflictCodeGoogleUnavailable:
+		return true
+	case RetireConflictCodeGoogleWritePending:
+		return true
+	case RetireConflictCodeGoogleWriteUnknown:
 		return true
 	case RetireConflictCodeImportPreviewChanged:
 		return true
@@ -870,6 +942,7 @@ const (
 	ScheduleReviewReasonPatientNotFound       ScheduleReviewReason = "patient_not_found"
 	ScheduleReviewReasonRecurrenceUnsupported ScheduleReviewReason = "recurrence_unsupported"
 	ScheduleReviewReasonServiceCodeNotFound   ScheduleReviewReason = "service_code_not_found"
+	ScheduleReviewReasonTitleMismatch         ScheduleReviewReason = "title_mismatch"
 	ScheduleReviewReasonTitleUnreadable       ScheduleReviewReason = "title_unreadable"
 )
 
@@ -883,6 +956,8 @@ func (e ScheduleReviewReason) Valid() bool {
 	case ScheduleReviewReasonRecurrenceUnsupported:
 		return true
 	case ScheduleReviewReasonServiceCodeNotFound:
+		return true
+	case ScheduleReviewReasonTitleMismatch:
 		return true
 	case ScheduleReviewReasonTitleUnreadable:
 		return true
@@ -1131,7 +1206,30 @@ func (e ListUsersParamsSortOrder) Valid() bool {
 	}
 }
 
-// CalendarCutover 事業所の予定の正本を Google カレンダーから buddy に切り替える作業の記録（ADR-0035）
+// AllDayEvent Google カレンダーの終日の予定。buddy の予定ではない（#672）
+type AllDayEvent struct {
+	// EndDate 予定がかかる最後の日（この日を含む）。1 日の予定では start_date と同じ
+	EndDate string `json:"end_date"`
+
+	// Id 一覧を読むたびに同じになる値。繰り返しの回は回ごとに違う値である。予定の ID としては使えない
+	Id string `json:"id"`
+
+	// ReviewReason 確認が必要な理由。無ければ null。buddy の繰り返しの規則に写せない繰り返しの終日の予定は、最初の回の 1 件にし、
+	// recurrence_unsupported を付ける（#972）
+	ReviewReason *ScheduleReviewReason `json:"review_reason"`
+
+	// StaffId Example: 01M3TC5H00QV17BC0J9V3393ZP
+	StaffId   ID     `json:"staff_id"`
+	StaffName string `json:"staff_name"`
+
+	// StartDate 予定がかかる最初の日
+	StartDate string `json:"start_date"`
+
+	// Title Google の予定のタイトル。空のことがある
+	Title string `json:"title"`
+}
+
+// CalendarCutover 事業所の予定の正本を Google カレンダーから buddy に切り替える作業の記録（ADR-0031）
 type CalendarCutover struct {
 	// FacilityId Example: 01M3TC5H00QV17BC0J9V3393ZP
 	FacilityId ID `json:"facility_id"`
@@ -1262,7 +1360,7 @@ type CalendarExport struct {
 	// forbidden はサービスアカウントがカレンダーに書けない、rejected は Google が予定の内容を受け付けなかった（400）、
 	// unavailable は Google に届かないか一時的なエラーが続いた、unappliable は Google カレンダーの変更を buddy の予定に読み替えられない
 	// （終日にした予定、タイトルの利用者を引けない予定、繰り返しの予定そのものの変更）。
-	// not_buddy_primary は事業所が buddy を予定の正本にしていないので、書かずに保留にした（ADR-0035）
+	// not_buddy_primary は事業所が buddy を予定の正本にしていないので、書かずに保留にした（ADR-0029）
 	ErrorCode *CalendarExportErrorCode `json:"error_code"`
 
 	// Id Example: 01M3TC5H00QV17BC0J9V3393ZP
@@ -1285,7 +1383,7 @@ type CalendarExport struct {
 // forbidden はサービスアカウントがカレンダーに書けない、rejected は Google が予定の内容を受け付けなかった（400）、
 // unavailable は Google に届かないか一時的なエラーが続いた、unappliable は Google カレンダーの変更を buddy の予定に読み替えられない
 // （終日にした予定、タイトルの利用者を引けない予定、繰り返しの予定そのものの変更）。
-// not_buddy_primary は事業所が buddy を予定の正本にしていないので、書かずに保留にした（ADR-0035）
+// not_buddy_primary は事業所が buddy を予定の正本にしていないので、書かずに保留にした（ADR-0029）
 type CalendarExportErrorCode string
 
 // CalendarExportStatus pending は書く待ち、succeeded は書き終えた、conflict は Google カレンダーで予定が変わっていたか消えていたので書かずに止めたか、
@@ -1294,8 +1392,8 @@ type CalendarExportStatus string
 
 // CalendarExportIssue 確認が必要な書き出しと、その予定の日時と職員。繰り返しの予定の date は最初の回の日付
 type CalendarExportIssue struct {
-	// Acceptable Google カレンダーの内容で解けるか（POST /v1/calendar_exports/{calendar_export_id}/acceptances）。
-	// 単発の予定で、buddy でキャンセルしておらず、error_code が precondition_failed か not_found のときに true
+	// Acceptable Google カレンダーで予定が変わったか消えたので書けなかった、buddy でキャンセルしていない単発の予定か。
+	// error_code が precondition_failed か not_found のときに true
 	Acceptable bool `json:"acceptable"`
 
 	// Attempts 書こうとした回数
@@ -1313,7 +1411,7 @@ type CalendarExportIssue struct {
 	// forbidden はサービスアカウントがカレンダーに書けない、rejected は Google が予定の内容を受け付けなかった（400）、
 	// unavailable は Google に届かないか一時的なエラーが続いた、unappliable は Google カレンダーの変更を buddy の予定に読み替えられない
 	// （終日にした予定、タイトルの利用者を引けない予定、繰り返しの予定そのものの変更）。
-	// not_buddy_primary は事業所が buddy を予定の正本にしていないので、書かずに保留にした（ADR-0035）
+	// not_buddy_primary は事業所が buddy を予定の正本にしていないので、書かずに保留にした（ADR-0029）
 	ErrorCode *CalendarExportIssueErrorCode `json:"error_code"`
 
 	// Id Example: 01M3TC5H00QV17BC0J9V3393ZP
@@ -1343,7 +1441,7 @@ type CalendarExportIssue struct {
 // forbidden はサービスアカウントがカレンダーに書けない、rejected は Google が予定の内容を受け付けなかった（400）、
 // unavailable は Google に届かないか一時的なエラーが続いた、unappliable は Google カレンダーの変更を buddy の予定に読み替えられない
 // （終日にした予定、タイトルの利用者を引けない予定、繰り返しの予定そのものの変更）。
-// not_buddy_primary は事業所が buddy を予定の正本にしていないので、書かずに保留にした（ADR-0035）
+// not_buddy_primary は事業所が buddy を予定の正本にしていないので、書かずに保留にした（ADR-0029）
 type CalendarExportIssueErrorCode string
 
 // CalendarExportIssueStatus pending は書く待ち、succeeded は書き終えた、conflict は Google カレンダーで予定が変わっていたか消えていたので書かずに止めたか、
@@ -1456,7 +1554,7 @@ type Facility struct {
 	Id   ID     `json:"id"`
 	Name string `json:"name"`
 
-	// SourceMode 事業所の予定の正本。google_primary は Google カレンダー、buddy_primary は buddy である（ADR-0035）
+	// SourceMode 事業所の予定の正本。google_primary は Google カレンダー、buddy_primary は buddy である（ADR-0029）
 	SourceMode SourceMode `json:"source_mode"`
 	UpdatedAt  time.Time  `json:"updated_at"`
 }
@@ -1542,7 +1640,7 @@ type ImportPreview struct {
 	Skipped []ImportSkippedItem `json:"skipped"`
 }
 
-// ImportRange 事業所に open の予定の正本の切り替えがあるときは、range_start を切り替えの range_start にし、range_end を省くか null にする（ADR-0035）。
+// ImportRange 事業所に open の予定の正本の切り替えがあるときは、range_start を切り替えの range_start にし、range_end を省くか null にする（ADR-0031）。
 // ほかの期間は 400 になる。open の切り替えが無いときは、range_end を省けない。
 type ImportRange struct {
 	// RangeEnd 期間の最後の日。この日を含む。range_start 以降で、range_start から 1 年未満の日。切り替えの取り込みでは null
@@ -1651,7 +1749,7 @@ type ImportSkippedItem struct {
 	// EndsNextDay date の翌日の end_time に終わる予定に読み替えた予定のとき true。reason が multi_day の予定では false
 	EndsNextDay bool `json:"ends_next_day"`
 
-	// Reason all_day は終日、multi_day は日をまたぐ（24:00 に終わる予定を含む）、unreadable_time は日時を読めない、
+	// Reason all_day は終日、multi_day は終了が開始の翌日より後か、長さが 24 時間以上（翌日に終わる 24 時間未満の予定は含まない）、unreadable_time は日時を読めない、
 	// zero_length は長さが無い、unreadable_title はタイトルが空白だけか訪問のタイトルを読めない、
 	// service_not_found はタイトルのサービス内容がサービスコードに無い、
 	// staff_on_leave はカレンダーを結び付けた職員が休職しているので作らない新しい予定、
@@ -1660,7 +1758,7 @@ type ImportSkippedItem struct {
 	StartTime *Time                   `json:"start_time"`
 }
 
-// ImportSkippedItemReason all_day は終日、multi_day は日をまたぐ（24:00 に終わる予定を含む）、unreadable_time は日時を読めない、
+// ImportSkippedItemReason all_day は終日、multi_day は終了が開始の翌日より後か、長さが 24 時間以上（翌日に終わる 24 時間未満の予定は含まない）、unreadable_time は日時を読めない、
 // zero_length は長さが無い、unreadable_title はタイトルが空白だけか訪問のタイトルを読めない、
 // service_not_found はタイトルのサービス内容がサービスコードに無い、
 // staff_on_leave はカレンダーを結び付けた職員が休職しているので作らない新しい予定、
@@ -1672,6 +1770,12 @@ type OpenCalendarCutover struct {
 	// RangeStart 取り込みの期間の最初の日
 	RangeStart Date      `json:"range_start"`
 	StartedAt  time.Time `json:"started_at"`
+
+	// StartedBy 切り替えを始めた職員
+	StartedBy ID `json:"started_by"`
+
+	// StartedByName 切り替えを始めた職員の名前。職員の状態（休職、退職）によらず返し、予定の一覧を読める全ての職員に返す
+	StartedByName string `json:"started_by_name"`
 }
 
 // Patient defines model for Patient.
@@ -1728,6 +1832,9 @@ type PatientSchedules_RecurringSchedules struct {
 	// EndTime Example: 09:30
 	EndTime Time `json:"end_time"`
 
+	// EndsNextDay 全ての回が、回の日付の翌日の end_time に終わるとき true
+	EndsNextDay bool `json:"ends_next_day"`
+
 	// Id Example: 01M3TC5H00QV17BC0J9V3393ZP
 	Id ID `json:"id"`
 
@@ -1741,6 +1848,9 @@ type PatientSchedules_Schedules struct {
 
 	// EndTime Example: 09:30
 	EndTime Time `json:"end_time"`
+
+	// EndsNextDay date の翌日の end_time に終わる予定のとき true
+	EndsNextDay bool `json:"ends_next_day"`
 
 	// Id Example: 01M3TC5H00QV17BC0J9V3393ZP
 	Id ID `json:"id"`
@@ -1786,19 +1896,29 @@ type PreferredGender string
 // PreferredTime defines model for PreferredTime.
 type PreferredTime string
 
-// RecurringRule weekly は day_of_week だけを、monthly は day_of_month だけか、week_of_month と day_of_week の組を指定できる。
+// RecurringRule weekly は days_of_week と interval だけを、monthly は day_of_month だけか、week_of_month と day_of_week の組を指定できる。
 // 指定しない項目は、最初の日付の曜日や日から決める。
 // 最初の日付が規則の回に当たらない組み合わせ（火曜の最初の日付に毎週の月曜など）は、入力のエラーにする。
+// weekly の回は、日曜に始まる週で数え、最初の日付を含む週を 1 週目として、1 週目から interval の倍数だけ後の週の days_of_week の曜日にある（ADR-0038）。
+// 繰り返しの終わりは end_date だけで持ち、回数は持たない。
 type RecurringRule struct {
 	DayOfMonth *int `json:"day_of_month"`
 
-	// DayOfWeek 1 が月曜、7 が日曜
+	// DayOfWeek monthly の week_of_month の週の曜日。1 が月曜、7 が日曜。weekly には指定できない
 	DayOfWeek *int `json:"day_of_week"`
 
+	// DaysOfWeek weekly の曜日。1 が月曜、7 が日曜で、重ならない 1 つ以上の曜日を指定する。省くと最初の日付の曜日の 1 つにする。
+	// レスポンスでは、weekly は月曜から日曜の順に並べて必ず返し、monthly は null である
+	DaysOfWeek *[]int `json:"days_of_week"`
+
 	// EndDate この日を含む
-	EndDate     *Date                  `json:"end_date"`
-	Frequency   RecurringRuleFrequency `json:"frequency"`
-	WeekOfMonth *int                   `json:"week_of_month"`
+	EndDate   *Date                  `json:"end_date"`
+	Frequency RecurringRuleFrequency `json:"frequency"`
+
+	// Interval weekly の間隔の週の数。1 が毎週、2 が隔週である。weekly で省くと 1 にする。monthly には指定できない（1 も 400 になる）。
+	// レスポンスでは、weekly は必ず返し、monthly は null である
+	Interval    *int `json:"interval"`
+	WeekOfMonth *int `json:"week_of_month"`
 }
 
 // RecurringRuleFrequency defines model for RecurringRule.Frequency.
@@ -1828,9 +1948,11 @@ type RecurringSchedule struct {
 	Id             ID   `json:"id"`
 	IsOverTimeWork bool `json:"is_over_time_work"`
 
-	// RecurringRule weekly は day_of_week だけを、monthly は day_of_month だけか、week_of_month と day_of_week の組を指定できる。
+	// RecurringRule weekly は days_of_week と interval だけを、monthly は day_of_month だけか、week_of_month と day_of_week の組を指定できる。
 	// 指定しない項目は、最初の日付の曜日や日から決める。
 	// 最初の日付が規則の回に当たらない組み合わせ（火曜の最初の日付に毎週の月曜など）は、入力のエラーにする。
+	// weekly の回は、日曜に始まる週で数え、最初の日付を含む週を 1 週目として、1 週目から interval の倍数だけ後の週の days_of_week の曜日にある（ADR-0038）。
+	// 繰り返しの終わりは end_date だけで持ち、回数は持たない。
 	RecurringRule RecurringRule `json:"recurring_rule"`
 
 	// ScheduleType 通常の予定はタイトルを、訪問の予定は訪問の情報を必須とする
@@ -1885,6 +2007,10 @@ type Schedule struct {
 	// EndsNextDay date の翌日の end_time に終わる予定のとき true
 	EndsNextDay bool `json:"ends_next_day"`
 
+	// Etag google_calendar の予定の、Google カレンダーの etag。予定を変えるか取り消すときに送る。
+	// buddy の予定では null で、繰り返しの回では親の予定の etag である
+	Etag *string `json:"etag"`
+
 	// FacilityId Example: 01M3TC5H00QV17BC0J9V3393ZP
 	FacilityId ID `json:"facility_id"`
 
@@ -1894,7 +2020,12 @@ type Schedule struct {
 	// IsOverTimeWork 17 時以降に始まる予定のとき true
 	IsOverTimeWork bool `json:"is_over_time_work"`
 
-	// RecurringScheduleId 繰り返しの予定の 1 回を置き換えた予定のとき、元の繰り返しの予定
+	// RecurringRule google_primary の事業所で、繰り返しの親を展開した回のときの、親の繰り返しの規則。ほかの予定では null である。
+	// 指定しない項目は、親の最初の日付の曜日や日から決まり、展開した回の日付の曜日や日と同じである（ADR-0037）
+	RecurringRule *RecurringRule `json:"recurring_rule"`
+
+	// RecurringScheduleId 繰り返しの予定の 1 回を置き換えた予定のとき、元の繰り返しの予定。
+	// google_primary の事業所で、繰り返しの親を展開した回のときは、親の予定の一覧での ID で、changeRecurringRule の recurring_schedule_id に使う
 	RecurringScheduleId *ID `json:"recurring_schedule_id"`
 
 	// ReviewReason google_calendar の予定のうち、確認が必要な予定の理由。ほかの予定では null
@@ -1907,7 +2038,7 @@ type Schedule struct {
 	ScheduleTypeId ID `json:"schedule_type_id"`
 
 	// Source 予定の読み元。buddy は buddy の予定、google_calendar は google_primary の事業所で同期が写した Google カレンダーの予定（Projection）である。
-	// google_calendar の予定は buddy から変えられず、Google カレンダーで変える。
+	// google_calendar の予定は、etag を付けて変更と取り消しができる。繰り返しの回も同じで、回の etag は親の予定の etag である。
 	Source ScheduleSource `json:"source"`
 
 	// StaffId Example: 01M3TC5H00QV17BC0J9V3393ZP
@@ -1924,14 +2055,17 @@ type Schedule struct {
 }
 
 // ScheduleSource 予定の読み元。buddy は buddy の予定、google_calendar は google_primary の事業所で同期が写した Google カレンダーの予定（Projection）である。
-// google_calendar の予定は buddy から変えられず、Google カレンダーで変える。
+// google_calendar の予定は、etag を付けて変更と取り消しができる。繰り返しの回も同じで、回の etag は親の予定の etag である。
 type ScheduleSource string
 
 // ScheduleReviewReason Google カレンダーの予定を、buddy の予定に読み替えられなかった理由。
 // recurrence_unsupported は buddy の繰り返しの規則に写せない繰り返しの予定で、回に展開せず最初の回の 1 件で返す。
 // patient_not_found と patient_ambiguous はタイトルの利用者名の利用者がいないか 2 人以上いる予定、
 // service_code_not_found はタイトルのサービス内容がサービスコードのマスタに無い予定、title_unreadable はタイトルが空か、訪問のタイトルを読めない予定である。
-// recurrence_unsupported のほかの予定は、訪問の情報（visit_info）を空にし、Google のタイトルを title に入れた通常の予定として返す。
+// patient_not_found、patient_ambiguous、service_code_not_found、title_unreadable の予定は、訪問の情報（visit_info）を空にし、
+// Google のタイトルを title に入れた通常の予定として返す。
+// title_mismatch は、buddy で訪問の情報を入力した予定のうち、Google でタイトルを変え、タイトルの利用者かサービス内容が
+// buddy の訪問の情報と違う予定である。訪問の情報は buddy の内容で返す（ADR-0029）。
 type ScheduleReviewReason string
 
 // ScheduleType defines model for ScheduleType.
@@ -1983,7 +2117,7 @@ type SlotRequest struct {
 	VisitInfo *VisitInfoRequest `json:"visit_info,omitempty"`
 }
 
-// SourceMode 事業所の予定の正本。google_primary は Google カレンダー、buddy_primary は buddy である（ADR-0035）
+// SourceMode 事業所の予定の正本。google_primary は Google カレンダー、buddy_primary は buddy である（ADR-0029）
 type SourceMode string
 
 // Staff defines model for Staff.
@@ -2028,7 +2162,7 @@ type Staff struct {
 
 // StaffAssignments 職員を休職、退職、訪問しない職員にするときに残る、その日以降の予定、繰り返しの予定、担当の利用者。職員が予定の職員、主訪問者、同行者のどれかの予定を含める
 type StaffAssignments struct {
-	// Patients 職員が主に担当する利用中の利用者。利用の終了の利用者は含めない（ADR-0021）。名前の順
+	// Patients 職員が主に担当する利用中の利用者。利用の終了の利用者は含めない（ADR-0005）。名前の順
 	Patients []StaffAssignments_Patients `json:"patients"`
 
 	// RecurringSchedules その日以降に終わる繰り返しの予定。終了日の無い繰り返しを含める。最初の回の日時の順
@@ -2056,6 +2190,9 @@ type StaffAssignments_RecurringSchedules struct {
 	// EndTime Example: 09:30
 	EndTime Time `json:"end_time"`
 
+	// EndsNextDay 全ての回が、回の日付の翌日の end_time に終わるとき true
+	EndsNextDay bool `json:"ends_next_day"`
+
 	// Id Example: 01M3TC5H00QV17BC0J9V3393ZP
 	Id ID `json:"id"`
 
@@ -2069,6 +2206,9 @@ type StaffAssignments_Schedules struct {
 
 	// EndTime Example: 09:30
 	EndTime Time `json:"end_time"`
+
+	// EndsNextDay date の翌日の end_time に終わる予定のとき true
+	EndsNextDay bool `json:"ends_next_day"`
 
 	// Id Example: 01M3TC5H00QV17BC0J9V3393ZP
 	Id ID `json:"id"`
@@ -2187,6 +2327,14 @@ type Unit struct {
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
+// UnlistedEventCount 職員の、予定のカレンダーに出せない Google カレンダーの予定の件数。予定の中身は返さない（#672）
+type UnlistedEventCount struct {
+	Count int `json:"count"`
+
+	// StaffId Example: 01M3TC5H00QV17BC0J9V3393ZP
+	StaffId ID `json:"staff_id"`
+}
+
 // VisitCategory defines model for VisitCategory.
 type VisitCategory struct {
 	// Id Example: 01M3TC5H00QV17BC0J9V3393ZP
@@ -2267,9 +2415,6 @@ type CalendarUnreadable = Error
 
 // Forbidden defines model for Forbidden.
 type Forbidden = Error
-
-// GooglePrimary defines model for GooglePrimary.
-type GooglePrimary = Error
 
 // InternalError defines model for InternalError.
 type InternalError = Error
@@ -2414,17 +2559,58 @@ type ListSchedulesParamsSortOrder string
 
 // ListSchedules200JSONResponseBody defines parameters for ListSchedules.
 type ListSchedules200JSONResponseBody struct {
+	// AllDayEvents google_primary の事業所で、date_from から date_to までの期間に重なる、職員が見てよい職員の Google カレンダーの終日の予定。
+	// buddy の予定ではないので、取得、変更、取り消しはできず、照合の対象にもしない。繰り返しの終日の予定は回ごとに返す。
+	// buddy の繰り返しの規則に写せない繰り返しの終日の予定は、回が期間に重なりうる間、最初の回の 1 件にし、review_reason を付けて返す。
+	// 最初の回は期間の外のことがある（#972）。
+	// buddy_primary の事業所と、schedule_type で絞ったときは空である（#672）
+	AllDayEvents []AllDayEvent `json:"all_day_events"`
+
 	// CalendarSyncs google_primary の事業所で、職員が見てよい職員に結び付けた、外していないカレンダーの同期の状況。buddy_primary の事業所では空である。
 	// 最新でないとみなす時間は画面が決める。
 	CalendarSyncs []CalendarSyncStatus `json:"calendar_syncs"`
 
-	// Cutover google_primary の事業所で、予定の正本を buddy に切り替えている間の open の切り替え。無ければ null（ADR-0035）
+	// Cutover google_primary の事業所で、予定の正本を buddy に切り替えている間の open の切り替え。無ければ null（ADR-0031）
 	Cutover            *OpenCalendarCutover `json:"cutover"`
 	RecurringSchedules []RecurringSchedule  `json:"recurring_schedules"`
 	Schedules          []Schedule           `json:"schedules"`
 
-	// SourceMode 事業所の予定の正本。google_primary は Google カレンダー、buddy_primary は buddy である（ADR-0035）
+	// SourceMode 事業所の予定の正本。google_primary は Google カレンダー、buddy_primary は buddy である（ADR-0029）
 	SourceMode SourceMode `json:"source_mode"`
+
+	// UnlistedEventCounts google_primary の事業所で、date_from から date_to までの期間に重なる、職員が見てよい職員の、schedules にも all_day_events にも出せない
+	// Google カレンダーの予定の、職員ごとの件数。2 日以上にわたる予定、24 時間以上の予定、開始か終了の日時を読めない予定、長さが 0 以下の予定を数える。
+	// 繰り返しの予定は、期間に重なる回の数を数える。日時を読めない予定は、開始か終了の読めた方の日で期間に重なるかを決め、
+	// どちらも読めなければどの期間でも数える。件数が 1 以上の職員だけを返す。
+	// buddy_primary の事業所と、schedule_type で絞ったときは空である（#672）
+	UnlistedEventCounts []UnlistedEventCount `json:"unlisted_event_counts"`
+}
+
+// CreateScheduleJSONBody defines parameters for CreateSchedule.
+type CreateScheduleJSONBody struct {
+	Date        Date    `json:"date"`
+	Description *string `json:"description,omitempty"`
+
+	// EndTime ends_next_day が false なら start_time より後、true なら start_time より前。start_time と同じ時刻にはできない
+	EndTime Time `json:"end_time"`
+
+	// EndsNextDay 終了が date の翌日の end_time か。省くと false。翌日の 0:00 に終わる予定は、end_time を 00:00 にして true にする
+	EndsNextDay *bool `json:"ends_next_day,omitempty"`
+
+	// Id 画面が決める予定の ID（ULID）。google_primary の事業所では必須で、Google の予定の ID をこの ID から決める。
+	// buddy_primary の事業所では、送れば予定の ID にし、省けばサーバーが決める。
+	Id *ID `json:"id,omitempty"`
+
+	// ScheduleTypeId Example: 01M3TC5H00QV17BC0J9V3393ZP
+	ScheduleTypeId ID `json:"schedule_type_id"`
+
+	// StaffId Example: 01M3TC5H00QV17BC0J9V3393ZP
+	StaffId ID `json:"staff_id"`
+
+	// StartTime Example: 09:30
+	StartTime Time              `json:"start_time"`
+	Title     *string           `json:"title,omitempty"`
+	VisitInfo *VisitInfoRequest `json:"visit_info,omitempty"`
 }
 
 // CreateRecurringScheduleJSONBody defines parameters for CreateRecurringSchedule.
@@ -2438,9 +2624,15 @@ type CreateRecurringScheduleJSONBody struct {
 	// EndsNextDay 終了が date の翌日の end_time か。省くと false。翌日の 0:00 に終わる予定は、end_time を 00:00 にして true にする
 	EndsNextDay *bool `json:"ends_next_day,omitempty"`
 
-	// RecurringRule weekly は day_of_week だけを、monthly は day_of_month だけか、week_of_month と day_of_week の組を指定できる。
+	// Id 画面が決める繰り返しの予定の ID（ULID）。google_primary の事業所では必須で、Google の予定の ID をこの ID から決める。
+	// buddy_primary の事業所では読まない。
+	Id *ID `json:"id,omitempty"`
+
+	// RecurringRule weekly は days_of_week と interval だけを、monthly は day_of_month だけか、week_of_month と day_of_week の組を指定できる。
 	// 指定しない項目は、最初の日付の曜日や日から決める。
 	// 最初の日付が規則の回に当たらない組み合わせ（火曜の最初の日付に毎週の月曜など）は、入力のエラーにする。
+	// weekly の回は、日曜に始まる週で数え、最初の日付を含む週を 1 週目として、1 週目から interval の倍数だけ後の週の days_of_week の曜日にある（ADR-0038）。
+	// 繰り返しの終わりは end_date だけで持ち、回数は持たない。
 	RecurringRule RecurringRule `json:"recurring_rule"`
 
 	// ScheduleTypeId Example: 01M3TC5H00QV17BC0J9V3393ZP
@@ -2512,6 +2704,12 @@ type CreateUserJSONBody struct {
 	Visits *bool `json:"visits,omitempty"`
 }
 
+// GetMyExternalCalendar200JSONResponseBody defines parameters for GetMyExternalCalendar.
+type GetMyExternalCalendar200JSONResponseBody struct {
+	// ExternalCalendar 結び付いたカレンダー。結び付いていなければ null
+	ExternalCalendar *ExternalCalendar `json:"external_calendar"`
+}
+
 // UpdatePatientJSONBody defines parameters for UpdatePatient.
 type UpdatePatientJSONBody struct {
 	// AssignedStaffId Example: 01M3TC5H00QV17BC0J9V3393ZP
@@ -2556,9 +2754,75 @@ type ChangeOccurrenceJSONBody struct {
 	VisitInfo *VisitInfoRequest `json:"visit_info,omitempty"`
 }
 
+// CancelOccurrenceJSONBody defines parameters for CancelOccurrence.
+type CancelOccurrenceJSONBody struct {
+	// OriginalDate キャンセルする回の日付。繰り返しの規則に当たる日に限る
+	OriginalDate string `json:"original_date"`
+	Reason       string `json:"reason"`
+}
+
+// DeleteOccurrenceJSONBody defines parameters for DeleteOccurrence.
+type DeleteOccurrenceJSONBody struct {
+	// OriginalDate 削除する回の日付。繰り返しの規則に当たる、今日（Asia/Tokyo）以降の日に限る
+	OriginalDate string `json:"original_date"`
+}
+
+// ChangeRecurringRuleJSONBody defines parameters for ChangeRecurringRule.
+type ChangeRecurringRuleJSONBody struct {
+	// EffectiveDate 適用の日。今日（Asia/Tokyo）以降に限る。規則の終了日のほかの項目を変えるときは必須で、終了日だけを変えるときは読まない
+	EffectiveDate *string `json:"effective_date,omitempty"`
+
+	// Etag 画面が読んだ親の予定の etag。google_primary の事業所では必須で、buddy_primary の事業所では読まない
+	Etag *string `json:"etag,omitempty"`
+
+	// FirstWeekDate 新しい規則の 1 週目を決める日（ADR-0038）。分けるときは、この日を含む週を 1 週目にして毎週の間隔を数え、
+	// effective_date 以降で新しい規則が当たる最初の日を最初の日付にする。画面は開いた回の日を送る。
+	// 元の繰り返しの最初の日付以降、effective_date 以前に限る。省くと effective_date を使う。終了日だけを変えるときは読まない
+	FirstWeekDate *string `json:"first_week_date,omitempty"`
+
+	// Id 繰り返しの予定を分けるときの、新しい繰り返しの予定の ID（ULID）。google_primary の事業所で規則を変えるときは必須で、
+	// Google の予定の ID をこの ID から決める。buddy_primary の事業所では読まない。
+	Id *ID `json:"id,omitempty"`
+
+	// RecurringRule weekly は days_of_week と interval だけを、monthly は day_of_month だけか、week_of_month と day_of_week の組を指定できる。
+	// 指定しない項目は、最初の日付の曜日や日から決める。
+	// 最初の日付が規則の回に当たらない組み合わせ（火曜の最初の日付に毎週の月曜など）は、入力のエラーにする。
+	// weekly の回は、日曜に始まる週で数え、最初の日付を含む週を 1 週目として、1 週目から interval の倍数だけ後の週の days_of_week の曜日にある（ADR-0038）。
+	// 繰り返しの終わりは end_date だけで持ち、回数は持たない。
+	RecurringRule RecurringRule `json:"recurring_rule"`
+}
+
+// UpdateScheduleJSONBody defines parameters for UpdateSchedule.
+type UpdateScheduleJSONBody struct {
+	Date        Date    `json:"date"`
+	Description *string `json:"description,omitempty"`
+
+	// EndTime ends_next_day が false なら start_time より後、true なら start_time より前。start_time と同じ時刻にはできない
+	EndTime Time `json:"end_time"`
+
+	// EndsNextDay 終了が date の翌日の end_time か。省くと false。翌日の 0:00 に終わる予定は、end_time を 00:00 にして true にする
+	EndsNextDay *bool `json:"ends_next_day,omitempty"`
+
+	// Etag 画面が読んだ予定の etag。google_primary の事業所では必須で、buddy_primary の事業所では読まない
+	Etag *string `json:"etag,omitempty"`
+
+	// ScheduleTypeId Example: 01M3TC5H00QV17BC0J9V3393ZP
+	ScheduleTypeId ID `json:"schedule_type_id"`
+
+	// StaffId Example: 01M3TC5H00QV17BC0J9V3393ZP
+	StaffId ID `json:"staff_id"`
+
+	// StartTime Example: 09:30
+	StartTime Time              `json:"start_time"`
+	Title     *string           `json:"title,omitempty"`
+	VisitInfo *VisitInfoRequest `json:"visit_info,omitempty"`
+}
+
 // CancelScheduleJSONBody defines parameters for CancelSchedule.
 type CancelScheduleJSONBody struct {
-	Reason string `json:"reason"`
+	// Etag 画面が読んだ予定の etag。google_primary の事業所では必須で、buddy_primary の事業所では読まない
+	Etag   *string `json:"etag,omitempty"`
+	Reason string  `json:"reason"`
 }
 
 // UpdateTeamJSONBody defines parameters for UpdateTeam.
@@ -2630,7 +2894,7 @@ type CreatePatientJSONRequestBody CreatePatientJSONBody
 type CreatePositionJSONRequestBody CreatePositionJSONBody
 
 // CreateScheduleJSONRequestBody defines body for CreateSchedule for application/json ContentType.
-type CreateScheduleJSONRequestBody = SlotRequest
+type CreateScheduleJSONRequestBody CreateScheduleJSONBody
 
 // CreateRecurringScheduleJSONRequestBody defines body for CreateRecurringSchedule for application/json ContentType.
 type CreateRecurringScheduleJSONRequestBody CreateRecurringScheduleJSONBody
@@ -2650,8 +2914,17 @@ type ResumePatientServiceJSONRequestBody ResumePatientServiceJSONBody
 // ChangeOccurrenceJSONRequestBody defines body for ChangeOccurrence for application/json ContentType.
 type ChangeOccurrenceJSONRequestBody ChangeOccurrenceJSONBody
 
+// CancelOccurrenceJSONRequestBody defines body for CancelOccurrence for application/json ContentType.
+type CancelOccurrenceJSONRequestBody CancelOccurrenceJSONBody
+
+// DeleteOccurrenceJSONRequestBody defines body for DeleteOccurrence for application/json ContentType.
+type DeleteOccurrenceJSONRequestBody DeleteOccurrenceJSONBody
+
+// ChangeRecurringRuleJSONRequestBody defines body for ChangeRecurringRule for application/json ContentType.
+type ChangeRecurringRuleJSONRequestBody ChangeRecurringRuleJSONBody
+
 // UpdateScheduleJSONRequestBody defines body for UpdateSchedule for application/json ContentType.
-type UpdateScheduleJSONRequestBody = SlotRequest
+type UpdateScheduleJSONRequestBody UpdateScheduleJSONBody
 
 // CancelScheduleJSONRequestBody defines body for CancelSchedule for application/json ContentType.
 type CancelScheduleJSONRequestBody CancelScheduleJSONBody
@@ -2685,9 +2958,6 @@ type ServerInterface interface {
 	// CreateCalendarCutoverCompletion 予定の正本の切り替えを完了する
 	// (POST /v1/calendar_cutovers/{calendar_cutover_id}/completions)
 	CreateCalendarCutoverCompletion(c *gin.Context, calendarCutoverId CalendarCutoverID)
-	// CreateCalendarExportAcceptance 確認が必要な書き出しを Google カレンダーの内容で解く
-	// (POST /v1/calendar_exports/{calendar_export_id}/acceptances)
-	CreateCalendarExportAcceptance(c *gin.Context, calendarExportId CalendarExportID)
 	// CreateCalendarExportRetry 確認が必要な書き出しを buddy の内容で書き直す
 	// (POST /v1/calendar_exports/{calendar_export_id}/retries)
 	CreateCalendarExportRetry(c *gin.Context, calendarExportId CalendarExportID)
@@ -2772,6 +3042,9 @@ type ServerInterface interface {
 	// GetMe トークンの職員を取得する
 	// (GET /v1/me)
 	GetMe(c *gin.Context)
+	// GetMyExternalCalendar トークンの職員に結び付いたカレンダーを取得する
+	// (GET /v1/me/external_calendar)
+	GetMyExternalCalendar(c *gin.Context)
 	// GetPatient 利用者を取得する
 	// (GET /v1/patients/{patient_id})
 	GetPatient(c *gin.Context, patientId ID)
@@ -2805,6 +3078,18 @@ type ServerInterface interface {
 	// ChangeOccurrence 繰り返しの予定の 1 回を置き換える
 	// (POST /v1/schedules/recurring/{recurring_schedule_id}/occurrences)
 	ChangeOccurrence(c *gin.Context, recurringScheduleId RecurringScheduleID)
+	// CancelOccurrence 繰り返しの予定の 1 回をキャンセルする
+	// (POST /v1/schedules/recurring/{recurring_schedule_id}/occurrences/cancel)
+	CancelOccurrence(c *gin.Context, recurringScheduleId RecurringScheduleID)
+	// DeleteOccurrence 誤って入れた繰り返しの予定の 1 回を削除する
+	// (POST /v1/schedules/recurring/{recurring_schedule_id}/occurrences/delete)
+	DeleteOccurrence(c *gin.Context, recurringScheduleId RecurringScheduleID)
+	// ChangeRecurringRule 繰り返しの予定の規則を、適用の日以降の回について変える
+	// (PUT /v1/schedules/recurring/{recurring_schedule_id}/rule)
+	ChangeRecurringRule(c *gin.Context, recurringScheduleId RecurringScheduleID)
+	// DeleteSchedule 誤って入れた単発の予定を削除する
+	// (DELETE /v1/schedules/{schedule_id})
+	DeleteSchedule(c *gin.Context, scheduleId ScheduleID)
 	// GetSchedule 単発の予定を取得する
 	// (GET /v1/schedules/{schedule_id})
 	GetSchedule(c *gin.Context, scheduleId ScheduleID)
@@ -2938,31 +3223,6 @@ func (siw *ServerInterfaceWrapper) CreateCalendarCutoverCompletion(c *gin.Contex
 	}
 
 	siw.Handler.CreateCalendarCutoverCompletion(c, calendarCutoverId)
-}
-
-// CreateCalendarExportAcceptance operation middleware
-func (siw *ServerInterfaceWrapper) CreateCalendarExportAcceptance(c *gin.Context) {
-
-	var err error
-	_ = err
-
-	// ------------- Path parameter "calendar_export_id" -------------
-	var calendarExportId CalendarExportID
-
-	err = runtime.BindStyledParameterWithOptions("simple", "calendar_export_id", c.Param("calendar_export_id"), &calendarExportId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
-	if err != nil {
-		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter calendar_export_id: %w", err), http.StatusBadRequest)
-		return
-	}
-
-	for _, middleware := range siw.HandlerMiddlewares {
-		middleware(c)
-		if c.IsAborted() {
-			return
-		}
-	}
-
-	siw.Handler.CreateCalendarExportAcceptance(c, calendarExportId)
 }
 
 // CreateCalendarExportRetry operation middleware
@@ -3806,6 +4066,19 @@ func (siw *ServerInterfaceWrapper) GetMe(c *gin.Context) {
 	siw.Handler.GetMe(c)
 }
 
+// GetMyExternalCalendar operation middleware
+func (siw *ServerInterfaceWrapper) GetMyExternalCalendar(c *gin.Context) {
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.GetMyExternalCalendar(c)
+}
+
 // GetPatient operation middleware
 func (siw *ServerInterfaceWrapper) GetPatient(c *gin.Context) {
 
@@ -4055,6 +4328,106 @@ func (siw *ServerInterfaceWrapper) ChangeOccurrence(c *gin.Context) {
 	}
 
 	siw.Handler.ChangeOccurrence(c, recurringScheduleId)
+}
+
+// CancelOccurrence operation middleware
+func (siw *ServerInterfaceWrapper) CancelOccurrence(c *gin.Context) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "recurring_schedule_id" -------------
+	var recurringScheduleId RecurringScheduleID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "recurring_schedule_id", c.Param("recurring_schedule_id"), &recurringScheduleId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter recurring_schedule_id: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.CancelOccurrence(c, recurringScheduleId)
+}
+
+// DeleteOccurrence operation middleware
+func (siw *ServerInterfaceWrapper) DeleteOccurrence(c *gin.Context) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "recurring_schedule_id" -------------
+	var recurringScheduleId RecurringScheduleID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "recurring_schedule_id", c.Param("recurring_schedule_id"), &recurringScheduleId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter recurring_schedule_id: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.DeleteOccurrence(c, recurringScheduleId)
+}
+
+// ChangeRecurringRule operation middleware
+func (siw *ServerInterfaceWrapper) ChangeRecurringRule(c *gin.Context) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "recurring_schedule_id" -------------
+	var recurringScheduleId RecurringScheduleID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "recurring_schedule_id", c.Param("recurring_schedule_id"), &recurringScheduleId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter recurring_schedule_id: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.ChangeRecurringRule(c, recurringScheduleId)
+}
+
+// DeleteSchedule operation middleware
+func (siw *ServerInterfaceWrapper) DeleteSchedule(c *gin.Context) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "schedule_id" -------------
+	var scheduleId ScheduleID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "schedule_id", c.Param("schedule_id"), &scheduleId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter schedule_id: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.DeleteSchedule(c, scheduleId)
 }
 
 // GetSchedule operation middleware
@@ -4497,6 +4870,7 @@ func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options
 	router.POST(options.BaseURL+"/v1/users/:user_id/policies", wrapper.AddUserPolicy)
 	router.DELETE(options.BaseURL+"/v1/users/:user_id/policies/:user_policy_id", wrapper.RemoveUserPolicy)
 	router.GET(options.BaseURL+"/v1/me", wrapper.GetMe)
+	router.GET(options.BaseURL+"/v1/me/external_calendar", wrapper.GetMyExternalCalendar)
 	router.GET(options.BaseURL+"/v1/facilities/:facility_id/patients", wrapper.ListPatients)
 	router.POST(options.BaseURL+"/v1/facilities/:facility_id/patients", wrapper.CreatePatient)
 	router.GET(options.BaseURL+"/v1/patients/:patient_id", wrapper.GetPatient)
@@ -4510,11 +4884,15 @@ func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options
 	router.GET(options.BaseURL+"/v1/facilities/:facility_id/schedules", wrapper.ListSchedules)
 	router.POST(options.BaseURL+"/v1/facilities/:facility_id/schedules", wrapper.CreateSchedule)
 	router.POST(options.BaseURL+"/v1/facilities/:facility_id/schedules/recurring", wrapper.CreateRecurringSchedule)
+	router.DELETE(options.BaseURL+"/v1/schedules/:schedule_id", wrapper.DeleteSchedule)
 	router.GET(options.BaseURL+"/v1/schedules/:schedule_id", wrapper.GetSchedule)
 	router.PUT(options.BaseURL+"/v1/schedules/:schedule_id", wrapper.UpdateSchedule)
 	router.POST(options.BaseURL+"/v1/schedules/:schedule_id/cancel", wrapper.CancelSchedule)
 	router.GET(options.BaseURL+"/v1/schedules/recurring/:recurring_schedule_id", wrapper.GetRecurringSchedule)
+	router.PUT(options.BaseURL+"/v1/schedules/recurring/:recurring_schedule_id/rule", wrapper.ChangeRecurringRule)
 	router.POST(options.BaseURL+"/v1/schedules/recurring/:recurring_schedule_id/occurrences", wrapper.ChangeOccurrence)
+	router.POST(options.BaseURL+"/v1/schedules/recurring/:recurring_schedule_id/occurrences/cancel", wrapper.CancelOccurrence)
+	router.POST(options.BaseURL+"/v1/schedules/recurring/:recurring_schedule_id/occurrences/delete", wrapper.DeleteOccurrence)
 	router.GET(options.BaseURL+"/v1/facilities/:facility_id/calendar_service_account", wrapper.GetCalendarServiceAccount)
 	router.GET(options.BaseURL+"/v1/facilities/:facility_id/external_calendars", wrapper.ListExternalCalendars)
 	router.POST(options.BaseURL+"/v1/facilities/:facility_id/external_calendars", wrapper.CreateExternalCalendar)
@@ -4524,7 +4902,6 @@ func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options
 	router.POST(options.BaseURL+"/v1/external_calendars/:external_calendar_id/imports", wrapper.CreateCalendarImport)
 	router.GET(options.BaseURL+"/v1/facilities/:facility_id/calendar_export_issues", wrapper.ListCalendarExportIssues)
 	router.POST(options.BaseURL+"/v1/calendar_exports/:calendar_export_id/retries", wrapper.CreateCalendarExportRetry)
-	router.POST(options.BaseURL+"/v1/calendar_exports/:calendar_export_id/acceptances", wrapper.CreateCalendarExportAcceptance)
 	router.GET(options.BaseURL+"/v1/facilities/:facility_id/calendar_cutover_status", wrapper.GetCalendarCutoverStatus)
 	router.POST(options.BaseURL+"/v1/facilities/:facility_id/calendar_cutovers", wrapper.StartCalendarCutover)
 	router.POST(options.BaseURL+"/v1/calendar_cutovers/:calendar_cutover_id/completions", wrapper.CreateCalendarCutoverCompletion)
@@ -4542,8 +4919,6 @@ type CalendarUnavailableJSONResponse Error
 type CalendarUnreadableJSONResponse Error
 
 type ForbiddenJSONResponse Error
-
-type GooglePrimaryJSONResponse Error
 
 type InternalErrorJSONResponse Error
 
@@ -4867,161 +5242,6 @@ type CreateCalendarCutoverCompletion503JSONResponse struct {
 }
 
 func (response CreateCalendarCutoverCompletion503JSONResponse) VisitCreateCalendarCutoverCompletionResponse(w http.ResponseWriter) error {
-
-	var buf bytes.Buffer
-	if err := json.NewEncoder(&buf).Encode(response); err != nil {
-		return err
-	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(503)
-	_, err := buf.WriteTo(w)
-	return err
-}
-
-type CreateCalendarExportAcceptanceRequestObject struct {
-	CalendarExportId CalendarExportID `json:"calendar_export_id"`
-}
-
-type CreateCalendarExportAcceptanceResponseObject interface {
-	VisitCreateCalendarExportAcceptanceResponse(w http.ResponseWriter) error
-}
-
-type CreateCalendarExportAcceptance200JSONResponse CalendarExport
-
-func (response CreateCalendarExportAcceptance200JSONResponse) VisitCreateCalendarExportAcceptanceResponse(w http.ResponseWriter) error {
-
-	var buf bytes.Buffer
-	if err := json.NewEncoder(&buf).Encode(response); err != nil {
-		return err
-	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(200)
-	_, err := buf.WriteTo(w)
-	return err
-}
-
-type CreateCalendarExportAcceptance400JSONResponse struct{ BadRequestJSONResponse }
-
-func (response CreateCalendarExportAcceptance400JSONResponse) VisitCreateCalendarExportAcceptanceResponse(w http.ResponseWriter) error {
-
-	var buf bytes.Buffer
-	if err := json.NewEncoder(&buf).Encode(response); err != nil {
-		return err
-	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(400)
-	_, err := buf.WriteTo(w)
-	return err
-}
-
-type CreateCalendarExportAcceptance401JSONResponse struct{ UnauthorizedJSONResponse }
-
-func (response CreateCalendarExportAcceptance401JSONResponse) VisitCreateCalendarExportAcceptanceResponse(w http.ResponseWriter) error {
-
-	var buf bytes.Buffer
-	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
-		return err
-	}
-	w.Header().Set("Content-Type", "application/json")
-	if response.Headers.WWWAuthenticate != nil {
-		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
-	}
-	w.WriteHeader(401)
-	_, err := buf.WriteTo(w)
-	return err
-}
-
-type CreateCalendarExportAcceptance403JSONResponse struct{ ForbiddenJSONResponse }
-
-func (response CreateCalendarExportAcceptance403JSONResponse) VisitCreateCalendarExportAcceptanceResponse(w http.ResponseWriter) error {
-
-	var buf bytes.Buffer
-	if err := json.NewEncoder(&buf).Encode(response); err != nil {
-		return err
-	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(403)
-	_, err := buf.WriteTo(w)
-	return err
-}
-
-type CreateCalendarExportAcceptance404JSONResponse struct{ NotFoundJSONResponse }
-
-func (response CreateCalendarExportAcceptance404JSONResponse) VisitCreateCalendarExportAcceptanceResponse(w http.ResponseWriter) error {
-
-	var buf bytes.Buffer
-	if err := json.NewEncoder(&buf).Encode(response); err != nil {
-		return err
-	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(404)
-	_, err := buf.WriteTo(w)
-	return err
-}
-
-type CreateCalendarExportAcceptance409JSONResponse Error
-
-func (response CreateCalendarExportAcceptance409JSONResponse) VisitCreateCalendarExportAcceptanceResponse(w http.ResponseWriter) error {
-
-	var buf bytes.Buffer
-	if err := json.NewEncoder(&buf).Encode(response); err != nil {
-		return err
-	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(409)
-	_, err := buf.WriteTo(w)
-	return err
-}
-
-type CreateCalendarExportAcceptance422JSONResponse struct{ CalendarUnreadableJSONResponse }
-
-func (response CreateCalendarExportAcceptance422JSONResponse) VisitCreateCalendarExportAcceptanceResponse(w http.ResponseWriter) error {
-
-	var buf bytes.Buffer
-	if err := json.NewEncoder(&buf).Encode(response); err != nil {
-		return err
-	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(422)
-	_, err := buf.WriteTo(w)
-	return err
-}
-
-type CreateCalendarExportAcceptance500JSONResponse struct{ InternalErrorJSONResponse }
-
-func (response CreateCalendarExportAcceptance500JSONResponse) VisitCreateCalendarExportAcceptanceResponse(w http.ResponseWriter) error {
-
-	var buf bytes.Buffer
-	if err := json.NewEncoder(&buf).Encode(response); err != nil {
-		return err
-	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(500)
-	_, err := buf.WriteTo(w)
-	return err
-}
-
-type CreateCalendarExportAcceptance502JSONResponse struct {
-	CalendarUnavailableJSONResponse
-}
-
-func (response CreateCalendarExportAcceptance502JSONResponse) VisitCreateCalendarExportAcceptanceResponse(w http.ResponseWriter) error {
-
-	var buf bytes.Buffer
-	if err := json.NewEncoder(&buf).Encode(response); err != nil {
-		return err
-	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(502)
-	_, err := buf.WriteTo(w)
-	return err
-}
-
-type CreateCalendarExportAcceptance503JSONResponse struct {
-	CalendarNotConfiguredJSONResponse
-}
-
-func (response CreateCalendarExportAcceptance503JSONResponse) VisitCreateCalendarExportAcceptanceResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response); err != nil {
@@ -7328,7 +7548,7 @@ func (response CreateSchedule404JSONResponse) VisitCreateScheduleResponse(w http
 	return err
 }
 
-type CreateSchedule409JSONResponse struct{ GooglePrimaryJSONResponse }
+type CreateSchedule409JSONResponse Error
 
 func (response CreateSchedule409JSONResponse) VisitCreateScheduleResponse(w http.ResponseWriter) error {
 
@@ -7352,6 +7572,20 @@ func (response CreateSchedule500JSONResponse) VisitCreateScheduleResponse(w http
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateSchedule503JSONResponse Error
+
+func (response CreateSchedule503JSONResponse) VisitCreateScheduleResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
 	_, err := buf.WriteTo(w)
 	return err
 }
@@ -7438,7 +7672,7 @@ func (response CreateRecurringSchedule404JSONResponse) VisitCreateRecurringSched
 	return err
 }
 
-type CreateRecurringSchedule409JSONResponse struct{ GooglePrimaryJSONResponse }
+type CreateRecurringSchedule409JSONResponse Error
 
 func (response CreateRecurringSchedule409JSONResponse) VisitCreateRecurringScheduleResponse(w http.ResponseWriter) error {
 
@@ -7462,6 +7696,20 @@ func (response CreateRecurringSchedule500JSONResponse) VisitCreateRecurringSched
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateRecurringSchedule503JSONResponse Error
+
+func (response CreateRecurringSchedule503JSONResponse) VisitCreateRecurringScheduleResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
 	_, err := buf.WriteTo(w)
 	return err
 }
@@ -7932,6 +8180,72 @@ func (response GetMe403JSONResponse) VisitGetMeResponse(w http.ResponseWriter) e
 type GetMe500JSONResponse struct{ InternalErrorJSONResponse }
 
 func (response GetMe500JSONResponse) VisitGetMeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetMyExternalCalendarRequestObject struct {
+}
+
+type GetMyExternalCalendarResponseObject interface {
+	VisitGetMyExternalCalendarResponse(w http.ResponseWriter) error
+}
+
+type GetMyExternalCalendar200JSONResponse = GetMyExternalCalendar200JSONResponseBody
+
+func (response GetMyExternalCalendar200JSONResponse) VisitGetMyExternalCalendarResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetMyExternalCalendar401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetMyExternalCalendar401JSONResponse) VisitGetMyExternalCalendarResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetMyExternalCalendar403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response GetMyExternalCalendar403JSONResponse) VisitGetMyExternalCalendarResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetMyExternalCalendar500JSONResponse struct{ InternalErrorJSONResponse }
+
+func (response GetMyExternalCalendar500JSONResponse) VisitGetMyExternalCalendarResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response); err != nil {
@@ -8961,6 +9275,461 @@ func (response ChangeOccurrence500JSONResponse) VisitChangeOccurrenceResponse(w 
 	return err
 }
 
+type ChangeOccurrence503JSONResponse Error
+
+func (response ChangeOccurrence503JSONResponse) VisitChangeOccurrenceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CancelOccurrenceRequestObject struct {
+	RecurringScheduleId RecurringScheduleID `json:"recurring_schedule_id"`
+	Body                *CancelOccurrenceJSONRequestBody
+}
+
+type CancelOccurrenceResponseObject interface {
+	VisitCancelOccurrenceResponse(w http.ResponseWriter) error
+}
+
+type CancelOccurrence201JSONResponse Cancel
+
+func (response CancelOccurrence201JSONResponse) VisitCancelOccurrenceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CancelOccurrence400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response CancelOccurrence400JSONResponse) VisitCancelOccurrenceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CancelOccurrence401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response CancelOccurrence401JSONResponse) VisitCancelOccurrenceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CancelOccurrence403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response CancelOccurrence403JSONResponse) VisitCancelOccurrenceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CancelOccurrence404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response CancelOccurrence404JSONResponse) VisitCancelOccurrenceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CancelOccurrence409JSONResponse Error
+
+func (response CancelOccurrence409JSONResponse) VisitCancelOccurrenceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CancelOccurrence500JSONResponse struct{ InternalErrorJSONResponse }
+
+func (response CancelOccurrence500JSONResponse) VisitCancelOccurrenceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeleteOccurrenceRequestObject struct {
+	RecurringScheduleId RecurringScheduleID `json:"recurring_schedule_id"`
+	Body                *DeleteOccurrenceJSONRequestBody
+}
+
+type DeleteOccurrenceResponseObject interface {
+	VisitDeleteOccurrenceResponse(w http.ResponseWriter) error
+}
+
+type DeleteOccurrence204Response struct {
+}
+
+func (response DeleteOccurrence204Response) VisitDeleteOccurrenceResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type DeleteOccurrence400JSONResponse Error
+
+func (response DeleteOccurrence400JSONResponse) VisitDeleteOccurrenceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeleteOccurrence401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response DeleteOccurrence401JSONResponse) VisitDeleteOccurrenceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeleteOccurrence403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response DeleteOccurrence403JSONResponse) VisitDeleteOccurrenceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeleteOccurrence404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response DeleteOccurrence404JSONResponse) VisitDeleteOccurrenceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeleteOccurrence409JSONResponse Error
+
+func (response DeleteOccurrence409JSONResponse) VisitDeleteOccurrenceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeleteOccurrence500JSONResponse struct{ InternalErrorJSONResponse }
+
+func (response DeleteOccurrence500JSONResponse) VisitDeleteOccurrenceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ChangeRecurringRuleRequestObject struct {
+	RecurringScheduleId RecurringScheduleID `json:"recurring_schedule_id"`
+	Body                *ChangeRecurringRuleJSONRequestBody
+}
+
+type ChangeRecurringRuleResponseObject interface {
+	VisitChangeRecurringRuleResponse(w http.ResponseWriter) error
+}
+
+type ChangeRecurringRule200JSONResponse RecurringSchedule
+
+func (response ChangeRecurringRule200JSONResponse) VisitChangeRecurringRuleResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ChangeRecurringRule400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response ChangeRecurringRule400JSONResponse) VisitChangeRecurringRuleResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ChangeRecurringRule401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ChangeRecurringRule401JSONResponse) VisitChangeRecurringRuleResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ChangeRecurringRule403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ChangeRecurringRule403JSONResponse) VisitChangeRecurringRuleResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ChangeRecurringRule404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response ChangeRecurringRule404JSONResponse) VisitChangeRecurringRuleResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ChangeRecurringRule409JSONResponse Error
+
+func (response ChangeRecurringRule409JSONResponse) VisitChangeRecurringRuleResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ChangeRecurringRule500JSONResponse struct{ InternalErrorJSONResponse }
+
+func (response ChangeRecurringRule500JSONResponse) VisitChangeRecurringRuleResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ChangeRecurringRule503JSONResponse Error
+
+func (response ChangeRecurringRule503JSONResponse) VisitChangeRecurringRuleResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeleteScheduleRequestObject struct {
+	ScheduleId ScheduleID `json:"schedule_id"`
+}
+
+type DeleteScheduleResponseObject interface {
+	VisitDeleteScheduleResponse(w http.ResponseWriter) error
+}
+
+type DeleteSchedule204Response struct {
+}
+
+func (response DeleteSchedule204Response) VisitDeleteScheduleResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type DeleteSchedule400JSONResponse Error
+
+func (response DeleteSchedule400JSONResponse) VisitDeleteScheduleResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeleteSchedule401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response DeleteSchedule401JSONResponse) VisitDeleteScheduleResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeleteSchedule403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response DeleteSchedule403JSONResponse) VisitDeleteScheduleResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeleteSchedule404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response DeleteSchedule404JSONResponse) VisitDeleteScheduleResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeleteSchedule409JSONResponse Error
+
+func (response DeleteSchedule409JSONResponse) VisitDeleteScheduleResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeleteSchedule500JSONResponse struct{ InternalErrorJSONResponse }
+
+func (response DeleteSchedule500JSONResponse) VisitDeleteScheduleResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type GetScheduleRequestObject struct {
 	ScheduleId ScheduleID `json:"schedule_id"`
 }
@@ -9166,6 +9935,20 @@ func (response UpdateSchedule500JSONResponse) VisitUpdateScheduleResponse(w http
 	return err
 }
 
+type UpdateSchedule503JSONResponse Error
+
+func (response UpdateSchedule503JSONResponse) VisitUpdateScheduleResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type CancelScheduleRequestObject struct {
 	ScheduleId ScheduleID `json:"schedule_id"`
 	Body       *CancelScheduleJSONRequestBody
@@ -9272,6 +10055,20 @@ func (response CancelSchedule500JSONResponse) VisitCancelScheduleResponse(w http
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CancelSchedule503JSONResponse Error
+
+func (response CancelSchedule503JSONResponse) VisitCancelScheduleResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
 	_, err := buf.WriteTo(w)
 	return err
 }
@@ -10585,9 +11382,6 @@ type StrictServerInterface interface {
 	// CreateCalendarCutoverCompletion 予定の正本の切り替えを完了する
 	// (POST /v1/calendar_cutovers/{calendar_cutover_id}/completions)
 	CreateCalendarCutoverCompletion(ctx context.Context, request CreateCalendarCutoverCompletionRequestObject) (CreateCalendarCutoverCompletionResponseObject, error)
-	// CreateCalendarExportAcceptance 確認が必要な書き出しを Google カレンダーの内容で解く
-	// (POST /v1/calendar_exports/{calendar_export_id}/acceptances)
-	CreateCalendarExportAcceptance(ctx context.Context, request CreateCalendarExportAcceptanceRequestObject) (CreateCalendarExportAcceptanceResponseObject, error)
 	// CreateCalendarExportRetry 確認が必要な書き出しを buddy の内容で書き直す
 	// (POST /v1/calendar_exports/{calendar_export_id}/retries)
 	CreateCalendarExportRetry(ctx context.Context, request CreateCalendarExportRetryRequestObject) (CreateCalendarExportRetryResponseObject, error)
@@ -10672,6 +11466,9 @@ type StrictServerInterface interface {
 	// GetMe トークンの職員を取得する
 	// (GET /v1/me)
 	GetMe(ctx context.Context, request GetMeRequestObject) (GetMeResponseObject, error)
+	// GetMyExternalCalendar トークンの職員に結び付いたカレンダーを取得する
+	// (GET /v1/me/external_calendar)
+	GetMyExternalCalendar(ctx context.Context, request GetMyExternalCalendarRequestObject) (GetMyExternalCalendarResponseObject, error)
 	// GetPatient 利用者を取得する
 	// (GET /v1/patients/{patient_id})
 	GetPatient(ctx context.Context, request GetPatientRequestObject) (GetPatientResponseObject, error)
@@ -10705,6 +11502,18 @@ type StrictServerInterface interface {
 	// ChangeOccurrence 繰り返しの予定の 1 回を置き換える
 	// (POST /v1/schedules/recurring/{recurring_schedule_id}/occurrences)
 	ChangeOccurrence(ctx context.Context, request ChangeOccurrenceRequestObject) (ChangeOccurrenceResponseObject, error)
+	// CancelOccurrence 繰り返しの予定の 1 回をキャンセルする
+	// (POST /v1/schedules/recurring/{recurring_schedule_id}/occurrences/cancel)
+	CancelOccurrence(ctx context.Context, request CancelOccurrenceRequestObject) (CancelOccurrenceResponseObject, error)
+	// DeleteOccurrence 誤って入れた繰り返しの予定の 1 回を削除する
+	// (POST /v1/schedules/recurring/{recurring_schedule_id}/occurrences/delete)
+	DeleteOccurrence(ctx context.Context, request DeleteOccurrenceRequestObject) (DeleteOccurrenceResponseObject, error)
+	// ChangeRecurringRule 繰り返しの予定の規則を、適用の日以降の回について変える
+	// (PUT /v1/schedules/recurring/{recurring_schedule_id}/rule)
+	ChangeRecurringRule(ctx context.Context, request ChangeRecurringRuleRequestObject) (ChangeRecurringRuleResponseObject, error)
+	// DeleteSchedule 誤って入れた単発の予定を削除する
+	// (DELETE /v1/schedules/{schedule_id})
+	DeleteSchedule(ctx context.Context, request DeleteScheduleRequestObject) (DeleteScheduleResponseObject, error)
 	// GetSchedule 単発の予定を取得する
 	// (GET /v1/schedules/{schedule_id})
 	GetSchedule(ctx context.Context, request GetScheduleRequestObject) (GetScheduleResponseObject, error)
@@ -10905,32 +11714,6 @@ func (sh *strictHandler) CreateCalendarCutoverCompletion(ctx *gin.Context, calen
 		sh.options.HandlerErrorFunc(ctx, err)
 	} else if validResponse, ok := response.(CreateCalendarCutoverCompletionResponseObject); ok {
 		if err := validResponse.VisitCreateCalendarCutoverCompletionResponse(ctx.Writer); err != nil {
-			sh.options.ResponseErrorHandlerFunc(ctx, err)
-		}
-	} else if response != nil {
-		sh.options.ResponseErrorHandlerFunc(ctx, fmt.Errorf("unexpected response type: %T", response))
-	}
-}
-
-// CreateCalendarExportAcceptance operation middleware
-func (sh *strictHandler) CreateCalendarExportAcceptance(ctx *gin.Context, calendarExportId CalendarExportID) {
-	var request CreateCalendarExportAcceptanceRequestObject
-
-	request.CalendarExportId = calendarExportId
-
-	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
-		return sh.ssi.CreateCalendarExportAcceptance(ctx, request.(CreateCalendarExportAcceptanceRequestObject))
-	}
-	for _, middleware := range sh.middlewares {
-		handler = middleware(handler, "CreateCalendarExportAcceptance")
-	}
-
-	response, err := handler(ctx, request)
-
-	if err != nil {
-		sh.options.HandlerErrorFunc(ctx, err)
-	} else if validResponse, ok := response.(CreateCalendarExportAcceptanceResponseObject); ok {
-		if err := validResponse.VisitCreateCalendarExportAcceptanceResponse(ctx.Writer); err != nil {
 			sh.options.ResponseErrorHandlerFunc(ctx, err)
 		}
 	} else if response != nil {
@@ -11751,6 +12534,30 @@ func (sh *strictHandler) GetMe(ctx *gin.Context) {
 	}
 }
 
+// GetMyExternalCalendar operation middleware
+func (sh *strictHandler) GetMyExternalCalendar(ctx *gin.Context) {
+	var request GetMyExternalCalendarRequestObject
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.GetMyExternalCalendar(ctx, request.(GetMyExternalCalendarRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetMyExternalCalendar")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		sh.options.HandlerErrorFunc(ctx, err)
+	} else if validResponse, ok := response.(GetMyExternalCalendarResponseObject); ok {
+		if err := validResponse.VisitGetMyExternalCalendarResponse(ctx.Writer); err != nil {
+			sh.options.ResponseErrorHandlerFunc(ctx, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(ctx, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // GetPatient operation middleware
 func (sh *strictHandler) GetPatient(ctx *gin.Context, patientId ID) {
 	var request GetPatientRequestObject
@@ -12047,6 +12854,131 @@ func (sh *strictHandler) ChangeOccurrence(ctx *gin.Context, recurringScheduleId 
 		sh.options.HandlerErrorFunc(ctx, err)
 	} else if validResponse, ok := response.(ChangeOccurrenceResponseObject); ok {
 		if err := validResponse.VisitChangeOccurrenceResponse(ctx.Writer); err != nil {
+			sh.options.ResponseErrorHandlerFunc(ctx, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(ctx, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CancelOccurrence operation middleware
+func (sh *strictHandler) CancelOccurrence(ctx *gin.Context, recurringScheduleId RecurringScheduleID) {
+	var request CancelOccurrenceRequestObject
+
+	request.RecurringScheduleId = recurringScheduleId
+
+	var body CancelOccurrenceJSONRequestBody
+	if err := ctx.ShouldBindJSON(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(ctx, err)
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.CancelOccurrence(ctx, request.(CancelOccurrenceRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CancelOccurrence")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		sh.options.HandlerErrorFunc(ctx, err)
+	} else if validResponse, ok := response.(CancelOccurrenceResponseObject); ok {
+		if err := validResponse.VisitCancelOccurrenceResponse(ctx.Writer); err != nil {
+			sh.options.ResponseErrorHandlerFunc(ctx, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(ctx, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// DeleteOccurrence operation middleware
+func (sh *strictHandler) DeleteOccurrence(ctx *gin.Context, recurringScheduleId RecurringScheduleID) {
+	var request DeleteOccurrenceRequestObject
+
+	request.RecurringScheduleId = recurringScheduleId
+
+	var body DeleteOccurrenceJSONRequestBody
+	if err := ctx.ShouldBindJSON(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(ctx, err)
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.DeleteOccurrence(ctx, request.(DeleteOccurrenceRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DeleteOccurrence")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		sh.options.HandlerErrorFunc(ctx, err)
+	} else if validResponse, ok := response.(DeleteOccurrenceResponseObject); ok {
+		if err := validResponse.VisitDeleteOccurrenceResponse(ctx.Writer); err != nil {
+			sh.options.ResponseErrorHandlerFunc(ctx, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(ctx, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ChangeRecurringRule operation middleware
+func (sh *strictHandler) ChangeRecurringRule(ctx *gin.Context, recurringScheduleId RecurringScheduleID) {
+	var request ChangeRecurringRuleRequestObject
+
+	request.RecurringScheduleId = recurringScheduleId
+
+	var body ChangeRecurringRuleJSONRequestBody
+	if err := ctx.ShouldBindJSON(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(ctx, err)
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.ChangeRecurringRule(ctx, request.(ChangeRecurringRuleRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ChangeRecurringRule")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		sh.options.HandlerErrorFunc(ctx, err)
+	} else if validResponse, ok := response.(ChangeRecurringRuleResponseObject); ok {
+		if err := validResponse.VisitChangeRecurringRuleResponse(ctx.Writer); err != nil {
+			sh.options.ResponseErrorHandlerFunc(ctx, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(ctx, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// DeleteSchedule operation middleware
+func (sh *strictHandler) DeleteSchedule(ctx *gin.Context, scheduleId ScheduleID) {
+	var request DeleteScheduleRequestObject
+
+	request.ScheduleId = scheduleId
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.DeleteSchedule(ctx, request.(DeleteScheduleRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DeleteSchedule")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		sh.options.HandlerErrorFunc(ctx, err)
+	} else if validResponse, ok := response.(DeleteScheduleResponseObject); ok {
+		if err := validResponse.VisitDeleteScheduleResponse(ctx.Writer); err != nil {
 			sh.options.ResponseErrorHandlerFunc(ctx, err)
 		}
 	} else if response != nil {
@@ -12521,340 +13453,417 @@ func (sh *strictHandler) ListVisitCategories(ctx *gin.Context) {
 // const string: with thousands of chunks the chained `+` fold is several
 // times slower for the Go compiler than parsing a slice literal.
 var swaggerSpec = []string{
-	"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",
-	"yXgWyRb//wA=",
+	"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",
+	"PwA=",
 }
 
 // decodeSpec returns the embedded OpenAPI spec as raw JSON bytes,

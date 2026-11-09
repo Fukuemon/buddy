@@ -2,7 +2,11 @@ import { expect, test, type Page } from '@playwright/test'
 
 import { CALENDARPIT_URL, OKADA } from '../../fixtures/env'
 import { EVIDENCE_VARIANTS, recordPrEvidence } from '../../fixtures/evidence'
-import { createGoogleEvent, failGoogleReads } from '../../fixtures/googleCalendar'
+import {
+  createGoogleEvent,
+  deleteGoogleEvent,
+  failGoogleReads,
+} from '../../fixtures/googleCalendar'
 import { calendarpitEvent } from '../../selectors/calendarpit'
 import { signInAtBroker } from '../../screens/login'
 
@@ -78,6 +82,72 @@ test.describe('予定のカレンダー', () => {
             await expect(detail.getByTestId('schedule-detail-google-calendar')).toBeVisible()
             await expect(detail.getByTestId('schedule-detail-edit')).toHaveCount(0)
             await check('詳細に Google カレンダーで変更する案内が出て、「編集」のボタンが出ない')
+          },
+        )
+      })
+
+      test(`${label}Google カレンダーで予定を取り消した場合、同期の後に予定のカレンダーから消えること`, async ({
+        browser,
+      }) => {
+        const date = todayInTokyo()
+        const title = `カンファレンス ${Date.now()}`
+        const event = (page: Page) =>
+          page
+            .getByTestId(`day-grid-staff-${OKADA.staff.id}`)
+            .getByTestId(/^schedule-event-/)
+            .filter({ hasText: title })
+        let eventId = ''
+        await recordPrEvidence(
+          browser,
+          {
+            name: 'google-primary-cancelled-event',
+            title: 'Google カレンダーで取り消した予定が、同期の後に予定のカレンダーから消える',
+            actor: ACTOR,
+            variant,
+          },
+          async (page) => {
+            await signIn(page)
+            eventId = (
+              await createGoogleEvent(page.request, OKADA.calendarId, {
+                summary: title,
+                date,
+                start: '10:00',
+                end: '11:00',
+              })
+            ).id
+            await openDay(page, date)
+            await expect(async () => {
+              await page.reload()
+              await expect(event(page)).toBeVisible()
+            }).toPass()
+          },
+          async ({ page, step, check }) => {
+            await openDay(page, date)
+            await expect(event(page)).toBeVisible()
+            await event(page).scrollIntoViewIfNeeded()
+            await step(
+              `予定のカレンダーを日の表示で開いている。${OKADA.staff.name} の列の 10:00〜11:00 に、Google カレンダーで作った「${title}」が出ている`,
+            )
+
+            await page.goto(
+              `${CALENDARPIT_URL}/?calendar=${encodeURIComponent(OKADA.calendarId)}&date=${date}`,
+            )
+            await expect(calendarpitEvent(page, title)).toBeVisible()
+            await step(
+              `（撮影のため、職員が Google カレンダーで予定を取り消す代わりに、calendarpit の管理の API で「${title}」を消す）`,
+            )
+            await deleteGoogleEvent(page.request, OKADA.calendarId, eventId)
+            await page.reload()
+            await expect(calendarpitEvent(page, title)).toHaveCount(0)
+            await check(`calendarpit から「${title}」が消える`)
+
+            await step('buddy の予定のカレンダーを日の表示で開き直す')
+            await openDay(page, date)
+            await expect(async () => {
+              await page.reload()
+              await expect(event(page)).toHaveCount(0)
+            }).toPass()
+            await check(`同期の後に、${OKADA.staff.name} の列から「${title}」が消える`)
           },
         )
       })

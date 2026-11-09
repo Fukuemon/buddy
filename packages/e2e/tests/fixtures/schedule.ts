@@ -6,6 +6,23 @@ import type { GoogleEvent } from './googleCalendar'
 /** 予定の詳細の URL。予定の ID は ULID で、後ろに編集のパスか search params が続くことがある。 */
 export const SCHEDULE_DETAIL_URL = /\/schedule\/[0-9A-HJKMNP-TV-Z]{26}(?:[/?#]|$)/
 
+const CROCKFORD = '0123456789ABCDEFGHJKMNPQRSTVWXYZ'
+
+/**
+ * 新しい予定の ID（ULID）を返す。google_primary の事業所では、画面が予定の ID を決めて作成のリクエストに付ける。
+ * 先頭の 10 文字は今の時刻のミリ秒、残りの 16 文字は乱数である。
+ */
+export const newScheduleId = () => {
+  let time = Date.now()
+  let head = ''
+  for (let i = 0; i < 10; i++) {
+    head = CROCKFORD[time % 32] + head
+    time = Math.floor(time / 32)
+  }
+  const tail = Array.from(crypto.getRandomValues(new Uint8Array(16)), (b) => CROCKFORD[b % 32])
+  return head + tail.join('')
+}
+
 /**
  * 予定の詳細の URL（/schedule/<予定の ID>）から、予定の ID を返す。
  * 予定の作成と変更の画面は予定の ID を出さないので、作った予定を開いた後の URL から得る。
@@ -34,8 +51,11 @@ export const detailDateTime = (event: GoogleEvent | undefined) => {
   return detailDateTimeText(start.slice(0, 10), start.slice(11, 16), end.slice(11, 16))
 }
 
-/** 通常の予定の値。日付と職員とタイトルのほかは、どの予定も同じにする。 */
-type NormalSchedule = { staffId: string; title: string; date: string }
+/**
+ * 通常の予定の値。日付と職員とタイトルと時刻のほかは、どの予定も同じにする。
+ * start と end（HH:mm）を省くと 10:00〜11:00 にする。同じ職員の同じ時刻の予定は日の表示で重なって押せないので、1 本の spec で何件も作るときに時刻をずらす。
+ */
+type NormalSchedule = { staffId: string; title: string; date: string; start?: string; end?: string }
 
 /**
  * token の職員で、予定の API の本文に入れる通常の予定の値を作る。
@@ -52,8 +72,8 @@ const normalSlot = async (request: APIRequestContext, token: string, schedule: N
   return {
     schedule_type_id: normal.id,
     date: schedule.date,
-    start_time: '10:00',
-    end_time: '11:00',
+    start_time: schedule.start ?? '10:00',
+    end_time: schedule.end ?? '11:00',
     staff_id: schedule.staffId,
     title: schedule.title,
   }
@@ -90,8 +110,10 @@ export const createOvernightSchedule = async (
     },
   })
 
-/** 予定の API で、facilityId の事業所に staffId の職員の毎週の通常の予定を作り（createRecurringSchedule）、レスポンスを返す。 */
-export const createWeeklyNormalSchedule = async (
+/**
+ * 予定の API で、facilityId の事業所に staffId の職員の、毎週の 22:00 に始まり翌日の 01:00 に終わる通常の予定を作り（createRecurringSchedule）、レスポンスを返す。
+ */
+export const createWeeklyOvernightSchedule = async (
   request: APIRequestContext,
   token: string,
   facilityId: string,
@@ -101,8 +123,70 @@ export const createWeeklyNormalSchedule = async (
     headers: { Authorization: `Bearer ${token}` },
     data: {
       ...(await normalSlot(request, token, schedule)),
+      start_time: '22:00',
+      end_time: '01:00',
+      ends_next_day: true,
       recurring_rule: { frequency: 'weekly' },
     },
+  })
+
+/**
+ * 予定の API で、facilityId の事業所に staffId の職員の毎週の通常の予定を作り（createRecurringSchedule）、レスポンスを返す。
+ * google_primary の事業所では、schedule.id に newScheduleId の ID を渡す。
+ * schedule.rule に毎週の曜日の並び（days_of_week）と間隔（interval）を渡せる。渡さなければ最初の日付の曜日の毎週にする。
+ */
+export const createWeeklyNormalSchedule = async (
+  request: APIRequestContext,
+  token: string,
+  facilityId: string,
+  schedule: NormalSchedule & { id?: string; rule?: { days_of_week?: number[]; interval?: number } },
+) =>
+  request.post(`${SCHEDULE_URL}/v1/facilities/${facilityId}/schedules/recurring`, {
+    headers: { Authorization: `Bearer ${token}` },
+    data: {
+      ...(await normalSlot(request, token, schedule)),
+      ...(schedule.id === undefined ? {} : { id: schedule.id }),
+      recurring_rule: { frequency: 'weekly', ...schedule.rule },
+    },
+  })
+
+/**
+ * 予定の API で、facilityId の事業所に staffId の職員の、毎月の第 weekOfMonth 週の dayOfWeek 曜日（1 が月曜）の通常の予定を作り（createRecurringSchedule）、レスポンスを返す。
+ * endDate（YYYY-MM-DD）を渡すと、その日を含む日までの繰り返しにする。
+ */
+export const createMonthlyWeekdayNormalSchedule = async (
+  request: APIRequestContext,
+  token: string,
+  facilityId: string,
+  schedule: NormalSchedule & { dayOfWeek: number; weekOfMonth: number; endDate?: string },
+) =>
+  request.post(`${SCHEDULE_URL}/v1/facilities/${facilityId}/schedules/recurring`, {
+    headers: { Authorization: `Bearer ${token}` },
+    data: {
+      ...(await normalSlot(request, token, schedule)),
+      recurring_rule: {
+        frequency: 'monthly',
+        day_of_week: schedule.dayOfWeek,
+        week_of_month: schedule.weekOfMonth,
+        ...(schedule.endDate === undefined ? {} : { end_date: schedule.endDate }),
+      },
+    },
+  })
+
+/**
+ * 予定の API で、繰り返しの予定 recurringScheduleId の originalDate の回を、schedule.date の 10:00〜11:00 の通常の予定に置き換え（changeOccurrence）、
+ * レスポンスを返す。buddy_primary の事業所で使う。
+ */
+export const replaceOccurrence = async (
+  request: APIRequestContext,
+  token: string,
+  recurringScheduleId: string,
+  originalDate: string,
+  schedule: NormalSchedule,
+) =>
+  request.post(`${SCHEDULE_URL}/v1/schedules/recurring/${recurringScheduleId}/occurrences`, {
+    headers: { Authorization: `Bearer ${token}` },
+    data: { ...(await normalSlot(request, token, schedule)), original_date: originalDate },
   })
 
 /** 予定の API で、予定 scheduleId を通常の予定 schedule に置き換え（updateSchedule）、レスポンスを返す。 */

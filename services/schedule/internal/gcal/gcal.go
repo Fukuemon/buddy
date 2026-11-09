@@ -193,6 +193,8 @@ func toEvent(ev *calendarv3.Event) calendar.Event {
 		OriginalStart:    toWhen(ev.OriginalStartTime),
 		ETag:             ev.Etag,
 		Updated:          ev.Updated,
+		Description:      ev.Description,
+		Private:          privateOf(ev),
 	}
 }
 
@@ -201,4 +203,12 @@ func toWhen(t *calendarv3.EventDateTime) calendar.When {
 		return calendar.When{}
 	}
 	return calendar.When{Date: t.Date, DateTime: t.DateTime, TimeZone: t.TimeZone}
+}
+
+// privateOf は、予定 ev の extendedProperties.private を返す。無ければ nil を返す。
+func privateOf(ev *calendarv3.Event) map[string]string {
+	if ev.ExtendedProperties == nil {
+		return nil
+	}
+	return ev.ExtendedProperties.Private
 }

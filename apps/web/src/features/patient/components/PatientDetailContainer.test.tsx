@@ -1,7 +1,9 @@
-import { composeStories } from '@storybook/react-vite'
+import { composeStories, composeStory } from '@storybook/react-vite'
 import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vite-plus/test'
+
+import { refocusWindow } from '#/test/refocusWindow'
 
 import * as stories from './PatientDetailContainer.stories'
 
@@ -131,7 +133,7 @@ describe('PatientDetailContainer', () => {
   it('利用の終了の利用者は、休職の担当に状態を添え、再開では担当を選び直すまで再開を押せない', async () => {
     render(<Ended />)
     expect(await screen.findByTestId('patient-detail-status')).toHaveTextContent(
-      '利用の終了（2026/10/01）',
+      '利用の終了（2026年10月1日（木））',
     )
     expect(await screen.findByText('石川 二葉（休職）')).toBeInTheDocument()
     await openMenuItem('patient-detail-resume')
@@ -178,5 +180,29 @@ describe('PatientDetailContainer', () => {
       '利用者が見つかりません。利用者の一覧から開き直してください。',
     )
     expect(screen.queryByTestId('patient-detail-retry')).toBeNull()
+  })
+
+  it('読み終えた後に読み直して利用者を読めなければ、表示を残して失敗の文を出し、読み直すで読めたら消す', async () => {
+    const Story = composeStory(
+      {
+        ...stories.RefetchError,
+        parameters: {
+          appRouter: { ...stories.default.parameters.appRouter, api: stories.refetchFailingApi() },
+        },
+      },
+      stories.default,
+    )
+    render(<Story />)
+    await screen.findByTestId('patient-detail-name')
+
+    refocusWindow()
+    expect(await screen.findByTestId('refetch-error')).toHaveTextContent(
+      '最新の情報を読み込めませんでした。',
+    )
+    expect(screen.getByTestId('patient-detail-name')).toBeInTheDocument()
+
+    await userEvent.click(screen.getByTestId('refetch-retry'))
+    await expect.poll(() => screen.queryByTestId('refetch-error')).toBeNull()
+    expect(screen.getByTestId('patient-detail-name')).toBeInTheDocument()
   })
 })

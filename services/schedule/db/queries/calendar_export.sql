@@ -67,6 +67,7 @@ WHERE id = $1 AND status IN ('conflict', 'failed');
 
 -- name: ListCalendarExportIssues :many
 -- 予定のタイトルと利用者名は読まない。
+-- 削除した予定の待ちは、予定の時刻を持たないので出さない。職員の結合で外れる（ADR-0040）。
 SELECT e.*,
        (sc.id IS NOT NULL)::boolean AS cancelled,
        u.id AS staff_id, u.username AS staff_name,
@@ -82,32 +83,11 @@ JOIN users u ON u.id = COALESCE(s.staff_id, rs.staff_id)
 WHERE e.facility_id = $1 AND e.status IN ('conflict', 'failed')
 ORDER BY e.updated_at DESC, e.id;
 
--- name: HoldScheduleExport :exec
--- 外部の変更と buddy の変更が重なった予定を、確認が必要な待ちにする。書いている処理の結果は revision の違いで捨てる。
-INSERT INTO calendar_exports (id, facility_id, schedule_id, status, error_code) VALUES ($1, $2, $3, 'conflict', $4)
-ON CONFLICT (schedule_id) WHERE status <> 'succeeded' AND schedule_id IS NOT NULL
-DO UPDATE SET
-    revision = calendar_exports.revision + 1, status = 'conflict', error_code = EXCLUDED.error_code,
-    overwrite = false, locked_until = NULL;
-
--- name: HoldRecurringScheduleExport :exec
-INSERT INTO calendar_exports (id, facility_id, recurring_schedule_id, status, error_code) VALUES ($1, $2, $3, 'conflict', $4)
-ON CONFLICT (recurring_schedule_id) WHERE status <> 'succeeded' AND recurring_schedule_id IS NOT NULL
-DO UPDATE SET
-    revision = calendar_exports.revision + 1, status = 'conflict', error_code = EXCLUDED.error_code,
-    overwrite = false, locked_until = NULL;
-
 -- name: GetOpenScheduleExport :one
 SELECT * FROM calendar_exports WHERE schedule_id = $1 AND status <> 'succeeded';
 
 -- name: GetOpenRecurringScheduleExport :one
 SELECT * FROM calendar_exports WHERE recurring_schedule_id = $1 AND status <> 'succeeded';
-
--- name: ResolveCalendarExport :execrows
--- 外部の内容を buddy に当てた、確認が必要な待ちを終える。読んだ後に積み直されたか保留し直された待ちは終えない。
-UPDATE calendar_exports
-SET status = 'succeeded', error_code = NULL, overwrite = false, locked_until = NULL, finished_at = now()
-WHERE id = sqlc.arg(id) AND revision = sqlc.arg(revision) AND status IN ('conflict', 'failed');
 
 -- name: CalendarExportBacklog :one
 -- 書いていない待ち（pending）の数と、最も古い待ちを積んでからの秒数を返す。確認が必要な待ち（conflict と failed）は、
@@ -120,3 +100,13 @@ WHERE status = 'pending';
 -- name: GetCalendarExportFacilityID :one
 -- access がパスの ID のリソースの事業所を確認するときに、事業所だけを読む。
 SELECT facility_id FROM calendar_exports WHERE id = $1;
+
+-- name: EnqueueDeletedScheduleExport :exec
+INSERT INTO calendar_exports (id, facility_id, deleted_schedule_id) VALUES ($1, $2, $3)
+ON CONFLICT (deleted_schedule_id) WHERE status <> 'succeeded' AND deleted_schedule_id IS NOT NULL
+DO UPDATE SET
+    revision = calendar_exports.revision + 1,
+    status = CASE WHEN calendar_exports.status = 'failed' THEN 'pending' ELSE calendar_exports.status END,
+    attempts = CASE WHEN calendar_exports.status = 'failed' THEN 0 ELSE calendar_exports.attempts END,
+    error_code = CASE WHEN calendar_exports.status = 'failed' THEN NULL ELSE calendar_exports.error_code END,
+    next_attempt_at = CASE WHEN calendar_exports.status = 'conflict' THEN calendar_exports.next_attempt_at ELSE now() END;

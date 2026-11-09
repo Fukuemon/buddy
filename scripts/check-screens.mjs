@@ -13,6 +13,8 @@ import { createRequire } from 'node:module'
 import { basename, dirname, join, relative } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
+import { checkApiTables, readTestIdPairs } from './screen-conditions.mjs'
+
 const ROOT = fileURLToPath(new URL('..', import.meta.url))
 const SCREENS_DIR = relative(process.cwd(), join(ROOT, 'docs/screens')) || '.'
 const SCREEN_DIR_NAME = /^([a-z]+-[a-z]+)_(.+)$/
@@ -296,7 +298,7 @@ const checkMock = (mockPath, screenId) => {
     mockTestIds.add(match[1])
     if (!TESTID.test(match[1])) report(mockPath, `data-testid="${match[1]}" の形が規約と違う`)
   }
-  return numbers
+  return { numbers, pairs: readTestIdPairs(code) }
 }
 
 const checkCss = (cssPath) => {
@@ -372,7 +374,7 @@ const checkScreen = (dir) => {
         `「${state.name}」の構成要素の表の見出しを ${TABLE_HEADER.join(' | ')} にする`,
       )
     }
-    const numbers = mocks.get(state.src)
+    const numbers = mocks.get(state.src)?.numbers
     if (numbers === undefined) {
       report(specPath, `「${state.name}」の iframe の ${state.src} が無い`)
       continue
@@ -390,6 +392,11 @@ const checkScreen = (dir) => {
   for (const src of mocks.keys()) {
     if (!embedded.has(src)) report(specPath, `${src} を「構成」のセクションに埋め込んでいない`)
   }
+
+  if (!existsSync(apiPath)) return
+  const pairs = new Set([...mocks.values()].flatMap((mock) => [...mock.pairs]))
+  for (const { path, message } of checkApiTables(markdown, readFileSync(apiPath, 'utf8'), pairs))
+    report(path === 'spec' ? specPath : apiPath, message)
 }
 
 const targets =

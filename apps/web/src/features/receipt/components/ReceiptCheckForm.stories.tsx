@@ -22,9 +22,11 @@ const meta = {
 export default meta
 type Story = StoryObj<typeof meta>
 
-export const Calendar: Story = {}
+export const Calendar: Story = { args: { submitHint: '対象の月と実績の CSV を選んでください。' } }
 
-export const ScheduleCsv: Story = { args: { source: 'csv' } }
+export const ScheduleCsv: Story = {
+  args: { source: 'csv', submitHint: '予定の CSV と実績の CSV を選んでください。' },
+}
 
 export const Ready: Story = { args: { canSubmit: true } }
 

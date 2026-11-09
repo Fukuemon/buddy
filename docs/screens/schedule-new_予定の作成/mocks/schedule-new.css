@@ -45,7 +45,124 @@
   color: var(--wf-muted);
 }
 
-/* Google カレンダーを予定の正本にする事業所で、フォームの代わりに出す文 */
-.sn-message {
-  margin: 0;
+/*
+ * 繰り返しの規則の欄。繰り返しの変更のモック（schedule-recurrence.css の sr-*）と同じ見た目にする。
+ * 見出しを左、欄を右の 2 列にする（apps/web の RecurringRuleFields の Row）
+ */
+.sn-rule {
+  display: grid;
+  grid-template-columns: 7rem minmax(0, 1fr);
+  gap: 24px 16px;
+  align-items: start;
+}
+
+.sn-rule__label {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+}
+
+.sn-rule__field {
+  min-width: 0;
+}
+
+.sn-preset {
+  justify-content: space-between;
+  width: 280px;
+  max-width: 100%;
+}
+
+.sn-preset--invalid {
+  border: 2px solid var(--wf-danger);
+}
+
+/* 曜日の丸いボタン。選んだ曜日は主の色で塗る */
+.sn-days {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.sn-day {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 1px var(--wf-line);
+}
+
+.sn-day.is-on {
+  background: var(--wf-primary);
+  box-shadow: none;
+  color: var(--wf-surface);
+  font-weight: 700;
+}
+
+/* 押せない日付の欄。apps/web の disabled と同じく薄くする */
+.sn-disabled {
+  background: var(--wf-fill);
+  color: var(--wf-muted);
+}
+
+/* 終了日の「なし」「あり」と、「あり」の右の日付の欄 */
+.sn-ends {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 12.5rem);
+  gap: 8px 16px;
+  align-items: start;
+}
+
+.sn-ends .wf-radio {
+  min-height: 44px;
+}
+
+.sn-field {
+  display: grid;
+  gap: 4px;
+}
+
+/* 見出しを隠した 44px の日付の欄（packages/ui の DatePicker の isLabelHidden） */
+.sn-date {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 12px;
+  border: 1px solid var(--wf-line);
+  border-radius: var(--wf-radius);
+}
+
+.sn-error {
+  color: var(--wf-danger);
+}
+
+/* 間隔の欄。44px の数の欄の右に「週ごと」を置き、誤りの文は欄と「週ごと」の下に出す */
+.sn-interval {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.sn-interval__input {
+  width: 6rem;
+}
+
+@container screen (width < 768px) {
+  .sn-rule {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 4px;
+  }
+
+  .sn-rule__label {
+    min-height: 0;
+  }
+
+  .sn-rule__field {
+    margin-bottom: 12px;
+  }
+
+  .sn-days {
+    gap: 4px;
+  }
 }

@@ -22,6 +22,7 @@
               <span class="wf-site-account" aria-label="アカウント（青木 陽菜）" data-open="viewer-menu" data-testid="viewer-menu-open"><span class="wf-site-avatar" aria-hidden="true">青</span><span class="wf-site-account__name">青木 陽菜</span></span>
               <div class="wf-site-viewer-menu" data-panel="viewer-menu" data-panel-dismiss>
                 <span class="wf-text wf-text--s">青木 陽菜</span>
+                <span class="wf-btn wf-btn--text" data-testid="viewer-profile" data-go="../../account-profile_自分の情報/mocks/02-manager.html">自分の情報</span>
                 <span class="wf-btn" data-testid="viewer-logout">ログアウト</span>
               </div>
             </div>
@@ -84,21 +85,21 @@
                 </section>
               </main>
               <div class="wf-overlay" tabindex="-1" data-m="1" data-go="01-detail.html"></div>
-              <div class="wf-dialog" role="alertdialog" aria-modal="true" aria-labelledby="end-title" data-testid="patient-end-dialog">
+              <div class="wf-dialog" role="alertdialog" aria-modal="true" aria-labelledby="end-title" data-m="2" data-testid="patient-end-dialog">
                 <div class="wf-dialog__body">
-                  <h2 class="wf-heading" id="end-title" data-m="2">見本 一郎 の利用を終了できません</h2>
+                  <h2 class="wf-heading" id="end-title">見本 一郎 の利用を終了できません</h2>
                   <p data-m="3">利用を終了すると、見本 一郎 は予定の利用者の候補と、利用者の一覧に、ふだんは出なくなります。過去の予定は残り、利用を再開すると同じ利用者として戻せます。</p>
                   <section class="pt-warning" role="status" data-m="4" data-testid="patient-end-schedules">
                     <p class="pt-warning__title">今日以降の予定が残っています。予定をキャンセルするか、繰り返しを終えてから、利用を終了してください。</p>
                     <div class="pt-assignments">
                       <h3 class="pt-h3">予定（2 件）</h3>
                       <ul class="pt-list">
-                        <li><span class="pt-link" data-m="5" data-testid="patient-end-schedule-{予定の id}" data-go="../../schedule-detail_予定の詳細/mocks/01-visit.html">2026/11/02 09:00〜09:29</span></li>
-                        <li><span class="pt-link" data-testid="patient-end-schedule-{予定の id}" data-go="../../schedule-detail_予定の詳細/mocks/01-visit.html">2026/11/09 09:00〜09:29</span></li>
+                        <li><span class="pt-link" data-m="5" data-testid="patient-end-schedule-{予定の id}" data-go="../../schedule-detail_予定の詳細/mocks/01-visit.html">2026年11月2日（月） 09:00〜09:29</span></li>
+                        <li><span class="pt-link" data-testid="patient-end-schedule-{予定の id}" data-go="../../schedule-detail_予定の詳細/mocks/01-visit.html">2026年11月9日（月） 09:00〜09:29</span></li>
                       </ul>
                       <h3 class="pt-h3">繰り返しの予定（1 件）</h3>
                       <ul class="pt-list">
-                        <li data-m="6" data-testid="patient-end-recurring-{繰り返しの予定の id}">2026/10/05 から 終了日なし、09:00〜09:29</li>
+                        <li data-m="6" data-testid="patient-end-recurring-{繰り返しの予定の id}">2026年10月5日（月）から終了日なし、09:00〜09:29</li>
                       </ul>
                     </div>
                   </section>

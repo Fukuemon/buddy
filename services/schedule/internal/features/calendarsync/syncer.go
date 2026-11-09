@@ -23,8 +23,6 @@ const (
 	syncCallTimeout = time.Minute
 	// syncLease は、取ったカレンダーをほかの処理に渡さない時間である。syncBatch 件を syncCallTimeout で終えても超えない長さにする。
 	syncLease = 6 * time.Minute
-	// syncRetryAfter は、予定を書いている書き出しの処理を待って、カレンダーを読み直すまでの時間である。
-	syncRetryAfter = 5 * time.Second
 )
 
 // CalendarReader は、Syncer が、予定を当てる前に結び付けたカレンダーを読み直す。見つからないときは apperr.ErrNotFound を返す。
@@ -43,19 +41,23 @@ type SyncerDeps struct {
 	// モードの切り替えを待たせる。退職がカレンダーを外した後と、モードを切り替えた後に、当てないためである。
 	Locks   FacilityLock
 	Sources calendar.SourceFor
+	// Records と Visits は、読み戻し（ReadBackDue）が、書く期限を過ぎた保留の版を取って確定するか消し、使われなくなった訪問の情報を消す。
+	Records PendingRecords
+	Visits  calendar.UnusedVisits
+	// Now は、読み戻しが書く期限と比べる時刻を返す。nil なら time.Now を使う。
+	Now func() time.Time
 }
 
 // Applier は、外部のカレンダーの予定の変更を当てる規則である。
 type Applier interface {
 	// Apply は、カレンダー c の外部の予定 ev の変更を当てる。Syncer が 1 つの予定ごとに開くトランザクションの中で呼ぶ。
-	// 予定を書いている書き出しの処理があれば、当てずに errExportWriting を返し、Syncer はカレンダーを後で読み直す。
 	Apply(ctx context.Context, c calendar.ExternalCalendar, ev calendar.Event) error
 	// Settle は、カレンダー c の読んだ予定を全て当てた後に、Syncer が開くトランザクションの中で呼ぶ。full は、トークンを付けずに
 	// 全ての予定を読んだか（最初の同期と、トークンが切れた 410 の後）で、eventIDs は、読んだ予定の ID である。
 	Settle(ctx context.Context, c calendar.ExternalCalendar, full bool, eventIDs []string) error
 }
 
-// Appliers は、事業所の正本のモードごとの Applier である。組み立て（assemble）が決めて Syncer に渡す（ADR-0032）。
+// Appliers は、事業所の正本のモードごとの Applier である。組み立て（cmd/calendar-worker）が決めて Syncer に渡す（ADR-0021）。
 // Applier の無いモードの事業所のカレンダーは、同期で読まない。
 type Appliers map[organization.SourceMode]Applier
 
@@ -63,7 +65,7 @@ type Appliers map[organization.SourceMode]Applier
 var errModeChanged = errors.New("同期の途中で事業所の正本のモードが変わった")
 
 // Syncer は、職員が結び付けた外部のカレンダーの変わった予定を、増分の取得（syncToken）で読み、事業所の正本のモードの Applier で
-// 当てる処理である。Applier の無いモードの事業所のカレンダーは取らない（ADR-0035）。
+// 当てる処理である。Applier の無いモードの事業所のカレンダーは取らない（ADR-0029）。
 // トークンが切れていれば（410）、全ての予定を読み直す。
 type Syncer struct {
 	deps     SyncerDeps
@@ -76,6 +78,9 @@ type Syncer struct {
 
 // NewSyncer は、カレンダーを読み、appliers の Applier で当てる Syncer を作る。カレンダーを読み終えたら、interval の後を次に読む時刻にする。
 func NewSyncer(deps SyncerDeps, appliers Appliers, tx tx.Transactor, interval time.Duration, log *slog.Logger) *Syncer {
+	if deps.Now == nil {
+		deps.Now = time.Now
+	}
 	return &Syncer{
 		deps: deps, tx: tx, appliers: appliers, modes: slices.SortedFunc(maps.Keys(appliers), cmp.Compare), interval: interval, log: log,
 	}
@@ -119,7 +124,7 @@ type outcome int
 const (
 	outcomeSynced outcome = iota
 	outcomeFailed
-	// outcomeHeld は、当てずに置いたことを表す。書き出しを待って読み直すときと、途中でカレンダーが外れたかモードが変わったときである。
+	// outcomeHeld は、当てずに置いたことを表す。途中でカレンダーが外れたかモードが変わったときである。
 	outcomeHeld
 	// outcomeRequeued は、止める合図で、前の状態のまま返したことを表す。
 	outcomeRequeued
@@ -167,10 +172,12 @@ func (s *Syncer) sync(ctx context.Context, st SyncState) (SyncResult, outcome) {
 		code := SyncUnavailable
 		return SyncResult{SyncToken: token, Status: SyncFailed, ErrorCode: &code, After: s.interval}, outcomeFailed
 	}
+	readAt := time.Now()
 	ch, err := src.Changes(ctx, st.Calendar.CalendarID, token)
 	if errors.Is(err, calendar.ErrSyncTokenExpired) {
 		s.log.InfoContext(ctx, "calendar sync token expired", attrs...)
 		token = ""
+		readAt = time.Now()
 		ch, err = src.Changes(ctx, st.Calendar.CalendarID, "")
 	}
 	if err != nil {
@@ -184,6 +191,7 @@ func (s *Syncer) sync(ctx context.Context, st SyncState) (SyncResult, outcome) {
 	eventIDs := make([]string, len(ch.Events))
 	for i, ev := range ch.Events {
 		eventIDs[i] = ev.ID
+		ev = calendar.StampCancellation(ev, readAt)
 		err := s.tx.WithinTx(ctx, func(ctx context.Context) error {
 			a, err := s.applierFor(ctx, st.Calendar)
 			if err != nil {
@@ -217,8 +225,6 @@ func (s *Syncer) stopped(ctx context.Context, st SyncState, token string, err er
 	case errors.Is(err, errCalendarUnlinked), errors.Is(err, errModeChanged):
 		// 外したカレンダーと、Applier の無いモードの事業所のカレンダーは次から取らないので、トークンと状態は前のまま返す
 		return SyncResult{SyncToken: st.SyncToken, Status: st.LastStatus, ErrorCode: st.LastError, After: s.interval}, outcomeHeld, true
-	case errors.Is(err, errExportWriting):
-		return SyncResult{SyncToken: token, Status: st.LastStatus, ErrorCode: st.LastError, After: syncRetryAfter}, outcomeHeld, true
 	}
 	s.log.ErrorContext(ctx, "calendar sync failed", append(attrs, slog.Any("error", err))...)
 	code := SyncApplyFailed

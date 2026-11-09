@@ -7,6 +7,7 @@ import { createOvernightSchedule } from '../../fixtures/schedule'
 import { STAFF_FORM } from '../../fixtures/staff'
 import { signInAtBroker } from '../../screens/login'
 import { calendarTimeLabel } from '../../selectors/scheduleCalendar'
+import { wheel } from '../../widgets/scroll/actions/scroll'
 
 /**
  * 夜勤の予定の開始の日（火曜）と翌日。予定は 22:00 に始まり、翌日の 01:00 に終わる。
@@ -66,12 +67,12 @@ test.describe('予定のカレンダー', () => {
 
             await step('カレンダーを上へ送る')
             await calendarTimeLabel(page, '06:00:00').hover()
-            await page.mouse.wheel(0, -2000)
+            await wheel(page, { y: -2000 })
             await expect(calendarTimeLabel(page, '00:00:00')).toBeInViewport()
             await check('0時 まで出る')
 
             await step('カレンダーを下へ送る')
-            await page.mouse.wheel(0, 4000)
+            await wheel(page, { y: 4000 })
             await expect(calendarTimeLabel(page, '23:00:00')).toBeInViewport()
             await check('23時 の枠の下端の 24 時まで出る')
           },
@@ -104,13 +105,13 @@ test.describe('予定のカレンダー', () => {
             await segments.first().scrollIntoViewIfNeeded()
             await expect(segments).toHaveCount(2)
             await expect(segments.first()).toBeInViewport()
-            await expect(segments.first()).toContainText('22:00 - 翌 1:00 夜勤（週の表示）')
+            await expect(segments.first()).toContainText('22:00〜翌 01:00 夜勤（週の表示）')
             await check('11月10日（火）の 22 時から 24 時に、予定が描かれる')
 
             await step('カレンダーを上へ送り、0 時から 1 時を出す')
             await segments.last().scrollIntoViewIfNeeded()
             await expect(segments.last()).toBeInViewport()
-            await expect(segments.last()).toContainText('22:00 - 翌 1:00 夜勤（週の表示）')
+            await expect(segments.last()).toContainText('22:00〜翌 01:00 夜勤（週の表示）')
             await check('11月11日（水）の 0 時から 1 時に、同じ予定が描かれる')
           },
         )
@@ -141,7 +142,7 @@ test.describe('予定のカレンダー', () => {
             const event = page.getByTestId(`schedule-event-${id}`)
             await event.scrollIntoViewIfNeeded()
             await expect(event).toBeInViewport()
-            await expect(event).toContainText('22:00-翌 01:00 夜勤（日の表示）')
+            await expect(event).toContainText('22:00〜翌 01:00 夜勤（日の表示）')
             await expect(page.getByTestId(`day-grid-slot-${LOGIN_STAFF.id}-00:00`)).toBeInViewport()
             await check('0 時から 1 時に、その予定が描かれる')
           },

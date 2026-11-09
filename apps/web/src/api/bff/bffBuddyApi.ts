@@ -23,11 +23,16 @@ export const createBffBuddyApi = (callBff: CallBff = (data) => callBffFn({ data 
   }
   return {
     facilities: { get: call('facilities.get') },
+    me: { get: call('me.get'), externalCalendar: call('me.externalCalendar') },
     schedules: {
       list: call('schedules.list'),
       get: call('schedules.get'),
       create: call('schedules.create'),
       update: call('schedules.update'),
+      cancel: call('schedules.cancel'),
+      delete: call('schedules.delete'),
+      createRecurring: call('schedules.createRecurring'),
+      changeRule: call('schedules.changeRule'),
     },
     staff: {
       list: call('staff.list'),
@@ -76,7 +81,6 @@ export const createBffBuddyApi = (callBff: CallBff = (data) => callBffFn({ data 
       import: call('calendars.import'),
       exportIssues: call('calendars.exportIssues'),
       retryExport: call('calendars.retryExport'),
-      acceptExport: call('calendars.acceptExport'),
       cutoverStatus: call('calendars.cutoverStatus'),
       startCutover: call('calendars.startCutover'),
       completeCutover: call('calendars.completeCutover'),

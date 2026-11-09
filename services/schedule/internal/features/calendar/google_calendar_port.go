@@ -70,6 +70,10 @@ type Event struct {
 	ETag          string
 	// Updated は、外部のカレンダーで予定を最後に変えた時刻で、RFC 3339 の形である。返らなければ空である。
 	Updated string
+	// Description は、予定の説明である。無ければ空である。
+	Description string
+	// Private は、extendedProperties.private の値である。無ければ nil である。
+	Private map[string]string
 }
 
 // EventSource が返すエラー。httpapi が状態コードに対応させる。
@@ -115,7 +119,7 @@ type SourceFor func(ctx context.Context, facilityID string) (EventSource, error)
 // WriterFor は、事業所 facilityID の外部のカレンダーに書く EventWriter を返す。
 type WriterFor func(ctx context.Context, facilityID string) (EventWriter, error)
 
-// Accounts は、事業所ごとのサービスアカウントで外部のカレンダーを読み書きする手段である（ADR-0012）。
+// Accounts は、事業所ごとのサービスアカウントで外部のカレンダーを読み書きする手段である（ADR-0030）。
 // 事業所にサービスアカウントの設定が無ければ、どのメソッドも ErrNotConfigured を返す。
 type Accounts interface {
 	// ServiceAccount は、事業所 facilityID の職員がカレンダーを共有する相手のメールアドレスを返す。
@@ -127,13 +131,13 @@ type Accounts interface {
 }
 
 // EventWriter は、外部のカレンダーに予定を書く。エラーは、ErrEventChanged、ErrEventGone、ErrEventNotFound、ErrEventExists、
-// ErrEventRejected、ErrUnwritable、ErrUnavailable のいずれかを包む。
+// ErrEventRejected、ErrUnwritable、ErrUnavailable、ErrOutcomeUnknown のいずれかを包む。
 type EventWriter interface {
-	// Insert は、ID が eventID の予定を作り、etag を返す。
-	Insert(ctx context.Context, calendarID, eventID string, b EventBody) (string, error)
-	// Update は、予定 eventID を b の内容にし、消されていれば戻して、新しい etag を返す。
+	// Insert は、ID が eventID の予定を作り、外部が返した予定を返す。
+	Insert(ctx context.Context, calendarID, eventID string, b EventBody) (Event, error)
+	// Update は、予定 eventID を b の内容にし、消されていれば戻して、外部が返した予定を返す。
 	// etag が空でなければ If-Match に付け、外部で予定が変わっていれば ErrEventChanged を、消されていれば ErrEventGone を返す。
-	Update(ctx context.Context, calendarID, eventID, etag string, b EventBody) (string, error)
+	Update(ctx context.Context, calendarID, eventID, etag string, b EventBody) (Event, error)
 	// Delete は、予定 eventID を消す。etag は Update と同じである。
 	Delete(ctx context.Context, calendarID, eventID, etag string) error
 }

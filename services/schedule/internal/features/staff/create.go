@@ -11,7 +11,7 @@ import (
 	"github.com/Fukuemon/buddy/services/schedule/internal/tx"
 )
 
-// CreateInput は、職員の作成の入力である。NonVisiting は訪問しない職員かで、役職からは決めない（ADR-0022）。
+// CreateInput は、職員の作成の入力である。NonVisiting は訪問しない職員かで、役職からは決めない（ADR-0006）。
 type CreateInput struct {
 	FacilityID   string
 	Username     string

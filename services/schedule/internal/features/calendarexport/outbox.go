@@ -34,6 +34,15 @@ func (o *Outbox) ScheduleChanged(ctx context.Context, facilityID, staffID, sched
 	})
 }
 
+// ScheduleDeleted は、削除した単発の予定 scheduleID の外部の予定を消す待ちを積む（ADR-0040）。
+// 積む条件は ScheduleChanged と同じで、予定の職員 staffID が外していないカレンダーを結び付けているときと、予定の対応のカレンダーを外していないときである。
+// 予定の対応が無くても積むのは、書き出しが最初の作成を書いている間に削除すると、対応を書く前の外部の予定が残るためである。
+func (o *Outbox) ScheduleDeleted(ctx context.Context, facilityID, staffID, scheduleID string) error {
+	return o.enqueue(ctx, staffID, calendar.Target{FacilityID: facilityID, DeletedScheduleID: scheduleID}, func(ctx context.Context) (calendar.EventLink, error) {
+		return o.calendars.LinkByDeletedSchedule(ctx, scheduleID)
+	})
+}
+
 // RecurringChanged は、繰り返しの予定 recurringScheduleID の変更を積む。
 func (o *Outbox) RecurringChanged(ctx context.Context, facilityID, staffID, recurringScheduleID string) error {
 	return o.enqueue(ctx, staffID, calendar.Target{FacilityID: facilityID, RecurringScheduleID: recurringScheduleID}, func(ctx context.Context) (calendar.EventLink, error) {
@@ -42,7 +51,7 @@ func (o *Outbox) RecurringChanged(ctx context.Context, facilityID, staffID, recu
 }
 
 func (o *Outbox) enqueue(ctx context.Context, staffID string, t calendar.Target, linkOf func(context.Context) (calendar.EventLink, error)) error {
-	// google_primary の事業所は Google カレンダーが正本なので、buddy から書き出さない（ADR-0035）。
+	// google_primary の事業所は Google カレンダーが正本なので、buddy から書き出さない（ADR-0029）。
 	f, err := o.facilities.Get(ctx, t.FacilityID)
 	if err != nil || !f.IsBuddyPrimary() {
 		return err

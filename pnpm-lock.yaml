@@ -257,8 +257,8 @@ importers:
   packages/e2e:
     devDependencies:
       '@fukuemon/e2e-kit':
-        specifier: 0.1.1
-        version: 0.1.1(@playwright/test@1.64.1)(eslint@10.13.0(jiti@2.7.0))
+        specifier: 0.2.1
+        version: 0.2.1(@playwright/test@1.64.1)(eslint@10.13.0(jiti@2.7.0))
       '@playwright/test':
         specifier: 1.64.1
         version: 1.64.1
@@ -277,9 +277,6 @@ importers:
 
   packages/ui:
     dependencies:
-      '@digital-go-jp/design-tokens':
-        specifier: 2.1.0
-        version: 2.1.0
       '@fontsource/noto-sans-jp':
         specifier: 5.3.1
         version: 5.3.1
@@ -676,9 +673,6 @@ packages:
     resolution: {integrity: sha512-OoKoR0f76dCY666JlcbhmVTs2drYj1GUXZTYTcbUgJjh9Nv41aFfZ21bPQTERm5+L5cBDo466NltB2lplS5GBw==}
     engines: {node: '>=20.19.0'}
 
-  '@digital-go-jp/design-tokens@2.1.0':
-    resolution: {integrity: sha512-cf3Ir+DwxXgkRhFwq4cbDzktdvIsvkxo6ryJ1LMj6xUOT1ldLi6r1QvYHrXLVK54Y/IWVaOeqdsZiNlzijm94g==}
-
   '@emnapi/core@1.11.0':
     resolution: {integrity: sha512-l9Oo58x0HOP5znGzVhYW9U3e5wVuA4LAZU2AGezTmkhO1CgQRFDhDg4nneHsu/t3WniXg9QrG2nIXL/ZS8ln8Q==}
 
@@ -934,8 +928,8 @@ packages:
   '@fontsource/noto-sans-jp@5.3.1':
     resolution: {integrity: sha512-9NNBB/M9PextLYVXGSfIaLZsPnrt5UDw8g2B6T0M775H2yb/oekApSjuS1XKOP7FPcMMEnTavR5rJGDM66qKtA==}
 
-  '@fukuemon/e2e-kit@0.1.1':
-    resolution: {integrity: sha512-Zoz1W/mBU7z0sU418+dyLj6zBc3R8na4oqvPUWTJypk0ndqC0CWUrDeXxFYKfYNQUQ+1cLzhm/btC37LRpGYCw==}
+  '@fukuemon/e2e-kit@0.2.1':
+    resolution: {integrity: sha512-DsC3QmhaG/80AIg0GEneeUszuMWfsQgZB0iKl5ynbRPQyuw9lvS5/qn0U7sXd80kmzedUZxPTpXRWcybj88Qsg==}
     engines: {node: '>=22.12'}
     peerDependencies:
       '@playwright/test': '>=1.59.0 <2'
@@ -6519,8 +6513,6 @@ snapshots:
 
   '@csstools/css-tokenizer@4.0.2': {}
 
-  '@digital-go-jp/design-tokens@2.1.0': {}
-
   '@emnapi/core@1.11.0':
     dependencies:
       '@emnapi/wasi-threads': 1.2.2
@@ -6722,7 +6714,7 @@ snapshots:
 
   '@fontsource/noto-sans-jp@5.3.1': {}
 
-  '@fukuemon/e2e-kit@0.1.1(@playwright/test@1.64.1)(eslint@10.13.0(jiti@2.7.0))':
+  '@fukuemon/e2e-kit@0.2.1(@playwright/test@1.64.1)(eslint@10.13.0(jiti@2.7.0))':
     dependencies:
       '@playwright/test': 1.64.1
     optionalDependencies:

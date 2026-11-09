@@ -3,6 +3,8 @@ package postgres
 import (
 	"context"
 	"errors"
+	"reflect"
+	"slices"
 	"testing"
 	"time"
 
@@ -120,6 +122,10 @@ func TestCalendarCutoverInDB(t *testing.T) {
 	if cut.RangeStart != (civil.Date{Year: 2026, Month: 11, Day: 1}) || cut.Status != calendarimport.CutoverOpen || cut.StartedBy != seedOkada {
 		t.Fatalf("始めた切り替え = %+v", cut)
 	}
+	open, err := NewCalendarProjectionRepository(testDB).FindOpenCutover(ctx, seedGoogleFacility)
+	if err != nil || open == nil || open.StartedBy != seedOkada || open.StartedByName != "岡田 葵" || !open.StartedAt.Equal(cut.StartedAt) || open.RangeStart != cut.RangeStart {
+		t.Fatalf("予定の一覧の open の切り替え = %+v, err = %v", open, err)
+	}
 	// 操作の確認を通らずに書いても、DB の一意の索引が 2 つ目の open を拒む
 	err = NewCalendarCutoverRepository(testDB).Create(ctx, calendarimport.Cutover{
 		ID: ulid.Generator{}.NewID(), FacilityID: seedGoogleFacility, RangeStart: cut.RangeStart, StartedBy: seedOkada,
@@ -167,6 +173,11 @@ func TestCalendarCutoverInDB(t *testing.T) {
 	if _, err := tx.Exec(ctx, `UPDATE calendar_sync_states SET last_synced_at = now() + interval '1 minute' WHERE external_calendar_id = $1`, seedOkadaCalendar); err != nil {
 		t.Fatal(err)
 	}
+	if err := NewCalendarEventRecordRepository(testDB).Create(ctx, calendar.EventRecord{
+		ScheduleID: "01M3TD000000000000000000SA", FacilityID: seedGoogleFacility, ExternalCalendarID: seedOkadaCalendar, ExternalEventID: "meeting", Version: 1,
+	}); err != nil {
+		t.Fatal(err)
+	}
 	done, err := ops.complete.Do(ctx, cut.ID)
 	if err != nil {
 		t.Fatal(err)
@@ -180,6 +191,9 @@ func TestCalendarCutoverInDB(t *testing.T) {
 	}
 	if n := countRows(t, ctx, tx, `SELECT count(*) FROM calendar_event_projections WHERE facility_id = $1`, seedGoogleFacility); n != 0 {
 		t.Errorf("Projection の行 = %d, want 0", n)
+	}
+	if n := countRows(t, ctx, tx, `SELECT count(*) FROM calendar_event_records WHERE facility_id = $1`, seedGoogleFacility); n != 0 {
+		t.Errorf("記録 = %d 件, want 0", n)
 	}
 }
 
@@ -218,5 +232,106 @@ func TestCalendarCutoverCancelInDB(t *testing.T) {
 	// やめた後に、もう一度始められる
 	if _, err := ops.start.Do(ctx, seedGoogleFacility); err != nil {
 		t.Errorf("やめた後に始める: err = %v", err)
+	}
+}
+
+// TestCalendarCutoverPendingInDB は、事業所に保留の版を持つ記録があると、切り替えを始める操作が google_write_pending を返し、
+// 切り替えを書かないことを確認する。
+func TestCalendarCutoverPendingInDB(t *testing.T) {
+	ctx, tx := cutoverContext(t)
+	ops := newCutoverOps(t)
+	if err := NewCalendarEventRecordRepository(testDB).Create(ctx, calendar.EventRecord{
+		ScheduleID: "01M3TD000000000000000000S8", FacilityID: seedGoogleFacility, ExternalCalendarID: seedOkadaCalendar, ExternalEventID: "pending",
+		Pending: &calendar.PendingWrite{Version: 1, State: calendar.PendingWriting, Deadline: time.Date(2099, 1, 1, 0, 0, 0, 0, time.UTC)},
+	}); err != nil {
+		t.Fatal(err)
+	}
+	var ce *apperr.ConflictError
+	if _, err := ops.start.Do(ctx, seedGoogleFacility); !errors.As(err, &ce) || ce.Code != calendarimport.CodeWritePending {
+		t.Fatalf("始める: err = %v, want %s", err, calendarimport.CodeWritePending)
+	}
+	if n := countRows(t, ctx, tx, `SELECT count(*) FROM calendar_cutovers WHERE facility_id = $1`, seedGoogleFacility); n != 0 {
+		t.Errorf("切り替え = %d 件, want 0", n)
+	}
+}
+
+// TestCalendarCutoverRepositoryRecords は、CountPendingRecords が事業所の保留の版を持つ記録だけを数え、ListRecordVisits が
+// カレンダーの記録の確定した版の訪問の情報を、同行者と区分を付けて Google の予定の ID ごとに返し、保留の版の訪問の情報を返さないことを確認する。
+// 訪問の情報を持たない確定した記録には、ID の空の訪問の情報を返す。
+// DeleteRecords が事業所の記録を全て消し、記録だけが指していた訪問の情報を消して、予定も指す訪問の情報を残すことも確認する。
+func TestCalendarCutoverRepositoryRecords(t *testing.T) {
+	ctx := txContext(t)
+	const calID = "01M3TD000000000000000000CD"
+	if err := NewCalendarRepository(testDB).Create(ctx, calendar.ExternalCalendar{
+		ID: calID, FacilityID: seedFacility, StaffID: seedMori, Provider: calendar.ProviderGoogle, CalendarID: "mori@example.com",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	const confirmedInfo, pendingInfo = "01M3TD000000000000000000V5", "01M3TD000000000000000000V6"
+	confirmedVisit := visit.Info{
+		ID: confirmedInfo, FacilityID: seedFacility, PatientID: seedPatient, AssignedStaffID: seedMori, CompanionID: ptr(seedAoki),
+		ServiceCodeID: seedServiceCode, CategoryIDs: []string{seedEmergency, seedNight},
+	}
+	infos := NewVisitInfoRepository(testDB)
+	for _, i := range []visit.Info{
+		confirmedVisit,
+		{ID: pendingInfo, FacilityID: seedFacility, PatientID: seedPatient, AssignedStaffID: seedMori, ServiceCodeID: seedServiceCode},
+	} {
+		if err := infos.Create(ctx, i); err != nil {
+			t.Fatal(err)
+		}
+	}
+	records := NewCalendarEventRecordRepository(testDB)
+	deadline := time.Date(2099, 1, 1, 0, 0, 0, 0, time.UTC)
+	for _, rec := range []calendar.EventRecord{
+		{ScheduleID: "01M3TD000000000000000000S5", FacilityID: seedFacility, ExternalCalendarID: calID, ExternalEventID: "confirmed",
+			VisitInfoID: ptr(confirmedInfo), Version: 1},
+		{ScheduleID: "01M3TD000000000000000000S6", FacilityID: seedFacility, ExternalCalendarID: calID, ExternalEventID: "pending",
+			Pending: &calendar.PendingWrite{Version: 1, State: calendar.PendingUnknown, VisitInfoID: ptr(pendingInfo), Deadline: deadline}},
+		{ScheduleID: "01M3TD000000000000000000S7", FacilityID: seedFacility, ExternalCalendarID: calID, ExternalEventID: "normal", Version: 1},
+	} {
+		if err := records.Create(ctx, rec); err != nil {
+			t.Fatal(err)
+		}
+	}
+	cutovers := NewCalendarCutoverRepository(testDB)
+	if n, err := cutovers.CountPendingRecords(ctx, seedFacility); err != nil || n != 1 {
+		t.Errorf("保留の版の記録 = %d, %v, want 1", n, err)
+	}
+	if n, err := cutovers.CountPendingRecords(ctx, seedGoogleFacility); err != nil || n != 0 {
+		t.Errorf("ほかの事業所の保留の版の記録 = %d, %v, want 0", n, err)
+	}
+	got, err := cutovers.ListRecordVisits(ctx, calID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := confirmedVisit
+	want.FacilityID = ""
+	slices.Sort(want.CategoryIDs)
+	if normal, ok := got["normal"]; len(got) != 2 || !reflect.DeepEqual(got["confirmed"], want) || !ok || normal.ID != "" {
+		t.Errorf("記録の訪問の情報 = %+v, want confirmed の %+v と、訪問の情報の空の normal", got, want)
+	}
+
+	tx := ctx.Value(txKey{}).(pgx.Tx)
+	var shared string
+	if err := tx.QueryRow(ctx, `SELECT visit_info_id FROM schedules WHERE facility_id = $1 AND visit_info_id IS NOT NULL LIMIT 1`, seedFacility).Scan(&shared); err != nil {
+		t.Fatal(err)
+	}
+	if err := records.Create(ctx, calendar.EventRecord{
+		ScheduleID: "01M3TD000000000000000000S9", FacilityID: seedFacility, ExternalCalendarID: calID, ExternalEventID: "shared",
+		VisitInfoID: &shared, Version: 1,
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if err := cutovers.DeleteRecords(ctx, seedFacility); err != nil {
+		t.Fatal(err)
+	}
+	if n := countRows(t, ctx, tx, `SELECT count(*) FROM calendar_event_records WHERE facility_id = $1`, seedFacility); n != 0 {
+		t.Errorf("記録 = %d 件, want 0", n)
+	}
+	for id, wantRows := range map[string]int{confirmedInfo: 0, pendingInfo: 0, shared: 1} {
+		if n := countRows(t, ctx, tx, `SELECT count(*) FROM visit_infos WHERE id = $1`, id); n != wantRows {
+			t.Errorf("訪問の情報 %s = %d 件, want %d", id, n, wantRows)
+		}
 	}
 }

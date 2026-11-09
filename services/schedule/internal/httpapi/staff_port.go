@@ -7,7 +7,7 @@ import (
 )
 
 // StaffApp は、職員のハンドラが使う操作である。
-// 組み立ての場所が、staff の操作の型の Do を入れる。入れていない操作を呼ぶと panic する（ADR-0031）。
+// 組み立ての場所が、staff の操作の型の Do を入れる。入れていない操作を呼ぶと panic する（ADR-0024）。
 type StaffApp struct {
 	Create               func(ctx context.Context, in staff.CreateInput) (staff.Detail, error)
 	Get                  func(ctx context.Context, id string) (staff.Detail, error)

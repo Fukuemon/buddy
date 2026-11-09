@@ -22,6 +22,7 @@
               <span class="wf-site-account" aria-label="アカウント（青木 陽菜）" data-open="viewer-menu" data-m="2" data-testid="viewer-menu-open"><span class="wf-site-avatar" aria-hidden="true">青</span><span class="wf-site-account__name">青木 陽菜</span></span>
               <div class="wf-site-viewer-menu" data-panel="viewer-menu" data-panel-dismiss>
                 <span class="wf-text wf-text--s">青木 陽菜</span>
+                <span class="wf-btn wf-btn--text" data-testid="viewer-profile" data-go="../../account-profile_自分の情報/mocks/02-manager.html">自分の情報</span>
                 <span class="wf-btn" data-m="3" data-testid="viewer-logout">ログアウト</span>
               </div>
             </div>
@@ -132,12 +133,26 @@
                   <div class="sc-head"><span data-testid="schedule-calendar-day-header">10/24(土)</span></div>
                   <div class="sc-times"><div>0時</div><div>1時</div><div>2時</div><div>3時</div><div>4時</div><div>5時</div><div>6時</div><div>7時</div><div>8時</div><div>9時</div><div>10時</div><div>11時</div><div>12時</div><div>13時</div><div>14時</div><div>15時</div><div>16時</div><div>17時</div><div>18時</div><div>19時</div><div>20時</div><div>21時</div><div>22時</div><div>23時</div></div>
                   <div class="sc-col"></div>
-                  <div class="sc-col"><span class="sc-event" data-testid="schedule-event-{予定の id}" style="top: 288px; height: 16px" data-go="../../schedule-detail_予定の詳細/mocks/01-visit.html">9:00 - 9:30 利用者 A 訪問</span></div>
+                  <div class="sc-col"><span class="sc-event" data-testid="schedule-event-{予定の id}" style="top: 288px; height: 16px" data-go="../../schedule-detail_予定の詳細/mocks/01-visit.html">09:00〜09:30 利用者 A 訪問</span></div>
                   <div class="sc-col"><span class="sc-slot sc-free" data-m="16" style="top: 320px; height: 16px" data-go="../../schedule-new_予定の作成/mocks/01-visit.html"></span></div>
-                  <div class="sc-col sc-today"><span class="sc-event" data-m="15" data-testid="schedule-event-{予定の id}" style="top: 304px; height: 16px" data-go="../../schedule-detail_予定の詳細/mocks/01-visit.html">9:30 - 10:00 利用者 B 訪問</span><span class="sc-event" data-testid="schedule-event-{予定の id}" style="top: 416px; height: 32px" data-go="../../schedule-detail_予定の詳細/mocks/02-normal.html">13:00 - 14:00 会議</span><span class="sc-event" data-testid="schedule-event-{予定の id}" style="top: 704px; height: 64px" data-go="../../schedule-detail_予定の詳細/mocks/02-normal.html">22:00 - 翌 1:00 夜勤</span><span class="sc-now" data-m="18" style="top: 452px"></span></div>
-                  <div class="sc-col"><span class="sc-event" data-testid="schedule-event-{予定の id}" style="top: 0px; height: 32px" data-go="../../schedule-detail_予定の詳細/mocks/02-normal.html">22:00 - 翌 1:00 夜勤</span><span class="sc-event" data-testid="schedule-event-{予定の id}" style="top: 480px; height: 48px" data-go="../../schedule-detail_予定の詳細/mocks/01-visit.html">15:00 - 16:30 利用者 C 訪問</span></div>
+                  <div class="sc-col sc-today"><span class="sc-event" data-m="15" data-testid="schedule-event-{予定の id}" style="top: 304px; height: 16px" data-go="../../schedule-detail_予定の詳細/mocks/01-visit.html">09:30〜10:00 利用者 B 訪問</span><span class="sc-event" data-testid="schedule-event-{予定の id}" style="top: 416px; height: 32px" data-go="../../schedule-detail_予定の詳細/mocks/02-normal.html">13:00〜14:00 会議</span><span class="sc-event" data-testid="schedule-event-{予定の id}" style="top: 704px; height: 64px" data-go="../../schedule-detail_予定の詳細/mocks/02-normal.html">22:00〜翌 01:00 夜勤</span><span class="sc-now" data-m="18" style="top: 452px"></span></div>
+                  <div class="sc-col"><span class="sc-event" data-testid="schedule-event-{予定の id}" style="top: 0px; height: 32px" data-go="../../schedule-detail_予定の詳細/mocks/02-normal.html">22:00〜翌 01:00 夜勤</span><span class="sc-event" data-testid="schedule-event-{予定の id}" style="top: 480px; height: 48px" data-go="../../schedule-detail_予定の詳細/mocks/01-visit.html">15:00〜16:30 利用者 C 訪問</span></div>
                   <div class="sc-col"></div>
                   <div class="sc-col"></div>
+                </div>
+                <div class="sc-agenda" data-m="31" data-testid="schedule-agenda">
+                  <span class="sc-agenda__day" data-m="32" data-testid="schedule-agenda-day-{日付}" data-go="03-day.html">10月18日（日）</span>
+                  <span class="sc-agenda__day" data-testid="schedule-agenda-day-{日付}" data-go="03-day.html">10月19日（月）</span>
+                  <span class="sc-agenda__item" data-m="33" data-testid="schedule-event-{予定の id}" data-go="../../schedule-detail_予定の詳細/mocks/01-visit.html"><span class="sc-agenda__time">09:00〜09:30</span><span class="sc-agenda__body"><span class="sc-agenda__title">利用者 A 訪問</span><span class="sc-agenda__staff wf-team"><span class="wf-dot wf-dot--blue"></span>職員 A</span></span></span>
+                  <span class="sc-agenda__day" data-testid="schedule-agenda-day-{日付}" data-go="03-day.html">10月20日（火）</span>
+                  <span class="sc-agenda__day sc-today" data-testid="schedule-agenda-day-{日付}" data-go="03-day.html">10月21日（水）</span>
+                  <span class="sc-agenda__item" data-testid="schedule-event-{予定の id}" data-go="../../schedule-detail_予定の詳細/mocks/01-visit.html"><span class="sc-agenda__time">09:30〜10:00</span><span class="sc-agenda__body"><span class="sc-agenda__title">利用者 B 訪問</span><span class="sc-agenda__staff wf-team"><span class="wf-dot wf-dot--orange"></span>職員 B</span></span></span>
+                  <span class="sc-agenda__item" data-testid="schedule-event-{予定の id}" data-go="../../schedule-detail_予定の詳細/mocks/02-normal.html"><span class="sc-agenda__time">13:00〜14:00</span><span class="sc-agenda__body"><span class="sc-agenda__title">会議</span><span class="sc-agenda__staff wf-team"><span class="wf-dot wf-dot--blue"></span>職員 A</span></span></span>
+                  <span class="sc-agenda__item" data-testid="schedule-event-{予定の id}" data-go="../../schedule-detail_予定の詳細/mocks/02-normal.html"><span class="sc-agenda__time">22:00〜翌 01:00</span><span class="sc-agenda__body"><span class="sc-agenda__title">夜勤</span><span class="sc-agenda__staff wf-team"><span class="wf-dot wf-dot--magenta"></span>職員 C</span></span></span>
+                  <span class="sc-agenda__day" data-testid="schedule-agenda-day-{日付}" data-go="03-day.html">10月22日（木）</span>
+                  <span class="sc-agenda__item" data-testid="schedule-event-{予定の id}" data-go="../../schedule-detail_予定の詳細/mocks/01-visit.html"><span class="sc-agenda__time">15:00〜16:30</span><span class="sc-agenda__body"><span class="sc-agenda__title">利用者 C 訪問</span><span class="sc-agenda__staff wf-team"><span class="wf-dot wf-dot--orange"></span>職員 B</span></span></span>
+                  <span class="sc-agenda__day" data-testid="schedule-agenda-day-{日付}" data-go="03-day.html">10月23日（金）</span>
+                  <span class="sc-agenda__day" data-testid="schedule-agenda-day-{日付}" data-go="03-day.html">10月24日（土）</span>
                 </div>
               </main>
             </div>

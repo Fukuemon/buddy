@@ -1,7 +1,9 @@
-import { composeStories } from '@storybook/react-vite'
+import { composeStories, composeStory } from '@storybook/react-vite'
 import { fireEvent, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vite-plus/test'
+
+import { refocusWindow } from '#/test/refocusWindow'
 
 import * as stories from './CalendarImportContainer.stories'
 
@@ -109,10 +111,24 @@ describe('CalendarImportContainer', () => {
     })
 
     expect(screen.queryByTestId('calendar-import-result-preview')).toBeNull()
-    expect(screen.getByRole('alert')).toHaveTextContent(
-      '開始日は、終了日より前の日にしてください。',
+    expect(screen.getByTestId('calendar-import-start')).toHaveAccessibleDescription(
+      /開始日は、終了日より前の日にしてください。/,
     )
     expect(screen.getByTestId('calendar-import-preview')).toHaveAttribute('aria-disabled', 'true')
+    // 期間の誤りは欄の下に出るので、ボタンの横の条件の文は出さない
+    expect(screen.queryByTestId('calendar-import-preview-hint')).toBeNull()
+  })
+
+  it('開始日を空にすると、プレビューを押せず、ボタンの横に押せるようにする条件を出す', async () => {
+    render(<Initial />)
+    fireEvent.change(await screen.findByTestId('calendar-import-start'), {
+      target: { value: '' },
+    })
+
+    expect(screen.getByTestId('calendar-import-preview')).toHaveAttribute('aria-disabled', 'true')
+    expect(screen.getByTestId('calendar-import-preview')).toHaveAccessibleDescription(
+      '開始日と終了日を入れると、プレビューできます。',
+    )
   })
 
   it('プレビューが失敗したら、理由ごとの文を出す', async () => {
@@ -144,7 +160,7 @@ describe('CalendarImportContainer', () => {
   it('予定の正本の切り替えの間は、切り替えの期間で取り込み、規則を写せない繰り返しは取り込まないだけを選べる', async () => {
     render(<Cutover />)
     expect(await screen.findByTestId('calendar-import-cutover-range')).toHaveTextContent(
-      '2026/11/01〜',
+      '2026年11月1日（日）〜',
     )
     expect(screen.queryByTestId('calendar-import-start')).toBeNull()
     const result = await preview()
@@ -159,5 +175,31 @@ describe('CalendarImportContainer', () => {
     await userEvent.click(submit())
     expect(await screen.findByTestId('calendar-import-back-to-cutover')).toBeInTheDocument()
     expect(screen.queryByTestId('calendar-import-open-calendar')).toBeNull()
+  })
+})
+
+describe('予定の取り込みの読み直し', () => {
+  it('読み終えた後に読み直して結び付いたカレンダーを読めなければ、表示を残して失敗の文を出し、読み直すで読めたら消す', async () => {
+    const Story = composeStory(
+      {
+        ...stories.RefetchError,
+        parameters: {
+          ...stories.default.parameters,
+          appRouter: { ...stories.default.parameters.appRouter, api: stories.refetchFailingApi() },
+        },
+      },
+      stories.default,
+    )
+    render(<Story />)
+    await screen.findByTestId('calendar-import-form')
+
+    refocusWindow()
+    expect(await screen.findByTestId('refetch-error')).toHaveTextContent(
+      '最新の情報を読み込めませんでした。',
+    )
+    expect(screen.getByTestId('calendar-import-form')).toBeInTheDocument()
+
+    await userEvent.click(screen.getByTestId('refetch-retry'))
+    await expect.poll(() => screen.queryByTestId('refetch-error')).toBeNull()
   })
 })

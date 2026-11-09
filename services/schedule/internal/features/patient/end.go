@@ -27,7 +27,7 @@ func NewEnd(patients Repository, locks FacilityLock, schedules ScheduleReader, n
 }
 
 // Do は、利用者を利用の終了にし、利用の終了にした利用者を返す。利用の終了の利用者を利用の終了にしても成功し、最初に利用の終了にした時刻を残す。
-// その日以降の予定か、その日以降に終わる繰り返しの予定が残れば、書かずに残る一覧を持つ *ScheduledError を返す（ADR-0021）。
+// その日以降の予定か、その日以降に終わる繰り返しの予定が残れば、書かずに残る一覧を持つ *ScheduledError を返す（ADR-0005）。
 // 利用者が見つからないときは apperr.ErrNotFound を、職員の管理の権限が無いときは apperr.ErrForbidden を返す。
 //
 // 事業所をロックしてから残る予定を数えるので、予定の作成（事業所の共有のロックを取る）と行き違わない。

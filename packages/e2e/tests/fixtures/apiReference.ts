@@ -14,10 +14,10 @@ const root = fileURLToPath(new URL('../../../..', import.meta.url))
  */
 export const API_REFERENCE_ORIGIN = 'http://localhost:8000'
 
-/** openapi.yaml の servers が指す、compose のデフォルトのポートの API と、送り直す先。 */
+/** openapi.yaml の servers が指す、main の checkout の compose の API と、送り直す先。 */
 const API_FORWARDS = [
-  { from: 'http://localhost:8080', to: SCHEDULE_URL },
-  { from: 'http://localhost:8090', to: RECEIPT_URL },
+  { from: 'https://schedule.buddy.localhost', to: SCHEDULE_URL },
+  { from: 'https://receipt.buddy.localhost', to: RECEIPT_URL },
 ]
 
 const CONTENT_TYPES: Record<string, string> = {
@@ -29,8 +29,8 @@ const CONTENT_TYPES: Record<string, string> = {
 
 /**
  * API の参照のページ（docs/api/）を、ドキュメントサイトを起動せずに、リポジトリのファイルから開けるようにする。
- * ページが openapi.yaml の servers（compose のデフォルトのポート）へ送ったリクエストは、撮る compose の API へ送り直す。
- * 撮る compose のポートをずらしても、ページの Server の欄は openapi.yaml のままになる。
+ * ページが openapi.yaml の servers（main の checkout の compose）へ送ったリクエストは、撮る compose の API へ送り直す。
+ * 撮る compose が別の環境でも、ページの Server の欄は openapi.yaml のままになる。
  */
 export const routeApiReference = async (page: Page) => {
   await page.route(`${API_REFERENCE_ORIGIN}/**`, async (route) => {
@@ -90,17 +90,3 @@ export const issueAccessToken = async (request: APIRequestContext, email: string
   if (!token.ok()) throw new Error(`Hydra からトークンを取れない: ${token.status()}`)
   return ((await token.json()) as { access_token: string }).access_token
 }
-
-/**
- * recordPrEvidence の prepare に渡す。API の参照のページを開いてから、email で入った職員のトークンを取って返す。
- * 録画は、このページの origin の sessionStorage を持ち越して始まる。
- *
- * @param api docs/api/ のページの名前
- * @param email compose のブローカーにログインするメール。トークンを使わない spec は null にする
- */
-export const prepareApiReference =
-  (api: 'schedule' | 'receipt', email: string | null) => async (page: Page) => {
-    await routeApiReference(page)
-    await page.goto(`${API_REFERENCE_ORIGIN}/api/${api}.html`)
-    return email === null ? '' : issueAccessToken(page.request, email)
-  }

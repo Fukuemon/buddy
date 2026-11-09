@@ -22,6 +22,7 @@
               <span class="wf-site-account" aria-label="アカウント（青木 陽菜）" data-open="viewer-menu" data-testid="viewer-menu-open"><span class="wf-site-avatar" aria-hidden="true">青</span><span class="wf-site-account__name">青木 陽菜</span></span>
               <div class="wf-site-viewer-menu" data-panel="viewer-menu" data-panel-dismiss>
                 <span class="wf-text wf-text--s">青木 陽菜</span>
+                <span class="wf-btn wf-btn--text" data-testid="viewer-profile" data-go="../../account-profile_自分の情報/mocks/02-manager.html">自分の情報</span>
                 <span class="wf-btn" data-testid="viewer-logout">ログアウト</span>
               </div>
             </div>
@@ -98,17 +99,16 @@
                 </section>
               </main>
               <div class="wf-overlay" tabindex="-1" data-m="1" data-go="02-policies.html"></div>
-              <div class="wf-dialog" role="dialog" aria-modal="true" aria-labelledby="policies-title" data-testid="staff-policies-dialog">
+              <div class="wf-dialog" role="dialog" aria-modal="true" aria-labelledby="policies-title" data-m="2" data-testid="staff-policies-dialog">
                 <div class="wf-dialog__header">
-                  <h2 class="wf-dialog__title" id="policies-title" data-m="2">権限を変える</h2>
-                  <span class="wf-btn wf-btn--icon" aria-label="閉じる" data-escape data-m="3" data-testid="staff-policies-close" data-go="02-policies.html"><svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><path d="M5 5l10 10M15 5 5 15" fill="none" stroke="currentColor" stroke-width="1.8" /></svg></span>
+                  <h2 class="wf-dialog__title" id="policies-title">権限を変える</h2>
                 </div>
                 <div class="wf-dialog__body">
                   <div class="st-policy-fieldsets" data-testid="staff-policies-options">
-                    <fieldset class="st-policy-fieldset" data-testid="staff-policies-group-position">
-                      <legend class="st-policy-group__title" data-m="5">役職「メンバー」で付く権限</legend>
+                    <fieldset class="st-policy-fieldset" data-m="4" data-testid="staff-policies-group-position">
+                      <legend class="st-policy-group__title">役職「メンバー」で付く権限</legend>
                       <ul class="st-policy-options">
-                        <li class="st-policy-option"><span class="wf-check is-on" data-toggle data-m="4" data-testid="staff-policies-option-{権限の code}">自分の予定の編集</span></li>
+                        <li class="st-policy-option"><span class="wf-check is-on" data-toggle data-m="3" data-testid="staff-policies-option-{権限の code}">自分の予定の編集</span></li>
                       </ul>
                     </fieldset>
                     <fieldset class="st-policy-fieldset" data-testid="staff-policies-group-other">
@@ -116,12 +116,12 @@
                       <ul class="st-policy-options">
                         <li class="st-policy-option">
                           <span class="wf-check is-on" data-toggle data-testid="staff-policies-option-{権限の code}">指定した職員の予定の閲覧</span>
-                          <div class="st-targets" data-m="6" data-testid="staff-policies-targets">
+                          <div class="st-targets" data-m="5" data-testid="staff-policies-targets">
                             <span class="wf-label" id="policies-targets-label">対象の職員</span>
                             <div class="wf-chips" role="list" aria-labelledby="policies-targets-label">
-                              <span class="st-target" role="listitem" data-testid="staff-policies-target-{職員の id}">森 健太<span class="wf-btn wf-btn--icon st-target__remove" role="button" aria-label="森 健太 を外す" data-m="7" data-testid="staff-policies-target-remove-{職員の id}"><svg width="16" height="16" viewBox="0 0 20 20" aria-hidden="true"><path d="M5 5l10 10M15 5 5 15" fill="none" stroke="currentColor" stroke-width="1.8" /></svg></span></span>
+                              <span class="st-target" role="listitem" data-testid="staff-policies-target-{職員の id}">森 健太<span class="wf-btn wf-btn--icon st-target__remove" role="button" aria-label="森 健太 を外す" data-m="6" data-testid="staff-policies-target-remove-{職員の id}"><svg width="16" height="16" viewBox="0 0 20 20" aria-hidden="true"><path d="M5 5l10 10M15 5 5 15" fill="none" stroke="currentColor" stroke-width="1.8" /></svg></span></span>
                               <span class="st-target" role="listitem" data-testid="staff-policies-target-{職員の id}">佐藤 美咲<span class="wf-btn wf-btn--icon st-target__remove" role="button" aria-label="佐藤 美咲 を外す" data-testid="staff-policies-target-remove-{職員の id}"><svg width="16" height="16" viewBox="0 0 20 20" aria-hidden="true"><path d="M5 5l10 10M15 5 5 15" fill="none" stroke="currentColor" stroke-width="1.8" /></svg></span></span>
-                              <span class="wf-select st-target-add" role="combobox" aria-expanded="false" aria-label="対象の職員を選ぶ" data-m="8" data-testid="staff-policies-target-add" data-go="16-policies-target.html">＋ 職員を選ぶ</span>
+                              <span class="wf-select st-target-add" role="combobox" aria-expanded="false" aria-label="対象の職員を選ぶ" data-m="7" data-testid="staff-policies-target-add" data-go="16-policies-target.html">＋ 職員を選ぶ</span>
                             </div>
                           </div>
                         </li>
@@ -137,8 +137,9 @@
                   </div>
                 </div>
                 <div class="wf-dialog__footer">
-                  <span class="wf-btn" data-m="9" data-testid="staff-policies-cancel" data-go="02-policies.html">キャンセル</span>
-                  <span class="wf-btn wf-btn--primary" data-m="10" data-testid="staff-policies-submit" data-go="02-policies.html">保存</span>
+                  <p class="wf-hint" data-m="10" data-testid="staff-policies-submit-hint">付ける権限か外す権限を選んでください。</p>
+                  <span class="wf-btn" data-escape data-m="8" data-testid="staff-policies-cancel" data-go="02-policies.html">キャンセル</span>
+                  <span class="wf-btn wf-btn--primary" aria-disabled="true" data-m="9" data-testid="staff-policies-submit">保存</span>
                 </div>
               </div>
             </div>

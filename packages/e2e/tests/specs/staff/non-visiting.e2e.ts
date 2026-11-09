@@ -19,7 +19,7 @@ test.describe('予定のカレンダー', () => {
       page,
       request,
     }) => {
-      const manager = await issueManagerToken(request)
+      const manager = await issueManagerToken()
       const staff = newStaff('non-visiting')
       const id = await registerStaffId(request, manager, staff)
       await page.goto('/schedule?view=day')
@@ -37,7 +37,7 @@ test.describe('予定のカレンダー', () => {
     test('今日以降の予定が残る職員を訪問しない職員にしようとした場合、409 で残る予定が返り、訪問する職員のままであること', async ({
       request,
     }) => {
-      const manager = await issueManagerToken(request)
+      const manager = await issueManagerToken()
       const id = await registerStaffId(request, manager, newStaff('non-visiting-refused'))
       const created = await createNormalSchedule(request, manager, STAFF_FORM.facilityId, {
         staffId: id,

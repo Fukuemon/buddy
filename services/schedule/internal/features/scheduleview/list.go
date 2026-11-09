@@ -45,7 +45,7 @@ func NewList(facilities kernel.Finder[organization.Facility], schedules Schedule
 }
 
 // Do は、事業所の予定のうち、見てよい職員の予定を返す。事業所が見つからないときは apperr.ErrNotFound を返す。
-// buddy_primary の事業所では buddy の予定のテーブルを、google_primary の事業所では Projection を読む（ADR-0033、ADR-0035）。
+// buddy_primary の事業所では buddy の予定のテーブルを、google_primary の事業所では Projection を読む（ADR-0026）。
 func (s List) Do(ctx context.Context, facilityID string, q ListQuery) (Listing, error) {
 	if err := q.Validate(); err != nil {
 		return Listing{}, err
@@ -74,10 +74,12 @@ func (s List) Do(ctx context.Context, facilityID string, q ListQuery) (Listing, 
 		return Listing{}, err
 	}
 	return Listing{
-		Schedules:          filter(single, func(d Detail) bool { return readable(d.StaffID) }),
-		RecurringSchedules: filter(recurring, func(d RecurringDetail) bool { return readable(d.StaffID) }),
-		SourceMode:         f.SourceMode,
-		CalendarSyncs:      []CalendarSync{},
+		Schedules:           filter(single, func(d Detail) bool { return readable(d.StaffID) }),
+		RecurringSchedules:  filter(recurring, func(d RecurringDetail) bool { return readable(d.StaffID) }),
+		SourceMode:          f.SourceMode,
+		CalendarSyncs:       []CalendarSync{},
+		AllDayEvents:        []AllDayEvent{},
+		UnlistedEventCounts: []UnlistedEventCount{},
 	}, nil
 }
 
@@ -107,7 +109,10 @@ func (s List) listProjected(ctx context.Context, f organization.Facility, q List
 	}
 	rows = filter(rows, func(r ProjectionDetail) bool { return r.FacilityID == f.ID && readable(r.StaffID) })
 	events := expandProjections(rows, s.projected.Rules, from, to)
-	b, err := s.newProjectionBuilder(ctx, f.ID, events)
+	if err := markLeft(ctx, s.projected.Projections, f.ID, events); err != nil {
+		return Listing{}, err
+	}
+	b, err := newProjectionBuilder(ctx, s.projected, f.ID, events)
 	if err != nil {
 		return Listing{}, err
 	}
@@ -119,6 +124,10 @@ func (s List) listProjected(ctx context.Context, f organization.Facility, q List
 		}
 	}
 	sortDetails(details, q.Sort)
+	only := calendarOnly{allDay: []AllDayEvent{}, unlisted: []UnlistedEventCount{}}
+	if q.TypeName == nil {
+		only = collectCalendarOnly(rows, s.projected.Rules, from, to)
+	}
 	syncs, err := s.projected.Syncs.ListSyncsByFacility(ctx, f.ID)
 	if err != nil {
 		return Listing{}, err
@@ -130,15 +139,17 @@ func (s List) listProjected(ctx context.Context, f organization.Facility, q List
 		}
 	}
 	return Listing{
-		Schedules:          details,
-		RecurringSchedules: []RecurringDetail{},
-		SourceMode:         f.SourceMode,
-		CalendarSyncs:      filter(syncs, func(c CalendarSync) bool { return readable(c.StaffID) }),
-		Cutover:            cutover,
+		Schedules:           details,
+		RecurringSchedules:  []RecurringDetail{},
+		SourceMode:          f.SourceMode,
+		CalendarSyncs:       filter(syncs, func(c CalendarSync) bool { return readable(c.StaffID) }),
+		Cutover:             cutover,
+		AllDayEvents:        only.allDay,
+		UnlistedEventCounts: only.unlisted,
 	}, nil
 }
 
-// retainedMonthsBefore と retainedMonthsAfter は、Projection を保持する期間（前々月の初日から 3 か月後の月末）の、今月からの月の数である（ADR-0035）。
+// retainedMonthsBefore と retainedMonthsAfter は、Projection を保持する期間（前々月の初日から 3 か月後の月末）の、今月からの月の数である（ADR-0029）。
 const (
 	retainedMonthsBefore = 2
 	retainedMonthsAfter  = 3
@@ -169,9 +180,9 @@ type projectionBuilder struct {
 
 type servicecodeRef struct{ id, code string }
 
-func (s List) newProjectionBuilder(ctx context.Context, facilityID string, events []projectedEvent) (projectionBuilder, error) {
-	b := projectionBuilder{rules: s.projected.Rules, serviceIDs: map[string]servicecodeRef{}, patients: map[string][]patient.Detail{}}
-	types, err := s.projected.Types.List(ctx)
+func newProjectionBuilder(ctx context.Context, deps ProjectionDeps, facilityID string, events []projectedEvent) (projectionBuilder, error) {
+	b := projectionBuilder{rules: deps.Rules, serviceIDs: map[string]servicecodeRef{}, patients: map[string][]patient.Detail{}}
+	types, err := deps.Types.List(ctx)
 	if err != nil {
 		return projectionBuilder{}, err
 	}
@@ -183,17 +194,17 @@ func (s List) newProjectionBuilder(ctx context.Context, facilityID string, event
 			b.visit = t
 		}
 	}
-	if !slices.ContainsFunc(events, func(e projectedEvent) bool { return e.reading.Kind == EventVisit }) {
+	if !slices.ContainsFunc(events, func(e projectedEvent) bool { return e.reading.Kind == EventVisit && e.row.Visit == nil }) {
 		return b, nil
 	}
-	codes, err := s.projected.ServiceCodes.List(ctx)
+	codes, err := deps.ServiceCodes.List(ctx)
 	if err != nil {
 		return projectionBuilder{}, err
 	}
 	for _, c := range codes {
 		b.serviceIDs[b.rules.ServiceKey(c.Code)] = servicecodeRef{id: c.ID, code: c.Code}
 	}
-	pats, err := s.projected.Patients.ListByFacility(ctx, facilityID, patient.ListQuery{Sort: kernel.Sort{Field: "name"}})
+	pats, err := deps.Patients.ListByFacility(ctx, facilityID, patient.ListQuery{Sort: kernel.Sort{Field: "name"}})
 	if err != nil {
 		return projectionBuilder{}, err
 	}
@@ -204,7 +215,9 @@ func (s List) newProjectionBuilder(ctx context.Context, facilityID string, event
 	return b, nil
 }
 
-// detail は、e を Detail にする。訪問の予定は、タイトルのサービス内容と利用者名でサービスコードと利用者を引き、
+// detail は、e を Detail にする。記録の訪問の情報（ProjectionDetail.Visit）がある予定は、その訪問の情報の訪問の予定にし、
+// タイトルの利用者かサービス内容が訪問の情報と違えば ReviewTitleMismatch を付ける。
+// 記録の訪問の情報が無い訪問の予定は、タイトルのサービス内容と利用者名でサービスコードと利用者を引き、
 // 引けないときは訪問の情報を付けず、Google のタイトルの通常の予定にして理由を付ける。
 func (b projectionBuilder) detail(e projectedEvent) Detail {
 	rd := e.reading
@@ -222,13 +235,28 @@ func (b projectionBuilder) detail(e projectedEvent) Detail {
 		TypeName: b.normal.Name, StaffName: e.row.StaffName, Version: 1, CreatedAt: at, UpdatedAt: at,
 		Source: SourceGoogleCalendar,
 	}
+	d.ETag = e.row.ETag
+	// 別の職員へ移した後に残った回（left）は、移した予定と別の回として扱うので、親の規則を付けない
+	if e.rule != nil && !e.left {
+		parentID := e.row.ScheduleID
+		d.RecurringScheduleID, d.Rule = &parentID, e.rule
+	}
 	if strings.TrimSpace(rd.Title) != "" {
 		title := rd.Title
 		d.Title = &title
 	}
+	if e.row.Visit != nil {
+		v := *e.row.Visit
+		d.TypeID, d.TypeName, d.Title = b.visit.ID, b.visit.Name, nil
+		d.VisitInfoID, d.Visit = &v.ID, &v
+	}
 	switch {
 	case e.unsupported:
 		d.ReviewReason = ReviewRecurrenceUnsupported
+	case e.row.Visit != nil:
+		if !b.titleMatches(rd, *e.row.Visit) {
+			d.ReviewReason = ReviewTitleMismatch
+		}
 	case rd.Kind == EventUnreadableTitle:
 		d.ReviewReason = ReviewTitleUnreadable
 	case rd.Kind == EventVisit:
@@ -252,6 +280,12 @@ func (b projectionBuilder) detail(e projectedEvent) Detail {
 		}
 	}
 	return d
+}
+
+// titleMatches は、rd が訪問のタイトルで、タイトルの利用者名とサービス内容が、訪問の情報 v の利用者とサービスコードと同じかを返す。
+// 比べる前に、取り込みと同じ規則（EventRules の ClientKey と ServiceKey）で表記をそろえる。
+func (b projectionBuilder) titleMatches(rd EventReading, v visit.Detail) bool {
+	return rd.Kind == EventVisit && rd.ClientKey == b.rules.ClientKey(v.PatientName) && rd.ServiceKey == b.rules.ServiceKey(v.ServiceCode)
 }
 
 // sortDetails は、Projection の予定を、buddy の予定の一覧と同じく sort の順に並べる。date は日付の後に開始の時刻で並べる。

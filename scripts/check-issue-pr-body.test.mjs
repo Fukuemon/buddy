@@ -105,10 +105,13 @@ test('インラインのコードの .ai-out は話題として通す', () => {
   assert.deepEqual(pr({ body: body({ extra }) }).errors, [])
 })
 
-test('この pull request のコメントを指すリンクは注意にとどめ、ほかのリポジトリは見ない', () => {
-  const own = pr({ body: body({ extra: `https://github.com/${REPO}/pull/30#issuecomment-1` }) })
+test('この pull request のコメントを指し、動画の URL が無い本文は注意にとどめ、ほかのリポジトリは見ない', () => {
+  const thread = `https://github.com/${REPO}/pull/30#issuecomment-1`
+  const own = pr({ body: body({ extra: thread }) })
   assert.deepEqual(own.errors, [])
   assert.equal(own.warnings.length, 1)
+  const video = 'https://github.com/user-attachments/assets/0000'
+  assert.deepEqual(pr({ body: body({ extra: `${thread}\n\n${video}` }) }).warnings, [])
   const other = pr({ body: body({ extra: 'https://github.com/x/y/pull/30#issuecomment-1' }) })
   assert.deepEqual(other.warnings, [])
 })

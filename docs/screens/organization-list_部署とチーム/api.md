@@ -1,7 +1,9 @@
 # organization-list API との対応
 
 [部署とチーム](index.md) の項目と、web の型と OpenAPI の項目の対応。  
-画面を作る人と API を変える人が読む。
+画面を作る人、API を変える人、仕様と実装を照合する人が読む。
+
+## 値の対応
 
 | 要素名 | 表示する値 | web の型の項目 | OpenAPI の項目 |
 | --- | --- | --- | --- |
@@ -20,6 +22,62 @@
 | 色 | 作成の初期値 | 画面で決める | `listTeams` が返した全てのチームの `color` |
 | 保存の失敗の文 | 失敗の理由 | `ApiError` | 409 `conflict`、404 `not_found`、403 `forbidden` |
 | 読み込みの失敗の文 | 読めなかったか | `ApiError` | `listDepartments`、`listTeams` のエラー |
+
+## 条件の対応
+
+| 条件 | 判定に使う値 |
+| --- | --- |
+| 事業所に、部署がある | `departments.list` の結果（`Department[]`）が空でない |
+| 事業所に、チームがある | `teams.list` の結果（`Team[]`）が空でない |
+| 職員が、作るか保存を送っている途中である | 作成か編集を送る mutation の `isPending` が `true`（`OrganizationUnitDialog` の `isSubmitting`） |
+
+- 一覧と、無いことの文の出し分けは、`OrganizationListView.tsx` の `rows.length === 0` にある。
+- 送っている間は、名前と色の欄に `disabled` を、キャンセルに押せない印を付ける。覆いと Escape キーでも閉じない。
+  - 欄は `OrganizationUnitDialog.tsx`、ボタンと覆いは packages/ui の `InputDialog`、`DialogSubmit`、`Dialog` が決める。
+
+## 要素の testid
+
+| 番号 | 要素名 | testid |
+| --- | --- | --- |
+| 1 | ナビゲーション | `site-nav` |
+| 2 | アカウント | `viewer-menu-open` |
+| 3 | ログアウト | `viewer-logout` |
+| 5 | ヘルプ | `organization-list-help` |
+| 7 | 部署を作る | `organization-list-department-new` |
+| 8 | 部署の一覧 | `organization-list-department-table` |
+| 8 | 部署が無いことの文 | `organization-list-department-empty` |
+| 9 | 部署の行 | `organization-list-department-row-{部署の id}` |
+| 10 | 編集 | `organization-list-department-edit-{部署の id}` |
+| 12 | チームを作る | `organization-list-team-new` |
+| 10 | チームを作る | `organization-list-team-new` |
+| 13 | チームの一覧 | `organization-list-team-table` |
+| 11 | チームが無いことの文 | `organization-list-team-empty` |
+| 14 | チームの行 | `organization-list-team-row-{チームの id}` |
+| 15 | チーム | `organization-list-team-name-{チームの id}` |
+| 16 | 編集 | `organization-list-team-edit-{チームの id}` |
+| 3 | 名前 | `organization-list-department-name` |
+| 3 | 名前 | `organization-list-team-name` |
+| 4 | 色 | `organization-list-team-color` |
+| 4 | キャンセル | `organization-list-department-cancel` |
+| 5 | キャンセル | `organization-list-team-cancel` |
+| 5 | 作る、保存 | `organization-list-department-submit` |
+| 6 | 作る、保存 | `organization-list-team-submit` |
+| 7 | 入力の誤りの文 | `organization-list-team-error-name` |
+| 7 | 保存の失敗の文 | `organization-list-team-submit-error` |
+| 6 | 読み込み中の表示 | `organization-list-loading` |
+| 6 | 読み込みの失敗の文 | `organization-list-error` |
+| 7 | 読み直す | `organization-list-retry` |
+| 6 | 予定のカレンダーへ | `page-forbidden-back` |
+| 17 | メニュー | `site-nav-toggle` |
+| 12 | メニュー | `site-nav-toggle` |
+| 7 | メニュー | `site-nav-toggle` |
+| 8 | メニュー | `site-nav-toggle` |
+| 18 | 最新の情報の読み込みの失敗の文 | `refetch-error` |
+| 19 | 最新の情報を読み直す | `refetch-retry` |
+
+- 部署のダイアログとチームのダイアログは、testid の始まりだけが違うので、行を分ける。入力の誤りの文と保存の失敗の文は、部署のダイアログでは `organization-list-department-error-name` と `organization-list-department-submit-error` になる。モックはチームのダイアログだけを描く。
+- 色の選択肢は `organization-list-team-color-{色}` である。
+- ダイアログの本体の `organization-list-{department|team}-dialog` と、権限が無いことの入れ物の `page-forbidden` は、構成要素の表に載せないので、この表に載せない。
 
 ## 操作
 
@@ -47,5 +105,6 @@
 | 保存の失敗 | 「この部署が見つかりません。閉じてから、開き直してください。」か、「この部署」を「このチーム」にした文 | `updateDepartment`、`updateTeam` が 404 |
 | 保存の失敗 | 「この操作をする権限がありません。」 | 4 つの書き込みの操作が 403 |
 | 保存の失敗 | 「保存できませんでした。時間をおいて、もう一度保存してください。」 | 409、404、403 のほかの失敗、API に届かない |
+| 最新の情報の読み込みの失敗 | 「最新の情報を読み込めませんでした。」 | 読み終えた後に読み直して、`listDepartments` か `listTeams` が失敗、API に届かない。403 と 404 も含む |
 
 - 文を選ぶ処理は `apps/web/src/features/organization/lib/errorMessage.ts` の `submitErrorMessage` にある。

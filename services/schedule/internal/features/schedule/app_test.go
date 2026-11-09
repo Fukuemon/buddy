@@ -151,7 +151,7 @@ func TestSchedulesEndsNextDay(t *testing.T) {
 	}
 }
 
-// nonVisiting は、stop に渡して、職員を訪問しない職員にする。職員の状態ではない（ADR-0022）。
+// nonVisiting は、stop に渡して、職員を訪問しない職員にする。職員の状態ではない（ADR-0006）。
 const nonVisiting staff.Status = "non_visiting"
 
 // stop は、職員 id を休職か退職か、訪問しない職員にする。
@@ -174,7 +174,7 @@ func stop(t *testing.T, s *inmem.Store, id string, status staff.Status) {
 }
 
 // 予定の作成、職員の変更、繰り返しの予定の作成と回の置き換えは、休職か退職の職員と訪問しない職員を予定の職員、主訪問者、同行者に指すと
-// 入力のエラーで拒む（#269 の検証の観点 1、3、ADR-0022）。
+// 入力のエラーで拒む（#269 の検証の観点 1、3、ADR-0004、ADR-0006）。
 func TestSchedulesRejectInactiveStaff(t *testing.T) {
 	slots := map[string]func() schedule.SlotInput{
 		"予定の職員": func() schedule.SlotInput {
@@ -198,7 +198,7 @@ func TestSchedulesRejectInactiveStaff(t *testing.T) {
 		},
 		"繰り返しの予定の作成": func(uc *app, ctx context.Context, in schedule.SlotInput, stopCompanion func()) error {
 			stopCompanion()
-			_, err := uc.CreateRecurring(ctx, facilityID, in, schedule.RuleInput{Frequency: schedule.Weekly, DayOfWeek: ptr(1)})
+			_, err := uc.CreateRecurring(ctx, facilityID, in, schedule.RuleInput{Frequency: schedule.Weekly, DaysOfWeek: []int{1}})
 			return err
 		},
 		"回の置き換え": func(uc *app, ctx context.Context, in schedule.SlotInput, stopCompanion func()) error {
@@ -330,7 +330,7 @@ func TestSchedulesKeepRulesForInactiveStaff(t *testing.T) {
 	}
 }
 
-// 利用の終了の利用者は、新しい予定に指せない。既に付けた予定は、利用者を変えずに、今日より前の日付でだけ保存できる（ADR-0021）。
+// 利用の終了の利用者は、新しい予定に指せない。既に付けた予定は、利用者を変えずに、今日より前の日付でだけ保存できる（ADR-0005）。
 func TestSchedulesEndedPatient(t *testing.T) {
 	const activePatientID = "ACTIVEPATIENT"
 	tests := []struct {
@@ -432,12 +432,15 @@ type deps struct {
 	Facilities kernel.Finder[organization.Facility]
 	Staff      schedule.StaffRefs
 	Locks      schedule.FacilityLock
-	Visits     schedule.VisitInfos
-	Schedules  schedule.Repository
-	Recurring  schedule.RecurringRepository
-	Types      schedule.TypeRepository
-	Exports    schedule.Exports
-	Now        func() time.Time
+	Visits     interface {
+		schedule.VisitInfos
+		schedule.VisitCopier
+	}
+	Schedules schedule.Repository
+	Recurring schedule.RecurringRepository
+	Types     schedule.TypeRepository
+	Exports   schedule.Exports
+	Now       func() time.Time
 }
 
 // app は、テストが呼ぶ schedule の操作の Do である。
@@ -446,8 +449,12 @@ type app struct {
 	Create           func(ctx context.Context, facilityID string, in schedule.SlotInput) (schedule.Schedule, error)
 	CreateRecurring  func(ctx context.Context, facilityID string, in schedule.SlotInput, rule schedule.RuleInput) (schedule.RecurringSchedule, error)
 	ChangeOccurrence func(ctx context.Context, recurringScheduleID string, originalDate civil.Date, in schedule.SlotInput) (schedule.Schedule, error)
+	ChangeRule       func(ctx context.Context, recurringScheduleID string, effective, firstWeek *civil.Date, rule schedule.RuleInput) (schedule.RecurringSchedule, error)
 	Cancel           func(ctx context.Context, scheduleID, reason string) (schedule.Cancellation, error)
+	CancelOccurrence func(ctx context.Context, recurringScheduleID string, originalDate civil.Date, reason string) (schedule.Cancellation, error)
 	Update           func(ctx context.Context, scheduleID string, in schedule.SlotInput) (schedule.Schedule, error)
+	Delete           func(ctx context.Context, scheduleID string) error
+	DeleteOccurrence func(ctx context.Context, recurringScheduleID string, originalDate civil.Date) error
 }
 
 // build は、d の依存で schedule の全ての操作の型を作る。
@@ -457,7 +464,11 @@ func build(d deps, tx tx.Transactor, ids kernel.IDGenerator) *app {
 		Create:           schedule.NewCreate(d.Facilities, d.Schedules, d.Types, d.Staff, d.Locks, d.Visits, d.Now, d.Exports, tx, ids).Do,
 		CreateRecurring:  schedule.NewCreateRecurring(d.Facilities, d.Types, d.Staff, d.Locks, d.Visits, d.Now, d.Recurring, d.Exports, tx, ids).Do,
 		ChangeOccurrence: schedule.NewChangeOccurrence(d.Recurring, d.Staff, d.Locks, d.Schedules, d.Types, d.Visits, d.Now, d.Exports, tx, ids).Do,
+		ChangeRule:       schedule.NewChangeRule(d.Recurring, d.Staff, d.Locks, d.Types, d.Visits, d.Now, d.Exports, tx, ids).Do,
 		Cancel:           schedule.NewCancel(d.Schedules, d.Staff, d.Locks, d.Exports, tx, ids).Do,
+		CancelOccurrence: schedule.NewCancelOccurrence(d.Recurring, d.Staff, d.Locks, d.Schedules, d.Types, d.Visits, d.Exports, tx, ids).Do,
 		Update:           schedule.NewUpdate(d.Schedules, d.Staff, d.Locks, d.Types, d.Visits, d.Now, d.Exports, tx).Do,
+		Delete:           schedule.NewDelete(d.Schedules, d.Staff, d.Locks, d.Now, d.Exports, tx, ids).Do,
+		DeleteOccurrence: schedule.NewDeleteOccurrence(d.Recurring, d.Staff, d.Locks, d.Now, d.Exports, tx, ids).Do,
 	}
 }

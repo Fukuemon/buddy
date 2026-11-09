@@ -1,4 +1,4 @@
-// Command calendar-worker は、Google カレンダーの書き出しか同期を、役割ごとのプロセスで動かす（ADR-0036）。
+// Command calendar-worker は、Google カレンダーの書き出しか同期を、役割ごとのプロセスで動かす（ADR-0032）。
 //
 // 使い方:
 //
@@ -30,8 +30,8 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/Fukuemon/buddy/services/schedule/internal/assemble"
 	"github.com/Fukuemon/buddy/services/schedule/internal/config"
+	"github.com/Fukuemon/buddy/services/schedule/internal/postgres"
 )
 
 // role は、Worker の役割である。
@@ -120,22 +120,22 @@ func parseArgs(args []string, stderr io.Writer) (options, error) {
 
 // work は、DB に繋いで役割の処理を組み立て、常駐か 1 回の形で動かす。
 func work(ctx context.Context, cfg config.Worker, opts options, log *slog.Logger) error {
-	db, err := assemble.OpenDB(ctx, cfg.DB)
+	db, err := postgres.Open(ctx, postgres.Config(cfg.DB))
 	if err != nil {
 		return err
 	}
 	defer db.Close()
-	repos := assemble.NewRepositories(db)
-	accounts, err := assemble.NewCalendarAccounts(ctx, cfg.Calendar, repos)
+	accounts, err := openAccounts(ctx, cfg.Calendar, db)
 	if err != nil {
 		return err
 	}
 	var due dueFunc
 	switch opts.name {
 	case "export":
-		due = assemble.NewExporter(repos, accounts, log).ExportDue
+		due = newExporter(db, accounts, log).ExportDue
 	case "sync":
-		due = assemble.NewSyncer(repos, accounts, cfg.Calendar.SyncInterval, log).SyncDue
+		s := newSyncer(db, accounts, cfg.Calendar.SyncInterval, log)
+		due = sequence(s.SyncDue, s.ReadBackDue)
 	}
 	if !opts.once {
 		log.Info("calendar worker started")

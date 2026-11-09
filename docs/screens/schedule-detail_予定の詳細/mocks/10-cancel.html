@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>schedule-detail キャンセルのダイアログ</title>
+    <link rel="stylesheet" href="../../_common/mock.css" />
+    <link rel="stylesheet" href="../../_common/tokens.css" />
+    <link rel="stylesheet" href="../../_common/wireframe.css" />
+    <link rel="stylesheet" href="schedule-detail.css" />
+  </head>
+  <body data-view="desktop">
+    <div class="stage">
+      <div class="screen">
+        <div class="screen-body">
+          <div class="wf-modal-stage">
+            <div aria-hidden="true" class="wf-bg-calendar"></div>
+            <div class="wf-overlay" tabindex="-1"></div>
+            <div aria-hidden="true" aria-label="予定の詳細" class="wf-modal" data-testid="schedule-detail-modal" role="dialog">
+              <div class="wf-modal__header">
+                <h2 class="wf-modal__title wf-dialog__title">予定の詳細</h2>
+              </div>
+              <div class="wf-modal__body">
+                <h3 class="sd-datetime" data-testid="schedule-detail-datetime">2026年11月20日（金） 09:00〜09:29</h3>
+                <dl class="wf-rows sd-rows">
+                  <div class="wf-row">
+                    <dt>種類</dt>
+                    <dd>訪問</dd>
+                  </div>
+                  <div class="wf-row">
+                    <dt>主訪問者</dt>
+                    <dd><span class="wf-text"></span></dd>
+                  </div>
+                </dl>
+                <section class="sd-section" data-testid="schedule-detail-visit">
+                  <h3 class="sd-section__title">訪問の情報</h3>
+                  <dl class="wf-rows sd-rows" data-testid="schedule-detail-visit-fields">
+                    <div class="wf-row">
+                      <dt>利用者</dt>
+                      <dd><span class="wf-text"></span></dd>
+                    </div>
+                    <div class="wf-row">
+                      <dt>サービスコード</dt>
+                      <dd>訪看I2</dd>
+                    </div>
+                    <div class="wf-row">
+                      <dt>訪問の区分</dt>
+                      <dd>緊急</dd>
+                    </div>
+                  </dl>
+                </section>
+              </div>
+              <div class="wf-modal__footer">
+                <span class="wf-btn wf-btn--destructive" data-testid="schedule-detail-cancel-schedule">予定をキャンセル</span>
+                <span class="wf-btn wf-btn--destructive" data-testid="schedule-detail-delete-schedule">予定を削除</span>
+                <span class="wf-btn" data-testid="schedule-detail-close">閉じる</span>
+                <span class="wf-btn" data-testid="schedule-detail-edit">編集</span>
+              </div>
+            </div>
+          </div>
+          <div class="wf-overlay" tabindex="-1" data-m="1" data-go="01-visit.html"></div>
+          <div class="wf-dialog wf-dialog--narrow" role="alertdialog" aria-modal="true" aria-labelledby="cancel-title" data-m="2" data-testid="schedule-cancel-dialog">
+            <div class="wf-dialog__body">
+              <h2 class="wf-heading" id="cancel-title" data-m="3">この予定をキャンセルしますか</h2>
+              <p data-m="4" data-testid="schedule-cancel-datetime">2026年11月20日（金） 09:00〜09:29</p>
+              <p data-m="5" data-testid="schedule-cancel-description">キャンセルした予定は、キャンセルした予定を出すとカレンダーに残り、理由を見られます。</p>
+              <div class="wf-field">
+                <span class="wf-label">キャンセルの理由</span>
+                <div class="wf-input wf-input--area wf-field__input" data-m="6" data-testid="schedule-cancel-reason">
+                  <span class="sd-placeholder">例: 利用者の都合で取りやめ</span>
+                </div>
+              </div>
+            </div>
+            <div class="wf-dialog__footer">
+              <span class="wf-btn" data-escape data-m="7" data-testid="schedule-cancel-cancel" data-go="01-visit.html">戻る</span>
+              <span class="wf-btn wf-btn--danger" aria-disabled="true" data-m="8" data-testid="schedule-cancel-submit">予定をキャンセルする</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="markers"></div>
+    </div>
+    <script src="../../_common/mock.js"></script>
+    <script src="../../_common/interact.js"></script>
+  </body>
+</html>

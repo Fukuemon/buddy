@@ -38,9 +38,17 @@ type ExporterDeps struct {
 	Writers    calendar.WriterFor
 	Schedules  kernel.Finder[scheduleview.Detail]
 	Recurring  kernel.Finder[scheduleview.RecurringDetail]
+	// Deletions は、削除した単発の予定の職員を読む。nil なら、予定の対応の無い削除の待ちで外部の予定を探さない。
+	Deletions DeletedSchedules
 }
 
-// Exporter は、書き出しの待ちを、予定の職員が結び付けた外部のカレンダーに書く処理である。ADR-0009 の段階 2 に当たる。
+// DeletedSchedules は、削除した単発の予定の監査の記録を読む。
+type DeletedSchedules interface {
+	// StaffOfDeleted は、削除した単発の予定 scheduleID の、削除した時点の予定の職員を返す。無いときは apperr.ErrNotFound を返す。
+	StaffOfDeleted(ctx context.Context, scheduleID string) (string, error)
+}
+
+// Exporter は、書き出しの待ちを、予定の職員が結び付けた外部のカレンダーに書く処理である。ADR-0029 の書き出しに当たる。
 // 待ちは予定の変更と同じトランザクションで積まれ（Outbox）、Exporter はトランザクションの外で外部のカレンダーを呼ぶ。
 // 外部のカレンダーで変わった予定は buddy に当てず、確認が必要な待ち（conflict）にする。
 // 事業所が buddy を予定の正本にしていない（buddy_primary でない）待ちは、書かずに確認が必要な待ち（conflict）にして保留にする。
@@ -119,7 +127,8 @@ func (x *Exporter) logBacklog(ctx context.Context) {
 		slog.Int("pending_count", bl.PendingCount), slog.Int64("oldest_pending_age_seconds", int64(bl.OldestAge.Seconds())))
 }
 
-// resultOf は、待ち e を書いたエラー err を、待ちの次の状態にする。
+// resultOf は、待ち e を書いたエラー err を、待ちの次の状態にする。書いたかが分からないエラー（calendar.ErrOutcomeUnknown）も、
+// 一時的なエラー（calendar.ErrUnavailable）と同じく書き直す。予定の ID が buddy の予定から決まるので、書き直しても予定は 2 つにならない。
 func resultOf(e calendar.Export, err error) calendar.ExportResult {
 	code := func(c calendar.ExportErrorCode) *calendar.ExportErrorCode { return &c }
 	switch {
@@ -154,6 +163,9 @@ func (x *Exporter) export(ctx context.Context, e calendar.Export) error {
 	if !f.IsBuddyPrimary() {
 		return errNotBuddyPrimary
 	}
+	if e.DeletedScheduleID != "" {
+		return x.exportDeletion(ctx, e)
+	}
 	if e.ScheduleID != "" {
 		return x.exportSchedule(ctx, e)
 	}
@@ -179,6 +191,64 @@ func (x *Exporter) exportSchedule(ctx context.Context, e calendar.Export) error 
 		body = &b
 	}
 	return x.sync(ctx, e, item{staffID: d.StaffID, id: d.ID, version: d.Version, link: link, body: body, scheduleID: &d.ID})
+}
+
+// exportDeletion は、削除した単発の予定の外部の予定を消し、予定の対応を消す（ADR-0040）。対応のカレンダーを外したときは何もしない。
+// 予定の対応が無いときは、予定の職員の今のカレンダーから、予定の ID から決めた ID の外部の予定を消す。
+// 書き出しが最初の作成か職員の替わった予定を書いている間に削除すると、対応の無い外部の予定が残るためである。
+// buddy が正本なので、外部で予定が変わっていても etag を比べずに消す。外部で既に消されていれば（410）、消せたものとして扱う。
+func (x *Exporter) exportDeletion(ctx context.Context, e calendar.Export) error {
+	link, err := optionalLink(x.deps.Calendars.LinkByDeletedSchedule(ctx, e.DeletedScheduleID))
+	if err != nil {
+		return err
+	}
+	if link == nil {
+		return x.deleteUnlinked(ctx, e.DeletedScheduleID)
+	}
+	lc, err := x.deps.Calendars.Get(ctx, link.ExternalCalendarID)
+	if err != nil || lc.DisabledAt != nil {
+		return err
+	}
+	w, err := x.deps.Writers(ctx, lc.FacilityID)
+	if err != nil {
+		return err
+	}
+	if err := w.Delete(ctx, lc.CalendarID, link.ExternalEventID, ""); err != nil && !errors.Is(err, calendar.ErrEventGone) {
+		return err
+	}
+	return x.deps.Calendars.DeleteLink(ctx, link.ID)
+}
+
+// deleteUnlinked は、削除した単発の予定 scheduleID の職員の、外していないカレンダーから、予定の ID から決めた ID の外部の予定を消す。
+// 外部の予定が無いか既に消されていれば（404、410）、消せたものとして扱う。職員にカレンダーが無ければ何もしない。
+func (x *Exporter) deleteUnlinked(ctx context.Context, scheduleID string) error {
+	if x.deps.Deletions == nil {
+		return nil
+	}
+	staffID, err := x.deps.Deletions.StaffOfDeleted(ctx, scheduleID)
+	if err != nil {
+		return err
+	}
+	cal, err := x.deps.Calendars.ActiveByStaff(ctx, staffID)
+	if errors.Is(err, apperr.ErrNotFound) {
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+	eventID, err := calendar.EventIDOf(scheduleID)
+	if err != nil {
+		return err
+	}
+	w, err := x.deps.Writers(ctx, cal.FacilityID)
+	if err != nil {
+		return err
+	}
+	err = w.Delete(ctx, cal.CalendarID, eventID, "")
+	if errors.Is(err, calendar.ErrEventGone) || errors.Is(err, calendar.ErrEventNotFound) {
+		return nil
+	}
+	return err
 }
 
 // exportRecurring は、繰り返しの予定を、規則と除外する日の RRULE と EXDATE で書く。
@@ -245,7 +315,7 @@ type item struct {
 }
 
 // sync は、予定 it を、職員が結び付けた外していないカレンダーの内容にそろえる。
-// 外部のカレンダーには、そのカレンダーの行の事業所のサービスアカウントで書く（ADR-0012）。
+// 外部のカレンダーには、そのカレンダーの行の事業所のサービスアカウントで書く（ADR-0030）。
 //   - 予定の対応のカレンダーを外していれば、そのカレンダーには書かない。職員に別のカレンダーがあれば、対応を消して、そのカレンダーに作る。
 //   - 予定の対応があり、職員のカレンダーが同じなら、外部の予定を更新する。
 //   - 予定を消すか、職員のカレンダーが替わったなら、対応の外部の予定を消して対応も消す。
@@ -274,9 +344,9 @@ func (x *Exporter) sync(ctx context.Context, e calendar.Export, it item) error {
 			if err != nil {
 				return err
 			}
-			etag, err := w.Update(ctx, lc.CalendarID, it.link.ExternalEventID, ifMatch(e, *it.link), *it.body)
+			updated, err := w.Update(ctx, lc.CalendarID, it.link.ExternalEventID, ifMatch(e, *it.link), *it.body)
 			if err == nil {
-				return x.deps.Calendars.UpdateLink(ctx, it.link.ID, etag, it.version)
+				return x.deps.Calendars.UpdateLink(ctx, it.link.ID, updated.ETag, it.version)
 			}
 			// 書き直すと選んだ予定が外部で消されていたら、対応を消して作り直す。
 			if !e.Overwrite || !errors.Is(err, calendar.ErrEventGone) {
@@ -306,10 +376,12 @@ func (x *Exporter) sync(ctx context.Context, e calendar.Export, it item) error {
 	if err != nil {
 		return err
 	}
-	etag, err := w.Insert(ctx, cal.CalendarID, eventID, *it.body)
+	created, err := w.Insert(ctx, cal.CalendarID, eventID, *it.body)
+	etag := created.ETag
 	if errors.Is(err, calendar.ErrEventExists) {
 		// 前に作った後で対応を書けなかったか、消した予定である。ID が buddy の予定から決まるので、buddy の内容で書き直す。
-		etag, err = w.Update(ctx, cal.CalendarID, eventID, "", *it.body)
+		created, err = w.Update(ctx, cal.CalendarID, eventID, "", *it.body)
+		etag = created.ETag
 	}
 	if err != nil {
 		return err

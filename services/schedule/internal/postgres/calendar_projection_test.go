@@ -2,8 +2,10 @@ package postgres
 
 import (
 	"context"
+	"errors"
 	"io"
 	"log/slog"
+	"reflect"
 	"slices"
 	"testing"
 	"time"
@@ -11,11 +13,13 @@ import (
 	"github.com/jackc/pgx/v5"
 	calendarv3 "google.golang.org/api/calendar/v3"
 
+	"github.com/Fukuemon/buddy/services/schedule/internal/apperr"
 	"github.com/Fukuemon/buddy/services/schedule/internal/civil"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendar"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendarsync"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/organization"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/scheduleview"
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/visit"
 	"github.com/Fukuemon/buddy/services/schedule/internal/gcal"
 	"github.com/Fukuemon/buddy/services/schedule/internal/gcal/gcaltest"
 )
@@ -111,9 +115,17 @@ func TestCalendarProjectionRepository(t *testing.T) {
 		}
 	}
 	// 同じ予定を変えて書き直すと、行は増えない
-	single.Title, single.ETag = "【訪看I2】見本 二葉", `"6"`
+	single.Title, single.ETag, single.GoogleUpdatedAt = "【訪看I2】見本 二葉", `"6"`, timeAt(t, "2099-10-31T08:00:00Z")
 	if err := r.Put(ctx, single); err != nil {
 		t.Fatal(err)
+	}
+	// Google の更新の時刻が行と同じか古い内容は、書き直さない
+	for _, at := range []string{"2099-10-31T08:00:00Z", "2099-10-30T08:00:00Z"} {
+		stale := single
+		stale.Title, stale.ETag, stale.GoogleUpdatedAt = "古い内容", `"7"`, timeAt(t, at)
+		if err := r.Put(ctx, stale); err != nil {
+			t.Fatal(err)
+		}
 	}
 
 	rows := projectionRows(t, ctx, seedOkadaCalendar)
@@ -170,6 +182,44 @@ func TestCalendarProjectionRepository(t *testing.T) {
 	if rows := projectionRows(t, ctx, otherCal); len(rows) != 1 {
 		t.Errorf("ほかのカレンダーの行 = %+v, want 消さない", rows)
 	}
+
+	// 取り消した単発の予定は、取り消しの状態の行に残し、後から届いた取り消す前の内容で戻さない
+	gone := single
+	gone.EventID, gone.GoogleUpdatedAt = "gone", timeAt(t, "2099-10-30T08:00:00Z")
+	cancelledSingle := base
+	cancelledSingle.EventID, cancelledSingle.Status, cancelledSingle.ETag = "gone", scheduleview.ProjectionCancelled, `"8"`
+	cancelledSingle.GoogleUpdatedAt, cancelledSingle.LastEndDate = timeAt(t, "2099-10-31T08:00:00Z"), civilDate(2026, 11, 6)
+	for _, p := range []scheduleview.Projection{gone, cancelledSingle, gone} {
+		if err := r.Put(ctx, p); err != nil {
+			t.Fatal(err)
+		}
+	}
+	// 親の予定の例外の回を、取り消した回の行にする。ほかの親の例外の回は変えない
+	moved := base
+	moved.EventID, moved.RecurringEventID, moved.Title, moved.ETag = "parent_1109", "parent", "動かした回", `"9"`
+	moved.OriginalStart.At, moved.Start.At, moved.End.At = timeAt(t, "2099-11-09T09:00:00+09:00"), timeAt(t, "2099-11-09T14:00:00+09:00"), timeAt(t, "2099-11-09T15:00:00+09:00")
+	moved.LastEndDate = civilDate(2099, 11, 9)
+	keep := moved
+	keep.EventID, keep.RecurringEventID = "other_1109", "other"
+	for _, p := range []scheduleview.Projection{moved, keep} {
+		if err := r.Put(ctx, p); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := r.CancelOccurrences(ctx, seedOkadaCalendar, "parent"); err != nil {
+		t.Fatal(err)
+	}
+	after := projectionRows(t, ctx, seedOkadaCalendar)
+	if got := after["parent_1109"]; got.Status != "cancelled" || got.Title != "" || got.StartAt != nil || !sameTime(got.OriginalStartAt, moved.OriginalStart.At) ||
+		got.LastEndDate == nil || civil.DateOf(*got.LastEndDate) != *moved.LastEndDate {
+		t.Errorf("取り消した親の例外の回の行 = %+v", got)
+	}
+	if got := after["other_1109"]; got.Status != "confirmed" || got.Title != "動かした回" {
+		t.Errorf("ほかの親の例外の回の行 = %+v, want 変えない", got)
+	}
+	if got := projectionRows(t, ctx, seedOkadaCalendar)["gone"]; got.Status != "cancelled" || got.Title != "" || got.StartAt != nil || got.RecurringEventID != nil {
+		t.Errorf("取り消した単発の予定の行 = %+v, want 取り消しのまま", got)
+	}
 }
 
 // TestCalendarSyncProjectsGooglePrimaryCalendar は、組み立てと同じく google_primary の事業所にだけ ProjectionApplier を渡した同期の処理が、
@@ -210,7 +260,7 @@ func TestCalendarSyncProjectsGooglePrimaryCalendar(t *testing.T) {
 			return source, nil
 		},
 	}, calendarsync.Appliers{
-		organization.SourceGooglePrimary: calendarsync.NewProjectionApplier(NewCalendarProjectionRepository(testDB), log),
+		organization.SourceGooglePrimary: calendarsync.NewProjectionApplier(NewCalendarProjectionRepository(testDB), NewCalendarEventRecordRepository(testDB), NewVisitInfoRepository(testDB), log),
 	}, NewTransactor(testDB), 0, log)
 	sync := func() {
 		t.Helper()
@@ -318,6 +368,56 @@ func TestCalendarSyncClaimsByMode(t *testing.T) {
 	}
 }
 
+// TestCalendarProjectionRepositoryTimeUnreadable は、日時を読めない予定の行を、読めた方の日時だけで書いて TimeUnreadable のまま読み、
+// 親を取り消すと例外の回の印を外すことと、日時を読めない予定でない確定の行は、開始が無いと書けないことを確認する（#672）。
+func TestCalendarProjectionRepositoryTimeUnreadable(t *testing.T) {
+	ctx := txContext(t)
+	r := NewCalendarProjectionRepository(testDB)
+	base := scheduleview.Projection{
+		ExternalCalendarID: seedOkadaCalendar, FacilityID: seedGoogleFacility, StaffID: seedOkada, Status: scheduleview.ProjectionConfirmed,
+		Title: "会議", TimeUnreadable: true,
+	}
+	endOnly := base
+	endOnly.EventID, endOnly.ETag = "endonly", `"1"`
+	endOnly.End.At, endOnly.LastEndDate = timeAt(t, "2099-11-04T11:00:00+09:00"), civilDate(2099, 11, 4)
+	neither := base
+	neither.EventID, neither.ETag = "neither", `"2"`
+	occurrence := base
+	occurrence.EventID, occurrence.ETag, occurrence.RecurringEventID = "weekly_1104", `"3"`, "weekly"
+	occurrence.OriginalStart.At, occurrence.LastEndDate = timeAt(t, "2099-11-04T10:00:00+09:00"), civilDate(2099, 11, 4)
+	for _, p := range []scheduleview.Projection{endOnly, neither, occurrence} {
+		if err := r.Put(ctx, p); err != nil {
+			t.Fatalf("Put %s: %v", p.EventID, err)
+		}
+	}
+	if err := r.CancelOccurrences(ctx, seedOkadaCalendar, "weekly"); err != nil {
+		t.Fatal(err)
+	}
+	got, err := r.ListByFacility(ctx, seedGoogleFacility, civil.Date{Year: 2099, Month: 1, Day: 1})
+	if err != nil {
+		t.Fatal(err)
+	}
+	rows := map[string]scheduleview.Projection{}
+	for _, p := range got {
+		rows[p.EventID] = p.Projection
+	}
+	if p := rows["endonly"]; !p.TimeUnreadable || p.Start != (scheduleview.ProjectionTime{}) || !sameTime(p.End.At, endOnly.End.At) {
+		t.Errorf("終了だけを読めた予定の行 = %+v", p)
+	}
+	if p := rows["neither"]; !p.TimeUnreadable || p.Start != (scheduleview.ProjectionTime{}) || p.End != (scheduleview.ProjectionTime{}) || p.LastEndDate != nil {
+		t.Errorf("開始も終了も読めない予定の行 = %+v", p)
+	}
+	if p := rows["weekly_1104"]; p.Status != scheduleview.ProjectionCancelled || p.TimeUnreadable {
+		t.Errorf("親を取り消した、日時を読めない例外の回の行 = %+v, want 取り消した回で TimeUnreadable は false", p)
+	}
+
+	broken := neither
+	broken.EventID, broken.TimeUnreadable = "broken", false
+	if err := r.Put(txContext(t), broken); err == nil {
+		t.Error("開始と終了の無い確定の行を書けた")
+	}
+}
+
 // TestCalendarProjectionRepositoryListByFacility は、予定の表示の読み出しが、事業所の外していないカレンダーの行を職員の名前を付けて読み、
 // from より前に終わった行とほかの事業所の行と外したカレンダーの行を返さないことと、カレンダーの同期の状況を読むことを確認する。
 func TestCalendarProjectionRepositoryListByFacility(t *testing.T) {
@@ -410,5 +510,414 @@ func TestCalendarProjectionRepositoryListByFacility(t *testing.T) {
 	}
 	if syncs, err := r.ListSyncsByFacility(ctx, seedGoogleFacility); err != nil || len(syncs) != 0 {
 		t.Errorf("外したカレンダーの同期の状況 = %+v, err = %v", syncs, err)
+	}
+}
+
+// TestProjectedScheduleIDMatchesGo は、DB の関数 projected_schedule_id と detached_schedule_id が、scheduleview.ProjectedScheduleID と
+// scheduleview.DetachedScheduleID と同じ値を返すことを確認する。
+func TestProjectedScheduleIDMatchesGo(t *testing.T) {
+	if testDB == nil {
+		t.Skip("PostgreSQL を使うテストは -short では動かさない")
+	}
+	ctx := context.Background()
+	for _, in := range [][2]string{
+		{seedOkadaCalendar, "single"},
+		{seedOkadaCalendar, "4bq1t2f8gqv0k7rjtusk3jp8f0"},
+		{"01M3TD000000000000000000CA", "予定_1"},
+		{"", ""},
+	} {
+		var projected, detached string
+		if err := testDB.QueryRow(ctx, "SELECT projected_schedule_id($1, $2), detached_schedule_id($1, $2)", in[0], in[1]).Scan(&projected, &detached); err != nil {
+			t.Fatal(err)
+		}
+		if want := scheduleview.ProjectedScheduleID(in[0], in[1]); projected != want {
+			t.Errorf("projected_schedule_id(%q, %q) = %s, want %s", in[0], in[1], projected, want)
+		}
+		if want := scheduleview.DetachedScheduleID(in[0], in[1]); detached != want || detached == projected {
+			t.Errorf("detached_schedule_id(%q, %q) = %s, want %s", in[0], in[1], detached, want)
+		}
+	}
+}
+
+// TestOccurrenceScheduleIDMatchesGo は、DB の関数 occurrence_schedule_id が、元の開始の時刻（Asia/Tokyo の日付）と終日の元の日付のどちらでも、
+// scheduleview.OccurrenceScheduleID と同じ値を返し、元の開始が無ければ NULL を返すことを確認する。
+func TestOccurrenceScheduleIDMatchesGo(t *testing.T) {
+	if testDB == nil {
+		t.Skip("PostgreSQL を使うテストは -short では動かさない")
+	}
+	ctx := context.Background()
+	day := civil.Date{Year: 2026, Month: 10, Day: 29}
+	at := time.Date(2026, 10, 29, 0, 30, 0, 0, calendar.Tokyo)
+	want := scheduleview.OccurrenceScheduleID(seedOkadaCalendar, "series", day)
+	var byTime, byDate string
+	var none *string
+	if err := testDB.QueryRow(ctx, "SELECT occurrence_schedule_id($1, $2, $3, NULL), occurrence_schedule_id($1, $2, NULL, $4), occurrence_schedule_id($1, $2, NULL, NULL)",
+		seedOkadaCalendar, "series", at, day.Time()).Scan(&byTime, &byDate, &none); err != nil {
+		t.Fatal(err)
+	}
+	if byTime != want || byDate != want || none != nil {
+		t.Errorf("occurrence_schedule_id = %s, %s, %v, want %s, %s, NULL", byTime, byDate, none, want, want)
+	}
+	var detached string
+	if err := testDB.QueryRow(ctx, "SELECT detached_occurrence_schedule_id($1, $2, $3, NULL)", seedOkadaCalendar, "series", at).Scan(&detached); err != nil {
+		t.Fatal(err)
+	}
+	if want := scheduleview.DetachedOccurrenceScheduleID(seedOkadaCalendar, "series", day); detached != want || detached == byTime {
+		t.Errorf("detached_occurrence_schedule_id = %s, want %s", detached, want)
+	}
+}
+
+// TestCalendarProjectionRepositoryDetachedOccurrenceID は、回を移した後に元のカレンダーに残った例外の回の行（記録を持たず、
+// occurrence_schedule_id が移した予定の記録の主キーと重なる行）に、一覧と 1 件の読み出しが detached_occurrence_schedule_id を使い、
+// access がその ID の事業所を引けることを確認する。記録の主キーの ID は、移した予定を指す。
+func TestCalendarProjectionRepositoryDetachedOccurrenceID(t *testing.T) {
+	ctx := txContext(t)
+	r := NewCalendarProjectionRepository(testDB)
+	original := timeAt(t, "2099-11-04T10:00:00+09:00")
+	left := scheduleview.Projection{
+		ExternalCalendarID: seedOkadaCalendar, EventID: "series_20991104T010000Z", FacilityID: seedGoogleFacility, StaffID: seedOkada,
+		RecurringEventID: "series", OriginalStart: scheduleview.ProjectionTime{At: original}, Status: scheduleview.ProjectionConfirmed,
+		Title: "担当者会議", ETag: `"1"`, Start: scheduleview.ProjectionTime{At: original},
+		End: scheduleview.ProjectionTime{At: timeAt(t, "2099-11-04T10:30:00+09:00")}, LastEndDate: civilDate(2099, 11, 4),
+	}
+	moved := left
+	moved.EventID, moved.RecurringEventID, moved.OriginalStart = "moved_single", "", scheduleview.ProjectionTime{}
+	for _, p := range []scheduleview.Projection{left, moved} {
+		if err := r.Put(ctx, p); err != nil {
+			t.Fatal(err)
+		}
+	}
+	day := civil.Date{Year: 2099, Month: 11, Day: 4}
+	occID := scheduleview.OccurrenceScheduleID(seedOkadaCalendar, "series", day)
+	if err := NewCalendarEventRecordRepository(testDB).Create(ctx, calendar.EventRecord{
+		ScheduleID: occID, FacilityID: seedGoogleFacility, ExternalCalendarID: seedOkadaCalendar, ExternalEventID: moved.EventID, Version: 1,
+	}); err != nil {
+		t.Fatal(err)
+	}
+	detachedID := scheduleview.DetachedOccurrenceScheduleID(seedOkadaCalendar, "series", day)
+
+	rows, err := r.ListByFacility(ctx, seedGoogleFacility, civil.Date{Year: 2099, Month: 1, Day: 1})
+	if err != nil {
+		t.Fatal(err)
+	}
+	ids := map[string]string{}
+	for _, p := range rows {
+		ids[p.EventID] = p.ScheduleID
+	}
+	if ids[left.EventID] != detachedID || ids[moved.EventID] != occID {
+		t.Errorf("一覧の予定の ID = %v, want 残った回 %s、移した予定 %s", ids, detachedID, occID)
+	}
+	if got, err := r.GetBySchedule(ctx, seedGoogleFacility, detachedID); err != nil || got.EventID != left.EventID || got.ScheduleID != detachedID {
+		t.Errorf("残った回の 1 件 = %+v, err = %v", got, err)
+	}
+	if got, err := r.GetBySchedule(ctx, seedGoogleFacility, occID); err != nil || got.EventID != moved.EventID {
+		t.Errorf("移した予定の 1 件 = %+v, err = %v", got, err)
+	}
+	if f, err := NewScheduleRepository(testDB).GetFacilityID(ctx, detachedID); err != nil || f != seedGoogleFacility {
+		t.Errorf("GetFacilityID(%s) = %s, %v, want %s", detachedID, f, err, seedGoogleFacility)
+	}
+	if got, err := r.ListRecordedEvents(ctx, seedGoogleFacility, []string{occID, detachedID}); err != nil ||
+		!reflect.DeepEqual(got, map[string]scheduleview.RecordedEvent{occID: {ExternalCalendarID: seedOkadaCalendar, ExternalEventID: moved.EventID}}) {
+		t.Errorf("ListRecordedEvents = %v, %v, want 記録の主キーの %s だけ", got, err, occID)
+	}
+	if got, err := r.ListRecordedEvents(ctx, seedFacility, []string{occID}); err != nil || len(got) != 0 {
+		t.Errorf("ほかの事業所の ListRecordedEvents = %v, %v, want 空", got, err)
+	}
+	pendingID := scheduleview.OccurrenceScheduleID(seedOkadaCalendar, "series", civil.Date{Year: 2099, Month: 11, Day: 11})
+	if err := NewCalendarEventRecordRepository(testDB).Create(ctx, calendar.EventRecord{
+		ScheduleID: pendingID, FacilityID: seedGoogleFacility, ExternalCalendarID: seedOkadaCalendar, ExternalEventID: "series_20991111T010000Z",
+		Pending: &calendar.PendingWrite{Version: 1, State: calendar.PendingUnknown, Deadline: time.Date(2099, 1, 1, 0, 0, 0, 0, time.UTC)},
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if got, err := r.ListRecordedEvents(ctx, seedGoogleFacility, []string{pendingID}); err != nil || len(got) != 0 {
+		t.Errorf("保留の版だけの記録の ListRecordedEvents = %v, %v, want 空", got, err)
+	}
+	own := left
+	own.EventID, own.OriginalStart.At = "series_20991118T010000Z", timeAt(t, "2099-11-18T10:00:00+09:00")
+	if err := r.Put(ctx, own); err != nil {
+		t.Fatal(err)
+	}
+	ownID := scheduleview.OccurrenceScheduleID(seedOkadaCalendar, "series", civil.Date{Year: 2099, Month: 11, Day: 18})
+	noRowID := scheduleview.OccurrenceScheduleID(seedOkadaCalendar, "series", civil.Date{Year: 2099, Month: 11, Day: 25})
+	for _, rec := range []calendar.EventRecord{
+		{ScheduleID: ownID, FacilityID: seedGoogleFacility, ExternalCalendarID: seedOkadaCalendar, ExternalEventID: own.EventID, Version: 1},
+		{ScheduleID: noRowID, FacilityID: seedGoogleFacility, ExternalCalendarID: seedOkadaCalendar, ExternalEventID: "series_20991125T010000Z", Version: 1},
+	} {
+		if err := NewCalendarEventRecordRepository(testDB).Create(ctx, rec); err != nil {
+			t.Fatal(err)
+		}
+	}
+	got, err := r.ListRecordedEvents(ctx, seedGoogleFacility, []string{ownID, noRowID})
+	if want := map[string]scheduleview.RecordedEvent{ownID: {ExternalCalendarID: seedOkadaCalendar, ExternalEventID: own.EventID, RecurringEventID: "series"}}; err != nil || !reflect.DeepEqual(got, want) {
+		t.Errorf("例外の回を指す記録と行の無い記録の ListRecordedEvents = %v, %v, want %v", got, err, want)
+	}
+}
+
+// TestCalendarProjectionRepositoryGetBySchedule は、記録のある予定を記録の予定の ID で、記録の無い予定を一覧での ID で引けることと、
+// 一覧が記録の予定の ID を返すこと、access が両方の ID の事業所を引けることを確認する。
+func TestCalendarProjectionRepositoryGetBySchedule(t *testing.T) {
+	ctx := txContext(t)
+	r := NewCalendarProjectionRepository(testDB)
+	base := scheduleview.Projection{
+		ExternalCalendarID: seedOkadaCalendar, FacilityID: seedGoogleFacility, StaffID: seedOkada, Status: scheduleview.ProjectionConfirmed,
+		Title: "担当者会議", ETag: `"1"`, Start: scheduleview.ProjectionTime{At: timeAt(t, "2099-11-04T10:00:00+09:00")},
+		End: scheduleview.ProjectionTime{At: timeAt(t, "2099-11-04T10:30:00+09:00")}, LastEndDate: civilDate(2099, 11, 4),
+	}
+	google, written := base, base
+	google.EventID, written.EventID = "made_in_google", "written_by_buddy"
+	for _, p := range []scheduleview.Projection{google, written} {
+		if err := r.Put(ctx, p); err != nil {
+			t.Fatal(err)
+		}
+	}
+	const recordID = "01M3TD000000000000000000S7"
+	if err := NewCalendarEventRecordRepository(testDB).Create(ctx, calendar.EventRecord{
+		ScheduleID: recordID, FacilityID: seedGoogleFacility, ExternalCalendarID: seedOkadaCalendar, ExternalEventID: written.EventID, Version: 1,
+	}); err != nil {
+		t.Fatal(err)
+	}
+	googleID := scheduleview.ProjectedScheduleID(seedOkadaCalendar, google.EventID)
+
+	got, err := r.GetBySchedule(ctx, seedGoogleFacility, googleID)
+	if err != nil || got.EventID != google.EventID || got.ScheduleID != googleID || got.StaffName != "岡田 葵" {
+		t.Errorf("記録の無い予定 = %+v, err = %v", got, err)
+	}
+	got, err = r.GetBySchedule(ctx, seedGoogleFacility, recordID)
+	if err != nil || got.EventID != written.EventID || got.ScheduleID != recordID {
+		t.Errorf("記録のある予定 = %+v, err = %v", got, err)
+	}
+	if _, err := r.GetBySchedule(ctx, seedGoogleFacility, scheduleview.ProjectedScheduleID(seedOkadaCalendar, written.EventID)); !errors.Is(err, apperr.ErrNotFound) {
+		t.Errorf("記録のある予定を一覧での ID で引いた: err = %v, want ErrNotFound", err)
+	}
+	if _, err := r.GetBySchedule(ctx, seedFacility, recordID); !errors.Is(err, apperr.ErrNotFound) {
+		t.Errorf("ほかの事業所で引いた: err = %v, want ErrNotFound", err)
+	}
+
+	rows, err := r.ListByFacility(ctx, seedGoogleFacility, civil.Date{Year: 2099, Month: 1, Day: 1})
+	if err != nil {
+		t.Fatal(err)
+	}
+	ids := map[string]string{}
+	for _, p := range rows {
+		ids[p.EventID] = p.ScheduleID
+	}
+	if ids[google.EventID] != googleID || ids[written.EventID] != recordID {
+		t.Errorf("一覧の記録の予定の ID = %v", ids)
+	}
+
+	schedules := NewScheduleRepository(testDB)
+	for _, id := range []string{recordID, googleID} {
+		if f, err := schedules.GetFacilityID(ctx, id); err != nil || f != seedGoogleFacility {
+			t.Errorf("GetFacilityID(%s) = %s, %v, want %s", id, f, err, seedGoogleFacility)
+		}
+	}
+}
+
+// TestCalendarProjectionRepositoryDetachedID は、Google で作った予定を移した後に前のカレンダーに残った予定（記録を持たず、
+// 一覧での ID が移した予定の記録の主キーと重なる予定）に、一覧と 1 件の読み出しが detached_schedule_id を使うことを確認する。
+func TestCalendarProjectionRepositoryDetachedID(t *testing.T) {
+	ctx := txContext(t)
+	r := NewCalendarProjectionRepository(testDB)
+	base := scheduleview.Projection{
+		ExternalCalendarID: seedOkadaCalendar, FacilityID: seedGoogleFacility, StaffID: seedOkada, Status: scheduleview.ProjectionConfirmed,
+		Title: "担当者会議", ETag: `"1"`, Start: scheduleview.ProjectionTime{At: timeAt(t, "2099-11-04T10:00:00+09:00")},
+		End: scheduleview.ProjectionTime{At: timeAt(t, "2099-11-04T10:30:00+09:00")}, LastEndDate: civilDate(2099, 11, 4),
+	}
+	left, moved := base, base
+	left.EventID, moved.EventID = "left_in_google", "moved_by_buddy"
+	for _, p := range []scheduleview.Projection{left, moved} {
+		if err := r.Put(ctx, p); err != nil {
+			t.Fatal(err)
+		}
+	}
+	movedID := scheduleview.ProjectedScheduleID(seedOkadaCalendar, left.EventID)
+	if err := NewCalendarEventRecordRepository(testDB).Create(ctx, calendar.EventRecord{
+		ScheduleID: movedID, FacilityID: seedGoogleFacility, ExternalCalendarID: seedOkadaCalendar, ExternalEventID: moved.EventID, Version: 2,
+	}); err != nil {
+		t.Fatal(err)
+	}
+	leftID := scheduleview.DetachedScheduleID(seedOkadaCalendar, left.EventID)
+
+	rows, err := r.ListByFacility(ctx, seedGoogleFacility, civil.Date{Year: 2099, Month: 1, Day: 1})
+	if err != nil {
+		t.Fatal(err)
+	}
+	ids := map[string]string{}
+	for _, p := range rows {
+		ids[p.EventID] = p.ScheduleID
+	}
+	if ids[left.EventID] != leftID || ids[moved.EventID] != movedID {
+		t.Errorf("一覧での ID = %v, want 残った予定 %s、移した予定 %s", ids, leftID, movedID)
+	}
+	for id, want := range map[string]string{movedID: moved.EventID, leftID: left.EventID} {
+		if got, err := r.GetBySchedule(ctx, seedGoogleFacility, id); err != nil || got.EventID != want || got.ScheduleID != id {
+			t.Errorf("GetBySchedule(%s) = %+v, %v, want %s", id, got, err, want)
+		}
+	}
+	if f, err := NewScheduleRepository(testDB).GetFacilityID(ctx, leftID); err != nil || f != seedGoogleFacility {
+		t.Errorf("GetFacilityID(%s) = %s, %v", leftID, f, err)
+	}
+}
+
+// TestCalendarProjectionRepositoryRecordVisit は、一覧と 1 件の読み出しが、記録の確定した版の訪問の情報を、利用者、主訪問者、同行者、
+// サービスコードの名前と区分を付けて返し、保留の版の訪問の情報だけを持つ記録と、記録の無い行には訪問の情報を付けないことを確認する。
+func TestCalendarProjectionRepositoryRecordVisit(t *testing.T) {
+	ctx := txContext(t)
+	const calID = "01M3TD000000000000000000CC"
+	if err := NewCalendarRepository(testDB).Create(ctx, calendar.ExternalCalendar{
+		ID: calID, FacilityID: seedFacility, StaffID: seedMori, Provider: calendar.ProviderGoogle, CalendarID: "mori@example.com",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	infos := NewVisitInfoRepository(testDB)
+	const confirmedInfo, pendingInfo = "01M3TD000000000000000000V3", "01M3TD000000000000000000V4"
+	for _, i := range []visit.Info{
+		{ID: confirmedInfo, FacilityID: seedFacility, PatientID: seedPatient, AssignedStaffID: seedMori, CompanionID: ptr(seedAoki),
+			ServiceCodeID: seedServiceCode, CategoryIDs: []string{seedEmergency, seedNight}},
+		{ID: pendingInfo, FacilityID: seedFacility, PatientID: seedPatient, AssignedStaffID: seedMori, ServiceCodeID: seedServiceCode},
+	} {
+		if err := infos.Create(ctx, i); err != nil {
+			t.Fatal(err)
+		}
+	}
+	r := NewCalendarProjectionRepository(testDB)
+	base := scheduleview.Projection{
+		ExternalCalendarID: calID, FacilityID: seedFacility, StaffID: seedMori, Status: scheduleview.ProjectionConfirmed,
+		Title: "【訪看I2】見本 一郎", ETag: `"1"`, Start: scheduleview.ProjectionTime{At: timeAt(t, "2099-11-04T10:00:00+09:00")},
+		End: scheduleview.ProjectionTime{At: timeAt(t, "2099-11-04T10:30:00+09:00")}, LastEndDate: civilDate(2099, 11, 4),
+	}
+	confirmed, pending, google := base, base, base
+	confirmed.EventID, pending.EventID, google.EventID = "confirmed", "pending", "google"
+	for _, p := range []scheduleview.Projection{confirmed, pending, google} {
+		if err := r.Put(ctx, p); err != nil {
+			t.Fatal(err)
+		}
+	}
+	records := NewCalendarEventRecordRepository(testDB)
+	const confirmedID, pendingID = "01M3TD000000000000000000S8", "01M3TD000000000000000000S9"
+	for _, rec := range []calendar.EventRecord{
+		{ScheduleID: confirmedID, FacilityID: seedFacility, ExternalCalendarID: calID, ExternalEventID: confirmed.EventID, Version: 1, VisitInfoID: ptr(confirmedInfo)},
+		{ScheduleID: pendingID, FacilityID: seedFacility, ExternalCalendarID: calID, ExternalEventID: pending.EventID,
+			Pending: &calendar.PendingWrite{Version: 1, State: calendar.PendingUnknown, VisitInfoID: ptr(pendingInfo), Deadline: time.Date(2099, 1, 1, 0, 0, 0, 0, time.UTC)}},
+	} {
+		if err := records.Create(ctx, rec); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	rows, err := r.ListByFacility(ctx, seedFacility, civil.Date{Year: 2099, Month: 1, Day: 1})
+	if err != nil {
+		t.Fatal(err)
+	}
+	visits := map[string]*visit.Detail{}
+	for _, p := range rows {
+		visits[p.EventID] = p.Visit
+	}
+	if len(visits) != 3 || visits[pending.EventID] != nil || visits[google.EventID] != nil {
+		t.Errorf("保留の版だけの記録と記録の無い行の訪問の情報 = %+v, %+v, want nil（行 = %d 件）", visits[pending.EventID], visits[google.EventID], len(visits))
+	}
+	v := visits[confirmed.EventID]
+	want := visit.Detail{
+		ID: confirmedInfo, PatientID: seedPatient, PatientName: "見本 一郎", AssignedStaffID: seedMori, AssignedStaffName: "森 健太",
+		CompanionID: ptr(seedAoki), CompanionName: ptr("青木 陽菜"), ServiceCodeID: seedServiceCode, ServiceCode: "訪看I2",
+	}
+	if v == nil || v.ID != want.ID || v.PatientID != want.PatientID || v.PatientName != want.PatientName || v.AssignedStaffID != want.AssignedStaffID ||
+		v.AssignedStaffName != want.AssignedStaffName || v.CompanionID == nil || *v.CompanionID != seedAoki || v.CompanionName == nil ||
+		*v.CompanionName != *want.CompanionName || v.ServiceCodeID != want.ServiceCodeID || v.ServiceCode != want.ServiceCode || len(v.Categories) != 2 {
+		t.Fatalf("確定した版の訪問の情報 = %+v, want %+v と区分 2 つ", v, want)
+	}
+	got, err := r.GetBySchedule(ctx, seedFacility, confirmedID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.Visit == nil || got.Visit.ID != confirmedInfo || got.Visit.CompanionName == nil || len(got.Visit.Categories) != 2 {
+		t.Errorf("1 件の読み出しの訪問の情報 = %+v", got.Visit)
+	}
+	if got, err := r.GetBySchedule(ctx, seedFacility, pendingID); err != nil || got.Visit != nil {
+		t.Errorf("保留の版だけの記録の 1 件の読み出し = %+v, %v, want 訪問の情報の無い行", got.Visit, err)
+	}
+}
+
+// TestCalendarProjectionRepositoryExceptionVisit は、繰り返しの予定の例外の回の行が、回の記録が無いか確定した版を持たなければ
+// 親の予定の記録の訪問の情報を返し、回の記録の確定した版があればその訪問の情報を返すことを確認する。
+// 繰り返しの予定の記録の ID で、GetFacilityID が事業所を引けることも確認する。
+func TestCalendarProjectionRepositoryExceptionVisit(t *testing.T) {
+	ctx := txContext(t)
+	const exCalID = "01M3TD000000000000000000CD"
+	if err := NewCalendarRepository(testDB).Create(ctx, calendar.ExternalCalendar{
+		ID: exCalID, FacilityID: seedFacility, StaffID: seedMori, Provider: calendar.ProviderGoogle, CalendarID: "mori@example.com",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	infos := NewVisitInfoRepository(testDB)
+	const parentInfo, ownInfo, pendingInfo = "01M3TD000000000000000000V5", "01M3TD000000000000000000V6", "01M3TD000000000000000000V7"
+	for _, id := range []string{parentInfo, ownInfo, pendingInfo} {
+		if err := infos.Create(ctx, visit.Info{ID: id, FacilityID: seedFacility, PatientID: seedPatient, AssignedStaffID: seedMori, ServiceCodeID: seedServiceCode}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	r := NewCalendarProjectionRepository(testDB)
+	base := scheduleview.Projection{
+		ExternalCalendarID: exCalID, FacilityID: seedFacility, StaffID: seedMori, Status: scheduleview.ProjectionConfirmed,
+		Title: "【訪看I2】見本 一郎", ETag: `"1"`, Start: scheduleview.ProjectionTime{At: timeAt(t, "2099-11-04T10:00:00+09:00")},
+		End: scheduleview.ProjectionTime{At: timeAt(t, "2099-11-04T10:30:00+09:00")},
+	}
+	parent := base
+	parent.EventID, parent.Recurrence = "series", []string{"RRULE:FREQ=WEEKLY"}
+	rows := []scheduleview.Projection{parent}
+	for _, id := range []string{"series_inherited", "series_own", "series_pending"} {
+		ex := base
+		ex.EventID, ex.RecurringEventID, ex.OriginalStart, ex.LastEndDate = id, parent.EventID, base.Start, civilDate(2099, 11, 4)
+		rows = append(rows, ex)
+	}
+	for _, p := range rows {
+		if err := r.Put(ctx, p); err != nil {
+			t.Fatal(err)
+		}
+	}
+	records := NewCalendarEventRecordRepository(testDB)
+	const parentID, ownID, pendingID = "01M3TD000000000000000000SA", "01M3TD000000000000000000SB", "01M3TD000000000000000000SC"
+	for _, rec := range []calendar.EventRecord{
+		{ScheduleID: parentID, FacilityID: seedFacility, ExternalCalendarID: exCalID, ExternalEventID: "series", Version: 1, VisitInfoID: ptr(parentInfo)},
+		{ScheduleID: ownID, FacilityID: seedFacility, ExternalCalendarID: exCalID, ExternalEventID: "series_own", Version: 1, VisitInfoID: ptr(ownInfo)},
+		{ScheduleID: pendingID, FacilityID: seedFacility, ExternalCalendarID: exCalID, ExternalEventID: "series_pending",
+			Pending: &calendar.PendingWrite{Version: 1, State: calendar.PendingUnknown, VisitInfoID: ptr(pendingInfo), Deadline: time.Date(2099, 1, 1, 0, 0, 0, 0, time.UTC)}},
+	} {
+		if err := records.Create(ctx, rec); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	got, err := r.ListByFacility(ctx, seedFacility, civil.Date{Year: 2099, Month: 1, Day: 1})
+	if err != nil {
+		t.Fatal(err)
+	}
+	visits := map[string]string{}
+	for _, p := range got {
+		if p.Visit != nil {
+			visits[p.EventID] = p.Visit.ID
+		}
+	}
+	want := map[string]string{"series": parentInfo, "series_inherited": parentInfo, "series_own": ownInfo, "series_pending": parentInfo}
+	for id, info := range want {
+		if visits[id] != info {
+			t.Errorf("行 %s の訪問の情報 = %q, want %q", id, visits[id], info)
+		}
+	}
+	inheritedID := scheduleview.OccurrenceScheduleID(exCalID, "series", civil.Date{Year: 2099, Month: 11, Day: 4})
+	inherited, err := r.GetBySchedule(ctx, seedFacility, inheritedID)
+	if err != nil || inherited.EventID != "series_inherited" || inherited.ScheduleID != inheritedID || inherited.Visit == nil || inherited.Visit.ID != parentInfo {
+		t.Errorf("記録の無い例外の回の 1 件 = %+v, %v", inherited.Visit, err)
+	}
+	own, err := r.GetBySchedule(ctx, seedFacility, ownID)
+	if err != nil || own.Visit == nil || own.Visit.ID != ownInfo {
+		t.Errorf("記録のある例外の回の 1 件 = %+v, %v", own.Visit, err)
+	}
+	if f, err := NewScheduleRepository(testDB).GetFacilityID(ctx, inheritedID); err != nil || f != seedFacility {
+		t.Errorf("例外の回の一覧での ID の GetFacilityID = %s, %v, want %s", f, err, seedFacility)
+	}
+	if f, err := NewRecurringScheduleRepository(testDB).GetFacilityID(ctx, parentID); err != nil || f != seedFacility {
+		t.Errorf("繰り返しの予定の記録の GetFacilityID = %s, %v, want %s", f, err, seedFacility)
 	}
 }

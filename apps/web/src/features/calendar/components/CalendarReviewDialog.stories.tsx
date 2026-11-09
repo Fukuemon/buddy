@@ -13,7 +13,6 @@ const meta = {
   args: {
     issue: mockExportIssues[0],
     onOpenSchedule: fn(),
-    onAccept: fn(),
     onRewrite: fn(),
     onClose: fn(),
   },
@@ -22,10 +21,10 @@ const meta = {
 export default meta
 type Story = StoryObj<typeof meta>
 
-/** buddy と Google カレンダーの両方で変わった単発の予定。合わせると書き直すの両方を出す。 */
+/** buddy と Google カレンダーの両方で変わった単発の予定。 */
 export const Default: Story = {}
 
-/** buddy でキャンセルした単発の予定。Google の内容に合わせるは出さない。 */
+/** buddy でキャンセルした単発の予定。書き直すと Google カレンダーの予定を消すことを示す。 */
 export const Cancelled: Story = { args: { issue: mockExportIssues[4] } }
 
 /** 繰り返しの予定。予定を開くは出さない。 */

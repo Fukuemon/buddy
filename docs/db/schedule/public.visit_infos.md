@@ -6,23 +6,24 @@
 
 ## Columns
 
-| Name              | Type                     | Default | Nullable | Children                                                                                                                                                                        | Parents                                                               | Comment  |
-| ----------------- | ------------------------ | ------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- | -------- |
-| id                | text                     |         | false    | [public.visit_info_visit_categories](public.visit_info_visit_categories.md) [public.recurring_schedules](public.recurring_schedules.md) [public.schedules](public.schedules.md) |                                                                       |          |
-| facility_id       | text                     |         | false    | [public.recurring_schedules](public.recurring_schedules.md) [public.schedules](public.schedules.md)                                                                             | [public.users](public.users.md) [public.patients](public.patients.md) |          |
-| patient_id        | text                     |         | false    |                                                                                                                                                                                 | [public.patients](public.patients.md)                                 |          |
-| assigned_staff_id | text                     |         | false    |                                                                                                                                                                                 | [public.users](public.users.md)                                       | 主訪問者 |
-| companion_id      | text                     |         | true     |                                                                                                                                                                                 | [public.users](public.users.md)                                       | 同行者   |
-| service_code_id   | text                     |         | false    |                                                                                                                                                                                 | [public.service_codes](public.service_codes.md)                       |          |
-| created_at        | timestamp with time zone | now()   | false    |                                                                                                                                                                                 |                                                                       |          |
-| updated_at        | timestamp with time zone | now()   | false    |                                                                                                                                                                                 |                                                                       |          |
+| Name              | Type                     | Default | Nullable | Children                                                                                                                                                                                                                                          | Parents                                                               | Comment  |
+| ----------------- | ------------------------ | ------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- | -------- |
+| id                | text                     |         | false    | [public.visit_info_visit_categories](public.visit_info_visit_categories.md) [public.recurring_schedules](public.recurring_schedules.md) [public.schedules](public.schedules.md) [public.calendar_event_records](public.calendar_event_records.md) |                                                                       |          |
+| facility_id       | text                     |         | false    | [public.recurring_schedules](public.recurring_schedules.md) [public.schedules](public.schedules.md) [public.calendar_event_records](public.calendar_event_records.md)                                                                             | [public.users](public.users.md) [public.patients](public.patients.md) |          |
+| patient_id        | text                     |         | false    |                                                                                                                                                                                                                                                   | [public.patients](public.patients.md)                                 |          |
+| assigned_staff_id | text                     |         | false    |                                                                                                                                                                                                                                                   | [public.users](public.users.md)                                       | 主訪問者 |
+| companion_id      | text                     |         | true     |                                                                                                                                                                                                                                                   | [public.users](public.users.md)                                       | 同行者   |
+| service_code_id   | text                     |         | false    |                                                                                                                                                                                                                                                   | [public.service_codes](public.service_codes.md)                       |          |
+| created_at        | timestamp with time zone | now()   | false    |                                                                                                                                                                                                                                                   |                                                                       |          |
+| updated_at        | timestamp with time zone | now()   | false    |                                                                                                                                                                                                                                                   |                                                                       |          |
 
 ## Viewpoints
 
-| Name                                     | Definition                                                                             |
-| ---------------------------------------- | -------------------------------------------------------------------------------------- |
-| [予定と訪問](viewpoint-schedules.md)     | 予定と、訪問のときの訪問の情報と区分、予定の取り消し                                   |
-| [繰り返しの予定](viewpoint-recurring.md) | 繰り返しの予定と規則、回にしない日。繰り返しの 1 回を置き換えた予定は schedules に入る |
+| Name                                                               | Definition                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| ------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| [予定と訪問](viewpoint-schedules.md)                               | 予定と、訪問のときの訪問の情報と区分、予定の取り消し、誤って入れた予定の削除の監査の記録                                                                                                                                                                                                                                                                                                                                                                                                   |
+| [繰り返しの予定](viewpoint-recurring.md)                           | 繰り返しの予定と規則、回にしない日。繰り返しの 1 回を置き換えた予定は schedules に入る                                                                                                                                                                                                                                                                                                                                                                                                     |
+| [外部のカレンダーの取り込みと書き出し](viewpoint-calendar-sync.md) | 職員の外部のカレンダーと同期の状態、外部の予定と予定の対応、取り込みの記録、書き出しの待ち、Google カレンダーの予定の写し（Projection）。書き出しは、予定の正本のモードが buddy_primary の事業所に限る。同期は google_primary の事業所のカレンダーだけを読み、予定の写しに書く。google_primary の事業所で buddy から Google カレンダーに書いた予定は、訪問の情報と書き込みの保留の版を記録に持つ。切り替えは、google_primary の事業所の予定を取り込み、完了で事業所を buddy_primary にする |
 
 ## Constraints
 
@@ -68,6 +69,8 @@ erDiagram
 "public.visit_info_visit_categories" }o--|| "public.visit_infos" : "FOREIGN KEY (visit_info_id) REFERENCES visit_infos(id) ON DELETE CASCADE"
 "public.recurring_schedules" }o--|| "public.visit_infos" : "FOREIGN KEY (facility_id, visit_info_id) REFERENCES visit_infos(facility_id, id)"
 "public.schedules" }o--|| "public.visit_infos" : "FOREIGN KEY (facility_id, visit_info_id) REFERENCES visit_infos(facility_id, id)"
+"public.calendar_event_records" }o--|| "public.visit_infos" : "FOREIGN KEY (facility_id, pending_visit_info_id) REFERENCES visit_infos(facility_id, id)"
+"public.calendar_event_records" }o--|| "public.visit_infos" : "FOREIGN KEY (facility_id, visit_info_id) REFERENCES visit_infos(facility_id, id)"
 "public.visit_infos" }o--|| "public.users" : "FOREIGN KEY (facility_id, assigned_staff_id) REFERENCES users(facility_id, id)"
 "public.visit_infos" }o--|| "public.users" : "FOREIGN KEY (facility_id, companion_id) REFERENCES users(facility_id, id)"
 "public.visit_infos" }o--|| "public.patients" : "FOREIGN KEY (facility_id, patient_id) REFERENCES patients(facility_id, id)"
@@ -108,6 +111,8 @@ erDiagram
   timestamp_with_time_zone updated_at
   integer version
   boolean ends_next_day
+  smallint__ days_of_week
+  smallint interval_weeks
 }
 "public.schedules" {
   text id
@@ -127,6 +132,23 @@ erDiagram
   timestamp_with_time_zone updated_at
   integer version
   boolean ends_next_day
+}
+"public.calendar_event_records" {
+  text schedule_id
+  text facility_id FK
+  text external_calendar_id FK
+  varchar_1024_ external_event_id
+  text visit_info_id FK
+  integer version
+  integer pending_version
+  text pending_state
+  text pending_visit_info_id FK
+  timestamp_with_time_zone pending_deadline
+  timestamp_with_time_zone created_at
+  timestamp_with_time_zone updated_at
+  timestamp_with_time_zone pending_locked_until
+  text pending_external_calendar_id FK
+  varchar_1024_ pending_external_event_id
 }
 "public.users" {
   text id

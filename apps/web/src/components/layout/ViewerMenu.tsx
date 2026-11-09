@@ -9,7 +9,7 @@ export type ViewerMenuProps = {
 
 /**
  * ヘッダーの右端の、ログインした職員のアカウントのボタン。名前の先頭の 1 文字を入れた丸と、名前を並べる。幅 768px 未満では丸だけにする。
- * 押すと、名前とログアウトを入れたメニューをボタンの下に開く。メニューはブラウザの popover で、外を押すか Esc で閉じる。
+ * 押すと、名前、自分の情報の画面へのリンク、ログアウトを入れたメニューをボタンの下に開く。メニューはブラウザの popover で、外を押すか Esc で閉じる。
  */
 export const ViewerMenu = ({ staffName, canLogout }: ViewerMenuProps) => {
   const menuId = useId()
@@ -39,6 +39,13 @@ export const ViewerMenu = ({ staffName, canLogout }: ViewerMenuProps) => {
         popover="auto"
       >
         <span className="text-body whitespace-nowrap">{staffName}</span>
+        <a
+          className="inline-flex min-h-11 items-center text-label text-primary underline underline-offset-4 focus-visible:focus-ring"
+          data-testid="viewer-profile"
+          href="/me"
+        >
+          自分の情報
+        </a>
         {canLogout && (
           <form method="post" action="/auth/logout">
             <Button type="submit" variant="secondary" size="S" data-testid="viewer-logout">

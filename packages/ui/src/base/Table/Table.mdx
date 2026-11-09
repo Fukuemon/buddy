@@ -9,33 +9,20 @@ import * as Stories from './Table.stories'
 
 同じ項目を持つ行を並べる表。`Table.Header`、`Table.Body`、`Table.Row`、`Table.HeaderCell`、`Table.Cell` で組む。
 
-## 使う場面
+## 規則
 
-- 同じ項目を持つ行を並べる
+規則の本文は、デザインシステムの文書の次のセクションにある。
 
-## 使わない場面
-
-- 項目名と値の組（`dl` を使う）
-- 段組みの配置
-
-## Do
-
-- 見出しの行には `Table.HeaderCell` を使う
-
-## Don't
-
-- `Table.Cell` を見出しに使う
-- table の要素の display を変える
+- 使う場面、使わない場面、キーボードの操作: コンポーネントの文書（`packages/ui/design/components.md`）の「コンポーネントの選び方」の `Table` の行
+- 使い方の規則と Do と Don't: コンポーネントの文書の「コンポーネントごとの規則」の「`Table`、`RowTable`」
+- 当たる原則: DESIGN.md の「画面を作るときの原則」の次の ID
+  - `LAYOUT-OVERFLOW`
 
 ## 状態
 
 ### デフォルト
 
 <Canvas of={Stories.Default} />
-
-## キーボードの操作
-
-- コンポーネントの操作はない。見出しのセルは `th` で、表の役割を保つ
 
 ## props
 

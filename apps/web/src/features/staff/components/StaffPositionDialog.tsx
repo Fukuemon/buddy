@@ -18,7 +18,7 @@ export type StaffPositionDialogProps = {
 
 /**
  * 職員の役職を変える入力のダイアログ。今の役職を選んで始め、違う役職を選ぶと変えられる。
- * 役職を変えると権限が新しい役職のものに置き換わり、個別に足した権限が消えるので、主ボタンを危険な操作の色にする。
+ * 役職を変えると権限が新しい役職のものに置き換わり、個別に足した権限が消える。このダイアログが消える権限を示して確定するので、確定のボタンを赤い塗りにする。
  */
 export const StaffPositionDialog = ({
   staff,
@@ -37,6 +37,7 @@ export const StaffPositionDialog = ({
     <InputDialog
       busyLabel="変えています"
       canSubmit={positions !== undefined && selected !== staff.position.id}
+      submitHint={positions === undefined ? undefined : '今の役職と違う役職を選んでください。'}
       error={
         errorMessage === undefined
           ? undefined
@@ -46,7 +47,7 @@ export const StaffPositionDialog = ({
       onClose={onClose}
       onSubmit={() => onSubmit(selected)}
       submitLabel="役職を変える"
-      submitVariant="destructive"
+      submitVariant="danger"
       testIdPrefix="staff-position"
       title="役職を変える"
     >
@@ -71,13 +72,15 @@ export const StaffPositionDialog = ({
           </label>
         ))}
       </fieldset>
-      <p
-        className="border-l-4 border-warning bg-warning-surface px-3 py-2 text-body"
-        data-testid="staff-position-note"
-      >
-        {`役職を変えると、${staff.username} の権限は全て、新しい役職に決まっている権限に置き換わります。`}
-        {added.length > 0 && `個別に足した権限（${added.join('、')}）は消えます。`}
-      </p>
+      {positions !== undefined && (
+        <p
+          className="border-l-4 border-warning bg-warning-surface px-3 py-2 text-body"
+          data-testid="staff-position-note"
+        >
+          {`役職を変えると、${staff.username} の権限は全て、新しい役職に決まっている権限に置き換わります。`}
+          {added.length > 0 && `個別に足した権限（${added.join('、')}）は消えます。`}
+        </p>
+      )}
     </InputDialog>
   )
 }

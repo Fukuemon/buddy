@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vite-plus/test'
 
 import { ApiError } from '../BuddyApi'
 import { createFakeBuddyApi } from './fakeBuddyApi'
+import { FAKE_VIEWER } from './fixtures'
 import { MOCK_FACILITY_ID } from '#/mocks/scheduleData'
 
 const baseDate = new Date(2026, 9, 20)
@@ -41,20 +42,57 @@ describe('createFakeBuddyApi', () => {
     })
     const cancelled = await api.schedules.get(MOCK_FACILITY_ID, 'schedule-6')
     await expect(
-      api.schedules.update(MOCK_FACILITY_ID, 'schedule-6', cancelled),
+      api.schedules.update(MOCK_FACILITY_ID, 'schedule-6', cancelled, null),
     ).rejects.toMatchObject({ status: 409 })
+  })
+
+  it('今日以降の有効な予定を削除し、キャンセル済みと今日より前の予定と google_primary の事業所の削除を拒む', async () => {
+    const api = createFakeBuddyApi({ baseDate })
+    await api.schedules.delete(MOCK_FACILITY_ID, 'schedule-1')
+    await expect(api.schedules.get(MOCK_FACILITY_ID, 'schedule-1')).rejects.toMatchObject({
+      status: 404,
+    })
+    await expect(api.schedules.delete(MOCK_FACILITY_ID, 'schedule-6')).rejects.toMatchObject({
+      status: 409,
+      code: 'conflict',
+    })
+    const past = await api.schedules.create(
+      MOCK_FACILITY_ID,
+      {
+        kind: 'normal',
+        title: '研修',
+        staffId: 'staff-2',
+        startsAt: '2026-10-19T15:00:00+09:00',
+        endsAt: '2026-10-19T16:00:00+09:00',
+        description: '',
+      },
+      'past-1',
+    )
+    await expect(api.schedules.delete(MOCK_FACILITY_ID, past.id)).rejects.toMatchObject({
+      status: 400,
+    })
+    const google = createFakeBuddyApi({ baseDate, sourceMode: 'google_primary' })
+    await expect(google.schedules.delete(MOCK_FACILITY_ID, 'schedule-1')).rejects.toMatchObject({
+      status: 409,
+      code: 'google_primary',
+    })
   })
 
   it('作った予定を取得できる', async () => {
     const api = createFakeBuddyApi({ baseDate })
-    const created = await api.schedules.create(MOCK_FACILITY_ID, {
-      kind: 'normal',
-      title: '研修',
-      staffId: 'staff-2',
-      startsAt: '2026-10-20T15:00:00+09:00',
-      endsAt: '2026-10-20T16:00:00+09:00',
-      description: '',
-    })
+    const created = await api.schedules.create(
+      MOCK_FACILITY_ID,
+      {
+        kind: 'normal',
+        title: '研修',
+        staffId: 'staff-2',
+        startsAt: '2026-10-20T15:00:00+09:00',
+        endsAt: '2026-10-20T16:00:00+09:00',
+        description: '',
+      },
+      'created-1',
+    )
+    expect(created.id).toBe('created-1')
     await expect(api.schedules.get(MOCK_FACILITY_ID, created.id)).resolves.toEqual(created)
   })
 
@@ -92,12 +130,21 @@ describe('createFakeBuddyApi', () => {
     ])
     expect(list.calendarSyncs.map((s) => s.last_status)).toEqual(['succeeded', 'failed', 'never'])
     const [first] = list.schedules
+    await expect(api.schedules.get(MOCK_FACILITY_ID, first.id)).resolves.toEqual(first)
+    await expect(
+      api.schedules.update(MOCK_FACILITY_ID, first.id, first, '"old"'),
+    ).rejects.toMatchObject({ status: 409, code: 'google_event_changed' })
+    const updated = await api.schedules.update(
+      MOCK_FACILITY_ID,
+      first.id,
+      { ...first, title: '変えた予定' },
+      first.etag ?? null,
+    )
+    expect(updated).toMatchObject({ id: first.id, title: '変えた予定', fromGoogleCalendar: true })
+    expect(updated.etag).not.toBe(first.etag)
+    await api.schedules.cancel(MOCK_FACILITY_ID, first.id, '中止', updated.etag ?? null)
     await expect(api.schedules.get(MOCK_FACILITY_ID, first.id)).rejects.toMatchObject({
       status: 404,
-    })
-    await expect(api.schedules.update(MOCK_FACILITY_ID, first.id, first)).rejects.toMatchObject({
-      status: 409,
-      code: 'google_primary',
     })
   })
 
@@ -107,6 +154,8 @@ describe('createFakeBuddyApi', () => {
     expect(cutover).toMatchObject({ status: 'open', range_start: '2026-10-01' })
     expect((await api.schedules.list(MOCK_FACILITY_ID, range)).cutover).toMatchObject({
       range_start: '2026-10-01',
+      started_by: FAKE_VIEWER.staffId,
+      started_by_name: FAKE_VIEWER.staffName,
     })
     await expect(
       api.calendars.preview(MOCK_FACILITY_ID, 'calendar-1', {

@@ -293,14 +293,14 @@ func (r *StaffAssignmentReader) From(ctx context.Context, facilityID, staffID st
 		if err != nil {
 			return staff.Assignments{}, err
 		}
-		out.Schedules[i] = staff.AssignedSchedule{ID: s.ID, Date: civil.DateOf(s.Date), StartTime: start, EndTime: end}
+		out.Schedules[i] = staff.AssignedSchedule{ID: s.ID, Date: civil.DateOf(s.Date), StartTime: start, EndTime: end, EndsNextDay: s.EndsNextDay}
 	}
 	for i, s := range recs {
 		start, end, err := slotTimes(s.StartTime, s.EndTime)
 		if err != nil {
 			return staff.Assignments{}, err
 		}
-		out.RecurringSchedules[i] = staff.AssignedRecurring{ID: s.ID, Date: civil.DateOf(s.Date), EndDate: datePtr(s.EndDate), StartTime: start, EndTime: end}
+		out.RecurringSchedules[i] = staff.AssignedRecurring{ID: s.ID, Date: civil.DateOf(s.Date), EndDate: datePtr(s.EndDate), StartTime: start, EndTime: end, EndsNextDay: s.EndsNextDay}
 	}
 	for i, p := range pats {
 		out.Patients[i] = staff.AssignedPatient{ID: p.ID, Name: p.Name}

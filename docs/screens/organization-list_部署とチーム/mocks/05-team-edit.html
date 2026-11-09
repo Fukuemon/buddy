@@ -22,6 +22,7 @@
               <span class="wf-site-account" aria-label="アカウント（青木 陽菜）" data-open="viewer-menu" data-testid="viewer-menu-open"><span class="wf-site-avatar" aria-hidden="true">青</span><span class="wf-site-account__name">青木 陽菜</span></span>
               <div class="wf-site-viewer-menu" data-panel="viewer-menu" data-panel-dismiss>
                 <span class="wf-text wf-text--s">青木 陽菜</span>
+                <span class="wf-btn wf-btn--text" data-testid="viewer-profile" data-go="../../account-profile_自分の情報/mocks/02-manager.html">自分の情報</span>
                 <span class="wf-btn" data-testid="viewer-logout">ログアウト</span>
               </div>
             </div>
@@ -122,16 +123,15 @@
               <div class="wf-dialog" role="dialog" aria-modal="true" aria-labelledby="organization-list-team-dialog-title" data-testid="organization-list-team-dialog">
                 <div class="wf-dialog__header">
                   <h2 class="wf-dialog__title" id="organization-list-team-dialog-title" data-m="2">チームを編集</h2>
-                  <span class="wf-btn wf-btn--icon" aria-label="閉じる" data-escape data-m="3" data-testid="organization-list-team-close" data-go="01-list.html"><svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><path d="M5 5l10 10M15 5 5 15" fill="none" stroke="currentColor" stroke-width="1.8" /></svg></span>
                 </div>
                 <div class="wf-dialog__body">
                     <div class="wf-field">
                       <span class="wf-label" id="organization-list-team-name-label">名前</span>
-                      <div class="wf-input wf-field__input" role="textbox" aria-labelledby="organization-list-team-name-label" data-m="4" data-testid="organization-list-team-name">東チーム</div>
+                      <div class="wf-input wf-field__input" role="textbox" aria-labelledby="organization-list-team-name-label" data-m="3" data-testid="organization-list-team-name">東チーム</div>
                     </div>
                     <div class="wf-field">
                       <span class="wf-label" id="organization-list-team-color-label">色</span>
-                      <div class="og-colors" role="radiogroup" aria-labelledby="organization-list-team-color-label" data-m="5" data-testid="organization-list-team-color">
+                      <div class="og-colors" role="radiogroup" aria-labelledby="organization-list-team-color-label" data-m="4" data-testid="organization-list-team-color">
                         <span class="wf-radio og-color is-on" data-choice="team-color" data-testid="organization-list-team-color-blue"><span class="wf-dot wf-dot--blue" aria-hidden="true"></span>青</span>
                         <span class="wf-radio og-color" data-choice="team-color" data-testid="organization-list-team-color-orange"><span class="wf-dot wf-dot--orange" aria-hidden="true"></span>オレンジ</span>
                         <span class="wf-radio og-color" data-choice="team-color" data-testid="organization-list-team-color-magenta"><span class="wf-dot wf-dot--magenta" aria-hidden="true"></span>赤紫</span>
@@ -145,8 +145,8 @@
                     </div>
                 </div>
                 <div class="wf-dialog__footer">
-                  <span class="wf-btn" data-m="6" data-testid="organization-list-team-cancel" data-go="01-list.html">キャンセル</span>
-                  <span class="wf-btn wf-btn--primary" data-m="7" data-testid="organization-list-team-submit">保存</span>
+                  <span class="wf-btn" data-escape data-m="5" data-testid="organization-list-team-cancel" data-go="01-list.html">キャンセル</span>
+                  <span class="wf-btn wf-btn--primary" data-m="6" data-testid="organization-list-team-submit">保存</span>
                 </div>
               </div>
             </div>

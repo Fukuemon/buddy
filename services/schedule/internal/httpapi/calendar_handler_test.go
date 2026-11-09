@@ -28,6 +28,9 @@ type fakeCalendars struct {
 	lastDecisions []calendarimport.Decision
 	preview       calendarimport.ImportPreview
 	lastFacility  string
+	lastStaff     string
+	// mine は、Mine が返すカレンダーである。
+	mine *calendar.ExternalCalendar
 	// incomplete は、CompleteCutover が返す満たさない一覧で、nil でなければ IncompleteError を返す。
 	incomplete []calendarimport.Unmet
 }
@@ -39,6 +42,11 @@ func (f *fakeCalendars) ServiceAccount(_ context.Context, facilityID string) (st
 
 func (f *fakeCalendars) List(context.Context, string) ([]calendar.ExternalCalendar, error) {
 	return []calendar.ExternalCalendar{{ID: calendarID, Provider: calendar.ProviderGoogle}}, f.err
+}
+
+func (f *fakeCalendars) Mine(_ context.Context, facilityID, staffID string) (*calendar.ExternalCalendar, error) {
+	f.lastFacility, f.lastStaff = facilityID, staffID
+	return f.mine, f.err
 }
 
 func (f *fakeCalendars) Check(_ context.Context, facilityID, _ string) error {
@@ -79,15 +87,11 @@ func (f *fakeCalendars) RetryExport(_ context.Context, id string) (calendar.Expo
 	return calendar.Export{ID: id, Target: calendar.Target{ScheduleID: scheduleID}, Status: calendar.ExportPending, Overwrite: true}, f.err
 }
 
-func (f *fakeCalendars) AcceptExport(_ context.Context, id string) (calendar.Export, error) {
-	return calendar.Export{ID: id, Target: calendar.Target{ScheduleID: scheduleID}, Status: calendar.ExportSucceeded}, f.err
-}
-
 // app は、f のメソッド値を CalendarApp に入れる。
 func (f *fakeCalendars) app() httpapi.CalendarApp {
 	return httpapi.CalendarApp{
-		ServiceAccount: f.ServiceAccount, List: f.List, Check: f.Check, Link: f.Link, Unlink: f.Unlink, Preview: f.Preview,
-		Import: f.Import, ListExportIssues: f.ListExportIssues, RetryExport: f.RetryExport, AcceptExport: f.AcceptExport,
+		ServiceAccount: f.ServiceAccount, List: f.List, Mine: f.Mine, Check: f.Check, Link: f.Link, Unlink: f.Unlink, Preview: f.Preview,
+		Import: f.Import, ListExportIssues: f.ListExportIssues, RetryExport: f.RetryExport,
 		GetCutover: f.GetCutover, StartCutover: f.StartCutover, CompleteCutover: f.CompleteCutover, CancelCutover: f.CancelCutover,
 	}
 }
@@ -126,13 +130,6 @@ func TestCalendarErrorStatus(t *testing.T) {
 			wantCode: http.StatusConflict, wantBody: "import_running"},
 		{name: "確認が必要な書き出しでない", err: apperr.ConflictCode(calendar.CodeExportNotInReview, "確認が必要な書き出しではありません"), method: http.MethodPost,
 			target: "/v1/calendar_exports/" + calendarID + "/retries", wantCode: http.StatusConflict, wantBody: "export_not_in_review"},
-		{name: "Google カレンダーの内容で解けない", err: apperr.ConflictCode(calendar.CodeExportNotAcceptable, "解けません"), method: http.MethodPost,
-			target: "/v1/calendar_exports/" + calendarID + "/acceptances", wantCode: http.StatusConflict, wantBody: "export_not_acceptable"},
-		{name: "Google カレンダーの予定を読み替えられない", err: apperr.ConflictCode(calendar.CodeExternalChangeUnappliable, "読み替えられません"),
-			method: http.MethodPost, target: "/v1/calendar_exports/" + calendarID + "/acceptances",
-			wantCode: http.StatusConflict, wantBody: "external_change_unappliable"},
-		{name: "解くときにカレンダーを読めない", err: fmt.Errorf("x: %w", calendar.ErrUnreadable), method: http.MethodPost,
-			target: "/v1/calendar_exports/" + calendarID + "/acceptances", wantCode: http.StatusUnprocessableEntity, wantBody: "calendar_unreadable"},
 		{name: "期間が逆", method: http.MethodPost, target: previewTarget, body: `{"range_start":"2026-11-30","range_end":"2026-11-01"}`,
 			wantCode: http.StatusBadRequest, wantBody: "invalid_input"},
 		{name: "取り込み方の値が定義に無い", method: http.MethodPost, target: "/v1/external_calendars/" + calendarID + "/imports",
@@ -156,6 +153,20 @@ func TestCalendarErrorStatus(t *testing.T) {
 }
 
 // サービスアカウントとカレンダーの確認は、パスの事業所のアカウントで行う。
+func TestGetMyExternalCalendar(t *testing.T) {
+	f := &fakeCalendars{mine: &calendar.ExternalCalendar{ID: calendarID, FacilityID: facilityID, StaffID: staffID, Provider: calendar.ProviderGoogle}}
+	rec, body := do(t, newCalendarRouter(f), http.MethodGet, "/v1/me/external_calendar", "")
+	got, _ := body["external_calendar"].(map[string]any)
+	if rec.Code != http.StatusOK || got["id"] != calendarID || f.lastFacility != facilityID || f.lastStaff != staffID {
+		t.Errorf("結び付いた職員: status = %d, body = %s, facility = %q, staff = %q", rec.Code, rec.Body, f.lastFacility, f.lastStaff)
+	}
+
+	rec, body = do(t, newCalendarRouter(&fakeCalendars{}), http.MethodGet, "/v1/me/external_calendar", "")
+	if v, ok := body["external_calendar"]; rec.Code != http.StatusOK || !ok || v != nil {
+		t.Errorf("結び付いていない職員: status = %d, body = %s", rec.Code, rec.Body)
+	}
+}
+
 func TestCalendarAccountOfFacility(t *testing.T) {
 	f := &fakeCalendars{}
 	rec, body := do(t, newCalendarRouter(f), http.MethodGet, "/v1/facilities/"+facilityID+"/calendar_service_account", "")
@@ -177,7 +188,7 @@ func TestPreviewCalendarImport(t *testing.T) {
 		ReviewItems: []calendarimport.ReviewItem{{
 			ExternalEventID: "weekly", Date: d, StartTime: civil.Time{Hour: 10}, EndTime: civil.Time{Hour: 10, Minute: 30},
 			Service: "訪看I2", Client: "利用者B", Reason: calendarimport.ReviewPatientAmbiguous,
-			Recurrence: &schedule.Rule{Frequency: schedule.Weekly, DayOfWeek: &day},
+			Recurrence: &schedule.Rule{Frequency: schedule.Weekly, DaysOfWeek: []int{day}},
 			Candidates: []calendarimport.PatientRef{{ID: "PB1", Name: "利用者B", AssignedStaffName: "職員A"}},
 		}},
 		SkippedItems: []calendarimport.Skipped{{Date: &d, AllDay: true, Reason: calendar.SkipAllDay}},
@@ -191,7 +202,7 @@ func TestPreviewCalendarImport(t *testing.T) {
 		t.Errorf("Range = %+v", f.lastRange)
 	}
 	review := body["needs_review"].([]any)[0].(map[string]any)
-	if review["recurrence"].(map[string]any)["day_of_week"] != float64(2) || review["client_name"] != "利用者B" {
+	if fmt.Sprint(review["recurrence"].(map[string]any)["days_of_week"]) != "[2]" || review["client_name"] != "利用者B" {
 		t.Errorf("needs_review = %v", review)
 	}
 	skipped := body["skipped"].([]any)[0].(map[string]any)
@@ -244,9 +255,10 @@ func TestCalendarExportIssues(t *testing.T) {
 		t.Errorf("書き直し: status = %d, body = %v", rec.Code, body)
 	}
 
-	rec, body = do(t, newCalendarRouter(&fakeCalendars{}), http.MethodPost, "/v1/calendar_exports/"+calendarID+"/acceptances", "")
-	if rec.Code != http.StatusOK || body["status"] != "succeeded" {
-		t.Errorf("Google の内容で解く: status = %d, body = %v", rec.Code, body)
+	// Google の内容で解く操作は消した（ADR-0029）
+	rec, _ = do(t, newCalendarRouter(&fakeCalendars{}), http.MethodPost, "/v1/calendar_exports/"+calendarID+"/acceptances", "")
+	if rec.Code != http.StatusNotFound {
+		t.Errorf("Google の内容で解く: status = %d, want 404", rec.Code)
 	}
 }
 
@@ -341,7 +353,9 @@ func TestCalendarCutover(t *testing.T) {
 		want         string
 	}{
 		{"始める: open の切り替えがある", "/v1/facilities/" + facilityID + "/calendar_cutovers", apperr.ConflictCode(calendarimport.CodeCutoverOpen, "始めています"), "cutover_open"},
+		{"始める: 保留の版がある", "/v1/facilities/" + facilityID + "/calendar_cutovers", apperr.ConflictCode(calendarimport.CodeWritePending, "分かりません"), "google_write_pending"},
 		{"完了: open でない", "/v1/calendar_cutovers/" + cutoverID + "/completions", apperr.ConflictCode(calendarimport.CodeCutoverNotOpen, "終えています"), "cutover_not_open"},
+		{"完了: 保留の版がある", "/v1/calendar_cutovers/" + cutoverID + "/completions", apperr.ConflictCode(calendarimport.CodeWritePending, "分かりません"), "google_write_pending"},
 		{"やめる: open でない", "/v1/calendar_cutovers/" + cutoverID + "/cancel", apperr.ConflictCode(calendarimport.CodeCutoverNotOpen, "終えています"), "cutover_not_open"},
 	} {
 		rec, body := do(t, newCalendarRouter(&fakeCalendars{err: tt.err}), http.MethodPost, tt.target, "")

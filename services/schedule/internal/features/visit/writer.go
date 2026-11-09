@@ -12,7 +12,7 @@ import (
 )
 
 // Input は、訪問の予定に付ける訪問の情報の入力である。
-// KeptPatientID は、利用の終了の利用者のまま保存してよい、予定に既に付けた利用者である。呼ぶ側は、今日より前の予定でだけ指定する（ADR-0021）。
+// KeptPatientID は、利用の終了の利用者のまま保存してよい、予定に既に付けた利用者である。呼ぶ側は、今日より前の予定でだけ指定する（ADR-0005）。
 type Input struct {
 	PatientID       string
 	AssignedStaffID string
@@ -43,7 +43,7 @@ func NewWriter(deps WriterDeps, ids kernel.IDGenerator) Writer {
 }
 
 // Create は、in の参照が facilityID の事業所に属することを確認して訪問の情報を保存し、その ID を返す。
-// 利用者が利用の終了で、in.KeptPatientID と違うときは、入力のエラーを返す（ADR-0021）。
+// 利用者が利用の終了で、in.KeptPatientID と違うときは、入力のエラーを返す（ADR-0005）。
 func (w Writer) Create(ctx context.Context, facilityID string, in Input) (string, error) {
 	pa, err := w.deps.Patients.Get(ctx, in.PatientID)
 	if err != nil {
@@ -105,7 +105,19 @@ func (w Writer) Create(ctx context.Context, facilityID string, in Input) (string
 	return info.ID, nil
 }
 
-// DeleteIfUnused は、どの予定と繰り返しの予定も指していない訪問の情報 id を消す。指されているか、無いときは何もしない。
+// Copy は、保存した訪問の情報 info と同じ内容の訪問の情報を、新しい ID で保存し、その ID を返す。
+// 参照を確認しない。info は保存したときに確認してあり、休職、退職の職員と利用の終了の利用者のまま写すためである。
+// 予定の訪問の情報は予定ごとに 1 つなので、繰り返しの予定の内容のまま回の予定を作る操作が使う。
+func (w Writer) Copy(ctx context.Context, info Info) (string, error) {
+	info.ID = w.ids.NewID()
+	if err := w.deps.Infos.Create(ctx, info); err != nil {
+		return "", err
+	}
+	return info.ID, nil
+}
+
+// DeleteIfUnused は、どの予定、繰り返しの予定、Google カレンダーに書いた予定の記録（calendar.EventRecord）も指していない
+// 訪問の情報 id を消す。指されているか、無いときは何もしない。
 func (w Writer) DeleteIfUnused(ctx context.Context, id string) error {
 	return w.deps.Infos.DeleteIfUnused(ctx, id)
 }

@@ -1,6 +1,6 @@
 import type { CalendarExportIssue } from '#/api/types'
 
-import { formatDateWithWeekday } from './format'
+import { formatDateKey, formatTimeRange } from '#/components/dateFormat'
 
 type ExportIssueState = Pick<
   CalendarExportIssue,
@@ -8,14 +8,28 @@ type ExportIssueState = Pick<
 >
 
 /**
- * 確認が必要な予定の日時を「2026/11/04（水）10:00〜11:00」の形にする。終了が翌日の予定は「22:00〜翌 01:00」にする。
+ * 確認が必要な予定の日時を、日付の側（「2026年11月4日（水）」、繰り返しは「2026年11月3日（火）から毎回」）と
+ * 時刻の範囲（「10:00〜11:00」、終了が翌日なら「22:00〜翌 01:00」）に分けて返す。表が時刻の範囲を 1 行に保つのに使う。
+ */
+export const formatExportIssueDateTimeParts = (issue: CalendarExportIssue) => {
+  const date = formatDateKey(issue.date)
+  return {
+    date: issue.recurring_schedule_id === null ? date : `${date}から毎回`,
+    time: formatTimeRange(
+      issue.start_time,
+      issue.end_time,
+      issue.ends_next_day ? 'nextDay' : 'sameDay',
+    ),
+  }
+}
+
+/**
+ * 確認が必要な予定の日時を「2026年11月4日（水） 10:00〜11:00」の形にする。終了が翌日の予定は「22:00〜翌 01:00」にする。
  * 繰り返しの予定は、最初の回の日付に「から毎回」を付ける。
  */
 export const formatExportIssueDateTime = (issue: CalendarExportIssue) => {
-  const nextDay = issue.ends_next_day ? '翌 ' : ''
-  const time = `${issue.start_time.slice(0, 5)}〜${nextDay}${issue.end_time.slice(0, 5)}`
-  const date = formatDateWithWeekday(issue.date)
-  return issue.recurring_schedule_id === null ? `${date}${time}` : `${date}から毎回 ${time}`
+  const { date, time } = formatExportIssueDateTimeParts(issue)
+  return `${date} ${time}`
 }
 
 /**
@@ -55,7 +69,7 @@ export const exportIssueReason = (issue: ExportIssueState) => {
 
 /**
  * 予定の確認のダイアログで理由の文に続ける、ボタンで足りないときに職員が次にすることの文。無い理由は undefined を返す。
- * ボタンが示す操作（合わせる、書き直す、予定を開く）は繰り返さない。
+ * ボタンが示す操作（書き直す、予定を開く）は繰り返さない。
  */
 export const exportIssueReasonDetail = (issue: ExportIssueState) => {
   switch (issue.error_code) {

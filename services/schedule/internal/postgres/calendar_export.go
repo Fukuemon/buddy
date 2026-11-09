@@ -10,11 +10,10 @@ import (
 	"github.com/Fukuemon/buddy/services/schedule/internal/civil"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendar"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendarexport"
-	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendarsync"
 	"github.com/Fukuemon/buddy/services/schedule/internal/postgres/sqlcgen"
 )
 
-// CalendarExportRepository は、calendarsync.ExportRepository と calendarexport.ExportRepository を実装する。
+// CalendarExportRepository は、calendarexport.ExportRepository を実装する。
 type CalendarExportRepository struct{ conn }
 
 // NewCalendarExportRepository は CalendarExportRepository を作る。
@@ -22,10 +21,7 @@ func NewCalendarExportRepository(pool *pgxpool.Pool) *CalendarExportRepository {
 	return &CalendarExportRepository{conn{pool}}
 }
 
-var (
-	_ calendarsync.ExportRepository   = (*CalendarExportRepository)(nil)
-	_ calendarexport.ExportRepository = (*CalendarExportRepository)(nil)
-)
+var _ calendarexport.ExportRepository = (*CalendarExportRepository)(nil)
 
 func toExport(e sqlcgen.CalendarExport) calendar.Export {
 	out := calendar.Export{
@@ -34,6 +30,7 @@ func toExport(e sqlcgen.CalendarExport) calendar.Export {
 			FacilityID:          e.FacilityID,
 			ScheduleID:          deref(e.ScheduleID),
 			RecurringScheduleID: deref(e.RecurringScheduleID),
+			DeletedScheduleID:   deref(e.DeletedScheduleID),
 		},
 		Status:        calendar.ExportStatus(e.Status),
 		Revision:      int(e.Revision),
@@ -53,6 +50,11 @@ func toExport(e sqlcgen.CalendarExport) calendar.Export {
 
 // Enqueue は、t の終わっていない待ちを積み直すか、ID が id の待ちを足す。
 func (r *CalendarExportRepository) Enqueue(ctx context.Context, id string, t calendar.Target) error {
+	if t.DeletedScheduleID != "" {
+		return translate("enqueue deleted schedule export", r.q(ctx).EnqueueDeletedScheduleExport(ctx, sqlcgen.EnqueueDeletedScheduleExportParams{
+			ID: id, FacilityID: t.FacilityID, DeletedScheduleID: &t.DeletedScheduleID,
+		}))
+	}
 	if t.ScheduleID != "" {
 		return translate("enqueue schedule export", r.q(ctx).EnqueueScheduleExport(ctx, sqlcgen.EnqueueScheduleExportParams{
 			ID: id, FacilityID: t.FacilityID, ScheduleID: &t.ScheduleID,
@@ -171,44 +173,16 @@ func (r *CalendarExportRepository) Open(ctx context.Context, t calendar.Target) 
 		e   sqlcgen.CalendarExport
 		err error
 	)
-	if t.ScheduleID != "" {
+	switch {
+	case t.ScheduleID != "":
 		e, err = r.q(ctx).GetOpenScheduleExport(ctx, &t.ScheduleID)
-	} else {
+	default:
 		e, err = r.q(ctx).GetOpenRecurringScheduleExport(ctx, &t.RecurringScheduleID)
 	}
 	if err != nil {
 		return calendar.Export{}, translate("get open calendar export", err)
 	}
 	return toExport(e), nil
-}
-
-// Hold は、t の終わっていない待ちを、理由が code の確認が必要な待ちにするか、ID が id の確認が必要な待ちを足す。
-func (r *CalendarExportRepository) Hold(ctx context.Context, id string, t calendar.Target, code calendar.ExportErrorCode) error {
-	c := string(code)
-	if t.ScheduleID != "" {
-		return translate("hold schedule export", r.q(ctx).HoldScheduleExport(ctx, sqlcgen.HoldScheduleExportParams{
-			ID: id, FacilityID: t.FacilityID, ScheduleID: &t.ScheduleID, ErrorCode: &c,
-		}))
-	}
-	return translate("hold recurring schedule export", r.q(ctx).HoldRecurringScheduleExport(ctx, sqlcgen.HoldRecurringScheduleExportParams{
-		ID: id, FacilityID: t.FacilityID, RecurringScheduleID: &t.RecurringScheduleID, ErrorCode: &c,
-	}))
-}
-
-// Resolve は、確認が必要な待ち id を終えた待ちにする。確認が必要な待ちでないか、Revision が revision でなければ apperr.ErrConflict を返す。
-func (r *CalendarExportRepository) Resolve(ctx context.Context, id string, revision int) error {
-	rev, err := int32Of(revision)
-	if err != nil {
-		return err
-	}
-	n, err := r.q(ctx).ResolveCalendarExport(ctx, sqlcgen.ResolveCalendarExportParams{ID: id, Revision: rev})
-	if err != nil {
-		return translate("resolve calendar export", err)
-	}
-	if n == 0 {
-		return apperr.ErrConflict
-	}
-	return nil
 }
 
 // Backlog は、書いていない待ちの数と、最も古い待ちを足してからの時間を返す。

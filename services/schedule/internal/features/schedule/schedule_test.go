@@ -149,18 +149,28 @@ func TestNewRule(t *testing.T) {
 		wantErr bool
 	}{
 		{name: "毎週で曜日なし", rule: schedule.Rule{Frequency: schedule.Weekly}},
-		{name: "毎週で曜日", rule: schedule.Rule{Frequency: schedule.Weekly, DayOfWeek: ptr(3)}},
+		{name: "毎週で曜日", rule: schedule.Rule{Frequency: schedule.Weekly, DaysOfWeek: []int{3}}},
 		{name: "毎週で日", rule: schedule.Rule{Frequency: schedule.Weekly, DayOfMonth: ptr(3)}, wantErr: true},
 		{name: "毎月で日", rule: schedule.Rule{Frequency: schedule.Monthly, DayOfMonth: ptr(31)}},
 		{name: "毎月で週と曜日", rule: schedule.Rule{Frequency: schedule.Monthly, WeekOfMonth: ptr(2), DayOfWeek: ptr(1)}},
 		{name: "毎月で週だけ", rule: schedule.Rule{Frequency: schedule.Monthly, WeekOfMonth: ptr(2)}, wantErr: true},
 		{name: "毎月で曜日だけ", rule: schedule.Rule{Frequency: schedule.Monthly, DayOfWeek: ptr(2)}, wantErr: true},
 		{name: "毎月で日と曜日", rule: schedule.Rule{Frequency: schedule.Monthly, DayOfMonth: ptr(1), DayOfWeek: ptr(2)}, wantErr: true},
-		{name: "曜日が 0", rule: schedule.Rule{Frequency: schedule.Weekly, DayOfWeek: ptr(0)}, wantErr: true},
-		{name: "曜日が 8", rule: schedule.Rule{Frequency: schedule.Weekly, DayOfWeek: ptr(8)}, wantErr: true},
+		{name: "曜日が 0", rule: schedule.Rule{Frequency: schedule.Weekly, DaysOfWeek: []int{0}}, wantErr: true},
+		{name: "曜日が 8", rule: schedule.Rule{Frequency: schedule.Weekly, DaysOfWeek: []int{8}}, wantErr: true},
 		{name: "日が 32", rule: schedule.Rule{Frequency: schedule.Monthly, DayOfMonth: ptr(32)}, wantErr: true},
 		{name: "週が 6", rule: schedule.Rule{Frequency: schedule.Monthly, WeekOfMonth: ptr(6), DayOfWeek: ptr(1)}, wantErr: true},
 		{name: "頻度が不明", rule: schedule.Rule{Frequency: "daily"}, wantErr: true},
+		{name: "毎週の複数の曜日", rule: schedule.Rule{Frequency: schedule.Weekly, DaysOfWeek: []int{4, 1}}},
+		{name: "毎週の 7 つの曜日", rule: schedule.Rule{Frequency: schedule.Weekly, DaysOfWeek: []int{1, 2, 3, 4, 5, 6, 7}}},
+		{name: "毎週の空の曜日", rule: schedule.Rule{Frequency: schedule.Weekly, DaysOfWeek: []int{}}, wantErr: true},
+		{name: "毎週の重なる曜日", rule: schedule.Rule{Frequency: schedule.Weekly, DaysOfWeek: []int{1, 1}}, wantErr: true},
+		{name: "毎週の間隔が 52", rule: schedule.Rule{Frequency: schedule.Weekly, Interval: 52}},
+		{name: "毎週の間隔が 53", rule: schedule.Rule{Frequency: schedule.Weekly, Interval: 53}, wantErr: true},
+		{name: "毎週の間隔が負", rule: schedule.Rule{Frequency: schedule.Weekly, Interval: -1}, wantErr: true},
+		{name: "毎週で 1 つの曜日の項目", rule: schedule.Rule{Frequency: schedule.Weekly, DayOfWeek: ptr(1)}, wantErr: true},
+		{name: "毎月で曜日の並び", rule: schedule.Rule{Frequency: schedule.Monthly, DaysOfWeek: []int{1}}, wantErr: true},
+		{name: "毎月で間隔", rule: schedule.Rule{Frequency: schedule.Monthly, Interval: 2}, wantErr: true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -190,8 +200,8 @@ func TestRecurringHasOccurrenceOn(t *testing.T) {
 	}{
 		{name: "毎週のデフォルトは最初の日の曜日", rule: schedule.Rule{Frequency: schedule.Weekly}, day: "2026-10-12", want: true},
 		{name: "毎週のデフォルトで別の曜日", rule: schedule.Rule{Frequency: schedule.Weekly}, day: "2026-10-13", want: false},
-		{name: "毎週の水曜", start: "2026-10-07", rule: schedule.Rule{Frequency: schedule.Weekly, DayOfWeek: ptr(3)}, day: "2026-10-14", want: true},
-		{name: "毎週の日曜は 7", start: "2026-10-11", rule: schedule.Rule{Frequency: schedule.Weekly, DayOfWeek: ptr(7)}, day: "2026-10-18", want: true},
+		{name: "毎週の水曜", start: "2026-10-07", rule: schedule.Rule{Frequency: schedule.Weekly, DaysOfWeek: []int{3}}, day: "2026-10-14", want: true},
+		{name: "毎週の日曜は 7", start: "2026-10-11", rule: schedule.Rule{Frequency: schedule.Weekly, DaysOfWeek: []int{7}}, day: "2026-10-18", want: true},
 		{name: "最初の日より前", rule: schedule.Rule{Frequency: schedule.Weekly}, day: "2026-09-28", want: false},
 		{name: "終了日の当日", rule: schedule.Rule{Frequency: schedule.Weekly, EndDate: ptr(civil.Date{Year: 2026, Month: 10, Day: 19})}, day: "2026-10-19", want: true},
 		{name: "終了日より後", rule: schedule.Rule{Frequency: schedule.Weekly, EndDate: ptr(civil.Date{Year: 2026, Month: 10, Day: 19})}, day: "2026-10-26", want: false},
@@ -200,6 +210,18 @@ func TestRecurringHasOccurrenceOn(t *testing.T) {
 		{name: "毎月の 31 日で 30 日までの月", start: "2026-10-31", rule: schedule.Rule{Frequency: schedule.Monthly, DayOfMonth: ptr(31)}, day: "2026-11-30", want: false},
 		{name: "毎月の第 2 火曜", start: "2026-10-13", rule: schedule.Rule{Frequency: schedule.Monthly, WeekOfMonth: ptr(2), DayOfWeek: ptr(2)}, day: "2026-11-10", want: true},
 		{name: "毎月の第 2 火曜で第 1 火曜", start: "2026-10-13", rule: schedule.Rule{Frequency: schedule.Monthly, WeekOfMonth: ptr(2), DayOfWeek: ptr(2)}, day: "2026-11-03", want: false},
+		{name: "毎週の月曜と木曜の木曜", rule: schedule.Rule{Frequency: schedule.Weekly, DaysOfWeek: []int{1, 4}}, day: "2026-10-08", want: true},
+		{name: "毎週の月曜と木曜の水曜", rule: schedule.Rule{Frequency: schedule.Weekly, DaysOfWeek: []int{1, 4}}, day: "2026-10-07", want: false},
+		{name: "隔週の月曜の次の週", rule: schedule.Rule{Frequency: schedule.Weekly, Interval: 2}, day: "2026-10-12", want: false},
+		{name: "隔週の月曜の 2 週後", rule: schedule.Rule{Frequency: schedule.Weekly, Interval: 2}, day: "2026-10-19", want: true},
+		{name: "隔週の月曜と木曜の次の週の木曜", rule: schedule.Rule{Frequency: schedule.Weekly, DaysOfWeek: []int{1, 4}, Interval: 2}, day: "2026-10-15", want: false},
+		{name: "隔週の月曜と木曜の 2 週後の木曜", rule: schedule.Rule{Frequency: schedule.Weekly, DaysOfWeek: []int{1, 4}, Interval: 2}, day: "2026-10-22", want: true},
+		{name: "日曜に始まる週で、土曜の翌日の日曜は次の週", start: "2026-10-10", rule: schedule.Rule{Frequency: schedule.Weekly, DaysOfWeek: []int{6, 7}, Interval: 2}, day: "2026-10-11", want: false},
+		{name: "日曜に始まる週で、3 週目の日曜", start: "2026-10-10", rule: schedule.Rule{Frequency: schedule.Weekly, DaysOfWeek: []int{6, 7}, Interval: 2}, day: "2026-10-18", want: true},
+		{name: "日曜に始まる週で、3 週目の土曜", start: "2026-10-10", rule: schedule.Rule{Frequency: schedule.Weekly, DaysOfWeek: []int{6, 7}, Interval: 2}, day: "2026-10-24", want: true},
+		{name: "3 週ごとの 3 週後", rule: schedule.Rule{Frequency: schedule.Weekly, Interval: 3}, day: "2026-10-26", want: true},
+		{name: "3 週ごとの 2 週後", rule: schedule.Rule{Frequency: schedule.Weekly, Interval: 3}, day: "2026-10-19", want: false},
+		{name: "52 週ごとの年をまたいだ回", rule: schedule.Rule{Frequency: schedule.Weekly, Interval: 52}, day: "2027-10-04", want: true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -245,8 +267,8 @@ func TestNewRecurringFirstDate(t *testing.T) {
 		wantErr bool
 	}{
 		{name: "毎週のデフォルト", rule: schedule.Rule{Frequency: schedule.Weekly}},
-		{name: "毎週の火曜", rule: schedule.Rule{Frequency: schedule.Weekly, DayOfWeek: ptr(2)}},
-		{name: "毎週の月曜", rule: schedule.Rule{Frequency: schedule.Weekly, DayOfWeek: ptr(1)}, wantErr: true},
+		{name: "毎週の火曜", rule: schedule.Rule{Frequency: schedule.Weekly, DaysOfWeek: []int{2}}},
+		{name: "毎週の月曜", rule: schedule.Rule{Frequency: schedule.Weekly, DaysOfWeek: []int{1}}, wantErr: true},
 		{name: "毎月のデフォルト", rule: schedule.Rule{Frequency: schedule.Monthly}},
 		{name: "毎月の 6 日", rule: schedule.Rule{Frequency: schedule.Monthly, DayOfMonth: ptr(6)}},
 		{name: "毎月の 7 日", rule: schedule.Rule{Frequency: schedule.Monthly, DayOfMonth: ptr(7)}, wantErr: true},

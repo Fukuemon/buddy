@@ -1,5 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
+import { createMemoryHistory } from '@tanstack/react-router'
 
+import { ApiError, type BuddyApi } from '#/api/BuddyApi'
 import { createFakeBuddyApi } from '#/api/fake/fakeBuddyApi'
 import {
   failingBuddyApi,
@@ -10,7 +12,47 @@ import {
 } from '#/storybook/withAppRouter'
 
 import { ScheduleEditModalContainer } from './ScheduleEditModalContainer'
-import { selfEditViewer } from './storyData'
+import { cutoverBuddyApi, selfEditViewer } from './storyData'
+
+/**
+ * google_primary の事業所で、編集を開いた後に Google カレンダーで予定が 1 時間遅れたフェイクの API。
+ * 最初の保存を 409（google_event_changed）で拒み、2 回目からの読み出しは、遅れた日時と新しい etag の予定を返す。
+ */
+const changedInGoogleApi = (): BuddyApi => {
+  const api = createFakeBuddyApi({ sourceMode: 'google_primary' })
+  let reads = 0
+  let rejected = false
+  const later = (dateTime: string) => new Date(Date.parse(dateTime) + 60 * 60 * 1000).toISOString()
+  return {
+    ...api,
+    schedules: {
+      ...api.schedules,
+      get: async (facilityId, scheduleId) => {
+        reads += 1
+        const schedule = await api.schedules.get(facilityId, scheduleId)
+        if (reads === 1) return schedule
+        return {
+          ...schedule,
+          startsAt: later(schedule.startsAt),
+          endsAt: later(schedule.endsAt),
+          etag: '"etag-latest"',
+        }
+      },
+      update: async (facilityId, scheduleId, input) => {
+        if (!rejected) {
+          rejected = true
+          throw new ApiError(
+            409,
+            'Google カレンダーで予定が変わっていました。最新の予定を確認してください',
+            [],
+            'google_event_changed',
+          )
+        }
+        return { ...(await api.schedules.get(facilityId, scheduleId)), ...input }
+      },
+    },
+  }
+}
 
 const route = (appRouter: Partial<AppRouterParameters>) => ({
   appRouter: {
@@ -33,6 +75,11 @@ export default meta
 type Story = StoryObj<typeof meta>
 
 export const Visit: Story = {}
+
+/** 予定のサービスコード（訪看I4）が、予定の利用者の久保 秋代のサービスコード（訪看I2）と違う訪問の予定。開くと訪看I4 を選んでいる。 */
+export const VisitWithOtherServiceCode: Story = {
+  parameters: route({ url: '/schedule/schedule-4/edit' }),
+}
 
 export const Normal: Story = {
   parameters: route({ url: '/schedule/schedule-3/edit' }),
@@ -60,10 +107,60 @@ export const Forbidden: Story = {
 
 export const NotFound: Story = { parameters: route({ url: '/schedule/missing/edit' }) }
 
-/** Google カレンダーを予定の正本にする事業所で URL から開いた。フォームの代わりに、Google カレンダーで変更する案内を出す。 */
+/** Google カレンダーを予定の正本にする事業所の予定。同じフォームを出し、編集を開いたときの etag で保存する。 */
 export const GooglePrimary: Story = {
   parameters: route({
     url: '/schedule/gcal-schedule-1/edit',
     api: createFakeBuddyApi({ sourceMode: 'google_primary' }),
   }),
+}
+
+/** カレンダーで予定と別の日を開いた後の、Google カレンダーの予定の編集。保存すると、予定の日のカレンダーで詳細を開く。 */
+export const GooglePrimaryFromOtherDay: Story = {
+  parameters: route({
+    url: '/schedule/gcal-schedule-1/edit?view=day&date=2020-01-06',
+    api: createFakeBuddyApi({ sourceMode: 'google_primary' }),
+    history: createMemoryHistory({
+      initialEntries: ['/schedule/gcal-schedule-1/edit?view=day&date=2020-01-06'],
+    }),
+  }),
+}
+
+/** 編集を開いた後に Google カレンダーで予定が変わった。保存すると、入力を残したまま最新の予定を出す。 */
+export const GooglePrimaryChangedInGoogle: Story = {
+  parameters: route({ url: '/schedule/gcal-schedule-1/edit', api: changedInGoogleApi() }),
+}
+
+/** タイトルの利用者が見つからない、確認が必要な Google カレンダーの予定。予定の種類のタブを出し、訪問にして訪問の情報を足せる。 */
+export const GooglePrimaryNeedsReview: Story = {
+  parameters: route({
+    url: '/schedule/gcal-review-1/edit',
+    api: createFakeBuddyApi({ sourceMode: 'google_primary' }),
+  }),
+}
+
+/** 繰り返しの規則を buddy で表せない Google カレンダーの予定。フォームを出さずに、変えられないことを出す。 */
+export const GooglePrimaryRecurrenceUnsupported: Story = {
+  parameters: route({
+    url: '/schedule/gcal-review-3/edit',
+    api: createFakeBuddyApi({ sourceMode: 'google_primary' }),
+  }),
+}
+
+/** buddy_primary の事業所の予定。予定の一覧を読まないことと、事業所を読めないときを確かめるテストが、API を spy にする。 */
+export const BuddyPrimary: Story = {
+  parameters: route({ url: '/schedule/schedule-4/edit', api: createFakeBuddyApi() }),
+}
+
+/** google_primary の事業所で、切り替えていないときに開いた。開いた後に切り替えを始めるテストが、この story の API を書き換える。 */
+export const GooglePrimaryBeforeCutover: Story = {
+  parameters: route({
+    url: '/schedule/gcal-schedule-1/edit',
+    api: createFakeBuddyApi({ sourceMode: 'google_primary', calendarSyncs: [] }),
+  }),
+}
+
+/** 予定の正本を buddy に切り替えている事業所で、URL を直に開いた。フォームと保存のボタンを出さずに、切り替えていることを出す。 */
+export const Cutover: Story = {
+  parameters: route({ url: '/schedule/gcal-schedule-1/edit', api: cutoverBuddyApi() }),
 }

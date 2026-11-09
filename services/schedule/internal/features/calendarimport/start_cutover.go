@@ -15,7 +15,7 @@ import (
 	"github.com/Fukuemon/buddy/services/schedule/internal/tx"
 )
 
-// StartCutover は、事業所の予定の正本を Google カレンダーから buddy に切り替える作業（切り替え）を始める（ADR-0035）。
+// StartCutover は、事業所の予定の正本を Google カレンダーから buddy に切り替える作業（切り替え）を始める（ADR-0031）。
 type StartCutover struct {
 	facilities FacilityModes
 	syncs      scheduleview.CalendarSyncs
@@ -37,8 +37,8 @@ func NewStartCutover(facilities FacilityModes, syncs scheduleview.CalendarSyncs,
 // Do は、事業所 facilityID の open の切り替えを作って返す。取り込みの期間は、今の Asia/Tokyo の月の初日から先の全てにする。
 // 事業所の行を排他のロックで取り、事業所が Google カレンダーを予定の正本にしていて、外していない全てのカレンダーの最後の同期が
 // 成功していることを確認する。事業所が buddy を予定の正本にしているとき（code は CodeCutoverNotGooglePrimary）、
-// open の切り替えがあるとき（CodeCutoverOpen）、最後の同期が成功していないカレンダーがあるとき（CodeCutoverSyncNotReady）は
-// apperr.ErrConflict を返す。事業所が無いときは apperr.ErrNotFound を返す。
+// open の切り替えがあるとき（CodeCutoverOpen）、予定の API の保留の版がある記録があるとき（CodeWritePending）、
+// 最後の同期が成功していないカレンダーがあるとき（CodeCutoverSyncNotReady）は apperr.ErrConflict を返す。事業所が無いときは apperr.ErrNotFound を返す。
 func (u StartCutover) Do(ctx context.Context, facilityID string) (Cutover, error) {
 	if err := u.guard(ctx); err != nil {
 		return Cutover{}, err
@@ -62,6 +62,9 @@ func (u StartCutover) Do(ctx context.Context, facilityID string) (Cutover, error
 		if _, err := u.cutovers.FindOpen(ctx, facilityID); err == nil {
 			return errCutoverAlreadyOpen
 		} else if !errors.Is(err, apperr.ErrNotFound) {
+			return err
+		}
+		if err := requireNoPendingWrites(ctx, u.cutovers, facilityID, "始め"); err != nil {
 			return err
 		}
 		if err := u.requireSynced(ctx, facilityID); err != nil {

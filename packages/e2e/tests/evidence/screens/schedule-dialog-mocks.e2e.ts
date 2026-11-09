@@ -8,7 +8,7 @@ const EDIT = 'schedule-edit_予定の編集/mocks/03-initial.html'
 const DETAIL = 'schedule-detail_予定の詳細/mocks/01-visit.html'
 
 /**
- * right の左端が left の右端より右に来るまで待つ。× がタイトルの右にあることと、フッターのボタンの順を確認する。
+ * right の左端が left の右端より右に来るまで待つ。フッターのボタンの順を確認する。
  * 座標が読めないうちは負の値を返し、描き終えるまで待ち続ける。
  */
 const expectRightOf = async (left: Locator, right: Locator) => {
@@ -26,7 +26,7 @@ test.describe('予定のダイアログの画面仕様書のモック', () => {
   for (const variant of EVIDENCE_VARIANTS) {
     const prefix = variant.label ? `${variant.label}: ` : ''
 
-    test(`${prefix}予定の作成のモックを開いた場合、× が右上にあり、フッターのキャンセルで予定のカレンダーへ戻ること`, async ({
+    test(`${prefix}予定の作成のモックを開いた場合、× が無く、Escape で予定のカレンダーへ戻ること`, async ({
       browser,
     }) => {
       await recordPrEvidence(
@@ -34,7 +34,7 @@ test.describe('予定のダイアログの画面仕様書のモック', () => {
         {
           name: 'schedule-new-mock-header-footer',
           title:
-            '予定の作成は、タイトルを左、× を右上に置き、フッターの右に「キャンセル」と「作成」を置く',
+            '予定の作成は、タイトルを左に置き、× を置かず、フッターの右に「キャンセル」と「作成」を置く',
           actor: 'ログインなし',
           variant,
         },
@@ -44,25 +44,29 @@ test.describe('予定のダイアログの画面仕様書のモック', () => {
         async ({ page, step, check }) => {
           await page.goto(mockUrl(NEW))
           const modal = page.getByTestId('schedule-form-modal')
-          await expectRightOf(
-            scheduleModalTitle(modal, '予定の作成'),
-            page.getByTestId('modal-close'),
-          )
+          await expect(scheduleModalTitle(modal, '予定の作成')).toBeVisible()
+          await expect(page.getByTestId('modal-close')).toHaveCount(0)
           await expect(page.getByTestId('schedule-new-cancel')).toHaveText('キャンセル')
           await expect(page.getByTestId('schedule-create-submit')).toHaveText('作成')
+          await expectRightOf(
+            page.getByTestId('schedule-new-cancel'),
+            page.getByTestId('schedule-create-submit'),
+          )
           await check(
-            'タイトル「予定の作成」が左、× が右上にあり、フッターの右に「キャンセル」と「作成」が並ぶ',
+            'タイトル「予定の作成」が左にあり、右上に × が無く、フッターの右に「キャンセル」と「作成」が並ぶ',
           )
 
-          await step('「キャンセル」を押す')
-          await page.getByTestId('schedule-new-cancel').click()
+          await step('Escape キーを押す')
+          await page.keyboard.press('Escape')
           await expect(page).toHaveURL(/schedule-calendar_.+\/01-month\.html/)
-          await check('何も作らずに、予定のカレンダーのモック（01-month.html）へ戻る')
+          await check(
+            'キャンセルと同じく、何も作らずに予定のカレンダーのモック（01-month.html）へ戻る',
+          )
         },
       )
     })
 
-    test(`${prefix}予定の編集のモックを開いた場合、× が右上にあり、フッターのキャンセルで予定の詳細へ戻ること`, async ({
+    test(`${prefix}予定の編集のモックを開いた場合、× が無く、フッターのキャンセルで予定の詳細へ戻ること`, async ({
       browser,
     }) => {
       await recordPrEvidence(
@@ -70,7 +74,7 @@ test.describe('予定のダイアログの画面仕様書のモック', () => {
         {
           name: 'schedule-edit-mock-header-footer',
           title:
-            '予定の編集は、タイトルを左、× を右上に置き、フッターの右に「キャンセル」と「保存」を置く',
+            '予定の編集は、タイトルを左に置き、× を置かず、フッターの右に「キャンセル」と「保存」を置く',
           actor: 'ログインなし',
           variant,
         },
@@ -80,14 +84,16 @@ test.describe('予定のダイアログの画面仕様書のモック', () => {
         async ({ page, step, check }) => {
           await page.goto(mockUrl(EDIT))
           const modal = page.getByTestId('schedule-form-modal')
-          await expectRightOf(
-            scheduleModalTitle(modal, '予定の編集'),
-            page.getByTestId('modal-close'),
-          )
+          await expect(scheduleModalTitle(modal, '予定の編集')).toBeVisible()
+          await expect(page.getByTestId('modal-close')).toHaveCount(0)
           await expect(page.getByTestId('schedule-edit-cancel')).toHaveText('キャンセル')
           await expect(page.getByTestId('schedule-edit-submit')).toHaveText('保存')
+          await expectRightOf(
+            page.getByTestId('schedule-edit-cancel'),
+            page.getByTestId('schedule-edit-submit'),
+          )
           await check(
-            'タイトル「予定の編集」が左、× が右上にあり、フッターの右に「キャンセル」と「保存」が並ぶ',
+            'タイトル「予定の編集」が左にあり、右上に × が無く、フッターの右に「キャンセル」と「保存」が並ぶ',
           )
 
           await step('「キャンセル」を押す')
@@ -98,7 +104,7 @@ test.describe('予定のダイアログの画面仕様書のモック', () => {
       )
     })
 
-    test(`${prefix}予定の詳細のモックを開いた場合、× が右上にあり、フッターの閉じるで予定のカレンダーへ戻ること`, async ({
+    test(`${prefix}予定の詳細のモックを開いた場合、× が無く、Escape で予定のカレンダーへ戻ること`, async ({
       browser,
     }) => {
       await recordPrEvidence(
@@ -106,7 +112,7 @@ test.describe('予定のダイアログの画面仕様書のモック', () => {
         {
           name: 'schedule-detail-mock-header-footer',
           title:
-            '予定の詳細は、タイトルを左、× を右上に置き、フッターの右に「閉じる」と「編集」を置く',
+            '予定の詳細は、タイトルを左に置き、× を置かず、フッターの右に「閉じる」と「編集」を置く',
           actor: 'ログインなし',
           variant,
         },
@@ -116,20 +122,24 @@ test.describe('予定のダイアログの画面仕様書のモック', () => {
         async ({ page, step, check }) => {
           await page.goto(mockUrl(DETAIL))
           const modal = page.getByTestId('schedule-detail-modal')
-          await expectRightOf(
-            scheduleModalTitle(modal, '予定の詳細'),
-            page.getByTestId('modal-close'),
-          )
+          await expect(scheduleModalTitle(modal, '予定の詳細')).toBeVisible()
+          await expect(page.getByTestId('modal-close')).toHaveCount(0)
           await expect(page.getByTestId('schedule-detail-close')).toHaveText('閉じる')
           await expect(page.getByTestId('schedule-detail-edit')).toHaveText('編集')
+          await expectRightOf(
+            page.getByTestId('schedule-detail-close'),
+            page.getByTestId('schedule-detail-edit'),
+          )
           await check(
-            'タイトル「予定の詳細」が左、× が右上にあり、フッターの右に「閉じる」と「編集」が並ぶ',
+            'タイトル「予定の詳細」が左にあり、右上に × が無く、フッターの右に「閉じる」と「編集」が並ぶ',
           )
 
-          await step('フッターの「閉じる」を押す')
-          await page.getByTestId('schedule-detail-close').click()
+          await step('Escape キーを押す')
+          await page.keyboard.press('Escape')
           await expect(page).toHaveURL(/schedule-calendar_.+\/01-month\.html/)
-          await check('予定のカレンダーのモック（01-month.html）へ戻る')
+          await check(
+            'フッターの「閉じる」と同じく、予定のカレンダーのモック（01-month.html）へ戻る',
+          )
         },
       )
     })

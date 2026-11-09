@@ -171,6 +171,46 @@ test.describe('予定の正本の切り替え', () => {
       )
     })
 
+    test(`${label}切り替えを始めた場合、予定のカレンダーに切り替え中と始めた職員と時刻が出て、予定の作成を開かないこと`, async ({
+      browser,
+    }) => {
+      const title = `申し送り ${Date.now()}`
+      await recordPrEvidence(
+        browser,
+        {
+          name: 'cutover-calendar-notice',
+          title:
+            '切り替えを始めると、予定のカレンダーに切り替え中と始めた職員と時刻が出て、予定の作成を開かない',
+          actor: ACTOR,
+          variant,
+        },
+        prepare(title, '11:00', '12:00'),
+        async ({ page, step, check }) => {
+          await openCutover(page)
+          await step('予定の正本の切り替えの画面を開いている')
+          await step('「切り替えを始める」を押す')
+          await page.getByTestId('calendar-cutover-start').click()
+          await expect(page.getByTestId('calendar-cutover-open')).toBeVisible()
+          await step('予定のカレンダーを開く')
+          await page.goto('/schedule')
+          const notice = page.getByTestId('schedule-calendar-cutover')
+          await expect(notice).toContainText('buddy でも予定を作成、変更できません')
+          await expect(notice.getByTestId('schedule-calendar-cutover-started')).toContainText(
+            `開始: ${ISHIDA.staff.name}、`,
+          )
+          await expect(page.getByTestId('schedule-create-open')).toHaveCount(0)
+          await check(
+            `切り替え中の案内に、buddy でも予定を変えられないことと「開始: ${ISHIDA.staff.name}、〈始めた時刻〉」が出て、「予定を作成」は出ない`,
+          )
+          // ほかの撮影の前提に戻すため、始めた切り替えをやめる
+          await page.goto(CUTOVER_URL)
+          await page.getByTestId('calendar-cutover-cancel').click()
+          await page.getByTestId('calendar-cutover-cancel-confirm-submit').click()
+          await expect(page.getByTestId('calendar-cutover-start')).toBeVisible()
+        },
+      )
+    })
+
     test(`${label}切り替えをやめた場合、取り込んだ予定が消え、事業所は Google カレンダーを正本にしたままになること`, async ({
       browser,
     }) => {

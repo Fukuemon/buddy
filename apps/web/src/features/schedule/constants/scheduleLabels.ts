@@ -18,4 +18,5 @@ export const SCHEDULE_REVIEW_REASON_LABEL: Record<ScheduleReviewReason, string> 
   patient_ambiguous: 'タイトルの利用者が 2 人以上います',
   service_code_not_found: 'タイトルのサービス内容がサービスコードにありません',
   title_unreadable: 'タイトルを読めません',
+  title_mismatch: 'タイトルの利用者かサービス内容が、buddy の訪問の情報と違います',
 }

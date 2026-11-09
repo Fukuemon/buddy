@@ -4,9 +4,9 @@ import { ColorItem, ColorPalette, Meta } from '@storybook/addon-docs/blocks'
 
 # 色
 
-画面とコンポーネントは、意味のトークンだけを使う。
-ユーティリティの名前は、Tailwind の `bg-`、`text-`、`border-`、`ring-` の後ろに、意味のトークンの名前を付けたもの（`bg-primary`、`text-text-secondary`）。
-値は DADS の `@digital-go-jp/design-tokens` の変数を参照し、参照の対応は `src/tokens/semantic.css` にある。
+画面とコンポーネントは、セマンティックトークンだけを使う。
+ユーティリティの名前は、Tailwind の `bg-`、`text-`、`border-`、`ring-` の後ろに、セマンティックトークンの名前を付けたもの（`bg-primary`、`text-text-secondary`）。
+値は `src/tokens/primitive.css` のプリミティブトークンを参照し、参照の対応は `src/tokens/semantic.css` にある。
 
 - 出典: [DADS の色](https://design.digital.go.jp/dads/foundations/color/)
 
@@ -42,6 +42,11 @@ import { ColorItem, ColorPalette, Meta } from '@storybook/addon-docs/blocks'
     title="border"
     subtitle="行と帯の区切り、格子の線。押せるものの境界には使わない"
     colors={{ border: 'var(--buddy-color-border)' }}
+  />
+  <ColorItem
+    title="border-strong"
+    subtitle="表の見出しの行とデータの行の区切り"
+    colors={{ 'border-strong': 'var(--buddy-color-border-strong)' }}
   />
   <ColorItem
     title="border-field"
@@ -149,7 +154,7 @@ import { ColorItem, ColorPalette, Meta } from '@storybook/addon-docs/blocks'
 ## チーム
 
 チームのまとまりを、名前の横の点で示す。点は名前と並べて出し、面と文字には使わない。
-区別の色より明るい段から選び、どの面の上でも 3:1 以上になる。選び方は DESIGN.md の「チームの色」にある。
+区別の色より明るい段から選び、どの面の上でも 3:1 以上になる。選び方は packages/ui/design/tokens.md の「チームの色」にある。
 
 <ColorPalette>
   <ColorItem

@@ -2,6 +2,7 @@ package scheduleview_test
 
 import (
 	"errors"
+	"maps"
 	"reflect"
 	"regexp"
 	"slices"
@@ -301,6 +302,84 @@ func TestSchedulesListGooglePrimaryExpandsRecurrence(t *testing.T) {
 	}
 }
 
+// TestSchedulesListGooglePrimaryOccurrenceRule は、繰り返しの親を展開した回が、親の一覧での ID と親の規則を持ち、
+// 変えた回（例外の回）と単発の予定は持たないことを確認する。画面は、展開した回から規則の変更を送る（ADR-0037）。
+func TestSchedulesListGooglePrimaryOccurrenceRule(t *testing.T) {
+	s := googleStore()
+	putEvent(s, targetCalendarID, "weekly", "定例", tokyo(10, 5, 9), 60, func(p *scheduleview.Projection) {
+		p.Recurrence = []string{"RRULE:FREQ=WEEKLY;UNTIL=20261231T235959Z"}
+		p.LastEndDate = nil
+	})
+	putEvent(s, targetCalendarID, "weekly_20261019", "定例（変更）", tokyo(10, 20, 11), 60, func(p *scheduleview.Projection) {
+		orig := tokyo(10, 19, 9)
+		p.RecurringEventID, p.OriginalStart = "weekly", scheduleview.ProjectionTime{At: &orig}
+	})
+	putEvent(s, targetCalendarID, "single", "会議", tokyo(10, 7, 13), 60, nil)
+
+	list, err := newSchedules(s).List(editorCtx(), facilityID, october())
+	if err != nil {
+		t.Fatal(err)
+	}
+	parentID := scheduleview.ProjectedScheduleID(targetCalendarID, "weekly")
+	got := map[string]string{}
+	for _, d := range list.Schedules {
+		key := d.Date.String() + " " + *d.Title
+		switch {
+		case d.RecurringScheduleID == nil && d.Rule == nil:
+			got[key] = "なし"
+		case d.RecurringScheduleID != nil && *d.RecurringScheduleID == parentID && d.Rule != nil &&
+			d.Rule.Frequency == schedule.Weekly && d.Rule.EndDate != nil && d.Rule.EndDate.String() == "2026-12-31":
+			got[key] = "親"
+		default:
+			got[key] = "違う"
+		}
+	}
+	want := map[string]string{
+		"2026-10-05 定例": "親", "2026-10-12 定例": "親", "2026-10-26 定例": "親",
+		"2026-10-20 定例（変更）": "なし", "2026-10-07 会議": "なし",
+	}
+	if !maps.Equal(got, want) {
+		t.Errorf("回の親と規則 = %v, want %v", got, want)
+	}
+}
+
+// TestSchedulesListGooglePrimaryHidesCancelled は、Google で取り消した単発の予定と繰り返しの親を一覧に出さず、取り消した親の例外の回も
+// 出さないことと、取り消しを写した後に、Google の更新の時刻が古い取り消す前の内容を写しても、予定が一覧に戻らないことを確認する。
+func TestSchedulesListGooglePrimaryHidesCancelled(t *testing.T) {
+	s := googleStore()
+	before, after := tokyo(10, 1, 8), tokyo(10, 2, 8)
+	single := func(status scheduleview.ProjectionStatus, updated time.Time) func(*scheduleview.Projection) {
+		return func(p *scheduleview.Projection) { p.Status, p.GoogleUpdatedAt = status, &updated }
+	}
+	putEvent(s, targetCalendarID, "kept", "カンファレンス", tokyo(10, 20, 9), 60, nil)
+	putEvent(s, targetCalendarID, "weekly", "", tokyo(10, 5, 9), 60, func(p *scheduleview.Projection) {
+		p.Status, p.Start, p.End = scheduleview.ProjectionCancelled, scheduleview.ProjectionTime{}, scheduleview.ProjectionTime{}
+	})
+	putEvent(s, targetCalendarID, "weekly_20261019", "定例（変更）", tokyo(10, 20, 11), 60, func(p *scheduleview.Projection) {
+		orig := tokyo(10, 19, 9)
+		p.RecurringEventID, p.OriginalStart = "weekly", scheduleview.ProjectionTime{At: &orig}
+	})
+	putEvent(s, targetCalendarID, "gone", "担当者会議", tokyo(10, 21, 9), 60, single(scheduleview.ProjectionCancelled, after))
+	// 予定の API の書き込みが、取り消しの前に Google から受けた内容を、後から写す
+	stale := s.Projections[inmem.ProjectionKey{ExternalCalendarID: targetCalendarID, EventID: "gone"}]
+	single(scheduleview.ProjectionConfirmed, before)(&stale)
+	if err := (inmem.Projections{Store: s}).Put(t.Context(), stale); err != nil {
+		t.Fatal(err)
+	}
+
+	list, err := newSchedules(s).List(editorCtx(), facilityID, october())
+	if err != nil {
+		t.Fatal(err)
+	}
+	var got []string
+	for _, d := range list.Schedules {
+		got = append(got, *d.Title)
+	}
+	if !slices.Equal(got, []string{"カンファレンス"}) {
+		t.Errorf("予定 = %v, want 取り消していない予定だけ", got)
+	}
+}
+
 var ulidPattern = regexp.MustCompile(`^[0-7][0-9A-HJKMNP-TV-Z]{25}$`)
 
 // TestSchedulesListGooglePrimaryReviewReasons は、buddy の繰り返しの規則に写せない繰り返しの予定を、期間の外の最初の回でも 1 件で返し、
@@ -308,7 +387,7 @@ var ulidPattern = regexp.MustCompile(`^[0-7][0-9A-HJKMNP-TV-Z]{25}$`)
 func TestSchedulesListGooglePrimaryReviewReasons(t *testing.T) {
 	s := googleStore()
 	putEvent(s, targetCalendarID, "biweekly", "隔週の会議", tokyo(9, 7, 10), 60, func(p *scheduleview.Projection) {
-		p.Recurrence = []string{"RRULE:FREQ=WEEKLY;INTERVAL=2"}
+		p.Recurrence = []string{"RRULE:FREQ=WEEKLY;INTERVAL=2;BYDAY=MO,SU"}
 		p.LastEndDate = nil
 	})
 	putEvent(s, targetCalendarID, "visit", "【"+visitCode+"】"+patientName, tokyo(10, 20, 9), 60, nil)
@@ -347,7 +426,7 @@ func TestSchedulesListGooglePrimaryReviewReasons(t *testing.T) {
 }
 
 // TestSchedulesListGooglePrimaryCutover は、google_primary の事業所の一覧が、open の切り替えの間だけ切り替えを返し、
-// 切り替えの間も Projection を読むことを確認する（ADR-0035）。
+// 切り替えを始めた職員の ID と名前を、職員が退職していても返すことと、切り替えの間も Projection を読むことを確認する（ADR-0031）。
 func TestSchedulesListGooglePrimaryCutover(t *testing.T) {
 	s := googleStore()
 	putEvent(s, ownCalendarID, "own", "研修", tokyo(10, 20, 13), 60, nil)
@@ -359,15 +438,19 @@ func TestSchedulesListGooglePrimaryCutover(t *testing.T) {
 		t.Errorf("切り替えの前 = %+v, want nil", list.Cutover)
 	}
 	started := tokyo(10, 5, 9)
+	retired := tokyo(10, 6, 9)
+	s.Staff["MANAGER"] = staff.Detail{Summary: staff.Summary{Staff: staff.Staff{ID: "MANAGER", FacilityID: facilityID, Username: "退職した 管理者", RetiredAt: &retired}}}
 	s.Cutovers["CUT"] = calendarimport.Cutover{
 		ID: "CUT", FacilityID: facilityID, Status: calendarimport.CutoverOpen, RangeStart: civil.Date{Year: 2026, Month: 10, Day: 1}, StartedAt: started,
+		StartedBy: "MANAGER",
 	}
 	s.Cutovers["OLD"] = calendarimport.Cutover{ID: "OLD", FacilityID: facilityID, Status: calendarimport.CutoverCanceled}
 	list, err = newSchedules(s).List(viewerCtx(), facilityID, october())
 	if err != nil {
 		t.Fatal(err)
 	}
-	if list.Cutover == nil || !list.Cutover.StartedAt.Equal(started) || list.Cutover.RangeStart != (civil.Date{Year: 2026, Month: 10, Day: 1}) {
+	if list.Cutover == nil || !list.Cutover.StartedAt.Equal(started) || list.Cutover.RangeStart != (civil.Date{Year: 2026, Month: 10, Day: 1}) ||
+		list.Cutover.StartedBy != "MANAGER" || list.Cutover.StartedByName != "退職した 管理者" {
 		t.Errorf("切り替え = %+v", list.Cutover)
 	}
 	if len(list.Schedules) != 1 || list.Schedules[0].Source != scheduleview.SourceGoogleCalendar {

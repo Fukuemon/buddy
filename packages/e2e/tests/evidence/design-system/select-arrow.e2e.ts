@@ -8,6 +8,7 @@ const ACTOR = 'ログインなし（Storybook の story）'
 
 const PATIENT_LIST_URL = storyUrl('画面-patient-patientlistcontainer--default')
 const LONG_OPTION_URL = storyUrl('コンポーネント-base-select--long-option')
+const FORM_FIELD_WITH_HINT_URL = storyUrl('コンポーネント-base-formfield--with-hint')
 
 /** 字幕の帯に隠れないように story の中身を下へずらし、zoom の倍率で拡大する。撮影のための操作なので、前に字幕で断る。 */
 const shiftStory = async (page: Page, zoom = 1) => {
@@ -94,6 +95,36 @@ test.describe('選択の欄', () => {
             await shiftStory(page, 2)
             await check(
               `文字は矢印の手前で切れ、文字の領域の右の端と矢印の間に ${space}px の余白が残る`,
+            )
+          },
+        )
+      })
+
+      test(`${prefix}FormField の補足の文の付いた選択の欄を見た場合、矢印が欄の右から 12px の位置にあり、左の文字の余白とそろうこと`, async ({
+        browser,
+      }) => {
+        await recordPrEvidence(
+          browser,
+          {
+            name: 'form-field-select-arrow',
+            title: 'FormField の WithHint の選択の欄で、矢印の位置と左の余白を見る',
+            actor: ACTOR,
+            variant,
+          },
+          async (page) => {
+            await page.goto(FORM_FIELD_WITH_HINT_URL)
+          },
+          async ({ page, step, check }) => {
+            await page.goto(FORM_FIELD_WITH_HINT_URL)
+            const select = fieldByLabel(pageBody(page), '担当の職員')
+            await expect(select).toBeVisible()
+            await step('補足の文の付いた選択の欄（Storybook の FormField の WithHint）を開いている')
+            const gaps = await arrowGaps(select)
+            expect(gaps).toEqual({ left: 12, right: 12 })
+            await step('(撮影のため、字幕に隠れないように下へずらし、2 倍に拡大する)')
+            await shiftStory(page, 2)
+            await check(
+              `「担当の職員」の矢印は欄の右から ${gaps.right}px にあり、左の文字の余白の ${gaps.left}px とそろう`,
             )
           },
         )

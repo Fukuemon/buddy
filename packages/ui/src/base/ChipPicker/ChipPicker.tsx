@@ -14,8 +14,8 @@ export type ChipPickerProps = {
   addAriaLabel: string
   /** 候補が 1 つも無いときの文。 */
   emptyLabel: string
-  /** 候補の全て。選んでいないものを名前の順に候補に並べる。 */
-  options: readonly ChipPickerOption[]
+  /** 候補の全て。選んでいないものを名前の順に候補に並べる。読み終えるまでは undefined にし、足す欄を押せなくする。 */
+  options: readonly ChipPickerOption[] | undefined
   selectedIds: readonly string[]
   onChange: (selectedIds: string[]) => void
   disabled?: boolean
@@ -53,8 +53,8 @@ export const ChipPicker = ({
   }
   useDismiss(anchorRef, isOpen, close)
 
-  const nameOf = (id: string) => options.find((o) => o.id === id)?.name ?? id
-  const candidates = options
+  const nameOf = (id: string) => options?.find((o) => o.id === id)?.name ?? id
+  const candidates = (options ?? [])
     .filter((o) => !selectedIds.includes(o.id) && o.name.includes(query.trim()))
     .sort((a, b) => a.name.localeCompare(b.name, 'ja'))
 
@@ -127,7 +127,7 @@ export const ChipPicker = ({
             isOpen ? 'ring-2 ring-text' : 'ring-1 ring-border-field',
           )}
           data-testid={`${testIdPrefix}-add`}
-          disabled={disabled}
+          disabled={disabled || options === undefined}
           onChange={(event) => {
             setQuery(event.target.value)
             setOpen(true)

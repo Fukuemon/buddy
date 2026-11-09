@@ -1,7 +1,9 @@
 # staff-new API との対応
 
 [職員の登録](index.md) の項目と、web の型と OpenAPI の項目の対応。  
-画面を作る人と API を変える人が読む。  
+画面を作る人、API を変える人、仕様と実装を照合する人が読む。
+
+## 値の対応
 
 | 要素名 | 表示する値 | web の型の項目 | OpenAPI の項目 |
 | --- | --- | --- | --- |
@@ -17,6 +19,39 @@
 | 訪問 | 選んだ選択肢。「訪問する」なら true | `StaffCreateInput.visits` | `createUser` の本文の `visits`。省くと true |
 | 登録 | 登録した職員 | `StaffDetail`（`staff.create` の戻り値） | `createUser` のレスポンスの `StaffDetail` |
 | 登録の失敗の文 | 理由ごとの文 | `ApiError.status`、`ApiError.code` | レスポンスの status と `Error.code` |
+
+## 条件の対応
+
+| 条件 | 判定に使う値 |
+| --- | --- |
+| 職員が、登録を送っている途中である | `createUser` を呼ぶ mutation の `isPending` が `true`（`StaffCreateDialog` の `isSubmitting`） |
+| 事業所の部署を読み終えている | `departments.list` の結果（`Department[]`）がある。読めなかったときは `undefined` にする |
+| 事業所のチームを読み終えている | `teams.list` の結果（`Team[]`）がある。読めなかったときは `undefined` にする |
+| 事業所の役職を読み終えている | `positions.list` の結果（`Position[]`）がある。読めなかったときは `undefined` にする |
+
+- 送っている間は、入力の欄に `disabled` を、キャンセルに押せない印を付ける。覆いと Escape キーでも閉じない。訪問の選択は、送っている間も押せる。
+  - 欄は `StaffCreateDialog.tsx`、ボタンと覆いは packages/ui の `InputDialog`、`DialogSubmit`、`Dialog` が決める。
+- 登録のボタンは、3 つの選択肢を読み終えるまで押せない（`StaffCreateDialog.tsx` の `canSubmit`）。
+
+## 要素の testid
+
+| 番号 | 要素名 | testid |
+| --- | --- | --- |
+| 3 | ヘルプ | `staff-new-help` |
+| 4 | 名前 | `staff-new-name` |
+| 5 | メールアドレス | `staff-new-email` |
+| 6 | 電話番号 | `staff-new-phone` |
+| 7 | 部署 | `staff-new-department` |
+| 8 | チーム | `staff-new-team` |
+| 9 | 役職 | `staff-new-position` |
+| 10 | 訪問 | `staff-new-visits` |
+| 11 | キャンセル | `staff-new-cancel` |
+| 12 | 登録 | `staff-new-submit` |
+| 13 | 入力の誤りの文 | `staff-new-error-{項目}` |
+| 13 | 登録の失敗の文 | `staff-new-submit-error` |
+
+- 入力の誤りの文の `{項目}` は、`name`、`email`、`phone` のどれかである。
+- ヘルプの説明の `staff-new-help-text` と、ダイアログの本体の `staff-new-dialog` は、構成要素の表に載せないので、この表に載せない。
 
 ## 状態と失敗の要因
 

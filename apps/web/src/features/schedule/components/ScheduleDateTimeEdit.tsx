@@ -11,13 +11,19 @@ export type ScheduleDateTimeEditProps = {
   form: UseFormReturn<ScheduleFormValues>
   /** 予定の API のサービスコードの一覧。この順に選択肢を並べる。 */
   serviceCodes: readonly ServiceCodeRecord[]
+  /** 職員がサービスコードを選んだときに呼ぶ。 */
+  onServiceCodeSelect?: () => void
 }
 
 /**
  * 予定の日付と時間の入力。訪問の予定では、終了時間を開始時間と提供時間から求めて出し、
  * サービスコードを選ぶと提供時間をそのコードの上限にする。通常の予定では、終了が翌日かを選べる。
  */
-export const ScheduleDateTimeEdit = ({ form, serviceCodes }: ScheduleDateTimeEditProps) => {
+export const ScheduleDateTimeEdit = ({
+  form,
+  serviceCodes,
+  onServiceCodeSelect,
+}: ScheduleDateTimeEditProps) => {
   const { control, formState, setValue, trigger } = form
   const kind = useWatch({ control, name: 'kind' })
   const startTime = useWatch({ control, name: 'startTime' })
@@ -103,6 +109,7 @@ export const ScheduleDateTimeEdit = ({ form, serviceCodes }: ScheduleDateTimeEdi
               onChange={(code) => {
                 field.onChange(code.code)
                 setValue('serviceTime', code.service_time_range_end, { shouldValidate: true })
+                onServiceCodeSelect?.()
               }}
               serviceCodes={serviceCodes}
               value={field.value}
