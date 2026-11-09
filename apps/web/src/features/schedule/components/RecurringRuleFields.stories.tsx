@@ -143,6 +143,21 @@ export const BiweeklyDays: Story = {
   },
 }
 
+/** 7 つの曜日の毎週で、2026-10-20（火曜）の回を開いた形。今の規則の選択肢を選んで始める。 */
+export const Daily: Story = {
+  args: {
+    rule: {
+      frequency: 'weekly',
+      daysOfWeek: [1, 2, 3, 4, 5, 6, 7],
+      interval: 1,
+      dayOfWeek: null,
+      dayOfMonth: null,
+      weekOfMonth: null,
+      endDate: null,
+    },
+  },
+}
+
 /** 「カスタム…」の毎週で、曜日を 1 つも選ばず、間隔を 0 にして保存を押した形。 */
 export const CustomWeeklyInvalid: Story = {
   args: {
