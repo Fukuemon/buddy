@@ -8,83 +8,81 @@ import { registerNewStaff } from '../../setup/staff'
 /** 予定の API で作る予定の日。 */
 const SCHEDULE_DATE = '2026-10-20'
 
-/** 有効な職員と止めた職員を 1 人ずつ登録し、それぞれの ID を返す。 */
-const registerActiveAndSuspended = async (request: APIRequestContext) => {
+/** 有効な職員と休職の職員を 1 人ずつ登録し、それぞれの ID を返す。 */
+const registerActiveAndOnLeave = async (request: APIRequestContext) => {
   const manager = await issueManagerToken()
   const active = await registerNewStaff(request, manager, 'active')
-  const suspended = await registerNewStaff(request, manager, 'hidden')
-  expect((await leaveStaff(request, manager, suspended.id)).status()).toBe(200)
-  return { active: active.id, suspended: suspended.id }
+  const onLeave = await registerNewStaff(request, manager, 'hidden')
+  expect((await leaveStaff(request, manager, onLeave.id)).status()).toBe(200)
+  return { active: active.id, onLeave: onLeave.id }
 }
 
 test.describe('予定のカレンダー', () => {
-  test.describe('止めた職員', () => {
-    test('止めた職員がいる事業所で日の表示を開いた場合、止めた職員の列が出ないこと', async ({
+  test.describe('休職の職員', () => {
+    test('休職の職員がいる事業所で日の表示を開いた場合、休職の職員の列が出ないこと', async ({
       page,
       request,
     }) => {
-      const { active, suspended } = await registerActiveAndSuspended(request)
+      const { active, onLeave } = await registerActiveAndOnLeave(request)
 
       await page.goto('/schedule?view=day')
 
-      // 同じ時に登録した有効な職員の列が出てから、止めた職員の列が無いことを確認する
+      // 同じ時に登録した有効な職員の列が出てから、休職の職員の列が無いことを確認する
       await expect(page.getByTestId(`day-grid-staff-${LOGIN_STAFF.id}`)).toBeVisible()
       await expect(page.getByTestId(`day-grid-staff-${active}`)).toBeVisible()
-      await expect(page.getByTestId(`day-grid-staff-${suspended}`)).toHaveCount(0)
+      await expect(page.getByTestId(`day-grid-staff-${onLeave}`)).toHaveCount(0)
     })
 
     test('休職の職員を復職にした場合、日の表示にその職員の列が戻ること', async ({
       page,
       request,
     }) => {
-      const { suspended } = await registerActiveAndSuspended(request)
-      expect((await reinstateStaff(request, await issueManagerToken(), suspended)).status()).toBe(
-        200,
-      )
+      const { onLeave } = await registerActiveAndOnLeave(request)
+      expect((await reinstateStaff(request, await issueManagerToken(), onLeave)).status()).toBe(200)
 
       await page.goto('/schedule?view=day')
 
-      await expect(page.getByTestId(`day-grid-staff-${suspended}`)).toBeVisible()
+      await expect(page.getByTestId(`day-grid-staff-${onLeave}`)).toBeVisible()
     })
 
-    test('止めた職員がいる事業所で職員の絞り込みを見た場合、止めた職員が候補に出ないこと', async ({
+    test('休職の職員がいる事業所で職員の絞り込みを見た場合、休職の職員が候補に出ないこと', async ({
       page,
       request,
     }) => {
-      const { active, suspended } = await registerActiveAndSuspended(request)
+      const { active, onLeave } = await registerActiveAndOnLeave(request)
 
       await page.goto('/schedule')
 
-      // 同じ時に登録した有効な職員が候補に出てから、止めた職員が無いことを確認する
+      // 同じ時に登録した有効な職員が候補に出てから、休職の職員が無いことを確認する
       const sidebar = page.getByTestId('staff-filter-sidebar')
       await expect(sidebar.getByTestId(`staff-filter-staff-${active}`)).toBeVisible()
-      await expect(sidebar.getByTestId(`staff-filter-staff-${suspended}`)).toHaveCount(0)
+      await expect(sidebar.getByTestId(`staff-filter-staff-${onLeave}`)).toHaveCount(0)
     })
   })
 })
 
 test.describe('予定の作成', () => {
-  test.describe('止めた職員', () => {
-    test('止めた職員がいる事業所で主訪問者の欄を開いた場合、止めた職員が候補に出ないこと', async ({
+  test.describe('休職の職員', () => {
+    test('休職の職員がいる事業所で主訪問者の欄を開いた場合、休職の職員が候補に出ないこと', async ({
       page,
       request,
     }) => {
-      const { active, suspended } = await registerActiveAndSuspended(request)
+      const { active, onLeave } = await registerActiveAndOnLeave(request)
 
       await page.goto('/schedule?view=day')
       await page.getByTestId('schedule-create-open').click()
       await page.getByTestId('schedule-field-staff').click()
 
-      // 同じ時に登録した有効な職員が候補に出てから、止めた職員が無いことを確認する
+      // 同じ時に登録した有効な職員が候補に出てから、休職の職員が無いことを確認する
       await expect(page.getByTestId(`staff-select-option-${active}`)).toBeVisible()
-      await expect(page.getByTestId(`staff-select-option-${suspended}`)).toHaveCount(0)
+      await expect(page.getByTestId(`staff-select-option-${onLeave}`)).toHaveCount(0)
     })
   })
 })
 
 test.describe('予定の編集', () => {
-  test.describe('止めた職員', () => {
-    test('止めた職員に割り振った予定を開いた場合、主訪問者の名前が出て、候補に止めた職員が出ないこと', async ({
+  test.describe('休職の職員', () => {
+    test('休職の職員に割り振った予定を開いた場合、主訪問者の名前が出て、候補に休職の職員が出ないこと', async ({
       page,
       request,
     }) => {
@@ -103,12 +101,12 @@ test.describe('予定の編集', () => {
 
       await expect(page.getByTestId('schedule-field-staff')).toContainText(assigned.name)
       await page.getByTestId('schedule-field-staff').click()
-      // 有効な職員が候補に出てから、止めた職員が無いことを確認する
+      // 有効な職員が候補に出てから、休職の職員が無いことを確認する
       await expect(page.getByTestId(`staff-select-option-${LOGIN_STAFF.id}`)).toBeVisible()
       await expect(page.getByTestId(`staff-select-option-${assigned.id}`)).toHaveCount(0)
     })
 
-    test('止めた職員に割り振った予定のタイトルだけを変えて保存した場合、予定の職員が変わらないこと', async ({
+    test('休職の職員に割り振った予定のタイトルだけを変えて保存した場合、予定の職員が変わらないこと', async ({
       page,
       request,
     }) => {

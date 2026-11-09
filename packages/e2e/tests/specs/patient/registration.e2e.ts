@@ -67,9 +67,7 @@ test.describe('利用者の一覧', () => {
       await expect(patientOptionByName(page, name)).toBeVisible()
     })
   })
-})
 
-test.describe('利用者の登録', () => {
   test.describe('休職と退職の職員と、訪問しない職員への割り振り', () => {
     for (const { label, stop, message } of STOPS) {
       test(`担当を${label}にして利用者を登録しようとした場合、400 が返ること`, async ({
