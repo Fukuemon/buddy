@@ -5,8 +5,17 @@
 # 使い方: compose/dev-token.sh <メール> [上流の IdP の sub]
 # 上流の IdP の sub を省くと、メールの @ の前の部分にする。職員に結び付けた後は、同じ sub で入る。
 # デフォルトは main の checkout の環境（https://<サービス>.buddy.localhost）である。別の名前で起動したときは、
-# compose と同じ環境変数（HYDRA_PUBLIC_ORIGIN、BROKER_ORIGIN、WEB_ORIGIN）を渡す。worktrunk で作った worktree では、mise が .env から渡す。
+# compose と同じ環境変数（HYDRA_PUBLIC_ORIGIN、BROKER_ORIGIN、WEB_ORIGIN）を渡す。
+# worktrunk で作った worktree では、リポジトリのルートの .env から、まだ渡していない環境変数だけを読む。
 set -eu
+
+env_file="$(dirname "$0")/../.env"
+if [ -f "$env_file" ]; then
+  while IFS='=' read -r key value; do
+    case $key in '' | '#'*) continue ;; esac
+    [ -n "$(printenv "$key" || true)" ] || export "$key=$value"
+  done <"$env_file"
+fi
 
 email=${1:?メールを渡す}
 sub=${2:-${email%@*}}

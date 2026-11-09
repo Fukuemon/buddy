@@ -1,6 +1,6 @@
 # worktrunk（wt）のプロジェクトの設定。
 # worktree ごとに compose のプロジェクトの名前とポートの組を .env に書き、worktree を並べて起動できるようにする。
-# compose は .env を読み、mise は .env を環境変数に入れる（mise.toml の [env]）。
+# compose、E2E の設定（packages/e2e/tests/fixtures/env.ts）、compose/dev-token.sh が .env を読む。
 
 # worktree を消す前に、その worktree の compose を、DB の volume とビルドしたイメージごと消す。起動していなければ何もしない。
 # フックは wt を流したシェルの環境変数を受け継ぎ、compose はシェルの環境変数を .env より優先する。
@@ -44,7 +44,6 @@ E2E_BROKER_INTERNAL_URL=https://8081.broker.{{ host }}.localhost
 E2E_HYDRA_URL=https://hydra.{{ host }}.localhost
 E2E_CALENDARPIT_URL=https://calendarpit.{{ host }}.localhost
 E2E_GCALHOLD_URL=https://gcalhold.{{ host }}.localhost
-NODE_EXTRA_CA_CERTS=$HOME/.portless/ca.pem
 WEB_PORT={{ base }}
 SCHEDULE_PORT={{ base + 1 }}
 RECEIPT_PORT={{ base + 2 }}
