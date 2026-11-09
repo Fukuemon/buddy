@@ -11,6 +11,7 @@ import {
   previousDate,
 } from './recurrence'
 import {
+  fromApiAllDayEvent,
   fromApiFacility,
   fromApiPatient,
   fromApiSchedule,
@@ -165,6 +166,9 @@ export const createHttpBuddyApi = ({ baseUrl, fetch }: HttpApiOptions): BuddyApi
             }
           })
           .filter((schedule) => isSelectedStaff(schedule.staffId))
+        const selectedAllDayEvents = allDayEvents
+          .filter((event) => isSelectedStaff(event.staff_id))
+          .map(fromApiAllDayEvent)
         return {
           schedules: all.filter(
             (schedule) =>
@@ -175,16 +179,11 @@ export const createHttpBuddyApi = ({ baseUrl, fetch }: HttpApiOptions): BuddyApi
           sourceMode,
           calendarSyncs: calendarSyncs.filter((sync) => isSelectedStaff(sync.staff_id)),
           cutover,
-          allDayEvents: allDayEvents
-            .filter((event) => isSelectedStaff(event.staff_id))
-            .map((event) => ({
-              id: event.id,
-              staffId: event.staff_id,
-              staffName: event.staff_name,
-              startDate: event.start_date,
-              endDate: event.end_date,
-              title: event.title,
-            })),
+          allDayEvents: selectedAllDayEvents,
+          // 繰り返しの規則を写せない終日の予定も最初の回の日付で返り、期間の外のことがあるので、期間で絞らない
+          needsReviewAllDayEvents: selectedAllDayEvents.filter(
+            (event) => event.reviewReason !== undefined,
+          ),
           unlistedEventCounts: unlistedEventCounts
             .filter((count) => isSelectedStaff(count.staff_id))
             .map((count) => ({ staffId: count.staff_id, count: count.count })),

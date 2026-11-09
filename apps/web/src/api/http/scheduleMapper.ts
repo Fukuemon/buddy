@@ -1,6 +1,7 @@
 import type { components } from '../generated/schedule'
 import {
   SCHEDULE_CATEGORIES,
+  type AllDayEvent,
   type Facility,
   SCHEDULE_POLICY_CODES,
   type Schedule,
@@ -118,6 +119,20 @@ export const splitDateTime = (dateTime: string) => {
   if (Number.isNaN(time)) throw new Error(`日時 ${dateTime} を読めない`)
   const local = new Date(time + OFFSET_MS).toISOString()
   return { date: local.slice(0, 10), time: local.slice(11, 16) }
+}
+
+/** API の Google カレンダーの終日の予定を、画面の終日の予定にする。確認が必要な理由は、あるときだけ持たせる。 */
+export const fromApiAllDayEvent = (event: Schemas['AllDayEvent']): AllDayEvent => {
+  const result: AllDayEvent = {
+    id: event.id,
+    staffId: event.staff_id,
+    staffName: event.staff_name,
+    startDate: event.start_date,
+    endDate: event.end_date,
+    title: event.title,
+  }
+  if (event.review_reason !== null) result.reviewReason = event.review_reason
+  return result
 }
 
 /**

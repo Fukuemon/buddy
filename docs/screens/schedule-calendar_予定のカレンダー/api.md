@@ -79,12 +79,14 @@ web の型（`apps/web/src/api/types.ts`）はフェイクの API に合わせ�
 - web のサーバーは、`listSchedules` のレスポンスを `ScheduleList` にする。
   - `schedules` は、期間に重なり、職員の絞り込みに当たる予定である。
   - `needsReview` は、`review_reason` を持つ予定を、期間で絞らず、職員の絞り込みだけで絞ったものである。
+  - `needsReviewAllDayEvents` は、`review_reason` を持つ終日の予定を、期間で絞らず、職員の絞り込みだけで絞ったものである。`allDayEvents` にも残し、最初の回の日の終日の欄に出す。
   - `calendarSyncs` は、`calendar_syncs` を `staff_id` で職員の絞り込みに当てたものである。
   - `allDayEvents` と `unlistedEventCounts` は、`all_day_events` と `unlisted_event_counts` を `staff_id` で職員の絞り込みに当てたものである。
   - 処理は `apps/web/src/api/http/httpBuddyApi.ts` の `schedules.list` にある。
 - `all_day_events` と `unlisted_event_counts` は、`date_from` から `date_to` までの期間に重なり、ログインした職員が見てよい職員の分を返す（#672）。
   - `buddy_primary` の事業所と、`schedule_type` で絞ったときは空である。
   - 繰り返しの終日の予定は、回ごとに返す。`AllDayEvent.id` は回ごとに違い、予定の ID としては使えない。
+  - buddy の繰り返しの規則に写せない終日の予定は、最初の回の 1 件で、`review_reason` が `recurrence_unsupported` になる。回が期間に重なりうる間は、最初の回が期間の外でも返す（#972）。
   - `unlisted_event_counts` は、2 日以上にわたる予定、24 時間以上の予定、開始か終了の日時を読めない予定、長さが 0 以下の予定を数える。
   - `unlisted_event_counts` は、件数が 1 以上の職員だけを返す。繰り返しの予定は、期間に重なる回の数を数える。
   - 日時を読めない予定は、開始か終了の読めた方の日で期間に重なるかを決め、どちらも読めなければどの期間でも数える。
@@ -353,6 +355,7 @@ web の型（`apps/web/src/api/types.ts`）はフェイクの API に合わせ�
 | 31 | 同期の警告の行 | `schedule-calendar-sync-warning-{カレンダーの id}` |
 | 32 | 確認が必要な予定の通知 | `schedule-calendar-needs-review` |
 | 33 | 通知の予定 | `schedule-calendar-needs-review-{予定の id}` |
+| 39 | 通知の終日の予定 | `schedule-calendar-needs-review-all-day-{終日の予定の id}` |
 | 34 | 要確認の印 | `schedule-event-{予定の id}-needs-review` |
 | 35 | 切り替え中の案内 | `schedule-calendar-cutover` |
 | 36 | 切り替えの開始 | `schedule-calendar-cutover-started` |
