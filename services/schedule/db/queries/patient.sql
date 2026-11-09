@@ -53,7 +53,7 @@ ORDER BY
 
 -- name: ListPatientSchedulesFrom :many
 -- 訪問の情報の利用者が patient_id の、from 以降のキャンセルしていない単発の予定を返す。
-SELECT s.id, s.date, s.start_time, s.end_time
+SELECT s.id, s.date, s.start_time, s.end_time, s.ends_next_day
 FROM schedules s
 JOIN visit_infos v ON v.id = s.visit_info_id
 WHERE s.facility_id = sqlc.arg(facility_id)
@@ -64,7 +64,7 @@ ORDER BY s.date, s.start_time, s.id;
 
 -- name: ListPatientRecurringSchedulesFrom :many
 -- 訪問の情報の利用者が patient_id の、from 以降に終わる繰り返しの予定を返す。終了日の無い繰り返しは含める。
-SELECT r.id, r.date, r.end_date, r.start_time, r.end_time
+SELECT r.id, r.date, r.end_date, r.start_time, r.end_time, r.ends_next_day
 FROM recurring_schedules r
 JOIN visit_infos v ON v.id = r.visit_info_id
 WHERE r.facility_id = sqlc.arg(facility_id)

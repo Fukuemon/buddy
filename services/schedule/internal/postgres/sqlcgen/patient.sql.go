@@ -114,7 +114,7 @@ func (q *Queries) GetPatientFacilityID(ctx context.Context, id string) (string, 
 }
 
 const listPatientRecurringSchedulesFrom = `-- name: ListPatientRecurringSchedulesFrom :many
-SELECT r.id, r.date, r.end_date, r.start_time, r.end_time
+SELECT r.id, r.date, r.end_date, r.start_time, r.end_time, r.ends_next_day
 FROM recurring_schedules r
 JOIN visit_infos v ON v.id = r.visit_info_id
 WHERE r.facility_id = $1
@@ -130,11 +130,12 @@ type ListPatientRecurringSchedulesFromParams struct {
 }
 
 type ListPatientRecurringSchedulesFromRow struct {
-	ID        string
-	Date      time.Time
-	EndDate   *time.Time
-	StartTime pgtype.Time
-	EndTime   pgtype.Time
+	ID          string
+	Date        time.Time
+	EndDate     *time.Time
+	StartTime   pgtype.Time
+	EndTime     pgtype.Time
+	EndsNextDay bool
 }
 
 // 訪問の情報の利用者が patient_id の、from 以降に終わる繰り返しの予定を返す。終了日の無い繰り返しは含める。
@@ -153,6 +154,7 @@ func (q *Queries) ListPatientRecurringSchedulesFrom(ctx context.Context, arg Lis
 			&i.EndDate,
 			&i.StartTime,
 			&i.EndTime,
+			&i.EndsNextDay,
 		); err != nil {
 			return nil, err
 		}
@@ -165,7 +167,7 @@ func (q *Queries) ListPatientRecurringSchedulesFrom(ctx context.Context, arg Lis
 }
 
 const listPatientSchedulesFrom = `-- name: ListPatientSchedulesFrom :many
-SELECT s.id, s.date, s.start_time, s.end_time
+SELECT s.id, s.date, s.start_time, s.end_time, s.ends_next_day
 FROM schedules s
 JOIN visit_infos v ON v.id = s.visit_info_id
 WHERE s.facility_id = $1
@@ -182,10 +184,11 @@ type ListPatientSchedulesFromParams struct {
 }
 
 type ListPatientSchedulesFromRow struct {
-	ID        string
-	Date      time.Time
-	StartTime pgtype.Time
-	EndTime   pgtype.Time
+	ID          string
+	Date        time.Time
+	StartTime   pgtype.Time
+	EndTime     pgtype.Time
+	EndsNextDay bool
 }
 
 // 訪問の情報の利用者が patient_id の、from 以降のキャンセルしていない単発の予定を返す。
@@ -203,6 +206,7 @@ func (q *Queries) ListPatientSchedulesFrom(ctx context.Context, arg ListPatientS
 			&i.Date,
 			&i.StartTime,
 			&i.EndTime,
+			&i.EndsNextDay,
 		); err != nil {
 			return nil, err
 		}

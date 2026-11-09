@@ -155,14 +155,14 @@ func (r *PatientScheduleReader) From(ctx context.Context, facilityID, patientID 
 		if err != nil {
 			return patient.Remaining{}, err
 		}
-		out.Schedules[i] = patient.RemainingSchedule{ID: s.ID, Date: civil.DateOf(s.Date), StartTime: start, EndTime: end}
+		out.Schedules[i] = patient.RemainingSchedule{ID: s.ID, Date: civil.DateOf(s.Date), StartTime: start, EndTime: end, EndsNextDay: s.EndsNextDay}
 	}
 	for i, s := range recs {
 		start, end, err := slotTimes(s.StartTime, s.EndTime)
 		if err != nil {
 			return patient.Remaining{}, err
 		}
-		out.RecurringSchedules[i] = patient.RemainingRecurring{ID: s.ID, Date: civil.DateOf(s.Date), EndDate: datePtr(s.EndDate), StartTime: start, EndTime: end}
+		out.RecurringSchedules[i] = patient.RemainingRecurring{ID: s.ID, Date: civil.DateOf(s.Date), EndDate: datePtr(s.EndDate), StartTime: start, EndTime: end, EndsNextDay: s.EndsNextDay}
 	}
 	return out, nil
 }

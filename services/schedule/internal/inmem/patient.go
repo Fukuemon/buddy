@@ -85,13 +85,13 @@ func (s PatientSchedules) From(_ context.Context, facilityID, patientID string, 
 		if _, cancelled := s.Cancels[id]; cancelled || d.FacilityID != facilityID || d.Date.Before(from) || !visits(d.VisitInfoID) {
 			continue
 		}
-		out.Schedules = append(out.Schedules, patient.RemainingSchedule{ID: id, Date: d.Date, StartTime: d.StartTime, EndTime: d.EndTime})
+		out.Schedules = append(out.Schedules, patient.RemainingSchedule{ID: id, Date: d.Date, StartTime: d.StartTime, EndTime: d.EndTime, EndsNextDay: d.EndsNextDay})
 	}
 	for id, d := range s.Recurring {
 		if d.FacilityID != facilityID || (d.Rule.EndDate != nil && d.Rule.EndDate.Before(from)) || !visits(d.VisitInfoID) {
 			continue
 		}
-		out.RecurringSchedules = append(out.RecurringSchedules, patient.RemainingRecurring{ID: id, Date: d.Date, EndDate: d.Rule.EndDate, StartTime: d.StartTime, EndTime: d.EndTime})
+		out.RecurringSchedules = append(out.RecurringSchedules, patient.RemainingRecurring{ID: id, Date: d.Date, EndDate: d.Rule.EndDate, StartTime: d.StartTime, EndTime: d.EndTime, EndsNextDay: d.EndsNextDay})
 	}
 	slices.SortFunc(out.Schedules, func(a, b patient.RemainingSchedule) int { return strings.Compare(a.ID, b.ID) })
 	slices.SortFunc(out.RecurringSchedules, func(a, b patient.RemainingRecurring) int { return strings.Compare(a.ID, b.ID) })
