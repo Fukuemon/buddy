@@ -16,12 +16,12 @@ Go の API は 3 つある。予定の API（`services/schedule`）、照合の 
 
 - DB の操作は sqlc、HTTP は oapi-codegen の strict server が、それぞれ 1 つのパッケージに生成する。
   - 予定の API と照合の API の `httpapi` は、生成した `StrictServerInterface` を 1 つの型で実装するので、ハンドラを操作ごとの型に分けられない。
-- 予定の API の規則と手順は、機能ごとのパッケージに置き、全ての依存は組み立ての場所（`internal/assemble`）で組み立てる。
+- 予定の API の規則と手順は、機能ごとのパッケージに置き、全ての依存は組み立ての場所（各 `cmd`）で組み立てる。
   - ADR-0021: [予定の API を機能ごとのパッケージに分ける](0021-schedule-api-packages.md)
 
 ## Decision
 
-機能のパッケージの操作を、使う依存だけをフィールドに持つ操作ごとの型にする。全ての依存を知るのは、組み立ての場所（`internal/assemble`）だけにする。
+機能のパッケージの操作を、使う依存だけをフィールドに持つ操作ごとの型にする。全ての依存を知るのは、組み立ての場所（各 `cmd`）だけにする。
 
 ```go
 // Leave は、職員を休職にする操作である。
@@ -52,7 +52,7 @@ func (o Leave) Do(ctx context.Context, id string, in LeaveInput) (StatusChange, 
 操作の型を束ねる型は、機能のパッケージに置かない。束は、使う側の `httpapi` が持つ。
 
 - `httpapi` の `<機能>App`（`StaffApp` など）は、操作と同じ名前とシグネチャの関数のフィールドを持つ struct にする。`<機能>App` の束は `Apps` と名付ける。
-- 組み立ての場所は、操作の型の `Do` をメソッド値で渡す（`Leave: staff.NewLeave(...).Do`）。`assemble` の関数は、操作ごとではなく `httpapi` の `<機能>App` ごとに 1 つ置く（`staffApp(repos) httpapi.StaffApp`）。
+- 組み立ての場所は、操作の型の `Do` をメソッド値で渡す（`Leave: staff.NewLeave(...).Do`）。組み立ての関数は、操作ごとではなく `httpapi` の `<機能>App` ごとに 1 つ置く（`staffApp(repos) httpapi.StaffApp`）。
   - Worker は、使う型だけを作る。ID ブローカーの依存を持つ機能（`staff`）を作らない。
 - ハンドラは `s.u.Staff.Leave(ctx, id, in)` のように呼び、呼び先のパッケージを知らない。
 - `httpapi` のテストは、フェイクのメソッド値を struct に入れて渡す。

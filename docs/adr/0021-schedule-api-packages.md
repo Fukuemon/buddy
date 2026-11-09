@@ -43,19 +43,19 @@ Go の API は 3 つある。予定の API（`services/schedule`）、照合の 
   - 認証と、パスが指すリソースの事業所の確認は、全ての機能を読むので `access` に置く。
   - リクエストを送った職員と権限の一覧は `principal` に置く。`principal` はリポジトリと操作を持たず、`access` と `httpapi` が認証の後に作るリクエストの文脈なので、`features/` に置かない。
     - `principal` は `organization` と `staff` に依存する。予定に固有の判定は `principal` に置かず、`schedule` に置く。
-  - 設定は `config` に置く。`config` は DB の接続の値を自分の型で持ち、DB のアダプタを import しない。組み立ての場所がアダプタに渡す。
-  - 全ての依存を組み立てる場所は `assemble` に置き、`cmd/api` と `cmd/calendar-worker` が共有する。
+  - 設定は `config` に置く。`config` は DB の接続の値を自分の型で持ち、DB のアダプタを import しない。組み立ての場所がアダプタに渡す。OIDC の値も自分の型で持ち、`packages/go/oidc` を import しない。
   - 機能のパッケージのテストが使うメモリ上のリポジトリは、`inmem` に置いて共有する。本番のコードからは import しない。
+- 全ての依存を組み立てる場所は、各 `cmd`（`cmd/api`、`cmd/calendar-worker`）の `main` のパッケージに置く。各 `cmd` は、自分が使う機能のパッケージとアダプタだけを組み立てる。
+  - `cmd` の間で組み立てを共有しない。共有すると、Go はパッケージの単位で import をたどるので、`cmd/calendar-worker` に使わない HTTP の層と OIDC の検証が入る。
 - 新しい API は、機能が 2 つ以上あるときだけ `internal/features/<機能>/` を作る。照合の API と ID ブローカーは、1 つの機能なので `features/` を作らない。
 
 依存の向きは、アダプタと組み立ての場所から機能のパッケージ、機能のパッケージから共通のパッケージの 1 方向にする。
 
 ```mermaid
 flowchart TB
-    cmd["cmd/api、cmd/calendar-worker"] --> assemble
-    assemble --> adapters["アダプタ（httpapi、postgres、gcal など）"]
-    assemble --> access
-    assemble --> features["機能のパッケージ（internal/features/）"]
+    cmd["cmd/api、cmd/calendar-worker"] --> adapters["アダプタ（httpapi、postgres、gcal など）"]
+    cmd --> access
+    cmd --> features["機能のパッケージ（internal/features/）"]
     adapters --> features
     access --> principal
     adapters --> principal
@@ -64,7 +64,7 @@ flowchart TB
     features --> common["共通のパッケージ（apperr、tx、kernel、civil）"]
 ```
 
-- `principal` は `organization` と `staff` に依存し、`schedule`、`scheduleview`、`calendarimport`、`access`、`httpapi`、`assemble` から使う。点線は、`principal` を使ってよい 3 つの機能のパッケージから `principal` への向きである。
+- `principal` は `organization` と `staff` に依存し、`schedule`、`scheduleview`、`calendarimport`、`access`、`httpapi`、`cmd/api` から使う。点線は、`principal` を使ってよい 3 つの機能のパッケージから `principal` への向きである。
 
 機能のパッケージの間は、決めた順の前の機能だけを import する。
 
