@@ -180,7 +180,9 @@ test.describe('予定の詳細', () => {
       test(`${label}毎週の繰り返しの予定の 2 回目の回を詳細から削除した場合、その回だけが消え、キャンセルした予定を出しても出ず、1 回目と 3 回目は残ること`, async ({
         browser,
       }) => {
-        const title = `誤入力の定例 ${Date.now() % 1000}`
+        const stamp = Date.now() % 1000
+        const title = `誤入力の定例 ${stamp}`
+        const cancelled = `キャンセルした予定 ${stamp}`
         const [first, second, third] = [fromNextMonday(0), fromNextMonday(7), fromNextMonday(14)]
         await recordPrEvidence(
           browser,
@@ -197,13 +199,23 @@ test.describe('予定の詳細', () => {
               },
             )
             expect(res.status()).toBe(201)
+            // 「キャンセルした予定を出す」を入れたことを画面で示すため、2 回目の日にキャンセルした予定を置く
+            const cancelledId = await createSlot(page.request, token, {
+              staffId: HAYASHI.id,
+              title: cancelled,
+              date: second,
+              start: '13:00',
+              end: '14:00',
+            })
+            await cancelByApi(page.request, token, cancelledId)
+            return cancelledId
           }),
-          async ({ page, step, check }) => {
+          async ({ page, step, check }, { data: cancelledId }) => {
             await openDay(page, HAYASHI.id, second)
             const event = dayEvent(page, HAYASHI.id, title)
             await expect(event).toBeVisible()
             await step(
-              `前提: ${HAYASHI.name} に、${first} から毎週月曜 10:00〜11:00 の「${title}」がある。2 回目の ${second} の日の表示を開いている`,
+              `前提: ${HAYASHI.name} に、${first} から毎週月曜 10:00〜11:00 の「${title}」があり、2 回目の ${second} の 13:00〜14:00 の「${cancelled}」をキャンセルしてある。2 回目の ${second} の日の表示を開いている`,
             )
 
             await step('もし: 2 回目の回の詳細で「予定を削除」を押す')
@@ -219,16 +231,22 @@ test.describe('予定の詳細', () => {
             await step('もし: 「予定を削除する」を押す')
             await page.getByTestId('schedule-delete-submit').click()
             await expect(page.getByTestId('schedule-detail-modal')).toBeHidden()
+            await expect(event).toHaveCount(0)
+            await check(`ならば: 2 回目の ${second} の日の表示から「${title}」が消える`)
+
+            await step('もし: 左のサイドバーの「キャンセルした予定を出す」を入れる')
             await page.getByTestId('calendar-show-cancelled').check()
-            await expect(page.getByTestId(`day-grid-staff-${HAYASHI.id}`)).toBeVisible()
+            const cancelledEvent = page.getByTestId(`schedule-event-${cancelledId}-cancelled`)
+            await expect(cancelledEvent).toBeVisible()
             await expect(
               page
                 .getByTestId(`day-grid-staff-${HAYASHI.id}`)
                 .getByTestId(/^schedule-event-/)
                 .filter({ hasText: title }),
             ).toHaveCount(0)
+            await cancelledEvent.scrollIntoViewIfNeeded()
             await check(
-              `ならば: 「キャンセルした予定を出す」を入れた 2 回目の ${second} の日の表示に「${title}」が出ない`,
+              `ならば: キャンセルした「${cancelled}」は取り消し線で出て、削除した回の「${title}」は出ない`,
             )
 
             for (const [date, nth] of [
@@ -313,7 +331,7 @@ test.describe('予定の詳細', () => {
             const pastEvent = page.getByTestId(`schedule-event-${data.pastId}`)
             await expect(pastEvent).toBeVisible()
             await step(
-              `前提: ${HAYASHI.name} の昨日（${yesterday}）の「${past}」、明日（${tomorrow}）のキャンセルした「${cancelled}」、${LEADER.staff.name} の明日の「${others}」、${HAYASHI.name} の明日の「${own}」がある`,
+              `前提: ${HAYASHI.name} の昨日（${yesterday}）の 10:00〜11:00 に「${past}」がある。昨日の日の表示を開いている`,
             )
 
             await step(`もし: 昨日の自分の「${past}」の詳細を開く`)
@@ -323,9 +341,15 @@ test.describe('予定の詳細', () => {
             await expect(scheduleDetailDeleteButton(page)).toHaveCount(0)
             await check('ならば: 「予定をキャンセル」と「編集」は出て、「予定を削除」は出ない')
 
-            await step(`もし: 明日の自分のキャンセルした「${cancelled}」の詳細を開く`)
             await close.click()
+            await expect(page.getByTestId('schedule-detail-modal')).toBeHidden()
             await openDay(page, HAYASHI.id, tomorrow, { cancelled: true })
+            await expect(page.getByTestId(`schedule-event-${data.ownId}`)).toBeVisible()
+            await step(
+              `前提: キャンセルした予定を出した明日（${tomorrow}）の日の表示に、${HAYASHI.name} のキャンセルした「${cancelled}」、${LEADER.staff.name} の「${others}」、${HAYASHI.name} の「${own}」がある`,
+            )
+
+            await step(`もし: 明日の自分のキャンセルした「${cancelled}」の詳細を開く`)
             await openDetail(page, page.getByTestId(`schedule-event-${data.cancelledId}`))
             await expect(page.getByTestId('schedule-detail-cancel')).toBeVisible()
             await expect(scheduleDetailDeleteButton(page)).toHaveCount(0)
@@ -410,6 +434,13 @@ test.describe('予定の詳細', () => {
               )
 
               await step(`calendarpit の管理の画面で、${OKADA.calendarId} の ${date} を開く`)
+              await expect
+                .poll(async () =>
+                  (await listGoogleEvents(request, OKADA.calendarId)).some(
+                    (e) => e.summary === title,
+                  ),
+                )
+                .toBe(false)
               await openCalendarpit(page, OKADA.calendarId, date)
               await expect(calendarpitEvent(page, title)).toHaveCount(0)
               await check(`かつ: Google カレンダー（calendarpit）からも「${title}」が消える`)
