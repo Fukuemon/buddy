@@ -6,7 +6,7 @@ import (
 	"github.com/Fukuemon/buddy/services/schedule/internal/ulid"
 )
 
-func TestValid(t *testing.T) {
+func TestIsValid(t *testing.T) {
 	tests := []struct {
 		id   string
 		want bool
@@ -21,7 +21,7 @@ func TestValid(t *testing.T) {
 		{"", false},
 	}
 	for _, tt := range tests {
-		if got := ulid.Valid(tt.id); got != tt.want {
+		if got := ulid.IsValid(tt.id); got != tt.want {
 			t.Errorf("Valid(%q) = %v, want %v", tt.id, got, tt.want)
 		}
 	}

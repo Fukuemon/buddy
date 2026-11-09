@@ -1,5 +1,10 @@
 # ローカル環境で全体を起動する構成。手順は CONTRIBUTING.md の Running Locally にある。
 # 値は全て開発用のダミーの値で、ほかの環境で使わない。
+#
+# portless compose up で起動し、ブラウザが開く URL を portless のホスト名の https の URL にする（ADR-0036）。
+# ブラウザが開く URL は *_ORIGIN の環境変数で受ける。未設定のときは https://<サービス>.<プロジェクトの名前>.localhost にする。
+# worktrunk で作った worktree では、名前の _ を - に変えたホスト名を、.config/wt.toml が .env に書く。
+# CI は docker compose up で起動し、*_ORIGIN に http://localhost:<ポート> を渡す（.github/workflows/ci.yml）。
 
 name: buddy
 
@@ -16,6 +21,19 @@ x-broker-db-env: &broker-db-env
   DB_USER: buddy
   DB_PASSWORD: buddy-dev
   DB_NAME: broker
+
+# 予定の API と calendar-worker が Google カレンダー（calendarpit）を読み書きする設定
+x-calendar-env: &calendar-env
+  # 事業所の組織と、ダミーのサービスアカウントの対応
+  GOOGLE_CALENDAR_SERVICE_ACCOUNTS_FILE: /config/google-calendar-service-accounts.json
+  # calendarpit はサービスアカウントの token を出さないので、calendarpit-authorize が書いた fixture の利用者の認証の情報で呼ぶ
+  GOOGLE_CALENDAR_ENDPOINT: http://gcalhold:8080/calendar/v3/
+  GOOGLE_APPLICATION_CREDENTIALS: /credentials/google-calendar.json
+  GOOGLE_CALENDAR_EXPORT_ENABLED: 'true'
+
+x-calendar-volumes: &calendar-volumes
+  - ./compose/google-calendar-service-accounts.json:/config/google-calendar-service-accounts.json:ro
+  - calendarpit-credentials:/credentials:ro
 
 services:
   postgres:
@@ -57,7 +75,7 @@ services:
       postgres: { condition: service_healthy }
 
   # 事業所の上流の IdP のフェイク（mock-oauth2-server）。パスの最初の部分が issuer になるので、
-  # 1 つのコンテナで 2 つの事業所の IdP（/office-a、/office-b）を立てる。
+  # 1 つのコンテナで 4 つの事業所の IdP（/office-a、/office-b、/office-c、/office-d）を立てる。
   # ログインの画面で入れた名前が sub に、クレームの欄に書いた JSON（email と email_verified）が ID token のクレームになる
   idp:
     image: ghcr.io/navikt/mock-oauth2-server:6.0.4
@@ -87,7 +105,7 @@ services:
     depends_on:
       postgres-init: { condition: service_completed_successfully }
 
-  # トークンを発行する Ory Hydra（ADR-0016）。設定は compose/hydra/hydra.yml にある。
+  # トークンを発行する Ory Hydra（ADR-0002）。設定は compose/hydra/hydra.yml にある。
   # --dev は、ローカル環境の http の URL を許す
   hydra:
     image: oryd/hydra:v26.2.0
@@ -95,10 +113,10 @@ services:
     environment:
       DSN: postgres://buddy:buddy-dev@postgres:5432/hydra?sslmode=disable
       # 認可の画面とブローカーの画面は、ブラウザが開く
-      URLS_SELF_PUBLIC: http://localhost:${HYDRA_PUBLIC_PORT:-4444}
-      URLS_LOGIN: http://localhost:${BROKER_PORT:-8100}/login
-      URLS_CONSENT: http://localhost:${BROKER_PORT:-8100}/consent
-      URLS_LOGOUT: http://localhost:${BROKER_PORT:-8100}/logout
+      URLS_SELF_PUBLIC: ${HYDRA_PUBLIC_ORIGIN:-https://hydra.${COMPOSE_PROJECT_NAME}.localhost}
+      URLS_LOGIN: ${BROKER_ORIGIN:-https://broker.${COMPOSE_PROJECT_NAME}.localhost}/login
+      URLS_CONSENT: ${BROKER_ORIGIN:-https://broker.${COMPOSE_PROJECT_NAME}.localhost}/consent
+      URLS_LOGOUT: ${BROKER_ORIGIN:-https://broker.${COMPOSE_PROJECT_NAME}.localhost}/logout
     volumes: [./compose/hydra/hydra.yml:/config/hydra.yml:ro]
     ports:
       - '127.0.0.1:${HYDRA_PUBLIC_PORT:-4444}:4444'
@@ -117,9 +135,9 @@ services:
     entrypoint: ['/bin/sh', '/config/clients.sh']
     environment:
       HYDRA_ADMIN_URL: http://hydra:4445
-      WEB_REDIRECT_URI: http://localhost:${WEB_PORT:-3000}/auth/callback
+      WEB_REDIRECT_URI: ${WEB_ORIGIN:-https://web.${COMPOSE_PROJECT_NAME}.localhost}/auth/callback
       # web のログアウトは、Hydra のログインのセッションを消した後に web の / へ戻る
-      WEB_POST_LOGOUT_REDIRECT_URI: http://localhost:${WEB_PORT:-3000}/
+      WEB_POST_LOGOUT_REDIRECT_URI: ${WEB_ORIGIN:-https://web.${COMPOSE_PROJECT_NAME}.localhost}/
     volumes: [./compose/hydra/clients.sh:/config/clients.sh:ro]
     depends_on:
       hydra: { condition: service_healthy }
@@ -144,7 +162,7 @@ services:
     depends_on:
       broker-migrate: { condition: service_completed_successfully }
 
-  # ID ブローカー（ADR-0016）。Hydra のログインと同意の画面を持ち、職員の事業所の上流の IdP へリダイレクトする
+  # ID ブローカー（ADR-0002）。Hydra のログインと同意の画面を持ち、職員の事業所の上流の IdP へリダイレクトする
   broker:
     image: ${COMPOSE_PROJECT_NAME}-broker
     # イメージは broker-migrate がビルドする
@@ -152,12 +170,12 @@ services:
     environment:
       <<: *broker-db-env
       HYDRA_ADMIN_URL: http://hydra:4445
-      PUBLIC_URL: http://localhost:${BROKER_PORT:-8100}
+      PUBLIC_URL: ${BROKER_ORIGIN:-https://broker.${COMPOSE_PROJECT_NAME}.localhost}
       UPSTREAM_IDPS_FILE: /config/upstream-idps.json
       UPSTREAM_IDP_CLIENT_SECRETS_FILE: /config/upstream-idp-client-secrets.json
       # ブローカーは上流の IdP の discovery の文書をコンテナの間の名前 idp で読む。ブラウザは idp の名前を引けないので、
-      # 認可の画面だけローカルのポートへリダイレクトする
-      UPSTREAM_IDP_BROWSER_ORIGIN: http://localhost:${IDP_PORT:-9000}
+      # 認可の画面だけブラウザが開く URL へリダイレクトする
+      UPSTREAM_IDP_BROWSER_ORIGIN: ${IDP_ORIGIN:-https://idp.${COMPOSE_PROJECT_NAME}.localhost}
       # 内部の API は、予定の API の client credentials の access token を、Hydra の JWKS で検証する
       HYDRA_ISSUER: http://hydra:4444
       # Hydra が token_hook を呼ぶときのヘッダーの値。compose/hydra/hydra.yml の oauth2.token_hook と同じにする
@@ -178,7 +196,7 @@ services:
       idp: { condition: service_healthy }
 
   # Google Calendar API と OAuth をローカル環境で再現する calendarpit。職員のカレンダーと予定は compose/calendarpit/fixture.json にある。
-  # 書いた予定と token は volume に残り、docker compose down -v で消える。カレンダーと予定は、ブラウザで http://localhost:4173 の管理の画面に出る
+  # 書いた予定と token は volume に残り、portless compose down -v で消える。カレンダーと予定は、ブラウザで https://calendarpit.<プロジェクトの名前>.localhost の管理の画面に出る
   calendarpit:
     image: ghcr.io/iktakahiro/calendarpit:0.9.5@sha256:c492440490c5b39d43565593e40ce5f07ed72d901652f9778bad2e7fcc9ffeab
     environment:
@@ -246,7 +264,8 @@ services:
     # イメージは schedule-migrate がビルドする
     pull_policy: never
     environment:
-      <<: *db-env
+      # 書き出しの設定（calendar-env）で、予定の変更を書き出しの待ちに積む。待ちを書くのは schedule-calendar-export である
+      <<: [*db-env, *calendar-env]
       # トークンの iss は Hydra の urls.self.issuer で、API はコンテナの間の名前 hydra で JWKS を読む
       OIDC_ISSUER: http://hydra:4444
       OIDC_AUDIENCE: schedule
@@ -256,21 +275,8 @@ services:
       BROKER_TOKEN_URL: http://hydra:4444/oauth2/token
       BROKER_CLIENT_SECRET: schedule-dev
       # web と、API の仕様のページでリクエストを試すローカル環境のドキュメントサイト（zensical serve）に許す
-      CORS_ALLOW_ORIGINS: http://localhost:${WEB_PORT:-3000},http://localhost:8000
-      # 事業所の組織と、ダミーのサービスアカウントの対応
-      GOOGLE_CALENDAR_SERVICE_ACCOUNTS_FILE: /config/google-calendar-service-accounts.json
-      # calendarpit はサービスアカウントの token を出さないので、calendarpit-authorize が書いた fixture の利用者の認証の情報で呼ぶ
-      GOOGLE_CALENDAR_ENDPOINT: http://gcalhold:8080/calendar/v3/
-      GOOGLE_APPLICATION_CREDENTIALS: /credentials/google-calendar.json
-      GOOGLE_CALENDAR_EXPORT_ENABLED: 'true'
-      # E2E が書き出しを待つ時間を短くする
-      GOOGLE_CALENDAR_EXPORT_INTERVAL: 2s
-      GOOGLE_CALENDAR_SYNC_ENABLED: 'true'
-      # E2E が Google の変更の反映を待つ時間を短くする
-      GOOGLE_CALENDAR_SYNC_INTERVAL: 2s
-    volumes:
-      - ./compose/google-calendar-service-accounts.json:/config/google-calendar-service-accounts.json:ro
-      - calendarpit-credentials:/credentials:ro
+      CORS_ALLOW_ORIGINS: ${WEB_ORIGIN:-https://web.${COMPOSE_PROJECT_NAME}.localhost},http://localhost:8000
+    volumes: *calendar-volumes
     ports: ['127.0.0.1:${SCHEDULE_PORT:-8080}:8080']
     healthcheck:
       test: ['CMD', '/usr/local/bin/api', 'healthcheck']
@@ -285,11 +291,44 @@ services:
       calendarpit-authorize: { condition: service_completed_successfully }
       gcalhold: { condition: service_healthy }
 
+  # 予定の API と同じイメージの calendar-worker が、書き出しと同期を役割ごとのプロセスで常駐して動かす（ADR-0032）
+  schedule-calendar-export:
+    image: ${COMPOSE_PROJECT_NAME}-schedule
+    # イメージは schedule-migrate がビルドする
+    pull_policy: never
+    entrypoint: ['/usr/local/bin/calendar-worker']
+    command: ['export']
+    environment:
+      <<: [*db-env, *calendar-env]
+      # E2E が書き出しを待つ時間を短くする
+      GOOGLE_CALENDAR_EXPORT_INTERVAL: 2s
+    volumes: *calendar-volumes
+    depends_on: &calendar-worker-depends
+      schedule-seed: { condition: service_completed_successfully }
+      calendarpit-authorize: { condition: service_completed_successfully }
+      gcalhold: { condition: service_healthy }
+
+  schedule-calendar-sync:
+    image: ${COMPOSE_PROJECT_NAME}-schedule
+    # イメージは schedule-migrate がビルドする
+    pull_policy: never
+    entrypoint: ['/usr/local/bin/calendar-worker']
+    command: ['sync']
+    environment:
+      <<: [*db-env, *calendar-env]
+      GOOGLE_CALENDAR_SYNC_ENABLED: 'true'
+      # E2E が Google の変更の反映を待つ時間を短くする
+      GOOGLE_CALENDAR_SYNC_INTERVAL: 2s
+    volumes: *calendar-volumes
+    depends_on: *calendar-worker-depends
+
   receipt:
     build: { context: ., dockerfile: services/receipt/Dockerfile }
     environment:
       OIDC_ISSUER: http://hydra:4444
       OIDC_AUDIENCE: receipt
+      # 照合の前に、受けたトークンで予定の API の GET /v1/me を呼び、照合の権限を確認する（ADR-0007）
+      SCHEDULE_URL: http://schedule:8080
       # API の仕様のページでリクエストを試すローカル環境のドキュメントサイト（zensical serve）に許す
       CORS_ALLOW_ORIGINS: http://localhost:8000
       # 照合の対象の森のカレンダーと、予定の API と同じダミーのサービスアカウントの対応
@@ -310,6 +349,7 @@ services:
       retries: 30
     depends_on:
       hydra: { condition: service_healthy }
+      schedule: { condition: service_healthy }
       calendarpit-authorize: { condition: service_completed_successfully }
 
   web:
@@ -317,16 +357,18 @@ services:
       context: .
       dockerfile: apps/web/Dockerfile
     environment:
-      # discovery の文書の認可のエンドポイントは、ブラウザが開くローカルのポートを指す（compose/hydra/hydra.yml）
+      # discovery の文書の認可のエンドポイントは、ブラウザが開く URL を指す（compose/hydra/hydra.yml）
       OIDC_ISSUER: http://hydra:4444
       OIDC_CLIENT_ID: web
       OIDC_CLIENT_SECRET: web-dev
-      # Hydra は discovery の end_session_endpoint を Issuer の URL（コンテナの間の名前）から作るので、ブラウザが開くローカルのポートを渡す
-      OIDC_END_SESSION_ENDPOINT: http://localhost:${HYDRA_PUBLIC_PORT:-4444}/oauth2/sessions/logout
+      # Hydra は discovery の end_session_endpoint を Issuer の URL（コンテナの間の名前）から作るので、ブラウザが開く URL を渡す
+      OIDC_END_SESSION_ENDPOINT: ${HYDRA_PUBLIC_ORIGIN:-https://hydra.${COMPOSE_PROJECT_NAME}.localhost}/oauth2/sessions/logout
       SESSION_STORE_URL: redis://valkey:6379
       SESSION_SECRET: buddy-dev-session-secret-for-compose-only
-      # ローカル環境は https でないので、cookie に Secure を付けない
-      SESSION_COOKIE_SECURE: 'false'
+      # portless は TLS を終端して web へ http で渡すので、ログインとログアウトの戻り先は、ブラウザが開く URL から作る
+      PUBLIC_URL: ${WEB_ORIGIN:-https://web.${COMPOSE_PROJECT_NAME}.localhost}
+      # http://localhost で開く CI では、cookie に Secure を付けないよう false を渡す
+      SESSION_COOKIE_SECURE: ${SESSION_COOKIE_SECURE:-true}
       SCHEDULE_URL: http://schedule:8080
       RECEIPT_URL: http://receipt:8080
     ports: ['127.0.0.1:${WEB_PORT:-3000}:3000']

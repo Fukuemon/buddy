@@ -24,6 +24,21 @@ func (q *Queries) AddPositionPolicy(ctx context.Context, arg AddPositionPolicyPa
 	return err
 }
 
+const createDepartment = `-- name: CreateDepartment :exec
+INSERT INTO departments (id, facility_id, name) VALUES ($1, $2, $3)
+`
+
+type CreateDepartmentParams struct {
+	ID         string
+	FacilityID string
+	Name       string
+}
+
+func (q *Queries) CreateDepartment(ctx context.Context, arg CreateDepartmentParams) error {
+	_, err := q.db.Exec(ctx, createDepartment, arg.ID, arg.FacilityID, arg.Name)
+	return err
+}
+
 const createPosition = `-- name: CreatePosition :exec
 INSERT INTO positions (id, facility_id, name) VALUES ($1, $2, $3)
 `
@@ -40,17 +55,23 @@ func (q *Queries) CreatePosition(ctx context.Context, arg CreatePositionParams) 
 }
 
 const createTeam = `-- name: CreateTeam :exec
-INSERT INTO teams (id, facility_id, name) VALUES ($1, $2, $3)
+INSERT INTO teams (id, facility_id, name, color) VALUES ($1, $2, $3, $4)
 `
 
 type CreateTeamParams struct {
 	ID         string
 	FacilityID string
 	Name       string
+	Color      string
 }
 
 func (q *Queries) CreateTeam(ctx context.Context, arg CreateTeamParams) error {
-	_, err := q.db.Exec(ctx, createTeam, arg.ID, arg.FacilityID, arg.Name)
+	_, err := q.db.Exec(ctx, createTeam,
+		arg.ID,
+		arg.FacilityID,
+		arg.Name,
+		arg.Color,
+	)
 	return err
 }
 
@@ -71,8 +92,20 @@ func (q *Queries) GetDepartment(ctx context.Context, id string) (Department, err
 	return i, err
 }
 
+const getDepartmentFacilityID = `-- name: GetDepartmentFacilityID :one
+SELECT facility_id FROM departments WHERE id = $1
+`
+
+// access がパスの ID のリソースの事業所を確認するときに、事業所だけを読む。
+func (q *Queries) GetDepartmentFacilityID(ctx context.Context, id string) (string, error) {
+	row := q.db.QueryRow(ctx, getDepartmentFacilityID, id)
+	var facility_id string
+	err := row.Scan(&facility_id)
+	return facility_id, err
+}
+
 const getFacility = `-- name: GetFacility :one
-SELECT id, name, org_id, time_zone, created_at, updated_at FROM facilities WHERE id = $1
+SELECT id, name, org_id, time_zone, created_at, updated_at, source_mode FROM facilities WHERE id = $1
 `
 
 func (q *Queries) GetFacility(ctx context.Context, id string) (Facility, error) {
@@ -85,12 +118,13 @@ func (q *Queries) GetFacility(ctx context.Context, id string) (Facility, error) 
 		&i.TimeZone,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.SourceMode,
 	)
 	return i, err
 }
 
 const getFacilityByOrgID = `-- name: GetFacilityByOrgID :one
-SELECT id, name, org_id, time_zone, created_at, updated_at FROM facilities WHERE org_id = $1
+SELECT id, name, org_id, time_zone, created_at, updated_at, source_mode FROM facilities WHERE org_id = $1
 `
 
 func (q *Queries) GetFacilityByOrgID(ctx context.Context, orgID *string) (Facility, error) {
@@ -103,6 +137,48 @@ func (q *Queries) GetFacilityByOrgID(ctx context.Context, orgID *string) (Facili
 		&i.TimeZone,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.SourceMode,
+	)
+	return i, err
+}
+
+const getFacilityForShare = `-- name: GetFacilityForShare :one
+SELECT id, name, org_id, time_zone, created_at, updated_at, source_mode FROM facilities WHERE id = $1 FOR SHARE
+`
+
+// ShareFacility と同じ共有のロックを取り、事業所の行を返す。予定を書く操作が、ロックの中で正本のモードを読む。
+func (q *Queries) GetFacilityForShare(ctx context.Context, id string) (Facility, error) {
+	row := q.db.QueryRow(ctx, getFacilityForShare, id)
+	var i Facility
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.OrgID,
+		&i.TimeZone,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.SourceMode,
+	)
+	return i, err
+}
+
+const getFacilityForUpdate = `-- name: GetFacilityForUpdate :one
+SELECT id, name, org_id, time_zone, created_at, updated_at, source_mode FROM facilities WHERE id = $1 FOR UPDATE
+`
+
+// LockFacility と同じ排他のロックを取り、事業所の行を返す。正本のモードを変える操作（切り替えの完了）が、ロックの中でモードを読む。
+// 予定を書く操作は GetFacilityForShare で同じ行を読むので、モードを変えるまでの間に、前のモードで予定を書けない。
+func (q *Queries) GetFacilityForUpdate(ctx context.Context, id string) (Facility, error) {
+	row := q.db.QueryRow(ctx, getFacilityForUpdate, id)
+	var i Facility
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.OrgID,
+		&i.TimeZone,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.SourceMode,
 	)
 	return i, err
 }
@@ -142,8 +218,20 @@ func (q *Queries) GetPosition(ctx context.Context, id string) (Position, error) 
 	return i, err
 }
 
+const getPositionFacilityID = `-- name: GetPositionFacilityID :one
+SELECT facility_id FROM positions WHERE id = $1
+`
+
+// access がパスの ID のリソースの事業所を確認するときに、事業所だけを読む。
+func (q *Queries) GetPositionFacilityID(ctx context.Context, id string) (string, error) {
+	row := q.db.QueryRow(ctx, getPositionFacilityID, id)
+	var facility_id string
+	err := row.Scan(&facility_id)
+	return facility_id, err
+}
+
 const getTeam = `-- name: GetTeam :one
-SELECT id, facility_id, name, created_at, updated_at FROM teams WHERE id = $1
+SELECT id, facility_id, name, created_at, updated_at, color FROM teams WHERE id = $1
 `
 
 func (q *Queries) GetTeam(ctx context.Context, id string) (Team, error) {
@@ -155,8 +243,21 @@ func (q *Queries) GetTeam(ctx context.Context, id string) (Team, error) {
 		&i.Name,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.Color,
 	)
 	return i, err
+}
+
+const getTeamFacilityID = `-- name: GetTeamFacilityID :one
+SELECT facility_id FROM teams WHERE id = $1
+`
+
+// access がパスの ID のリソースの事業所を確認するときに、事業所だけを読む。
+func (q *Queries) GetTeamFacilityID(ctx context.Context, id string) (string, error) {
+	row := q.db.QueryRow(ctx, getTeamFacilityID, id)
+	var facility_id string
+	err := row.Scan(&facility_id)
+	return facility_id, err
 }
 
 const listDepartmentsByFacility = `-- name: ListDepartmentsByFacility :many
@@ -328,7 +429,7 @@ func (q *Queries) ListPositionsByFacility(ctx context.Context, facilityID string
 }
 
 const listTeamsByFacility = `-- name: ListTeamsByFacility :many
-SELECT id, facility_id, name, created_at, updated_at FROM teams WHERE facility_id = $1 ORDER BY name, id
+SELECT id, facility_id, name, created_at, updated_at, color FROM teams WHERE facility_id = $1 ORDER BY name, id
 `
 
 func (q *Queries) ListTeamsByFacility(ctx context.Context, facilityID string) ([]Team, error) {
@@ -346,6 +447,7 @@ func (q *Queries) ListTeamsByFacility(ctx context.Context, facilityID string) ([
 			&i.Name,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.Color,
 		); err != nil {
 			return nil, err
 		}
@@ -355,4 +457,79 @@ func (q *Queries) ListTeamsByFacility(ctx context.Context, facilityID string) ([
 		return nil, err
 	}
 	return items, nil
+}
+
+const lockFacility = `-- name: LockFacility :one
+SELECT id FROM facilities WHERE id = $1 FOR UPDATE
+`
+
+// 事業所の職員の休職、退職、役職とチームを変える操作、権限を外す操作を 1 つずつにする。職員の管理の権限を持つ有効な職員を数えてから書くまでの間に、ほかの操作が割り込まない。
+// 予定と担当の新しい割り振り（ShareFacility）とも 1 つずつにし、退職の残る予定の確認と予定の作成が行き違わない。
+func (q *Queries) LockFacility(ctx context.Context, id string) (string, error) {
+	row := q.db.QueryRow(ctx, lockFacility, id)
+	var id_2 string
+	err := row.Scan(&id_2)
+	return id_2, err
+}
+
+const shareFacility = `-- name: ShareFacility :one
+SELECT id FROM facilities WHERE id = $1 FOR SHARE
+`
+
+// 予定と担当の新しい割り振りが、職員の状態を確認してから書き終えるまでの間、LockFacility を待たせる。
+// 割り振りどうしは待たせない。
+func (q *Queries) ShareFacility(ctx context.Context, id string) (string, error) {
+	row := q.db.QueryRow(ctx, shareFacility, id)
+	var id_2 string
+	err := row.Scan(&id_2)
+	return id_2, err
+}
+
+const updateDepartment = `-- name: UpdateDepartment :execrows
+UPDATE departments SET name = $2, updated_at = now() WHERE id = $1
+`
+
+type UpdateDepartmentParams struct {
+	ID   string
+	Name string
+}
+
+func (q *Queries) UpdateDepartment(ctx context.Context, arg UpdateDepartmentParams) (int64, error) {
+	result, err := q.db.Exec(ctx, updateDepartment, arg.ID, arg.Name)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
+const updateFacilitySourceMode = `-- name: UpdateFacilitySourceMode :exec
+UPDATE facilities SET source_mode = $2 WHERE id = $1
+`
+
+type UpdateFacilitySourceModeParams struct {
+	ID         string
+	SourceMode string
+}
+
+func (q *Queries) UpdateFacilitySourceMode(ctx context.Context, arg UpdateFacilitySourceModeParams) error {
+	_, err := q.db.Exec(ctx, updateFacilitySourceMode, arg.ID, arg.SourceMode)
+	return err
+}
+
+const updateTeam = `-- name: UpdateTeam :execrows
+UPDATE teams SET name = $2, color = $3, updated_at = now() WHERE id = $1
+`
+
+type UpdateTeamParams struct {
+	ID    string
+	Name  string
+	Color string
+}
+
+func (q *Queries) UpdateTeam(ctx context.Context, arg UpdateTeamParams) (int64, error) {
+	result, err := q.db.Exec(ctx, updateTeam, arg.ID, arg.Name, arg.Color)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
 }

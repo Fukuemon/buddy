@@ -5,11 +5,11 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/Fukuemon/buddy/services/schedule/internal/organization"
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/organization"
 	"github.com/Fukuemon/buddy/services/schedule/internal/postgres/sqlcgen"
 )
 
-// FacilityRepository は、organization.FacilityRepository を実装する。
+// FacilityRepository は、organization.FacilityRepository と、事業所の行をロックする機能のパッケージの FacilityLock を実装する。
 type FacilityRepository struct{ conn }
 
 // NewFacilityRepository は FacilityRepository を作る。
@@ -35,8 +35,50 @@ func (r *FacilityRepository) GetByOrgID(ctx context.Context, orgID string) (orga
 	return toFacility(f), nil
 }
 
+// Lock は、事業所 facilityID の行に排他のロックを取る。呼び出し側がトランザクションの中で呼ぶ。
+// 職員の休職、退職、役職とチームを変える操作、権限を外す操作、利用者の利用の終了と再開が取る。
+// 事業所が無いときは apperr.ErrNotFound を返す。
+func (r *FacilityRepository) Lock(ctx context.Context, facilityID string) error {
+	_, err := r.q(ctx).LockFacility(ctx, facilityID)
+	return translate("lock facility", err)
+}
+
+// Share は、事業所 facilityID の行に共有のロックを取る。呼び出し側がトランザクションの中で呼ぶ。
+// 予定と担当の新しい割り振りが取る。Lock とは互いにトランザクションが終わるまで待ち、Share どうしは待たない。
+// 事業所が無いときは apperr.ErrNotFound を返す。
+func (r *FacilityRepository) Share(ctx context.Context, facilityID string) error {
+	_, err := r.q(ctx).ShareFacility(ctx, facilityID)
+	return translate("share facility", err)
+}
+
+// GetForShare は、Share と同じ共有のロックを事業所 facilityID の行に取り、事業所を返す。呼び出し側がトランザクションの中で呼ぶ。
+// 予定を書く操作が、ロックの中で正本のモードを読む。モードの切り替えは同じ行に排他のロックを取るので、読んだ後にモードが変わらない。
+// 事業所が無いときは apperr.ErrNotFound を返す。
+func (r *FacilityRepository) GetForShare(ctx context.Context, facilityID string) (organization.Facility, error) {
+	f, err := r.q(ctx).GetFacilityForShare(ctx, facilityID)
+	if err != nil {
+		return organization.Facility{}, translate("get facility for share", err)
+	}
+	return toFacility(f), nil
+}
+
+// GetForUpdate は、Lock と同じ排他のロックを事業所 facilityID の行に取り、事業所を返す。呼び出し側がトランザクションの中で呼ぶ。
+// 切り替えの操作が、ロックの中で正本のモードを読んで変える。事業所が無いときは apperr.ErrNotFound を返す。
+func (r *FacilityRepository) GetForUpdate(ctx context.Context, facilityID string) (organization.Facility, error) {
+	f, err := r.q(ctx).GetFacilityForUpdate(ctx, facilityID)
+	if err != nil {
+		return organization.Facility{}, translate("get facility for update", err)
+	}
+	return toFacility(f), nil
+}
+
+// ChangeSourceMode は、事業所 facilityID の正本のモードを mode にする。呼び出し側が GetForUpdate のロックの中で呼ぶ。
+func (r *FacilityRepository) ChangeSourceMode(ctx context.Context, facilityID string, mode organization.SourceMode) error {
+	return translate("update facility source mode", r.q(ctx).UpdateFacilitySourceMode(ctx, sqlcgen.UpdateFacilitySourceModeParams{ID: facilityID, SourceMode: string(mode)}))
+}
+
 func toFacility(f sqlcgen.Facility) organization.Facility {
-	return organization.Facility{ID: f.ID, Name: f.Name, OrgID: deref(f.OrgID), CreatedAt: f.CreatedAt, UpdatedAt: f.UpdatedAt}
+	return organization.Facility{ID: f.ID, Name: f.Name, OrgID: deref(f.OrgID), SourceMode: organization.SourceMode(f.SourceMode), CreatedAt: f.CreatedAt, UpdatedAt: f.UpdatedAt}
 }
 
 // DepartmentRepository は、organization.DepartmentRepository を実装する。
@@ -69,6 +111,18 @@ func (r *DepartmentRepository) ListByFacility(ctx context.Context, facilityID st
 	return out, nil
 }
 
+// Create は、部署を書く。同じ事業所に同じ名前があるときは apperr.ErrConflict を、事業所が無いときは apperr.ErrInvalidInput のエラーを返す。
+func (r *DepartmentRepository) Create(ctx context.Context, d organization.Department) error {
+	err := r.q(ctx).CreateDepartment(ctx, sqlcgen.CreateDepartmentParams{ID: d.ID, FacilityID: d.FacilityID, Name: d.Name})
+	return translate("create department", err)
+}
+
+// Update は、部署 d.ID の名前を d の値にする。部署が無いときは apperr.ErrNotFound を、同じ事業所にほかの同じ名前の部署があるときは apperr.ErrConflict を返す。
+func (r *DepartmentRepository) Update(ctx context.Context, d organization.Department) error {
+	n, err := r.q(ctx).UpdateDepartment(ctx, sqlcgen.UpdateDepartmentParams{ID: d.ID, Name: d.Name})
+	return touched("update department", n, err)
+}
+
 // TeamRepository は、organization.TeamRepository を実装する。
 type TeamRepository struct{ conn }
 
@@ -81,7 +135,7 @@ func (r *TeamRepository) Get(ctx context.Context, id string) (organization.Team,
 	if err != nil {
 		return organization.Team{}, translate("get team", err)
 	}
-	return organization.Team(t), nil
+	return toTeam(t), nil
 }
 
 // ListByFacility は、事業所 facilityID のチームを名前、ID の順に返す。無いときは空のスライスを返す。
@@ -92,15 +146,28 @@ func (r *TeamRepository) ListByFacility(ctx context.Context, facilityID string) 
 	}
 	out := make([]organization.Team, len(rows))
 	for i, t := range rows {
-		out[i] = organization.Team(t)
+		out[i] = toTeam(t)
 	}
 	return out, nil
 }
 
 // Create は、チームを書く。同じ事業所に同じ名前があるときは apperr.ErrConflict を、事業所が無いときは apperr.ErrInvalidInput のエラーを返す。
 func (r *TeamRepository) Create(ctx context.Context, t organization.Team) error {
-	err := r.q(ctx).CreateTeam(ctx, sqlcgen.CreateTeamParams{ID: t.ID, FacilityID: t.FacilityID, Name: t.Name})
+	err := r.q(ctx).CreateTeam(ctx, sqlcgen.CreateTeamParams{ID: t.ID, FacilityID: t.FacilityID, Name: t.Name, Color: string(t.Color)})
 	return translate("create team", err)
+}
+
+// Update は、チーム t.ID の名前と色を t の値にする。チームが無いときは apperr.ErrNotFound を、同じ事業所にほかの同じ名前のチームがあるときは apperr.ErrConflict を返す。
+func (r *TeamRepository) Update(ctx context.Context, t organization.Team) error {
+	n, err := r.q(ctx).UpdateTeam(ctx, sqlcgen.UpdateTeamParams{ID: t.ID, Name: t.Name, Color: string(t.Color)})
+	return touched("update team", n, err)
+}
+
+func toTeam(t sqlcgen.Team) organization.Team {
+	return organization.Team{
+		ID: t.ID, FacilityID: t.FacilityID, Name: t.Name, Color: organization.TeamColor(t.Color),
+		CreatedAt: t.CreatedAt, UpdatedAt: t.UpdatedAt,
+	}
 }
 
 // PositionRepository は、organization.PositionRepository を実装する。

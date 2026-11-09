@@ -17,7 +17,6 @@ import (
 	"github.com/Fukuemon/buddy/services/schedule/internal/access"
 	"github.com/Fukuemon/buddy/services/schedule/internal/apperr"
 	"github.com/Fukuemon/buddy/services/schedule/internal/principal"
-	"github.com/Fukuemon/buddy/services/schedule/internal/staff"
 )
 
 const (
@@ -77,7 +76,7 @@ func (fakeAuth) Authenticate(_ context.Context, id principal.Identity) (principa
 	if id.OrgID != testOrgID {
 		return principal.Principal{}, apperr.ErrForbidden
 	}
-	return principal.Principal{Staff: staff.Detail{Summary: staff.Summary{Staff: staff.Staff{ID: staffID, FacilityID: facilityID}}}}, nil
+	return principal.Principal{Staff: principal.Staff{ID: staffID, FacilityID: facilityID}}, nil
 }
 
 func (fakeAuth) FacilityOf(_ context.Context, r access.Resource, id string) (string, error) {
@@ -127,7 +126,7 @@ func TestUnauthenticated(t *testing.T) {
 				t.Errorf("body = %s", rec.Body)
 			}
 			if s.listCalls != 0 {
-				t.Error("usecase が呼ばれた")
+				t.Error("App が呼ばれた")
 			}
 		})
 	}
@@ -147,6 +146,10 @@ func TestForbidden(t *testing.T) {
 		{name: "ほかの事業所の予定の更新", method: http.MethodPut, target: "/v1/schedules/" + otherScheduleID, body: validSlotBody, org: testOrgID},
 		{name: "ほかの事業所の予定のキャンセル", method: http.MethodPost, target: "/v1/schedules/" + otherScheduleID + "/cancel",
 			body: `{"reason":"体調不良"}`, org: testOrgID},
+		// 利用者の 2 つの読み取りは、職員の取得と同じく、パスの ID が指す事業所で拒む（#353 の検証の観点 4）。
+		{name: "ほかの事業所の職員", method: http.MethodGet, target: "/v1/users/" + otherScheduleID, org: testOrgID},
+		{name: "ほかの事業所の利用者", method: http.MethodGet, target: "/v1/patients/" + otherScheduleID, org: testOrgID},
+		{name: "ほかの事業所の利用者に残る予定", method: http.MethodGet, target: "/v1/patients/" + otherScheduleID + "/remaining_schedules", org: testOrgID},
 		{name: "組織のクレームがない", method: http.MethodGet, target: "/v1/facilities/" + facilityID + "/schedules"},
 		{name: "職員を特定できない組織", method: http.MethodGet, target: "/v1/facilities/" + facilityID + "/schedules", org: "org-x"},
 	}
@@ -158,7 +161,7 @@ func TestForbidden(t *testing.T) {
 				t.Fatalf("status = %d, body = %s", rec.Code, rec.Body)
 			}
 			if s.listCalls != 0 || s.lastSlot.StaffID != "" {
-				t.Error("usecase が呼ばれた")
+				t.Error("App が呼ばれた")
 			}
 		})
 	}

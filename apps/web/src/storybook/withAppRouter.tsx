@@ -8,11 +8,12 @@ import {
   createRouter,
   stripSearchParams,
   useParams,
+  type RouterHistory,
 } from '@tanstack/react-router'
 import type { Decorator, StoryContext } from '@storybook/react-vite'
 import { useState } from 'react'
 
-import { ApiError, type BuddyApi, type ReceiptApi } from '#/api/client'
+import { ApiError, type BuddyApi, type ReceiptApi } from '#/api/BuddyApi'
 import { createFakeBuddyApi } from '#/api/fake/fakeBuddyApi'
 import { FAKE_VIEWER } from '#/api/fake/fixtures'
 import { createFakeReceiptApi } from '#/api/fake/fakeReceiptApi'
@@ -26,7 +27,7 @@ import {
   scheduleSearchDefaults,
   scheduleSearchSchema,
 } from '#/features/schedule/schema/scheduleSearch'
-import type { AppRouterContext } from '#/integrations/tanstack-query/root-provider'
+import type { AppRouterContext } from '#/appContext'
 
 /** story を置く route。アプリの route の ID と同じにし、Container の useSearch と useNavigate が働くようにする。 */
 export type StoryRouteId =
@@ -34,11 +35,21 @@ export type StoryRouteId =
   | '/schedule/new'
   | '/schedule/$scheduleId/'
   | '/schedule/$scheduleId/edit'
+  | '/schedule/$scheduleId/recurrence'
   | '/receipt/'
   | '/receipt/result'
   | '/schedule_/link'
+  | '/schedule_/link_/cutover'
   | '/schedule_/import'
   | '/schedule_/review'
+  | '/staff'
+  | '/staff/new'
+  | '/staff_/$staffId'
+  | '/organization'
+  | '/me'
+  | '/patients'
+  | '/patients/new'
+  | '/patients_/$patientId'
 
 /** story の parameters の appRouter に渡す値。 */
 export type AppRouterParameters = {
@@ -53,12 +64,14 @@ export type AppRouterParameters = {
   receiptApi?: ReceiptApi
   /** 描く前に query の cache に置く値。 */
   seed?: (queryClient: QueryClient) => void
+  /** テストが移った先の URL を読むための履歴。デフォルトは url から作る。 */
+  history?: RouterHistory
 }
 
 /** decorator が受ける story。route の params を args に足して描けるよう、args を受ける形にする。 */
 type StoryFn = (update?: { args?: Record<string, unknown> }) => React.ReactNode
 
-const buildRouter = (Story: StoryFn, params: AppRouterParameters) => {
+const createStoryRouter = (Story: StoryFn, params: AppRouterParameters) => {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   params.seed?.(queryClient)
   const context: AppRouterContext = {
@@ -66,6 +79,7 @@ const buildRouter = (Story: StoryFn, params: AppRouterParameters) => {
     api: params.api ?? createFakeBuddyApi(),
     receiptApi: params.receiptApi ?? createFakeReceiptApi(),
     mode: 'fake',
+    getViewer: async () => params.viewer ?? FAKE_VIEWER,
   }
   // story を置く route の外では何も描かない。story の操作で別の route へ移ると、画面は空になる
   const at = (id: StoryRouteId) => () => (params.route === id ? Story() : <Outlet />)
@@ -104,6 +118,11 @@ const buildRouter = (Story: StoryFn, params: AppRouterParameters) => {
     path: '$scheduleId/edit',
     component: atScheduleId('/schedule/$scheduleId/edit'),
   })
+  const scheduleRecurrence = createRoute({
+    getParentRoute: () => schedule,
+    path: '$scheduleId/recurrence',
+    component: atScheduleId('/schedule/$scheduleId/recurrence'),
+  })
   const receipt = createRoute({
     getParentRoute: () => root,
     path: 'receipt/',
@@ -120,6 +139,11 @@ const buildRouter = (Story: StoryFn, params: AppRouterParameters) => {
     path: 'schedule/link',
     component: at('/schedule_/link'),
   })
+  const scheduleCutover = createRoute({
+    getParentRoute: () => root,
+    path: 'schedule/link/cutover',
+    component: at('/schedule_/link_/cutover'),
+  })
   const scheduleImport = createRoute({
     getParentRoute: () => root,
     path: 'schedule/import',
@@ -132,23 +156,78 @@ const buildRouter = (Story: StoryFn, params: AppRouterParameters) => {
     component: at('/schedule_/review'),
   })
 
+  const staff = createRoute({
+    getParentRoute: () => root,
+    path: 'staff',
+    component: at('/staff'),
+  })
+  const staffNew = createRoute({
+    getParentRoute: () => staff,
+    path: 'new',
+    component: at('/staff/new'),
+  })
+
+  // アプリの route は params の staffId を Container の props に渡すので、story の args にも同じ値を渡す
+  function StaffIdRoute() {
+    const { staffId } = useParams({ strict: false })
+    return params.route === '/staff_/$staffId' ? Story({ args: { staffId } }) : <Outlet />
+  }
+  const staffDetail = createRoute({
+    getParentRoute: () => root,
+    path: 'staff/$staffId',
+    component: StaffIdRoute,
+  })
+  const me = createRoute({ getParentRoute: () => root, path: 'me', component: at('/me') })
+  const organization = createRoute({
+    getParentRoute: () => root,
+    path: 'organization',
+    component: at('/organization'),
+  })
+
+  const patients = createRoute({
+    getParentRoute: () => root,
+    path: 'patients',
+    component: at('/patients'),
+  })
+  const patientsNew = createRoute({
+    getParentRoute: () => patients,
+    path: 'new',
+    component: at('/patients/new'),
+  })
+  function PatientIdRoute() {
+    const { patientId } = useParams({ strict: false })
+    return params.route === '/patients_/$patientId' ? Story({ args: { patientId } }) : <Outlet />
+  }
+  const patientDetail = createRoute({
+    getParentRoute: () => root,
+    path: 'patients/$patientId',
+    component: PatientIdRoute,
+  })
+
   const router = createRouter({
     routeTree: root.addChildren([
-      schedule.addChildren([scheduleNew, scheduleDetail, scheduleEdit]),
+      schedule.addChildren([scheduleNew, scheduleDetail, scheduleEdit, scheduleRecurrence]),
       receipt,
       receiptResult,
       scheduleLink,
+      scheduleCutover,
       scheduleImport,
       scheduleReview,
+      staff.addChildren([staffNew]),
+      staffDetail,
+      organization,
+      me,
+      patients.addChildren([patientsNew]),
+      patientDetail,
     ]),
-    history: createMemoryHistory({ initialEntries: [params.url] }),
+    history: params.history ?? createMemoryHistory({ initialEntries: [params.url] }),
     context,
   })
   return { router, queryClient }
 }
 
 const AppRouterStory = ({ Story, params }: { Story: StoryFn; params: AppRouterParameters }) => {
-  const [{ router, queryClient }] = useState(() => buildRouter(Story, params))
+  const [{ router, queryClient }] = useState(() => createStoryRouter(Story, params))
   return (
     <QueryClientProvider client={queryClient}>
       <RouterProvider router={router} />
@@ -172,10 +251,17 @@ export const withAppRouter: Decorator = (Story, context: StoryContext) => (
 /** 一覧と 1 件の取得を、空の結果にしたフェイクの API を作る。 */
 export const emptyBuddyApi = (base: BuddyApi = createFakeBuddyApi()): BuddyApi => ({
   ...base,
-  schedules: { ...base.schedules, list: async () => [] },
+  schedules: {
+    ...base.schedules,
+    list: async (...args) => ({
+      ...(await base.schedules.list(...args)),
+      schedules: [],
+      needsReview: [],
+    }),
+  },
   staff: { ...base.staff, list: async () => [] },
   teams: { ...base.teams, list: async () => [] },
-  patients: { ...base.patients, list: async () => [] },
+  patients: { ...base.patients, list: async () => [], listRecords: async () => [] },
   calendars: { ...base.calendars, list: async () => [], exportIssues: async () => [] },
 })
 
@@ -183,6 +269,7 @@ export const emptyBuddyApi = (base: BuddyApi = createFakeBuddyApi()): BuddyApi =
 export const suspendedStaffBuddyApi = (base: BuddyApi = createFakeBuddyApi()): BuddyApi => ({
   ...base,
   staff: {
+    ...base.staff,
     list: async (...args) =>
       (await base.staff.list(...args)).map((staff) =>
         staff.id === 'staff-2' ? { ...staff, status: 'on_leave' } : staff,
@@ -190,50 +277,86 @@ export const suspendedStaffBuddyApi = (base: BuddyApi = createFakeBuddyApi()): B
   },
 })
 
-/** 全ての操作が status の ApiError で失敗するフェイクの API を作る。 */
-export const failingBuddyApi = (status = 500): BuddyApi => {
-  const fail = async () => {
-    throw new ApiError(status, 'API が失敗した')
-  }
-  return {
-    schedules: { list: fail, get: fail, create: fail, update: fail },
-    staff: { list: fail },
-    teams: { list: fail },
-    patients: { list: fail },
-    calendars: {
-      serviceAccount: fail,
-      list: fail,
-      check: fail,
-      link: fail,
-      unlink: fail,
-      preview: fail,
-      import: fail,
-      exportIssues: fail,
-      retryExport: fail,
-      acceptExport: fail,
-    },
+/** 全ての操作を operation にしたフェイクの API を作る。 */
+const buddyApiOf = (operation: () => Promise<never>): BuddyApi => ({
+  facilities: { get: operation },
+  me: { get: operation, externalCalendar: operation },
+  schedules: {
+    list: operation,
+    get: operation,
+    create: operation,
+    update: operation,
+    cancel: operation,
+    delete: operation,
+    createRecurring: operation,
+    changeRule: operation,
+  },
+  staff: {
+    list: operation,
+    listRecords: operation,
+    get: operation,
+    create: operation,
+    update: operation,
+    changePosition: operation,
+    addPolicy: operation,
+    removePolicy: operation,
+    remainingAssignments: operation,
+    startLeave: operation,
+    reinstate: operation,
+    retire: operation,
+  },
+  teams: { list: operation, create: operation, update: operation },
+  departments: { list: operation, create: operation, update: operation },
+  positions: { list: operation },
+  policies: { list: operation },
+  patients: {
+    list: operation,
+    listRecords: operation,
+    get: operation,
+    create: operation,
+    update: operation,
+    remainingSchedules: operation,
+    endService: operation,
+    resumeService: operation,
+  },
+  serviceCodes: { list: operation },
+  calendars: {
+    serviceAccount: operation,
+    list: operation,
+    check: operation,
+    link: operation,
+    unlink: operation,
+    preview: operation,
+    import: operation,
+    exportIssues: operation,
+    retryExport: operation,
+    cutoverStatus: operation,
+    startCutover: operation,
+    completeCutover: operation,
+    cancelCutover: operation,
+  },
+})
+
+/**
+ * 2 回目の呼び出しだけ status が 500 の ApiError で失敗する操作を作る。1 回目と 3 回目からは operation の結果を返す。
+ * 読み終えた後に読み直して読めなかったときと、その後に読み直して読めたときを見るために使う。
+ */
+export const failOnSecondCall = <Args extends unknown[], Result>(
+  operation: (...args: Args) => Promise<Result>,
+): ((...args: Args) => Promise<Result>) => {
+  let calls = 0
+  return async (...args) => {
+    calls += 1
+    if (calls === 2) throw new ApiError(500, '読み直しで読めない')
+    return operation(...args)
   }
 }
 
+/** 全ての操作が status の ApiError で失敗するフェイクの API を作る。 */
+export const failingBuddyApi = (status = 500): BuddyApi =>
+  buddyApiOf(async () => {
+    throw new ApiError(status, 'API が失敗した')
+  })
+
 /** 全ての操作が終わらないフェイクの API を作る。読み込み中の表示を見るために使う。 */
-export const pendingBuddyApi = (): BuddyApi => {
-  const wait = () => new Promise<never>(() => {})
-  return {
-    schedules: { list: wait, get: wait, create: wait, update: wait },
-    staff: { list: wait },
-    teams: { list: wait },
-    patients: { list: wait },
-    calendars: {
-      serviceAccount: wait,
-      list: wait,
-      check: wait,
-      link: wait,
-      unlink: wait,
-      preview: wait,
-      import: wait,
-      exportIssues: wait,
-      retryExport: wait,
-      acceptExport: wait,
-    },
-  }
-}
+export const pendingBuddyApi = (): BuddyApi => buddyApiOf(() => new Promise<never>(() => {}))

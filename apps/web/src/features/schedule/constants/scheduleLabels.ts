@@ -1,4 +1,4 @@
-import type { ScheduleCategory, ScheduleKind, ServiceCode } from '#/api/types'
+import type { ScheduleCategory, ScheduleKind, ScheduleReviewReason } from '#/api/types'
 
 export const SCHEDULE_KIND_LABEL: Record<ScheduleKind, string> = {
   normal: '通常',
@@ -11,17 +11,12 @@ export const SCHEDULE_CATEGORY_LABEL: Record<ScheduleCategory, string> = {
   hospitalization: '入院',
 }
 
-/** サービスコードごとの提供時間（分）の範囲。 */
-export const SERVICE_CODE_DURATION: Record<ServiceCode, { min: number; max: number }> = {
-  訪看I2: { min: 20, max: 29 },
-  訪看I3: { min: 30, max: 59 },
-  訪看I4: { min: 60, max: 89 },
-  訪看I5: { min: 21, max: 40 },
-  '訪看I5・2超': { min: 41, max: 60 },
-  予防看I2: { min: 20, max: 29 },
-  予防看I3: { min: 30, max: 59 },
-  予防看I4: { min: 60, max: 89 },
-  予防看I5: { min: 21, max: 40 },
-  '予防看I5・2超': { min: 41, max: 60 },
-  医: { min: 30, max: 90 },
+/** 確認が必要な予定の理由の文。Google カレンダーの予定を buddy の予定に読み替えられなかった理由ごとに引く。 */
+export const SCHEDULE_REVIEW_REASON_LABEL: Record<ScheduleReviewReason, string> = {
+  recurrence_unsupported: '繰り返しの規則を buddy で表せないため、最初の回だけを表示しています',
+  patient_not_found: 'タイトルの利用者が見つかりません',
+  patient_ambiguous: 'タイトルの利用者が 2 人以上います',
+  service_code_not_found: 'タイトルのサービス内容がサービスコードにありません',
+  title_unreadable: 'タイトルを読めません',
+  title_mismatch: 'タイトルの利用者かサービス内容が、buddy の訪問の情報と違います',
 }

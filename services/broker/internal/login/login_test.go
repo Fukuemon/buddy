@@ -2,6 +2,7 @@ package login_test
 
 import (
 	"context"
+	"encoding/base64"
 	"errors"
 	"log/slog"
 	"net/http"
@@ -14,6 +15,7 @@ import (
 
 	"github.com/Fukuemon/buddy/services/broker/internal/hydra"
 	"github.com/Fukuemon/buddy/services/broker/internal/login"
+	"github.com/Fukuemon/buddy/services/broker/internal/staff"
 	"github.com/Fukuemon/buddy/services/broker/internal/upstream"
 )
 
@@ -24,16 +26,18 @@ const (
 )
 
 type fakeStaff struct {
-	members map[string]login.StaffMember
-	links   []login.UpstreamAccount
+	members map[string]staff.Member
+	links   []staff.UpstreamAccount
 	finds   int
+	// gets は、Get を呼んだ回数である。
+	gets int
 	// beforeLink が nil でなければ、Link の前に呼ぶ。同時のログインが先に結び付けた場面を作る
-	beforeLink func(f *fakeStaff, staffID string, a login.UpstreamAccount)
+	beforeLink func(f *fakeStaff, staffID string, a staff.UpstreamAccount)
 }
 
-func (f *fakeStaff) FindByEmail(_ context.Context, email string) ([]login.StaffMember, error) {
+func (f *fakeStaff) FindByEmail(_ context.Context, email string) ([]staff.Member, error) {
 	f.finds++
-	var out []login.StaffMember
+	var out []staff.Member
 	for _, m := range f.members {
 		if m.Email == email {
 			out = append(out, m)
@@ -42,24 +46,25 @@ func (f *fakeStaff) FindByEmail(_ context.Context, email string) ([]login.StaffM
 	return out, nil
 }
 
-func (f *fakeStaff) Get(_ context.Context, id string) (login.StaffMember, error) {
+func (f *fakeStaff) Get(_ context.Context, id string) (staff.Member, error) {
+	f.gets++
 	m, ok := f.members[id]
 	if !ok {
-		return login.StaffMember{}, login.ErrNotFound
+		return staff.Member{}, staff.ErrNotFound
 	}
 	return m, nil
 }
 
-func (f *fakeStaff) Link(_ context.Context, staffID string, a login.UpstreamAccount) error {
+func (f *fakeStaff) Link(_ context.Context, staffID string, a staff.UpstreamAccount) error {
 	if f.beforeLink != nil {
 		f.beforeLink(f, staffID, a)
 	}
-	if f.members[staffID].Upstream != (login.UpstreamAccount{}) {
-		return login.ErrConflict
+	if f.members[staffID].Upstream != (staff.UpstreamAccount{}) {
+		return staff.ErrConflict
 	}
 	for _, m := range f.members {
 		if m.Upstream == a {
-			return login.ErrConflict
+			return staff.ErrConflict
 		}
 	}
 	m := f.members[staffID]
@@ -71,18 +76,29 @@ func (f *fakeStaff) Link(_ context.Context, staffID string, a login.UpstreamAcco
 
 // fakeHydra は、受けた accept と reject を残し、ブラウザのリダイレクト先に結果の種類を入れて返す。
 type fakeHydra struct {
-	login       hydra.LoginRequest
-	loginErr    error
-	consent     hydra.ConsentRequest
-	accepted    *hydra.AcceptLogin
-	consented   *hydra.AcceptConsent
-	rejected    bool
+	login    hydra.LoginRequest
+	loginErr error
+	// loginReads は、LoginRequest を呼んだ回数である。
+	loginReads int
+	consent    hydra.ConsentRequest
+	consentErr error
+	// consentReads は、ConsentRequest を呼んだ回数である。
+	consentReads int
+	// logouts は、AcceptLogout を呼んだ回数である。
+	logouts   int
+	accepted  *hydra.AcceptLogin
+	consented *hydra.AcceptConsent
+	rejected  bool
+	// rejects は、RejectLogin を呼んだ回数である。
+	rejects     int
+	rejection   hydra.Rejection
 	rejectedCon bool
 	logoutErr   error
 	loggedOut   string
 }
 
 func (f *fakeHydra) LoginRequest(context.Context, string) (hydra.LoginRequest, error) {
+	f.loginReads++
 	return f.login, f.loginErr
 }
 
@@ -91,13 +107,16 @@ func (f *fakeHydra) AcceptLogin(_ context.Context, _ string, b hydra.AcceptLogin
 	return "http://hydra/login-accepted", nil
 }
 
-func (f *fakeHydra) RejectLogin(context.Context, string, hydra.Rejection) (string, error) {
+func (f *fakeHydra) RejectLogin(_ context.Context, _ string, b hydra.Rejection) (string, error) {
 	f.rejected = true
+	f.rejects++
+	f.rejection = b
 	return "http://hydra/login-rejected", nil
 }
 
 func (f *fakeHydra) ConsentRequest(context.Context, string) (hydra.ConsentRequest, error) {
-	return f.consent, nil
+	f.consentReads++
+	return f.consent, f.consentErr
 }
 
 func (f *fakeHydra) AcceptConsent(_ context.Context, _ string, b hydra.AcceptConsent) (string, error) {
@@ -111,6 +130,7 @@ func (f *fakeHydra) RejectConsent(context.Context, string, hydra.Rejection) (str
 }
 
 func (f *fakeHydra) AcceptLogout(_ context.Context, challenge string) (string, error) {
+	f.logouts++
 	if f.logoutErr != nil {
 		return "", f.logoutErr
 	}
@@ -155,9 +175,9 @@ func newEnv(limit int) *env {
 // newEnvWith は、送信元の IP アドレスごとの上限を limit にし、設定を edit で替えた env を作る。
 func newEnvWith(limit int, edit func(*login.Config)) *env {
 	e := &env{
-		staff: &fakeStaff{members: map[string]login.StaffMember{
-			aokiID: {ID: aokiID, OrgID: "org-a", Email: "aoki@example.com", Status: login.StatusActive},
-			uenoID: {ID: uenoID, OrgID: "org-b", Email: "ueno@example.com", Status: login.StatusActive},
+		staff: &fakeStaff{members: map[string]staff.Member{
+			aokiID: {ID: aokiID, OrgID: "org-a", Email: "aoki@example.com", Status: staff.StatusActive},
+			uenoID: {ID: uenoID, OrgID: "org-b", Email: "ueno@example.com", Status: staff.StatusActive},
 		}},
 		hydra: &fakeHydra{},
 		upstream: &fakeUpstream{identity: upstream.Identity{
@@ -231,14 +251,33 @@ func TestShowLogin(t *testing.T) {
 	if rec.Code != http.StatusOK || !strings.Contains(body, `name="email"`) || !strings.Contains(body, `value="ch&#34;"`) {
 		t.Errorf("code = %d, body = %s", rec.Code, body)
 	}
-	if !strings.Contains(body, "--buddy-color-primary: #") {
-		t.Errorf("トークンの値が無い: %s", body)
+	// 画面の CSS は、apps/broker が packages/ui のトークンと focus-ring から生成したものである
+	for _, want := range []string{"--buddy-color-primary:", "--buddy-primitive-color-light-blue-800:#", "focus-ring:focus-visible{outline:4px solid"} {
+		if !strings.Contains(body, want) {
+			t.Errorf("画面の CSS に %q が無い", want)
+		}
 	}
 	if got := rec.Header().Get("Content-Security-Policy"); got != "frame-ancestors 'none'" {
 		t.Errorf("Content-Security-Policy = %q, want frame-ancestors 'none'", got)
 	}
 	if rec := e.do(httptest.NewRequest(http.MethodGet, "/login", nil)); rec.Code != http.StatusBadRequest {
 		t.Errorf("login_challenge の無い code = %d, want 400", rec.Code)
+	}
+}
+
+// TestUnreadableChallenge は、Hydra の admin API で読めない challenge に、GET と POST の /login と同意で同じ 400 の失敗の画面を出すことを確認する。
+func TestUnreadableChallenge(t *testing.T) {
+	e := newEnv(10)
+	e.hydra.loginErr = errors.New("hydra: 404 Not Found")
+	e.hydra.consentErr = errors.New("hydra: 404 Not Found")
+	for name, rec := range map[string]*httptest.ResponseRecorder{
+		"GET /login":   e.do(httptest.NewRequest(http.MethodGet, "/login?login_challenge=used", nil)),
+		"POST /login":  e.submit("hina.aoki@example.com"),
+		"GET /consent": e.do(httptest.NewRequest(http.MethodGet, "/consent?consent_challenge=used", nil)),
+	} {
+		if rec.Code != http.StatusBadRequest || !strings.Contains(rec.Body.String(), "ログインできませんでした") {
+			t.Errorf("%s: code = %d, want 400 のログインの失敗の画面", name, rec.Code)
+		}
 	}
 }
 
@@ -249,10 +288,10 @@ func TestShowLoginSkip(t *testing.T) {
 		status string
 		want   string
 	}{
-		{"有効な職員", login.StatusActive, "http://hydra/login-accepted"},
-		{"止めた職員", login.StatusSuspended, "http://hydra/login-rejected"},
-		{"退職した職員", login.StatusRetired, "http://hydra/login-rejected"},
-		{"登録の途中の職員", login.StatusPending, "http://hydra/login-rejected"},
+		{"有効な職員", staff.StatusActive, "http://hydra/login-accepted"},
+		{"止めた職員", staff.StatusSuspended, "http://hydra/login-rejected"},
+		{"退職した職員", staff.StatusRetired, "http://hydra/login-rejected"},
+		{"登録の途中の職員", staff.StatusPending, "http://hydra/login-rejected"},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			e := newEnv(10)
@@ -293,16 +332,16 @@ func TestSubmitEmailRejects(t *testing.T) {
 		{"登録していないメール", "nobody@example.com", nil},
 		{"止めた職員", "aoki@example.com", func(s *fakeStaff) {
 			m := s.members[aokiID]
-			m.Status = login.StatusSuspended
+			m.Status = staff.StatusSuspended
 			s.members[aokiID] = m
 		}},
 		{"登録の途中の職員", "aoki@example.com", func(s *fakeStaff) {
 			m := s.members[aokiID]
-			m.Status = login.StatusPending
+			m.Status = staff.StatusPending
 			s.members[aokiID] = m
 		}},
 		{"2 つの事業所に同じメール", "aoki@example.com", func(s *fakeStaff) {
-			s.members[uenoID] = login.StaffMember{ID: uenoID, OrgID: "org-b", Email: "aoki@example.com", Status: login.StatusActive}
+			s.members[uenoID] = staff.Member{ID: uenoID, OrgID: "org-b", Email: "aoki@example.com", Status: staff.StatusActive}
 		}},
 	}
 	for _, tt := range tests {
@@ -315,6 +354,9 @@ func TestSubmitEmailRejects(t *testing.T) {
 			if got := location(t, rec); got != "http://hydra/login-rejected" {
 				t.Errorf("Location = %q, want reject", got)
 			}
+			if e.hydra.rejection != hydra.AccessDenied {
+				t.Errorf("rejection = %+v, want 上限と分けない reject", e.hydra.rejection)
+			}
 			if len(e.upstream.orgs) != 0 || len(rec.Result().Cookies()) != 0 {
 				t.Errorf("上流の IdP へリダイレクトした: orgs = %v", e.upstream.orgs)
 			}
@@ -322,16 +364,129 @@ func TestSubmitEmailRejects(t *testing.T) {
 	}
 }
 
+// TestSubmitEmailRateLimit は、送信元の IP アドレスの上限を超えた試行に、Hydra を呼ばずにログインの失敗の画面を出すことを確認する。
+// ログインの画面を開く GET /login も、同じ上限で数える。
 func TestSubmitEmailRateLimit(t *testing.T) {
-	e := newEnv(2)
-	for i, want := range []string{"org-a.example.com", "org-a.example.com", "hydra"} {
-		to, err := url.Parse(location(t, e.submit("aoki@example.com")))
-		if err != nil || to.Host != want {
-			t.Errorf("%d 回目のリダイレクト先 = %v, want %s", i+1, to, want)
+	e := newEnv(3)
+	if rec := e.do(httptest.NewRequest(http.MethodGet, "/login?login_challenge=ch", nil)); rec.Code != http.StatusOK {
+		t.Fatalf("GET /login の code = %d, want 200", rec.Code)
+	}
+	for i := range 2 {
+		if to, err := url.Parse(location(t, e.submit("aoki@example.com"))); err != nil || to.Host != "org-a.example.com" {
+			t.Errorf("%d 回目のリダイレクト先 = %v, want 上流の IdP", i+1, to)
 		}
 	}
-	if !e.hydra.rejected {
-		t.Error("上限を超えた試行を拒んでいない")
+	reads := e.hydra.loginReads
+	for _, req := range []*http.Request{submitRequest("aoki@example.com"), httptest.NewRequest(http.MethodGet, "/login?login_challenge=ch", nil)} {
+		rec := e.do(req)
+		if rec.Code != http.StatusTooManyRequests || !strings.Contains(rec.Body.String(), "ログインできませんでした") {
+			t.Errorf("%s の code = %d, want 429 のログインの失敗の画面", req.Method, rec.Code)
+		}
+	}
+	if e.hydra.loginReads != reads || e.hydra.rejected || e.staff.finds != 2 {
+		t.Errorf("上限を超えた後に Hydra か職員を呼んだ: LoginRequest = %d 回, rejected = %v, finds = %d",
+			e.hydra.loginReads-reads, e.hydra.rejected, e.staff.finds)
+	}
+}
+
+// TestSubmitEmailBodyTooLarge は、上限を超えた本文の POST /login に、Hydra を呼ばずにログインの失敗の画面を出すことを確認する。
+func TestSubmitEmailBodyTooLarge(t *testing.T) {
+	e := newEnv(10)
+	rec := e.submit(strings.Repeat("a", 8<<10) + "@example.com")
+	if rec.Code != http.StatusRequestEntityTooLarge || !strings.Contains(rec.Body.String(), "ログインできませんでした") {
+		t.Errorf("code = %d, want 413 のログインの失敗の画面", rec.Code)
+	}
+	if e.hydra.loginReads != 0 || e.hydra.rejected || e.staff.finds != 0 {
+		t.Errorf("Hydra か職員を呼んだ: LoginRequest = %d 回, finds = %d", e.hydra.loginReads, e.staff.finds)
+	}
+	// 読めない本文の送信も、送信元の IP アドレスの上限で数える
+	e = newEnv(1)
+	e.submit(strings.Repeat("a", 8<<10))
+	if rec := e.submit("aoki@example.com"); rec.Code != http.StatusTooManyRequests {
+		t.Errorf("上限を超えた本文の後の code = %d, want 429", rec.Code)
+	}
+}
+
+// TestSubmitEmailInvalidEmail は、職員のメールの形でないメールに、メールごとの上限で数えずにログインの失敗の画面を出すことを確認する。
+func TestSubmitEmailInvalidEmail(t *testing.T) {
+	long := strings.Repeat("a", staff.MaxEmailLen-len("@example.com")+1) + "@example.com"
+	for _, tt := range []struct{ name, email string }{
+		{"321 文字", long},
+		{"@ が無い", "aoki.example.com"},
+		{"@ の前が空", "@example.com"},
+		{"空", ""},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			emails := login.NewLimiter(time.Hour, 10)
+			e := newEnvWith(10, func(c *login.Config) { c.EmailLimiter = emails })
+			rec := e.submit(tt.email)
+			if rec.Code != http.StatusBadRequest || !strings.Contains(rec.Body.String(), "ログインできませんでした") {
+				t.Errorf("code = %d, want 400 のログインの失敗の画面", rec.Code)
+			}
+			if n := login.LimiterKeys(emails); n != 0 {
+				t.Errorf("メールごとの上限のキーが %d 個ある, want 0", n)
+			}
+			if e.hydra.loginReads != 0 || e.hydra.rejected || e.staff.finds != 0 {
+				t.Errorf("Hydra か職員を呼んだ: LoginRequest = %d 回, finds = %d", e.hydra.loginReads, e.staff.finds)
+			}
+		})
+	}
+	// 320 文字のメールは形が正しく、職員を引く
+	e := newEnv(10)
+	location(t, e.submit(long[1:]))
+	if e.staff.finds != 1 {
+		t.Errorf("320 文字のメールで職員を引かない: finds = %d", e.staff.finds)
+	}
+	// 形の違うメールの送信も、送信元の IP アドレスの上限で数える
+	e = newEnv(1)
+	e.submit("")
+	if rec := e.submit("aoki@example.com"); rec.Code != http.StatusTooManyRequests {
+		t.Errorf("形の違うメールの後の code = %d, want 429", rec.Code)
+	}
+}
+
+// TestClientAddr は、送信元のキーを、IPv4 はアドレス、IPv6 は /64 のプレフィックスにそろえることを確認する。
+func TestClientAddr(t *testing.T) {
+	for _, tt := range []struct {
+		name, remote, header, value, want string
+	}{
+		{"IPv4", "198.51.100.1:1234", "", "", "198.51.100.1"},
+		{"IPv4 を埋めた IPv6", "[::ffff:198.51.100.1]:1234", "", "", "198.51.100.1"},
+		{"IPv6", "[2001:db8:1:2:3:4:5:6]:1234", "", "", "2001:db8:1:2::/64"},
+		{"zone 付きの IPv6", "[fe80::1%eth0]:1234", "", "", "fe80::/64"},
+		{"ヘッダーの IPv6", "10.0.0.1:1234", "X-Forwarded-For", "203.0.113.9, 2001:db8:1:2::9", "2001:db8:1:2::/64"},
+		{"ヘッダーが IP でない", "10.0.0.1:1234", "X-Forwarded-For", "unknown", "10.0.0.1"},
+		{"接続の相手が IP でない", "pipe", "", "", "pipe"},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			req := httptest.NewRequest(http.MethodGet, "/login", nil)
+			req.RemoteAddr = tt.remote
+			if tt.header != "" {
+				req.Header.Set(tt.header, tt.value)
+			}
+			if got := login.ClientAddr(req, tt.header); got != tt.want {
+				t.Errorf("clientAddr = %q, want %q", got, tt.want)
+			}
+		})
+	}
+}
+
+// TestSubmitEmailIPv6Prefix は、送信元の IPv6 アドレスを /64 ごとに数えることを確認する。
+func TestSubmitEmailIPv6Prefix(t *testing.T) {
+	e := newEnv(1)
+	send := func(addr string) int {
+		req := submitRequest("aoki@example.com")
+		req.RemoteAddr = addr
+		return e.do(req).Code
+	}
+	if got := send("[2001:db8:1:2::1]:1234"); got != http.StatusSeeOther {
+		t.Errorf("1 回目の code = %d, want 303", got)
+	}
+	if got := send("[2001:db8:1:2:ffff::9]:1234"); got != http.StatusTooManyRequests {
+		t.Errorf("同じ /64 の別のアドレスの code = %d, want 429", got)
+	}
+	if got := send("[2001:db8:1:3::1]:1234"); got != http.StatusSeeOther {
+		t.Errorf("別の /64 の code = %d, want 303", got)
 	}
 }
 
@@ -394,6 +549,9 @@ func TestSubmitEmailRateLimitPerEmail(t *testing.T) {
 			t.Errorf("%d 回目のリダイレクト先 = %v, want %s", i+1, to, want)
 		}
 	}
+	if e.hydra.rejection != hydra.TooManyAttempts {
+		t.Errorf("rejection = %+v, want 上限を超えたことを分けた reject", e.hydra.rejection)
+	}
 	if to, _ := url.Parse(location(t, e.submit("ueno@example.com"))); to.Host != "org-b.example.com" {
 		t.Errorf("別のメールまで止めた: %v", to)
 	}
@@ -403,24 +561,20 @@ func TestSubmitEmailRateLimitPerEmail(t *testing.T) {
 // 最後の値はリバースプロキシが足したもので、ブラウザが先頭に書いた値では数え分けない。
 func TestSubmitEmailClientIPHeader(t *testing.T) {
 	e := newEnvWith(1, func(c *login.Config) { c.ClientIPHeader = "X-Forwarded-For" })
-	send := func(xff string) string {
+	send := func(xff string) int {
 		req := submitRequest("aoki@example.com")
 		req.RemoteAddr = "10.0.0.1:1234"
 		req.Header.Set("X-Forwarded-For", xff)
-		to, err := url.Parse(location(t, e.do(req)))
-		if err != nil {
-			t.Fatal(err)
-		}
-		return to.Host
+		return e.do(req).Code
 	}
-	if got := send("198.51.100.1"); got != "org-a.example.com" {
-		t.Errorf("1 人目のリダイレクト先 = %s", got)
+	if got := send("198.51.100.1"); got != http.StatusSeeOther {
+		t.Errorf("1 人目の code = %d, want 303", got)
 	}
-	if got := send("198.51.100.2"); got != "org-a.example.com" {
-		t.Errorf("プロキシのアドレスで数え、別の送信元を止めた: %s", got)
+	if got := send("198.51.100.2"); got != http.StatusSeeOther {
+		t.Errorf("プロキシのアドレスで数え、別の送信元を止めた: code = %d", got)
 	}
-	if got := send("203.0.113.9, 198.51.100.1"); got != "hydra" {
-		t.Errorf("ブラウザが書いた先頭の値で数え分けた: %s", got)
+	if got := send("203.0.113.9, 198.51.100.1"); got != http.StatusTooManyRequests {
+		t.Errorf("ブラウザが書いた先頭の値で数え分けた: code = %d", got)
 	}
 }
 
@@ -428,16 +582,16 @@ func TestCallback(t *testing.T) {
 	tests := []struct {
 		name     string
 		identity upstream.Identity
-		linked   login.UpstreamAccount
+		linked   staff.UpstreamAccount
 		code     string
 		accepted bool
-		linkedTo []login.UpstreamAccount
+		linkedTo []staff.UpstreamAccount
 	}{
 		{
 			name:     "初回のログインで、確認済みのメールが登録と同じなら結び付ける",
 			identity: upstream.Identity{Issuer: issuerA, Subject: "u-aoki", Email: "Aoki@example.com", EmailVerified: true},
 			code:     "code-1", accepted: true,
-			linkedTo: []login.UpstreamAccount{{Issuer: issuerA, Subject: "u-aoki"}},
+			linkedTo: []staff.UpstreamAccount{{Issuer: issuerA, Subject: "u-aoki"}},
 		},
 		{
 			name:     "上流のメールが登録と違う",
@@ -452,13 +606,13 @@ func TestCallback(t *testing.T) {
 		{
 			name:     "結び付け済みなら iss と sub で照合し、メールを見ない",
 			identity: upstream.Identity{Issuer: issuerA, Subject: "u-aoki", Email: "renamed@example.com"},
-			linked:   login.UpstreamAccount{Issuer: issuerA, Subject: "u-aoki"},
+			linked:   staff.UpstreamAccount{Issuer: issuerA, Subject: "u-aoki"},
 			code:     "code-1", accepted: true,
 		},
 		{
 			name:     "結び付けた上流のアカウントと違う",
 			identity: upstream.Identity{Issuer: issuerA, Subject: "u-other", Email: "aoki@example.com", EmailVerified: true},
-			linked:   login.UpstreamAccount{Issuer: issuerA, Subject: "u-aoki"},
+			linked:   staff.UpstreamAccount{Issuer: issuerA, Subject: "u-aoki"},
 			code:     "code-1",
 		},
 		{
@@ -480,7 +634,7 @@ func TestCallback(t *testing.T) {
 			aoki.Upstream = tt.linked
 			e.staff.members[aokiID] = aoki
 			ueno := e.staff.members[uenoID]
-			ueno.Upstream = login.UpstreamAccount{Issuer: issuerA, Subject: "u-ueno"}
+			ueno.Upstream = staff.UpstreamAccount{Issuer: issuerA, Subject: "u-ueno"}
 			e.staff.members[uenoID] = ueno
 
 			rec := e.callback(t, e.submit("aoki@example.com"), tt.code)
@@ -543,15 +697,15 @@ func TestCallbackBadRequest(t *testing.T) {
 func TestCallbackConcurrentFirstLogin(t *testing.T) {
 	for _, tt := range []struct {
 		name    string
-		linked  login.UpstreamAccount
+		linked  staff.UpstreamAccount
 		wantLoc string
 	}{
-		{"先のログインが同じアカウントを結び付けた", login.UpstreamAccount{Issuer: issuerA, Subject: "u-aoki"}, "http://hydra/login-accepted"},
-		{"先のログインが別のアカウントを結び付けた", login.UpstreamAccount{Issuer: issuerA, Subject: "u-other"}, "http://hydra/login-rejected"},
+		{"先のログインが同じアカウントを結び付けた", staff.UpstreamAccount{Issuer: issuerA, Subject: "u-aoki"}, "http://hydra/login-accepted"},
+		{"先のログインが別のアカウントを結び付けた", staff.UpstreamAccount{Issuer: issuerA, Subject: "u-other"}, "http://hydra/login-rejected"},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			e := newEnv(10)
-			e.staff.beforeLink = func(f *fakeStaff, staffID string, _ login.UpstreamAccount) {
+			e.staff.beforeLink = func(f *fakeStaff, staffID string, _ staff.UpstreamAccount) {
 				m := f.members[staffID]
 				m.Upstream = tt.linked
 				f.members[staffID] = m
@@ -608,7 +762,7 @@ func TestConsent(t *testing.T) {
 	}
 
 	m := e.staff.members[uenoID]
-	m.Status = login.StatusSuspended
+	m.Status = staff.StatusSuspended
 	e.staff.members[uenoID] = m
 	if got := location(t, e.do(httptest.NewRequest(http.MethodGet, "/consent?consent_challenge=ch", nil))); got != "http://hydra/consent-rejected" {
 		t.Errorf("止めた職員の Location = %q, want reject", got)
@@ -641,6 +795,69 @@ func TestLogout(t *testing.T) {
 	e.hydra.logoutErr = errors.New("hydra down")
 	if rec := e.do(httptest.NewRequest(http.MethodGet, "/logout?logout_challenge=ch", nil)); rec.Code != http.StatusBadGateway || !strings.Contains(rec.Body.String(), "ログアウトできませんでした") {
 		t.Errorf("Hydra の失敗の code = %d, body = %s", rec.Code, rec.Body.String())
+	}
+}
+
+// TestCallbackConsentLogoutRateLimit は、上流の IdP のコールバックと同意とログアウトの画面も、ログインの画面と同じ
+// 送信元の IP アドレスごとの上限で数え、超えた試行に Hydra と職員を呼ばずに失敗の画面を 429 で出すことを確認する。
+// ブローカーは cookie broker_login に署名しないので、送る側が cookie とクエリの state を合わせて書ける。
+func TestCallbackConsentLogoutRateLimit(t *testing.T) {
+	forged := func(target string) *http.Request {
+		req := httptest.NewRequest(http.MethodGet, target, nil)
+		raw := `{"challenge":"x","staff_id":"x","attempt":{"state":"s"}}`
+		req.AddCookie(&http.Cookie{Name: "broker_login", Value: base64.RawURLEncoding.EncodeToString([]byte(raw))})
+		return req
+	}
+	tests := []struct {
+		name  string
+		req   func() *http.Request
+		page  string
+		calls func(e *env) int
+	}{
+		{
+			name:  "上流の IdP のエラーのコールバック",
+			req:   func() *http.Request { return forged("/login/callback?state=s&error=a") },
+			page:  "ログインできませんでした",
+			calls: func(e *env) int { return e.hydra.rejects + e.staff.gets },
+		},
+		{
+			name:  "DB にない職員のコールバック",
+			req:   func() *http.Request { return forged("/login/callback?state=s&code=code-1") },
+			page:  "ログインできませんでした",
+			calls: func(e *env) int { return e.hydra.rejects + e.staff.gets },
+		},
+		{
+			name:  "同意",
+			req:   func() *http.Request { return httptest.NewRequest(http.MethodGet, "/consent?consent_challenge=x", nil) },
+			page:  "ログインできませんでした",
+			calls: func(e *env) int { return e.hydra.consentReads },
+		},
+		{
+			name:  "ログアウト",
+			req:   func() *http.Request { return httptest.NewRequest(http.MethodGet, "/logout?logout_challenge=x", nil) },
+			page:  "ログアウトできませんでした",
+			calls: func(e *env) int { return e.hydra.logouts },
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			e := newEnv(2)
+			e.hydra.consentErr = errors.New("not found")
+			for range 2 {
+				e.do(tt.req())
+			}
+			before := tt.calls(e)
+			if before == 0 {
+				t.Fatal("上限の中の試行で Hydra を呼んでいない")
+			}
+			rec := e.do(tt.req())
+			if rec.Code != http.StatusTooManyRequests || !strings.Contains(rec.Body.String(), tt.page) {
+				t.Errorf("code = %d, want 429 の失敗の画面", rec.Code)
+			}
+			if got := tt.calls(e); got != before {
+				t.Errorf("上限を超えた後に Hydra か職員を呼んだ: %d 回 → %d 回", before, got)
+			}
+		})
 	}
 }
 

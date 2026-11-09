@@ -1,5 +1,3 @@
-// Package httpapi は、API の HTTP のハンドラを持つ。エンドポイントとリクエストとレスポンスの型は openapi.yaml が正本で、
-// httpapi は openapi パッケージに生成したインターフェイスを実装する。
 package httpapi
 
 import (
@@ -10,8 +8,9 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"github.com/Fukuemon/buddy/services/schedule/internal/apperr"
-	"github.com/Fukuemon/buddy/services/schedule/internal/calendar"
 	"github.com/Fukuemon/buddy/services/schedule/internal/civil"
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendar"
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendarwrite"
 )
 
 // bodyErrorPrefix は、本文を読めないときの 400 の文の先頭である。
@@ -53,6 +52,10 @@ func writeError(c *gin.Context, log *slog.Logger, err error) {
 		c.AbortWithStatusJSON(http.StatusConflict, errorResponse{Code: code, Message: ce.Message})
 	case errors.Is(err, apperr.ErrConflict):
 		c.AbortWithStatusJSON(http.StatusConflict, errorResponse{Code: "conflict", Message: apperr.ErrConflict.Error()})
+	case errors.Is(err, calendarwrite.ErrWriteUnknown):
+		calendarError(c, log, err, http.StatusServiceUnavailable, "google_write_unknown", calendarwrite.ErrWriteUnknown)
+	case errors.Is(err, calendarwrite.ErrGoogleUnavailable):
+		calendarError(c, log, err, http.StatusServiceUnavailable, "google_unavailable", calendarwrite.ErrGoogleUnavailable)
 	case errors.Is(err, calendar.ErrUnreadable):
 		calendarError(c, log, err, http.StatusUnprocessableEntity, "calendar_unreadable", calendar.ErrUnreadable)
 	case errors.Is(err, calendar.ErrUnavailable):
@@ -123,9 +126,17 @@ func bodyTime(s string) (civil.Time, error) {
 	return t, nil
 }
 
-func mapSlice[T, U any](in []T, f func(T) U) []U {
-	out := make([]U, len(in))
-	for i, v := range in {
+func stringPtr[T interface{ String() string }](v *T) *string {
+	if v == nil {
+		return nil
+	}
+	s := (*v).String()
+	return &s
+}
+
+func mapSlice[T, U any](values []T, f func(T) U) []U {
+	out := make([]U, len(values))
+	for i, v := range values {
 		out[i] = f(v)
 	}
 	return out

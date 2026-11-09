@@ -16,9 +16,9 @@
 
 ## Viewpoints
 
-| Name                                 | Definition                                           |
-| ------------------------------------ | ---------------------------------------------------- |
-| [予定と訪問](viewpoint-schedules.md) | 予定と、訪問のときの訪問の情報と区分、予定の取り消し |
+| Name                                 | Definition                                                                               |
+| ------------------------------------ | ---------------------------------------------------------------------------------------- |
+| [予定と訪問](viewpoint-schedules.md) | 予定と、訪問のときの訪問の情報と区分、予定の取り消し、誤って入れた予定の削除の監査の記録 |
 
 ## Constraints
 
@@ -78,6 +78,7 @@ erDiagram
   timestamp_with_time_zone created_at
   timestamp_with_time_zone updated_at
   integer version
+  boolean ends_next_day
 }
 ```
 

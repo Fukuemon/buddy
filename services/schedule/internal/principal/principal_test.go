@@ -6,14 +6,14 @@ import (
 	"testing"
 
 	"github.com/Fukuemon/buddy/services/schedule/internal/apperr"
-	"github.com/Fukuemon/buddy/services/schedule/internal/organization"
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/organization"
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/staff"
 	"github.com/Fukuemon/buddy/services/schedule/internal/principal"
-	"github.com/Fukuemon/buddy/services/schedule/internal/staff"
 )
 
 func subject(grants ...staff.PolicyGrant) principal.Principal {
-	return principal.Principal{Staff: staff.Detail{
-		Summary:  staff.Summary{Staff: staff.Staff{ID: "SELF", TeamID: "TEAM-A"}},
+	return principal.Principal{Staff: principal.Staff{
+		ID: "SELF", TeamID: "TEAM-A",
 		Policies: grants,
 	}}
 }

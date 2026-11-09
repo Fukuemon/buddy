@@ -7,9 +7,16 @@ site_dir = "site"
 # docs/design/ のシンボリックリンクの先を、プレビューでたどって再読み込みする
 watch = [
   "services/schedule/DesignDoc.md",
+  "services/schedule/internal/features/calendar/DesignDoc.md",
+  "services/schedule/internal/access/DesignDoc.md",
+  "services/schedule/internal/features/staff/DesignDoc.md",
   "services/receipt/DesignDoc.md",
   "services/broker/DesignDoc.md",
+  "apps/web/src/features/schedule/DesignDoc.md",
   "packages/ui/DESIGN.md",
+  "packages/ui/design/tokens.md",
+  "packages/ui/design/components.md",
+  "packages/ui/design/catalog.md",
   "packages/e2e/DesignDoc.md",
 ]
 # ADR、画面仕様書、ワイヤーフレームのテンプレートは文書ではないので、サイトに載せない
@@ -27,6 +34,10 @@ nav = [
   { "Design Doc" = [
     { "全体" = "design/DesignDoc.md" },
     { "予定の管理" = "design/services/schedule.md" },
+    { "Google カレンダーとの連携" = "design/services/schedule-calendar.md" },
+    { "権限" = "design/services/schedule-access.md" },
+    { "職員の管理" = "design/services/schedule-staff.md" },
+    { "予定の画面" = "design/apps/web-schedule.md" },
     { "レセプトの照合" = "design/services/receipt.md" },
     { "ID ブローカー" = "design/services/broker.md" },
     { "E2E のテストのコード" = "design/packages/e2e.md" },
@@ -38,16 +49,29 @@ nav = [
     { "予定の作成" = "screens/schedule-new_予定の作成/index.md" },
     { "予定の詳細" = "screens/schedule-detail_予定の詳細/index.md" },
     { "予定の編集" = "screens/schedule-edit_予定の編集/index.md" },
+    { "繰り返しの変更" = "screens/schedule-recurrence_繰り返しの変更/index.md" },
     { "カレンダーの連携" = "screens/schedule-link_カレンダーの連携/index.md" },
     { "予定の取り込み" = "screens/schedule-import_予定の取り込み/index.md" },
     { "確認が必要な予定" = "screens/schedule-review_確認が必要な予定/index.md" },
+    { "予定の正本の切り替え" = "screens/schedule-cutover_予定の正本の切り替え/index.md" },
+    { "職員の一覧" = "screens/staff-list_職員の一覧/index.md" },
+    { "職員の登録" = "screens/staff-new_職員の登録/index.md" },
+    { "職員の詳細" = "screens/staff-detail_職員の詳細/index.md" },
+    { "部署とチーム" = "screens/organization-list_部署とチーム/index.md" },
+    { "利用者の一覧" = "screens/patient-list_利用者の一覧/index.md" },
+    { "利用者の登録" = "screens/patient-new_利用者の登録/index.md" },
+    { "利用者の詳細" = "screens/patient-detail_利用者の詳細/index.md" },
     { "照合" = "screens/receipt-upload_照合/index.md" },
     { "照合の結果" = "screens/receipt-result_照合の結果/index.md" },
     { "ログイン" = "screens/account-login_ログイン/index.md" },
     { "ログインの失敗" = "screens/account-error_ログインの失敗/index.md" },
+    { "自分の情報" = "screens/account-profile_自分の情報/index.md" },
   ] },
   { "デザインシステム" = [
-    { "使い方" = "design/packages/ui.md" },
+    { "規則（DESIGN.md）" = "design/packages/ui.md" },
+    { "トークン" = "design/packages/ui-tokens.md" },
+    { "コンポーネント" = "design/packages/ui-components.md" },
+    { "カタログの組み方" = "design/packages/ui-catalog.md" },
     # カタログは同じサイトの /storybook/ に置く（apps/docs-site）。ローカルの zensical serve には無い
     { "カタログ（Storybook）" = "/storybook/" },
   ] },
@@ -70,29 +94,47 @@ nav = [
     { "外部のカレンダーの取り込みと書き出し" = "db/schedule/viewpoint-calendar-sync.md" },
   ] },
   { "ADR" = [
+    "adr/index.md",
     "adr/0001-auth.md",
-    "adr/0002-pbac.md",
-    "adr/0003-branch-and-release.md",
-    "adr/0004-design-system.md",
-    "adr/0005-schedule-api-packages.md",
-    "adr/0006-staff-manage-policy.md",
-    "adr/0007-go-shared-module.md",
-    "adr/0008-web-view-types.md",
-    "adr/0009-google-calendar-sync.md",
-    "adr/0010-schedule-api-usecase-boundaries.md",
-    "adr/0011-schedule-api-postgresql.md",
-    "adr/0012-google-calendar-facility-service-accounts.md",
-    "adr/0013-services-directory.md",
-    "adr/0014-service-names.md",
-    "adr/0015-key-color-and-canvas.md",
-    "adr/0016-id-broker-hydra.md",
-    "adr/0017-identity-boundary.md",
-    "adr/0018-staff-leave-and-retirement.md",
-    "adr/0019-docs-site-publish-and-contrast-check.md",
+    "adr/0002-id-broker-hydra.md",
+    "adr/0003-broker-login-pages-source.md",
+    "adr/0004-staff-leave-and-retirement.md",
+    "adr/0005-patient-service-end.md",
+    "adr/0006-non-visiting-staff.md",
+    "adr/0007-pbac.md",
+    "adr/0008-web-permission-checks.md",
+    "adr/0009-branch-and-release.md",
+    "adr/0010-go-shared-module.md",
+    "adr/0011-directories-and-service-names.md",
+    "adr/0012-design-system.md",
+    "adr/0013-design-system-primitive-tokens.md",
+    "adr/0014-ui-components.md",
+    "adr/0015-accessibility.md",
+    "adr/0016-design-system-documents.md",
+    "adr/0017-design-system-guidelines.md",
+    "adr/0018-storybook-catalog.md",
+    "adr/0019-docs-site-publish.md",
+    "adr/0020-design-system-topic-documents.md",
+    "adr/0021-schedule-api-packages.md",
+    "adr/0022-schedule-api-postgresql.md",
+    "adr/0023-service-code-rules.md",
+    "adr/0024-go-operation-types.md",
+    "adr/0025-go-file-names.md",
+    "adr/0026-schedule-write-read-models.md",
+    "adr/0027-web-view-types.md",
+    "adr/0028-web-site-frame-in-root-route.md",
+    "adr/0029-google-calendar-sync.md",
+    "adr/0030-google-calendar-service-accounts.md",
+    "adr/0031-calendar-cutover.md",
+    "adr/0032-calendar-worker.md",
+    "adr/0033-overnight-schedule.md",
+    "adr/0034-e2e-functions-without-page-object.md",
+    "adr/0035-local-hostnames-with-portless.md",
+    "adr/0036-main-checkout-with-portless.md",
   ] },
 ]
 
-# 書体を画面と同じデザインシステムの書体（tokens.css の --font-family-sans と --font-family-mono）にする。Zensical が Google Fonts から読み込む
+# 書体を画面と同じデザインシステムの書体（tokens.css の --buddy-primitive-font-family-sans と --buddy-primitive-font-family-mono）にする。Zensical が Google Fonts から読み込む
 [project.theme.font]
 text = "Noto Sans JP"
 code = "Noto Sans Mono"
@@ -111,3 +153,7 @@ slugify.kwds.case = "lower"
 # 画面仕様書の状態をタブで切り替える
 [project.markdown_extensions.pymdownx.tabbed]
 alternate_style = true
+
+# 2 文字字下げの入れ子の箇条書きを入れ子として読む。Python-Markdown は入れ子に 4 文字を求めるが、文書は 2 文字で書く
+[project.markdown_extensions.mdx_truly_sane_lists]
+nested_indent = 2

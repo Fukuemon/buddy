@@ -1,36 +1,38 @@
 import { expect, test, type Page } from '@playwright/test'
 
-import { prepareApiReference, routeApiReference } from '../../fixtures/apiReference'
+import { issueAccessToken, routeApiReference } from '../../fixtures/apiReference'
 import { LOGIN_EMAIL, LOGIN_STAFF, SCHEDULE_URL } from '../../fixtures/env'
 import { EVIDENCE_VARIANTS, recordPrEvidence } from '../../fixtures/evidence'
+import { STAFF_FORM } from '../../fixtures/staff'
+import { openApiClient, openApiReference } from '../../screens/apiReference'
 import {
   fillApiBody,
   fillApiToken,
   fillApiVariable,
-  openApiClient,
-} from '../../screens/apiReference'
+} from '../../widgets/apiClient/actions/apiClient'
 import { apiClient } from '../../selectors/apiReference'
 
-/** シードの事業所と、職員を作るときの部署、チーム、役職。 */
-const FACILITY_ID = '01M3TC5H00QV17BC0J9V3393ZP'
-const NURSING = '01M3TC5HZ8A18D2TP3PTKDXJMN'
 const TEAM_B = '01M3TC5MX04QJ19X6XR1ZCBZRJ'
 const LEADER_POSITION = '01M3TC5PVG7W2H1H20W0T1ZVEJ'
-const MEMBER_POSITION = '01M3TC5QTRHSXHE7C68HPN6MBH'
 
 /** API の参照のページを開き、トークンを取って、役職を変える相手のメンバーの職員を作る。シードの職員の権限を変えないため。 */
 const prepareMember = async (page: Page) => {
-  const token = await prepareApiReference('schedule', LOGIN_EMAIL)(page)
-  const res = await page.request.post(`${SCHEDULE_URL}/v1/facilities/${FACILITY_ID}/users`, {
-    headers: { Authorization: `Bearer ${token}` },
-    data: {
-      username: '見本 職員',
-      email: `member-${Date.now()}@example.com`,
-      department_id: NURSING,
-      team_id: TEAM_B,
-      position_id: MEMBER_POSITION,
+  await routeApiReference(page)
+  await openApiReference(page, 'schedule')
+  const token = await issueAccessToken(page.request, LOGIN_EMAIL)
+  const res = await page.request.post(
+    `${SCHEDULE_URL}/v1/facilities/${STAFF_FORM.facilityId}/users`,
+    {
+      headers: { Authorization: `Bearer ${token}` },
+      data: {
+        username: '見本 職員',
+        email: `member-${Date.now()}@example.com`,
+        department_id: STAFF_FORM.departmentId,
+        team_id: TEAM_B,
+        position_id: STAFF_FORM.positionId,
+      },
     },
-  })
+  )
   if (!res.ok()) throw new Error(`職員を作れない: ${res.status()} ${await res.text()}`)
   const { id } = (await res.json()) as { id: string }
   return { token, userId: id }

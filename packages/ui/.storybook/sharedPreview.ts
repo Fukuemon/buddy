@@ -19,3 +19,12 @@ const sharedPreview = {
 } satisfies Preview
 
 export default sharedPreview
+
+/**
+ * `<dialog>` の showModal で開くコンポーネントの story に渡す parameters。
+ * showModal は文書の全体を操作できなくするので、Docs のページでは story ごとに iframe で描き、ほかの story を操作できるようにする。
+ * iframeHeight は iframe の高さ（px）で、ダイアログが収まる値を渡す。
+ */
+export const createModalDocsParameters = (iframeHeight = 480) => ({
+  docs: { story: { inline: false, iframeHeight } },
+})

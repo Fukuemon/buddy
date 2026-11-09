@@ -6,7 +6,7 @@ import { userEvent } from 'vite-plus/test/browser/context'
 
 import * as stories from './Button.stories'
 
-const { Primary, PrimaryDisabled, Loading, Small } = composeStories(stories)
+const { Primary, PrimaryDisabled, Loading, Small, Danger } = composeStories(stories)
 
 describe('Button', () => {
   it('押すと onClick を呼ぶ。Enter と Space でも押せる', async () => {
@@ -51,6 +51,12 @@ describe('Button', () => {
     expect(button).toHaveAttribute('aria-busy', 'true')
     await userEvent.click(button)
     expect(onClick).not.toHaveBeenCalled()
+  })
+
+  it('確定の削除のボタンは、赤い面に反転の文字で出す', () => {
+    render(<Danger />)
+    const button = screen.getByRole('button', { name: '外す' })
+    expect(button).toHaveClass('bg-danger', 'text-text-inverse')
   })
 
   it('S のボタンは、見た目の外まで 44×44 px 以上を押せる', () => {

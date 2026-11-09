@@ -1,4 +1,4 @@
--- ADR-0011 で見直した表を、1 本の初期のマイグレーションで作る。
+-- ADR-0022 で見直した表を、1 本の初期のマイグレーションで作る。
 -- ID は ULID の文字列で、バイトの順で比べる。形の CHECK は主キーだけに付け、外部キーの列は主キーの値しか入らないので重ねない。
 -- 名前の列は既定の決定的な照合順序のままにし、完全に一致する値だけを同じとみなす。
 -- 事業所の中の参照は (facility_id, id) の複合の外部キーで指し、別の事業所の行を指せないようにする。
@@ -312,7 +312,7 @@ CREATE TABLE schedule_cancels (
     CONSTRAINT schedule_cancels_schedule_fkey FOREIGN KEY (schedule_id) REFERENCES schedules (id) ON DELETE CASCADE
 );
 
--- Google カレンダーの取り込み（ADR-0009 の段階 1）の表。外部の予定の題名と本文は利用者の名前を含むので保存しない。
+-- Google カレンダーの取り込み（ADR-0029 の取り込み）の表。外部の予定の題名と本文は利用者の名前を含むので保存しない。
 
 CREATE TABLE external_calendars (
     id                   text COLLATE "C" NOT NULL CHECK (id ~ '^[0-7][0-9A-HJKMNP-TV-Z]{25}$'),
@@ -469,7 +469,7 @@ LEFT JOIN visit_info_details vid ON vid.id = rs.visit_info_id;
 
 -- 事業所に属さず、全ての環境で同じ値のマスタを入れる。シードを当てない本番でも予定を作れるようにする。
 -- サービスコードの表記は、API の値をそのまま比べる web（apps/web/src/api/types.ts の SERVICE_CODES）に合わせる。
--- 提供時間の範囲は、receipt-api の servicerule と照合の Design Doc に合わせる。
+-- 提供時間の範囲は、packages/go/servicecode の表に合わせる。postgres の TestServiceCodesMatchServicecode が一致を確認する。
 
 INSERT INTO schedule_types (id, code, name) VALUES
     ('01M3TC68E05E1N46YCCBT6ZQB2', 'normal', '通常'),
@@ -493,7 +493,7 @@ INSERT INTO visit_categories (id, name) VALUES
     ('01M3TC64H0JJHBDMJQPGBX9FM7', '緊急'),
     ('01M3TC65G8G68GS870DAANGEBG', '入院');
 
--- 権限は全ての環境で同じ 8 行で、認可は code で読む。staff.manage は ADR-0006 の職員の管理の権限である。
+-- 権限は全ての環境で同じ 8 行で、認可は code で読む。staff.manage は ADR-0007 の職員の管理の権限である。
 INSERT INTO policies (id, code, name, needs_target) VALUES
     ('01M5E1S42TTS7QZK05YGS0GYR8', 'schedule.self.edit', '自分の予定の編集', false),
     ('01M5E1S42TTS7QZK05YGS0GYR9', 'schedule.user.read', '指定した職員の予定の閲覧', true),

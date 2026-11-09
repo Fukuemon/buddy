@@ -18,6 +18,3 @@ export const scheduleCreateSearchSchema = z.object({
   time: z.iso.time({ precision: -1 }).optional().catch(undefined),
   staffId: z.string().optional().catch(undefined),
 })
-
-/** 検証した後の `/schedule/new` の search params。 */
-export type ScheduleCreateSearch = z.infer<typeof scheduleCreateSearchSchema>

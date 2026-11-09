@@ -1,7 +1,8 @@
-import { SearchBox } from '@buddy/ui'
+import { DotLabel, SearchBox } from '@buddy/ui'
 import { useState } from 'react'
 
 import type { Staff, Team } from '#/api/types'
+import { teamColorDotClassName } from '#/components/teamColor'
 
 import { staffColorMap } from '../lib/toCalendarEvents'
 
@@ -15,12 +16,12 @@ export type StaffFilterSidebarProps = {
   viewerStaffId?: Staff['id']
 }
 
-/** 名前の照合のために、全角と半角をそろえ、空白を除く。「青木一郎」でも「青木 一郎」に当てる。 */
+/** 名前の照合のために、全角と半角をそろえ、空白を除く。「山田花子」でも「山田 花子」に当てる。 */
 const normalizeName = (name: string) => name.normalize('NFKC').replace(/\s/g, '')
 
 /**
  * 予定を出す職員を、チームと職員のチェックボックスで絞り込む。
- * 職員のチェックボックスは、カレンダーの予定と同じ職員の色で出し、凡例を兼ねる。
+ * 職員のチェックボックスは、カレンダーの予定と同じ職員の色で出し、凡例を兼ねる。チームの見出しには、チームの色の点を名前の前に置く。
  * 名前の検索は一覧の表示だけを絞り、チェックの状態は変えない。
  * チームのチェックボックスは、検索で隠れた職員も含めて印を決め、まとめて外す、付ける。
  */
@@ -48,6 +49,7 @@ export const StaffFilterSidebar = ({
     })
     .filter(({ shownMembers }) => keyword === '' || shownMembers.length > 0)
   const isSelected = (staffId: Staff['id']) => isAll || selectedStaffIds.includes(staffId)
+  const current = isAll ? staffList.map((staff) => staff.id) : selectedStaffIds
 
   const commit = (ids: Staff['id'][]) => {
     // 空の配列は全員の表示を意味するため、最後の 1 人を外す操作は受け付けない。
@@ -55,14 +57,11 @@ export const StaffFilterSidebar = ({
     onChange(ids.length === staffList.length ? [] : ids)
   }
 
-  const toggleStaff = (staffId: Staff['id'], checked: boolean) => {
-    const current = isAll ? staffList.map((staff) => staff.id) : selectedStaffIds
+  const toggleStaff = (staffId: Staff['id'], checked: boolean) =>
     commit(checked ? [...current, staffId] : current.filter((id) => id !== staffId))
-  }
 
   const toggleTeam = (team: Team, checked: boolean) => {
     const memberIds = staffList.filter((staff) => staff.teamId === team.id).map((staff) => staff.id)
-    const current = isAll ? staffList.map((staff) => staff.id) : selectedStaffIds
     const next = checked
       ? [...new Set([...current, ...memberIds])]
       : current.filter((id) => !memberIds.includes(id))
@@ -72,7 +71,7 @@ export const StaffFilterSidebar = ({
   return (
     <nav
       aria-label="職員の絞り込み"
-      className="flex flex-col gap-4 p-4"
+      className="flex flex-col gap-5 p-5"
       data-testid="staff-filter-sidebar"
     >
       <div className="flex items-center justify-between">
@@ -128,7 +127,12 @@ export const StaffFilterSidebar = ({
                 }}
                 type="checkbox"
               />
-              {team.name}
+              <DotLabel
+                dotClassName={teamColorDotClassName(team.color)}
+                dotTestId={`staff-filter-team-dot-${team.id}`}
+              >
+                {team.name}
+              </DotLabel>
             </label>
             {shownMembers.map((staff) => (
               <label

@@ -1,0 +1,54 @@
+import { ArgTypes, Canvas, Meta } from '@storybook/addon-docs/blocks'
+
+import { Dialog, DialogFooter, DialogHeader } from './Dialog'
+import * as Stories from './Dialog.stories'
+
+<Meta of={Stories} />
+
+# Dialog
+
+画面の上に重ねて出す、小さい確認と入力のダイアログ。`<dialog>` の `showModal()` で開き、後ろの画面を操作できなくする。中身は `DialogHeader`、`DialogBody`、`DialogFooter` で組む。
+
+## 規則
+
+規則の本文は、デザインシステムの文書の次のセクションにある。
+
+- 使う場面、使わない場面、キーボードの操作: コンポーネントの文書（`packages/ui/design/components.md`）の「コンポーネントの選び方」の `Dialog` の行
+- 使い方の規則と Do と Don't: コンポーネントの文書の「コンポーネントごとの規則」の「`Modal`、`Dialog`」
+- 当たる原則: DESIGN.md の「画面を作るときの原則」の次の ID
+  - `PRIMARY-ACTION-ONE`
+  - `FOCUS-ONE`
+
+## 状態
+
+### デフォルト（入力のダイアログの形）
+
+<Canvas of={Stories.Default} />
+
+### エラー
+
+<Canvas of={Stories.WithError} />
+
+### 送っている間
+
+<Canvas of={Stories.Submitting} />
+
+### 操作を並べる
+
+<Canvas of={Stories.OperationsOnly} />
+
+### フッターを置かない
+
+<Canvas of={Stories.WithCloseButton} />
+
+## props
+
+<ArgTypes of={Dialog} />
+
+### DialogHeader
+
+<ArgTypes of={DialogHeader} />
+
+### DialogFooter
+
+<ArgTypes of={DialogFooter} />

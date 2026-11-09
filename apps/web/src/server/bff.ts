@@ -1,8 +1,9 @@
-import { ApiError, type BuddyApi } from '#/api/client'
+import { ApiError, type BuddyApi } from '#/api/BuddyApi'
 import { parseBffArgs, type BffCall, type BffData, type BffResult } from '#/api/bff/bffCall'
 import { createHttpBuddyApi } from '#/api/http/httpBuddyApi'
 
-import { readSession, type AuthDeps } from './auth'
+import { fetchWithAccessToken, type AuthDeps } from './auth'
+import { readSession } from './session'
 
 /**
  * 画面からの BuddyApi の呼び出しを、セッションの access token を付けて予定の API に送る。
@@ -22,11 +23,7 @@ export const callBff = async (
   if (session === undefined) return { ok: false, status: 401, message: 'ログインが必要です' }
   const api = createHttpBuddyApi({
     baseUrl: deps.scheduleApiUrl,
-    fetch: (input, init) => {
-      const authorized = new Request(input, init)
-      authorized.headers.set('Authorization', `Bearer ${session.accessToken}`)
-      return globalThis.fetch(authorized)
-    },
+    fetch: fetchWithAccessToken(session.accessToken),
   })
   const [group, name] = call.op.split('.') as [keyof BuddyApi, string]
   const operation = (api[group] as Record<string, (...args: unknown[]) => Promise<unknown>>)[name]

@@ -87,3 +87,22 @@ describe('activeStaffId', () => {
     expect(activeStaffId('staff-2', undefined)).toBe('staff-2')
   })
 })
+
+describe('訪問しない職員（ADR-0006）', () => {
+  const nonVisiting: Staff = { ...staff('staff-5'), nonVisiting: true }
+  const list = [staff('staff-1'), nonVisiting]
+
+  it('予定のカレンダーの列と絞り込み、予定の職員の候補に出さない', () => {
+    expect(activeStaff(list).map(({ id }) => id)).toEqual(['staff-1'])
+  })
+
+  it('予定のカレンダーに予定を出さない', () => {
+    const schedules = [schedule('a', 'staff-1'), schedule('b', 'staff-5')]
+    expect(excludeInactiveStaffSchedules(schedules, list).map(({ id }) => id)).toEqual(['a'])
+  })
+
+  it('URL の絞り込みと予定の作成の職員から外す', () => {
+    expect(activeStaffIds(['staff-1', 'staff-5'], list)).toEqual(['staff-1'])
+    expect(activeStaffId('staff-5', list)).toBeUndefined()
+  })
+})

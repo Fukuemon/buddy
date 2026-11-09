@@ -19,7 +19,13 @@ export type ServerConfig = {
   sessionStoreUrl: string
   sessionSecret: string
   /** セッションの cookie に Secure を付けるか。https でないローカル環境だけ false にする。 */
-  secureCookie: boolean
+  usesSecureCookie: boolean
+  /**
+   * ブラウザが開く web のオリジン（例: https://web.example.com）。ログインとログアウトの戻り先の URL を作るのに使う。
+   * TLS を終端するプロキシの後ろでは、リクエストの URL が http になり、IdP に登録した戻り先と合わないので渡す。
+   * 渡さなければ、リクエストの URL を使う。
+   */
+  publicUrl?: string
   scheduleApiUrl: string
   receiptApiUrl: string
 }
@@ -59,7 +65,8 @@ export const loadServerConfig = (env: Record<string, string | undefined>): Serve
     },
     sessionStoreUrl: get('SESSION_STORE_URL'),
     sessionSecret: get('SESSION_SECRET'),
-    secureCookie: env.SESSION_COOKIE_SECURE !== 'false',
+    usesSecureCookie: env.SESSION_COOKIE_SECURE !== 'false',
+    publicUrl: env.PUBLIC_URL || undefined,
     scheduleApiUrl: get('SCHEDULE_URL'),
     receiptApiUrl: get('RECEIPT_URL'),
   }

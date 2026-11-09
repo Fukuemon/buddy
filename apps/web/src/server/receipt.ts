@@ -1,13 +1,14 @@
-import { ApiError, type ReceiptCheckInput } from '#/api/client'
+import { ApiError, type ReceiptCheckInput } from '#/api/BuddyApi'
 import type { ReceiptCheckResult } from '#/api/bff/receiptCall'
 import { createReceiptApi } from '#/api/http/receiptApi'
 
-import { readSession, type AuthDeps } from './auth'
+import { fetchWithAccessToken, type AuthDeps } from './auth'
+import { readSession } from './session'
 
 /**
  * 画面から受けた照合の入力を、照合の API に送る。form は parseReceiptForm で確認した値である。
  *
- * セッションが無ければ status が 401 の失敗を、照合の API が失敗の状態を返せばその status と行のエラーを返す。
+ * セッションが無ければ status が 401 の失敗を、照合の API が失敗の状態を返せばその status とコードと行のエラーを返す。
  * それ以外の失敗は投げる。
  */
 export const checkReceipt = async (
@@ -17,15 +18,11 @@ export const checkReceipt = async (
 ): Promise<ReceiptCheckResult> => {
   const session = await readSession(request, deps.auth)
   if (session === undefined) {
-    return { ok: false, status: 401, message: 'ログインが必要です', rowErrors: [] }
+    return { ok: false, status: 401, message: 'ログインが必要です', csvErrors: [] }
   }
   const api = createReceiptApi({
     baseUrl: deps.receiptApiUrl,
-    fetch: (input, init) => {
-      const authorized = new Request(input, init)
-      authorized.headers.set('Authorization', `Bearer ${session.accessToken}`)
-      return globalThis.fetch(authorized)
-    },
+    fetch: fetchWithAccessToken(session.accessToken),
   })
   const visits = form.get('visits') as Blob
   const schedules = form.get('schedules')
@@ -37,7 +34,13 @@ export const checkReceipt = async (
     return { ok: true, report: await api.check(input) }
   } catch (error) {
     if (error instanceof ApiError) {
-      return { ok: false, status: error.status, message: error.message, rowErrors: error.rowErrors }
+      return {
+        ok: false,
+        status: error.status,
+        message: error.message,
+        csvErrors: error.csvErrors,
+        code: error.code,
+      }
     }
     throw error
   }

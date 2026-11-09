@@ -52,7 +52,8 @@ export interface paths {
         put?: never;
         /**
          * 実訪問の CSV と予定を照合する
-         * @description 予定は、ファイル `schedules` があればそれを使う。無くてフォームの値 `month` があれば、その月の予定を Google カレンダーから取る。
+         * @description 照合の権限（`receipt.check`）を持つ職員だけが呼べる。受けたトークンを付けて予定の API の `GET /v1/me` を呼び、返った権限で確認する（ADR-0007）。
+         *     予定は、ファイル `schedules` があればそれを使う。無くてフォームの値 `month` があれば、その月の予定を Google カレンダーから取る。
          *     Google カレンダーは、トークンの組織に結び付けたカレンダーだけを読む。
          *     結果は Accept によらず JSON で返す。入力の CSV は、UTF-8（BOM の有無を問わない）と CP932 を受ける。
          *     本文の上限のバイト数は、サーバーの設定 `MAX_UPLOAD_BYTES` で決まる。
@@ -74,20 +75,32 @@ export interface components {
         };
         Error: {
             /** @enum {string} */
-            code: "bad_request" | "missing_file" | "payload_too_large" | "unauthenticated" | "forbidden" | "invalid_csv" | "not_found" | "internal" | "calendar_not_configured" | "schedule_source_failed";
+            code: "bad_request" | "missing_file" | "payload_too_large" | "unauthenticated" | "forbidden" | "invalid_csv" | "not_found" | "internal" | "calendar_not_configured" | "schedule_source_failed" | "permission_check_failed";
             /** @description 人が読む日本語の説明。文言は変わることがあるので、利用者の分岐は `code` で行う */
             message: string;
-            /** @description 入力の CSV の行ごとのエラー。`invalid_csv` のときだけ持つ */
-            errors?: components["schemas"]["RowError"][];
+            /** @description 入力の CSV の誤り。`invalid_csv` のときだけ持ち、1 件以上ある */
+            errors?: components["schemas"]["CsvError"][];
         };
-        RowError: {
+        CsvError: {
             source: components["schemas"]["InputSource"];
-            /** @description 入力の CSV の行番号。ヘッダーが 1 行目 */
-            line: number;
-            /** @description エラーのある列の名前。行全体のエラーでは省く */
+            reason: components["schemas"]["InputReason"];
+            /** @description 入力の CSV の行番号。ヘッダーが 1 行目。ファイルの全体の誤り（`encoding`、`empty_file`、`missing_column`）では省く */
+            line?: number;
+            /** @description 誤りのある列の名前。`missing_column` では無い列の名前。列を決められない誤りでは省く */
             column?: string;
+            /** @description 人が読む日本語か、CSV のライブラリの英語の説明。画面には出さず、`reason` から文を作る */
             message: string;
         };
+        /**
+         * @description 入力を照合に使えない理由。
+         *     encoding は文字コードが UTF-8 でも CP932 でもない、empty_file はヘッダーの行も無い、missing_column は要る列が無い、
+         *     malformed_row は引用符の閉じ忘れのように CSV として読めない行、empty_value は要る値が空、invalid_date は日付として読めないか暦に無い、
+         *     invalid_time は時刻として読めない、invalid_duration は提供時間が 0 以上の整数でない、
+         *     unreadable_title は予定のタイトルを `【サービス内容】利用者名` の形として読めない、unreadable_time は予定の開始か終了の日時を読めない、
+         *     spans_days は終了が開始の翌日より後か、24 時間以上の予定である。unreadable_title、unreadable_time、spans_days は Warning だけが使う
+         * @enum {string}
+         */
+        InputReason: "encoding" | "empty_file" | "missing_column" | "malformed_row" | "empty_value" | "invalid_date" | "invalid_time" | "invalid_duration" | "unreadable_title" | "unreadable_time" | "spans_days";
         /** @enum {string} */
         InputSource: "schedules" | "visits";
         /** @example 2024-04-01 */
@@ -176,6 +189,10 @@ export interface components {
             event_id: string;
             /** @description 予定の開始の日時（RFC 3339） */
             start: string;
+            reason: components["schemas"]["InputReason"];
+            /** @description `reason` が列の値の誤り（`empty_value` など）のときの列の名前 */
+            column?: string;
+            /** @description 人が読む日本語の説明。画面には出さず、`reason` から文を作る */
             message: string;
         };
     };
@@ -285,18 +302,12 @@ export interface operations {
                     "application/json": components["schemas"]["Error"];
                 };
             };
-            /** @description Google カレンダーから取るのに、トークンに組織がない（`forbidden`） */
+            /** @description 職員が照合の権限を持たないか、予定の API が職員を拒んだ。または、Google カレンダーから取るのに、トークンに組織がない（`forbidden`） */
             403: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    /**
-                     * @example {
-                     *       "code": "forbidden",
-                     *       "message": "トークンに組織がないので、month では照合できない"
-                     *     }
-                     */
                     "application/json": components["schemas"]["Error"];
                 };
             };
@@ -315,7 +326,7 @@ export interface operations {
                     "application/json": components["schemas"]["Error"];
                 };
             };
-            /** @description 入力の CSV に誤りがある（`invalid_csv`）。行のエラーは `errors` に行番号つきで入る。CSV が空のとき、列が足りないとき、文字コードを読めないときは、`errors` を持たない */
+            /** @description 入力の CSV に誤りがある（`invalid_csv`）。誤りは `errors` に、理由のコードと、分かれば行と列を付けて入る。画面は `errors` から文を作る */
             422: {
                 headers: {
                     [name: string]: unknown;
@@ -339,18 +350,12 @@ export interface operations {
                     "application/json": components["schemas"]["Error"];
                 };
             };
-            /** @description Google カレンダーから予定を取れない（`schedule_source_failed`） */
+            /** @description 予定の API で照合の権限を確認できない（`permission_check_failed`）か、Google カレンダーから予定を取れない（`schedule_source_failed`） */
             502: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    /**
-                     * @example {
-                     *       "code": "schedule_source_failed",
-                     *       "message": "Google カレンダーから予定を取れない"
-                     *     }
-                     */
                     "application/json": components["schemas"]["Error"];
                 };
             };

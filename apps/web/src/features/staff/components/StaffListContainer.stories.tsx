@@ -1,0 +1,81 @@
+import type { Meta, StoryObj } from '@storybook/react-vite'
+
+import type { BuddyApi } from '#/api/BuddyApi'
+import { createFakeBuddyApi } from '#/api/fake/fakeBuddyApi'
+import {
+  failOnSecondCall,
+  failingBuddyApi,
+  pendingBuddyApi,
+  withAppRouter,
+  type AppRouterParameters,
+} from '#/storybook/withAppRouter'
+
+import { StaffListContainer } from './StaffListContainer'
+
+const route = (appRouter: Partial<AppRouterParameters>) => ({
+  appRouter: { route: '/staff', url: '/staff', ...appRouter },
+})
+
+/** 石川 二葉（staff-2）を休職に、江藤 四郎（staff-4）を退職にしたフェイクの API を作る。 */
+export const mixedStatusApi = (): BuddyApi => {
+  const base = createFakeBuddyApi()
+  return {
+    ...base,
+    staff: {
+      ...base.staff,
+      listRecords: async (facilityId) =>
+        (await base.staff.listRecords(facilityId)).map((staff) => {
+          if (staff.id === 'staff-2')
+            return {
+              ...staff,
+              status: 'on_leave' as const,
+              leave_started_at: '2026-10-31T00:00:00Z',
+              leave_return_date: '2027-04-01',
+            }
+          if (staff.id === 'staff-4')
+            return {
+              ...staff,
+              status: 'retired' as const,
+              email: null,
+              retired_at: '2026-09-30T03:00:00Z',
+            }
+          return staff
+        }),
+    },
+  }
+}
+
+const meta = {
+  title: '画面/Staff/StaffListContainer',
+  component: StaffListContainer,
+  decorators: [withAppRouter],
+  parameters: route({ api: mixedStatusApi() }),
+} satisfies Meta<typeof StaffListContainer>
+
+export default meta
+type Story = StoryObj<typeof meta>
+
+/** 開いた直後。状態の絞り込みは「有効」で、休職と退職の職員を出さない。 */
+export const Default: Story = {}
+
+/** 幅 768px 未満。1 行目に名前、2 行目にチーム、役職、部署を並べる。 */
+export const Mobile: Story = { globals: { viewport: { value: 'mobile1' } } }
+
+export const Loading: Story = { parameters: route({ api: pendingBuddyApi() }) }
+
+export const LoadError: Story = { parameters: route({ api: failingBuddyApi() }) }
+
+/** 職員の一覧を、2 回目だけ読めないフェイクの API を作る。 */
+export const refetchFailingApi = (): BuddyApi => {
+  const base = mixedStatusApi()
+  return {
+    ...base,
+    staff: {
+      ...base.staff,
+      listRecords: failOnSecondCall((...args) => base.staff.listRecords(...args)),
+    },
+  }
+}
+
+/** 読み終えた後に読み直して、職員を読めない。一覧を残し、見出しの下に失敗の文と読み直すを出す。 */
+export const RefetchError: Story = { parameters: route({ api: refetchFailingApi() }) }

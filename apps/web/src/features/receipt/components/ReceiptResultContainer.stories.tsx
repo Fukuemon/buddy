@@ -1,9 +1,10 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 
-import { fakeReceiptReport } from '#/api/fake/fakeReceiptApi'
+import { queryKeys } from '#/api/queryKeys'
+import { mockReceiptReport } from '#/mocks/receiptData'
 import { withAppRouter, type AppRouterParameters } from '#/storybook/withAppRouter'
 
-import { receiptResultKey, type ReceiptResult } from '../queries'
+import type { ReceiptResult } from '../queries'
 import { ReceiptResultContainer } from './ReceiptResultContainer'
 
 const route = (appRouter: Partial<AppRouterParameters>) => ({
@@ -11,7 +12,7 @@ const route = (appRouter: Partial<AppRouterParameters>) => ({
 })
 
 const withResult = (result: ReceiptResult) =>
-  route({ seed: (queryClient) => queryClient.setQueryData(receiptResultKey, result) })
+  route({ seed: (queryClient) => queryClient.setQueryData(queryKeys.receiptResult(), result) })
 
 const meta = {
   title: '画面/Receipt/ReceiptResultContainer',
@@ -28,12 +29,12 @@ export const NoResult: Story = {}
 
 export const FromCalendar: Story = {
   parameters: withResult({
-    report: fakeReceiptReport,
+    report: mockReceiptReport,
     month: '2026-09',
     checkedAt: '2026-10-21T10:00:00+09:00',
   }),
 }
 
 export const FromCsv: Story = {
-  parameters: withResult({ report: fakeReceiptReport, checkedAt: '2026-10-21T10:00:00+09:00' }),
+  parameters: withResult({ report: mockReceiptReport, checkedAt: '2026-10-21T10:00:00+09:00' }),
 }

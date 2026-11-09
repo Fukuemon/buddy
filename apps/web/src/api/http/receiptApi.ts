@@ -1,6 +1,6 @@
 import createClient from 'openapi-fetch'
 
-import { ApiError, type ReceiptApi } from '../client'
+import { ApiError, type ReceiptApi } from '../BuddyApi'
 import type { paths } from '../generated/receipt'
 import type { HttpApiOptions } from './httpBuddyApi'
 
@@ -25,6 +25,7 @@ export const createReceiptApi = ({ baseUrl, fetch }: HttpApiOptions): ReceiptApi
         response.status,
         error?.message ?? response.statusText,
         error?.errors ?? [],
+        error?.code,
       )
     },
   }

@@ -9,15 +9,16 @@ import (
 	calendarv3 "google.golang.org/api/calendar/v3"
 
 	"github.com/Fukuemon/buddy/services/schedule/internal/apperr"
-	"github.com/Fukuemon/buddy/services/schedule/internal/calendar"
 	"github.com/Fukuemon/buddy/services/schedule/internal/civil"
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendar"
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendarimport"
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/organization"
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/staff"
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/visit"
 	"github.com/Fukuemon/buddy/services/schedule/internal/gcal"
 	"github.com/Fukuemon/buddy/services/schedule/internal/gcal/gcaltest"
-	"github.com/Fukuemon/buddy/services/schedule/internal/organization"
 	"github.com/Fukuemon/buddy/services/schedule/internal/principal"
-	"github.com/Fukuemon/buddy/services/schedule/internal/staff"
 	"github.com/Fukuemon/buddy/services/schedule/internal/ulid"
-	"github.com/Fukuemon/buddy/services/schedule/internal/visit"
 )
 
 func TestCalendarRepository(t *testing.T) {
@@ -85,7 +86,7 @@ func TestCalendarRepository(t *testing.T) {
 		t.Fatalf("ListByFacility = %+v", list)
 	}
 
-	link := calendar.Link{
+	link := calendar.EventLink{
 		ID: linkID, FacilityID: seedFacility, ExternalCalendarID: calID, ExternalEventID: "ev1",
 		ETag: `"1"`, RecurringScheduleID: ptr(seedRecurring),
 	}
@@ -152,8 +153,8 @@ func TestCalendarRepository(t *testing.T) {
 // 訪問の情報、予定の対応を、テーブルの制約に合う形で書けることを確認する。
 func TestCalendarImportInOneTransaction(t *testing.T) {
 	ctx := txContext(t)
-	ctx = principal.With(ctx, principal.Principal{Staff: staff.Detail{
-		Summary:  staff.Summary{Staff: staff.Staff{ID: seedAoki, FacilityID: seedFacility}},
+	ctx = principal.With(ctx, principal.Principal{Staff: principal.Staff{
+		ID: seedAoki, FacilityID: seedFacility,
 		Policies: []staff.PolicyGrant{{PolicyCode: organization.StaffManage}},
 	}})
 	ev := func(id, summary, start, end string) *calendarv3.Event {
@@ -165,7 +166,7 @@ func TestCalendarImportInOneTransaction(t *testing.T) {
 	moved := ev("weekly_1116", "【訪看I2】見本一郎", "2026-11-16T15:00:00+09:00", "2026-11-16T15:30:00+09:00")
 	moved.RecurringEventId, moved.OriginalStartTime = "weekly", &calendarv3.EventDateTime{DateTime: "2026-11-16T09:00:00+09:00"}
 	biweekly := ev("biweekly", "定例", "2026-11-03T16:00:00+09:00", "2026-11-03T17:00:00+09:00")
-	biweekly.Recurrence = []string{"RRULE:FREQ=WEEKLY;INTERVAL=2"}
+	biweekly.Recurrence = []string{"RRULE:FREQ=WEEKLY;INTERVAL=2;BYDAY=TU,SU"}
 	srv := &gcaltest.Server{
 		Calendars: map[string][][]*calendarv3.Event{"mori@example.com": {{
 			ev("single", "【訪看Ⅰ2】見本 二葉", "2026-11-04T10:00:00+09:00", "2026-11-04T10:30:00+09:00"),
@@ -185,29 +186,23 @@ func TestCalendarImportInOneTransaction(t *testing.T) {
 		t.Fatal(err)
 	}
 	patients := NewPatientRepository(testDB)
-	masters := NewVisitMasterRepository(testDB)
+	masters := NewServiceCodeRepository(testDB)
 	staffRefs := NewStaffRefRepository(testDB)
 	schedules := NewScheduleRepository(testDB)
 	recurring := NewRecurringScheduleRepository(testDB)
 	ids := ulid.Generator{}
-	uc := calendar.NewUsecase(calendar.Deps{
-		Calendars: calendars, Accounts: sameAccount{gcal.NewReader(gcaltest.Start(t, srv))},
-		Staff: staffRefs, Patients: patients, ServiceCodes: masters, Types: NewScheduleTypeRepository(testDB),
-		Schedules: schedules, Recurring: recurring, RecurringSchedules: recurring,
-		Visits: visit.NewWriter(visit.WriterDeps{
-			Staff: staffRefs,
-			Patients: func(ctx context.Context, id string) (string, string, error) {
-				p, err := patients.Get(ctx, id)
-				return p.ID, p.FacilityID, err
-			},
-			Infos: NewVisitInfoRepository(testDB), Masters: masters,
-		}, ids),
-	}, NewTransactor(testDB), ids, principal.RequireStaffManage)
-	rng, err := calendar.NewRange(civil.Date{Year: 2026, Month: 11, Day: 1}, civil.Date{Year: 2026, Month: 11, Day: 30})
+	visits := visit.NewWriter(visit.WriterDeps{
+		Staff:    staffRefs,
+		Patients: patients,
+		Infos:    NewVisitInfoRepository(testDB), ServiceCodes: masters, Categories: NewVisitCategoryRepository(testDB),
+	}, ids)
+	importCalendar := calendarimport.NewImport(calendars, sameAccount{gcal.NewReader(gcaltest.Start(t, srv))}, staffRefs, NewFacilityRepository(testDB), patients, recurring, masters,
+		NewScheduleTypeRepository(testDB), recurring, schedules, visits, NewCalendarCutoverRepository(testDB), NewTransactor(testDB), ids, principal.RequireStaffManage)
+	rng, err := calendarimport.NewRange(civil.Date{Year: 2026, Month: 11, Day: 1}, civil.Date{Year: 2026, Month: 11, Day: 30})
 	if err != nil {
 		t.Fatal(err)
 	}
-	res, err := uc.Import(ctx, calID, rng, nil)
+	res, err := importCalendar.Do(ctx, calID, rng, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -218,7 +213,7 @@ func TestCalendarImportInOneTransaction(t *testing.T) {
 	if err != nil || len(links) != 5 {
 		t.Fatalf("ListLinks = %d 件, %v", len(links), err)
 	}
-	byEvent := map[string]calendar.Link{}
+	byEvent := map[string]calendar.EventLink{}
 	for _, l := range links {
 		byEvent[l.ExternalEventID] = l
 	}
@@ -239,7 +234,7 @@ func TestCalendarImportInOneTransaction(t *testing.T) {
 	if l := byEvent["biweekly_1117"]; l.RecurringEventID == nil || *l.RecurringEventID != "biweekly" {
 		t.Errorf("回ごとにした予定の対応 = %+v", l)
 	}
-	again, err := uc.Import(ctx, calID, rng, nil)
+	again, err := importCalendar.Do(ctx, calID, rng, nil)
 	if err != nil {
 		t.Fatal(err)
 	}

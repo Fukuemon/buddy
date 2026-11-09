@@ -1,13 +1,14 @@
 import { describe, expect, it } from 'vite-plus/test'
 
-import { ApiError } from '#/api/client'
+import { ApiError } from '#/api/BuddyApi'
+import { FORBIDDEN_MESSAGE } from '#/api/forbiddenMessage'
 
 import {
-  FORBIDDEN_MESSAGE,
-  acceptErrorMessage,
+  cutoverErrorMessage,
   importErrorMessage,
   linkErrorMessage,
   previewErrorMessage,
+  rewriteErrorMessage,
   unlinkErrorMessage,
 } from './errorMessage'
 
@@ -15,7 +16,10 @@ const apiError = (status: number, code?: string) => new ApiError(status, '失敗
 
 describe('linkErrorMessage', () => {
   it.each([
-    [apiError(422, 'calendar_unreadable'), 'このカレンダーを読めません。'],
+    [
+      apiError(422, 'calendar_unreadable'),
+      'このカレンダーを読めません。カレンダーが、上に出ている buddy のメールアドレスに共有されているか',
+    ],
     [apiError(409, 'calendar_taken'), 'このカレンダーは、ほかの職員に結び付いています。'],
     [apiError(409, 'staff_has_calendar'), 'この職員には、ほかのカレンダーが結び付いています。'],
     [apiError(409, 'calendar_already_linked'), 'この職員にすでに結び付いています。'],
@@ -43,7 +47,7 @@ describe('previewErrorMessage', () => {
     [apiError(422, 'calendar_unreadable'), '青木 一郎 の Google カレンダーを読めません。'],
     [
       apiError(503, 'calendar_not_configured'),
-      'この事業所のサービスアカウントが設定されていないので',
+      'まだ Google カレンダーを使う準備ができていません。事業所の管理者に',
     ],
     [apiError(404, 'not_found'), 'この職員のカレンダーの結び付けが外れています。'],
     [apiError(403, 'forbidden'), FORBIDDEN_MESSAGE],
@@ -60,6 +64,10 @@ describe('importErrorMessage', () => {
       'プレビューの後に、Google カレンダーの予定か職員の休職が変わりました。',
     ],
     [apiError(409, 'import_running'), 'この職員の取り込みが、ほかの画面で進んでいます。'],
+    [
+      apiError(409, 'google_primary'),
+      'この事業所の予定は Google カレンダーで管理しているので、buddy に取り込めません。',
+    ],
     [apiError(400, 'invalid_input'), '選んだ利用者が見つかりません。'],
     [apiError(403, 'forbidden'), FORBIDDEN_MESSAGE],
     [apiError(404, 'not_found'), 'この職員のカレンダーの結び付けが外れています。'],
@@ -69,22 +77,37 @@ describe('importErrorMessage', () => {
   })
 })
 
-describe('acceptErrorMessage', () => {
+describe('rewriteErrorMessage', () => {
   it.each([
     [
       apiError(409, 'export_not_in_review'),
-      'この予定は、すでに書き直す待ちにしたか、解いています。',
-    ],
-    [apiError(409, 'export_not_acceptable'), 'buddy の内容で書き直してください。'],
-    [apiError(409, 'external_change_unappliable'), 'buddy の予定に読み替えられません。'],
-    [apiError(422, 'calendar_unreadable'), 'カレンダーの共有が外れていないか'],
-    [
-      apiError(503, 'calendar_not_configured'),
-      'この事業所のサービスアカウントが設定されていないので',
+      'この予定は、すでに書き直しを始めたか、書き直し終えています。一覧を読み直してください。',
     ],
     [apiError(403, 'forbidden'), FORBIDDEN_MESSAGE],
-    [apiError(502, 'calendar_unavailable'), 'Google カレンダーの内容に合わせられませんでした。'],
+    [apiError(500), '書き直せませんでした。時間をおいて、もう一度書き直してください。'],
   ])('%s を文にする', (error, expected) => {
-    expect(acceptErrorMessage(error)).toContain(expected)
+    expect(rewriteErrorMessage(error)).toBe(expected)
+  })
+})
+
+describe('cutoverErrorMessage', () => {
+  it.each([
+    [apiError(409, 'cutover_open'), 'ほかの画面で切り替えを始めています。'],
+    [apiError(409, 'cutover_not_google_primary'), '予定の正本は、すでに buddy です。'],
+    [
+      new ApiError(
+        409,
+        '最後の同期が成功していないカレンダーがあります（青木 一郎）',
+        [],
+        'cutover_sync_not_ready',
+      ),
+      '（青木 一郎）',
+    ],
+    [apiError(409, 'cutover_not_open'), 'ほかの画面で完了したか、やめています。'],
+    [apiError(502, 'calendar_unavailable'), 'もう一度完了してください。'],
+    [apiError(403, 'forbidden'), FORBIDDEN_MESSAGE],
+    [apiError(500), '操作できませんでした。'],
+  ])('%s を文にする', (error, expected) => {
+    expect(cutoverErrorMessage(error)).toContain(expected)
   })
 })

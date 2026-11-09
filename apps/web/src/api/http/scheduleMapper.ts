@@ -1,15 +1,20 @@
 import type { components } from '../generated/schedule'
 import {
   SCHEDULE_CATEGORIES,
-  SERVICE_CODES,
+  type AllDayEvent,
+  type Facility,
+  SCHEDULE_POLICY_CODES,
   type Schedule,
+  type SchedulePolicy,
+  type SchedulePolicyCode,
   type ScheduleCategory,
   type ScheduleInput,
   type ScheduleKind,
-  type ServiceCode,
   type Patient,
+  type RecurringRule,
   type Staff,
   type Team,
+  type Viewer,
 } from '../types'
 
 type Schemas = components['schemas']
@@ -46,27 +51,50 @@ export const fromApiStaff = (user: Schemas['Staff']): Staff => {
     email: user.email,
   }
   if (user.status !== 'active') staff.status = user.status
+  if (!user.visits) staff.nonVisiting = true
   return staff
 }
 
+/** 職員の権限のうち、予定の権限だけを画面の予定の権限にする。画面の知らない code は捨てる。 */
+export const fromApiSchedulePolicies = (
+  policies: Schemas['StaffDetail']['policies'],
+): SchedulePolicy[] =>
+  policies.flatMap(({ code, target_user_ids, target_team_ids }) =>
+    isSchedulePolicyCode(code)
+      ? [{ code, targetStaffIds: target_user_ids, targetTeamIds: target_team_ids }]
+      : [],
+  )
+
+const isSchedulePolicyCode = (code: string): code is SchedulePolicyCode =>
+  (SCHEDULE_POLICY_CODES as readonly string[]).includes(code)
+
+/** GET /v1/me の職員を、画面の出し分けに使うログインした職員にする。 */
+export const fromApiMe = (me: Schemas['StaffDetail']): Viewer => ({
+  staffId: me.id,
+  staffName: me.username,
+  facilityId: me.facility_id,
+  policyCodes: me.policies.map((p) => p.code),
+  schedulePolicies: fromApiSchedulePolicies(me.policies),
+})
+
 /** API のチームを、画面のチームにする。 */
-export const fromApiTeam = ({ id, name }: Schemas['Unit']): Team => ({ id, name })
+export const fromApiTeam = ({ id, name, color }: Schemas['Team']): Team => ({ id, name, color })
 
 /** API の利用者を、画面の利用者にする。 */
-export const fromApiPatient = ({ id, name }: Schemas['Patient']): Patient => ({ id, name })
+export const fromApiPatient = ({
+  id,
+  name,
+  service_code,
+  ended_at,
+}: Schemas['Patient']): Patient =>
+  ended_at === null
+    ? { id, name, serviceCode: service_code }
+    : { id, name, serviceCode: service_code, ended: true }
 
 /** API の日付と時刻は事業所の現地時刻で、事業所は日本にあるものとする。 */
 const OFFSET = '+09:00'
 const OFFSET_MS = 9 * 60 * 60 * 1000
-
-/** 全角と半角の数字の表記の違いを吸収して比べる。古いシードは全角（訪看I２）で入っている。 */
-const sameServiceCode = (a: string, b: string) => a.normalize('NFKC') === b.normalize('NFKC')
-
-const toServiceCode = (code: string): ServiceCode => {
-  const found = SERVICE_CODES.find((c) => sameServiceCode(c, code))
-  if (found === undefined) throw new Error(`画面が知らないサービスコード ${code} を受けた`)
-  return found
-}
+const DAY_MS = 24 * 60 * 60 * 1000
 
 const toCategory = (name: string): ScheduleCategory => {
   const found = SCHEDULE_CATEGORIES.find((category) => CATEGORY_TO_API[category] === name)
@@ -75,7 +103,11 @@ const toCategory = (name: string): ScheduleCategory => {
 }
 
 /** API の日付と時刻を、+09:00 の ISO 8601 の日時にする。 */
-export const toDateTime = (date: string, time: string) => `${date}T${time}:00${OFFSET}`
+const toDateTime = (date: string, time: string) => `${date}T${time}:00${OFFSET}`
+
+/** YYYY-MM-DD の翌日の YYYY-MM-DD を返す。 */
+const nextDate = (date: string) =>
+  new Date(Date.parse(`${date}T00:00:00Z`) + 24 * 60 * 60 * 1000).toISOString().slice(0, 10)
 
 /**
  * ISO 8601 の日時を、+09:00 の日付（YYYY-MM-DD）と時刻（HH:MM）に分ける。
@@ -89,8 +121,22 @@ export const splitDateTime = (dateTime: string) => {
   return { date: local.slice(0, 10), time: local.slice(11, 16) }
 }
 
+/** API の Google カレンダーの終日の予定を、画面の終日の予定にする。確認が必要な理由は、あるときだけ持たせる。 */
+export const fromApiAllDayEvent = (event: Schemas['AllDayEvent']): AllDayEvent => {
+  const result: AllDayEvent = {
+    id: event.id,
+    staffId: event.staff_id,
+    staffName: event.staff_name,
+    startDate: event.start_date,
+    endDate: event.end_date,
+    title: event.title,
+  }
+  if (event.review_reason !== null) result.reviewReason = event.review_reason
+  return result
+}
+
 /**
- * API の単発の予定を、画面の予定にする。
+ * API の単発の予定を、画面の予定にする。終了が翌日の印が付いた予定は、終了の日時を日付の翌日にする。
  *
  * サービスコードか訪問の区分が画面の知らない値なら Error を投げる。
  */
@@ -102,20 +148,61 @@ export const fromApiSchedule = (schedule: ApiSchedule): Schedule => {
     title: schedule.title ?? '',
     staffId: schedule.staff_id,
     startsAt: toDateTime(schedule.date, schedule.start_time),
-    endsAt: toDateTime(schedule.date, schedule.end_time),
+    endsAt: toDateTime(
+      schedule.ends_next_day ? nextDate(schedule.date) : schedule.date,
+      schedule.end_time,
+    ),
     description: schedule.description ?? '',
   }
   const visit = schedule.visit_info
   if (visit !== null) {
     result.visit = {
       patientId: visit.patient_id,
-      serviceCode: toServiceCode(visit.service_code),
+      serviceCode: visit.service_code,
       categories: visit.visit_categories.map((c) => toCategory(c.name)),
     }
   }
   if (schedule.cancel !== null) result.cancel = { reason: schedule.cancel.reason }
+  if (schedule.source === 'google_calendar') result.fromGoogleCalendar = true
+  if (schedule.etag !== null) result.etag = schedule.etag
+  if (schedule.review_reason !== null) result.reviewReason = schedule.review_reason
+  if (schedule.recurring_rule != null && schedule.recurring_schedule_id !== null) {
+    result.recurrence = {
+      recurringScheduleId: schedule.recurring_schedule_id,
+      rule: fromApiRecurringRule(schedule.recurring_rule),
+    }
+  }
   return result
 }
+
+/** API の繰り返しの規則を、画面の繰り返しの規則にする。 */
+export const fromApiRecurringRule = (rule: Schemas['RecurringRule']): RecurringRule => ({
+  frequency: rule.frequency,
+  daysOfWeek: rule.days_of_week ?? null,
+  interval: rule.interval ?? null,
+  dayOfWeek: rule.day_of_week ?? null,
+  dayOfMonth: rule.day_of_month ?? null,
+  weekOfMonth: rule.week_of_month ?? null,
+  endDate: rule.end_date ?? null,
+})
+
+/** 画面の繰り返しの規則を、API の繰り返しの規則にする。 */
+export const toApiRecurringRule = (rule: RecurringRule): Schemas['RecurringRule'] => ({
+  frequency: rule.frequency,
+  days_of_week: rule.daysOfWeek,
+  interval: rule.interval,
+  day_of_week: rule.dayOfWeek,
+  day_of_month: rule.dayOfMonth,
+  week_of_month: rule.weekOfMonth,
+  end_date: rule.endDate,
+})
+
+/** API の事業所を、画面の事業所にする。 */
+export const fromApiFacility = ({ id, name, source_mode }: Schemas['Facility']): Facility => ({
+  id,
+  name,
+  sourceMode: source_mode,
+})
 
 const idOf = <T extends { id: string }>(items: T[], match: (item: T) => boolean, what: string) => {
   const found = items.find(match)
@@ -126,14 +213,16 @@ const idOf = <T extends { id: string }>(items: T[], match: (item: T) => boolean,
 /**
  * 画面の予定の入力を、API の単発の予定の作成の本文にする。
  *
- * 開始と終了の日付が違う、マスタに当たる値がない、のいずれかで Error を投げる。
+ * 終了が開始の翌日なら ends_next_day を付ける。
+ * 長さが 0 以下か 24 時間以上、マスタに当たる値がない、のいずれかで Error を投げる。
  * 訪問の予定の担当は予定の職員にし、同行者は付けない。
  */
 export const toSlotRequest = (input: ScheduleInput, masters: ScheduleMasters): ApiSlotRequest => {
   const start = splitDateTime(input.startsAt)
   const end = splitDateTime(input.endsAt)
-  if (start.date !== end.date) {
-    throw new Error('予定の API は日付をまたぐ予定を受けない')
+  const length = Date.parse(input.endsAt) - Date.parse(input.startsAt)
+  if (length <= 0 || length >= DAY_MS) {
+    throw new Error('予定の API は、長さが 0 より長く 24 時間未満の予定だけを受ける')
   }
   const typeName = KIND_TO_API[input.kind]
   const visit = input.kind === 'visit' ? input.visit : undefined
@@ -146,6 +235,7 @@ export const toSlotRequest = (input: ScheduleInput, masters: ScheduleMasters): A
     date: start.date,
     start_time: start.time,
     end_time: end.time,
+    ends_next_day: start.date !== end.date,
     staff_id: input.staffId,
     title: input.title === '' ? null : input.title,
     description: input.description === '' ? null : input.description,
@@ -158,7 +248,7 @@ export const toSlotRequest = (input: ScheduleInput, masters: ScheduleMasters): A
             companion_id: null,
             service_code_id: idOf(
               masters.serviceCodes,
-              (c) => sameServiceCode(c.code, visit.serviceCode),
+              (c) => c.code === visit.serviceCode,
               `サービスコード ${visit.serviceCode}`,
             ),
             visit_category_ids: visit.categories.map((category) =>

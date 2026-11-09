@@ -1,30 +1,28 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { useNavigate, useRouteContext } from '@tanstack/react-router'
+import { useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
 
 import type { CalendarExportIssue } from '#/api/types'
+import { queryKeys } from '#/api/queryKeys'
+import { failedBeforeLoad, hasRefetchFailed, refetchFailedQueries } from '#/api/refetch'
 import { useBuddyApi } from '#/api/useBuddyApi'
-import { PageForbiddenMessage } from '#/components/site/PageForbiddenMessage'
 
 import {
   REVIEW_LOAD_ERROR_MESSAGE,
-  acceptErrorMessage,
   loadErrorMessage,
   rewriteErrorMessage,
 } from '../lib/errorMessage'
 import { formatExportIssueDateTime, isCancelledSingleIssue } from '../lib/exportIssue'
-import {
-  calendarQueryKeys,
-  exportIssueListQueryOptions,
-  useAcceptExport,
-  useRetryExport,
-} from '../queries'
-import { CalendarAcceptDialog } from './CalendarAcceptDialog'
+import { exportIssueListQueryOptions, useRetryExport } from '../queries'
+import { CalendarReviewDialog } from './CalendarReviewDialog'
 import { CalendarReviewView, type CalendarReviewViewState } from './CalendarReviewView'
 import { CalendarRewriteDialog } from './CalendarRewriteDialog'
 
-/** 開いているダイアログの操作と予定。 */
-type DialogTarget = { action: 'rewrite' | 'accept'; issue: CalendarExportIssue }
+/**
+ * 開いているダイアログ。detail は予定の確認のダイアログで、rewrite はそこから開く確認のダイアログである。
+ * 予定は、送った後に一覧を読み直しても消えないよう、開いたときの値を持つ。
+ */
+type DialogTarget = { step: 'detail' | 'rewrite'; issue: CalendarExportIssue }
 
 const CalendarReviewContent = () => {
   const { api, facilityId } = useBuddyApi()
@@ -32,25 +30,17 @@ const CalendarReviewContent = () => {
   const navigate = useNavigate()
   const issuesQuery = useQuery(exportIssueListQueryOptions(api, facilityId))
   const rewrite = useRetryExport()
-  const accept = useAcceptExport()
   const [target, setTarget] = useState<DialogTarget | null>(null)
 
-  const state: CalendarReviewViewState = issuesQuery.isError
+  const state: CalendarReviewViewState = failedBeforeLoad([issuesQuery])
     ? { status: 'error', message: loadErrorMessage(issuesQuery.error, REVIEW_LOAD_ERROR_MESSAGE) }
-    : issuesQuery.isPending
+    : issuesQuery.data === undefined
       ? { status: 'loading' }
       : { status: 'ready', issues: issuesQuery.data }
 
-  const close = () => {
+  const show = (step: DialogTarget['step'] | null, issue?: CalendarExportIssue) => {
     rewrite.reset()
-    accept.reset()
-    setTarget(null)
-  }
-  const open = (action: DialogTarget['action']) => (exportId: CalendarExportIssue['id']) => {
-    rewrite.reset()
-    accept.reset()
-    const issue = issuesQuery.data?.find((i) => i.id === exportId)
-    setTarget(issue === undefined ? null : { action, issue })
+    setTarget(step === null || issue === undefined ? null : { step, issue })
   }
   const label =
     target === null ? '' : `${formatExportIssueDateTime(target.issue)}、${target.issue.staff_name}`
@@ -58,32 +48,36 @@ const CalendarReviewContent = () => {
   return (
     <>
       <CalendarReviewView
-        onOpenSchedule={(scheduleId) =>
-          navigate({ to: '/schedule/$scheduleId', params: { scheduleId } })
-        }
+        onRefetch={() => refetchFailedQueries([issuesQuery])}
+        refetchFailed={hasRefetchFailed([issuesQuery])}
         onRetry={() =>
-          queryClient.resetQueries({ queryKey: calendarQueryKeys.exportIssues(facilityId) })
+          queryClient.resetQueries({ queryKey: queryKeys.calendars.exportIssues(facilityId) })
         }
-        onAccept={open('accept')}
-        onRewrite={open('rewrite')}
+        onSelect={(exportId) =>
+          show(
+            'detail',
+            issuesQuery.data?.find((i) => i.id === exportId),
+          )
+        }
         state={state}
       />
-      {target?.action === 'rewrite' && (
-        <CalendarRewriteDialog
-          cancelled={isCancelledSingleIssue(target.issue)}
-          errorMessage={rewrite.isError ? rewriteErrorMessage(rewrite.error) : undefined}
-          isSubmitting={rewrite.isPending}
-          onCancel={close}
-          onSubmit={() => rewrite.mutate(target.issue.id, { onSuccess: close })}
-          target={label}
+      {target?.step === 'detail' && (
+        <CalendarReviewDialog
+          issue={target.issue}
+          onClose={() => show(null)}
+          onOpenSchedule={(scheduleId) =>
+            navigate({ to: '/schedule/$scheduleId', params: { scheduleId } })
+          }
+          onRewrite={() => show('rewrite', target.issue)}
         />
       )}
-      {target?.action === 'accept' && (
-        <CalendarAcceptDialog
-          errorMessage={accept.isError ? acceptErrorMessage(accept.error) : undefined}
-          isSubmitting={accept.isPending}
-          onCancel={close}
-          onSubmit={() => accept.mutate(target.issue.id, { onSuccess: close })}
+      {target?.step === 'rewrite' && (
+        <CalendarRewriteDialog
+          isCancelled={isCancelledSingleIssue(target.issue)}
+          errorMessage={rewrite.isError ? rewriteErrorMessage(rewrite.error) : undefined}
+          isSubmitting={rewrite.isPending}
+          onCancel={() => show('detail', target.issue)}
+          onSubmit={() => rewrite.mutate(target.issue.id, { onSuccess: () => show(null) })}
           target={label}
         />
       )}
@@ -92,10 +86,10 @@ const CalendarReviewContent = () => {
 }
 
 /**
- * 確認が必要な予定の画面。職員の管理の権限が無ければ、API を呼ばずに権限が無いことを示す。
- * Google カレンダーと食い違った予定を読み、buddy の内容で書き直すか、Google の内容に合わせるかを、ダイアログで確認してから行う。
+ * 確認が必要な予定の画面。
+ * 行を押すと予定の確認のダイアログを開き、buddy の内容で書き直すかを、確認のダイアログで確定してから行う。
+ * 確認のダイアログの「キャンセル」は、予定の確認のダイアログに戻る。
  */
 export const CalendarReviewContainer = () => {
-  const { viewer } = useRouteContext({ from: '__root__' })
-  return viewer?.canManageStaff ? <CalendarReviewContent /> : <PageForbiddenMessage />
+  return <CalendarReviewContent />
 }

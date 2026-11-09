@@ -1,9 +1,6 @@
-import createClient from 'openapi-fetch'
+import { getMe } from '#/api/http/meApi'
 
-import type { paths } from '#/api/generated/schedule'
-import { STAFF_MANAGE } from '#/api/types'
-
-import type { AuthDeps, MeResult } from './auth'
+import type { AuthDeps } from './auth'
 import { loadServerConfig, type ServerConfig } from './config'
 import { createOidcClient, type OidcClient } from './oidc'
 import { createValkeySessionStore, type SessionStore } from './sessionStore'
@@ -45,26 +42,6 @@ const getOidc = (config: ServerConfig) => {
   return oidc
 }
 
-/** access token で予定の API の GET /v1/me を呼ぶ。 */
-export const fetchMe = async (scheduleApiUrl: string, accessToken: string): Promise<MeResult> => {
-  const api = createClient<paths>({ baseUrl: scheduleApiUrl })
-  const { data, response } = await api.GET('/v1/me', {
-    headers: { Authorization: `Bearer ${accessToken}` },
-  })
-  if (data !== undefined) {
-    return {
-      ok: true,
-      viewer: {
-        staffId: data.id,
-        staffName: data.username,
-        facilityId: data.facility_id,
-        canManageStaff: data.policies.some((p) => p.code === STAFF_MANAGE),
-      },
-    }
-  }
-  return { ok: false, reason: response.status === 403 ? 'forbidden' : 'failed' }
-}
-
 /** 認証の処理に渡す依存を返す。 */
 export const getAuthDeps = async (): Promise<AuthDeps> => {
   const { config, store } = getRuntime()
@@ -72,7 +49,8 @@ export const getAuthDeps = async (): Promise<AuthDeps> => {
     store,
     oidc: await getOidc(config),
     secret: config.sessionSecret,
-    secureCookie: config.secureCookie,
-    fetchMe: (accessToken) => fetchMe(config.scheduleApiUrl, accessToken),
+    usesSecureCookie: config.usesSecureCookie,
+    publicUrl: config.publicUrl,
+    getMe: (accessToken) => getMe(config.scheduleApiUrl, accessToken),
   }
 }

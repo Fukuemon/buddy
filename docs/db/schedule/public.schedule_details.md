@@ -37,7 +37,8 @@ CREATE VIEW schedule_details AS (
     c.reason AS cancel_reason,
     s.created_at,
     s.updated_at,
-    s.version
+    s.version,
+    s.ends_next_day
    FROM ((((schedules s
      JOIN schedule_types st ON ((st.id = s.schedule_type_id)))
      JOIN users u ON ((u.id = s.staff_id)))
@@ -81,22 +82,23 @@ CREATE VIEW schedule_details AS (
 | created_at            | timestamp with time zone |         | true     |          |         |         |
 | updated_at            | timestamp with time zone |         | true     |          |         |         |
 | version               | integer                  |         | true     |          |         |         |
+| ends_next_day         | boolean                  |         | true     |          |         |         |
 
 ## Referenced Tables
 
 | Name                                                      | Columns | Comment                                            | Type       |
 | --------------------------------------------------------- | ------- | -------------------------------------------------- | ---------- |
-| [public.schedules](public.schedules.md)                   | 16      | 予定                                               | BASE TABLE |
+| [public.schedules](public.schedules.md)                   | 17      | 予定                                               | BASE TABLE |
 | [public.schedule_types](public.schedule_types.md)         | 5       | 予定の種類（通常、訪問）。マイグレーションで入れる | BASE TABLE |
-| [public.users](public.users.md)                           | 14      | 職員                                               | BASE TABLE |
+| [public.users](public.users.md)                           | 15      | 職員                                               | BASE TABLE |
 | [public.visit_info_details](public.visit_info_details.md) | 10      | 訪問の情報と名前を結合したビュー                   | VIEW       |
 | [public.schedule_cancels](public.schedule_cancels.md)     | 5       | 予定の取り消し                                     | BASE TABLE |
 
 ## Viewpoints
 
-| Name                                 | Definition                                           |
-| ------------------------------------ | ---------------------------------------------------- |
-| [予定と訪問](viewpoint-schedules.md) | 予定と、訪問のときの訪問の情報と区分、予定の取り消し |
+| Name                                 | Definition                                                                               |
+| ------------------------------------ | ---------------------------------------------------------------------------------------- |
+| [予定と訪問](viewpoint-schedules.md) | 予定と、訪問のときの訪問の情報と区分、予定の取り消し、誤って入れた予定の削除の監査の記録 |
 
 ## Relations
 
@@ -134,6 +136,7 @@ erDiagram
   timestamp_with_time_zone created_at
   timestamp_with_time_zone updated_at
   integer version
+  boolean ends_next_day
 }
 ```
 

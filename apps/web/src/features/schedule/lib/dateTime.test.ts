@@ -1,9 +1,11 @@
 import { describe, expect, it } from 'vite-plus/test'
 
 import {
+  addDaysToDateKey,
   addMinutesToTimeKey,
   combineDateTime,
   diffMinutes,
+  formatDateTime,
   formatDateTimeRange,
   toDateKey,
 } from './dateTime'
@@ -22,6 +24,12 @@ describe('dateTime', () => {
     expect(diffMinutes('10:30', '11:29')).toBe(59)
   })
 
+  it('日付に日数を足し、月と年をまたぐ', () => {
+    expect(addDaysToDateKey('2026-10-20', 1)).toBe('2026-10-21')
+    expect(addDaysToDateKey('2026-10-31', 1)).toBe('2026-11-01')
+    expect(addDaysToDateKey('2026-12-31', 1)).toBe('2027-01-01')
+  })
+
   it('Date を YYYY-MM-DD にする', () => {
     expect(toDateKey(new Date(2026, 0, 5))).toBe('2026-01-05')
   })
@@ -29,6 +37,19 @@ describe('dateTime', () => {
   it('開始と終了の日時を、年月日、曜日、時刻の範囲の文にする', () => {
     expect(formatDateTimeRange(new Date(2026, 9, 20, 9, 0), new Date(2026, 9, 20, 9, 29))).toBe(
       '2026年10月20日（火） 09:00〜09:29',
+    )
+  })
+
+  it('日時を、日付、曜日、時刻の形にする', () => {
+    expect(formatDateTime(new Date(2026, 9, 20, 9, 5))).toBe('2026年10月20日（火） 09:05')
+  })
+
+  it('終了が翌日なら、終了の時刻に「翌」を付ける', () => {
+    expect(formatDateTimeRange(new Date(2026, 9, 20, 22, 0), new Date(2026, 9, 21, 1, 0))).toBe(
+      '2026年10月20日（火） 22:00〜翌 01:00',
+    )
+    expect(formatDateTimeRange(new Date(2026, 9, 20, 22, 0), new Date(2026, 9, 21, 0, 0))).toBe(
+      '2026年10月20日（火） 22:00〜翌 00:00',
     )
   })
 

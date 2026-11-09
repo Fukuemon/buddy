@@ -7,6 +7,3 @@ import { z } from 'zod'
 export const calendarImportSearchSchema = z.object({
   staff: z.string().min(1).optional().catch(undefined),
 })
-
-/** 検証した後の `/schedule/import` の search params。 */
-export type CalendarImportSearch = z.infer<typeof calendarImportSearchSchema>

@@ -49,7 +49,6 @@ type RP struct {
 	browserOrigin *url.URL
 	client        *http.Client
 	now           func() time.Time
-	retryAfter    time.Duration
 
 	// mu は providers の map だけを守る。discovery の文書を読む間は、事業所ごとの discovery.mu を握る
 	mu        sync.Mutex
@@ -72,7 +71,7 @@ type discovery struct {
 func NewRP(idps IdPs, redirectURL, browserOrigin string, client *http.Client) (*RP, error) {
 	rp := &RP{
 		idps: idps, redirectURL: redirectURL, client: client,
-		now: time.Now, retryAfter: discoveryRetryAfter, providers: map[string]*discovery{},
+		now: time.Now, providers: map[string]*discovery{},
 	}
 	if rp.client == nil {
 		rp.client = &http.Client{Timeout: discoveryTimeout}
@@ -108,7 +107,7 @@ func (rp *RP) provider(ctx context.Context, orgID string) (IdP, *oidc.Provider, 
 	if d.provider != nil {
 		return idp, d.provider, nil
 	}
-	if d.err != nil && rp.now().Sub(d.failedAt) < rp.retryAfter {
+	if d.err != nil && rp.now().Sub(d.failedAt) < discoveryRetryAfter {
 		return IdP{}, nil, d.err
 	}
 	// ブラウザが接続を切っても読み込みを続け、待っているほかのログインに途中で切った失敗を返さない

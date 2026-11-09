@@ -4,19 +4,25 @@ import { describe, expect, it, vi } from 'vite-plus/test'
 import {
   finishLogin,
   logout,
-  readCookie,
-  readSession,
+  readViewer,
   safeReturnTo,
   startLogin,
+  viewerOf,
   type AuthDeps,
-  type Session,
 } from './auth'
-import { GrantRejectedError, type OidcClient } from './oidc'
+import type { OidcClient } from './oidc'
+import { readSession, type Session } from './session'
 import { createMemorySessionStore } from './sessionStore'
 import { signValue } from './signedValue'
 
 const SECRET = 'x'.repeat(32)
-const VIEWER = { staffId: 'staff-1', staffName: '青木 陽菜', facilityId: 'facility-1' }
+const VIEWER = {
+  staffId: 'staff-1',
+  staffName: '青木 陽菜',
+  facilityId: 'facility-1',
+  policyCodes: [],
+  schedulePolicies: [],
+}
 
 const fakeOidc = (overrides: Partial<OidcClient> = {}): OidcClient => ({
   authorizationUrl: ({ redirectUri, state, prompt }) =>
@@ -43,8 +49,11 @@ const setup = (overrides: Partial<AuthDeps> = {}) => {
     store,
     oidc: fakeOidc(),
     secret: SECRET,
-    secureCookie: false,
-    fetchMe: async () => ({ ok: true, viewer: { ...VIEWER, canManageStaff: false } }),
+    usesSecureCookie: false,
+    getMe: async () => ({
+      ok: true,
+      viewer: { ...VIEWER, policyCodes: [], schedulePolicies: [] },
+    }),
     now: () => 1_000_000,
     wait: async () => {},
     ...overrides,
@@ -111,8 +120,47 @@ describe('ログイン', () => {
     expect(await promptOf('')).toBeNull()
   })
 
-  it('secureCookie なら cookie に Secure を付ける', async () => {
-    const { deps } = setup({ secureCookie: true })
+  it('publicUrl があれば、戻り先の URL とコールバックの URL のオリジンを publicUrl にする', async () => {
+    const exchangeCode = vi.fn<OidcClient['exchangeCode']>(async () => ({
+      accessToken: 'access-1',
+      refreshToken: 'refresh-1',
+      expiresIn: 3600,
+      idToken: 'id-1',
+    }))
+    const { deps } = setup({
+      publicUrl: 'https://web.example.localhost',
+      oidc: fakeOidc({ exchangeCode }),
+    })
+    const start = await startLogin(new Request('http://web.test/auth/login'), deps)
+    const location = new URL(start.headers.get('Location') ?? '')
+    expect(location.searchParams.get('redirect_uri')).toBe(
+      'https://web.example.localhost/auth/callback',
+    )
+
+    await finishLogin(
+      new Request(
+        `http://web.test/auth/callback?code=c&state=${location.searchParams.get('state')}`,
+        {
+          headers: { Cookie: cookiesOf(start) },
+        },
+      ),
+      deps,
+    )
+    expect(exchangeCode.mock.calls[0]?.[0].href).toBe(
+      `https://web.example.localhost/auth/callback?code=c&state=${location.searchParams.get('state')}`,
+    )
+  })
+
+  it('publicUrl にポートが無ければ、リクエストの URL のポートを戻り先に残さない', async () => {
+    const { deps } = setup({ publicUrl: 'https://web.example.localhost' })
+    const start = await startLogin(new Request('http://web:3000/auth/login'), deps)
+    expect(new URL(start.headers.get('Location') ?? '').searchParams.get('redirect_uri')).toBe(
+      'https://web.example.localhost/auth/callback',
+    )
+  })
+
+  it('usesSecureCookie なら cookie に Secure を付ける', async () => {
+    const { deps } = setup({ usesSecureCookie: true })
     const start = await startLogin(new Request('http://web.test/auth/login'), deps)
     expect(start.headers.getSetCookie()[0]).toContain('Secure')
   })
@@ -149,10 +197,27 @@ describe('ログイン', () => {
   })
 
   it('事業所に登録されていない職員は forbidden へリダイレクトし、セッションを作らない', async () => {
-    const { store, deps } = setup({ fetchMe: async () => ({ ok: false, reason: 'forbidden' }) })
+    const { store, deps } = setup({ getMe: async () => ({ ok: false, reason: 'forbidden' }) })
     const res = await login(deps)
     expect(res.headers.get('Location')).toBe('/auth/error?reason=forbidden')
     expect([...store.values.keys()].some((k) => k.startsWith('session:'))).toBe(false)
+  })
+
+  it('ブローカーが試行の回数の上限で拒んだら、トークンを取らずに too_many_attempts へリダイレクトする', async () => {
+    const exchangeCode = vi.fn<OidcClient['exchangeCode']>()
+    const { store, deps } = setup({ oidc: fakeOidc({ exchangeCode }) })
+    vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const start = await startLogin(new Request('http://web.test/auth/login'), deps)
+    const state = new URL(start.headers.get('Location') ?? '').searchParams.get('state')
+    const res = await finishLogin(
+      new Request(`http://web.test/auth/callback?error=temporarily_unavailable&state=${state}`, {
+        headers: { Cookie: cookiesOf(start) },
+      }),
+      deps,
+    )
+    expect(res.headers.get('Location')).toBe('/auth/error?reason=too_many_attempts')
+    expect(exchangeCode).not.toHaveBeenCalled()
+    expect([...store.values.keys()].some((k) => k.startsWith('login:'))).toBe(false)
   })
 
   it('トークンを取れなければ failed へリダイレクトする', async () => {
@@ -189,187 +254,13 @@ describe('ログイン', () => {
   })
 })
 
-describe('readSession', () => {
+describe('ログアウト', () => {
   const withSession = async (session: Session, deps: AuthDeps) => {
     await deps.store.set('session:id-1', session, 60)
     return new Request('http://web.test/', {
       headers: { Cookie: `buddy_session=${encodeURIComponent(signValue('id-1', SECRET))}` },
     })
   }
-
-  it('署名の誤った cookie は読まない', async () => {
-    const { deps } = setup()
-    await deps.store.set('session:id-1', { ...VIEWER, accessToken: 'a' }, 60)
-    const forged = new Request('http://web.test/', {
-      headers: { Cookie: `buddy_session=${signValue('id-1', 'y'.repeat(32))}` },
-    })
-    expect(await readSession(forged, deps)).toBeUndefined()
-  })
-
-  it('期限が近い access token は refresh token で更新して置き直す', async () => {
-    const { deps } = setup()
-    const req = await withSession(
-      {
-        ...VIEWER,
-        accessToken: 'old',
-        refreshToken: 'refresh-1',
-        expiresAt: 1_000_000 + 30_000,
-        idToken: 'id-1',
-      },
-      deps,
-    )
-    // 更新で Hydra が ID token を返さなければ、前の ID token をログアウトに使う
-    expect(await readSession(req, deps)).toMatchObject({
-      accessToken: 'access-2',
-      refreshToken: 'refresh-1',
-      idToken: 'id-1',
-    })
-    expect(await deps.store.get('session:id-1')).toMatchObject({ accessToken: 'access-2' })
-  })
-
-  it('更新で Hydra が ID token を返したら、新しい ID token に置き換える', async () => {
-    const { deps } = setup({
-      oidc: fakeOidc({
-        refresh: async () => ({ accessToken: 'access-2', expiresIn: 3600, idToken: 'id-2' }),
-      }),
-    })
-    const req = await withSession(
-      {
-        ...VIEWER,
-        accessToken: 'old',
-        refreshToken: 'r',
-        expiresAt: 1_000_000 + 30_000,
-        idToken: 'id-1',
-      },
-      deps,
-    )
-    expect((await readSession(req, deps))?.idToken).toBe('id-2')
-  })
-
-  it('同じセッションの更新を 1 本にまとめる', async () => {
-    const refresh = vi.fn<OidcClient['refresh']>(async () => ({
-      accessToken: 'access-2',
-      expiresIn: 3600,
-    }))
-    const { deps } = setup({ oidc: fakeOidc({ refresh }) })
-    const req = await withSession(
-      { ...VIEWER, accessToken: 'old', refreshToken: 'r', expiresAt: 1_000_000 + 30_000 },
-      deps,
-    )
-    const results = await Promise.all([readSession(req, deps), readSession(req, deps)])
-    expect(results.map((s) => s?.accessToken)).toEqual(['access-2', 'access-2'])
-    expect(refresh).toHaveBeenCalledTimes(1)
-    expect(await deps.store.get('refresh-lock:id-1')).toBeUndefined()
-  })
-
-  it('ほかのプロセスが更新している間は、置かれた値を待って使う', async () => {
-    const refresh = vi.fn<OidcClient['refresh']>()
-    const { deps } = setup({ oidc: fakeOidc({ refresh }) })
-    const req = await withSession(
-      { ...VIEWER, accessToken: 'old', refreshToken: 'r', expiresAt: 1_000_000 + 30_000 },
-      deps,
-    )
-    await deps.store.lock('refresh-lock:id-1', 1000)
-    deps.wait = async () => {
-      await deps.store.set(
-        'session:id-1',
-        { ...VIEWER, accessToken: 'by-other', refreshToken: 'r2' },
-        60,
-      )
-    }
-    expect((await readSession(req, deps))?.accessToken).toBe('by-other')
-    expect(refresh).not.toHaveBeenCalled()
-  })
-
-  it('鍵を取る前にほかのリクエストが更新し終えていたら、古い refresh token を送らない', async () => {
-    const refresh = vi.fn<OidcClient['refresh']>()
-    const { deps } = setup({ oidc: fakeOidc({ refresh }) })
-    const req = await withSession(
-      { ...VIEWER, accessToken: 'old', refreshToken: 'r', expiresAt: 1_000_000 + 30_000 },
-      deps,
-    )
-    const get = deps.store.get.bind(deps.store)
-    let reads = 0
-    deps.store.get = async <T>(key: string) => {
-      reads++
-      // readSession の 1 回目の読み取りの後に、ほかのリクエストが更新終えたとする
-      if (reads === 2) {
-        await deps.store.set(
-          'session:id-1',
-          { ...VIEWER, accessToken: 'by-other', refreshToken: 'r2' },
-          60,
-        )
-      }
-      return get<T>(key)
-    }
-    expect((await readSession(req, deps))?.accessToken).toBe('by-other')
-    expect(refresh).not.toHaveBeenCalled()
-  })
-
-  it('鍵が放されたら待つのをやめる', async () => {
-    const { deps } = setup()
-    const req = await withSession(
-      { ...VIEWER, accessToken: 'old', refreshToken: 'r', expiresAt: 1_000_000 + 30_000 },
-      deps,
-    )
-    const token = await deps.store.lock('refresh-lock:id-1', 1000)
-    let waits = 0
-    deps.wait = async () => {
-      waits++
-      await deps.store.unlock('refresh-lock:id-1', token as string)
-    }
-    expect((await readSession(req, deps))?.accessToken).toBe('old')
-    expect(waits).toBe(1)
-  })
-
-  it('更新の間にセッションが消えたら、置き直さない', async () => {
-    const { deps } = setup({
-      oidc: fakeOidc({
-        refresh: async () => {
-          await deps.store.delete('session:id-1')
-          return { accessToken: 'access-2', expiresIn: 3600 }
-        },
-      }),
-    })
-    const req = await withSession(
-      { ...VIEWER, accessToken: 'old', refreshToken: 'r', expiresAt: 1_000_000 + 30_000 },
-      deps,
-    )
-    expect(await readSession(req, deps)).toBeUndefined()
-    expect(await deps.store.get('session:id-1')).toBeUndefined()
-  })
-
-  it('通信の失敗ではセッションを消さず、まだ使える token を返す', async () => {
-    const { deps } = setup({
-      oidc: fakeOidc({
-        refresh: async () => {
-          throw new Error('ECONNRESET')
-        },
-      }),
-    })
-    const req = await withSession(
-      { ...VIEWER, accessToken: 'old', refreshToken: 'r', expiresAt: 1_000_000 + 30_000 },
-      deps,
-    )
-    expect((await readSession(req, deps))?.accessToken).toBe('old')
-    expect(await deps.store.get('session:id-1')).toBeDefined()
-  })
-
-  it('refresh token を拒まれたらセッションを消す', async () => {
-    const { deps } = setup({
-      oidc: fakeOidc({
-        refresh: async () => {
-          throw new GrantRejectedError()
-        },
-      }),
-    })
-    const req = await withSession(
-      { ...VIEWER, accessToken: 'old', refreshToken: 'r', expiresAt: 1_000_000 - 1 },
-      deps,
-    )
-    expect(await readSession(req, deps)).toBeUndefined()
-    expect(await deps.store.get('session:id-1')).toBeUndefined()
-  })
 
   it('ログアウトでセッションと cookie を消し、ID token を添えて Hydra のログアウトへリダイレクトする', async () => {
     const { deps } = setup()
@@ -381,6 +272,15 @@ describe('readSession', () => {
     expect(location.searchParams.get('post_logout_redirect_uri')).toBe('http://web.test/')
     expect(res.headers.getSetCookie()[0]).toContain('Max-Age=0')
     expect(await deps.store.get('session:id-1')).toBeUndefined()
+  })
+
+  it('publicUrl があれば、ログアウトの後の戻り先を publicUrl の / にする', async () => {
+    const { deps } = setup({ publicUrl: 'https://web.example.localhost' })
+    const req = await withSession({ ...VIEWER, accessToken: 'a', idToken: 'id-1' }, deps)
+    const location = new URL((await logout(req, deps)).headers.get('Location') ?? '')
+    expect(location.searchParams.get('post_logout_redirect_uri')).toBe(
+      'https://web.example.localhost/',
+    )
   })
 
   it('ID token の無い古いセッションのログアウトは、セッションを消して / へリダイレクトする', async () => {
@@ -398,10 +298,62 @@ describe('readSession', () => {
   })
 })
 
-describe('readCookie', () => {
-  it('名前の一致する cookie だけを読む', () => {
-    expect(readCookie('a=1; buddy_session=x%2Ey; b=2', 'buddy_session')).toBe('x.y')
-    expect(readCookie(null, 'buddy_session')).toBeUndefined()
-    expect(readCookie('buddy_session=%E0', 'buddy_session')).toBeUndefined()
+describe('viewerOf', () => {
+  it('セッションから、トークンを除いて職員と権限の値をそのまま返す', () => {
+    const session: Session = {
+      ...VIEWER,
+      policyCodes: ['staff.manage'],
+      accessToken: 'at',
+      refreshToken: 'rt',
+      expiresAt: 1,
+      idToken: 'id',
+    }
+    expect(viewerOf(session)).toEqual({ ...VIEWER, policyCodes: ['staff.manage'] })
+  })
+
+  it('権限の code の一覧を持たない前の形のセッションでは、権限を持たない職員を返す', () => {
+    const { policyCodes: _, ...legacy } = VIEWER
+    const session = { ...legacy, accessToken: 'at' } as unknown as Session
+    expect(viewerOf(session)).toEqual({ ...VIEWER, policyCodes: [] })
+  })
+})
+
+describe('readViewer', () => {
+  const requestWith = async (deps: AuthDeps) => {
+    await deps.store.set('session:id-1', { ...VIEWER, accessToken: 'at' } satisfies Session, 60)
+    return new Request('http://web.test/', {
+      headers: { Cookie: `buddy_session=${encodeURIComponent(signValue('id-1', SECRET))}` },
+    })
+  }
+
+  it('ログインの後に変えた権限を、GET /v1/me から読み直す', async () => {
+    const getMe = vi.fn<AuthDeps['getMe']>(async () => ({
+      ok: true,
+      viewer: { ...VIEWER, policyCodes: ['staff.manage', 'receipt.check'], schedulePolicies: [] },
+    }))
+    const { deps } = setup({ getMe })
+    expect(await readViewer(await requestWith(deps), deps)).toEqual({
+      ...VIEWER,
+      policyCodes: ['staff.manage', 'receipt.check'],
+      schedulePolicies: [],
+    })
+    expect(getMe).toHaveBeenCalledWith('at')
+  })
+
+  it('GET /v1/me が失敗したとき、届かないときは、セッションの値を返す', async () => {
+    for (const getMe of [
+      async () => ({ ok: false, reason: 'failed' }) as const,
+      async () => Promise.reject(new Error('connect ECONNREFUSED')),
+    ]) {
+      const { deps } = setup({ getMe })
+      expect(await readViewer(await requestWith(deps), deps)).toEqual(VIEWER)
+    }
+  })
+
+  it('ログインしていなければ null を返し、GET /v1/me を呼ばない', async () => {
+    const getMe = vi.fn<AuthDeps['getMe']>()
+    const { deps } = setup({ getMe })
+    expect(await readViewer(new Request('http://web.test/'), deps)).toBeNull()
+    expect(getMe).not.toHaveBeenCalled()
   })
 })

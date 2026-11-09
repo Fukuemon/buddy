@@ -12,7 +12,7 @@ import (
 	calendarv3 "google.golang.org/api/calendar/v3"
 	"google.golang.org/api/googleapi"
 
-	"github.com/Fukuemon/buddy/services/schedule/internal/calendar"
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendar"
 )
 
 // Reader は、Google Calendar API で予定を読む calendar.EventSource である。
@@ -26,7 +26,7 @@ func NewReader(svc *calendarv3.Service) *Reader {
 	return &Reader{svc: svc}
 }
 
-// Events は、calendarID のカレンダーの、timeMin から timeMax までに重なる予定を、全てのページを読んで返す。
+// Events は、calendarID のカレンダーの、timeMin から timeMax までに重なる予定を、全てのページを読んで返す。timeMax が零の時刻なら、終わりで絞らない。
 // 繰り返しの予定は展開せず（singleEvents=false）、親の予定と、変えた回と取り消した回を返す。日時は Asia/Tokyo で返る。
 // Calendar API が 403 か 404 を返すと calendar.ErrUnreadable を、ほかの失敗では calendar.ErrUnavailable を包んだエラーを返す。
 // HTTP のエラーのレスポンスでは、*googleapi.Error も包む。エラーの文はカレンダー ID（職員のメールアドレスのことがある）を含まない。
@@ -34,15 +34,17 @@ func (r *Reader) Events(ctx context.Context, calendarID string, timeMin, timeMax
 	var events []calendar.Event
 	// singleEvents と showDeleted が false のとき、繰り返しの予定の取り消した回は cancelled で返る。
 	// 出典: https://developers.google.com/workspace/calendar/api/v3/reference/events/list
-	err := r.svc.Events.List(calendarID).
-		TimeMin(timeMin.Format(time.RFC3339)).
-		TimeMax(timeMax.Format(time.RFC3339)).
+	call := r.svc.Events.List(calendarID).TimeMin(timeMin.Format(time.RFC3339))
+	if !timeMax.IsZero() {
+		call = call.TimeMax(timeMax.Format(time.RFC3339))
+	}
+	err := call.
 		TimeZone(calendar.TimeZone).
 		SingleEvents(false).
 		ShowDeleted(false).
 		MaxResults(2500).
 		Pages(ctx, func(page *calendarv3.Events) error {
-			if err := checkAccess(page); err != nil {
+			if err := requireAccess(page); err != nil {
 				return err
 			}
 			for _, ev := range page.Items {
@@ -57,13 +59,15 @@ func (r *Reader) Events(ctx context.Context, calendarID string, timeMin, timeMax
 }
 
 // Instances は、繰り返しの親の予定 eventID の、timeMin から timeMax までに重なる回を、全てのページを読んで返す。
-// 取り消した回は返さない（showDeleted=false）。エラーは Events と同じである。
+// timeMax が零の時刻なら、終わりで絞らない。取り消した回は返さない（showDeleted=false）。エラーは Events と同じである。
 // 出典: https://developers.google.com/workspace/calendar/api/v3/reference/events/instances
 func (r *Reader) Instances(ctx context.Context, calendarID, eventID string, timeMin, timeMax time.Time) ([]calendar.Event, error) {
 	var events []calendar.Event
-	err := r.svc.Events.Instances(calendarID, eventID).
-		TimeMin(timeMin.Format(time.RFC3339)).
-		TimeMax(timeMax.Format(time.RFC3339)).
+	call := r.svc.Events.Instances(calendarID, eventID).TimeMin(timeMin.Format(time.RFC3339))
+	if !timeMax.IsZero() {
+		call = call.TimeMax(timeMax.Format(time.RFC3339))
+	}
+	err := call.
 		TimeZone(calendar.TimeZone).
 		ShowDeleted(false).
 		MaxResults(2500).
@@ -85,7 +89,7 @@ func (r *Reader) Check(ctx context.Context, calendarID string) error {
 	if err != nil {
 		return wrap("カレンダーを読めない", err)
 	}
-	return checkAccess(page)
+	return requireAccess(page)
 }
 
 // Changes は、calendarID のカレンダーの、syncToken を受け取った後に変わった予定を、全てのページを読んで返す。
@@ -104,7 +108,7 @@ func (r *Reader) Changes(ctx context.Context, calendarID, syncToken string) (cal
 		call.SyncToken(syncToken)
 	}
 	err := call.Pages(ctx, func(page *calendarv3.Events) error {
-		if err := checkAccess(page); err != nil {
+		if err := requireAccess(page); err != nil {
 			return err
 		}
 		for _, ev := range page.Items {
@@ -143,10 +147,10 @@ func (r *Reader) Event(ctx context.Context, calendarID, eventID string) (calenda
 // errFreeBusy は、カレンダーが空き時間だけの共有であることを表す。
 var errFreeBusy = fmt.Errorf("%w: 空き時間だけの共有である", calendar.ErrUnreadable)
 
-// checkAccess は、カレンダーが空き時間だけの共有（freeBusyReader）なら calendar.ErrUnreadable を包んだエラーを返す。
+// requireAccess は、カレンダーが空き時間だけの共有（freeBusyReader）なら calendar.ErrUnreadable を包んだエラーを返す。
 // 空き時間だけの共有では、events.list が繰り返しの親と予定のタイトルを返さないためである。
 // 出典: https://developers.google.com/workspace/calendar/api/guides/recurringevents
-func checkAccess(page *calendarv3.Events) error {
+func requireAccess(page *calendarv3.Events) error {
 	if page.AccessRole == "freeBusyReader" {
 		return errFreeBusy
 	}
@@ -155,11 +159,7 @@ func checkAccess(page *calendarv3.Events) error {
 
 // wrap は、Calendar API の呼び出しのエラーを、calendar.ErrUnreadable か calendar.ErrUnavailable で包む。
 func wrap(msg string, err error) error {
-	// 通信のエラー（*url.Error）の文は、カレンダー ID を含むリクエストの URL を持つ。
-	var uerr *url.Error
-	if errors.As(err, &uerr) {
-		err = uerr.Err
-	}
+	err = withoutURL(err)
 	if errors.Is(err, calendar.ErrUnreadable) {
 		return fmt.Errorf("%s: %w", msg, err)
 	}
@@ -169,6 +169,15 @@ func wrap(msg string, err error) error {
 		kind = calendar.ErrUnreadable
 	}
 	return fmt.Errorf("%s: %w: %w", msg, kind, err)
+}
+
+// withoutURL は、通信のエラー（*url.Error）なら、包んだエラーを返す。*url.Error の文は、カレンダー ID を含むリクエストの URL を持つためである。
+func withoutURL(err error) error {
+	var uerr *url.Error
+	if errors.As(err, &uerr) {
+		return uerr.Err
+	}
+	return err
 }
 
 func toEvent(ev *calendarv3.Event) calendar.Event {
@@ -183,6 +192,9 @@ func toEvent(ev *calendarv3.Event) calendar.Event {
 		RecurringEventID: ev.RecurringEventId,
 		OriginalStart:    toWhen(ev.OriginalStartTime),
 		ETag:             ev.Etag,
+		Updated:          ev.Updated,
+		Description:      ev.Description,
+		Private:          privateOf(ev),
 	}
 }
 
@@ -191,4 +203,12 @@ func toWhen(t *calendarv3.EventDateTime) calendar.When {
 		return calendar.When{}
 	}
 	return calendar.When{Date: t.Date, DateTime: t.DateTime, TimeZone: t.TimeZone}
+}
+
+// privateOf は、予定 ev の extendedProperties.private を返す。無ければ nil を返す。
+func privateOf(ev *calendarv3.Event) map[string]string {
+	if ev.ExtendedProperties == nil {
+		return nil
+	}
+	return ev.ExtendedProperties.Private
 }

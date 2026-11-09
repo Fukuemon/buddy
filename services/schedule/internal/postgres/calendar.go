@@ -6,12 +6,14 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/Fukuemon/buddy/services/schedule/internal/calendar"
 	"github.com/Fukuemon/buddy/services/schedule/internal/civil"
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendar"
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendarexport"
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendarimport"
 	"github.com/Fukuemon/buddy/services/schedule/internal/postgres/sqlcgen"
 )
 
-// CalendarRepository は、calendar.Repository を実装する。
+// CalendarRepository は、calendar.Repository、calendarimport.Calendars、calendarexport.ExportCalendars と calendarexport.ExporterCalendars を実装する。
 type CalendarRepository struct{ conn }
 
 // NewCalendarRepository は CalendarRepository を作る。
@@ -19,7 +21,12 @@ func NewCalendarRepository(pool *pgxpool.Pool) *CalendarRepository {
 	return &CalendarRepository{conn{pool}}
 }
 
-var _ calendar.Repository = (*CalendarRepository)(nil)
+var (
+	_ calendar.Repository              = (*CalendarRepository)(nil)
+	_ calendarimport.Calendars         = (*CalendarRepository)(nil)
+	_ calendarexport.ExportCalendars   = (*CalendarRepository)(nil)
+	_ calendarexport.ExporterCalendars = (*CalendarRepository)(nil)
+)
 
 func toExternalCalendar(c sqlcgen.ExternalCalendar) calendar.ExternalCalendar {
 	return calendar.ExternalCalendar{
@@ -41,7 +48,8 @@ func toImportRun(r sqlcgen.ImportRun) calendar.ImportRun {
 		ExternalCalendarID: r.ExternalCalendarID,
 		RequestedBy:        r.RequestedBy,
 		RangeStart:         civil.DateOf(r.RangeStart),
-		RangeEnd:           civil.DateOf(r.RangeEnd),
+		RangeEnd:           dateOrZero(r.RangeEnd),
+		CutoverID:          r.CutoverID,
 		Status:             calendar.RunStatus(r.Status),
 		ImportedCount:      int(r.ImportedCount),
 		SkippedCount:       int(r.SkippedCount),
@@ -141,8 +149,9 @@ func (r *CalendarRepository) CreateRun(ctx context.Context, run calendar.ImportR
 		ExternalCalendarID: run.ExternalCalendarID,
 		RequestedBy:        run.RequestedBy,
 		RangeStart:         run.RangeStart.Time(),
-		RangeEnd:           run.RangeEnd.Time(),
+		RangeEnd:           nullDate(nonZeroDate(run.RangeEnd)),
 		Status:             string(run.Status),
+		CutoverID:          run.CutoverID,
 	})
 	return translate("create import run", err)
 }
@@ -170,20 +179,20 @@ func (r *CalendarRepository) FinishRun(ctx context.Context, run calendar.ImportR
 }
 
 // ListLinks は、カレンダーの予定の対応を返す。
-func (r *CalendarRepository) ListLinks(ctx context.Context, externalCalendarID string) ([]calendar.Link, error) {
+func (r *CalendarRepository) ListLinks(ctx context.Context, externalCalendarID string) ([]calendar.EventLink, error) {
 	rows, err := r.q(ctx).ListExternalEventLinks(ctx, externalCalendarID)
 	if err != nil {
 		return nil, translate("list external event links", err)
 	}
-	out := make([]calendar.Link, len(rows))
+	out := make([]calendar.EventLink, len(rows))
 	for i, l := range rows {
 		out[i] = toLink(l)
 	}
 	return out, nil
 }
 
-func toLink(l sqlcgen.ExternalEventLink) calendar.Link {
-	out := calendar.Link{
+func toLink(l sqlcgen.ExternalEventLink) calendar.EventLink {
+	out := calendar.EventLink{
 		ID:                  l.ID,
 		FacilityID:          l.FacilityID,
 		ExternalCalendarID:  l.ExternalCalendarID,
@@ -192,6 +201,8 @@ func toLink(l sqlcgen.ExternalEventLink) calendar.Link {
 		ETag:                l.Etag,
 		ScheduleID:          l.ScheduleID,
 		RecurringScheduleID: l.RecurringScheduleID,
+		DeletedScheduleID:   l.DeletedScheduleID,
+		CutoverID:           l.CutoverID,
 	}
 	if l.SyncedVersion != nil {
 		out.SyncedVersion = ptr(int(*l.SyncedVersion))
@@ -217,30 +228,28 @@ func (r *CalendarRepository) ActiveByStaff(ctx context.Context, staffID string) 
 }
 
 // LinkBySchedule は、単発の予定 scheduleID の予定の対応を返す。無いときは apperr.ErrNotFound を返す。
-func (r *CalendarRepository) LinkBySchedule(ctx context.Context, scheduleID string) (calendar.Link, error) {
+func (r *CalendarRepository) LinkBySchedule(ctx context.Context, scheduleID string) (calendar.EventLink, error) {
 	l, err := r.q(ctx).GetExternalEventLinkBySchedule(ctx, &scheduleID)
 	if err != nil {
-		return calendar.Link{}, translate("get external event link", err)
-	}
-	return toLink(l), nil
-}
-
-// LinkByEvent は、カレンダー externalCalendarID の外部の予定 eventID の予定の対応を返す。無いときは apperr.ErrNotFound を返す。
-func (r *CalendarRepository) LinkByEvent(ctx context.Context, externalCalendarID, eventID string) (calendar.Link, error) {
-	l, err := r.q(ctx).GetExternalEventLinkByEvent(ctx, sqlcgen.GetExternalEventLinkByEventParams{
-		ExternalCalendarID: externalCalendarID, ExternalEventID: eventID,
-	})
-	if err != nil {
-		return calendar.Link{}, translate("get external event link", err)
+		return calendar.EventLink{}, translate("get external event link", err)
 	}
 	return toLink(l), nil
 }
 
 // LinkByRecurringSchedule は、繰り返しの予定 recurringScheduleID の予定の対応を返す。無いときは apperr.ErrNotFound を返す。
-func (r *CalendarRepository) LinkByRecurringSchedule(ctx context.Context, recurringScheduleID string) (calendar.Link, error) {
+func (r *CalendarRepository) LinkByRecurringSchedule(ctx context.Context, recurringScheduleID string) (calendar.EventLink, error) {
 	l, err := r.q(ctx).GetExternalEventLinkByRecurringSchedule(ctx, &recurringScheduleID)
 	if err != nil {
-		return calendar.Link{}, translate("get external event link", err)
+		return calendar.EventLink{}, translate("get external event link", err)
+	}
+	return toLink(l), nil
+}
+
+// LinkByDeletedSchedule は、削除した単発の予定 scheduleID の予定の対応を返す。無いときは apperr.ErrNotFound を返す。
+func (r *CalendarRepository) LinkByDeletedSchedule(ctx context.Context, scheduleID string) (calendar.EventLink, error) {
+	l, err := r.q(ctx).GetExternalEventLinkByDeletedSchedule(ctx, &scheduleID)
+	if err != nil {
+		return calendar.EventLink{}, translate("get external event link", err)
 	}
 	return toLink(l), nil
 }
@@ -262,7 +271,7 @@ func (r *CalendarRepository) DeleteLink(ctx context.Context, id string) error {
 }
 
 // CreateLink は、予定の対応を書く。同じ外部の予定の対応があるときは apperr.ErrConflict を返す。
-func (r *CalendarRepository) CreateLink(ctx context.Context, l calendar.Link) error {
+func (r *CalendarRepository) CreateLink(ctx context.Context, l calendar.EventLink) error {
 	v, err := syncedVersion(l.SyncedVersion)
 	if err != nil {
 		return err
@@ -277,6 +286,23 @@ func (r *CalendarRepository) CreateLink(ctx context.Context, l calendar.Link) er
 		Etag:                l.ETag,
 		ScheduleID:          l.ScheduleID,
 		RecurringScheduleID: l.RecurringScheduleID,
+		CutoverID:           l.CutoverID,
 	})
 	return translate("create external event link", err)
+}
+
+// dateOrZero は、NULL を許すカラムの日付を返す。NULL なら零の値を返す。
+func dateOrZero(t *time.Time) civil.Date {
+	if t == nil {
+		return civil.Date{}
+	}
+	return civil.DateOf(*t)
+}
+
+// nonZeroDate は、d が零の値なら nil を、ほかは d を指すポインタを返す。
+func nonZeroDate(d civil.Date) *civil.Date {
+	if d.IsZero() {
+		return nil
+	}
+	return &d
 }

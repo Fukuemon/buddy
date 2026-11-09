@@ -50,6 +50,7 @@ const (
 	MissingFile           ErrorCode = "missing_file"
 	NotFound              ErrorCode = "not_found"
 	PayloadTooLarge       ErrorCode = "payload_too_large"
+	PermissionCheckFailed ErrorCode = "permission_check_failed"
 	ScheduleSourceFailed  ErrorCode = "schedule_source_failed"
 	Unauthenticated       ErrorCode = "unauthenticated"
 )
@@ -73,6 +74,8 @@ func (e ErrorCode) Valid() bool {
 		return true
 	case PayloadTooLarge:
 		return true
+	case PermissionCheckFailed:
+		return true
 	case ScheduleSourceFailed:
 		return true
 	case Unauthenticated:
@@ -91,6 +94,51 @@ const (
 func (e HealthStatus) Valid() bool {
 	switch e {
 	case Ok:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for InputReason.
+const (
+	EmptyFile       InputReason = "empty_file"
+	EmptyValue      InputReason = "empty_value"
+	Encoding        InputReason = "encoding"
+	InvalidDate     InputReason = "invalid_date"
+	InvalidDuration InputReason = "invalid_duration"
+	InvalidTime     InputReason = "invalid_time"
+	MalformedRow    InputReason = "malformed_row"
+	MissingColumn   InputReason = "missing_column"
+	SpansDays       InputReason = "spans_days"
+	UnreadableTime  InputReason = "unreadable_time"
+	UnreadableTitle InputReason = "unreadable_title"
+)
+
+// Valid indicates whether the value is a known member of the InputReason enum.
+func (e InputReason) Valid() bool {
+	switch e {
+	case EmptyFile:
+		return true
+	case EmptyValue:
+		return true
+	case Encoding:
+		return true
+	case InvalidDate:
+		return true
+	case InvalidDuration:
+		return true
+	case InvalidTime:
+		return true
+	case MalformedRow:
+		return true
+	case MissingColumn:
+		return true
+	case SpansDays:
+		return true
+	case UnreadableTime:
+		return true
+	case UnreadableTitle:
 		return true
 	default:
 		return false
@@ -152,6 +200,27 @@ type Checks struct {
 // Clock Example: 09:30
 type Clock = string
 
+// CsvError defines model for CsvError.
+type CsvError struct {
+	// Column 誤りのある列の名前。`missing_column` では無い列の名前。列を決められない誤りでは省く
+	Column *string `json:"column,omitempty"`
+
+	// Line 入力の CSV の行番号。ヘッダーが 1 行目。ファイルの全体の誤り（`encoding`、`empty_file`、`missing_column`）では省く
+	Line *int `json:"line,omitempty"`
+
+	// Message 人が読む日本語か、CSV のライブラリの英語の説明。画面には出さず、`reason` から文を作る
+	Message string `json:"message"`
+
+	// Reason 入力を照合に使えない理由。
+	// encoding は文字コードが UTF-8 でも CP932 でもない、empty_file はヘッダーの行も無い、missing_column は要る列が無い、
+	// malformed_row は引用符の閉じ忘れのように CSV として読めない行、empty_value は要る値が空、invalid_date は日付として読めないか暦に無い、
+	// invalid_time は時刻として読めない、invalid_duration は提供時間が 0 以上の整数でない、
+	// unreadable_title は予定のタイトルを `【サービス内容】利用者名` の形として読めない、unreadable_time は予定の開始か終了の日時を読めない、
+	// spans_days は終了が開始の翌日より後か、24 時間以上の予定である。unreadable_title、unreadable_time、spans_days は Warning だけが使う
+	Reason InputReason `json:"reason"`
+	Source InputSource `json:"source"`
+}
+
 // Date Example: 2024-04-01
 type Date = string
 
@@ -159,8 +228,8 @@ type Date = string
 type Error struct {
 	Code ErrorCode `json:"code"`
 
-	// Errors 入力の CSV の行ごとのエラー。`invalid_csv` のときだけ持つ
-	Errors *[]RowError `json:"errors,omitempty"`
+	// Errors 入力の CSV の誤り。`invalid_csv` のときだけ持ち、1 件以上ある
+	Errors *[]CsvError `json:"errors,omitempty"`
 
 	// Message 人が読む日本語の説明。文言は変わることがあるので、利用者の分岐は `code` で行う
 	Message string `json:"message"`
@@ -176,6 +245,14 @@ type Health struct {
 
 // HealthStatus defines model for Health.Status.
 type HealthStatus string
+
+// InputReason 入力を照合に使えない理由。
+// encoding は文字コードが UTF-8 でも CP932 でもない、empty_file はヘッダーの行も無い、missing_column は要る列が無い、
+// malformed_row は引用符の閉じ忘れのように CSV として読めない行、empty_value は要る値が空、invalid_date は日付として読めないか暦に無い、
+// invalid_time は時刻として読めない、invalid_duration は提供時間が 0 以上の整数でない、
+// unreadable_title は予定のタイトルを `【サービス内容】利用者名` の形として読めない、unreadable_time は予定の開始か終了の日時を読めない、
+// spans_days は終了が開始の翌日より後か、24 時間以上の予定である。unreadable_title、unreadable_time、spans_days は Warning だけが使う
+type InputReason string
 
 // InputSource defines model for InputSource.
 type InputSource string
@@ -231,17 +308,6 @@ type Result struct {
 	Visit *Side `json:"visit"`
 }
 
-// RowError defines model for RowError.
-type RowError struct {
-	// Column エラーのある列の名前。行全体のエラーでは省く
-	Column *string `json:"column,omitempty"`
-
-	// Line 入力の CSV の行番号。ヘッダーが 1 行目
-	Line    int         `json:"line"`
-	Message string      `json:"message"`
-	Source  InputSource `json:"source"`
-}
-
 // Side defines model for Side.
 type Side struct {
 	// Additions 実績の加算①〜加算⑤のうち空でない値を ", " でつないだもの。予定の側では省く
@@ -274,8 +340,21 @@ type Summary struct {
 // Warning 照合に使わなかった Google カレンダーの予定。利用者名を含むので、予定のタイトルは持たない
 type Warning struct {
 	CalendarId string `json:"calendar_id"`
-	EventId    string `json:"event_id"`
-	Message    string `json:"message"`
+
+	// Column `reason` が列の値の誤り（`empty_value` など）のときの列の名前
+	Column  *string `json:"column,omitempty"`
+	EventId string  `json:"event_id"`
+
+	// Message 人が読む日本語の説明。画面には出さず、`reason` から文を作る
+	Message string `json:"message"`
+
+	// Reason 入力を照合に使えない理由。
+	// encoding は文字コードが UTF-8 でも CP932 でもない、empty_file はヘッダーの行も無い、missing_column は要る列が無い、
+	// malformed_row は引用符の閉じ忘れのように CSV として読めない行、empty_value は要る値が空、invalid_date は日付として読めないか暦に無い、
+	// invalid_time は時刻として読めない、invalid_duration は提供時間が 0 以上の整数でない、
+	// unreadable_title は予定のタイトルを `【サービス内容】利用者名` の形として読めない、unreadable_time は予定の開始か終了の日時を読めない、
+	// spans_days は終了が開始の翌日より後か、24 時間以上の予定である。unreadable_title、unreadable_time、spans_days は Warning だけが使う
+	Reason InputReason `json:"reason"`
 
 	// Start 予定の開始の日時（RFC 3339）
 	Start string `json:"start"`

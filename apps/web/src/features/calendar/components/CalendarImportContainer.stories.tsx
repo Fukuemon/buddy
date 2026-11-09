@@ -1,10 +1,11 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { fn, userEvent, within } from 'storybook/test'
 
-import { ApiError, type BuddyApi } from '#/api/client'
+import { ApiError, type BuddyApi } from '#/api/BuddyApi'
 import { createFakeBuddyApi } from '#/api/fake/fakeBuddyApi'
-import { FAKE_VIEWER } from '#/api/fake/fixtures'
+import { MOCK_FACILITY_ID } from '#/mocks/scheduleData'
 import {
+  failOnSecondCall,
   emptyBuddyApi,
   failingBuddyApi,
   pendingBuddyApi,
@@ -64,11 +65,6 @@ export const LoadError: Story = { parameters: route({ api: failingBuddyApi() }) 
 
 export const NoCalendar: Story = { parameters: route({ api: emptyBuddyApi() }) }
 
-/** 職員の管理の権限を持たない職員。API を呼ばない（全ての API が失敗しても、権限が無いことだけを示す）。 */
-export const Forbidden: Story = {
-  parameters: route({ api: failingBuddyApi(), viewer: { ...FAKE_VIEWER, canManageStaff: false } }),
-}
-
 export const Previewing: Story = {
   parameters: route({ api: calendarsApi({ preview: () => new Promise(() => {}) }) }),
   play: async ({ canvasElement }) => {
@@ -127,3 +123,38 @@ export const AllImported: Story = {
     await canvas.findByTestId('calendar-import-all-imported')
   },
 }
+
+/** 予定の正本の切り替えを始めた、Google カレンダーを正本にする事業所のフェイクの API。 */
+const cutoverApi = (): BuddyApi => {
+  const api = createFakeBuddyApi({
+    baseDate: new Date('2026-11-05T09:00:00+09:00'),
+    sourceMode: 'google_primary',
+    calendarSyncs: [],
+  })
+  void api.calendars.startCutover(MOCK_FACILITY_ID)
+  return api
+}
+
+/** 予定の正本の切り替えの間。期間の入力の代わりに切り替えの期間を出し、規則を写せない繰り返しの予定は取り込まないだけを選べる。 */
+export const Cutover: Story = {
+  parameters: route({ api: cutoverApi() }),
+  play: async ({ canvasElement }) => {
+    const canvas = await preview(canvasElement)
+    await canvas.findByTestId('calendar-import-review-event-biweekly')
+  },
+}
+
+/** 結び付いたカレンダーを、2 回目だけ読めないフェイクの API を作る。 */
+export const refetchFailingApi = (): BuddyApi => {
+  const base = createFakeBuddyApi()
+  return {
+    ...base,
+    calendars: {
+      ...base.calendars,
+      list: failOnSecondCall((...args) => base.calendars.list(...args)),
+    },
+  }
+}
+
+/** 読み終えた後に読み直して、結び付いたカレンダーを読めない。表示を残し、見出しの下に失敗の文と読み直すを出す。 */
+export const RefetchError: Story = { parameters: route({ api: refetchFailingApi() }) }

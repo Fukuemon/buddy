@@ -3,7 +3,9 @@ import { expect, test, type Page } from '@playwright/test'
 import { LEADER, LOGIN_EMAIL, LOGIN_STAFF, RECEIPT_TESTDATA } from '../../fixtures/env'
 import { EVIDENCE_VARIANTS, recordPrEvidence } from '../../fixtures/evidence'
 import { signInAtBroker } from '../../screens/login'
+import { showAllReceiptRows } from '../../screens/receipt'
 import { receiptCategoryRowCells, receiptResultRow } from '../../selectors/receipt'
+import { scrollToRightEnd } from '../../widgets/scroll/actions/scroll'
 
 // 照合の API は、compose/receipt-calendars.json の森のカレンダーを calendarpit から読む。
 // 森のカレンダーは 2026 年 11 月の予定を持つ。
@@ -22,9 +24,9 @@ const CALENDAR_VISIT_CASES = [
     category: 'match',
     date: '2026-11-02',
     patient: '見本一郎',
-    cells: ['訪看I２', '10:00', '10:29', '29', '訪看I２', '10:00', '10:29', '29', '通常'],
+    cells: ['', '訪看I２', '10:00', '10:29', '29', '訪看I２', '10:00', '10:29', '29', '通常'],
     scheduleResult:
-      '「整合データ」に 2026-11-02 の見本一郎の行が出て、予定の側は訪看I２、10:00〜10:29、29 で印が無い',
+      '「整合データ」に 2026-11-02 の見本一郎の行が出て、確認することは空で、予定の側は訪看I２、10:00〜10:29、29 で印が無い',
     visitResult: '実績の側も訪看I２、10:00〜10:29、29 で、予定と同じ値で印が無い',
   },
   {
@@ -35,10 +37,22 @@ const CALENDAR_VISIT_CASES = [
     category: 'mismatch',
     date: '2026-11-04',
     patient: '見本二葉',
-    cells: ['訪看I３', '09:00 ❌', '09:44', '44', '訪看I３', '09:15 ❌', '09:59', '44', '通常'],
+    cells: [
+      '開始時間が予定と違う終了時間が予定と違う',
+      '訪看I３',
+      '09:00（不一致）',
+      '09:44（注意）',
+      '44',
+      '訪看I３',
+      '09:15（不一致）',
+      '09:59（注意）',
+      '44',
+      '通常',
+    ],
     scheduleResult:
-      '「不整合データ」に 2026-11-04 の見本二葉の行が出て、予定の開始時間 09:00 に ❌ が付く',
-    visitResult: '実績の開始時間 09:15 に ❌ が付き、サービス内容と提供時間には印が無い',
+      '「不整合データ」に 2026-11-04 の見本二葉の行が出て、予定の開始時間 09:00 に不一致の印が、終了時間 09:44 に注意の印が付き、確認することに「開始時間が予定と違う」と「終了時間が予定と違う」が出る',
+    visitResult:
+      '実績の開始時間 09:15 に不一致の印が、終了時間 09:59 に注意の印が付き、サービス内容と提供時間には印が無い',
   },
   {
     name: 'receipt-calendar-mismatch-service',
@@ -48,10 +62,22 @@ const CALENDAR_VISIT_CASES = [
     category: 'mismatch',
     date: '2026-11-18',
     patient: '見本二葉',
-    cells: ['訪看I３ ❌', '14:00', '14:44', '44', '予防訪看I３ ❌', '14:00', '14:44', '44', '通常'],
+    cells: [
+      'サービス内容が予定と違う',
+      '訪看I３（不一致）',
+      '14:00',
+      '14:44',
+      '44',
+      '予防訪看I３（不一致）',
+      '14:00',
+      '14:44',
+      '44',
+      '通常',
+    ],
     scheduleResult:
-      '「不整合データ」に 2026-11-18 の見本二葉の行が出て、予定のサービス内容 訪看I３ に ❌ が付く',
-    visitResult: '実績のサービス内容 予防訪看I３ に ❌ が付き、開始時間と提供時間には印が無い',
+      '「不整合データ」に 2026-11-18 の見本二葉の行が出て、予定のサービス内容 訪看I３ に不一致の印が付き、確認することに「サービス内容が予定と違う」と出る',
+    visitResult:
+      '実績のサービス内容 予防訪看I３ に不一致の印が付き、開始時間と提供時間には印が無い',
   },
 ] as const
 
@@ -100,8 +126,8 @@ test.describe('照合の結果', () => {
             await expect(futaba).toHaveCount(3)
             await expect(futaba.first()).toContainText(LEADER.staff.name)
             await expect(receiptResultRow(page, '見本一郎')).toContainText([
-              '2026-11-02',
-              '2026-11-16',
+              '2026年11月2日（月）',
+              '2026年11月16日（月）',
             ])
             await check('「予定のみ」に、主訪問者が森 健太の、見本一郎と見本二葉の予定の行が出る')
           },
@@ -142,6 +168,12 @@ test.describe('照合の結果', () => {
                 '2026 年 11 月の Google カレンダー',
               )
 
+              if (item.category === 'match') {
+                await step('表示する行を「全ての行」に切り替える')
+
+                await showAllReceiptRows(page)
+              }
+
               const row = receiptCategoryRowCells(page, item.category, item.date, item.patient)
               await expect(row).toHaveText([
                 item.date,
@@ -152,9 +184,7 @@ test.describe('照合の結果', () => {
               await check(item.scheduleResult)
 
               await step('（撮影のため、結果の表を右端まで送り、実績の側の列を見せる）')
-              await page.getByTestId('receipt-result-table').evaluate((element) => {
-                element.scrollLeft = element.scrollWidth
-              })
+              await scrollToRightEnd(page.getByTestId('receipt-result-table'))
               await expect(row).toHaveText([
                 item.date,
                 item.patient,

@@ -1,0 +1,103 @@
+import { Button, Dialog, DialogBody, DialogFooter, DialogHeader } from '@buddy/ui'
+import { useId, useRef, type ReactNode } from 'react'
+
+import type { CalendarExportIssue } from '#/api/types'
+
+import {
+  exportIssueReason,
+  exportIssueReasonDetail,
+  formatExportIssueDateTime,
+} from '../lib/exportIssue'
+import { formatDateTime } from '../lib/format'
+
+export type CalendarReviewDialogProps = {
+  issue: CalendarExportIssue
+  /** 単発の予定の詳細を開く。繰り返しの予定には出さない。 */
+  onOpenSchedule: (scheduleId: string) => void
+  /** buddy の内容で書き直す確認のダイアログを開く。 */
+  onRewrite: () => void
+  /** 「閉じる」、覆い、Escape キーで呼ぶ。 */
+  onClose: () => void
+}
+
+const Row = ({ label, children }: { label: string; children: ReactNode }) => (
+  <div className="grid grid-cols-[10rem_minmax(0,1fr)] gap-x-3 py-1">
+    <dt className="text-text-secondary">{label}</dt>
+    <dd>{children}</dd>
+  </div>
+)
+
+/**
+ * 一覧で押した予定の日時、職員、理由を示し、その予定で選べる操作をフッターに並べるダイアログ。
+ * 書き直すと Google カレンダーでの変更が消えるので、書き直すボタンを赤い文字にしてフッターの左端に 1 つだけ置き、「閉じる」から離す。
+ * フッターの「閉じる」で閉じ、右上に × を置かない。
+ */
+export const CalendarReviewDialog = ({
+  issue,
+  onOpenSchedule,
+  onRewrite,
+  onClose,
+}: CalendarReviewDialogProps) => {
+  const titleId = useId()
+  // 予定を開くが無い繰り返しの予定で、最初の押せる要素の書き直すにフォーカスが移らないようにする
+  const closeRef = useRef<HTMLButtonElement>(null)
+  const detail = exportIssueReasonDetail(issue)
+  const scheduleId = issue.schedule_id
+  return (
+    <Dialog
+      data-testid="calendar-review-dialog"
+      initialFocusRef={closeRef}
+      labelledBy={titleId}
+      onClose={onClose}
+    >
+      <DialogHeader title="食い違った予定" titleId={titleId} />
+      <DialogBody>
+        <dl className="text-body">
+          <Row label="予定の日時">
+            <span data-testid="calendar-review-dialog-datetime">
+              {formatExportIssueDateTime(issue)}
+            </span>
+          </Row>
+          <Row label="職員">{issue.staff_name}</Row>
+          <Row label="最後に変わった日時">{formatDateTime(issue.updated_at)}</Row>
+        </dl>
+        <p className="text-body" data-testid="calendar-review-dialog-reason">
+          {exportIssueReason(issue)}
+          {detail}
+        </p>
+        {scheduleId !== null && (
+          <div>
+            <button
+              className="inline-flex min-h-11 items-center rounded-8 text-label text-primary hover:underline focus-visible:focus-ring"
+              data-testid={`calendar-review-open-${issue.id}`}
+              onClick={() => onOpenSchedule(scheduleId)}
+              type="button"
+            >
+              予定を開く
+            </button>
+          </div>
+        )}
+      </DialogBody>
+      <DialogFooter>
+        <Button
+          className="mr-auto"
+          data-testid={`calendar-review-rewrite-${issue.id}`}
+          onClick={onRewrite}
+          size="S"
+          variant="destructive"
+        >
+          buddy の内容で書き直す
+        </Button>
+        <Button
+          data-testid="calendar-review-cancel"
+          onClick={onClose}
+          ref={closeRef}
+          size="S"
+          variant="secondary"
+        >
+          閉じる
+        </Button>
+      </DialogFooter>
+    </Dialog>
+  )
+}

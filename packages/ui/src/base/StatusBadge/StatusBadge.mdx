@@ -1,0 +1,45 @@
+import { ArgTypes, Canvas, Meta } from '@storybook/addon-docs/blocks'
+
+import { StatusBadge } from './StatusBadge'
+import * as Stories from './StatusBadge.stories'
+
+<Meta of={Stories} />
+
+# StatusBadge
+
+一覧と詳細で、職員や利用者の状態を文字で示す印。同じファイルに、名前の先頭の 1 文字を入れた丸（`Avatar`）と、名前の前に色の点を置く `DotLabel` を置く。
+
+## 規則
+
+規則の本文は、デザインシステムの文書の次のセクションにある。
+
+- 使う場面、使わない場面、キーボードの操作: コンポーネントの文書（`packages/ui/design/components.md`）の「コンポーネントの選び方」の `StatusBadge` の行
+- 使い方の規則と Do と Don't: コンポーネントの文書の「コンポーネントごとの規則」の「`StatusBadge`」
+- 当たる原則: DESIGN.md の「画面を作るときの原則」の次の ID
+  - `STATE-NOT-COLOR-ONLY`
+
+## 状態
+
+### デフォルト
+
+<Canvas of={Stories.Default} />
+
+### 注意
+
+<Canvas of={Stories.Warning} />
+
+### 終わった状態
+
+<Canvas of={Stories.Muted} />
+
+### Avatar
+
+<Canvas of={Stories.WithAvatar} />
+
+### DotLabel
+
+<Canvas of={Stories.WithDotLabel} />
+
+## props
+
+<ArgTypes of={StatusBadge} />

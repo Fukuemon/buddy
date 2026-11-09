@@ -1,7 +1,9 @@
-import { ApiError } from '#/api/client'
+import { ApiError } from '#/api/BuddyApi'
+import { FORBIDDEN_MESSAGE } from '#/api/forbiddenMessage'
 
-/** 画面を開いた後に権限を外された職員が操作したときの文。 */
-export const FORBIDDEN_MESSAGE = 'この操作をする権限がありません。'
+/** 事業所の Google カレンダーの設定（サービスアカウント）が無いときの文。 */
+export const NOT_CONFIGURED_MESSAGE =
+  'この事業所では、まだ Google カレンダーを使う準備ができていません。事業所の管理者に、設定を頼んでください。'
 
 /** カレンダーの連携の、職員とカレンダーを読めなかったときの文。 */
 export const LINK_LOAD_ERROR_MESSAGE =
@@ -23,7 +25,7 @@ export const linkErrorMessage = (error: unknown) => {
   if (statusOf(error) === 403) return FORBIDDEN_MESSAGE
   switch (codeOf(error)) {
     case 'calendar_unreadable':
-      return 'このカレンダーを読めません。カレンダーをこの事業所の buddy のサービスアカウントに共有したかと、カレンダーの ID が合っているかを確認してください。'
+      return 'このカレンダーを読めません。カレンダーが、上に出ている buddy のメールアドレスに共有されているかと、カレンダーの ID が合っているかを確認してください。'
     case 'calendar_taken':
       return 'このカレンダーは、ほかの職員に結び付いています。'
     case 'staff_has_calendar':
@@ -52,7 +54,7 @@ export const previewErrorMessage = (error: unknown, staffName: string) => {
     case 'calendar_unreadable':
       return `${staffName} の Google カレンダーを読めません。カレンダーの共有が外れていないかを、職員に確認してください。`
     case 'calendar_not_configured':
-      return 'この事業所のサービスアカウントが設定されていないので、予定を読めません。buddy を動かしている管理者に、Google カレンダーの設定を頼んでください。'
+      return NOT_CONFIGURED_MESSAGE
     case 'not_found':
       return 'この職員のカレンダーの結び付けが外れています。画面を読み直してください。'
     default:
@@ -70,29 +72,9 @@ export const rewriteErrorMessage = (error: unknown) => {
   switch (codeOf(error)) {
     case 'export_not_in_review':
     case 'not_found':
-      return 'この予定は、すでに書き直す待ちにしたか、書き出し終えています。一覧を読み直してください。'
+      return 'この予定は、すでに書き直しを始めたか、書き直し終えています。一覧を読み直してください。'
     default:
-      return '書き直す待ちにできませんでした。時間をおいて、もう一度書き直してください。'
-  }
-}
-
-/** Google カレンダーの内容に合わせられなかったときの文。ほかの画面で解いたときは、一覧を読み直させる。 */
-export const acceptErrorMessage = (error: unknown) => {
-  if (statusOf(error) === 403) return FORBIDDEN_MESSAGE
-  switch (codeOf(error)) {
-    case 'export_not_in_review':
-    case 'not_found':
-      return 'この予定は、すでに書き直す待ちにしたか、解いています。一覧を読み直してください。'
-    case 'export_not_acceptable':
-      return 'この予定は、Google カレンダーの内容に合わせられません。buddy の内容で書き直してください。'
-    case 'external_change_unappliable':
-      return 'Google カレンダーの予定を、buddy の予定に読み替えられません。終日の予定か、タイトルの利用者が見つからない予定です。buddy の内容で書き直すか、Google カレンダーで直すよう職員に頼んでください。'
-    case 'calendar_unreadable':
-      return 'Google カレンダーを読めません。カレンダーの共有が外れていないかを、職員に確認してください。'
-    case 'calendar_not_configured':
-      return 'この事業所のサービスアカウントが設定されていないので、Google カレンダーを読めません。buddy を動かしている管理者に、Google カレンダーの設定を頼んでください。'
-    default:
-      return 'Google カレンダーの内容に合わせられませんでした。時間をおいて、もう一度試してください。'
+      return '書き直せませんでした。時間をおいて、もう一度書き直してください。'
   }
 }
 
@@ -108,6 +90,10 @@ export const importErrorMessage = (error: unknown) => {
       return 'プレビューの後に、Google カレンダーの予定か職員の休職が変わりました。もう一度プレビューしてから取り込んでください。予定は 1 件も取り込んでいません。'
     case 'import_running':
       return 'この職員の取り込みが、ほかの画面で進んでいます。終わってから、もう一度プレビューしてください。予定は 1 件も取り込んでいません。'
+    case 'google_primary':
+      return 'この事業所の予定は Google カレンダーで管理しているので、buddy に取り込めません。予定は 1 件も取り込んでいません。'
+    case 'cutover_not_open':
+      return '予定の正本の切り替えが、ほかの画面で完了したか、やめました。画面を読み直してください。予定は 1 件も取り込んでいません。'
     // 画面は期間と取り込み方の値を確認してから送るので、残る入力のエラーは、選んだ利用者がいないことである
     case 'invalid_input':
       return '選んだ利用者が見つかりません。利用者を選び直してください。予定は 1 件も取り込んでいません。'
@@ -115,5 +101,37 @@ export const importErrorMessage = (error: unknown) => {
       return 'この職員のカレンダーの結び付けが外れています。画面を読み直してください。予定は 1 件も取り込んでいません。'
     default:
       return '取り込めませんでした。時間をおいて、もう一度取り込んでください。予定は 1 件も取り込んでいません。'
+  }
+}
+
+/** 予定の正本の切り替えの状況を読めなかったときの文。 */
+export const CUTOVER_LOAD_ERROR_MESSAGE =
+  '予定の正本の切り替えの状況を読み込めませんでした。時間をおいて、読み直してください。'
+
+/**
+ * 切り替えの操作（始める、完了する、やめる）の失敗を、失敗の文にする。
+ * 最後の同期が成功していないカレンダーがあるときは、API の文（職員の名前を含む）をそのまま出す。
+ */
+export const cutoverErrorMessage = (error: unknown) => {
+  if (statusOf(error) === 403) return FORBIDDEN_MESSAGE
+  switch (codeOf(error)) {
+    case 'cutover_open':
+      return 'この事業所では、ほかの画面で切り替えを始めています。画面を読み直してください。'
+    case 'cutover_not_google_primary':
+      return 'この事業所の予定の正本は、すでに buddy です。画面を読み直してください。'
+    case 'cutover_sync_not_ready':
+      return error instanceof Error
+        ? error.message
+        : '最後の同期が成功していないカレンダーがあります。'
+    case 'cutover_not_open':
+      return 'この切り替えは、ほかの画面で完了したか、やめています。画面を読み直してください。'
+    case 'calendar_unavailable':
+      return 'Google カレンダーから予定を読めませんでした。時間をおいて、もう一度完了してください。'
+    case 'calendar_unreadable':
+      return 'Google カレンダーを読めない職員がいます。カレンダーの共有が外れていないかを、職員に確認してください。'
+    case 'calendar_not_configured':
+      return NOT_CONFIGURED_MESSAGE
+    default:
+      return '操作できませんでした。時間をおいて、もう一度試してください。'
   }
 }

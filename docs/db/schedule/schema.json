@@ -41,6 +41,13 @@
           "type": "timestamp with time zone",
           "nullable": false,
           "default": "now()"
+        },
+        {
+          "name": "source_mode",
+          "type": "text",
+          "nullable": false,
+          "default": "'google_primary'::text",
+          "comment": "予定の正本のモード。google_primary は Google カレンダーが正本で予定の API から予定を書けない。buddy_primary は buddy が正本で Google カレンダーへ書き出す"
         }
       ],
       "indexes": [
@@ -100,6 +107,26 @@
           "referenced_table": "",
           "columns": [
             "name"
+          ]
+        },
+        {
+          "name": "facilities_source_mode_check",
+          "type": "CHECK",
+          "def": "CHECK ((source_mode = ANY (ARRAY['google_primary'::text, 'buddy_primary'::text])))",
+          "table": "public.facilities",
+          "referenced_table": "",
+          "columns": [
+            "source_mode"
+          ]
+        },
+        {
+          "name": "facilities_source_mode_not_null",
+          "type": "n",
+          "def": "NOT NULL source_mode",
+          "table": "public.facilities",
+          "referenced_table": "",
+          "columns": [
+            "source_mode"
           ]
         },
         {
@@ -358,6 +385,12 @@
           "type": "timestamp with time zone",
           "nullable": false,
           "default": "now()"
+        },
+        {
+          "name": "color",
+          "type": "text",
+          "nullable": false,
+          "comment": "チームの色。packages/ui のチームの色のトークンの名前（team- の後ろ）。事業所の中で重なってよい"
         }
       ],
       "indexes": [
@@ -389,6 +422,26 @@
         }
       ],
       "constraints": [
+        {
+          "name": "teams_color_check",
+          "type": "CHECK",
+          "def": "CHECK ((color = ANY (ARRAY['blue'::text, 'orange'::text, 'magenta'::text, 'cyan'::text, 'yellow'::text, 'purple'::text, 'green'::text, 'lime'::text])))",
+          "table": "public.teams",
+          "referenced_table": "",
+          "columns": [
+            "color"
+          ]
+        },
+        {
+          "name": "teams_color_not_null",
+          "type": "n",
+          "def": "NOT NULL color",
+          "table": "public.teams",
+          "referenced_table": "",
+          "columns": [
+            "color"
+          ]
+        },
         {
           "name": "teams_created_at_not_null",
           "type": "n",
@@ -1024,6 +1077,13 @@
           "type": "timestamp with time zone",
           "nullable": true,
           "comment": "職員を退職にした時刻。退職していなければ NULL"
+        },
+        {
+          "name": "visits",
+          "type": "boolean",
+          "nullable": false,
+          "default": "true",
+          "comment": "訪問するか。false の職員には、予定と担当を新しく割り振れない"
         }
       ],
       "indexes": [
@@ -1222,6 +1282,16 @@
           "referenced_table": "",
           "columns": [
             "username"
+          ]
+        },
+        {
+          "name": "users_visits_not_null",
+          "type": "n",
+          "def": "NOT NULL visits",
+          "table": "public.users",
+          "referenced_table": "",
+          "columns": [
+            "visits"
           ]
         },
         {
@@ -2076,6 +2146,12 @@
           "type": "timestamp with time zone",
           "nullable": false,
           "default": "now()"
+        },
+        {
+          "name": "ended_at",
+          "type": "timestamp with time zone",
+          "nullable": true,
+          "comment": "利用者を利用の終了にした時刻。利用中なら NULL"
         }
       ],
       "indexes": [
@@ -2911,7 +2987,7 @@
           "name": "day_of_week",
           "type": "smallint",
           "nullable": true,
-          "comment": "1（月曜）から 7"
+          "comment": "1（月曜）から 7。毎月の week_of_month と組で使う。前のバージョンのアプリは毎週の曜日にも書く"
         },
         {
           "name": "day_of_month",
@@ -2949,6 +3025,26 @@
           "nullable": false,
           "default": "1",
           "comment": "更新の番号。回を除外するたびに 1 つ増える"
+        },
+        {
+          "name": "ends_next_day",
+          "type": "boolean",
+          "nullable": false,
+          "default": "false",
+          "comment": "終了が翌日か。全ての回が同じ値を持つ"
+        },
+        {
+          "name": "days_of_week",
+          "type": "smallint[]",
+          "nullable": true,
+          "comment": "毎週の、重ならない 1（月曜）から 7 の曜日を月曜から日曜の順に並べたもの。毎月は NULL。毎週の NULL は day_of_week か最初の日付の曜日として読む"
+        },
+        {
+          "name": "interval_weeks",
+          "type": "smallint",
+          "nullable": false,
+          "default": "1",
+          "comment": "毎週の間隔の週の数。1 が毎週、2 が隔週。日曜に始まる週で、最初の日付を含む週から数える。毎月は 1"
         }
       ],
       "indexes": [
@@ -3029,6 +3125,16 @@
           ]
         },
         {
+          "name": "recurring_schedules_days_of_week_check",
+          "type": "CHECK",
+          "def": "CHECK ((((cardinality(days_of_week) \u003e= 1) AND (cardinality(days_of_week) \u003c= 7)) AND (days_of_week \u003c@ ARRAY[(1)::smallint, (2)::smallint, (3)::smallint, (4)::smallint, (5)::smallint, (6)::smallint, (7)::smallint])))",
+          "table": "public.recurring_schedules",
+          "referenced_table": "",
+          "columns": [
+            "days_of_week"
+          ]
+        },
+        {
           "name": "recurring_schedules_end_date_check",
           "type": "CHECK",
           "def": "CHECK ((end_date \u003e= date))",
@@ -3047,6 +3153,16 @@
           "referenced_table": "",
           "columns": [
             "end_time"
+          ]
+        },
+        {
+          "name": "recurring_schedules_ends_next_day_not_null",
+          "type": "n",
+          "def": "NOT NULL ends_next_day",
+          "table": "public.recurring_schedules",
+          "referenced_table": "",
+          "columns": [
+            "ends_next_day"
           ]
         },
         {
@@ -3100,6 +3216,26 @@
           ]
         },
         {
+          "name": "recurring_schedules_interval_weeks_check",
+          "type": "CHECK",
+          "def": "CHECK (((interval_weeks \u003e= 1) AND (interval_weeks \u003c= 52)))",
+          "table": "public.recurring_schedules",
+          "referenced_table": "",
+          "columns": [
+            "interval_weeks"
+          ]
+        },
+        {
+          "name": "recurring_schedules_interval_weeks_not_null",
+          "type": "n",
+          "def": "NOT NULL interval_weeks",
+          "table": "public.recurring_schedules",
+          "referenced_table": "",
+          "columns": [
+            "interval_weeks"
+          ]
+        },
+        {
           "name": "recurring_schedules_is_over_time_work_not_null",
           "type": "n",
           "def": "NOT NULL is_over_time_work",
@@ -3107,6 +3243,18 @@
           "referenced_table": "",
           "columns": [
             "is_over_time_work"
+          ]
+        },
+        {
+          "name": "recurring_schedules_monthly_weekly_fields_check",
+          "type": "CHECK",
+          "def": "CHECK (((frequency = 'weekly'::text) OR ((days_of_week IS NULL) AND (interval_weeks = 1))))",
+          "table": "public.recurring_schedules",
+          "referenced_table": "",
+          "columns": [
+            "frequency",
+            "days_of_week",
+            "interval_weeks"
           ]
         },
         {
@@ -3155,12 +3303,13 @@
         {
           "name": "recurring_schedules_time_check",
           "type": "CHECK",
-          "def": "CHECK ((start_time \u003c end_time))",
+          "def": "CHECK (\nCASE\n    WHEN ends_next_day THEN (end_time \u003c start_time)\n    ELSE (start_time \u003c end_time)\nEND)",
           "table": "public.recurring_schedules",
           "referenced_table": "",
           "columns": [
-            "start_time",
-            "end_time"
+            "ends_next_day",
+            "end_time",
+            "start_time"
           ]
         },
         {
@@ -3295,6 +3444,10 @@
         {
           "name": "recurring_schedules_set_updated_at",
           "def": "CREATE TRIGGER recurring_schedules_set_updated_at BEFORE UPDATE ON public.recurring_schedules FOR EACH ROW EXECUTE FUNCTION set_updated_at()"
+        },
+        {
+          "name": "recurring_schedules_clear_stale_weekly_days",
+          "def": "CREATE TRIGGER recurring_schedules_clear_stale_weekly_days BEFORE UPDATE ON public.recurring_schedules FOR EACH ROW EXECUTE FUNCTION recurring_schedules_clear_stale_weekly_days()"
         }
       ]
     },
@@ -3465,6 +3618,13 @@
           "nullable": false,
           "default": "1",
           "comment": "更新の番号。予定を変えるかキャンセルするたびに 1 つ増える"
+        },
+        {
+          "name": "ends_next_day",
+          "type": "boolean",
+          "nullable": false,
+          "default": "false",
+          "comment": "終了が翌日か。true なら終了の時刻は開始の時刻より前で、date の翌日のその時刻に終わる"
         }
       ],
       "indexes": [
@@ -3555,6 +3715,16 @@
           ]
         },
         {
+          "name": "schedules_ends_next_day_not_null",
+          "type": "n",
+          "def": "NOT NULL ends_next_day",
+          "table": "public.schedules",
+          "referenced_table": "",
+          "columns": [
+            "ends_next_day"
+          ]
+        },
+        {
           "name": "schedules_facility_id_not_null",
           "type": "n",
           "def": "NOT NULL facility_id",
@@ -3638,12 +3808,13 @@
         {
           "name": "schedules_time_check",
           "type": "CHECK",
-          "def": "CHECK ((start_time \u003c end_time))",
+          "def": "CHECK (\nCASE\n    WHEN ends_next_day THEN (end_time \u003c start_time)\n    ELSE (start_time \u003c end_time)\nEND)",
           "table": "public.schedules",
           "referenced_table": "",
           "columns": [
-            "start_time",
-            "end_time"
+            "ends_next_day",
+            "end_time",
+            "start_time"
           ]
         },
         {
@@ -4463,6 +4634,18 @@
           "type": "integer",
           "nullable": true,
           "comment": "最後に外部の予定と同じにした時点の、buddy の予定の更新の番号。この列を足す前の行は NULL"
+        },
+        {
+          "name": "cutover_id",
+          "type": "text",
+          "nullable": true,
+          "comment": "切り替えの取り込みで作った対応のとき、その切り替え。切り替えをやめると、この対応と予定を消す"
+        },
+        {
+          "name": "deleted_schedule_id",
+          "type": "text",
+          "nullable": true,
+          "comment": "削除した単発の予定の ID。書き出しが外部の予定を消すまで対応を残す（ADR-0040）"
         }
       ],
       "indexes": [
@@ -4524,6 +4707,23 @@
           "columns": [
             "facility_id",
             "recurring_schedule_id"
+          ]
+        },
+        {
+          "name": "external_event_links_cutover_idx",
+          "def": "CREATE INDEX external_event_links_cutover_idx ON public.external_event_links USING btree (facility_id, cutover_id) WHERE (cutover_id IS NOT NULL)",
+          "table": "public.external_event_links",
+          "columns": [
+            "facility_id",
+            "cutover_id"
+          ]
+        },
+        {
+          "name": "external_event_links_deleted_schedule_key",
+          "def": "CREATE UNIQUE INDEX external_event_links_deleted_schedule_key ON public.external_event_links USING btree (deleted_schedule_id)",
+          "table": "public.external_event_links",
+          "columns": [
+            "deleted_schedule_id"
           ]
         }
       ],
@@ -4611,12 +4811,13 @@
         {
           "name": "external_event_links_target_check",
           "type": "CHECK",
-          "def": "CHECK ((num_nonnulls(schedule_id, recurring_schedule_id) = 1))",
+          "def": "CHECK ((num_nonnulls(schedule_id, recurring_schedule_id, deleted_schedule_id) = 1))",
           "table": "public.external_event_links",
           "referenced_table": "",
           "columns": [
             "schedule_id",
-            "recurring_schedule_id"
+            "recurring_schedule_id",
+            "deleted_schedule_id"
           ]
         },
         {
@@ -4714,6 +4915,46 @@
           "columns": [
             "recurring_schedule_id"
           ]
+        },
+        {
+          "name": "external_event_links_cutover_fkey",
+          "type": "FOREIGN KEY",
+          "def": "FOREIGN KEY (facility_id, cutover_id) REFERENCES calendar_cutovers(facility_id, id)",
+          "table": "public.external_event_links",
+          "referenced_table": "public.calendar_cutovers",
+          "columns": [
+            "facility_id",
+            "cutover_id"
+          ],
+          "referenced_columns": [
+            "facility_id",
+            "id"
+          ]
+        },
+        {
+          "name": "external_event_links_deleted_schedule_fkey",
+          "type": "FOREIGN KEY",
+          "def": "FOREIGN KEY (facility_id, deleted_schedule_id) REFERENCES schedule_deletions(facility_id, schedule_id)",
+          "table": "public.external_event_links",
+          "referenced_table": "public.schedule_deletions",
+          "columns": [
+            "facility_id",
+            "deleted_schedule_id"
+          ],
+          "referenced_columns": [
+            "facility_id",
+            "schedule_id"
+          ]
+        },
+        {
+          "name": "external_event_links_deleted_schedule_key",
+          "type": "UNIQUE",
+          "def": "UNIQUE (deleted_schedule_id)",
+          "table": "public.external_event_links",
+          "referenced_table": "",
+          "columns": [
+            "deleted_schedule_id"
+          ]
         }
       ],
       "triggers": [
@@ -4758,8 +4999,8 @@
         {
           "name": "range_end",
           "type": "date",
-          "nullable": false,
-          "comment": "取り込む期間の最後の日。この日を含む"
+          "nullable": true,
+          "comment": "取り込む期間の最後の日。この日を含む。切り替えの取り込みでは NULL（終わりを持たない）"
         },
         {
           "name": "status",
@@ -4807,6 +5048,12 @@
           "type": "timestamp with time zone",
           "nullable": false,
           "default": "now()"
+        },
+        {
+          "name": "cutover_id",
+          "type": "text",
+          "nullable": true,
+          "comment": "切り替えの取り込みのとき、その切り替え"
         }
       ],
       "indexes": [
@@ -4835,6 +5082,15 @@
           "columns": [
             "facility_id",
             "requested_by"
+          ]
+        },
+        {
+          "name": "import_runs_cutover_idx",
+          "def": "CREATE INDEX import_runs_cutover_idx ON public.import_runs USING btree (facility_id, cutover_id) WHERE (cutover_id IS NOT NULL)",
+          "table": "public.import_runs",
+          "columns": [
+            "facility_id",
+            "cutover_id"
           ]
         }
       ],
@@ -4922,6 +5178,17 @@
           ]
         },
         {
+          "name": "import_runs_open_range_check",
+          "type": "CHECK",
+          "def": "CHECK (((range_end IS NOT NULL) OR (cutover_id IS NOT NULL)))",
+          "table": "public.import_runs",
+          "referenced_table": "",
+          "columns": [
+            "range_end",
+            "cutover_id"
+          ]
+        },
+        {
           "name": "import_runs_range_check",
           "type": "CHECK",
           "def": "CHECK ((range_start \u003c= range_end))",
@@ -4929,16 +5196,6 @@
           "referenced_table": "",
           "columns": [
             "range_start",
-            "range_end"
-          ]
-        },
-        {
-          "name": "import_runs_range_end_not_null",
-          "type": "n",
-          "def": "NOT NULL range_end",
-          "table": "public.import_runs",
-          "referenced_table": "",
-          "columns": [
             "range_end"
           ]
         },
@@ -5049,6 +5306,21 @@
           "table": "public.import_runs",
           "referenced_table": "",
           "columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "import_runs_cutover_fkey",
+          "type": "FOREIGN KEY",
+          "def": "FOREIGN KEY (facility_id, cutover_id) REFERENCES calendar_cutovers(facility_id, id)",
+          "table": "public.import_runs",
+          "referenced_table": "public.calendar_cutovers",
+          "columns": [
+            "facility_id",
+            "cutover_id"
+          ],
+          "referenced_columns": [
+            "facility_id",
             "id"
           ]
         }
@@ -5273,9 +5545,14 @@
           "name": "version",
           "type": "integer",
           "nullable": true
+        },
+        {
+          "name": "ends_next_day",
+          "type": "boolean",
+          "nullable": true
         }
       ],
-      "def": "CREATE VIEW schedule_details AS (\n SELECT s.id,\n    s.facility_id,\n    s.schedule_type_id,\n    st.code AS schedule_type_code,\n    st.name AS schedule_type_name,\n    s.date,\n    s.start_time,\n    s.end_time,\n    s.is_over_time_work,\n    s.staff_id,\n    u.username AS staff_name,\n    s.title,\n    s.description,\n    s.recurring_schedule_id,\n    s.original_date,\n    s.visit_info_id,\n    vid.patient_id,\n    vid.patient_name,\n    vid.assigned_staff_id,\n    vid.assigned_staff_name,\n    vid.companion_id,\n    vid.companion_name,\n    vid.service_code_id,\n    vid.service_code,\n    c.id AS cancel_id,\n    c.reason AS cancel_reason,\n    s.created_at,\n    s.updated_at,\n    s.version\n   FROM ((((schedules s\n     JOIN schedule_types st ON ((st.id = s.schedule_type_id)))\n     JOIN users u ON ((u.id = s.staff_id)))\n     LEFT JOIN visit_info_details vid ON ((vid.id = s.visit_info_id)))\n     LEFT JOIN schedule_cancels c ON ((c.schedule_id = s.id)))\n)",
+      "def": "CREATE VIEW schedule_details AS (\n SELECT s.id,\n    s.facility_id,\n    s.schedule_type_id,\n    st.code AS schedule_type_code,\n    st.name AS schedule_type_name,\n    s.date,\n    s.start_time,\n    s.end_time,\n    s.is_over_time_work,\n    s.staff_id,\n    u.username AS staff_name,\n    s.title,\n    s.description,\n    s.recurring_schedule_id,\n    s.original_date,\n    s.visit_info_id,\n    vid.patient_id,\n    vid.patient_name,\n    vid.assigned_staff_id,\n    vid.assigned_staff_name,\n    vid.companion_id,\n    vid.companion_name,\n    vid.service_code_id,\n    vid.service_code,\n    c.id AS cancel_id,\n    c.reason AS cancel_reason,\n    s.created_at,\n    s.updated_at,\n    s.version,\n    s.ends_next_day\n   FROM ((((schedules s\n     JOIN schedule_types st ON ((st.id = s.schedule_type_id)))\n     JOIN users u ON ((u.id = s.staff_id)))\n     LEFT JOIN visit_info_details vid ON ((vid.id = s.visit_info_id)))\n     LEFT JOIN schedule_cancels c ON ((c.schedule_id = s.id)))\n)",
       "referenced_tables": [
         "public.schedules",
         "public.schedule_types",
@@ -5438,9 +5715,24 @@
           "name": "version",
           "type": "integer",
           "nullable": true
+        },
+        {
+          "name": "ends_next_day",
+          "type": "boolean",
+          "nullable": true
+        },
+        {
+          "name": "days_of_week",
+          "type": "smallint[]",
+          "nullable": true
+        },
+        {
+          "name": "interval_weeks",
+          "type": "smallint",
+          "nullable": true
         }
       ],
-      "def": "CREATE VIEW recurring_schedule_details AS (\n SELECT rs.id,\n    rs.facility_id,\n    rs.schedule_type_id,\n    st.code AS schedule_type_code,\n    st.name AS schedule_type_name,\n    rs.date,\n    rs.start_time,\n    rs.end_time,\n    rs.is_over_time_work,\n    rs.staff_id,\n    u.username AS staff_name,\n    rs.title,\n    rs.description,\n    rs.frequency,\n    rs.day_of_week,\n    rs.day_of_month,\n    rs.week_of_month,\n    rs.end_date,\n    rs.visit_info_id,\n    vid.patient_id,\n    vid.patient_name,\n    vid.assigned_staff_id,\n    vid.assigned_staff_name,\n    vid.companion_id,\n    vid.companion_name,\n    vid.service_code_id,\n    vid.service_code,\n    rs.created_at,\n    rs.updated_at,\n    rs.version\n   FROM (((recurring_schedules rs\n     JOIN schedule_types st ON ((st.id = rs.schedule_type_id)))\n     JOIN users u ON ((u.id = rs.staff_id)))\n     LEFT JOIN visit_info_details vid ON ((vid.id = rs.visit_info_id)))\n)",
+      "def": "CREATE VIEW recurring_schedule_details AS (\n SELECT rs.id,\n    rs.facility_id,\n    rs.schedule_type_id,\n    st.code AS schedule_type_code,\n    st.name AS schedule_type_name,\n    rs.date,\n    rs.start_time,\n    rs.end_time,\n    rs.is_over_time_work,\n    rs.staff_id,\n    u.username AS staff_name,\n    rs.title,\n    rs.description,\n    rs.frequency,\n    rs.day_of_week,\n    rs.day_of_month,\n    rs.week_of_month,\n    rs.end_date,\n    rs.visit_info_id,\n    vid.patient_id,\n    vid.patient_name,\n    vid.assigned_staff_id,\n    vid.assigned_staff_name,\n    vid.companion_id,\n    vid.companion_name,\n    vid.service_code_id,\n    vid.service_code,\n    rs.created_at,\n    rs.updated_at,\n    rs.version,\n    rs.ends_next_day,\n    rs.days_of_week,\n    rs.interval_weeks\n   FROM (((recurring_schedules rs\n     JOIN schedule_types st ON ((st.id = rs.schedule_type_id)))\n     JOIN users u ON ((u.id = rs.staff_id)))\n     LEFT JOIN visit_info_details vid ON ((vid.id = rs.visit_info_id)))\n)",
       "referenced_tables": [
         "public.recurring_schedules",
         "public.schedule_types",
@@ -5518,7 +5810,7 @@
           "name": "error_code",
           "type": "text",
           "nullable": true,
-          "comment": "最後に書けなかった理由。外部の予定の題名とカレンダーの ID を含めない。unappliable は、外部の変更を buddy の予定に読み替えられなかったこと"
+          "comment": "最後に書けなかった理由。外部の予定の題名とカレンダーの ID を含めない。unappliable は、外部の変更を buddy の予定に読み替えられなかったこと。not_buddy_primary は、事業所が buddy を正本にしていないので書かなかったこと"
         },
         {
           "name": "finished_at",
@@ -5536,6 +5828,12 @@
           "type": "timestamp with time zone",
           "nullable": false,
           "default": "now()"
+        },
+        {
+          "name": "deleted_schedule_id",
+          "type": "text",
+          "nullable": true,
+          "comment": "削除した単発の予定の ID。外部の予定を消す待ち（ADR-0040）"
         }
       ],
       "indexes": [
@@ -5607,6 +5905,23 @@
             "facility_id",
             "recurring_schedule_id"
           ]
+        },
+        {
+          "name": "calendar_exports_open_deleted_schedule_key",
+          "def": "CREATE UNIQUE INDEX calendar_exports_open_deleted_schedule_key ON public.calendar_exports USING btree (deleted_schedule_id) WHERE ((status \u003c\u003e 'succeeded'::text) AND (deleted_schedule_id IS NOT NULL))",
+          "table": "public.calendar_exports",
+          "columns": [
+            "deleted_schedule_id"
+          ]
+        },
+        {
+          "name": "calendar_exports_facility_deleted_schedule_idx",
+          "def": "CREATE INDEX calendar_exports_facility_deleted_schedule_idx ON public.calendar_exports USING btree (facility_id, deleted_schedule_id) WHERE (deleted_schedule_id IS NOT NULL)",
+          "table": "public.calendar_exports",
+          "columns": [
+            "facility_id",
+            "deleted_schedule_id"
+          ]
         }
       ],
       "constraints": [
@@ -5644,7 +5959,7 @@
         {
           "name": "calendar_exports_error_code_check",
           "type": "CHECK",
-          "def": "CHECK ((error_code = ANY (ARRAY['precondition_failed'::text, 'not_found'::text, 'forbidden'::text, 'rejected'::text, 'unavailable'::text, 'unappliable'::text])))",
+          "def": "CHECK ((error_code = ANY (ARRAY['precondition_failed'::text, 'not_found'::text, 'forbidden'::text, 'rejected'::text, 'unavailable'::text, 'unappliable'::text, 'not_buddy_primary'::text])))",
           "table": "public.calendar_exports",
           "referenced_table": "",
           "columns": [
@@ -5745,12 +6060,13 @@
         {
           "name": "calendar_exports_target_check",
           "type": "CHECK",
-          "def": "CHECK ((num_nonnulls(schedule_id, recurring_schedule_id) = 1))",
+          "def": "CHECK ((num_nonnulls(schedule_id, recurring_schedule_id, deleted_schedule_id) = 1))",
           "table": "public.calendar_exports",
           "referenced_table": "",
           "columns": [
             "schedule_id",
-            "recurring_schedule_id"
+            "recurring_schedule_id",
+            "deleted_schedule_id"
           ]
         },
         {
@@ -5826,12 +6142,1494 @@
             "facility_id",
             "id"
           ]
+        },
+        {
+          "name": "calendar_exports_deleted_schedule_fkey",
+          "type": "FOREIGN KEY",
+          "def": "FOREIGN KEY (facility_id, deleted_schedule_id) REFERENCES schedule_deletions(facility_id, schedule_id)",
+          "table": "public.calendar_exports",
+          "referenced_table": "public.schedule_deletions",
+          "columns": [
+            "facility_id",
+            "deleted_schedule_id"
+          ],
+          "referenced_columns": [
+            "facility_id",
+            "schedule_id"
+          ]
         }
       ],
       "triggers": [
         {
           "name": "calendar_exports_set_updated_at",
           "def": "CREATE TRIGGER calendar_exports_set_updated_at BEFORE UPDATE ON public.calendar_exports FOR EACH ROW EXECUTE FUNCTION set_updated_at()"
+        }
+      ]
+    },
+    {
+      "name": "public.calendar_event_projections",
+      "type": "BASE TABLE",
+      "comment": "Google カレンダーを予定の正本にする事業所の、Google カレンダーの予定の写し（Projection）。1 つの予定を 1 行にする",
+      "columns": [
+        {
+          "name": "external_calendar_id",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "external_event_id",
+          "type": "varchar(1024)",
+          "nullable": false,
+          "comment": "Google の予定の ID"
+        },
+        {
+          "name": "facility_id",
+          "type": "text",
+          "nullable": false,
+          "comment": "写した時点のカレンダーの事業所"
+        },
+        {
+          "name": "staff_id",
+          "type": "text",
+          "nullable": false,
+          "comment": "写した時点のカレンダーの職員"
+        },
+        {
+          "name": "recurring_event_id",
+          "type": "varchar(1024)",
+          "nullable": true,
+          "comment": "繰り返しの予定の例外の回のとき、親の予定の ID"
+        },
+        {
+          "name": "original_start_at",
+          "type": "timestamp with time zone",
+          "nullable": true,
+          "comment": "例外の回が元の規則で始まるはずだった日時。終日の予定は original_start_date に持つ"
+        },
+        {
+          "name": "original_start_date",
+          "type": "date",
+          "nullable": true
+        },
+        {
+          "name": "status",
+          "type": "text",
+          "nullable": false,
+          "comment": "confirmed、cancelled。cancelled は Google で取り消した予定で、単発の予定と親の予定も行に残す。予定の表示の読み出しは返さない"
+        },
+        {
+          "name": "title",
+          "type": "text",
+          "nullable": false,
+          "comment": "Google の予定のタイトル。利用者名を含むが、表示と照合に要るので持つ。取り消した回は空"
+        },
+        {
+          "name": "start_at",
+          "type": "timestamp with time zone",
+          "nullable": true,
+          "comment": "開始の日時。終日の予定は start_date に持つ。取り消した回はどちらも NULL"
+        },
+        {
+          "name": "start_date",
+          "type": "date",
+          "nullable": true
+        },
+        {
+          "name": "end_at",
+          "type": "timestamp with time zone",
+          "nullable": true,
+          "comment": "終了の日時。終日の予定は end_date（Google と同じく、終わる日の翌日）に持つ"
+        },
+        {
+          "name": "end_date",
+          "type": "date",
+          "nullable": true
+        },
+        {
+          "name": "time_zone",
+          "type": "text",
+          "nullable": true,
+          "comment": "Google の予定の開始のタイムゾーン（IANA）。繰り返しの規則はこの暦で数える"
+        },
+        {
+          "name": "recurrence",
+          "type": "text[]",
+          "nullable": false,
+          "default": "'{}'::text[]",
+          "comment": "繰り返しの親の予定の RRULE、EXDATE、RDATE の行"
+        },
+        {
+          "name": "etag",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "google_updated_at",
+          "type": "timestamp with time zone",
+          "nullable": true,
+          "comment": "Google で予定を最後に変えた時刻。行を書き直すのは、書く予定の時刻がこの時刻より新しいときだけにする"
+        },
+        {
+          "name": "last_end_date",
+          "type": "date",
+          "nullable": true,
+          "comment": "Asia/Tokyo で予定が終わる日。繰り返しは最後の回、取り消した回は元の開始の日、取り消した単発の予定と親の予定は取り消しを写した日。終わりの無い繰り返しと、最後の回を決められない繰り返しは NULL。保持する期間より前に終わった行を消すのに使う"
+        },
+        {
+          "name": "projected_at",
+          "type": "timestamp with time zone",
+          "nullable": false,
+          "default": "now()",
+          "comment": "同期が行を書いた時刻"
+        },
+        {
+          "name": "time_unreadable",
+          "type": "boolean",
+          "nullable": false,
+          "default": "false",
+          "comment": "開始か終了の日時を読めない予定のとき true。読めた方の日時か日付だけを持つ。予定のカレンダーは、出せない予定の件数に数える"
+        }
+      ],
+      "indexes": [
+        {
+          "name": "calendar_event_projections_pkey",
+          "def": "CREATE UNIQUE INDEX calendar_event_projections_pkey ON public.calendar_event_projections USING btree (external_calendar_id, external_event_id)",
+          "table": "public.calendar_event_projections",
+          "columns": [
+            "external_calendar_id",
+            "external_event_id"
+          ]
+        },
+        {
+          "name": "calendar_event_projections_facility_end_idx",
+          "def": "CREATE INDEX calendar_event_projections_facility_end_idx ON public.calendar_event_projections USING btree (facility_id, last_end_date)",
+          "table": "public.calendar_event_projections",
+          "columns": [
+            "facility_id",
+            "last_end_date"
+          ]
+        },
+        {
+          "name": "calendar_event_projections_schedule_id_idx",
+          "def": "CREATE INDEX calendar_event_projections_schedule_id_idx ON public.calendar_event_projections USING btree (projected_schedule_id(external_calendar_id, (external_event_id)::text))",
+          "table": "public.calendar_event_projections",
+          "columns": [
+            "projected_schedule_id"
+          ]
+        },
+        {
+          "name": "calendar_event_projections_detached_id_idx",
+          "def": "CREATE INDEX calendar_event_projections_detached_id_idx ON public.calendar_event_projections USING btree (detached_schedule_id(external_calendar_id, (external_event_id)::text))",
+          "table": "public.calendar_event_projections",
+          "columns": [
+            "detached_schedule_id"
+          ]
+        },
+        {
+          "name": "calendar_event_projections_occurrence_id_idx",
+          "def": "CREATE INDEX calendar_event_projections_occurrence_id_idx ON public.calendar_event_projections USING btree (occurrence_schedule_id(external_calendar_id, (recurring_event_id)::text, original_start_at, original_start_date)) WHERE (recurring_event_id IS NOT NULL)",
+          "table": "public.calendar_event_projections",
+          "columns": [
+            "occurrence_schedule_id"
+          ]
+        },
+        {
+          "name": "calendar_event_projections_detached_occurrence_id_idx",
+          "def": "CREATE INDEX calendar_event_projections_detached_occurrence_id_idx ON public.calendar_event_projections USING btree (detached_occurrence_schedule_id(external_calendar_id, (recurring_event_id)::text, original_start_at, original_start_date)) WHERE (recurring_event_id IS NOT NULL)",
+          "table": "public.calendar_event_projections",
+          "columns": [
+            "detached_occurrence_schedule_id"
+          ]
+        }
+      ],
+      "constraints": [
+        {
+          "name": "calendar_event_projections_end_check",
+          "type": "CHECK",
+          "def": "CHECK (((num_nonnulls(end_at, end_date) \u003c= 1) AND ((status = 'cancelled'::text) OR time_unreadable OR (num_nonnulls(end_at, end_date) = 1))))",
+          "table": "public.calendar_event_projections",
+          "referenced_table": "",
+          "columns": [
+            "end_at",
+            "end_date",
+            "status",
+            "time_unreadable"
+          ]
+        },
+        {
+          "name": "calendar_event_projections_etag_not_null",
+          "type": "n",
+          "def": "NOT NULL etag",
+          "table": "public.calendar_event_projections",
+          "referenced_table": "",
+          "columns": [
+            "etag"
+          ]
+        },
+        {
+          "name": "calendar_event_projections_external_calendar_id_not_null",
+          "type": "n",
+          "def": "NOT NULL external_calendar_id",
+          "table": "public.calendar_event_projections",
+          "referenced_table": "",
+          "columns": [
+            "external_calendar_id"
+          ]
+        },
+        {
+          "name": "calendar_event_projections_external_event_id_not_null",
+          "type": "n",
+          "def": "NOT NULL external_event_id",
+          "table": "public.calendar_event_projections",
+          "referenced_table": "",
+          "columns": [
+            "external_event_id"
+          ]
+        },
+        {
+          "name": "calendar_event_projections_facility_id_not_null",
+          "type": "n",
+          "def": "NOT NULL facility_id",
+          "table": "public.calendar_event_projections",
+          "referenced_table": "",
+          "columns": [
+            "facility_id"
+          ]
+        },
+        {
+          "name": "calendar_event_projections_original_check",
+          "type": "CHECK",
+          "def": "CHECK ((num_nonnulls(original_start_at, original_start_date) \u003c= 1))",
+          "table": "public.calendar_event_projections",
+          "referenced_table": "",
+          "columns": [
+            "original_start_at",
+            "original_start_date"
+          ]
+        },
+        {
+          "name": "calendar_event_projections_projected_at_not_null",
+          "type": "n",
+          "def": "NOT NULL projected_at",
+          "table": "public.calendar_event_projections",
+          "referenced_table": "",
+          "columns": [
+            "projected_at"
+          ]
+        },
+        {
+          "name": "calendar_event_projections_recurrence_not_null",
+          "type": "n",
+          "def": "NOT NULL recurrence",
+          "table": "public.calendar_event_projections",
+          "referenced_table": "",
+          "columns": [
+            "recurrence"
+          ]
+        },
+        {
+          "name": "calendar_event_projections_staff_id_not_null",
+          "type": "n",
+          "def": "NOT NULL staff_id",
+          "table": "public.calendar_event_projections",
+          "referenced_table": "",
+          "columns": [
+            "staff_id"
+          ]
+        },
+        {
+          "name": "calendar_event_projections_start_check",
+          "type": "CHECK",
+          "def": "CHECK (((num_nonnulls(start_at, start_date) \u003c= 1) AND ((status = 'cancelled'::text) OR time_unreadable OR (num_nonnulls(start_at, start_date) = 1))))",
+          "table": "public.calendar_event_projections",
+          "referenced_table": "",
+          "columns": [
+            "start_at",
+            "start_date",
+            "status",
+            "time_unreadable"
+          ]
+        },
+        {
+          "name": "calendar_event_projections_status_check",
+          "type": "CHECK",
+          "def": "CHECK ((status = ANY (ARRAY['confirmed'::text, 'cancelled'::text])))",
+          "table": "public.calendar_event_projections",
+          "referenced_table": "",
+          "columns": [
+            "status"
+          ]
+        },
+        {
+          "name": "calendar_event_projections_status_not_null",
+          "type": "n",
+          "def": "NOT NULL status",
+          "table": "public.calendar_event_projections",
+          "referenced_table": "",
+          "columns": [
+            "status"
+          ]
+        },
+        {
+          "name": "calendar_event_projections_time_unreadable_not_null",
+          "type": "n",
+          "def": "NOT NULL time_unreadable",
+          "table": "public.calendar_event_projections",
+          "referenced_table": "",
+          "columns": [
+            "time_unreadable"
+          ]
+        },
+        {
+          "name": "calendar_event_projections_title_not_null",
+          "type": "n",
+          "def": "NOT NULL title",
+          "table": "public.calendar_event_projections",
+          "referenced_table": "",
+          "columns": [
+            "title"
+          ]
+        },
+        {
+          "name": "calendar_event_projections_staff_fkey",
+          "type": "FOREIGN KEY",
+          "def": "FOREIGN KEY (facility_id, staff_id) REFERENCES users(facility_id, id) ON DELETE CASCADE",
+          "table": "public.calendar_event_projections",
+          "referenced_table": "public.users",
+          "columns": [
+            "facility_id",
+            "staff_id"
+          ],
+          "referenced_columns": [
+            "facility_id",
+            "id"
+          ]
+        },
+        {
+          "name": "calendar_event_projections_calendar_fkey",
+          "type": "FOREIGN KEY",
+          "def": "FOREIGN KEY (facility_id, external_calendar_id) REFERENCES external_calendars(facility_id, id) ON DELETE CASCADE",
+          "table": "public.calendar_event_projections",
+          "referenced_table": "public.external_calendars",
+          "columns": [
+            "facility_id",
+            "external_calendar_id"
+          ],
+          "referenced_columns": [
+            "facility_id",
+            "id"
+          ]
+        },
+        {
+          "name": "calendar_event_projections_pkey",
+          "type": "PRIMARY KEY",
+          "def": "PRIMARY KEY (external_calendar_id, external_event_id)",
+          "table": "public.calendar_event_projections",
+          "referenced_table": "",
+          "columns": [
+            "external_calendar_id",
+            "external_event_id"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "public.calendar_cutovers",
+      "type": "BASE TABLE",
+      "comment": "事業所の予定の正本を Google カレンダーから buddy に切り替える作業の記録（切り替え）。事業所ごとに open は 1 つまで",
+      "columns": [
+        {
+          "name": "id",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "facility_id",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "status",
+          "type": "text",
+          "nullable": false,
+          "comment": "open、completed、canceled。completed で事業所を buddy_primary にし、canceled は google_primary のまま"
+        },
+        {
+          "name": "range_start",
+          "type": "date",
+          "nullable": false,
+          "comment": "取り込みの期間の最初の日。切り替えを始めた月の初日。期間は終わりを持たない"
+        },
+        {
+          "name": "started_by",
+          "type": "text",
+          "nullable": false,
+          "comment": "切り替えを始めた職員"
+        },
+        {
+          "name": "started_at",
+          "type": "timestamp with time zone",
+          "nullable": false,
+          "default": "now()"
+        },
+        {
+          "name": "finished_at",
+          "type": "timestamp with time zone",
+          "nullable": true,
+          "comment": "完了したかやめた時刻。open なら NULL"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": false,
+          "default": "now()"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "nullable": false,
+          "default": "now()"
+        }
+      ],
+      "indexes": [
+        {
+          "name": "calendar_cutovers_pkey",
+          "def": "CREATE UNIQUE INDEX calendar_cutovers_pkey ON public.calendar_cutovers USING btree (id)",
+          "table": "public.calendar_cutovers",
+          "columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "calendar_cutovers_facility_id_key",
+          "def": "CREATE UNIQUE INDEX calendar_cutovers_facility_id_key ON public.calendar_cutovers USING btree (facility_id, id)",
+          "table": "public.calendar_cutovers",
+          "columns": [
+            "facility_id",
+            "id"
+          ]
+        },
+        {
+          "name": "calendar_cutovers_open_key",
+          "def": "CREATE UNIQUE INDEX calendar_cutovers_open_key ON public.calendar_cutovers USING btree (facility_id) WHERE (status = 'open'::text)",
+          "table": "public.calendar_cutovers",
+          "columns": [
+            "facility_id"
+          ]
+        },
+        {
+          "name": "calendar_cutovers_started_by_idx",
+          "def": "CREATE INDEX calendar_cutovers_started_by_idx ON public.calendar_cutovers USING btree (facility_id, started_by)",
+          "table": "public.calendar_cutovers",
+          "columns": [
+            "facility_id",
+            "started_by"
+          ]
+        }
+      ],
+      "constraints": [
+        {
+          "name": "calendar_cutovers_created_at_not_null",
+          "type": "n",
+          "def": "NOT NULL created_at",
+          "table": "public.calendar_cutovers",
+          "referenced_table": "",
+          "columns": [
+            "created_at"
+          ]
+        },
+        {
+          "name": "calendar_cutovers_facility_id_not_null",
+          "type": "n",
+          "def": "NOT NULL facility_id",
+          "table": "public.calendar_cutovers",
+          "referenced_table": "",
+          "columns": [
+            "facility_id"
+          ]
+        },
+        {
+          "name": "calendar_cutovers_finished_check",
+          "type": "CHECK",
+          "def": "CHECK (((status = 'open'::text) = (finished_at IS NULL)))",
+          "table": "public.calendar_cutovers",
+          "referenced_table": "",
+          "columns": [
+            "status",
+            "finished_at"
+          ]
+        },
+        {
+          "name": "calendar_cutovers_id_check",
+          "type": "CHECK",
+          "def": "CHECK ((id ~ '^[0-7][0-9A-HJKMNP-TV-Z]{25}$'::text))",
+          "table": "public.calendar_cutovers",
+          "referenced_table": "",
+          "columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "calendar_cutovers_id_not_null",
+          "type": "n",
+          "def": "NOT NULL id",
+          "table": "public.calendar_cutovers",
+          "referenced_table": "",
+          "columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "calendar_cutovers_range_start_check",
+          "type": "CHECK",
+          "def": "CHECK ((EXTRACT(day FROM range_start) = (1)::numeric))",
+          "table": "public.calendar_cutovers",
+          "referenced_table": "",
+          "columns": [
+            "range_start"
+          ]
+        },
+        {
+          "name": "calendar_cutovers_range_start_not_null",
+          "type": "n",
+          "def": "NOT NULL range_start",
+          "table": "public.calendar_cutovers",
+          "referenced_table": "",
+          "columns": [
+            "range_start"
+          ]
+        },
+        {
+          "name": "calendar_cutovers_started_at_not_null",
+          "type": "n",
+          "def": "NOT NULL started_at",
+          "table": "public.calendar_cutovers",
+          "referenced_table": "",
+          "columns": [
+            "started_at"
+          ]
+        },
+        {
+          "name": "calendar_cutovers_started_by_not_null",
+          "type": "n",
+          "def": "NOT NULL started_by",
+          "table": "public.calendar_cutovers",
+          "referenced_table": "",
+          "columns": [
+            "started_by"
+          ]
+        },
+        {
+          "name": "calendar_cutovers_status_check",
+          "type": "CHECK",
+          "def": "CHECK ((status = ANY (ARRAY['open'::text, 'completed'::text, 'canceled'::text])))",
+          "table": "public.calendar_cutovers",
+          "referenced_table": "",
+          "columns": [
+            "status"
+          ]
+        },
+        {
+          "name": "calendar_cutovers_status_not_null",
+          "type": "n",
+          "def": "NOT NULL status",
+          "table": "public.calendar_cutovers",
+          "referenced_table": "",
+          "columns": [
+            "status"
+          ]
+        },
+        {
+          "name": "calendar_cutovers_updated_at_not_null",
+          "type": "n",
+          "def": "NOT NULL updated_at",
+          "table": "public.calendar_cutovers",
+          "referenced_table": "",
+          "columns": [
+            "updated_at"
+          ]
+        },
+        {
+          "name": "calendar_cutovers_facility_fkey",
+          "type": "FOREIGN KEY",
+          "def": "FOREIGN KEY (facility_id) REFERENCES facilities(id)",
+          "table": "public.calendar_cutovers",
+          "referenced_table": "public.facilities",
+          "columns": [
+            "facility_id"
+          ],
+          "referenced_columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "calendar_cutovers_started_by_fkey",
+          "type": "FOREIGN KEY",
+          "def": "FOREIGN KEY (facility_id, started_by) REFERENCES users(facility_id, id)",
+          "table": "public.calendar_cutovers",
+          "referenced_table": "public.users",
+          "columns": [
+            "facility_id",
+            "started_by"
+          ],
+          "referenced_columns": [
+            "facility_id",
+            "id"
+          ]
+        },
+        {
+          "name": "calendar_cutovers_pkey",
+          "type": "PRIMARY KEY",
+          "def": "PRIMARY KEY (id)",
+          "table": "public.calendar_cutovers",
+          "referenced_table": "",
+          "columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "calendar_cutovers_facility_id_key",
+          "type": "UNIQUE",
+          "def": "UNIQUE (facility_id, id)",
+          "table": "public.calendar_cutovers",
+          "referenced_table": "",
+          "columns": [
+            "facility_id",
+            "id"
+          ]
+        }
+      ],
+      "triggers": [
+        {
+          "name": "calendar_cutovers_set_updated_at",
+          "def": "CREATE TRIGGER calendar_cutovers_set_updated_at BEFORE UPDATE ON public.calendar_cutovers FOR EACH ROW EXECUTE FUNCTION set_updated_at()"
+        }
+      ]
+    },
+    {
+      "name": "public.calendar_cutover_skips",
+      "type": "BASE TABLE",
+      "comment": "切り替えの取り込みで、確認が必要な予定に取り込まないを選んだ記録",
+      "columns": [
+        {
+          "name": "cutover_id",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "facility_id",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "external_calendar_id",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "external_event_id",
+          "type": "varchar(1024)",
+          "nullable": false,
+          "comment": "取り込み方を選んだ Google の予定の ID。繰り返しの予定とその回では、親の予定の ID"
+        },
+        {
+          "name": "revision",
+          "type": "varchar(64)",
+          "nullable": false,
+          "comment": "取り込み方を選んだときの、確認が必要な予定のバージョン。Google で予定が変わると変わり、記録は当たらなくなる"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": false,
+          "default": "now()"
+        }
+      ],
+      "indexes": [
+        {
+          "name": "calendar_cutover_skips_pkey",
+          "def": "CREATE UNIQUE INDEX calendar_cutover_skips_pkey ON public.calendar_cutover_skips USING btree (cutover_id, external_calendar_id, external_event_id)",
+          "table": "public.calendar_cutover_skips",
+          "columns": [
+            "cutover_id",
+            "external_calendar_id",
+            "external_event_id"
+          ]
+        },
+        {
+          "name": "calendar_cutover_skips_calendar_idx",
+          "def": "CREATE INDEX calendar_cutover_skips_calendar_idx ON public.calendar_cutover_skips USING btree (facility_id, external_calendar_id)",
+          "table": "public.calendar_cutover_skips",
+          "columns": [
+            "facility_id",
+            "external_calendar_id"
+          ]
+        }
+      ],
+      "constraints": [
+        {
+          "name": "calendar_cutover_skips_created_at_not_null",
+          "type": "n",
+          "def": "NOT NULL created_at",
+          "table": "public.calendar_cutover_skips",
+          "referenced_table": "",
+          "columns": [
+            "created_at"
+          ]
+        },
+        {
+          "name": "calendar_cutover_skips_cutover_id_not_null",
+          "type": "n",
+          "def": "NOT NULL cutover_id",
+          "table": "public.calendar_cutover_skips",
+          "referenced_table": "",
+          "columns": [
+            "cutover_id"
+          ]
+        },
+        {
+          "name": "calendar_cutover_skips_external_calendar_id_not_null",
+          "type": "n",
+          "def": "NOT NULL external_calendar_id",
+          "table": "public.calendar_cutover_skips",
+          "referenced_table": "",
+          "columns": [
+            "external_calendar_id"
+          ]
+        },
+        {
+          "name": "calendar_cutover_skips_external_event_id_not_null",
+          "type": "n",
+          "def": "NOT NULL external_event_id",
+          "table": "public.calendar_cutover_skips",
+          "referenced_table": "",
+          "columns": [
+            "external_event_id"
+          ]
+        },
+        {
+          "name": "calendar_cutover_skips_facility_id_not_null",
+          "type": "n",
+          "def": "NOT NULL facility_id",
+          "table": "public.calendar_cutover_skips",
+          "referenced_table": "",
+          "columns": [
+            "facility_id"
+          ]
+        },
+        {
+          "name": "calendar_cutover_skips_revision_not_null",
+          "type": "n",
+          "def": "NOT NULL revision",
+          "table": "public.calendar_cutover_skips",
+          "referenced_table": "",
+          "columns": [
+            "revision"
+          ]
+        },
+        {
+          "name": "calendar_cutover_skips_calendar_fkey",
+          "type": "FOREIGN KEY",
+          "def": "FOREIGN KEY (facility_id, external_calendar_id) REFERENCES external_calendars(facility_id, id) ON DELETE CASCADE",
+          "table": "public.calendar_cutover_skips",
+          "referenced_table": "public.external_calendars",
+          "columns": [
+            "facility_id",
+            "external_calendar_id"
+          ],
+          "referenced_columns": [
+            "facility_id",
+            "id"
+          ]
+        },
+        {
+          "name": "calendar_cutover_skips_cutover_fkey",
+          "type": "FOREIGN KEY",
+          "def": "FOREIGN KEY (facility_id, cutover_id) REFERENCES calendar_cutovers(facility_id, id) ON DELETE CASCADE",
+          "table": "public.calendar_cutover_skips",
+          "referenced_table": "public.calendar_cutovers",
+          "columns": [
+            "facility_id",
+            "cutover_id"
+          ],
+          "referenced_columns": [
+            "facility_id",
+            "id"
+          ]
+        },
+        {
+          "name": "calendar_cutover_skips_pkey",
+          "type": "PRIMARY KEY",
+          "def": "PRIMARY KEY (cutover_id, external_calendar_id, external_event_id)",
+          "table": "public.calendar_cutover_skips",
+          "referenced_table": "",
+          "columns": [
+            "cutover_id",
+            "external_calendar_id",
+            "external_event_id"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "public.calendar_event_records",
+      "type": "BASE TABLE",
+      "comment": "google_primary の事業所で、予定の API が Google カレンダーに書いた予定の、訪問の情報と書き込みの保留の版（ADR-0029）。通常の予定も保留の版を持つために行を作る",
+      "columns": [
+        {
+          "name": "schedule_id",
+          "type": "text",
+          "nullable": false,
+          "comment": "buddy の予定の ID。画面が作成のリクエストに付ける。Google の予定の ID はこの ID から決める"
+        },
+        {
+          "name": "facility_id",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "external_calendar_id",
+          "type": "text",
+          "nullable": false,
+          "comment": "予定を書いた、結び付けたカレンダー"
+        },
+        {
+          "name": "external_event_id",
+          "type": "varchar(1024)",
+          "nullable": false,
+          "comment": "Google の予定の ID"
+        },
+        {
+          "name": "visit_info_id",
+          "type": "text",
+          "nullable": true,
+          "comment": "Google が受けた版の訪問の情報。通常の予定と、まだ版を確定していない行は NULL"
+        },
+        {
+          "name": "version",
+          "type": "integer",
+          "nullable": false,
+          "default": "0",
+          "comment": "Google が受けたと分かった最後の版。0 は、まだ受けたと分かっていない。0 の行は保留の版を持つ"
+        },
+        {
+          "name": "pending_version",
+          "type": "integer",
+          "nullable": true,
+          "comment": "書き込みの保留の版。Google の予定の extendedProperties.private の buddyVersion に置く。保留が無ければ NULL で、保留の状態、訪問の情報、書く期限も NULL"
+        },
+        {
+          "name": "pending_state",
+          "type": "text",
+          "nullable": true,
+          "comment": "writing（書いている途中）、unknown（Google が受けたかが分からない）"
+        },
+        {
+          "name": "pending_visit_info_id",
+          "type": "text",
+          "nullable": true,
+          "comment": "保留の版の訪問の情報。版を確定すると visit_info_id に移す"
+        },
+        {
+          "name": "pending_deadline",
+          "type": "timestamp with time zone",
+          "nullable": true,
+          "comment": "書く期限。保留の版を書いた時刻に、Google を呼ぶ時間の上限と余裕を足した時刻"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": false,
+          "default": "now()"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "nullable": false,
+          "default": "now()"
+        },
+        {
+          "name": "pending_locked_until",
+          "type": "timestamp with time zone",
+          "nullable": true,
+          "comment": "同期が保留の版を読み戻す間、ほかの Worker に記録を渡さない期限。読み戻せなかった記録は、この時刻の後に取り直す。保留の版を解いても NULL に戻さない"
+        },
+        {
+          "name": "pending_external_calendar_id",
+          "type": "text",
+          "nullable": true,
+          "comment": "保留の版が予定を別のカレンダーに移す書き込みのときの、移す先のカレンダー。移さない書き込みと、保留が無い行は NULL。版を確定すると external_calendar_id に移す"
+        },
+        {
+          "name": "pending_external_event_id",
+          "type": "varchar(1024)",
+          "nullable": true,
+          "comment": "移す先のカレンダーに作る Google の予定の ID。pending_external_calendar_id と一緒に NULL になる"
+        }
+      ],
+      "indexes": [
+        {
+          "name": "calendar_event_records_pkey",
+          "def": "CREATE UNIQUE INDEX calendar_event_records_pkey ON public.calendar_event_records USING btree (schedule_id)",
+          "table": "public.calendar_event_records",
+          "columns": [
+            "schedule_id"
+          ]
+        },
+        {
+          "name": "calendar_event_records_event_key",
+          "def": "CREATE UNIQUE INDEX calendar_event_records_event_key ON public.calendar_event_records USING btree (external_calendar_id, external_event_id)",
+          "table": "public.calendar_event_records",
+          "columns": [
+            "external_calendar_id",
+            "external_event_id"
+          ]
+        },
+        {
+          "name": "calendar_event_records_calendar_idx",
+          "def": "CREATE INDEX calendar_event_records_calendar_idx ON public.calendar_event_records USING btree (facility_id, external_calendar_id)",
+          "table": "public.calendar_event_records",
+          "columns": [
+            "facility_id",
+            "external_calendar_id"
+          ]
+        },
+        {
+          "name": "calendar_event_records_visit_info_idx",
+          "def": "CREATE INDEX calendar_event_records_visit_info_idx ON public.calendar_event_records USING btree (visit_info_id) WHERE (visit_info_id IS NOT NULL)",
+          "table": "public.calendar_event_records",
+          "columns": [
+            "visit_info_id"
+          ]
+        },
+        {
+          "name": "calendar_event_records_pending_visit_info_idx",
+          "def": "CREATE INDEX calendar_event_records_pending_visit_info_idx ON public.calendar_event_records USING btree (pending_visit_info_id) WHERE (pending_visit_info_id IS NOT NULL)",
+          "table": "public.calendar_event_records",
+          "columns": [
+            "pending_visit_info_id"
+          ]
+        },
+        {
+          "name": "calendar_event_records_pending_deadline_idx",
+          "def": "CREATE INDEX calendar_event_records_pending_deadline_idx ON public.calendar_event_records USING btree (pending_deadline) WHERE (pending_version IS NOT NULL)",
+          "table": "public.calendar_event_records",
+          "columns": [
+            "pending_deadline"
+          ]
+        }
+      ],
+      "constraints": [
+        {
+          "name": "calendar_event_records_created_at_not_null",
+          "type": "n",
+          "def": "NOT NULL created_at",
+          "table": "public.calendar_event_records",
+          "referenced_table": "",
+          "columns": [
+            "created_at"
+          ]
+        },
+        {
+          "name": "calendar_event_records_external_calendar_id_not_null",
+          "type": "n",
+          "def": "NOT NULL external_calendar_id",
+          "table": "public.calendar_event_records",
+          "referenced_table": "",
+          "columns": [
+            "external_calendar_id"
+          ]
+        },
+        {
+          "name": "calendar_event_records_external_event_id_not_null",
+          "type": "n",
+          "def": "NOT NULL external_event_id",
+          "table": "public.calendar_event_records",
+          "referenced_table": "",
+          "columns": [
+            "external_event_id"
+          ]
+        },
+        {
+          "name": "calendar_event_records_facility_id_not_null",
+          "type": "n",
+          "def": "NOT NULL facility_id",
+          "table": "public.calendar_event_records",
+          "referenced_table": "",
+          "columns": [
+            "facility_id"
+          ]
+        },
+        {
+          "name": "calendar_event_records_pending_check",
+          "type": "CHECK",
+          "def": "CHECK ((((pending_version IS NULL) AND (pending_state IS NULL) AND (pending_visit_info_id IS NULL) AND (pending_deadline IS NULL)) OR ((pending_version IS NOT NULL) AND (pending_state IS NOT NULL) AND (pending_deadline IS NOT NULL))))",
+          "table": "public.calendar_event_records",
+          "referenced_table": "",
+          "columns": [
+            "pending_version",
+            "pending_state",
+            "pending_visit_info_id",
+            "pending_deadline"
+          ]
+        },
+        {
+          "name": "calendar_event_records_pending_move_check",
+          "type": "CHECK",
+          "def": "CHECK ((((pending_external_calendar_id IS NULL) AND (pending_external_event_id IS NULL)) OR ((pending_external_calendar_id IS NOT NULL) AND (pending_external_event_id IS NOT NULL) AND (pending_version IS NOT NULL))))",
+          "table": "public.calendar_event_records",
+          "referenced_table": "",
+          "columns": [
+            "pending_external_calendar_id",
+            "pending_external_event_id",
+            "pending_version"
+          ]
+        },
+        {
+          "name": "calendar_event_records_pending_state_check",
+          "type": "CHECK",
+          "def": "CHECK ((pending_state = ANY (ARRAY['writing'::text, 'unknown'::text])))",
+          "table": "public.calendar_event_records",
+          "referenced_table": "",
+          "columns": [
+            "pending_state"
+          ]
+        },
+        {
+          "name": "calendar_event_records_pending_version_check",
+          "type": "CHECK",
+          "def": "CHECK ((pending_version \u003e version))",
+          "table": "public.calendar_event_records",
+          "referenced_table": "",
+          "columns": [
+            "pending_version",
+            "version"
+          ]
+        },
+        {
+          "name": "calendar_event_records_schedule_id_check",
+          "type": "CHECK",
+          "def": "CHECK ((schedule_id ~ '^[0-7][0-9A-HJKMNP-TV-Z]{25}$'::text))",
+          "table": "public.calendar_event_records",
+          "referenced_table": "",
+          "columns": [
+            "schedule_id"
+          ]
+        },
+        {
+          "name": "calendar_event_records_schedule_id_not_null",
+          "type": "n",
+          "def": "NOT NULL schedule_id",
+          "table": "public.calendar_event_records",
+          "referenced_table": "",
+          "columns": [
+            "schedule_id"
+          ]
+        },
+        {
+          "name": "calendar_event_records_unconfirmed_check",
+          "type": "CHECK",
+          "def": "CHECK (((version \u003e 0) OR ((pending_version IS NOT NULL) AND (visit_info_id IS NULL))))",
+          "table": "public.calendar_event_records",
+          "referenced_table": "",
+          "columns": [
+            "version",
+            "pending_version",
+            "visit_info_id"
+          ]
+        },
+        {
+          "name": "calendar_event_records_updated_at_not_null",
+          "type": "n",
+          "def": "NOT NULL updated_at",
+          "table": "public.calendar_event_records",
+          "referenced_table": "",
+          "columns": [
+            "updated_at"
+          ]
+        },
+        {
+          "name": "calendar_event_records_version_check",
+          "type": "CHECK",
+          "def": "CHECK ((version \u003e= 0))",
+          "table": "public.calendar_event_records",
+          "referenced_table": "",
+          "columns": [
+            "version"
+          ]
+        },
+        {
+          "name": "calendar_event_records_version_not_null",
+          "type": "n",
+          "def": "NOT NULL version",
+          "table": "public.calendar_event_records",
+          "referenced_table": "",
+          "columns": [
+            "version"
+          ]
+        },
+        {
+          "name": "calendar_event_records_facility_fkey",
+          "type": "FOREIGN KEY",
+          "def": "FOREIGN KEY (facility_id) REFERENCES facilities(id)",
+          "table": "public.calendar_event_records",
+          "referenced_table": "public.facilities",
+          "columns": [
+            "facility_id"
+          ],
+          "referenced_columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "calendar_event_records_pending_visit_info_fkey",
+          "type": "FOREIGN KEY",
+          "def": "FOREIGN KEY (facility_id, pending_visit_info_id) REFERENCES visit_infos(facility_id, id)",
+          "table": "public.calendar_event_records",
+          "referenced_table": "public.visit_infos",
+          "columns": [
+            "facility_id",
+            "pending_visit_info_id"
+          ],
+          "referenced_columns": [
+            "facility_id",
+            "id"
+          ]
+        },
+        {
+          "name": "calendar_event_records_visit_info_fkey",
+          "type": "FOREIGN KEY",
+          "def": "FOREIGN KEY (facility_id, visit_info_id) REFERENCES visit_infos(facility_id, id)",
+          "table": "public.calendar_event_records",
+          "referenced_table": "public.visit_infos",
+          "columns": [
+            "facility_id",
+            "visit_info_id"
+          ],
+          "referenced_columns": [
+            "facility_id",
+            "id"
+          ]
+        },
+        {
+          "name": "calendar_event_records_calendar_fkey",
+          "type": "FOREIGN KEY",
+          "def": "FOREIGN KEY (facility_id, external_calendar_id) REFERENCES external_calendars(facility_id, id) ON DELETE CASCADE",
+          "table": "public.calendar_event_records",
+          "referenced_table": "public.external_calendars",
+          "columns": [
+            "facility_id",
+            "external_calendar_id"
+          ],
+          "referenced_columns": [
+            "facility_id",
+            "id"
+          ]
+        },
+        {
+          "name": "calendar_event_records_pending_calendar_fkey",
+          "type": "FOREIGN KEY",
+          "def": "FOREIGN KEY (facility_id, pending_external_calendar_id) REFERENCES external_calendars(facility_id, id) ON DELETE CASCADE",
+          "table": "public.calendar_event_records",
+          "referenced_table": "public.external_calendars",
+          "columns": [
+            "facility_id",
+            "pending_external_calendar_id"
+          ],
+          "referenced_columns": [
+            "facility_id",
+            "id"
+          ]
+        },
+        {
+          "name": "calendar_event_records_pkey",
+          "type": "PRIMARY KEY",
+          "def": "PRIMARY KEY (schedule_id)",
+          "table": "public.calendar_event_records",
+          "referenced_table": "",
+          "columns": [
+            "schedule_id"
+          ]
+        },
+        {
+          "name": "calendar_event_records_event_key",
+          "type": "UNIQUE",
+          "def": "UNIQUE (external_calendar_id, external_event_id)",
+          "table": "public.calendar_event_records",
+          "referenced_table": "",
+          "columns": [
+            "external_calendar_id",
+            "external_event_id"
+          ]
+        }
+      ],
+      "triggers": [
+        {
+          "name": "calendar_event_records_set_updated_at",
+          "def": "CREATE TRIGGER calendar_event_records_set_updated_at BEFORE UPDATE ON public.calendar_event_records FOR EACH ROW EXECUTE FUNCTION set_updated_at()"
+        }
+      ]
+    },
+    {
+      "name": "public.schedule_deletions",
+      "type": "BASE TABLE",
+      "comment": "誤って入れた予定を削除した監査の記録（ADR-0040）。画面に出さない。消した時点の内容（訪問の情報と利用者）は持たない",
+      "columns": [
+        {
+          "name": "id",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "facility_id",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "schedule_id",
+          "type": "text",
+          "nullable": true,
+          "comment": "削除した単発の予定の ID。回の削除では NULL"
+        },
+        {
+          "name": "recurring_schedule_id",
+          "type": "text",
+          "nullable": true,
+          "comment": "回を削除した繰り返しの予定。単発の予定の削除では NULL"
+        },
+        {
+          "name": "date",
+          "type": "date",
+          "nullable": false,
+          "comment": "単発の予定の開始の日か、削除した回の日"
+        },
+        {
+          "name": "staff_id",
+          "type": "text",
+          "nullable": false,
+          "comment": "削除した予定の職員"
+        },
+        {
+          "name": "deleted_by",
+          "type": "text",
+          "nullable": false,
+          "comment": "削除した職員"
+        },
+        {
+          "name": "deleted_at",
+          "type": "timestamp with time zone",
+          "nullable": false,
+          "default": "now()",
+          "comment": "削除した時刻"
+        }
+      ],
+      "indexes": [
+        {
+          "name": "schedule_deletions_pkey",
+          "def": "CREATE UNIQUE INDEX schedule_deletions_pkey ON public.schedule_deletions USING btree (id)",
+          "table": "public.schedule_deletions",
+          "columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "schedule_deletions_schedule_key",
+          "def": "CREATE UNIQUE INDEX schedule_deletions_schedule_key ON public.schedule_deletions USING btree (facility_id, schedule_id)",
+          "table": "public.schedule_deletions",
+          "columns": [
+            "facility_id",
+            "schedule_id"
+          ]
+        },
+        {
+          "name": "schedule_deletions_recurring_schedule_idx",
+          "def": "CREATE INDEX schedule_deletions_recurring_schedule_idx ON public.schedule_deletions USING btree (facility_id, recurring_schedule_id, date) WHERE (recurring_schedule_id IS NOT NULL)",
+          "table": "public.schedule_deletions",
+          "columns": [
+            "facility_id",
+            "recurring_schedule_id",
+            "date"
+          ]
+        },
+        {
+          "name": "schedule_deletions_staff_idx",
+          "def": "CREATE INDEX schedule_deletions_staff_idx ON public.schedule_deletions USING btree (facility_id, staff_id)",
+          "table": "public.schedule_deletions",
+          "columns": [
+            "facility_id",
+            "staff_id"
+          ]
+        },
+        {
+          "name": "schedule_deletions_deleted_by_idx",
+          "def": "CREATE INDEX schedule_deletions_deleted_by_idx ON public.schedule_deletions USING btree (facility_id, deleted_by)",
+          "table": "public.schedule_deletions",
+          "columns": [
+            "facility_id",
+            "deleted_by"
+          ]
+        }
+      ],
+      "constraints": [
+        {
+          "name": "schedule_deletions_date_not_null",
+          "type": "n",
+          "def": "NOT NULL date",
+          "table": "public.schedule_deletions",
+          "referenced_table": "",
+          "columns": [
+            "date"
+          ]
+        },
+        {
+          "name": "schedule_deletions_deleted_at_not_null",
+          "type": "n",
+          "def": "NOT NULL deleted_at",
+          "table": "public.schedule_deletions",
+          "referenced_table": "",
+          "columns": [
+            "deleted_at"
+          ]
+        },
+        {
+          "name": "schedule_deletions_deleted_by_not_null",
+          "type": "n",
+          "def": "NOT NULL deleted_by",
+          "table": "public.schedule_deletions",
+          "referenced_table": "",
+          "columns": [
+            "deleted_by"
+          ]
+        },
+        {
+          "name": "schedule_deletions_facility_id_not_null",
+          "type": "n",
+          "def": "NOT NULL facility_id",
+          "table": "public.schedule_deletions",
+          "referenced_table": "",
+          "columns": [
+            "facility_id"
+          ]
+        },
+        {
+          "name": "schedule_deletions_id_check",
+          "type": "CHECK",
+          "def": "CHECK ((id ~ '^[0-7][0-9A-HJKMNP-TV-Z]{25}$'::text))",
+          "table": "public.schedule_deletions",
+          "referenced_table": "",
+          "columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "schedule_deletions_id_not_null",
+          "type": "n",
+          "def": "NOT NULL id",
+          "table": "public.schedule_deletions",
+          "referenced_table": "",
+          "columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "schedule_deletions_staff_id_not_null",
+          "type": "n",
+          "def": "NOT NULL staff_id",
+          "table": "public.schedule_deletions",
+          "referenced_table": "",
+          "columns": [
+            "staff_id"
+          ]
+        },
+        {
+          "name": "schedule_deletions_target_check",
+          "type": "CHECK",
+          "def": "CHECK ((num_nonnulls(schedule_id, recurring_schedule_id) = 1))",
+          "table": "public.schedule_deletions",
+          "referenced_table": "",
+          "columns": [
+            "schedule_id",
+            "recurring_schedule_id"
+          ]
+        },
+        {
+          "name": "schedule_deletions_facility_fkey",
+          "type": "FOREIGN KEY",
+          "def": "FOREIGN KEY (facility_id) REFERENCES facilities(id)",
+          "table": "public.schedule_deletions",
+          "referenced_table": "public.facilities",
+          "columns": [
+            "facility_id"
+          ],
+          "referenced_columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "schedule_deletions_deleted_by_fkey",
+          "type": "FOREIGN KEY",
+          "def": "FOREIGN KEY (facility_id, deleted_by) REFERENCES users(facility_id, id)",
+          "table": "public.schedule_deletions",
+          "referenced_table": "public.users",
+          "columns": [
+            "facility_id",
+            "deleted_by"
+          ],
+          "referenced_columns": [
+            "facility_id",
+            "id"
+          ]
+        },
+        {
+          "name": "schedule_deletions_staff_fkey",
+          "type": "FOREIGN KEY",
+          "def": "FOREIGN KEY (facility_id, staff_id) REFERENCES users(facility_id, id)",
+          "table": "public.schedule_deletions",
+          "referenced_table": "public.users",
+          "columns": [
+            "facility_id",
+            "staff_id"
+          ],
+          "referenced_columns": [
+            "facility_id",
+            "id"
+          ]
+        },
+        {
+          "name": "schedule_deletions_recurring_schedule_fkey",
+          "type": "FOREIGN KEY",
+          "def": "FOREIGN KEY (facility_id, recurring_schedule_id) REFERENCES recurring_schedules(facility_id, id)",
+          "table": "public.schedule_deletions",
+          "referenced_table": "public.recurring_schedules",
+          "columns": [
+            "facility_id",
+            "recurring_schedule_id"
+          ],
+          "referenced_columns": [
+            "facility_id",
+            "id"
+          ]
+        },
+        {
+          "name": "schedule_deletions_pkey",
+          "type": "PRIMARY KEY",
+          "def": "PRIMARY KEY (id)",
+          "table": "public.schedule_deletions",
+          "referenced_table": "",
+          "columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "schedule_deletions_schedule_key",
+          "type": "UNIQUE",
+          "def": "UNIQUE (facility_id, schedule_id)",
+          "table": "public.schedule_deletions",
+          "referenced_table": "",
+          "columns": [
+            "facility_id",
+            "schedule_id"
+          ]
         }
       ]
     }
@@ -6387,6 +8185,36 @@
       "def": "FOREIGN KEY (facility_id, external_calendar_id) REFERENCES external_calendars(facility_id, id) ON DELETE CASCADE"
     },
     {
+      "table": "public.external_event_links",
+      "columns": [
+        "facility_id",
+        "cutover_id"
+      ],
+      "cardinality": "zero_or_more",
+      "parent_table": "public.calendar_cutovers",
+      "parent_columns": [
+        "facility_id",
+        "id"
+      ],
+      "parent_cardinality": "exactly_one",
+      "def": "FOREIGN KEY (facility_id, cutover_id) REFERENCES calendar_cutovers(facility_id, id)"
+    },
+    {
+      "table": "public.external_event_links",
+      "columns": [
+        "facility_id",
+        "deleted_schedule_id"
+      ],
+      "cardinality": "zero_or_more",
+      "parent_table": "public.schedule_deletions",
+      "parent_columns": [
+        "facility_id",
+        "schedule_id"
+      ],
+      "parent_cardinality": "exactly_one",
+      "def": "FOREIGN KEY (facility_id, deleted_schedule_id) REFERENCES schedule_deletions(facility_id, schedule_id)"
+    },
+    {
       "table": "public.import_runs",
       "columns": [
         "facility_id",
@@ -6415,6 +8243,21 @@
       ],
       "parent_cardinality": "exactly_one",
       "def": "FOREIGN KEY (facility_id, external_calendar_id) REFERENCES external_calendars(facility_id, id) ON DELETE CASCADE"
+    },
+    {
+      "table": "public.import_runs",
+      "columns": [
+        "facility_id",
+        "cutover_id"
+      ],
+      "cardinality": "zero_or_more",
+      "parent_table": "public.calendar_cutovers",
+      "parent_columns": [
+        "facility_id",
+        "id"
+      ],
+      "parent_cardinality": "exactly_one",
+      "def": "FOREIGN KEY (facility_id, cutover_id) REFERENCES calendar_cutovers(facility_id, id)"
     },
     {
       "table": "public.calendar_exports",
@@ -6458,11 +8301,275 @@
       ],
       "parent_cardinality": "exactly_one",
       "def": "FOREIGN KEY (facility_id, schedule_id) REFERENCES schedules(facility_id, id) ON DELETE CASCADE"
+    },
+    {
+      "table": "public.calendar_exports",
+      "columns": [
+        "facility_id",
+        "deleted_schedule_id"
+      ],
+      "cardinality": "zero_or_more",
+      "parent_table": "public.schedule_deletions",
+      "parent_columns": [
+        "facility_id",
+        "schedule_id"
+      ],
+      "parent_cardinality": "exactly_one",
+      "def": "FOREIGN KEY (facility_id, deleted_schedule_id) REFERENCES schedule_deletions(facility_id, schedule_id)"
+    },
+    {
+      "table": "public.calendar_event_projections",
+      "columns": [
+        "facility_id",
+        "staff_id"
+      ],
+      "cardinality": "zero_or_more",
+      "parent_table": "public.users",
+      "parent_columns": [
+        "facility_id",
+        "id"
+      ],
+      "parent_cardinality": "exactly_one",
+      "def": "FOREIGN KEY (facility_id, staff_id) REFERENCES users(facility_id, id) ON DELETE CASCADE"
+    },
+    {
+      "table": "public.calendar_event_projections",
+      "columns": [
+        "facility_id",
+        "external_calendar_id"
+      ],
+      "cardinality": "zero_or_more",
+      "parent_table": "public.external_calendars",
+      "parent_columns": [
+        "facility_id",
+        "id"
+      ],
+      "parent_cardinality": "exactly_one",
+      "def": "FOREIGN KEY (facility_id, external_calendar_id) REFERENCES external_calendars(facility_id, id) ON DELETE CASCADE"
+    },
+    {
+      "table": "public.calendar_cutovers",
+      "columns": [
+        "facility_id"
+      ],
+      "cardinality": "zero_or_more",
+      "parent_table": "public.facilities",
+      "parent_columns": [
+        "id"
+      ],
+      "parent_cardinality": "exactly_one",
+      "def": "FOREIGN KEY (facility_id) REFERENCES facilities(id)"
+    },
+    {
+      "table": "public.calendar_cutovers",
+      "columns": [
+        "facility_id",
+        "started_by"
+      ],
+      "cardinality": "zero_or_more",
+      "parent_table": "public.users",
+      "parent_columns": [
+        "facility_id",
+        "id"
+      ],
+      "parent_cardinality": "exactly_one",
+      "def": "FOREIGN KEY (facility_id, started_by) REFERENCES users(facility_id, id)"
+    },
+    {
+      "table": "public.calendar_cutover_skips",
+      "columns": [
+        "facility_id",
+        "external_calendar_id"
+      ],
+      "cardinality": "zero_or_more",
+      "parent_table": "public.external_calendars",
+      "parent_columns": [
+        "facility_id",
+        "id"
+      ],
+      "parent_cardinality": "exactly_one",
+      "def": "FOREIGN KEY (facility_id, external_calendar_id) REFERENCES external_calendars(facility_id, id) ON DELETE CASCADE"
+    },
+    {
+      "table": "public.calendar_cutover_skips",
+      "columns": [
+        "facility_id",
+        "cutover_id"
+      ],
+      "cardinality": "zero_or_more",
+      "parent_table": "public.calendar_cutovers",
+      "parent_columns": [
+        "facility_id",
+        "id"
+      ],
+      "parent_cardinality": "exactly_one",
+      "def": "FOREIGN KEY (facility_id, cutover_id) REFERENCES calendar_cutovers(facility_id, id) ON DELETE CASCADE"
+    },
+    {
+      "table": "public.calendar_event_records",
+      "columns": [
+        "facility_id"
+      ],
+      "cardinality": "zero_or_more",
+      "parent_table": "public.facilities",
+      "parent_columns": [
+        "id"
+      ],
+      "parent_cardinality": "exactly_one",
+      "def": "FOREIGN KEY (facility_id) REFERENCES facilities(id)"
+    },
+    {
+      "table": "public.calendar_event_records",
+      "columns": [
+        "facility_id",
+        "pending_visit_info_id"
+      ],
+      "cardinality": "zero_or_more",
+      "parent_table": "public.visit_infos",
+      "parent_columns": [
+        "facility_id",
+        "id"
+      ],
+      "parent_cardinality": "exactly_one",
+      "def": "FOREIGN KEY (facility_id, pending_visit_info_id) REFERENCES visit_infos(facility_id, id)"
+    },
+    {
+      "table": "public.calendar_event_records",
+      "columns": [
+        "facility_id",
+        "visit_info_id"
+      ],
+      "cardinality": "zero_or_more",
+      "parent_table": "public.visit_infos",
+      "parent_columns": [
+        "facility_id",
+        "id"
+      ],
+      "parent_cardinality": "exactly_one",
+      "def": "FOREIGN KEY (facility_id, visit_info_id) REFERENCES visit_infos(facility_id, id)"
+    },
+    {
+      "table": "public.calendar_event_records",
+      "columns": [
+        "facility_id",
+        "external_calendar_id"
+      ],
+      "cardinality": "zero_or_more",
+      "parent_table": "public.external_calendars",
+      "parent_columns": [
+        "facility_id",
+        "id"
+      ],
+      "parent_cardinality": "exactly_one",
+      "def": "FOREIGN KEY (facility_id, external_calendar_id) REFERENCES external_calendars(facility_id, id) ON DELETE CASCADE"
+    },
+    {
+      "table": "public.calendar_event_records",
+      "columns": [
+        "facility_id",
+        "pending_external_calendar_id"
+      ],
+      "cardinality": "zero_or_more",
+      "parent_table": "public.external_calendars",
+      "parent_columns": [
+        "facility_id",
+        "id"
+      ],
+      "parent_cardinality": "exactly_one",
+      "def": "FOREIGN KEY (facility_id, pending_external_calendar_id) REFERENCES external_calendars(facility_id, id) ON DELETE CASCADE"
+    },
+    {
+      "table": "public.schedule_deletions",
+      "columns": [
+        "facility_id"
+      ],
+      "cardinality": "zero_or_more",
+      "parent_table": "public.facilities",
+      "parent_columns": [
+        "id"
+      ],
+      "parent_cardinality": "exactly_one",
+      "def": "FOREIGN KEY (facility_id) REFERENCES facilities(id)"
+    },
+    {
+      "table": "public.schedule_deletions",
+      "columns": [
+        "facility_id",
+        "deleted_by"
+      ],
+      "cardinality": "zero_or_more",
+      "parent_table": "public.users",
+      "parent_columns": [
+        "facility_id",
+        "id"
+      ],
+      "parent_cardinality": "exactly_one",
+      "def": "FOREIGN KEY (facility_id, deleted_by) REFERENCES users(facility_id, id)"
+    },
+    {
+      "table": "public.schedule_deletions",
+      "columns": [
+        "facility_id",
+        "staff_id"
+      ],
+      "cardinality": "zero_or_more",
+      "parent_table": "public.users",
+      "parent_columns": [
+        "facility_id",
+        "id"
+      ],
+      "parent_cardinality": "exactly_one",
+      "def": "FOREIGN KEY (facility_id, staff_id) REFERENCES users(facility_id, id)"
+    },
+    {
+      "table": "public.schedule_deletions",
+      "columns": [
+        "facility_id",
+        "recurring_schedule_id"
+      ],
+      "cardinality": "zero_or_more",
+      "parent_table": "public.recurring_schedules",
+      "parent_columns": [
+        "facility_id",
+        "id"
+      ],
+      "parent_cardinality": "exactly_one",
+      "def": "FOREIGN KEY (facility_id, recurring_schedule_id) REFERENCES recurring_schedules(facility_id, id)"
     }
   ],
   "functions": [
     {
       "name": "public.set_updated_at",
+      "return_type": "trigger",
+      "arguments": "",
+      "type": "FUNCTION"
+    },
+    {
+      "name": "public.projected_schedule_id",
+      "return_type": "text",
+      "arguments": "external_calendar_id text, external_event_id text",
+      "type": "FUNCTION"
+    },
+    {
+      "name": "public.detached_schedule_id",
+      "return_type": "text",
+      "arguments": "external_calendar_id text, external_event_id text",
+      "type": "FUNCTION"
+    },
+    {
+      "name": "public.occurrence_schedule_id",
+      "return_type": "text",
+      "arguments": "external_calendar_id text, parent_event_id text, original_start_at timestamp with time zone, original_start_date date",
+      "type": "FUNCTION"
+    },
+    {
+      "name": "public.detached_occurrence_schedule_id",
+      "return_type": "text",
+      "arguments": "external_calendar_id text, parent_event_id text, original_start_at timestamp with time zone, original_start_date date",
+      "type": "FUNCTION"
+    },
+    {
+      "name": "public.recurring_schedules_clear_stale_weekly_days",
       "return_type": "trigger",
       "arguments": "",
       "type": "FUNCTION"
@@ -6486,7 +8593,7 @@
     {
       "id": "organization",
       "name": "事業所と組織",
-      "desc": "事業所と、その中の部署、チーム、役職、職員",
+      "desc": "事業所と、その中の部署、チーム、役職、職員。事業所は予定の正本のモードを持つ",
       "tables": [
         "public.facilities",
         "public.departments",
@@ -6523,11 +8630,12 @@
     {
       "id": "schedules",
       "name": "予定と訪問",
-      "desc": "予定と、訪問のときの訪問の情報と区分、予定の取り消し",
+      "desc": "予定と、訪問のときの訪問の情報と区分、予定の取り消し、誤って入れた予定の削除の監査の記録",
       "tables": [
         "public.schedules",
         "public.schedule_types",
         "public.schedule_cancels",
+        "public.schedule_deletions",
         "public.visit_infos",
         "public.visit_categories",
         "public.visit_info_visit_categories",
@@ -6558,16 +8666,23 @@
     {
       "id": "calendar-sync",
       "name": "外部のカレンダーの取り込みと書き出し",
-      "desc": "職員の外部のカレンダーと同期の状態、外部の予定と予定の対応、取り込みの記録、書き出しの待ち",
+      "desc": "職員の外部のカレンダーと同期の状態、外部の予定と予定の対応、取り込みの記録、書き出しの待ち、Google カレンダーの予定の写し（Projection）。書き出しは、予定の正本のモードが buddy_primary の事業所に限る。同期は google_primary の事業所のカレンダーだけを読み、予定の写しに書く。google_primary の事業所で buddy から Google カレンダーに書いた予定は、訪問の情報と書き込みの保留の版を記録に持つ。切り替えは、google_primary の事業所の予定を取り込み、完了で事業所を buddy_primary にする",
       "tables": [
         "public.external_calendars",
         "public.calendar_sync_states",
+        "public.calendar_event_projections",
+        "public.calendar_event_records",
+        "public.visit_infos",
         "public.external_event_links",
         "public.import_runs",
+        "public.calendar_cutovers",
+        "public.calendar_cutover_skips",
         "public.calendar_exports",
+        "public.schedule_deletions",
         "public.schedules",
         "public.recurring_schedules",
-        "public.users"
+        "public.users",
+        "public.facilities"
       ]
     }
   ]

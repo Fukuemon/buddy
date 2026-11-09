@@ -27,9 +27,11 @@ describe.each(fields)('$name', ({ label, stories }) => {
     render(<stories.WithError />)
     const input = screen.getByLabelText(label)
     expect(input).toHaveAttribute('aria-invalid', 'true')
-    const message = screen.getByRole('alert')
-    expect(input.getAttribute('aria-describedby')).toBe(message.id)
-    expect(input).toHaveAccessibleDescription(message.textContent ?? '')
+    const message = document.getElementById(input.getAttribute('aria-describedby') ?? '')
+    expect(message).not.toBeNull()
+    expect(input).toHaveAccessibleDescription(message?.textContent ?? '')
+    // 誤りの文は割り込みで読み上げない（packages/ui/design/components.md の FormField の規則）
+    expect(screen.queryByRole('alert')).toBeNull()
   })
 
   it('Tab でフォーカスが移り、押せる高さが 44px 以上ある', async () => {

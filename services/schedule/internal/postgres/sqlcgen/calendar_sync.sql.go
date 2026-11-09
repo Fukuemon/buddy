@@ -10,6 +10,30 @@ import (
 	"time"
 )
 
+const calendarSyncBacklog = `-- name: CalendarSyncBacklog :one
+SELECT count(*) FILTER (WHERE s.next_sync_at <= now())::int AS overdue_count,
+       COALESCE(EXTRACT(EPOCH FROM now() - min(COALESCE(s.last_synced_at, s.created_at))), 0)::float8 AS oldest_success_age_seconds
+FROM calendar_sync_states s
+JOIN external_calendars c ON c.id = s.external_calendar_id
+JOIN facilities f ON f.id = c.facility_id
+WHERE c.disabled_at IS NULL AND f.source_mode = ANY($1::text[])
+`
+
+type CalendarSyncBacklogRow struct {
+	OverdueCount            int32
+	OldestSuccessAgeSeconds float64
+}
+
+// 外していないカレンダーのうち、事業所の正本のモードが modes にあるカレンダーの、読む時刻を過ぎたものの数と、
+// 最も古い最後の成功からの秒数を返す。
+// 1 回も成功していないカレンダーは、同期の状態の行を足した時刻から数える。カレンダーが無ければ秒数は 0 である。
+func (q *Queries) CalendarSyncBacklog(ctx context.Context, modes []string) (CalendarSyncBacklogRow, error) {
+	row := q.db.QueryRow(ctx, calendarSyncBacklog, modes)
+	var i CalendarSyncBacklogRow
+	err := row.Scan(&i.OverdueCount, &i.OldestSuccessAgeSeconds)
+	return i, err
+}
+
 const claimCalendarSyncs = `-- name: ClaimCalendarSyncs :many
 UPDATE calendar_sync_states s
 SET locked_until = now() + make_interval(secs => $1::float8)
@@ -17,9 +41,10 @@ FROM external_calendars c
 WHERE c.id = s.external_calendar_id AND s.external_calendar_id IN (
     SELECT s2.external_calendar_id FROM calendar_sync_states s2
     JOIN external_calendars c2 ON c2.id = s2.external_calendar_id
-    WHERE c2.disabled_at IS NULL AND s2.next_sync_at <= now() AND (s2.locked_until IS NULL OR s2.locked_until <= now())
+    JOIN facilities f ON f.id = c2.facility_id
+    WHERE c2.disabled_at IS NULL AND f.source_mode = ANY($2::text[]) AND s2.next_sync_at <= now() AND (s2.locked_until IS NULL OR s2.locked_until <= now())
     ORDER BY s2.next_sync_at, s2.external_calendar_id
-    LIMIT $2
+    LIMIT $3
     FOR UPDATE OF s2 SKIP LOCKED
 )
 RETURNING s.external_calendar_id AS id, s.sync_token, s.last_status, s.last_error, s.locked_until,
@@ -28,6 +53,7 @@ RETURNING s.external_calendar_id AS id, s.sync_token, s.last_status, s.last_erro
 
 type ClaimCalendarSyncsParams struct {
 	LeaseSeconds float64
+	Modes        []string
 	MaxCount     int32
 }
 
@@ -44,8 +70,9 @@ type ClaimCalendarSyncsRow struct {
 }
 
 // 複数の処理が同時に取っても同じカレンダーを渡さないよう、行をロックできたものだけを取る。外したカレンダーは取らない。
+// 事業所の正本のモードが modes に無いカレンダーは取らない（ADR-0029）。
 func (q *Queries) ClaimCalendarSyncs(ctx context.Context, arg ClaimCalendarSyncsParams) ([]ClaimCalendarSyncsRow, error) {
-	rows, err := q.db.Query(ctx, claimCalendarSyncs, arg.LeaseSeconds, arg.MaxCount)
+	rows, err := q.db.Query(ctx, claimCalendarSyncs, arg.LeaseSeconds, arg.Modes, arg.MaxCount)
 	if err != nil {
 		return nil, err
 	}
@@ -90,15 +117,16 @@ func (q *Queries) EnsureCalendarSyncStates(ctx context.Context) error {
 const finishCalendarSync = `-- name: FinishCalendarSync :execrows
 UPDATE calendar_sync_states
 SET sync_token = $1, last_status = $2, last_error = $3,
-    last_synced_at = CASE WHEN $2::text = 'succeeded' THEN now() ELSE last_synced_at END,
-    next_sync_at = now() + make_interval(secs => $4::float8), locked_until = NULL
-WHERE external_calendar_id = $5 AND locked_until = $6
+    last_synced_at = CASE WHEN $4::bool THEN now() ELSE last_synced_at END,
+    next_sync_at = now() + make_interval(secs => $5::float8), locked_until = NULL
+WHERE external_calendar_id = $6 AND locked_until = $7
 `
 
 type FinishCalendarSyncParams struct {
 	SyncToken          *string
 	LastStatus         string
 	LastError          *string
+	Synced             bool
 	AfterSeconds       float64
 	ExternalCalendarID string
 	LockedUntil        *time.Time
@@ -110,6 +138,7 @@ func (q *Queries) FinishCalendarSync(ctx context.Context, arg FinishCalendarSync
 		arg.SyncToken,
 		arg.LastStatus,
 		arg.LastError,
+		arg.Synced,
 		arg.AfterSeconds,
 		arg.ExternalCalendarID,
 		arg.LockedUntil,
@@ -118,32 +147,4 @@ func (q *Queries) FinishCalendarSync(ctx context.Context, arg FinishCalendarSync
 		return 0, err
 	}
 	return result.RowsAffected(), nil
-}
-
-const getExternalEventLinkByEvent = `-- name: GetExternalEventLinkByEvent :one
-SELECT id, facility_id, external_calendar_id, external_event_id, recurring_event_id, etag, schedule_id, recurring_schedule_id, created_at, updated_at, synced_version FROM external_event_links WHERE external_calendar_id = $1 AND external_event_id = $2
-`
-
-type GetExternalEventLinkByEventParams struct {
-	ExternalCalendarID string
-	ExternalEventID    string
-}
-
-func (q *Queries) GetExternalEventLinkByEvent(ctx context.Context, arg GetExternalEventLinkByEventParams) (ExternalEventLink, error) {
-	row := q.db.QueryRow(ctx, getExternalEventLinkByEvent, arg.ExternalCalendarID, arg.ExternalEventID)
-	var i ExternalEventLink
-	err := row.Scan(
-		&i.ID,
-		&i.FacilityID,
-		&i.ExternalCalendarID,
-		&i.ExternalEventID,
-		&i.RecurringEventID,
-		&i.Etag,
-		&i.ScheduleID,
-		&i.RecurringScheduleID,
-		&i.CreatedAt,
-		&i.UpdatedAt,
-		&i.SyncedVersion,
-	)
-	return i, err
 }

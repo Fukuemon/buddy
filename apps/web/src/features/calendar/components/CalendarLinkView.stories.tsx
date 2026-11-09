@@ -23,13 +23,24 @@ type Story = StoryObj<typeof meta>
 
 export const List: Story = {}
 
+/** どの職員も結び付けていない事業所。共有の手順を開いた状態で始める。 */
+export const NoLinks: Story = {
+  args: {
+    state: {
+      status: 'ready',
+      rows: storyLinkRows.map(({ staff }) => ({ staff })),
+      serviceAccount: storyServiceAccount,
+    },
+  },
+}
+
 export const Loading: Story = { args: { state: { status: 'loading' } } }
 
 export const LoadError: Story = {
   args: { state: { status: 'error', message: LINK_LOAD_ERROR_MESSAGE } },
 }
 
-/** サービスアカウントが設定されていない。結び付けるを押せない。 */
+/** 事業所の Google カレンダーの設定が無い。結び付けるを押せない。 */
 export const NotConfigured: Story = {
   args: { state: { status: 'ready', rows: storyLinkRows, serviceAccount: null } },
 }

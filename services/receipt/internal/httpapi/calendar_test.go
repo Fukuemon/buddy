@@ -12,7 +12,6 @@ import (
 
 	"google.golang.org/api/calendar/v3"
 
-	"github.com/Fukuemon/buddy/services/receipt/internal/check"
 	"github.com/Fukuemon/buddy/services/receipt/internal/gcal"
 	"github.com/Fukuemon/buddy/services/receipt/internal/gcal/gcaltest"
 	"github.com/Fukuemon/buddy/services/receipt/internal/httpapi/openapi"
@@ -50,7 +49,7 @@ func calendarHandler(t *testing.T) http.Handler {
 		{ID: "staff-x@example.com", OrgID: "org-other"},
 	})
 	return NewHandler(slog.New(slog.NewTextHandler(io.Discard, nil)), Config{
-		MaxUploadBytes: 1 << 20, Sources: source.Selector{Calendar: reader}, Verifier: fakeVerifier{},
+		MaxUploadBytes: 1 << 20, Sources: source.Selector{Calendar: reader}, Verifier: fakeVerifier{}, Permission: fakePermission{},
 	})
 }
 
@@ -93,15 +92,15 @@ func TestChecksCalendar(t *testing.T) {
 	if rec.Code != http.StatusOK {
 		t.Fatalf("status %d body %s", rec.Code, rec.Body)
 	}
-	var rep check.Report
+	var rep openapi.Report
 	if err := json.Unmarshal(rec.Body.Bytes(), &rep); err != nil {
 		t.Fatal(err)
 	}
-	if want := (check.Summary{Mismatch: 3, ScheduleOnly: 1, VisitOnly: 1, Match: 3}); rep.Summary != want {
+	if want := (openapi.Summary{Mismatch: 3, ScheduleOnly: 1, VisitOnly: 1, Match: 3}); rep.Summary != want {
 		t.Errorf("Summary = %+v", rep.Summary)
 	}
 	csvRec := post(t, newHandler(), map[string][]byte{FieldVisits: testdata(t, "visits_utf8.csv"), FieldSchedules: testdata(t, "schedules_utf8.csv")}, "")
-	var csvRep check.Report
+	var csvRep openapi.Report
 	if err := json.Unmarshal(csvRec.Body.Bytes(), &csvRep); err != nil {
 		t.Fatal(err)
 	}
@@ -116,7 +115,7 @@ func TestChecksCalendar(t *testing.T) {
 	if !bytes.Equal(got, want) {
 		t.Errorf("同じ予定の CSV と結果の行が違う\n got %s\nwant %s", got, want)
 	}
-	if len(rep.Warnings) != 1 || rep.Warnings[0].EventID != "bad" || rep.Warnings[0].CalendarID != "staff-b@example.com" {
+	if len(rep.Warnings) != 1 || rep.Warnings[0].EventId != "bad" || rep.Warnings[0].CalendarId != "staff-b@example.com" {
 		t.Errorf("Warnings = %+v", rep.Warnings)
 	}
 	if bytes.Contains(rec.Body.Bytes(), []byte("【")) {
@@ -139,7 +138,7 @@ func TestChecksCalendarErrors(t *testing.T) {
 		Sources: source.Selector{Calendar: gcal.NewReader(
 			gcaltest.Same{Svc: gcaltest.Start(t, gcaltest.NewServer(nil))}, []gcal.Calendar{{ID: "unknown@example.com", OrgID: orgSample}},
 		)},
-		Verifier: fakeVerifier{},
+		Verifier: fakeVerifier{}, Permission: fakePermission{},
 	})
 	tests := []struct {
 		name       string

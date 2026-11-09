@@ -1,0 +1,44 @@
+import { ArgTypes, Canvas, Meta } from '@storybook/addon-docs/blocks'
+
+import { ActionMenu } from './ActionMenu'
+import * as Stories from './ActionMenu.stories'
+
+<Meta of={Stories} />
+
+# ActionMenu
+
+「…」のボタンと、押すとボタンの下に開く操作のメニュー。
+
+## 規則
+
+規則の本文は、デザインシステムの文書の次のセクションにある。
+
+- 使う場面、使わない場面、キーボードの操作: コンポーネントの文書（`packages/ui/design/components.md`）の「コンポーネントの選び方」の `ActionMenu` の行
+- 使い方の規則と Do と Don't: コンポーネントの文書の「コンポーネントごとの規則」の「`ActionMenu`」
+- 当たる原則: DESIGN.md の「画面を作るときの原則」の次の ID
+  - `TARGET-SIZE`
+  - `FOCUS-ONE`
+
+## 状態
+
+### デフォルト
+
+<Canvas of={Stories.Default} />
+
+### 開いた状態
+
+<Canvas of={Stories.Open} />
+
+### 押せない項目
+
+<Canvas of={Stories.WithDisabledItem} />
+
+### 文言のボタンで上に開く
+
+`triggerLabel` で「…」の代わりに文言のボタンを出し、`placement="top"` で上に開く例。押せない項目に `description` を渡している。
+
+<Canvas of={Stories.TextTriggerOpensUp} />
+
+## props
+
+<ArgTypes of={ActionMenu} />

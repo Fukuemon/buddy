@@ -59,13 +59,13 @@ export const useModalDialog = ({
     }
     // ::backdrop を押すと、クリックの対象は dialog 自身になる。中身は内側の div が受ける。
     // 中身から背景へドラッグしたときも click は dialog に届くので、押し始めも背景だったときだけ閉じる。
-    let pressedOnBackdrop = false
+    let isPressedOnBackdrop = false
     const handlePointerDown = (event: PointerEvent) => {
-      pressedOnBackdrop = event.target === dialog
+      isPressedOnBackdrop = event.target === dialog
     }
     const handleClick = (event: MouseEvent) => {
-      if (event.target === dialog && pressedOnBackdrop) requestClose()
-      pressedOnBackdrop = false
+      if (event.target === dialog && isPressedOnBackdrop) requestClose()
+      isPressedOnBackdrop = false
     }
     // showModal は後ろを操作できなくするが、最後の要素からの Tab はブラウザの UI へ抜けるので、先頭へ戻す。
     const handleKeyDown = (event: KeyboardEvent) => {

@@ -29,7 +29,13 @@ test.describe('カレンダーの連携と取り込みの文言', () => {
     test(`${prefix}食い違った予定の画面を開いた場合、見出しが「${expected.review}」で出ること`, async ({
       browser,
     }) => {
-      const url = storyUrl('画面-calendar-calendarreviewview--default')
+      // 理由に続く職員に頼む文は、改修前は一覧の行に、今は行を押して開く予定の確認のダイアログに出る
+      const isBefore = variant.name === 'before'
+      const url = storyUrl(
+        isBefore
+          ? '画面-calendar-calendarreviewview--default'
+          : '画面-calendar-calendarreviewcontainer--default',
+      )
       await recordPrEvidence(
         browser,
         {
@@ -45,12 +51,17 @@ test.describe('カレンダーの連携と取り込みの文言', () => {
           await page.goto(url)
           await expect(pageBody(page)).toContainText(expected.review)
           await step(
-            '食い違った予定の画面（Storybook の CalendarReviewView の Default）を開いている',
+            `食い違った予定の画面（Storybook の ${isBefore ? 'CalendarReviewView' : 'CalendarReviewContainer'} の Default）を開いている`,
           )
-          // export-2 は、Google カレンダーに書く権限が無い書き出しである
-          await expect(page.getByTestId('calendar-review-reason-export-2')).toContainText(
-            `職員に${expected.ask}てください`,
-          )
+          // export-2（予定は schedule-5）は、Google カレンダーに書く権限が無い書き出しである
+          const reason = isBefore
+            ? page.getByTestId('calendar-review-reason-export-2')
+            : page.getByTestId('calendar-review-dialog-reason')
+          if (!isBefore) {
+            await step('青木 一郎の 2026年11月2日（月） 14:00〜16:00 の行を押す')
+            await page.getByTestId('calendar-review-row-schedule-schedule-5').click()
+          }
+          await expect(reason).toContainText(`職員に${expected.ask}てください`)
           await check(
             `見出しが「${expected.review}」で、書けない予定の理由の文が「職員に${expected.ask}てください」で出る`,
           )

@@ -5,6 +5,8 @@ import (
 	"cmp"
 	"slices"
 
+	"github.com/Fukuemon/buddy/packages/go/servicecode"
+
 	"github.com/Fukuemon/buddy/services/receipt/internal/civil"
 	"github.com/Fukuemon/buddy/services/receipt/internal/match"
 	"github.com/Fukuemon/buddy/services/receipt/internal/record"
@@ -27,40 +29,77 @@ func Categories() []Category {
 	return []Category{Mismatch, ScheduleOnly, VisitOnly, Match}
 }
 
-// RequiredAddition は、整合とする加算の値である。加算①〜加算⑤のうちこの値の 1 つだけが入っているときに整合とする。
-const RequiredAddition = "通常"
+// requiredAddition は、時間帯を問わずに整合とする加算の値である。加算①〜加算⑤のうちこの値の 1 つだけが入っているときに整合とする。
+const requiredAddition = "通常"
+
+// 時間帯の加算の値。加算①〜加算⑤のうちこの値の 1 つだけが入り、予定の開始時間が timeBandOf の時間帯に入るときに整合とする。
+// AdditionLateNight は、電子カルテの実績で確認していない値で、名前は推測である。
+const (
+	AdditionEarlyMorning = "早朝"
+	AdditionNight        = "夜間"
+	AdditionLateNight    = "深夜"
+)
+
+// timeBandOf は、開始時間が入る時間帯の加算の値を返す。
+// 早朝は 6:00 以上 8:00 未満、夜間は 18:00 以上 22:00 未満、深夜は 22:00 以上か 6:00 未満である。
+// どの時間帯にも入らなければ ok は false である。
+func timeBandOf(start civil.Clock) (addition string, ok bool) {
+	const hour = 60
+	switch {
+	case start < 6*hour || start >= 22*hour:
+		return AdditionLateNight, true
+	case start < 8*hour:
+		return AdditionEarlyMorning, true
+	case start >= 18*hour:
+		return AdditionNight, true
+	}
+	return "", false
+}
+
+// isValidAdditions は、実績の加算が、予定の開始時間に対して規則に合うかを返す。
+// 「通常」か、開始時間の時間帯の加算の 1 つだけのときに合う。緊急時の訪問の加算を含むときと、2 つ以上並ぶときは合わない。
+func isValidAdditions(scheduleStart civil.Clock, additions []string) bool {
+	if len(additions) != 1 {
+		return false
+	}
+	if additions[0] == requiredAddition {
+		return true
+	}
+	band, ok := timeBandOf(scheduleStart)
+	return ok && additions[0] == band
+}
 
 // Check は、1 つの項目の判定である。
 type Check struct {
-	OK bool `json:"ok"`
+	OK bool
 }
 
 // RangeCheck は、分の値が許容範囲に入るかの判定である。
 type RangeCheck struct {
-	OK bool `json:"ok"`
+	OK bool
 	// Minutes は判定した分である。提供時間が空なら nil である。
-	Minutes *int `json:"minutes"`
+	Minutes *int
 	// Range は許容範囲である。範囲を持たないサービス内容なら nil である。
-	Range *servicerule.Range `json:"range"`
+	Range *servicecode.Range
 }
 
 // Checks は、予定と実績の対の、項目ごとの判定である。
 type Checks struct {
-	Start   Check `json:"start"`
-	Service Check `json:"service"`
+	Start   Check
+	Service Check
 	// ScheduleElapsed と VisitElapsed は、終了時間から開始時間を引いた分の判定である。
-	ScheduleElapsed  RangeCheck `json:"schedule_elapsed"`
-	VisitElapsed     RangeCheck `json:"visit_elapsed"`
-	ScheduleDuration RangeCheck `json:"schedule_duration"`
-	VisitDuration    RangeCheck `json:"visit_duration"`
-	Additions        Check      `json:"additions"`
+	ScheduleElapsed  RangeCheck
+	VisitElapsed     RangeCheck
+	ScheduleDuration RangeCheck
+	VisitDuration    RangeCheck
+	Additions        Check
 	// DurationEqual と EndEqual は、両側の値が同じかである。区分には影響せず、注記にだけ使う。
-	DurationEqual bool `json:"duration_equal"`
-	EndEqual      bool `json:"end_equal"`
+	DurationEqual bool
+	EndEqual      bool
 }
 
-// Consistent は、区分を決める項目がすべて整合するかを返す。
-func (c Checks) Consistent() bool {
+// IsConsistent は、区分を決める項目がすべて整合するかを返す。
+func (c Checks) IsConsistent() bool {
 	return c.Start.OK && c.Service.OK &&
 		c.ScheduleElapsed.OK && c.VisitElapsed.OK &&
 		c.ScheduleDuration.OK && c.VisitDuration.OK &&
@@ -69,32 +108,32 @@ func (c Checks) Consistent() bool {
 
 // Side は、結果の行の片側の値である。
 type Side struct {
-	Line     int         `json:"line"`
-	Start    civil.Clock `json:"start"`
-	End      civil.Clock `json:"end"`
-	Duration *int        `json:"duration"`
-	Service  string      `json:"service"`
+	Line     int
+	Start    civil.Clock
+	End      civil.Clock
+	Duration *int
+	Service  string
 	// Additions は実績の加算を ", " でつないだものである。予定の側では省く。
-	Additions *string `json:"additions,omitempty"`
+	Additions *string
 }
 
 // Result は、照合の結果の 1 行である。
 type Result struct {
-	Category Category   `json:"category"`
-	Date     civil.Date `json:"date"`
-	Client   string     `json:"client"`
-	Staff    string     `json:"staff"`
-	Schedule *Side      `json:"schedule"`
-	Visit    *Side      `json:"visit"`
+	Category Category
+	Date     civil.Date
+	Client   string
+	Staff    string
+	Schedule *Side
+	Visit    *Side
 	// Checks は、予定と実績の両方があるときだけ持つ。
-	Checks *Checks `json:"checks"`
+	Checks *Checks
 }
 
 // All は、対ごとに判定し、Categories の区分の順、訪問日、開始時間、利用者名、主訪問者の順に並べて返す。
 func All(pairs []match.Pair) []Result {
 	results := make([]Result, 0, len(pairs))
 	for _, p := range pairs {
-		results = append(results, Judge(p))
+		results = append(results, judgePair(p))
 	}
 	order := map[Category]int{}
 	for i, c := range Categories() {
@@ -119,8 +158,8 @@ func (r Result) start() civil.Clock {
 	return r.Visit.Start
 }
 
-// Judge は、1 つの対を判定する。p の Schedule と Visit の少なくとも一方は nil でない前提である。
-func Judge(p match.Pair) Result {
+// judgePair は、1 つの対を判定する。p の Schedule と Visit の少なくとも一方は nil でない前提である。
+func judgePair(p match.Pair) Result {
 	var key record.Key
 	if p.Schedule != nil {
 		key = p.Schedule.Key
@@ -143,14 +182,14 @@ func Judge(p match.Pair) Result {
 		c := check(*p.Schedule, *p.Visit)
 		r.Checks = &c
 		r.Category = Mismatch
-		if c.Consistent() {
+		if c.IsConsistent() {
 			r.Category = Match
 		}
 	}
 	return r
 }
 
-func side(rec record.Record, visit bool) *Side {
+func side(rec record.Record, describesVisit bool) *Side {
 	s := &Side{
 		Line:     rec.Line,
 		Start:    rec.Start,
@@ -158,7 +197,7 @@ func side(rec record.Record, visit bool) *Side {
 		Duration: rec.Duration,
 		Service:  rec.Service,
 	}
-	if visit {
+	if describesVisit {
 		a := rec.AdditionText()
 		s.Additions = &a
 	}
@@ -168,12 +207,12 @@ func side(rec record.Record, visit bool) *Side {
 func check(s, v record.Record) Checks {
 	return Checks{
 		Start:            Check{OK: s.Start == v.Start},
-		Service:          Check{OK: servicerule.ServiceMatches(s.Service, v.Service)},
+		Service:          Check{OK: servicerule.IsMatchingService(s.Service, v.Service)},
 		ScheduleElapsed:  inRange(s.Service, new(s.Elapsed())),
 		VisitElapsed:     inRange(v.Service, new(v.Elapsed())),
 		ScheduleDuration: inRange(s.Service, s.Duration),
 		VisitDuration:    inRange(v.Service, v.Duration),
-		Additions:        Check{OK: v.AdditionText() == RequiredAddition},
+		Additions:        Check{OK: isValidAdditions(s.Start, v.Additions)},
 		DurationEqual:    s.Duration != nil && v.Duration != nil && *s.Duration == *v.Duration,
 		EndEqual:         s.End == v.End,
 	}
@@ -181,7 +220,7 @@ func check(s, v record.Record) Checks {
 
 func inRange(service string, minutes *int) RangeCheck {
 	c := RangeCheck{Minutes: minutes}
-	r, ok := servicerule.Lookup(service)
+	r, ok := servicecode.Lookup(service)
 	if !ok {
 		return c
 	}

@@ -6,36 +6,40 @@
 
 ## Columns
 
-| Name       | Type                     | Default            | Nullable | Children                                                                                                                                                                                                                                                                                                                                            | Parents | Comment                                                 |
-| ---------- | ------------------------ | ------------------ | -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- | ------------------------------------------------------- |
-| id         | text                     |                    | false    | [public.departments](public.departments.md) [public.teams](public.teams.md) [public.positions](public.positions.md) [public.users](public.users.md) [public.patients](public.patients.md) [public.recurring_schedules](public.recurring_schedules.md) [public.schedules](public.schedules.md) [public.calendar_exports](public.calendar_exports.md) |         |                                                         |
-| name       | varchar(255)             |                    | false    |                                                                                                                                                                                                                                                                                                                                                     |         | 事業所名                                                |
-| org_id     | varchar(255)             |                    | true     |                                                                                                                                                                                                                                                                                                                                                     |         | ブローカーの組織の ID。結び付けるまで NULL              |
-| time_zone  | text                     | 'Asia/Tokyo'::text | false    |                                                                                                                                                                                                                                                                                                                                                     |         | 予定の日付と時刻を読む現地のタイムゾーン（IANA の名前） |
-| created_at | timestamp with time zone | now()              | false    |                                                                                                                                                                                                                                                                                                                                                     |         |                                                         |
-| updated_at | timestamp with time zone | now()              | false    |                                                                                                                                                                                                                                                                                                                                                     |         |                                                         |
+| Name        | Type                     | Default                | Nullable | Children                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                | Parents | Comment                                                                                                                                                   |
+| ----------- | ------------------------ | ---------------------- | -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| id          | text                     |                        | false    | [public.departments](public.departments.md) [public.teams](public.teams.md) [public.positions](public.positions.md) [public.users](public.users.md) [public.patients](public.patients.md) [public.recurring_schedules](public.recurring_schedules.md) [public.schedules](public.schedules.md) [public.calendar_exports](public.calendar_exports.md) [public.calendar_cutovers](public.calendar_cutovers.md) [public.calendar_event_records](public.calendar_event_records.md) [public.schedule_deletions](public.schedule_deletions.md) |         |                                                                                                                                                           |
+| name        | varchar(255)             |                        | false    |                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |         | 事業所名                                                                                                                                                  |
+| org_id      | varchar(255)             |                        | true     |                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |         | ブローカーの組織の ID。結び付けるまで NULL                                                                                                                |
+| time_zone   | text                     | 'Asia/Tokyo'::text     | false    |                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |         | 予定の日付と時刻を読む現地のタイムゾーン（IANA の名前）                                                                                                   |
+| created_at  | timestamp with time zone | now()                  | false    |                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |         |                                                                                                                                                           |
+| updated_at  | timestamp with time zone | now()                  | false    |                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |         |                                                                                                                                                           |
+| source_mode | text                     | 'google_primary'::text | false    |                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |         | 予定の正本のモード。google_primary は Google カレンダーが正本で予定の API から予定を書けない。buddy_primary は buddy が正本で Google カレンダーへ書き出す |
 
 ## Viewpoints
 
-| Name                                      | Definition                                                                             |
-| ----------------------------------------- | -------------------------------------------------------------------------------------- |
-| [事業所と組織](viewpoint-organization.md) | 事業所と、その中の部署、チーム、役職、職員                                             |
-| [利用者](viewpoint-patients.md)           | 利用者と、受けているサービスと、主に担当する職員                                       |
-| [予定と訪問](viewpoint-schedules.md)      | 予定と、訪問のときの訪問の情報と区分、予定の取り消し                                   |
-| [繰り返しの予定](viewpoint-recurring.md)  | 繰り返しの予定と規則、回にしない日。繰り返しの 1 回を置き換えた予定は schedules に入る |
+| Name                                                               | Definition                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| ------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| [事業所と組織](viewpoint-organization.md)                          | 事業所と、その中の部署、チーム、役職、職員。事業所は予定の正本のモードを持つ                                                                                                                                                                                                                                                                                                                                                                                                               |
+| [利用者](viewpoint-patients.md)                                    | 利用者と、受けているサービスと、主に担当する職員                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| [予定と訪問](viewpoint-schedules.md)                               | 予定と、訪問のときの訪問の情報と区分、予定の取り消し、誤って入れた予定の削除の監査の記録                                                                                                                                                                                                                                                                                                                                                                                                   |
+| [繰り返しの予定](viewpoint-recurring.md)                           | 繰り返しの予定と規則、回にしない日。繰り返しの 1 回を置き換えた予定は schedules に入る                                                                                                                                                                                                                                                                                                                                                                                                     |
+| [外部のカレンダーの取り込みと書き出し](viewpoint-calendar-sync.md) | 職員の外部のカレンダーと同期の状態、外部の予定と予定の対応、取り込みの記録、書き出しの待ち、Google カレンダーの予定の写し（Projection）。書き出しは、予定の正本のモードが buddy_primary の事業所に限る。同期は google_primary の事業所のカレンダーだけを読み、予定の写しに書く。google_primary の事業所で buddy から Google カレンダーに書いた予定は、訪問の情報と書き込みの保留の版を記録に持つ。切り替えは、google_primary の事業所の予定を取り込み、完了で事業所を buddy_primary にする |
 
 ## Constraints
 
-| Name                           | Type        | Definition                                           |
-| ------------------------------ | ----------- | ---------------------------------------------------- |
-| facilities_created_at_not_null | n           | NOT NULL created_at                                  |
-| facilities_id_check            | CHECK       | CHECK ((id ~ '^[0-7][0-9A-HJKMNP-TV-Z]{25}$'::text)) |
-| facilities_id_not_null         | n           | NOT NULL id                                          |
-| facilities_name_not_null       | n           | NOT NULL name                                        |
-| facilities_time_zone_not_null  | n           | NOT NULL time_zone                                   |
-| facilities_updated_at_not_null | n           | NOT NULL updated_at                                  |
-| facilities_pkey                | PRIMARY KEY | PRIMARY KEY (id)                                     |
-| facilities_org_id_key          | UNIQUE      | UNIQUE (org_id)                                      |
+| Name                            | Type        | Definition                                                                         |
+| ------------------------------- | ----------- | ---------------------------------------------------------------------------------- |
+| facilities_created_at_not_null  | n           | NOT NULL created_at                                                                |
+| facilities_id_check             | CHECK       | CHECK ((id ~ '^[0-7][0-9A-HJKMNP-TV-Z]{25}$'::text))                               |
+| facilities_id_not_null          | n           | NOT NULL id                                                                        |
+| facilities_name_not_null        | n           | NOT NULL name                                                                      |
+| facilities_source_mode_check    | CHECK       | CHECK ((source_mode = ANY (ARRAY['google_primary'::text, 'buddy_primary'::text]))) |
+| facilities_source_mode_not_null | n           | NOT NULL source_mode                                                               |
+| facilities_time_zone_not_null   | n           | NOT NULL time_zone                                                                 |
+| facilities_updated_at_not_null  | n           | NOT NULL updated_at                                                                |
+| facilities_pkey                 | PRIMARY KEY | PRIMARY KEY (id)                                                                   |
+| facilities_org_id_key           | UNIQUE      | UNIQUE (org_id)                                                                    |
 
 ## Indexes
 
@@ -63,6 +67,9 @@ erDiagram
 "public.recurring_schedules" }o--|| "public.facilities" : "FOREIGN KEY (facility_id) REFERENCES facilities(id)"
 "public.schedules" }o--|| "public.facilities" : "FOREIGN KEY (facility_id) REFERENCES facilities(id)"
 "public.calendar_exports" }o--|| "public.facilities" : "FOREIGN KEY (facility_id) REFERENCES facilities(id)"
+"public.calendar_cutovers" }o--|| "public.facilities" : "FOREIGN KEY (facility_id) REFERENCES facilities(id)"
+"public.calendar_event_records" }o--|| "public.facilities" : "FOREIGN KEY (facility_id) REFERENCES facilities(id)"
+"public.schedule_deletions" }o--|| "public.facilities" : "FOREIGN KEY (facility_id) REFERENCES facilities(id)"
 
 "public.facilities" {
   text id
@@ -71,6 +78,7 @@ erDiagram
   text time_zone
   timestamp_with_time_zone created_at
   timestamp_with_time_zone updated_at
+  text source_mode
 }
 "public.departments" {
   text id
@@ -85,6 +93,7 @@ erDiagram
   varchar_255_ name
   timestamp_with_time_zone created_at
   timestamp_with_time_zone updated_at
+  text color
 }
 "public.positions" {
   text id
@@ -108,6 +117,7 @@ erDiagram
   timestamp_with_time_zone leave_started_at
   date leave_return_date
   timestamp_with_time_zone retired_at
+  boolean visits
 }
 "public.patients" {
   text id
@@ -119,6 +129,7 @@ erDiagram
   text assigned_staff_id FK
   timestamp_with_time_zone created_at
   timestamp_with_time_zone updated_at
+  timestamp_with_time_zone ended_at
 }
 "public.recurring_schedules" {
   text id
@@ -140,6 +151,9 @@ erDiagram
   timestamp_with_time_zone created_at
   timestamp_with_time_zone updated_at
   integer version
+  boolean ends_next_day
+  smallint__ days_of_week
+  smallint interval_weeks
 }
 "public.schedules" {
   text id
@@ -158,6 +172,7 @@ erDiagram
   timestamp_with_time_zone created_at
   timestamp_with_time_zone updated_at
   integer version
+  boolean ends_next_day
 }
 "public.calendar_exports" {
   text id
@@ -174,6 +189,45 @@ erDiagram
   timestamp_with_time_zone finished_at
   timestamp_with_time_zone created_at
   timestamp_with_time_zone updated_at
+  text deleted_schedule_id FK
+}
+"public.calendar_cutovers" {
+  text id
+  text facility_id FK
+  text status
+  date range_start
+  text started_by FK
+  timestamp_with_time_zone started_at
+  timestamp_with_time_zone finished_at
+  timestamp_with_time_zone created_at
+  timestamp_with_time_zone updated_at
+}
+"public.calendar_event_records" {
+  text schedule_id
+  text facility_id FK
+  text external_calendar_id FK
+  varchar_1024_ external_event_id
+  text visit_info_id FK
+  integer version
+  integer pending_version
+  text pending_state
+  text pending_visit_info_id FK
+  timestamp_with_time_zone pending_deadline
+  timestamp_with_time_zone created_at
+  timestamp_with_time_zone updated_at
+  timestamp_with_time_zone pending_locked_until
+  text pending_external_calendar_id FK
+  varchar_1024_ pending_external_event_id
+}
+"public.schedule_deletions" {
+  text id
+  text facility_id FK
+  text schedule_id
+  text recurring_schedule_id FK
+  date date
+  text staff_id FK
+  text deleted_by FK
+  timestamp_with_time_zone deleted_at
 }
 ```
 

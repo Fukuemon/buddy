@@ -1,0 +1,68 @@
+import { ArgTypes, Canvas, Meta } from '@storybook/addon-docs/blocks'
+
+import { FileField } from './FileField'
+import * as Stories from './FileField.stories'
+
+<Meta of={Stories} />
+
+# FileField
+
+ファイルを 1 つ選ぶ欄。ブラウザの `input type="file"` を使い、選んだファイルを `onFileChange` に渡す。見出し、補足の文、誤りの文は `FormField` で並べる。
+
+## 規則
+
+規則の本文は、デザインシステムの文書の次のセクションにある。
+
+- 使う場面、使わない場面、キーボードの操作: コンポーネントの文書（`packages/ui/design/components.md`）の「コンポーネントの選び方」の `FileField` の行
+- 使い方の規則と Do と Don't: コンポーネントの文書の「コンポーネントごとの規則」の「`FileField`」
+- 欄の枠と面の状態: コンポーネントの文書の「入力の欄の状態」
+- 当たる原則: DESIGN.md の「画面を作るときの原則」の次の ID
+  - `STATE-NOT-COLOR-ONLY`
+  - `FOCUS-ONE`
+  - `TARGET-SIZE`
+
+## 状態
+
+### デフォルト
+
+<Canvas of={Stories.Default} />
+
+### hover
+
+枠を黒にする。
+
+<Canvas of={Stories.Hover} />
+
+### フォーカス
+
+<Canvas of={Stories.Focus} />
+
+### エラー
+
+<Canvas of={Stories.WithError} />
+
+### エラーで hover
+
+誤りの枠を濃い赤にする。
+
+<Canvas of={Stories.WithErrorHover} />
+
+### エラーでフォーカス
+
+誤りのない欄と同じ `focus-ring` を出す。
+
+<Canvas of={Stories.WithErrorFocus} />
+
+### 無効
+
+<Canvas of={Stories.Disabled} />
+
+### 無効で hover
+
+枠の色を変えない。
+
+<Canvas of={Stories.DisabledHover} />
+
+## props
+
+<ArgTypes of={FileField} />

@@ -5,9 +5,7 @@ import { createMockImportPreview, createMockImportedPreview } from '#/mocks/sche
 import {
   canSubmitImport,
   countRemaining,
-  importedNote,
   isAllImported,
-  notImportedNote,
   previewCountBoxes,
   toDecisions,
 } from './importSummary'
@@ -55,6 +53,7 @@ describe('取り込み方の選択', () => {
           date: '2026-11-04',
           start_time: '10:00',
           end_time: '11:00',
+          ends_next_day: false,
           all_day: false,
           reason: 'staff_on_leave' as const,
         },
@@ -65,30 +64,30 @@ describe('取り込み方の選択', () => {
   })
 })
 
-describe('件数の文', () => {
-  it('プレビューの件数の箱の補足を、内訳から作る', () => {
-    const [importBox, recurring] = previewCountBoxes(preview)
-    expect(importBox.note).toBe('訪問 15 件、通常 3 件。回ごとにした 4 件を含む')
-    expect(recurring.note).toBe('繰り返しのまま 2 件、回ごとにする 1 件')
-    const [none] = previewCountBoxes(createMockImportedPreview(range))
-    expect(none.note).toBe('取り込む予定は無い')
+describe('件数の箱', () => {
+  it('プレビューの件数の箱の補足を、内訳から作り、取り込まないの箱を作らない', () => {
+    const boxes = previewCountBoxes(preview)
+    expect(boxes.map((box) => box.key)).not.toContain('skipped')
+    const [importBox, recurring] = boxes
+    expect(importBox.note).toBe(
+      '訪問 15 件、通常 3 件。繰り返しの予定を 1 回ずつに分けた 4 件を含む',
+    )
+    expect(recurring.note).toBe('繰り返しとして 2 件、1 回ずつに分ける 1 件')
   })
 
-  it('取り込みの結果の補足に、取り込み方の内訳と取り込まない理由を入れる', () => {
-    const decisions = [
-      {
-        external_event_id: 'event-ambiguous',
-        revision: 'r1',
-        action: 'patient',
-        patient_id: 'patient-1',
-      },
-      { external_event_id: 'event-missing', revision: 'r2', action: 'skip' },
-    ] as const
-    expect(importedNote(preview, decisions)).toBe(
-      '繰り返しの予定 3 件を含む。確認した 2 件のうち 1 件は利用者を選び、1 件は取り込まなかった',
-    )
-    expect(notImportedNote(preview, decisions)).toBe(
-      '終日、日をまたぐ、サービス内容を引けない、取り込まないを選んだ予定',
-    )
+  it('確認が必要と取り込み済みの箱に、補足の文を付けない', () => {
+    const boxes = previewCountBoxes({
+      ...preview,
+      counts: { ...preview.counts, needs_review: 1, already_imported: 2 },
+    })
+    const notes = boxes
+      .filter((box) => box.key === 'needs_review' || box.key === 'already_imported')
+      .map((box) => box.note)
+    expect(notes).toEqual(['', ''])
+  })
+
+  it('件数が 0 の箱を作らない', () => {
+    const boxes = previewCountBoxes(createMockImportedPreview(range))
+    expect(boxes.map((box) => box.key)).toEqual(['already_imported'])
   })
 })

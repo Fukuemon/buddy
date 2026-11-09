@@ -2,10 +2,12 @@ import { Button, Loading } from '@buddy/ui'
 
 import type { Staff } from '#/api/types'
 
+import { NOT_CONFIGURED_MESSAGE } from '../lib/errorMessage'
 import { CalendarLinkTable, type CalendarLinkRow } from './CalendarLinkTable'
 import { CalendarShareGuide } from './CalendarShareGuide'
+import { RefetchErrorMessage } from '#/components/page/RefetchErrorMessage'
 
-/** カレンダーの連携の画面の状態。serviceAccount は、サービスアカウントが設定されていなければ null である。 */
+/** カレンダーの連携の画面の状態。serviceAccount は、事業所の Google カレンダーの設定（サービスアカウント）が無ければ null である。 */
 export type CalendarLinkViewState =
   | { status: 'loading' }
   | { status: 'error'; message: string }
@@ -14,6 +16,10 @@ export type CalendarLinkViewState =
 export type CalendarLinkViewProps = {
   state: CalendarLinkViewState
   onRetry: () => void
+  /** 読み終えた後に読み直して、データを読めなかったか。 */
+  refetchFailed?: boolean
+  /** 読み終えた後に読めなかったデータだけを読み直す。 */
+  onRefetch?: () => void
   onLink: (staffId: Staff['id']) => void
   onUnlink: (staffId: Staff['id']) => void
   onImport: (staffId: Staff['id']) => void
@@ -21,21 +27,32 @@ export type CalendarLinkViewProps = {
   copy?: (text: string) => Promise<void>
 }
 
-/** カレンダーの連携の画面の本文。タイトルと説明の文の下に、共有の手順と職員の一覧を並べる。 */
+/** カレンダーの連携の画面の本文。タイトル、予定の正本の切り替えへのリンク、説明の文の下に、共有の手順と職員の一覧を並べる。 */
 export const CalendarLinkView = ({
   state,
   onRetry,
+  refetchFailed,
+  onRefetch,
   onLink,
   onUnlink,
   onImport,
   copy,
 }: CalendarLinkViewProps) => (
   <div className="flex flex-col gap-6">
-    <h1 className="text-heading-md">カレンダーの連携</h1>
-    <p className="max-w-3xl text-body">
-      職員ごとに Google カレンダーを結び付けます。結び付けたカレンダーの予定は、予定の取り込みで
-      buddy に取り込めます。
-    </p>
+    <div className="flex flex-wrap items-baseline justify-between gap-3">
+      <h1 className="text-heading-md">カレンダーの連携</h1>
+      <a
+        className="inline-flex min-h-11 items-center rounded-8 px-2 text-label text-primary underline underline-offset-4 focus-visible:focus-ring"
+        data-testid="calendar-link-cutover"
+        href="/schedule/link/cutover"
+      >
+        予定の正本の切り替え
+      </a>
+    </div>
+    <p className="max-w-3xl text-body">職員ごとに Google カレンダーを結び付けます。</p>
+    {refetchFailed === true && onRefetch !== undefined && (
+      <RefetchErrorMessage onRetry={onRefetch} />
+    )}
     {state.status === 'loading' && (
       <div data-testid="calendar-link-loading">
         <Loading description="読み込んでいます" />
@@ -58,11 +75,14 @@ export const CalendarLinkView = ({
             className="max-w-3xl border-l-4 border-warning bg-warning-surface px-3 py-2 text-body"
             data-testid="calendar-link-not-configured"
           >
-            この事業所のサービスアカウントが設定されていないので、カレンダーを結び付けられません。buddy
-            を動かしている管理者に、Google カレンダーの設定を頼んでください。
+            {NOT_CONFIGURED_MESSAGE}
           </p>
         ) : (
-          <CalendarShareGuide copy={copy} serviceAccount={state.serviceAccount} />
+          <CalendarShareGuide
+            copy={copy}
+            serviceAccount={state.serviceAccount}
+            startsWithStepsOpen={state.rows.every((row) => row.calendar === undefined)}
+          />
         )}
         <CalendarLinkTable
           canLink={state.serviceAccount !== null}

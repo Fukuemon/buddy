@@ -1,5 +1,5 @@
 // Package hydra は、Ory Hydra の admin API のうち、ログインと同意の要求を読み、accept と reject を返す呼び出しと、
-// ログアウトの要求を accept する呼び出しと、職員のログインのセッションと同意を取り消す呼び出しを持つ（ADR-0016、ADR-0017）。
+// ログアウトの要求を accept する呼び出しと、職員のログインのセッションと同意を取り消す呼び出しを持つ（ADR-0002、ADR-0001、ADR-0004）。
 package hydra
 
 import (
@@ -77,7 +77,6 @@ type AcceptConsent struct {
 // access token の JWT では ext の下に入り、oauth2.allowed_top_level_claims に挙げたものは top level にも出る。
 type Session struct {
 	AccessToken map[string]any `json:"access_token,omitempty"`
-	IDToken     map[string]any `json:"id_token,omitempty"`
 }
 
 // Rejection は、ログインと同意の reject の本文である。Error は OAuth 2.0 のエラーの値で、クライアントの redirect_uri に渡る。
@@ -88,6 +87,11 @@ type Rejection struct {
 
 // AccessDenied は、職員にトークンを出さないときの reject である。理由はクライアントに伝えない。
 var AccessDenied = Rejection{Error: "access_denied", ErrorDescription: "ログインできませんでした"}
+
+// TooManyAttempts は、ログインの試行の回数の上限を超えたときの reject である。
+// クライアントが「時間をおいてから試す」と伝えられるよう、AccessDenied と分けて OAuth 2.0 の temporarily_unavailable にする。
+// メールの有無を引く前に返すので、登録の有無は伝わらない。
+var TooManyAttempts = Rejection{Error: "temporarily_unavailable", ErrorDescription: "ログインの試行の回数の上限を超えました"}
 
 // LoginRequest は、login_challenge の要求を読む。
 func (c *Client) LoginRequest(ctx context.Context, challenge string) (LoginRequest, error) {

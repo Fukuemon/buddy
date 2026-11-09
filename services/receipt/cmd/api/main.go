@@ -2,18 +2,19 @@
 //
 // 環境変数:
 //
-//   - PORT: 待ち受けるポート。デフォルトは 8080。
+//   - PORT: 待ち受けるポート。1 から 65535 の数にする。デフォルトは 8080。
 //   - MAX_UPLOAD_BYTES: POST /v1/checks の本文の上限のバイト数。デフォルトは 10485760（10 MiB）。
 //   - LOG_LEVEL: debug、info、warn、error のいずれか。デフォルトは info。
 //   - OIDC_ISSUER: 必須。Hydra の Issuer の URL。トークンの iss と一致させ、discovery の文書をここから読む。
 //   - OIDC_AUDIENCE: 必須。トークンの aud に求める値。
 //   - OIDC_ORG_CLAIM: 組織の ID を持つクレームの名前。デフォルトは org_id。
+//   - SCHEDULE_URL: 必須。予定の API の URL（`http://schedule:8080` の形）。照合の前に、受けたトークンで GET /v1/me を呼び、照合の権限を確認する（ADR-0007）。
 //   - CORS_ALLOW_ORIGINS: CORS でレスポンスを読ませるオリジンを、カンマで区切って並べる。空なら CORS のヘッダーを返さない。
 //   - GOOGLE_CALENDARS_FILE: 照合の対象のカレンダーの設定（JSON）のパス。空なら Google カレンダーを使わない。
 //     形は gcal.LoadCalendars にある。トークンの組織に結び付けたカレンダーだけを読む。
 //   - GOOGLE_CALENDAR_SERVICE_ACCOUNTS_FILE: 組織の ID と、その事業所の職員がカレンダーを共有するサービスアカウントの対応（JSON）のパス。
 //     GOOGLE_CALENDARS_FILE と一緒に渡す。形は gcalauth.LoadAccounts にあり、予定の API と同じである。
-//     カレンダーは、Application Default Credentials で認証し、カレンダーの組織のサービスアカウントになりすまして読む（ADR-0012）。
+//     カレンダーは、Application Default Credentials で認証し、カレンダーの組織のサービスアカウントになりすまして読む（ADR-0030）。
 //   - GOOGLE_CALENDAR_ENDPOINT: Calendar API の代わりに呼ぶ URL。ローカル環境の calendarpit で試すためのもので、GOOGLE_APPLICATION_CREDENTIALS を渡したときだけ、その認証情報をなりすまさずに全ての事業所で使い、渡さなければ認証をしない。
 //
 // `api healthcheck` は、サーバーを起動せず、動いているサーバーの GET /readyz を確認して終わる。
@@ -24,120 +25,21 @@ package main
 import (
 	"context"
 	"errors"
-	"fmt"
 	"log/slog"
+	"net"
 	"net/http"
 	"os"
 	"os/signal"
-	"strconv"
-	"strings"
 	"syscall"
 	"time"
 
 	"github.com/Fukuemon/buddy/packages/go/healthcheck"
-
-	"google.golang.org/api/calendar/v3"
-
-	"github.com/Fukuemon/buddy/packages/go/gcalauth"
 	"github.com/Fukuemon/buddy/packages/go/oidc"
 
-	"github.com/Fukuemon/buddy/services/receipt/internal/gcal"
 	"github.com/Fukuemon/buddy/services/receipt/internal/httpapi"
+	"github.com/Fukuemon/buddy/services/receipt/internal/permission"
 	"github.com/Fukuemon/buddy/services/receipt/internal/source"
 )
-
-type config struct {
-	port             string
-	maxUploadBytes   int64
-	logLevel         slog.Level
-	calendarsFile    string
-	accountsFile     string
-	calendarEndpoint string
-	oidc             oidc.Config
-	allowOrigins     []string
-}
-
-func loadConfig(getenv func(string) string) (config, error) {
-	cfg := config{port: "8080", maxUploadBytes: 10 << 20, logLevel: slog.LevelInfo}
-	cfg.oidc = oidc.Config{Issuer: getenv("OIDC_ISSUER"), Audience: getenv("OIDC_AUDIENCE"), OrgClaim: getenv("OIDC_ORG_CLAIM")}
-	var missing []string
-	if cfg.oidc.Issuer == "" {
-		missing = append(missing, "OIDC_ISSUER")
-	}
-	if cfg.oidc.Audience == "" {
-		missing = append(missing, "OIDC_AUDIENCE")
-	}
-	if len(missing) > 0 {
-		return config{}, fmt.Errorf("環境変数 %s が必要である", strings.Join(missing, "、"))
-	}
-	if cfg.oidc.OrgClaim == "" {
-		cfg.oidc.OrgClaim = "org_id"
-	}
-	if v := getenv("PORT"); v != "" {
-		cfg.port = v
-	}
-	if v := getenv("MAX_UPLOAD_BYTES"); v != "" {
-		n, err := strconv.ParseInt(v, 10, 64)
-		if err != nil || n <= 0 {
-			return config{}, fmt.Errorf("MAX_UPLOAD_BYTES は正の整数にする: %q", v)
-		}
-		cfg.maxUploadBytes = n
-	}
-	if v := getenv("LOG_LEVEL"); v != "" {
-		if err := cfg.logLevel.UnmarshalText([]byte(v)); err != nil {
-			return config{}, fmt.Errorf("LOG_LEVEL が不正: %w", err)
-		}
-	}
-	for _, o := range strings.Split(getenv("CORS_ALLOW_ORIGINS"), ",") {
-		if o = strings.TrimSpace(o); o != "" {
-			cfg.allowOrigins = append(cfg.allowOrigins, o)
-		}
-	}
-	cfg.calendarsFile = getenv("GOOGLE_CALENDARS_FILE")
-	cfg.accountsFile = getenv("GOOGLE_CALENDAR_SERVICE_ACCOUNTS_FILE")
-	cfg.calendarEndpoint = getenv("GOOGLE_CALENDAR_ENDPOINT")
-	if cfg.calendarEndpoint != "" && cfg.calendarsFile == "" {
-		return config{}, errors.New("GOOGLE_CALENDAR_ENDPOINT は GOOGLE_CALENDARS_FILE と一緒に渡す")
-	}
-	if (cfg.calendarsFile == "") != (cfg.accountsFile == "") {
-		return config{}, errors.New("GOOGLE_CALENDARS_FILE と GOOGLE_CALENDAR_SERVICE_ACCOUNTS_FILE は一緒に渡す")
-	}
-	return cfg, nil
-}
-
-// newCalendarReader は、cfg.calendarsFile のカレンダーを、カレンダーの組織のサービスアカウントで読む gcal.Reader を返す。
-// 設定が無ければ nil を返す。サービスアカウントの対応が無い組織のカレンダーがあれば、起動しない。
-func newCalendarReader(ctx context.Context, cfg config) (*gcal.Reader, error) {
-	if cfg.calendarsFile == "" {
-		return nil, nil
-	}
-	cals, err := gcal.LoadCalendars(cfg.calendarsFile)
-	if err != nil {
-		return nil, err
-	}
-	accounts, err := gcalauth.LoadAccounts(cfg.accountsFile)
-	if err != nil {
-		return nil, err
-	}
-	if err := requireAccounts(cals, accounts); err != nil {
-		return nil, err
-	}
-	clients, err := gcalauth.New(ctx, gcalauth.Config{Accounts: accounts, Scope: calendar.CalendarReadonlyScope, Endpoint: cfg.calendarEndpoint})
-	if err != nil {
-		return nil, err
-	}
-	return gcal.NewReader(clients, cals), nil
-}
-
-// requireAccounts は、cals の全ての組織に、accounts のサービスアカウントの対応があるかを確認する。
-func requireAccounts(cals []gcal.Calendar, accounts gcalauth.Accounts) error {
-	for _, c := range cals {
-		if _, ok := accounts.Of(c.OrgID); !ok {
-			return fmt.Errorf("組織 %s のサービスアカウントが GOOGLE_CALENDAR_SERVICE_ACCOUNTS_FILE に無い", c.OrgID)
-		}
-	}
-	return nil
-}
 
 func main() {
 	if len(os.Args) > 1 && os.Args[1] == "healthcheck" {
@@ -169,17 +71,27 @@ func run() error {
 	if err != nil {
 		return err
 	}
+	checker, err := permission.NewChecker(cfg.scheduleURL)
+	if err != nil {
+		return err
+	}
 
 	srv := &http.Server{
-		Addr: ":" + cfg.port,
+		Addr: net.JoinHostPort("", cfg.port),
 		Handler: httpapi.NewHandler(logger, httpapi.Config{
 			MaxUploadBytes: cfg.maxUploadBytes,
 			Sources:        source.Selector{Calendar: reader},
 			Verifier:       verifier,
+			Permission:     checker,
 			AllowOrigins:   cfg.allowOrigins,
 		}),
 		ReadHeaderTimeout: 10 * time.Second,
-		ErrorLog:          slog.NewLogLogger(logger.Handler(), slog.LevelError),
+		ReadTimeout:       30 * time.Second,
+		// WriteTimeout は本文を読む時間（ReadTimeout まで）も含むので、本文を読むのに 30 秒近くかかっても照合の時間が残るよう、ReadTimeout より長くする。
+		// 切れても照合の処理は止まらず、レスポンスを書けずに接続が切れるだけである。
+		WriteTimeout: 60 * time.Second,
+		IdleTimeout:  60 * time.Second,
+		ErrorLog:     slog.NewLogLogger(logger.Handler(), slog.LevelError),
 	}
 
 	errCh := make(chan error, 1)

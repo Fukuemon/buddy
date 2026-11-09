@@ -1,11 +1,13 @@
-import { composeStories } from '@storybook/react-vite'
+import { composeStories, composeStory } from '@storybook/react-vite'
 import { fireEvent, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vite-plus/test'
 
+import { refocusWindow } from '#/test/refocusWindow'
+
 import * as stories from './CalendarImportContainer.stories'
 
-const { Initial, WithStaff, Forbidden, NoCalendar, PreviewError, SubmitError } =
+const { Cutover, Initial, WithStaff, NoCalendar, PreviewError, SubmitError } =
   composeStories(stories)
 
 const submit = () => screen.getByTestId('calendar-import-submit')
@@ -34,6 +36,19 @@ describe('CalendarImportContainer', () => {
         .map((o) => o.textContent),
     ).toHaveLength(2)
     expect(staff).toHaveValue('staff-2')
+  })
+
+  it('利用者を選ぶ選択肢に、利用の終了の利用者を出さない', async () => {
+    render(<Initial />)
+    await preview()
+    await userEvent.click(screen.getByTestId('calendar-import-review-patient-event-ambiguous'))
+    const values = within(
+      screen.getByTestId('calendar-import-review-patient-select-event-ambiguous'),
+    )
+      .getAllByRole('option')
+      .map((o) => (o as HTMLOptionElement).value)
+    expect(values).toContain('patient-1')
+    expect(values).not.toContain('patient-ended')
   })
 
   it('プレビューの結果は、取り込み方を全て選ぶまで確定して取り込むを押せない', async () => {
@@ -68,9 +83,11 @@ describe('CalendarImportContainer', () => {
 
     const result = await screen.findByTestId('calendar-import-result')
     expect(result).toHaveTextContent('取り込みました')
-    expect(within(result).getByTestId('calendar-import-result-counts')).toHaveTextContent(
-      '確認した 2 件のうち 1 件は利用者を選び、1 件は通常の予定にした',
+    expect(within(result).getByTestId('calendar-import-result-count-imported')).toBeInTheDocument()
+    expect(within(result).getByTestId('calendar-import-result-counts')).not.toHaveTextContent(
+      '確認した',
     )
+    expect(within(result).queryByTestId('calendar-import-result-count-already_imported')).toBeNull()
     expect(screen.queryByTestId('calendar-import-result-preview')).toBeNull()
   })
 
@@ -94,10 +111,24 @@ describe('CalendarImportContainer', () => {
     })
 
     expect(screen.queryByTestId('calendar-import-result-preview')).toBeNull()
-    expect(screen.getByRole('alert')).toHaveTextContent(
-      '開始日は、終了日より前の日にしてください。',
+    expect(screen.getByTestId('calendar-import-start')).toHaveAccessibleDescription(
+      /開始日は、終了日より前の日にしてください。/,
     )
     expect(screen.getByTestId('calendar-import-preview')).toHaveAttribute('aria-disabled', 'true')
+    // 期間の誤りは欄の下に出るので、ボタンの横の条件の文は出さない
+    expect(screen.queryByTestId('calendar-import-preview-hint')).toBeNull()
+  })
+
+  it('開始日を空にすると、プレビューを押せず、ボタンの横に押せるようにする条件を出す', async () => {
+    render(<Initial />)
+    fireEvent.change(await screen.findByTestId('calendar-import-start'), {
+      target: { value: '' },
+    })
+
+    expect(screen.getByTestId('calendar-import-preview')).toHaveAttribute('aria-disabled', 'true')
+    expect(screen.getByTestId('calendar-import-preview')).toHaveAccessibleDescription(
+      '開始日と終了日を入れると、プレビューできます。',
+    )
   })
 
   it('プレビューが失敗したら、理由ごとの文を出す', async () => {
@@ -126,9 +157,49 @@ describe('CalendarImportContainer', () => {
     expect(screen.queryByTestId('calendar-import-form')).toBeNull()
   })
 
-  it('職員の管理の権限が無ければ、権限が無いことを示す', async () => {
-    render(<Forbidden />)
-    expect(await screen.findByTestId('page-forbidden')).toBeInTheDocument()
-    expect(screen.queryByTestId('calendar-import-load-error')).toBeNull()
+  it('予定の正本の切り替えの間は、切り替えの期間で取り込み、規則を写せない繰り返しは取り込まないだけを選べる', async () => {
+    render(<Cutover />)
+    expect(await screen.findByTestId('calendar-import-cutover-range')).toHaveTextContent(
+      '2026年11月1日（日）〜',
+    )
+    expect(screen.queryByTestId('calendar-import-start')).toBeNull()
+    const result = await preview()
+    expect(within(result).getByTestId('calendar-import-count-overwrite')).toHaveTextContent('1 件')
+    const unsupported = screen.getByTestId('calendar-import-review-event-biweekly')
+    expect(unsupported).toHaveTextContent('繰り返しの規則を buddy に写せない')
+    expect(
+      within(unsupported).queryByTestId('calendar-import-review-patient-event-biweekly'),
+    ).toBeNull()
+    await resolveAll()
+    await userEvent.click(screen.getByTestId('calendar-import-review-skip-event-biweekly'))
+    await userEvent.click(submit())
+    expect(await screen.findByTestId('calendar-import-back-to-cutover')).toBeInTheDocument()
+    expect(screen.queryByTestId('calendar-import-open-calendar')).toBeNull()
+  })
+})
+
+describe('予定の取り込みの読み直し', () => {
+  it('読み終えた後に読み直して結び付いたカレンダーを読めなければ、表示を残して失敗の文を出し、読み直すで読めたら消す', async () => {
+    const Story = composeStory(
+      {
+        ...stories.RefetchError,
+        parameters: {
+          ...stories.default.parameters,
+          appRouter: { ...stories.default.parameters.appRouter, api: stories.refetchFailingApi() },
+        },
+      },
+      stories.default,
+    )
+    render(<Story />)
+    await screen.findByTestId('calendar-import-form')
+
+    refocusWindow()
+    expect(await screen.findByTestId('refetch-error')).toHaveTextContent(
+      '最新の情報を読み込めませんでした。',
+    )
+    expect(screen.getByTestId('calendar-import-form')).toBeInTheDocument()
+
+    await userEvent.click(screen.getByTestId('refetch-retry'))
+    await expect.poll(() => screen.queryByTestId('refetch-error')).toBeNull()
   })
 })

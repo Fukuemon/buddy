@@ -21,9 +21,229 @@ import (
 	"github.com/oapi-codegen/runtime"
 )
 
+// Defines values for CalendarCutoverStatus.
+const (
+	Canceled  CalendarCutoverStatus = "canceled"
+	Completed CalendarCutoverStatus = "completed"
+	Open      CalendarCutoverStatus = "open"
+)
+
+// Valid indicates whether the value is a known member of the CalendarCutoverStatus enum.
+func (e CalendarCutoverStatus) Valid() bool {
+	switch e {
+	case Canceled:
+		return true
+	case Completed:
+		return true
+	case Open:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CalendarCutoverCalendarLastError.
+const (
+	CalendarCutoverCalendarLastErrorApply       CalendarCutoverCalendarLastError = "apply"
+	CalendarCutoverCalendarLastErrorUnavailable CalendarCutoverCalendarLastError = "unavailable"
+	CalendarCutoverCalendarLastErrorUnreadable  CalendarCutoverCalendarLastError = "unreadable"
+)
+
+// Valid indicates whether the value is a known member of the CalendarCutoverCalendarLastError enum.
+func (e CalendarCutoverCalendarLastError) Valid() bool {
+	switch e {
+	case CalendarCutoverCalendarLastErrorApply:
+		return true
+	case CalendarCutoverCalendarLastErrorUnavailable:
+		return true
+	case CalendarCutoverCalendarLastErrorUnreadable:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CalendarCutoverCalendarLastStatus.
+const (
+	CalendarCutoverCalendarLastStatusFailed    CalendarCutoverCalendarLastStatus = "failed"
+	CalendarCutoverCalendarLastStatusNever     CalendarCutoverCalendarLastStatus = "never"
+	CalendarCutoverCalendarLastStatusSucceeded CalendarCutoverCalendarLastStatus = "succeeded"
+)
+
+// Valid indicates whether the value is a known member of the CalendarCutoverCalendarLastStatus enum.
+func (e CalendarCutoverCalendarLastStatus) Valid() bool {
+	switch e {
+	case CalendarCutoverCalendarLastStatusFailed:
+		return true
+	case CalendarCutoverCalendarLastStatusNever:
+		return true
+	case CalendarCutoverCalendarLastStatusSucceeded:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CalendarCutoverIncompleteCode.
+const (
+	CalendarCutoverIncompleteCodeCalendarAlreadyLinked    CalendarCutoverIncompleteCode = "calendar_already_linked"
+	CalendarCutoverIncompleteCodeCalendarNotConfigured    CalendarCutoverIncompleteCode = "calendar_not_configured"
+	CalendarCutoverIncompleteCodeCalendarNotLinked        CalendarCutoverIncompleteCode = "calendar_not_linked"
+	CalendarCutoverIncompleteCodeCalendarTaken            CalendarCutoverIncompleteCode = "calendar_taken"
+	CalendarCutoverIncompleteCodeCalendarUnavailable      CalendarCutoverIncompleteCode = "calendar_unavailable"
+	CalendarCutoverIncompleteCodeCalendarUnreadable       CalendarCutoverIncompleteCode = "calendar_unreadable"
+	CalendarCutoverIncompleteCodeConflict                 CalendarCutoverIncompleteCode = "conflict"
+	CalendarCutoverIncompleteCodeCutoverIncomplete        CalendarCutoverIncompleteCode = "cutover_incomplete"
+	CalendarCutoverIncompleteCodeCutoverNotGooglePrimary  CalendarCutoverIncompleteCode = "cutover_not_google_primary"
+	CalendarCutoverIncompleteCodeCutoverNotOpen           CalendarCutoverIncompleteCode = "cutover_not_open"
+	CalendarCutoverIncompleteCodeCutoverOpen              CalendarCutoverIncompleteCode = "cutover_open"
+	CalendarCutoverIncompleteCodeCutoverSyncNotReady      CalendarCutoverIncompleteCode = "cutover_sync_not_ready"
+	CalendarCutoverIncompleteCodeExportNotInReview        CalendarCutoverIncompleteCode = "export_not_in_review"
+	CalendarCutoverIncompleteCodeForbidden                CalendarCutoverIncompleteCode = "forbidden"
+	CalendarCutoverIncompleteCodeGoogleCalendarUnwritable CalendarCutoverIncompleteCode = "google_calendar_unwritable"
+	CalendarCutoverIncompleteCodeGoogleEventChanged       CalendarCutoverIncompleteCode = "google_event_changed"
+	CalendarCutoverIncompleteCodeGoogleEventNotFound      CalendarCutoverIncompleteCode = "google_event_not_found"
+	CalendarCutoverIncompleteCodeGoogleEventRejected      CalendarCutoverIncompleteCode = "google_event_rejected"
+	CalendarCutoverIncompleteCodeGooglePrimary            CalendarCutoverIncompleteCode = "google_primary"
+	CalendarCutoverIncompleteCodeGoogleUnavailable        CalendarCutoverIncompleteCode = "google_unavailable"
+	CalendarCutoverIncompleteCodeGoogleWritePending       CalendarCutoverIncompleteCode = "google_write_pending"
+	CalendarCutoverIncompleteCodeGoogleWriteUnknown       CalendarCutoverIncompleteCode = "google_write_unknown"
+	CalendarCutoverIncompleteCodeImportPreviewChanged     CalendarCutoverIncompleteCode = "import_preview_changed"
+	CalendarCutoverIncompleteCodeImportRunning            CalendarCutoverIncompleteCode = "import_running"
+	CalendarCutoverIncompleteCodeInternal                 CalendarCutoverIncompleteCode = "internal"
+	CalendarCutoverIncompleteCodeInvalidInput             CalendarCutoverIncompleteCode = "invalid_input"
+	CalendarCutoverIncompleteCodeNotFound                 CalendarCutoverIncompleteCode = "not_found"
+	CalendarCutoverIncompleteCodePatientHasSchedules      CalendarCutoverIncompleteCode = "patient_has_schedules"
+	CalendarCutoverIncompleteCodeStaffHasAssignments      CalendarCutoverIncompleteCode = "staff_has_assignments"
+	CalendarCutoverIncompleteCodeStaffHasCalendar         CalendarCutoverIncompleteCode = "staff_has_calendar"
+	CalendarCutoverIncompleteCodeUnauthenticated          CalendarCutoverIncompleteCode = "unauthenticated"
+)
+
+// Valid indicates whether the value is a known member of the CalendarCutoverIncompleteCode enum.
+func (e CalendarCutoverIncompleteCode) Valid() bool {
+	switch e {
+	case CalendarCutoverIncompleteCodeCalendarAlreadyLinked:
+		return true
+	case CalendarCutoverIncompleteCodeCalendarNotConfigured:
+		return true
+	case CalendarCutoverIncompleteCodeCalendarNotLinked:
+		return true
+	case CalendarCutoverIncompleteCodeCalendarTaken:
+		return true
+	case CalendarCutoverIncompleteCodeCalendarUnavailable:
+		return true
+	case CalendarCutoverIncompleteCodeCalendarUnreadable:
+		return true
+	case CalendarCutoverIncompleteCodeConflict:
+		return true
+	case CalendarCutoverIncompleteCodeCutoverIncomplete:
+		return true
+	case CalendarCutoverIncompleteCodeCutoverNotGooglePrimary:
+		return true
+	case CalendarCutoverIncompleteCodeCutoverNotOpen:
+		return true
+	case CalendarCutoverIncompleteCodeCutoverOpen:
+		return true
+	case CalendarCutoverIncompleteCodeCutoverSyncNotReady:
+		return true
+	case CalendarCutoverIncompleteCodeExportNotInReview:
+		return true
+	case CalendarCutoverIncompleteCodeForbidden:
+		return true
+	case CalendarCutoverIncompleteCodeGoogleCalendarUnwritable:
+		return true
+	case CalendarCutoverIncompleteCodeGoogleEventChanged:
+		return true
+	case CalendarCutoverIncompleteCodeGoogleEventNotFound:
+		return true
+	case CalendarCutoverIncompleteCodeGoogleEventRejected:
+		return true
+	case CalendarCutoverIncompleteCodeGooglePrimary:
+		return true
+	case CalendarCutoverIncompleteCodeGoogleUnavailable:
+		return true
+	case CalendarCutoverIncompleteCodeGoogleWritePending:
+		return true
+	case CalendarCutoverIncompleteCodeGoogleWriteUnknown:
+		return true
+	case CalendarCutoverIncompleteCodeImportPreviewChanged:
+		return true
+	case CalendarCutoverIncompleteCodeImportRunning:
+		return true
+	case CalendarCutoverIncompleteCodeInternal:
+		return true
+	case CalendarCutoverIncompleteCodeInvalidInput:
+		return true
+	case CalendarCutoverIncompleteCodeNotFound:
+		return true
+	case CalendarCutoverIncompleteCodePatientHasSchedules:
+		return true
+	case CalendarCutoverIncompleteCodeStaffHasAssignments:
+		return true
+	case CalendarCutoverIncompleteCodeStaffHasCalendar:
+		return true
+	case CalendarCutoverIncompleteCodeUnauthenticated:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CalendarCutoverUnmetReason.
+const (
+	Changed          CalendarCutoverUnmetReason = "changed"
+	Deleted          CalendarCutoverUnmetReason = "deleted"
+	EventNotImported CalendarCutoverUnmetReason = "event_not_imported"
+	NeedsReview      CalendarCutoverUnmetReason = "needs_review"
+	NotImported      CalendarCutoverUnmetReason = "not_imported"
+	SyncStale        CalendarCutoverUnmetReason = "sync_stale"
+)
+
+// Valid indicates whether the value is a known member of the CalendarCutoverUnmetReason enum.
+func (e CalendarCutoverUnmetReason) Valid() bool {
+	switch e {
+	case Changed:
+		return true
+	case Deleted:
+		return true
+	case EventNotImported:
+		return true
+	case NeedsReview:
+		return true
+	case NotImported:
+		return true
+	case SyncStale:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CalendarCutoverUnmetReviewReason.
+const (
+	CalendarCutoverUnmetReviewReasonPatientAmbiguous      CalendarCutoverUnmetReviewReason = "patient_ambiguous"
+	CalendarCutoverUnmetReviewReasonPatientNotFound       CalendarCutoverUnmetReviewReason = "patient_not_found"
+	CalendarCutoverUnmetReviewReasonRecurrenceUnsupported CalendarCutoverUnmetReviewReason = "recurrence_unsupported"
+)
+
+// Valid indicates whether the value is a known member of the CalendarCutoverUnmetReviewReason enum.
+func (e CalendarCutoverUnmetReviewReason) Valid() bool {
+	switch e {
+	case CalendarCutoverUnmetReviewReasonPatientAmbiguous:
+		return true
+	case CalendarCutoverUnmetReviewReasonPatientNotFound:
+		return true
+	case CalendarCutoverUnmetReviewReasonRecurrenceUnsupported:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for CalendarExportErrorCode.
 const (
 	CalendarExportErrorCodeForbidden          CalendarExportErrorCode = "forbidden"
+	CalendarExportErrorCodeNotBuddyPrimary    CalendarExportErrorCode = "not_buddy_primary"
 	CalendarExportErrorCodeNotFound           CalendarExportErrorCode = "not_found"
 	CalendarExportErrorCodePreconditionFailed CalendarExportErrorCode = "precondition_failed"
 	CalendarExportErrorCodeRejected           CalendarExportErrorCode = "rejected"
@@ -35,6 +255,8 @@ const (
 func (e CalendarExportErrorCode) Valid() bool {
 	switch e {
 	case CalendarExportErrorCodeForbidden:
+		return true
+	case CalendarExportErrorCodeNotBuddyPrimary:
 		return true
 	case CalendarExportErrorCodeNotFound:
 		return true
@@ -78,6 +300,7 @@ func (e CalendarExportStatus) Valid() bool {
 // Defines values for CalendarExportIssueErrorCode.
 const (
 	CalendarExportIssueErrorCodeForbidden          CalendarExportIssueErrorCode = "forbidden"
+	CalendarExportIssueErrorCodeNotBuddyPrimary    CalendarExportIssueErrorCode = "not_buddy_primary"
 	CalendarExportIssueErrorCodeNotFound           CalendarExportIssueErrorCode = "not_found"
 	CalendarExportIssueErrorCodePreconditionFailed CalendarExportIssueErrorCode = "precondition_failed"
 	CalendarExportIssueErrorCodeRejected           CalendarExportIssueErrorCode = "rejected"
@@ -89,6 +312,8 @@ const (
 func (e CalendarExportIssueErrorCode) Valid() bool {
 	switch e {
 	case CalendarExportIssueErrorCodeForbidden:
+		return true
+	case CalendarExportIssueErrorCodeNotBuddyPrimary:
 		return true
 	case CalendarExportIssueErrorCodeNotFound:
 		return true
@@ -129,26 +354,186 @@ func (e CalendarExportIssueStatus) Valid() bool {
 	}
 }
 
+// Defines values for CalendarSyncStatusLastError.
+const (
+	CalendarSyncStatusLastErrorApply       CalendarSyncStatusLastError = "apply"
+	CalendarSyncStatusLastErrorUnavailable CalendarSyncStatusLastError = "unavailable"
+	CalendarSyncStatusLastErrorUnreadable  CalendarSyncStatusLastError = "unreadable"
+)
+
+// Valid indicates whether the value is a known member of the CalendarSyncStatusLastError enum.
+func (e CalendarSyncStatusLastError) Valid() bool {
+	switch e {
+	case CalendarSyncStatusLastErrorApply:
+		return true
+	case CalendarSyncStatusLastErrorUnavailable:
+		return true
+	case CalendarSyncStatusLastErrorUnreadable:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CalendarSyncStatusLastStatus.
+const (
+	CalendarSyncStatusLastStatusFailed    CalendarSyncStatusLastStatus = "failed"
+	CalendarSyncStatusLastStatusNever     CalendarSyncStatusLastStatus = "never"
+	CalendarSyncStatusLastStatusSucceeded CalendarSyncStatusLastStatus = "succeeded"
+)
+
+// Valid indicates whether the value is a known member of the CalendarSyncStatusLastStatus enum.
+func (e CalendarSyncStatusLastStatus) Valid() bool {
+	switch e {
+	case CalendarSyncStatusLastStatusFailed:
+		return true
+	case CalendarSyncStatusLastStatusNever:
+		return true
+	case CalendarSyncStatusLastStatusSucceeded:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for EndServiceConflictCode.
+const (
+	EndServiceConflictCodeCalendarAlreadyLinked    EndServiceConflictCode = "calendar_already_linked"
+	EndServiceConflictCodeCalendarNotConfigured    EndServiceConflictCode = "calendar_not_configured"
+	EndServiceConflictCodeCalendarNotLinked        EndServiceConflictCode = "calendar_not_linked"
+	EndServiceConflictCodeCalendarTaken            EndServiceConflictCode = "calendar_taken"
+	EndServiceConflictCodeCalendarUnavailable      EndServiceConflictCode = "calendar_unavailable"
+	EndServiceConflictCodeCalendarUnreadable       EndServiceConflictCode = "calendar_unreadable"
+	EndServiceConflictCodeConflict                 EndServiceConflictCode = "conflict"
+	EndServiceConflictCodeCutoverIncomplete        EndServiceConflictCode = "cutover_incomplete"
+	EndServiceConflictCodeCutoverNotGooglePrimary  EndServiceConflictCode = "cutover_not_google_primary"
+	EndServiceConflictCodeCutoverNotOpen           EndServiceConflictCode = "cutover_not_open"
+	EndServiceConflictCodeCutoverOpen              EndServiceConflictCode = "cutover_open"
+	EndServiceConflictCodeCutoverSyncNotReady      EndServiceConflictCode = "cutover_sync_not_ready"
+	EndServiceConflictCodeExportNotInReview        EndServiceConflictCode = "export_not_in_review"
+	EndServiceConflictCodeForbidden                EndServiceConflictCode = "forbidden"
+	EndServiceConflictCodeGoogleCalendarUnwritable EndServiceConflictCode = "google_calendar_unwritable"
+	EndServiceConflictCodeGoogleEventChanged       EndServiceConflictCode = "google_event_changed"
+	EndServiceConflictCodeGoogleEventNotFound      EndServiceConflictCode = "google_event_not_found"
+	EndServiceConflictCodeGoogleEventRejected      EndServiceConflictCode = "google_event_rejected"
+	EndServiceConflictCodeGooglePrimary            EndServiceConflictCode = "google_primary"
+	EndServiceConflictCodeGoogleUnavailable        EndServiceConflictCode = "google_unavailable"
+	EndServiceConflictCodeGoogleWritePending       EndServiceConflictCode = "google_write_pending"
+	EndServiceConflictCodeGoogleWriteUnknown       EndServiceConflictCode = "google_write_unknown"
+	EndServiceConflictCodeImportPreviewChanged     EndServiceConflictCode = "import_preview_changed"
+	EndServiceConflictCodeImportRunning            EndServiceConflictCode = "import_running"
+	EndServiceConflictCodeInternal                 EndServiceConflictCode = "internal"
+	EndServiceConflictCodeInvalidInput             EndServiceConflictCode = "invalid_input"
+	EndServiceConflictCodeNotFound                 EndServiceConflictCode = "not_found"
+	EndServiceConflictCodePatientHasSchedules      EndServiceConflictCode = "patient_has_schedules"
+	EndServiceConflictCodeStaffHasAssignments      EndServiceConflictCode = "staff_has_assignments"
+	EndServiceConflictCodeStaffHasCalendar         EndServiceConflictCode = "staff_has_calendar"
+	EndServiceConflictCodeUnauthenticated          EndServiceConflictCode = "unauthenticated"
+)
+
+// Valid indicates whether the value is a known member of the EndServiceConflictCode enum.
+func (e EndServiceConflictCode) Valid() bool {
+	switch e {
+	case EndServiceConflictCodeCalendarAlreadyLinked:
+		return true
+	case EndServiceConflictCodeCalendarNotConfigured:
+		return true
+	case EndServiceConflictCodeCalendarNotLinked:
+		return true
+	case EndServiceConflictCodeCalendarTaken:
+		return true
+	case EndServiceConflictCodeCalendarUnavailable:
+		return true
+	case EndServiceConflictCodeCalendarUnreadable:
+		return true
+	case EndServiceConflictCodeConflict:
+		return true
+	case EndServiceConflictCodeCutoverIncomplete:
+		return true
+	case EndServiceConflictCodeCutoverNotGooglePrimary:
+		return true
+	case EndServiceConflictCodeCutoverNotOpen:
+		return true
+	case EndServiceConflictCodeCutoverOpen:
+		return true
+	case EndServiceConflictCodeCutoverSyncNotReady:
+		return true
+	case EndServiceConflictCodeExportNotInReview:
+		return true
+	case EndServiceConflictCodeForbidden:
+		return true
+	case EndServiceConflictCodeGoogleCalendarUnwritable:
+		return true
+	case EndServiceConflictCodeGoogleEventChanged:
+		return true
+	case EndServiceConflictCodeGoogleEventNotFound:
+		return true
+	case EndServiceConflictCodeGoogleEventRejected:
+		return true
+	case EndServiceConflictCodeGooglePrimary:
+		return true
+	case EndServiceConflictCodeGoogleUnavailable:
+		return true
+	case EndServiceConflictCodeGoogleWritePending:
+		return true
+	case EndServiceConflictCodeGoogleWriteUnknown:
+		return true
+	case EndServiceConflictCodeImportPreviewChanged:
+		return true
+	case EndServiceConflictCodeImportRunning:
+		return true
+	case EndServiceConflictCodeInternal:
+		return true
+	case EndServiceConflictCodeInvalidInput:
+		return true
+	case EndServiceConflictCodeNotFound:
+		return true
+	case EndServiceConflictCodePatientHasSchedules:
+		return true
+	case EndServiceConflictCodeStaffHasAssignments:
+		return true
+	case EndServiceConflictCodeStaffHasCalendar:
+		return true
+	case EndServiceConflictCodeUnauthenticated:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for ErrorCode.
 const (
-	ErrorCodeCalendarAlreadyLinked     ErrorCode = "calendar_already_linked"
-	ErrorCodeCalendarNotConfigured     ErrorCode = "calendar_not_configured"
-	ErrorCodeCalendarTaken             ErrorCode = "calendar_taken"
-	ErrorCodeCalendarUnavailable       ErrorCode = "calendar_unavailable"
-	ErrorCodeCalendarUnreadable        ErrorCode = "calendar_unreadable"
-	ErrorCodeConflict                  ErrorCode = "conflict"
-	ErrorCodeExportNotAcceptable       ErrorCode = "export_not_acceptable"
-	ErrorCodeExportNotInReview         ErrorCode = "export_not_in_review"
-	ErrorCodeExternalChangeUnappliable ErrorCode = "external_change_unappliable"
-	ErrorCodeForbidden                 ErrorCode = "forbidden"
-	ErrorCodeImportPreviewChanged      ErrorCode = "import_preview_changed"
-	ErrorCodeImportRunning             ErrorCode = "import_running"
-	ErrorCodeInternal                  ErrorCode = "internal"
-	ErrorCodeInvalidInput              ErrorCode = "invalid_input"
-	ErrorCodeNotFound                  ErrorCode = "not_found"
-	ErrorCodeStaffHasAssignments       ErrorCode = "staff_has_assignments"
-	ErrorCodeStaffHasCalendar          ErrorCode = "staff_has_calendar"
-	ErrorCodeUnauthenticated           ErrorCode = "unauthenticated"
+	ErrorCodeCalendarAlreadyLinked    ErrorCode = "calendar_already_linked"
+	ErrorCodeCalendarNotConfigured    ErrorCode = "calendar_not_configured"
+	ErrorCodeCalendarNotLinked        ErrorCode = "calendar_not_linked"
+	ErrorCodeCalendarTaken            ErrorCode = "calendar_taken"
+	ErrorCodeCalendarUnavailable      ErrorCode = "calendar_unavailable"
+	ErrorCodeCalendarUnreadable       ErrorCode = "calendar_unreadable"
+	ErrorCodeConflict                 ErrorCode = "conflict"
+	ErrorCodeCutoverIncomplete        ErrorCode = "cutover_incomplete"
+	ErrorCodeCutoverNotGooglePrimary  ErrorCode = "cutover_not_google_primary"
+	ErrorCodeCutoverNotOpen           ErrorCode = "cutover_not_open"
+	ErrorCodeCutoverOpen              ErrorCode = "cutover_open"
+	ErrorCodeCutoverSyncNotReady      ErrorCode = "cutover_sync_not_ready"
+	ErrorCodeExportNotInReview        ErrorCode = "export_not_in_review"
+	ErrorCodeForbidden                ErrorCode = "forbidden"
+	ErrorCodeGoogleCalendarUnwritable ErrorCode = "google_calendar_unwritable"
+	ErrorCodeGoogleEventChanged       ErrorCode = "google_event_changed"
+	ErrorCodeGoogleEventNotFound      ErrorCode = "google_event_not_found"
+	ErrorCodeGoogleEventRejected      ErrorCode = "google_event_rejected"
+	ErrorCodeGooglePrimary            ErrorCode = "google_primary"
+	ErrorCodeGoogleUnavailable        ErrorCode = "google_unavailable"
+	ErrorCodeGoogleWritePending       ErrorCode = "google_write_pending"
+	ErrorCodeGoogleWriteUnknown       ErrorCode = "google_write_unknown"
+	ErrorCodeImportPreviewChanged     ErrorCode = "import_preview_changed"
+	ErrorCodeImportRunning            ErrorCode = "import_running"
+	ErrorCodeInternal                 ErrorCode = "internal"
+	ErrorCodeInvalidInput             ErrorCode = "invalid_input"
+	ErrorCodeNotFound                 ErrorCode = "not_found"
+	ErrorCodePatientHasSchedules      ErrorCode = "patient_has_schedules"
+	ErrorCodeStaffHasAssignments      ErrorCode = "staff_has_assignments"
+	ErrorCodeStaffHasCalendar         ErrorCode = "staff_has_calendar"
+	ErrorCodeUnauthenticated          ErrorCode = "unauthenticated"
 )
 
 // Valid indicates whether the value is a known member of the ErrorCode enum.
@@ -158,6 +543,8 @@ func (e ErrorCode) Valid() bool {
 		return true
 	case ErrorCodeCalendarNotConfigured:
 		return true
+	case ErrorCodeCalendarNotLinked:
+		return true
 	case ErrorCodeCalendarTaken:
 		return true
 	case ErrorCodeCalendarUnavailable:
@@ -166,13 +553,35 @@ func (e ErrorCode) Valid() bool {
 		return true
 	case ErrorCodeConflict:
 		return true
-	case ErrorCodeExportNotAcceptable:
+	case ErrorCodeCutoverIncomplete:
+		return true
+	case ErrorCodeCutoverNotGooglePrimary:
+		return true
+	case ErrorCodeCutoverNotOpen:
+		return true
+	case ErrorCodeCutoverOpen:
+		return true
+	case ErrorCodeCutoverSyncNotReady:
 		return true
 	case ErrorCodeExportNotInReview:
 		return true
-	case ErrorCodeExternalChangeUnappliable:
-		return true
 	case ErrorCodeForbidden:
+		return true
+	case ErrorCodeGoogleCalendarUnwritable:
+		return true
+	case ErrorCodeGoogleEventChanged:
+		return true
+	case ErrorCodeGoogleEventNotFound:
+		return true
+	case ErrorCodeGoogleEventRejected:
+		return true
+	case ErrorCodeGooglePrimary:
+		return true
+	case ErrorCodeGoogleUnavailable:
+		return true
+	case ErrorCodeGoogleWritePending:
+		return true
+	case ErrorCodeGoogleWriteUnknown:
 		return true
 	case ErrorCodeImportPreviewChanged:
 		return true
@@ -183,6 +592,8 @@ func (e ErrorCode) Valid() bool {
 	case ErrorCodeInvalidInput:
 		return true
 	case ErrorCodeNotFound:
+		return true
+	case ErrorCodePatientHasSchedules:
 		return true
 	case ErrorCodeStaffHasAssignments:
 		return true
@@ -272,16 +683,19 @@ func (e ImportResultStatus) Valid() bool {
 
 // Defines values for ImportReviewItemReason.
 const (
-	PatientAmbiguous ImportReviewItemReason = "patient_ambiguous"
-	PatientNotFound  ImportReviewItemReason = "patient_not_found"
+	ImportReviewItemReasonPatientAmbiguous      ImportReviewItemReason = "patient_ambiguous"
+	ImportReviewItemReasonPatientNotFound       ImportReviewItemReason = "patient_not_found"
+	ImportReviewItemReasonRecurrenceUnsupported ImportReviewItemReason = "recurrence_unsupported"
 )
 
 // Valid indicates whether the value is a known member of the ImportReviewItemReason enum.
 func (e ImportReviewItemReason) Valid() bool {
 	switch e {
-	case PatientAmbiguous:
+	case ImportReviewItemReasonPatientAmbiguous:
 		return true
-	case PatientNotFound:
+	case ImportReviewItemReasonPatientNotFound:
+		return true
+	case ImportReviewItemReasonRecurrenceUnsupported:
 		return true
 	default:
 		return false
@@ -311,13 +725,14 @@ func (e ImportRunStatus) Valid() bool {
 
 // Defines values for ImportSkippedItemReason.
 const (
-	AllDay          ImportSkippedItemReason = "all_day"
-	MultiDay        ImportSkippedItemReason = "multi_day"
-	ServiceNotFound ImportSkippedItemReason = "service_not_found"
-	StaffOnLeave    ImportSkippedItemReason = "staff_on_leave"
-	UnreadableTime  ImportSkippedItemReason = "unreadable_time"
-	UnreadableTitle ImportSkippedItemReason = "unreadable_title"
-	ZeroLength      ImportSkippedItemReason = "zero_length"
+	AllDay           ImportSkippedItemReason = "all_day"
+	MultiDay         ImportSkippedItemReason = "multi_day"
+	ServiceNotFound  ImportSkippedItemReason = "service_not_found"
+	StaffNonVisiting ImportSkippedItemReason = "staff_non_visiting"
+	StaffOnLeave     ImportSkippedItemReason = "staff_on_leave"
+	UnreadableTime   ImportSkippedItemReason = "unreadable_time"
+	UnreadableTitle  ImportSkippedItemReason = "unreadable_title"
+	ZeroLength       ImportSkippedItemReason = "zero_length"
 )
 
 // Valid indicates whether the value is a known member of the ImportSkippedItemReason enum.
@@ -328,6 +743,8 @@ func (e ImportSkippedItemReason) Valid() bool {
 	case MultiDay:
 		return true
 	case ServiceNotFound:
+		return true
+	case StaffNonVisiting:
 		return true
 	case StaffOnLeave:
 		return true
@@ -398,24 +815,37 @@ func (e RecurringRuleFrequency) Valid() bool {
 
 // Defines values for RetireConflictCode.
 const (
-	RetireConflictCodeCalendarAlreadyLinked     RetireConflictCode = "calendar_already_linked"
-	RetireConflictCodeCalendarNotConfigured     RetireConflictCode = "calendar_not_configured"
-	RetireConflictCodeCalendarTaken             RetireConflictCode = "calendar_taken"
-	RetireConflictCodeCalendarUnavailable       RetireConflictCode = "calendar_unavailable"
-	RetireConflictCodeCalendarUnreadable        RetireConflictCode = "calendar_unreadable"
-	RetireConflictCodeConflict                  RetireConflictCode = "conflict"
-	RetireConflictCodeExportNotAcceptable       RetireConflictCode = "export_not_acceptable"
-	RetireConflictCodeExportNotInReview         RetireConflictCode = "export_not_in_review"
-	RetireConflictCodeExternalChangeUnappliable RetireConflictCode = "external_change_unappliable"
-	RetireConflictCodeForbidden                 RetireConflictCode = "forbidden"
-	RetireConflictCodeImportPreviewChanged      RetireConflictCode = "import_preview_changed"
-	RetireConflictCodeImportRunning             RetireConflictCode = "import_running"
-	RetireConflictCodeInternal                  RetireConflictCode = "internal"
-	RetireConflictCodeInvalidInput              RetireConflictCode = "invalid_input"
-	RetireConflictCodeNotFound                  RetireConflictCode = "not_found"
-	RetireConflictCodeStaffHasAssignments       RetireConflictCode = "staff_has_assignments"
-	RetireConflictCodeStaffHasCalendar          RetireConflictCode = "staff_has_calendar"
-	RetireConflictCodeUnauthenticated           RetireConflictCode = "unauthenticated"
+	RetireConflictCodeCalendarAlreadyLinked    RetireConflictCode = "calendar_already_linked"
+	RetireConflictCodeCalendarNotConfigured    RetireConflictCode = "calendar_not_configured"
+	RetireConflictCodeCalendarNotLinked        RetireConflictCode = "calendar_not_linked"
+	RetireConflictCodeCalendarTaken            RetireConflictCode = "calendar_taken"
+	RetireConflictCodeCalendarUnavailable      RetireConflictCode = "calendar_unavailable"
+	RetireConflictCodeCalendarUnreadable       RetireConflictCode = "calendar_unreadable"
+	RetireConflictCodeConflict                 RetireConflictCode = "conflict"
+	RetireConflictCodeCutoverIncomplete        RetireConflictCode = "cutover_incomplete"
+	RetireConflictCodeCutoverNotGooglePrimary  RetireConflictCode = "cutover_not_google_primary"
+	RetireConflictCodeCutoverNotOpen           RetireConflictCode = "cutover_not_open"
+	RetireConflictCodeCutoverOpen              RetireConflictCode = "cutover_open"
+	RetireConflictCodeCutoverSyncNotReady      RetireConflictCode = "cutover_sync_not_ready"
+	RetireConflictCodeExportNotInReview        RetireConflictCode = "export_not_in_review"
+	RetireConflictCodeForbidden                RetireConflictCode = "forbidden"
+	RetireConflictCodeGoogleCalendarUnwritable RetireConflictCode = "google_calendar_unwritable"
+	RetireConflictCodeGoogleEventChanged       RetireConflictCode = "google_event_changed"
+	RetireConflictCodeGoogleEventNotFound      RetireConflictCode = "google_event_not_found"
+	RetireConflictCodeGoogleEventRejected      RetireConflictCode = "google_event_rejected"
+	RetireConflictCodeGooglePrimary            RetireConflictCode = "google_primary"
+	RetireConflictCodeGoogleUnavailable        RetireConflictCode = "google_unavailable"
+	RetireConflictCodeGoogleWritePending       RetireConflictCode = "google_write_pending"
+	RetireConflictCodeGoogleWriteUnknown       RetireConflictCode = "google_write_unknown"
+	RetireConflictCodeImportPreviewChanged     RetireConflictCode = "import_preview_changed"
+	RetireConflictCodeImportRunning            RetireConflictCode = "import_running"
+	RetireConflictCodeInternal                 RetireConflictCode = "internal"
+	RetireConflictCodeInvalidInput             RetireConflictCode = "invalid_input"
+	RetireConflictCodeNotFound                 RetireConflictCode = "not_found"
+	RetireConflictCodePatientHasSchedules      RetireConflictCode = "patient_has_schedules"
+	RetireConflictCodeStaffHasAssignments      RetireConflictCode = "staff_has_assignments"
+	RetireConflictCodeStaffHasCalendar         RetireConflictCode = "staff_has_calendar"
+	RetireConflictCodeUnauthenticated          RetireConflictCode = "unauthenticated"
 )
 
 // Valid indicates whether the value is a known member of the RetireConflictCode enum.
@@ -425,6 +855,8 @@ func (e RetireConflictCode) Valid() bool {
 		return true
 	case RetireConflictCodeCalendarNotConfigured:
 		return true
+	case RetireConflictCodeCalendarNotLinked:
+		return true
 	case RetireConflictCodeCalendarTaken:
 		return true
 	case RetireConflictCodeCalendarUnavailable:
@@ -433,13 +865,35 @@ func (e RetireConflictCode) Valid() bool {
 		return true
 	case RetireConflictCodeConflict:
 		return true
-	case RetireConflictCodeExportNotAcceptable:
+	case RetireConflictCodeCutoverIncomplete:
+		return true
+	case RetireConflictCodeCutoverNotGooglePrimary:
+		return true
+	case RetireConflictCodeCutoverNotOpen:
+		return true
+	case RetireConflictCodeCutoverOpen:
+		return true
+	case RetireConflictCodeCutoverSyncNotReady:
 		return true
 	case RetireConflictCodeExportNotInReview:
 		return true
-	case RetireConflictCodeExternalChangeUnappliable:
-		return true
 	case RetireConflictCodeForbidden:
+		return true
+	case RetireConflictCodeGoogleCalendarUnwritable:
+		return true
+	case RetireConflictCodeGoogleEventChanged:
+		return true
+	case RetireConflictCodeGoogleEventNotFound:
+		return true
+	case RetireConflictCodeGoogleEventRejected:
+		return true
+	case RetireConflictCodeGooglePrimary:
+		return true
+	case RetireConflictCodeGoogleUnavailable:
+		return true
+	case RetireConflictCodeGoogleWritePending:
+		return true
+	case RetireConflictCodeGoogleWriteUnknown:
 		return true
 	case RetireConflictCodeImportPreviewChanged:
 		return true
@@ -451,11 +905,61 @@ func (e RetireConflictCode) Valid() bool {
 		return true
 	case RetireConflictCodeNotFound:
 		return true
+	case RetireConflictCodePatientHasSchedules:
+		return true
 	case RetireConflictCodeStaffHasAssignments:
 		return true
 	case RetireConflictCodeStaffHasCalendar:
 		return true
 	case RetireConflictCodeUnauthenticated:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ScheduleSource.
+const (
+	Buddy          ScheduleSource = "buddy"
+	GoogleCalendar ScheduleSource = "google_calendar"
+)
+
+// Valid indicates whether the value is a known member of the ScheduleSource enum.
+func (e ScheduleSource) Valid() bool {
+	switch e {
+	case Buddy:
+		return true
+	case GoogleCalendar:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ScheduleReviewReason.
+const (
+	ScheduleReviewReasonPatientAmbiguous      ScheduleReviewReason = "patient_ambiguous"
+	ScheduleReviewReasonPatientNotFound       ScheduleReviewReason = "patient_not_found"
+	ScheduleReviewReasonRecurrenceUnsupported ScheduleReviewReason = "recurrence_unsupported"
+	ScheduleReviewReasonServiceCodeNotFound   ScheduleReviewReason = "service_code_not_found"
+	ScheduleReviewReasonTitleMismatch         ScheduleReviewReason = "title_mismatch"
+	ScheduleReviewReasonTitleUnreadable       ScheduleReviewReason = "title_unreadable"
+)
+
+// Valid indicates whether the value is a known member of the ScheduleReviewReason enum.
+func (e ScheduleReviewReason) Valid() bool {
+	switch e {
+	case ScheduleReviewReasonPatientAmbiguous:
+		return true
+	case ScheduleReviewReasonPatientNotFound:
+		return true
+	case ScheduleReviewReasonRecurrenceUnsupported:
+		return true
+	case ScheduleReviewReasonServiceCodeNotFound:
+		return true
+	case ScheduleReviewReasonTitleMismatch:
+		return true
+	case ScheduleReviewReasonTitleUnreadable:
 		return true
 	default:
 		return false
@@ -480,6 +984,24 @@ func (e ScheduleTypeName) Valid() bool {
 	}
 }
 
+// Defines values for SourceMode.
+const (
+	SourceModeBuddyPrimary  SourceMode = "buddy_primary"
+	SourceModeGooglePrimary SourceMode = "google_primary"
+)
+
+// Valid indicates whether the value is a known member of the SourceMode enum.
+func (e SourceMode) Valid() bool {
+	switch e {
+	case SourceModeBuddyPrimary:
+		return true
+	case SourceModeGooglePrimary:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for StaffStatus.
 const (
 	Active  StaffStatus = "active"
@@ -495,6 +1017,42 @@ func (e StaffStatus) Valid() bool {
 	case OnLeave:
 		return true
 	case Retired:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for TeamColor.
+const (
+	Blue    TeamColor = "blue"
+	Cyan    TeamColor = "cyan"
+	Green   TeamColor = "green"
+	Lime    TeamColor = "lime"
+	Magenta TeamColor = "magenta"
+	Orange  TeamColor = "orange"
+	Purple  TeamColor = "purple"
+	Yellow  TeamColor = "yellow"
+)
+
+// Valid indicates whether the value is a known member of the TeamColor enum.
+func (e TeamColor) Valid() bool {
+	switch e {
+	case Blue:
+		return true
+	case Cyan:
+		return true
+	case Green:
+		return true
+	case Lime:
+		return true
+	case Magenta:
+		return true
+	case Orange:
+		return true
+	case Purple:
+		return true
+	case Yellow:
 		return true
 	default:
 		return false
@@ -648,6 +1206,150 @@ func (e ListUsersParamsSortOrder) Valid() bool {
 	}
 }
 
+// AllDayEvent Google カレンダーの終日の予定。buddy の予定ではない（#672）
+type AllDayEvent struct {
+	// EndDate 予定がかかる最後の日（この日を含む）。1 日の予定では start_date と同じ
+	EndDate string `json:"end_date"`
+
+	// Id 一覧を読むたびに同じになる値。繰り返しの回は回ごとに違う値である。予定の ID としては使えない
+	Id string `json:"id"`
+
+	// ReviewReason 確認が必要な理由。無ければ null。buddy の繰り返しの規則に写せない繰り返しの終日の予定は、最初の回の 1 件にし、
+	// recurrence_unsupported を付ける（#972）
+	ReviewReason *ScheduleReviewReason `json:"review_reason"`
+
+	// StaffId Example: 01M3TC5H00QV17BC0J9V3393ZP
+	StaffId   ID     `json:"staff_id"`
+	StaffName string `json:"staff_name"`
+
+	// StartDate 予定がかかる最初の日
+	StartDate string `json:"start_date"`
+
+	// Title Google の予定のタイトル。空のことがある
+	Title string `json:"title"`
+}
+
+// CalendarCutover 事業所の予定の正本を Google カレンダーから buddy に切り替える作業の記録（ADR-0031）
+type CalendarCutover struct {
+	// FacilityId Example: 01M3TC5H00QV17BC0J9V3393ZP
+	FacilityId ID `json:"facility_id"`
+
+	// FinishedAt 完了したかやめた時刻。open なら null
+	FinishedAt *time.Time `json:"finished_at"`
+
+	// Id Example: 01M3TC5H00QV17BC0J9V3393ZP
+	Id ID `json:"id"`
+
+	// RangeStart 取り込みの期間の最初の日。切り替えを始めた月の初日で、期間は終わりを持たない
+	RangeStart Date      `json:"range_start"`
+	StartedAt  time.Time `json:"started_at"`
+
+	// StartedBy Example: 01M3TC5H00QV17BC0J9V3393ZP
+	StartedBy ID `json:"started_by"`
+
+	// Status open は切り替え中、completed は完了して事業所を buddy_primary にした、canceled はやめた
+	Status CalendarCutoverStatus `json:"status"`
+}
+
+// CalendarCutoverStatus open は切り替え中、completed は完了して事業所を buddy_primary にした、canceled はやめた
+type CalendarCutoverStatus string
+
+// CalendarCutoverCalendar 切り替えの状況のうち、結び付けたカレンダー 1 つの同期の状況と、この切り替えで最後に成功した取り込み
+type CalendarCutoverCalendar struct {
+	// ExternalCalendarId Example: 01M3TC5H00QV17BC0J9V3393ZP
+	ExternalCalendarId ID `json:"external_calendar_id"`
+
+	// LastError 最後の同期の失敗の理由。最後の同期が成功したか、まだ同期していなければ null。
+	// unreadable はカレンダーが無いかサービスアカウントに共有されていない、unavailable は Google カレンダーに届かないかエラーが返った、
+	// apply は読んだ予定を写せなかったことを表す
+	LastError *CalendarCutoverCalendarLastError `json:"last_error"`
+
+	// LastImport この切り替えで最後に成功した取り込み。取り込んでいないか、open の切り替えが無ければ null
+	LastImport *ImportRun `json:"last_import"`
+
+	// LastStatus 最後の同期の結果。never はまだ同期していない
+	LastStatus CalendarCutoverCalendarLastStatus `json:"last_status"`
+
+	// LastSucceededAt 変わった予定を最後まで読んで写した、最後の同期の時刻。成功したことが無ければ null
+	LastSucceededAt *time.Time `json:"last_succeeded_at"`
+
+	// StaffId Example: 01M3TC5H00QV17BC0J9V3393ZP
+	StaffId   ID     `json:"staff_id"`
+	StaffName string `json:"staff_name"`
+}
+
+// CalendarCutoverCalendarLastError 最後の同期の失敗の理由。最後の同期が成功したか、まだ同期していなければ null。
+// unreadable はカレンダーが無いかサービスアカウントに共有されていない、unavailable は Google カレンダーに届かないかエラーが返った、
+// apply は読んだ予定を写せなかったことを表す
+type CalendarCutoverCalendarLastError string
+
+// CalendarCutoverCalendarLastStatus 最後の同期の結果。never はまだ同期していない
+type CalendarCutoverCalendarLastStatus string
+
+// CalendarCutoverIncomplete defines model for CalendarCutoverIncomplete.
+type CalendarCutoverIncomplete struct {
+	Code CalendarCutoverIncompleteCode `json:"code"`
+
+	// Items code が cutover_incomplete のとき、満たさないカレンダーと予定。カレンダーの順に、カレンダーの中は日時の順（日時の無い予定は最後）
+	Items *[]CalendarCutoverUnmet `json:"items,omitempty"`
+
+	// Message 人が読む日本語の説明。文言は変わることがあるので、利用者の分岐は `code` で行う
+	Message string `json:"message"`
+}
+
+// CalendarCutoverIncompleteCode defines model for CalendarCutoverIncomplete.Code.
+type CalendarCutoverIncompleteCode string
+
+// CalendarCutoverState defines model for CalendarCutoverState.
+type CalendarCutoverState struct {
+	// Calendars 事業所の外していない全てのカレンダー
+	Calendars []CalendarCutoverCalendar `json:"calendars"`
+
+	// Cutover open の切り替え。無ければ null
+	Cutover *CalendarCutover `json:"cutover"`
+}
+
+// CalendarCutoverUnmet 切り替えの完了の確認を満たさないカレンダーか予定。予定のタイトルは利用者名を含むので返さない
+type CalendarCutoverUnmet struct {
+	// Date 予定の日付。読めなかった予定と、Google で消えた予定では null
+	Date    *Date `json:"date"`
+	EndTime *Time `json:"end_time"`
+
+	// EndsNextDay date の翌日の end_time に終わる予定のとき true
+	EndsNextDay bool `json:"ends_next_day"`
+
+	// ExternalCalendarId Example: 01M3TC5H00QV17BC0J9V3393ZP
+	ExternalCalendarId ID `json:"external_calendar_id"`
+
+	// ExternalEventId Google の予定の ID。カレンダーの理由と、取り消した回では null
+	ExternalEventId *string `json:"external_event_id"`
+
+	// Reason not_imported はカレンダーをこの切り替えで取り込んでいない、sync_stale は最後の取り込みの後に同期が成功していない。
+	// event_not_imported は取り込んでいない Google の予定（取り込んだ後に作った予定、取り消した回を含む）、
+	// needs_review は確認が必要な予定の取り込み方を決めていないか決めた後に変わった（規則に写せない繰り返しを含む）、
+	// changed は取り込んだ後に Google で変わった、deleted は取り込んだ後に Google で消えた予定である。
+	// not_imported と sync_stale は、予定の項目を持たない
+	Reason CalendarCutoverUnmetReason `json:"reason"`
+
+	// ReviewReason needs_review のときの確認が必要な理由。ほかの理由では null
+	ReviewReason *CalendarCutoverUnmetReviewReason `json:"review_reason"`
+
+	// StaffId Example: 01M3TC5H00QV17BC0J9V3393ZP
+	StaffId   ID     `json:"staff_id"`
+	StaffName string `json:"staff_name"`
+	StartTime *Time  `json:"start_time"`
+}
+
+// CalendarCutoverUnmetReason not_imported はカレンダーをこの切り替えで取り込んでいない、sync_stale は最後の取り込みの後に同期が成功していない。
+// event_not_imported は取り込んでいない Google の予定（取り込んだ後に作った予定、取り消した回を含む）、
+// needs_review は確認が必要な予定の取り込み方を決めていないか決めた後に変わった（規則に写せない繰り返しを含む）、
+// changed は取り込んだ後に Google で変わった、deleted は取り込んだ後に Google で消えた予定である。
+// not_imported と sync_stale は、予定の項目を持たない
+type CalendarCutoverUnmetReason string
+
+// CalendarCutoverUnmetReviewReason needs_review のときの確認が必要な理由。ほかの理由では null
+type CalendarCutoverUnmetReviewReason string
+
 // CalendarExport 1 つの予定を Google カレンダーに書き出す待ち。書くときは、書く時点の予定の内容を書く
 type CalendarExport struct {
 	// Attempts 書こうとした回数
@@ -657,7 +1359,8 @@ type CalendarExport struct {
 	// not_found は Google カレンダーで予定が消されたか、予定かカレンダーが見つからない（410、404、消された予定への 412）、
 	// forbidden はサービスアカウントがカレンダーに書けない、rejected は Google が予定の内容を受け付けなかった（400）、
 	// unavailable は Google に届かないか一時的なエラーが続いた、unappliable は Google カレンダーの変更を buddy の予定に読み替えられない
-	// （終日にした予定、タイトルの利用者を引けない予定、繰り返しの予定そのものの変更）
+	// （終日にした予定、タイトルの利用者を引けない予定、繰り返しの予定そのものの変更）。
+	// not_buddy_primary は事業所が buddy を予定の正本にしていないので、書かずに保留にした（ADR-0029）
 	ErrorCode *CalendarExportErrorCode `json:"error_code"`
 
 	// Id Example: 01M3TC5H00QV17BC0J9V3393ZP
@@ -679,7 +1382,8 @@ type CalendarExport struct {
 // not_found は Google カレンダーで予定が消されたか、予定かカレンダーが見つからない（410、404、消された予定への 412）、
 // forbidden はサービスアカウントがカレンダーに書けない、rejected は Google が予定の内容を受け付けなかった（400）、
 // unavailable は Google に届かないか一時的なエラーが続いた、unappliable は Google カレンダーの変更を buddy の予定に読み替えられない
-// （終日にした予定、タイトルの利用者を引けない予定、繰り返しの予定そのものの変更）
+// （終日にした予定、タイトルの利用者を引けない予定、繰り返しの予定そのものの変更）。
+// not_buddy_primary は事業所が buddy を予定の正本にしていないので、書かずに保留にした（ADR-0029）
 type CalendarExportErrorCode string
 
 // CalendarExportStatus pending は書く待ち、succeeded は書き終えた、conflict は Google カレンダーで予定が変わっていたか消えていたので書かずに止めたか、
@@ -688,8 +1392,8 @@ type CalendarExportStatus string
 
 // CalendarExportIssue 確認が必要な書き出しと、その予定の日時と職員。繰り返しの予定の date は最初の回の日付
 type CalendarExportIssue struct {
-	// Acceptable Google カレンダーの内容で解けるか（POST /v1/calendar_exports/{calendar_export_id}/acceptances）。
-	// 単発の予定で、buddy でキャンセルしておらず、error_code が precondition_failed か not_found のときに true
+	// Acceptable Google カレンダーで予定が変わったか消えたので書けなかった、buddy でキャンセルしていない単発の予定か。
+	// error_code が precondition_failed か not_found のときに true
 	Acceptable bool `json:"acceptable"`
 
 	// Attempts 書こうとした回数
@@ -699,11 +1403,15 @@ type CalendarExportIssue struct {
 	// EndTime Example: 09:30
 	EndTime Time `json:"end_time"`
 
+	// EndsNextDay date の翌日の end_time に終わる予定のとき true
+	EndsNextDay bool `json:"ends_next_day"`
+
 	// ErrorCode 最後に書けなかった理由。precondition_failed は buddy と Google カレンダーの両方で予定が変わった（消された予定を除く書き出しの 412 を含む）、
 	// not_found は Google カレンダーで予定が消されたか、予定かカレンダーが見つからない（410、404、消された予定への 412）、
 	// forbidden はサービスアカウントがカレンダーに書けない、rejected は Google が予定の内容を受け付けなかった（400）、
 	// unavailable は Google に届かないか一時的なエラーが続いた、unappliable は Google カレンダーの変更を buddy の予定に読み替えられない
-	// （終日にした予定、タイトルの利用者を引けない予定、繰り返しの予定そのものの変更）
+	// （終日にした予定、タイトルの利用者を引けない予定、繰り返しの予定そのものの変更）。
+	// not_buddy_primary は事業所が buddy を予定の正本にしていないので、書かずに保留にした（ADR-0029）
 	ErrorCode *CalendarExportIssueErrorCode `json:"error_code"`
 
 	// Id Example: 01M3TC5H00QV17BC0J9V3393ZP
@@ -732,7 +1440,8 @@ type CalendarExportIssue struct {
 // not_found は Google カレンダーで予定が消されたか、予定かカレンダーが見つからない（410、404、消された予定への 412）、
 // forbidden はサービスアカウントがカレンダーに書けない、rejected は Google が予定の内容を受け付けなかった（400）、
 // unavailable は Google に届かないか一時的なエラーが続いた、unappliable は Google カレンダーの変更を buddy の予定に読み替えられない
-// （終日にした予定、タイトルの利用者を引けない予定、繰り返しの予定そのものの変更）
+// （終日にした予定、タイトルの利用者を引けない予定、繰り返しの予定そのものの変更）。
+// not_buddy_primary は事業所が buddy を予定の正本にしていないので、書かずに保留にした（ADR-0029）
 type CalendarExportIssueErrorCode string
 
 // CalendarExportIssueStatus pending は書く待ち、succeeded は書き終えた、conflict は Google カレンダーで予定が変わっていたか消えていたので書かずに止めたか、
@@ -744,6 +1453,35 @@ type CalendarExportIssueStatus string
 // Example: staff@example.com
 type CalendarID = string
 
+// CalendarSyncStatus 結び付けたカレンダーの同期の状況
+type CalendarSyncStatus struct {
+	// ExternalCalendarId Example: 01M3TC5H00QV17BC0J9V3393ZP
+	ExternalCalendarId ID `json:"external_calendar_id"`
+
+	// LastError 最後の同期の失敗の理由。最後の同期が成功したか、まだ同期していなければ null。
+	// unreadable はカレンダーが無いかサービスアカウントに共有されていない、unavailable は Google カレンダーに届かないかエラーが返った、
+	// apply は読んだ予定を写せなかったことを表す
+	LastError *CalendarSyncStatusLastError `json:"last_error"`
+
+	// LastStatus 最後の同期の結果。never はまだ同期していない
+	LastStatus CalendarSyncStatusLastStatus `json:"last_status"`
+
+	// LastSucceededAt 変わった予定を最後まで読んで写した、最後の同期の時刻。成功したことが無ければ null
+	LastSucceededAt *time.Time `json:"last_succeeded_at"`
+
+	// StaffId Example: 01M3TC5H00QV17BC0J9V3393ZP
+	StaffId   ID     `json:"staff_id"`
+	StaffName string `json:"staff_name"`
+}
+
+// CalendarSyncStatusLastError 最後の同期の失敗の理由。最後の同期が成功したか、まだ同期していなければ null。
+// unreadable はカレンダーが無いかサービスアカウントに共有されていない、unavailable は Google カレンダーに届かないかエラーが返った、
+// apply は読んだ予定を写せなかったことを表す
+type CalendarSyncStatusLastError string
+
+// CalendarSyncStatusLastStatus 最後の同期の結果。never はまだ同期していない
+type CalendarSyncStatusLastStatus string
+
 // Cancel defines model for Cancel.
 type Cancel struct {
 	// Id Example: 01M3TC5H00QV17BC0J9V3393ZP
@@ -754,13 +1492,22 @@ type Cancel struct {
 	ScheduleId ID `json:"schedule_id"`
 }
 
-// CreateNameRequest defines model for CreateNameRequest.
-type CreateNameRequest struct {
-	Name string `json:"name"`
-}
-
 // Date defines model for Date.
 type Date = string
+
+// EndServiceConflict defines model for EndServiceConflict.
+type EndServiceConflict struct {
+	Code EndServiceConflictCode `json:"code"`
+
+	// Message 人が読む日本語の説明。文言は変わることがあるので、利用者の分岐は `code` で行う
+	Message string `json:"message"`
+
+	// Schedules code が patient_has_schedules のとき、残る予定と繰り返しの予定
+	Schedules *PatientSchedules `json:"schedules,omitempty"`
+}
+
+// EndServiceConflictCode defines model for EndServiceConflict.Code.
+type EndServiceConflictCode string
 
 // Error defines model for Error.
 type Error struct {
@@ -804,9 +1551,12 @@ type Facility struct {
 	CreatedAt time.Time `json:"created_at"`
 
 	// Id Example: 01M3TC5H00QV17BC0J9V3393ZP
-	Id        ID        `json:"id"`
-	Name      string    `json:"name"`
-	UpdatedAt time.Time `json:"updated_at"`
+	Id   ID     `json:"id"`
+	Name string `json:"name"`
+
+	// SourceMode 事業所の予定の正本。google_primary は Google カレンダー、buddy_primary は buddy である（ADR-0029）
+	SourceMode SourceMode `json:"source_mode"`
+	UpdatedAt  time.Time  `json:"updated_at"`
 }
 
 // Health defines model for Health.
@@ -840,6 +1590,9 @@ type ImportCounts struct {
 	// NeedsReview 取り込み方を選ぶ予定の数
 	NeedsReview int `json:"needs_review"`
 
+	// Overwrite 切り替えの取り込みで、取り込んだ後に Google で変わったか消えた予定の数。確定すると buddy の写しを消し、Google の今の内容で取り込み直す。ほかの取り込みでは 0
+	Overwrite int `json:"overwrite"`
+
 	// Recurring 取り込む繰り返しの予定の数
 	Recurring int `json:"recurring"`
 
@@ -855,7 +1608,8 @@ type ImportCounts struct {
 
 // ImportDecision defines model for ImportDecision.
 type ImportDecision struct {
-	// Action patient は選んだ利用者の訪問の予定に、normal は外部の予定のタイトルを buddy の予定のタイトルにした通常の予定にし、skip は取り込まない
+	// Action patient は選んだ利用者の訪問の予定に、normal は外部の予定のタイトルを buddy の予定のタイトルにした通常の予定にし、skip は取り込まない。
+	// reason が recurrence_unsupported の予定は skip だけを受ける
 	Action          ImportDecisionAction `json:"action"`
 	ExternalEventId string               `json:"external_event_id"`
 
@@ -866,7 +1620,8 @@ type ImportDecision struct {
 	Revision string `json:"revision"`
 }
 
-// ImportDecisionAction patient は選んだ利用者の訪問の予定に、normal は外部の予定のタイトルを buddy の予定のタイトルにした通常の予定にし、skip は取り込まない
+// ImportDecisionAction patient は選んだ利用者の訪問の予定に、normal は外部の予定のタイトルを buddy の予定のタイトルにした通常の予定にし、skip は取り込まない。
+// reason が recurrence_unsupported の予定は skip だけを受ける
 type ImportDecisionAction string
 
 // ImportPreview defines model for ImportPreview.
@@ -876,17 +1631,20 @@ type ImportPreview struct {
 
 	// NeedsReview 取り込み方を選ぶ予定。日時の順
 	NeedsReview []ImportReviewItem `json:"needs_review"`
-	RangeEnd    Date               `json:"range_end"`
-	RangeStart  Date               `json:"range_start"`
+
+	// RangeEnd 切り替えの取り込みでは、期間が終わりを持たないので null
+	RangeEnd   *Date `json:"range_end"`
+	RangeStart Date  `json:"range_start"`
 
 	// Skipped 取り込まない予定。日時の順で、日時の無い予定は最後
 	Skipped []ImportSkippedItem `json:"skipped"`
 }
 
-// ImportRange defines model for ImportRange.
+// ImportRange 事業所に open の予定の正本の切り替えがあるときは、range_start を切り替えの range_start にし、range_end を省くか null にする（ADR-0031）。
+// ほかの期間は 400 になる。open の切り替えが無いときは、range_end を省けない。
 type ImportRange struct {
-	// RangeEnd 期間の最後の日。この日を含む。range_start 以降で、range_start から 1 年未満の日
-	RangeEnd Date `json:"range_end"`
+	// RangeEnd 期間の最後の日。この日を含む。range_start 以降で、range_start から 1 年未満の日。切り替えの取り込みでは null
+	RangeEnd *Date `json:"range_end,omitempty"`
 
 	// RangeStart 期間の最初の日。この日から range_end までに始まる予定を取り込む
 	RangeStart Date `json:"range_start"`
@@ -905,9 +1663,9 @@ type ImportResult struct {
 	Id            ID  `json:"id"`
 	ImportedCount int `json:"imported_count"`
 
-	// RangeEnd この日を含む
-	RangeEnd   Date `json:"range_end"`
-	RangeStart Date `json:"range_start"`
+	// RangeEnd この日を含む。切り替えの取り込みでは、期間が終わりを持たないので null
+	RangeEnd   *Date `json:"range_end"`
+	RangeStart Date  `json:"range_start"`
 
 	// SkippedCount 取り込まない予定と、取り込まないを選んだ予定の数
 	SkippedCount int                `json:"skipped_count"`
@@ -932,10 +1690,14 @@ type ImportReviewItem struct {
 	// EndTime Example: 09:30
 	EndTime Time `json:"end_time"`
 
+	// EndsNextDay date の翌日の end_time に終わる予定のとき true。繰り返しの予定は最初の回の値
+	EndsNextDay bool `json:"ends_next_day"`
+
 	// ExternalEventId 取り込み方を送るときの Google の予定の ID。繰り返しの予定とその回では、親の予定の ID
 	ExternalEventId string `json:"external_event_id"`
 
-	// Reason patient_not_found は利用者がいない、patient_ambiguous は同じ名前の利用者が 2 人以上いる
+	// Reason patient_not_found は利用者がいない、patient_ambiguous は同じ名前の利用者が 2 人以上いる。
+	// recurrence_unsupported は buddy の繰り返しの規則に写せない繰り返しの予定で、切り替えの取り込みだけが返し、回に展開しない。取り込み方は skip だけを選べる
 	Reason ImportReviewItemReason `json:"reason"`
 
 	// Recurrence 繰り返しのまま取り込む予定の規則。ほかの予定では null
@@ -951,7 +1713,8 @@ type ImportReviewItem struct {
 	StartTime Time `json:"start_time"`
 }
 
-// ImportReviewItemReason patient_not_found は利用者がいない、patient_ambiguous は同じ名前の利用者が 2 人以上いる
+// ImportReviewItemReason patient_not_found は利用者がいない、patient_ambiguous は同じ名前の利用者が 2 人以上いる。
+// recurrence_unsupported は buddy の繰り返しの規則に写せない繰り返しの予定で、切り替えの取り込みだけが返し、回に展開しない。取り込み方は skip だけを選べる
 type ImportReviewItemReason string
 
 // ImportRun defines model for ImportRun.
@@ -962,9 +1725,9 @@ type ImportRun struct {
 	Id            ID  `json:"id"`
 	ImportedCount int `json:"imported_count"`
 
-	// RangeEnd この日を含む
-	RangeEnd   Date `json:"range_end"`
-	RangeStart Date `json:"range_start"`
+	// RangeEnd この日を含む。切り替えの取り込みでは、期間が終わりを持たないので null
+	RangeEnd   *Date `json:"range_end"`
+	RangeStart Date  `json:"range_start"`
 
 	// SkippedCount 取り込まない予定と、取り込まないを選んだ予定の数
 	SkippedCount int             `json:"skipped_count"`
@@ -983,19 +1746,37 @@ type ImportSkippedItem struct {
 	// EndTime 日をまたぐ予定では、翌日の時刻
 	EndTime *Time `json:"end_time"`
 
-	// Reason all_day は終日、multi_day は日をまたぐ（24:00 に終わる予定を含む）、unreadable_time は日時を読めない、
+	// EndsNextDay date の翌日の end_time に終わる予定に読み替えた予定のとき true。reason が multi_day の予定では false
+	EndsNextDay bool `json:"ends_next_day"`
+
+	// Reason all_day は終日、multi_day は終了が開始の翌日より後か、長さが 24 時間以上（翌日に終わる 24 時間未満の予定は含まない）、unreadable_time は日時を読めない、
 	// zero_length は長さが無い、unreadable_title はタイトルが空白だけか訪問のタイトルを読めない、
 	// service_not_found はタイトルのサービス内容がサービスコードに無い、
-	// staff_on_leave はカレンダーを結び付けた職員が休職しているので作らない新しい予定
+	// staff_on_leave はカレンダーを結び付けた職員が休職しているので作らない新しい予定、
+	// staff_non_visiting はカレンダーを結び付けた職員が訪問しない職員なので作らない新しい予定
 	Reason    ImportSkippedItemReason `json:"reason"`
 	StartTime *Time                   `json:"start_time"`
 }
 
-// ImportSkippedItemReason all_day は終日、multi_day は日をまたぐ（24:00 に終わる予定を含む）、unreadable_time は日時を読めない、
+// ImportSkippedItemReason all_day は終日、multi_day は終了が開始の翌日より後か、長さが 24 時間以上（翌日に終わる 24 時間未満の予定は含まない）、unreadable_time は日時を読めない、
 // zero_length は長さが無い、unreadable_title はタイトルが空白だけか訪問のタイトルを読めない、
 // service_not_found はタイトルのサービス内容がサービスコードに無い、
-// staff_on_leave はカレンダーを結び付けた職員が休職しているので作らない新しい予定
+// staff_on_leave はカレンダーを結び付けた職員が休職しているので作らない新しい予定、
+// staff_non_visiting はカレンダーを結び付けた職員が訪問しない職員なので作らない新しい予定
 type ImportSkippedItemReason string
+
+// OpenCalendarCutover 予定の正本を buddy に切り替えている間の、open の切り替え
+type OpenCalendarCutover struct {
+	// RangeStart 取り込みの期間の最初の日
+	RangeStart Date      `json:"range_start"`
+	StartedAt  time.Time `json:"started_at"`
+
+	// StartedBy 切り替えを始めた職員
+	StartedBy ID `json:"started_by"`
+
+	// StartedByName 切り替えを始めた職員の名前。職員の状態（休職、退職）によらず返し、予定の一覧を読める全ての職員に返す
+	StartedByName string `json:"started_by_name"`
+}
 
 // Patient defines model for Patient.
 type Patient struct {
@@ -1003,6 +1784,9 @@ type Patient struct {
 	AssignedStaffId   ID        `json:"assigned_staff_id"`
 	AssignedStaffName string    `json:"assigned_staff_name"`
 	CreatedAt         time.Time `json:"created_at"`
+
+	// EndedAt 利用の終了にした時刻。利用中なら null
+	EndedAt *time.Time `json:"ended_at"`
 
 	// FacilityId Example: 01M3TC5H00QV17BC0J9V3393ZP
 	FacilityId ID `json:"facility_id"`
@@ -1028,7 +1812,54 @@ type PatientCandidate struct {
 	PatientId ID `json:"patient_id"`
 }
 
-// Policy 職員に与える権限。8 つのレコードをマイグレーションが入れ、API では作らない
+// PatientSchedules 利用者の利用を終了するときに残る、その日以降の予定と繰り返しの予定。訪問の情報の利用者がその利用者の予定を含める
+type PatientSchedules struct {
+	// RecurringSchedules その日以降に終わる繰り返しの予定。終了日の無い繰り返しを含める。最初の回の日時の順
+	RecurringSchedules []PatientSchedules_RecurringSchedules `json:"recurring_schedules"`
+
+	// Schedules その日以降のキャンセルしていない単発の予定。日時の順
+	Schedules []PatientSchedules_Schedules `json:"schedules"`
+}
+
+// PatientSchedules_RecurringSchedules defines model for PatientSchedules.RecurringSchedules.
+type PatientSchedules_RecurringSchedules struct {
+	// Date 最初の回の日付
+	Date Date `json:"date"`
+
+	// EndDate 終了日。終了日が無ければ null
+	EndDate *string `json:"end_date"`
+
+	// EndTime Example: 09:30
+	EndTime Time `json:"end_time"`
+
+	// EndsNextDay 全ての回が、回の日付の翌日の end_time に終わるとき true
+	EndsNextDay bool `json:"ends_next_day"`
+
+	// Id Example: 01M3TC5H00QV17BC0J9V3393ZP
+	Id ID `json:"id"`
+
+	// StartTime Example: 09:30
+	StartTime Time `json:"start_time"`
+}
+
+// PatientSchedules_Schedules defines model for PatientSchedules.Schedules.
+type PatientSchedules_Schedules struct {
+	Date Date `json:"date"`
+
+	// EndTime Example: 09:30
+	EndTime Time `json:"end_time"`
+
+	// EndsNextDay date の翌日の end_time に終わる予定のとき true
+	EndsNextDay bool `json:"ends_next_day"`
+
+	// Id Example: 01M3TC5H00QV17BC0J9V3393ZP
+	Id ID `json:"id"`
+
+	// StartTime Example: 09:30
+	StartTime Time `json:"start_time"`
+}
+
+// Policy 職員に与える権限。9 つのレコードをマイグレーションが入れ、API では作らない
 type Policy struct {
 	// Code 認可が読む権限の識別子
 	//
@@ -1065,19 +1896,29 @@ type PreferredGender string
 // PreferredTime defines model for PreferredTime.
 type PreferredTime string
 
-// RecurringRule weekly は day_of_week だけを、monthly は day_of_month だけか、week_of_month と day_of_week の組を指定できる。
+// RecurringRule weekly は days_of_week と interval だけを、monthly は day_of_month だけか、week_of_month と day_of_week の組を指定できる。
 // 指定しない項目は、最初の日付の曜日や日から決める。
 // 最初の日付が規則の回に当たらない組み合わせ（火曜の最初の日付に毎週の月曜など）は、入力のエラーにする。
+// weekly の回は、日曜に始まる週で数え、最初の日付を含む週を 1 週目として、1 週目から interval の倍数だけ後の週の days_of_week の曜日にある（ADR-0038）。
+// 繰り返しの終わりは end_date だけで持ち、回数は持たない。
 type RecurringRule struct {
 	DayOfMonth *int `json:"day_of_month"`
 
-	// DayOfWeek 1 が月曜、7 が日曜
+	// DayOfWeek monthly の week_of_month の週の曜日。1 が月曜、7 が日曜。weekly には指定できない
 	DayOfWeek *int `json:"day_of_week"`
 
+	// DaysOfWeek weekly の曜日。1 が月曜、7 が日曜で、重ならない 1 つ以上の曜日を指定する。省くと最初の日付の曜日の 1 つにする。
+	// レスポンスでは、weekly は月曜から日曜の順に並べて必ず返し、monthly は null である
+	DaysOfWeek *[]int `json:"days_of_week"`
+
 	// EndDate この日を含む
-	EndDate     *Date                  `json:"end_date"`
-	Frequency   RecurringRuleFrequency `json:"frequency"`
-	WeekOfMonth *int                   `json:"week_of_month"`
+	EndDate   *Date                  `json:"end_date"`
+	Frequency RecurringRuleFrequency `json:"frequency"`
+
+	// Interval weekly の間隔の週の数。1 が毎週、2 が隔週である。weekly で省くと 1 にする。monthly には指定できない（1 も 400 になる）。
+	// レスポンスでは、weekly は必ず返し、monthly は null である
+	Interval    *int `json:"interval"`
+	WeekOfMonth *int `json:"week_of_month"`
 }
 
 // RecurringRuleFrequency defines model for RecurringRule.Frequency.
@@ -1094,6 +1935,9 @@ type RecurringSchedule struct {
 	// EndTime Example: 09:30
 	EndTime Time `json:"end_time"`
 
+	// EndsNextDay 全ての回が、回の日付の翌日の end_time に終わるとき true
+	EndsNextDay bool `json:"ends_next_day"`
+
 	// ExclusionDates 単発の予定に置き換えたため、繰り返しから外した日付
 	ExclusionDates []Date `json:"exclusion_dates"`
 
@@ -1104,9 +1948,11 @@ type RecurringSchedule struct {
 	Id             ID   `json:"id"`
 	IsOverTimeWork bool `json:"is_over_time_work"`
 
-	// RecurringRule weekly は day_of_week だけを、monthly は day_of_month だけか、week_of_month と day_of_week の組を指定できる。
+	// RecurringRule weekly は days_of_week と interval だけを、monthly は day_of_month だけか、week_of_month と day_of_week の組を指定できる。
 	// 指定しない項目は、最初の日付の曜日や日から決める。
 	// 最初の日付が規則の回に当たらない組み合わせ（火曜の最初の日付に毎週の月曜など）は、入力のエラーにする。
+	// weekly の回は、日曜に始まる週で数え、最初の日付を含む週を 1 週目として、1 週目から interval の倍数だけ後の週の days_of_week の曜日にある（ADR-0038）。
+	// 繰り返しの終わりは end_date だけで持ち、回数は持たない。
 	RecurringRule RecurringRule `json:"recurring_rule"`
 
 	// ScheduleType 通常の予定はタイトルを、訪問の予定は訪問の情報を必須とする
@@ -1148,13 +1994,22 @@ type RetireConflictCode string
 
 // Schedule defines model for Schedule.
 type Schedule struct {
-	Cancel      *Cancel   `json:"cancel"`
+	Cancel *Cancel `json:"cancel"`
+
+	// CreatedAt google_calendar の予定では、Google で最後に変えた時刻（無ければ写した時刻）
 	CreatedAt   time.Time `json:"created_at"`
 	Date        Date      `json:"date"`
 	Description *string   `json:"description"`
 
 	// EndTime Example: 09:30
 	EndTime Time `json:"end_time"`
+
+	// EndsNextDay date の翌日の end_time に終わる予定のとき true
+	EndsNextDay bool `json:"ends_next_day"`
+
+	// Etag google_calendar の予定の、Google カレンダーの etag。予定を変えるか取り消すときに送る。
+	// buddy の予定では null で、繰り返しの回では親の予定の etag である
+	Etag *string `json:"etag"`
 
 	// FacilityId Example: 01M3TC5H00QV17BC0J9V3393ZP
 	FacilityId ID `json:"facility_id"`
@@ -1165,8 +2020,16 @@ type Schedule struct {
 	// IsOverTimeWork 17 時以降に始まる予定のとき true
 	IsOverTimeWork bool `json:"is_over_time_work"`
 
-	// RecurringScheduleId 繰り返しの予定の 1 回を置き換えた予定のとき、元の繰り返しの予定
+	// RecurringRule google_primary の事業所で、繰り返しの親を展開した回のときの、親の繰り返しの規則。ほかの予定では null である。
+	// 指定しない項目は、親の最初の日付の曜日や日から決まり、展開した回の日付の曜日や日と同じである（ADR-0037）
+	RecurringRule *RecurringRule `json:"recurring_rule"`
+
+	// RecurringScheduleId 繰り返しの予定の 1 回を置き換えた予定のとき、元の繰り返しの予定。
+	// google_primary の事業所で、繰り返しの親を展開した回のときは、親の予定の一覧での ID で、changeRecurringRule の recurring_schedule_id に使う
 	RecurringScheduleId *ID `json:"recurring_schedule_id"`
+
+	// ReviewReason google_calendar の予定のうち、確認が必要な予定の理由。ほかの予定では null
+	ReviewReason *ScheduleReviewReason `json:"review_reason"`
 
 	// ScheduleType 通常の予定はタイトルを、訪問の予定は訪問の情報を必須とする
 	ScheduleType ScheduleTypeName `json:"schedule_type"`
@@ -1174,16 +2037,36 @@ type Schedule struct {
 	// ScheduleTypeId Example: 01M3TC5H00QV17BC0J9V3393ZP
 	ScheduleTypeId ID `json:"schedule_type_id"`
 
+	// Source 予定の読み元。buddy は buddy の予定、google_calendar は google_primary の事業所で同期が写した Google カレンダーの予定（Projection）である。
+	// google_calendar の予定は、etag を付けて変更と取り消しができる。繰り返しの回も同じで、回の etag は親の予定の etag である。
+	Source ScheduleSource `json:"source"`
+
 	// StaffId Example: 01M3TC5H00QV17BC0J9V3393ZP
 	StaffId   ID     `json:"staff_id"`
 	StaffName string `json:"staff_name"`
 
 	// StartTime Example: 09:30
-	StartTime Time       `json:"start_time"`
-	Title     *string    `json:"title"`
+	StartTime Time    `json:"start_time"`
+	Title     *string `json:"title"`
+
+	// UpdatedAt google_calendar の予定では、Google で最後に変えた時刻（無ければ写した時刻）
 	UpdatedAt time.Time  `json:"updated_at"`
 	VisitInfo *VisitInfo `json:"visit_info"`
 }
+
+// ScheduleSource 予定の読み元。buddy は buddy の予定、google_calendar は google_primary の事業所で同期が写した Google カレンダーの予定（Projection）である。
+// google_calendar の予定は、etag を付けて変更と取り消しができる。繰り返しの回も同じで、回の etag は親の予定の etag である。
+type ScheduleSource string
+
+// ScheduleReviewReason Google カレンダーの予定を、buddy の予定に読み替えられなかった理由。
+// recurrence_unsupported は buddy の繰り返しの規則に写せない繰り返しの予定で、回に展開せず最初の回の 1 件で返す。
+// patient_not_found と patient_ambiguous はタイトルの利用者名の利用者がいないか 2 人以上いる予定、
+// service_code_not_found はタイトルのサービス内容がサービスコードのマスタに無い予定、title_unreadable はタイトルが空か、訪問のタイトルを読めない予定である。
+// patient_not_found、patient_ambiguous、service_code_not_found、title_unreadable の予定は、訪問の情報（visit_info）を空にし、
+// Google のタイトルを title に入れた通常の予定として返す。
+// title_mismatch は、buddy で訪問の情報を入力した予定のうち、Google でタイトルを変え、タイトルの利用者かサービス内容が
+// buddy の訪問の情報と違う予定である。訪問の情報は buddy の内容で返す（ADR-0029）。
+type ScheduleReviewReason string
 
 // ScheduleType defines model for ScheduleType.
 type ScheduleType struct {
@@ -1216,8 +2099,11 @@ type SlotRequest struct {
 	Date        Date    `json:"date"`
 	Description *string `json:"description,omitempty"`
 
-	// EndTime start_time より後
+	// EndTime ends_next_day が false なら start_time より後、true なら start_time より前。start_time と同じ時刻にはできない
 	EndTime Time `json:"end_time"`
+
+	// EndsNextDay 終了が date の翌日の end_time か。省くと false。翌日の 0:00 に終わる予定は、end_time を 00:00 にして true にする
+	EndsNextDay *bool `json:"ends_next_day,omitempty"`
 
 	// ScheduleTypeId Example: 01M3TC5H00QV17BC0J9V3393ZP
 	ScheduleTypeId ID `json:"schedule_type_id"`
@@ -1230,6 +2116,9 @@ type SlotRequest struct {
 	Title     *string           `json:"title,omitempty"`
 	VisitInfo *VisitInfoRequest `json:"visit_info,omitempty"`
 }
+
+// SourceMode 事業所の予定の正本。google_primary は Google カレンダー、buddy_primary は buddy である（ADR-0029）
+type SourceMode string
 
 // Staff defines model for Staff.
 type Staff struct {
@@ -1266,11 +2155,14 @@ type Staff struct {
 	Team      Ref         `json:"team"`
 	UpdatedAt time.Time   `json:"updated_at"`
 	Username  string      `json:"username"`
+
+	// Visits 訪問するか。false の職員は、予定のカレンダーの職員の列と、予定と担当の候補に出ず、予定と担当を新しく割り振れない
+	Visits bool `json:"visits"`
 }
 
-// StaffAssignments 職員を休職か退職にするときに残る、その日以降の予定、繰り返しの予定、担当の利用者。職員が予定の職員、主訪問者、同行者のどれかの予定を含める
+// StaffAssignments 職員を休職、退職、訪問しない職員にするときに残る、その日以降の予定、繰り返しの予定、担当の利用者。職員が予定の職員、主訪問者、同行者のどれかの予定を含める
 type StaffAssignments struct {
-	// Patients 職員が主に担当する利用者。名前の順
+	// Patients 職員が主に担当する利用中の利用者。利用の終了の利用者は含めない（ADR-0005）。名前の順
 	Patients []StaffAssignments_Patients `json:"patients"`
 
 	// RecurringSchedules その日以降に終わる繰り返しの予定。終了日の無い繰り返しを含める。最初の回の日時の順
@@ -1298,6 +2190,9 @@ type StaffAssignments_RecurringSchedules struct {
 	// EndTime Example: 09:30
 	EndTime Time `json:"end_time"`
 
+	// EndsNextDay 全ての回が、回の日付の翌日の end_time に終わるとき true
+	EndsNextDay bool `json:"ends_next_day"`
+
 	// Id Example: 01M3TC5H00QV17BC0J9V3393ZP
 	Id ID `json:"id"`
 
@@ -1311,6 +2206,9 @@ type StaffAssignments_Schedules struct {
 
 	// EndTime Example: 09:30
 	EndTime Time `json:"end_time"`
+
+	// EndsNextDay date の翌日の end_time に終わる予定のとき true
+	EndsNextDay bool `json:"ends_next_day"`
 
 	// Id Example: 01M3TC5H00QV17BC0J9V3393ZP
 	Id ID `json:"id"`
@@ -1358,6 +2256,9 @@ type StaffDetail struct {
 	Team      Ref       `json:"team"`
 	UpdatedAt time.Time `json:"updated_at"`
 	Username  string    `json:"username"`
+
+	// Visits 訪問するか。false の職員は、予定のカレンダーの職員の列と、予定と担当の候補に出ず、予定と担当を新しく割り振れない
+	Visits bool `json:"visits"`
 }
 
 // StaffDetail_Policies defines model for StaffDetail.Policies.
@@ -1385,15 +2286,35 @@ type StaffStatus string
 
 // StaffStatusChange defines model for StaffStatusChange.
 type StaffStatusChange struct {
-	// Assignments 職員を休職か退職にするときに残る、その日以降の予定、繰り返しの予定、担当の利用者。職員が予定の職員、主訪問者、同行者のどれかの予定を含める
+	// Assignments 職員を休職、退職、訪問しない職員にするときに残る、その日以降の予定、繰り返しの予定、担当の利用者。職員が予定の職員、主訪問者、同行者のどれかの予定を含める
 	Assignments StaffAssignments `json:"assignments"`
 	Staff       StaffDetail      `json:"staff"`
 }
 
+// Team defines model for Team.
+type Team struct {
+	// Color チームの色。画面は packages/ui のチームの色のトークン（team- の後ろがこの値）で塗る。事業所の中で重なってよい。
+	// 並びは、色を省いて作ったチームに選ぶ順である。
+	Color     TeamColor `json:"color"`
+	CreatedAt time.Time `json:"created_at"`
+
+	// FacilityId Example: 01M3TC5H00QV17BC0J9V3393ZP
+	FacilityId ID `json:"facility_id"`
+
+	// Id Example: 01M3TC5H00QV17BC0J9V3393ZP
+	Id        ID        `json:"id"`
+	Name      string    `json:"name"`
+	UpdatedAt time.Time `json:"updated_at"`
+}
+
+// TeamColor チームの色。画面は packages/ui のチームの色のトークン（team- の後ろがこの値）で塗る。事業所の中で重なってよい。
+// 並びは、色を省いて作ったチームに選ぶ順である。
+type TeamColor string
+
 // Time Example: 09:30
 type Time = string
 
-// Unit 部署かチーム
+// Unit 部署
 type Unit struct {
 	CreatedAt time.Time `json:"created_at"`
 
@@ -1404,6 +2325,14 @@ type Unit struct {
 	Id        ID        `json:"id"`
 	Name      string    `json:"name"`
 	UpdatedAt time.Time `json:"updated_at"`
+}
+
+// UnlistedEventCount 職員の、予定のカレンダーに出せない Google カレンダーの予定の件数。予定の中身は返さない（#672）
+type UnlistedEventCount struct {
+	Count int `json:"count"`
+
+	// StaffId Example: 01M3TC5H00QV17BC0J9V3393ZP
+	StaffId ID `json:"staff_id"`
 }
 
 // VisitCategory defines model for VisitCategory.
@@ -1447,6 +2376,9 @@ type VisitInfoRequest struct {
 	ServiceCodeId    ID    `json:"service_code_id"`
 	VisitCategoryIds *[]ID `json:"visit_category_ids,omitempty"`
 }
+
+// CalendarCutoverID Example: 01M3TC5H00QV17BC0J9V3393ZP
+type CalendarCutoverID = ID
 
 // CalendarExportID Example: 01M3TC5H00QV17BC0J9V3393ZP
 type CalendarExportID = ID
@@ -1493,13 +2425,18 @@ type NotFound = Error
 // Unauthorized defines model for Unauthorized.
 type Unauthorized = Error
 
+// UpdateDepartmentJSONBody defines parameters for UpdateDepartment.
+type UpdateDepartmentJSONBody struct {
+	Name string `json:"name"`
+}
+
 // CreateCalendarImportJSONBody defines parameters for CreateCalendarImport.
 type CreateCalendarImportJSONBody struct {
 	// Decisions プレビューの needs_review の全ての予定の取り込み方
 	Decisions []ImportDecision `json:"decisions"`
 
-	// RangeEnd 期間の最後の日。この日を含む。range_start 以降で、range_start から 1 年未満の日
-	RangeEnd Date `json:"range_end"`
+	// RangeEnd 期間の最後の日。この日を含む。range_start 以降で、range_start から 1 年未満の日。切り替えの取り込みでは null
+	RangeEnd *Date `json:"range_end,omitempty"`
 
 	// RangeStart 期間の最初の日。この日から range_end までに始まる予定を取り込む
 	RangeStart Date `json:"range_start"`
@@ -1513,6 +2450,11 @@ type ListCalendarExportIssues200JSONResponseBody struct {
 // GetCalendarServiceAccount200JSONResponseBody defines parameters for GetCalendarServiceAccount.
 type GetCalendarServiceAccount200JSONResponseBody struct {
 	Email string `json:"email"`
+}
+
+// CreateDepartmentJSONBody defines parameters for CreateDepartment.
+type CreateDepartmentJSONBody struct {
+	Name string `json:"name"`
 }
 
 // ListExternalCalendars200JSONResponseBody defines parameters for ListExternalCalendars.
@@ -1555,6 +2497,9 @@ type ListPatientsParams struct {
 
 	// AssignedStaff 担当の職員の名前で一致させる
 	AssignedStaff *string `form:"assigned_staff,omitempty" json:"assigned_staff,omitempty"`
+
+	// IncludeEnded true なら利用の終了の利用者を含める。省くか false なら利用中の利用者だけを返す
+	IncludeEnded *bool `form:"include_ended,omitempty" json:"include_ended,omitempty"`
 
 	// SortField 省くと name の昇順
 	SortField *ListPatientsParamsSortField `form:"sort_field,omitempty" json:"sort_field,omitempty"`
@@ -1614,8 +2559,58 @@ type ListSchedulesParamsSortOrder string
 
 // ListSchedules200JSONResponseBody defines parameters for ListSchedules.
 type ListSchedules200JSONResponseBody struct {
-	RecurringSchedules []RecurringSchedule `json:"recurring_schedules"`
-	Schedules          []Schedule          `json:"schedules"`
+	// AllDayEvents google_primary の事業所で、date_from から date_to までの期間に重なる、職員が見てよい職員の Google カレンダーの終日の予定。
+	// buddy の予定ではないので、取得、変更、取り消しはできず、照合の対象にもしない。繰り返しの終日の予定は回ごとに返す。
+	// buddy の繰り返しの規則に写せない繰り返しの終日の予定は、回が期間に重なりうる間、最初の回の 1 件にし、review_reason を付けて返す。
+	// 最初の回は期間の外のことがある（#972）。
+	// buddy_primary の事業所と、schedule_type で絞ったときは空である（#672）
+	AllDayEvents []AllDayEvent `json:"all_day_events"`
+
+	// CalendarSyncs google_primary の事業所で、職員が見てよい職員に結び付けた、外していないカレンダーの同期の状況。buddy_primary の事業所では空である。
+	// 最新でないとみなす時間は画面が決める。
+	CalendarSyncs []CalendarSyncStatus `json:"calendar_syncs"`
+
+	// Cutover google_primary の事業所で、予定の正本を buddy に切り替えている間の open の切り替え。無ければ null（ADR-0031）
+	Cutover            *OpenCalendarCutover `json:"cutover"`
+	RecurringSchedules []RecurringSchedule  `json:"recurring_schedules"`
+	Schedules          []Schedule           `json:"schedules"`
+
+	// SourceMode 事業所の予定の正本。google_primary は Google カレンダー、buddy_primary は buddy である（ADR-0029）
+	SourceMode SourceMode `json:"source_mode"`
+
+	// UnlistedEventCounts google_primary の事業所で、date_from から date_to までの期間に重なる、職員が見てよい職員の、schedules にも all_day_events にも出せない
+	// Google カレンダーの予定の、職員ごとの件数。2 日以上にわたる予定、24 時間以上の予定、開始か終了の日時を読めない予定、長さが 0 以下の予定を数える。
+	// 繰り返しの予定は、期間に重なる回の数を数える。日時を読めない予定は、開始か終了の読めた方の日で期間に重なるかを決め、
+	// どちらも読めなければどの期間でも数える。件数が 1 以上の職員だけを返す。
+	// buddy_primary の事業所と、schedule_type で絞ったときは空である（#672）
+	UnlistedEventCounts []UnlistedEventCount `json:"unlisted_event_counts"`
+}
+
+// CreateScheduleJSONBody defines parameters for CreateSchedule.
+type CreateScheduleJSONBody struct {
+	Date        Date    `json:"date"`
+	Description *string `json:"description,omitempty"`
+
+	// EndTime ends_next_day が false なら start_time より後、true なら start_time より前。start_time と同じ時刻にはできない
+	EndTime Time `json:"end_time"`
+
+	// EndsNextDay 終了が date の翌日の end_time か。省くと false。翌日の 0:00 に終わる予定は、end_time を 00:00 にして true にする
+	EndsNextDay *bool `json:"ends_next_day,omitempty"`
+
+	// Id 画面が決める予定の ID（ULID）。google_primary の事業所では必須で、Google の予定の ID をこの ID から決める。
+	// buddy_primary の事業所では、送れば予定の ID にし、省けばサーバーが決める。
+	Id *ID `json:"id,omitempty"`
+
+	// ScheduleTypeId Example: 01M3TC5H00QV17BC0J9V3393ZP
+	ScheduleTypeId ID `json:"schedule_type_id"`
+
+	// StaffId Example: 01M3TC5H00QV17BC0J9V3393ZP
+	StaffId ID `json:"staff_id"`
+
+	// StartTime Example: 09:30
+	StartTime Time              `json:"start_time"`
+	Title     *string           `json:"title,omitempty"`
+	VisitInfo *VisitInfoRequest `json:"visit_info,omitempty"`
 }
 
 // CreateRecurringScheduleJSONBody defines parameters for CreateRecurringSchedule.
@@ -1623,12 +2618,21 @@ type CreateRecurringScheduleJSONBody struct {
 	Date        Date    `json:"date"`
 	Description *string `json:"description,omitempty"`
 
-	// EndTime start_time より後
+	// EndTime ends_next_day が false なら start_time より後、true なら start_time より前。start_time と同じ時刻にはできない
 	EndTime Time `json:"end_time"`
 
-	// RecurringRule weekly は day_of_week だけを、monthly は day_of_month だけか、week_of_month と day_of_week の組を指定できる。
+	// EndsNextDay 終了が date の翌日の end_time か。省くと false。翌日の 0:00 に終わる予定は、end_time を 00:00 にして true にする
+	EndsNextDay *bool `json:"ends_next_day,omitempty"`
+
+	// Id 画面が決める繰り返しの予定の ID（ULID）。google_primary の事業所では必須で、Google の予定の ID をこの ID から決める。
+	// buddy_primary の事業所では読まない。
+	Id *ID `json:"id,omitempty"`
+
+	// RecurringRule weekly は days_of_week と interval だけを、monthly は day_of_month だけか、week_of_month と day_of_week の組を指定できる。
 	// 指定しない項目は、最初の日付の曜日や日から決める。
 	// 最初の日付が規則の回に当たらない組み合わせ（火曜の最初の日付に毎週の月曜など）は、入力のエラーにする。
+	// weekly の回は、日曜に始まる週で数え、最初の日付を含む週を 1 週目として、1 週目から interval の倍数だけ後の週の days_of_week の曜日にある（ADR-0038）。
+	// 繰り返しの終わりは end_date だけで持ち、回数は持たない。
 	RecurringRule RecurringRule `json:"recurring_rule"`
 
 	// ScheduleTypeId Example: 01M3TC5H00QV17BC0J9V3393ZP
@@ -1641,6 +2645,14 @@ type CreateRecurringScheduleJSONBody struct {
 	StartTime Time              `json:"start_time"`
 	Title     *string           `json:"title,omitempty"`
 	VisitInfo *VisitInfoRequest `json:"visit_info,omitempty"`
+}
+
+// CreateTeamJSONBody defines parameters for CreateTeam.
+type CreateTeamJSONBody struct {
+	// Color チームの色。画面は packages/ui のチームの色のトークン（team- の後ろがこの値）で塗る。事業所の中で重なってよい。
+	// 並びは、色を省いて作ったチームに選ぶ順である。
+	Color *TeamColor `json:"color,omitempty"`
+	Name  string     `json:"name"`
 }
 
 // ListUsersParams defines parameters for ListUsers.
@@ -1687,6 +2699,33 @@ type CreateUserJSONBody struct {
 	// TeamId Example: 01M3TC5H00QV17BC0J9V3393ZP
 	TeamId   ID     `json:"team_id"`
 	Username string `json:"username"`
+
+	// Visits 訪問するか。false の職員は、予定のカレンダーの職員の列と、予定と担当の候補に出ない
+	Visits *bool `json:"visits,omitempty"`
+}
+
+// GetMyExternalCalendar200JSONResponseBody defines parameters for GetMyExternalCalendar.
+type GetMyExternalCalendar200JSONResponseBody struct {
+	// ExternalCalendar 結び付いたカレンダー。結び付いていなければ null
+	ExternalCalendar *ExternalCalendar `json:"external_calendar"`
+}
+
+// UpdatePatientJSONBody defines parameters for UpdatePatient.
+type UpdatePatientJSONBody struct {
+	// AssignedStaffId Example: 01M3TC5H00QV17BC0J9V3393ZP
+	AssignedStaffId ID              `json:"assigned_staff_id"`
+	Name            string          `json:"name"`
+	PreferredGender PreferredGender `json:"preferred_gender"`
+	PreferredTime   PreferredTime   `json:"preferred_time"`
+
+	// ServiceCodeId Example: 01M3TC5H00QV17BC0J9V3393ZP
+	ServiceCodeId ID `json:"service_code_id"`
+}
+
+// ResumePatientServiceJSONBody defines parameters for ResumePatientService.
+type ResumePatientServiceJSONBody struct {
+	// AssignedStaffId Example: 01M3TC5H00QV17BC0J9V3393ZP
+	AssignedStaffId ID `json:"assigned_staff_id"`
 }
 
 // ChangeOccurrenceJSONBody defines parameters for ChangeOccurrence.
@@ -1694,8 +2733,11 @@ type ChangeOccurrenceJSONBody struct {
 	Date        Date    `json:"date"`
 	Description *string `json:"description,omitempty"`
 
-	// EndTime start_time より後
+	// EndTime ends_next_day が false なら start_time より後、true なら start_time より前。start_time と同じ時刻にはできない
 	EndTime Time `json:"end_time"`
+
+	// EndsNextDay 終了が date の翌日の end_time か。省くと false。翌日の 0:00 に終わる予定は、end_time を 00:00 にして true にする
+	EndsNextDay *bool `json:"ends_next_day,omitempty"`
 
 	// OriginalDate 置き換える回の日付。繰り返しの規則に当たる日に限る
 	OriginalDate string `json:"original_date"`
@@ -1712,9 +2754,99 @@ type ChangeOccurrenceJSONBody struct {
 	VisitInfo *VisitInfoRequest `json:"visit_info,omitempty"`
 }
 
+// CancelOccurrenceJSONBody defines parameters for CancelOccurrence.
+type CancelOccurrenceJSONBody struct {
+	// OriginalDate キャンセルする回の日付。繰り返しの規則に当たる日に限る
+	OriginalDate string `json:"original_date"`
+	Reason       string `json:"reason"`
+}
+
+// DeleteOccurrenceJSONBody defines parameters for DeleteOccurrence.
+type DeleteOccurrenceJSONBody struct {
+	// OriginalDate 削除する回の日付。繰り返しの規則に当たる、今日（Asia/Tokyo）以降の日に限る
+	OriginalDate string `json:"original_date"`
+}
+
+// ChangeRecurringRuleJSONBody defines parameters for ChangeRecurringRule.
+type ChangeRecurringRuleJSONBody struct {
+	// EffectiveDate 適用の日。今日（Asia/Tokyo）以降に限る。規則の終了日のほかの項目を変えるときは必須で、終了日だけを変えるときは読まない
+	EffectiveDate *string `json:"effective_date,omitempty"`
+
+	// Etag 画面が読んだ親の予定の etag。google_primary の事業所では必須で、buddy_primary の事業所では読まない
+	Etag *string `json:"etag,omitempty"`
+
+	// FirstWeekDate 新しい規則の 1 週目を決める日（ADR-0038）。分けるときは、この日を含む週を 1 週目にして毎週の間隔を数え、
+	// effective_date 以降で新しい規則が当たる最初の日を最初の日付にする。画面は開いた回の日を送る。
+	// 元の繰り返しの最初の日付以降、effective_date 以前に限る。省くと effective_date を使う。終了日だけを変えるときは読まない
+	FirstWeekDate *string `json:"first_week_date,omitempty"`
+
+	// Id 繰り返しの予定を分けるときの、新しい繰り返しの予定の ID（ULID）。google_primary の事業所で規則を変えるときは必須で、
+	// Google の予定の ID をこの ID から決める。buddy_primary の事業所では読まない。
+	Id *ID `json:"id,omitempty"`
+
+	// RecurringRule weekly は days_of_week と interval だけを、monthly は day_of_month だけか、week_of_month と day_of_week の組を指定できる。
+	// 指定しない項目は、最初の日付の曜日や日から決める。
+	// 最初の日付が規則の回に当たらない組み合わせ（火曜の最初の日付に毎週の月曜など）は、入力のエラーにする。
+	// weekly の回は、日曜に始まる週で数え、最初の日付を含む週を 1 週目として、1 週目から interval の倍数だけ後の週の days_of_week の曜日にある（ADR-0038）。
+	// 繰り返しの終わりは end_date だけで持ち、回数は持たない。
+	RecurringRule RecurringRule `json:"recurring_rule"`
+}
+
+// UpdateScheduleJSONBody defines parameters for UpdateSchedule.
+type UpdateScheduleJSONBody struct {
+	Date        Date    `json:"date"`
+	Description *string `json:"description,omitempty"`
+
+	// EndTime ends_next_day が false なら start_time より後、true なら start_time より前。start_time と同じ時刻にはできない
+	EndTime Time `json:"end_time"`
+
+	// EndsNextDay 終了が date の翌日の end_time か。省くと false。翌日の 0:00 に終わる予定は、end_time を 00:00 にして true にする
+	EndsNextDay *bool `json:"ends_next_day,omitempty"`
+
+	// Etag 画面が読んだ予定の etag。google_primary の事業所では必須で、buddy_primary の事業所では読まない
+	Etag *string `json:"etag,omitempty"`
+
+	// ScheduleTypeId Example: 01M3TC5H00QV17BC0J9V3393ZP
+	ScheduleTypeId ID `json:"schedule_type_id"`
+
+	// StaffId Example: 01M3TC5H00QV17BC0J9V3393ZP
+	StaffId ID `json:"staff_id"`
+
+	// StartTime Example: 09:30
+	StartTime Time              `json:"start_time"`
+	Title     *string           `json:"title,omitempty"`
+	VisitInfo *VisitInfoRequest `json:"visit_info,omitempty"`
+}
+
 // CancelScheduleJSONBody defines parameters for CancelSchedule.
 type CancelScheduleJSONBody struct {
-	Reason string `json:"reason"`
+	// Etag 画面が読んだ予定の etag。google_primary の事業所では必須で、buddy_primary の事業所では読まない
+	Etag   *string `json:"etag,omitempty"`
+	Reason string  `json:"reason"`
+}
+
+// UpdateTeamJSONBody defines parameters for UpdateTeam.
+type UpdateTeamJSONBody struct {
+	// Color チームの色。画面は packages/ui のチームの色のトークン（team- の後ろがこの値）で塗る。事業所の中で重なってよい。
+	// 並びは、色を省いて作ったチームに選ぶ順である。
+	Color TeamColor `json:"color"`
+	Name  string    `json:"name"`
+}
+
+// UpdateUserJSONBody defines parameters for UpdateUser.
+type UpdateUserJSONBody struct {
+	// DepartmentId Example: 01M3TC5H00QV17BC0J9V3393ZP
+	DepartmentId ID `json:"department_id"`
+
+	// PhoneNumber 11 桁以内の数字。先頭の + は省いてよい。省くか null なら電話番号を消す
+	PhoneNumber *string `json:"phone_number,omitempty"`
+
+	// TeamId Example: 01M3TC5H00QV17BC0J9V3393ZP
+	TeamId   ID     `json:"team_id"`
+	Username string `json:"username"`
+
+	// Visits 訪問するか。false の職員は、予定のカレンダーの職員の列と、予定と担当の候補に出ない
+	Visits bool `json:"visits"`
 }
 
 // StartUserLeaveJSONBody defines parameters for StartUserLeave.
@@ -1737,11 +2869,17 @@ type ChangeUserPositionJSONBody struct {
 	PositionId ID `json:"position_id"`
 }
 
+// UpdateDepartmentJSONRequestBody defines body for UpdateDepartment for application/json ContentType.
+type UpdateDepartmentJSONRequestBody UpdateDepartmentJSONBody
+
 // CreateCalendarImportPreviewJSONRequestBody defines body for CreateCalendarImportPreview for application/json ContentType.
 type CreateCalendarImportPreviewJSONRequestBody = ImportRange
 
 // CreateCalendarImportJSONRequestBody defines body for CreateCalendarImport for application/json ContentType.
 type CreateCalendarImportJSONRequestBody CreateCalendarImportJSONBody
+
+// CreateDepartmentJSONRequestBody defines body for CreateDepartment for application/json ContentType.
+type CreateDepartmentJSONRequestBody CreateDepartmentJSONBody
 
 // CreateExternalCalendarJSONRequestBody defines body for CreateExternalCalendar for application/json ContentType.
 type CreateExternalCalendarJSONRequestBody CreateExternalCalendarJSONBody
@@ -1756,25 +2894,46 @@ type CreatePatientJSONRequestBody CreatePatientJSONBody
 type CreatePositionJSONRequestBody CreatePositionJSONBody
 
 // CreateScheduleJSONRequestBody defines body for CreateSchedule for application/json ContentType.
-type CreateScheduleJSONRequestBody = SlotRequest
+type CreateScheduleJSONRequestBody CreateScheduleJSONBody
 
 // CreateRecurringScheduleJSONRequestBody defines body for CreateRecurringSchedule for application/json ContentType.
 type CreateRecurringScheduleJSONRequestBody CreateRecurringScheduleJSONBody
 
 // CreateTeamJSONRequestBody defines body for CreateTeam for application/json ContentType.
-type CreateTeamJSONRequestBody = CreateNameRequest
+type CreateTeamJSONRequestBody CreateTeamJSONBody
 
 // CreateUserJSONRequestBody defines body for CreateUser for application/json ContentType.
 type CreateUserJSONRequestBody CreateUserJSONBody
 
+// UpdatePatientJSONRequestBody defines body for UpdatePatient for application/json ContentType.
+type UpdatePatientJSONRequestBody UpdatePatientJSONBody
+
+// ResumePatientServiceJSONRequestBody defines body for ResumePatientService for application/json ContentType.
+type ResumePatientServiceJSONRequestBody ResumePatientServiceJSONBody
+
 // ChangeOccurrenceJSONRequestBody defines body for ChangeOccurrence for application/json ContentType.
 type ChangeOccurrenceJSONRequestBody ChangeOccurrenceJSONBody
 
+// CancelOccurrenceJSONRequestBody defines body for CancelOccurrence for application/json ContentType.
+type CancelOccurrenceJSONRequestBody CancelOccurrenceJSONBody
+
+// DeleteOccurrenceJSONRequestBody defines body for DeleteOccurrence for application/json ContentType.
+type DeleteOccurrenceJSONRequestBody DeleteOccurrenceJSONBody
+
+// ChangeRecurringRuleJSONRequestBody defines body for ChangeRecurringRule for application/json ContentType.
+type ChangeRecurringRuleJSONRequestBody ChangeRecurringRuleJSONBody
+
 // UpdateScheduleJSONRequestBody defines body for UpdateSchedule for application/json ContentType.
-type UpdateScheduleJSONRequestBody = SlotRequest
+type UpdateScheduleJSONRequestBody UpdateScheduleJSONBody
 
 // CancelScheduleJSONRequestBody defines body for CancelSchedule for application/json ContentType.
 type CancelScheduleJSONRequestBody CancelScheduleJSONBody
+
+// UpdateTeamJSONRequestBody defines body for UpdateTeam for application/json ContentType.
+type UpdateTeamJSONRequestBody UpdateTeamJSONBody
+
+// UpdateUserJSONRequestBody defines body for UpdateUser for application/json ContentType.
+type UpdateUserJSONRequestBody UpdateUserJSONBody
 
 // StartUserLeaveJSONRequestBody defines body for StartUserLeave for application/json ContentType.
 type StartUserLeaveJSONRequestBody StartUserLeaveJSONBody
@@ -1793,15 +2952,21 @@ type ServerInterface interface {
 	// GetReadyz リクエストを受けられるかを返す
 	// (GET /readyz)
 	GetReadyz(c *gin.Context)
-	// CreateCalendarExportAcceptance 確認が必要な書き出しを Google カレンダーの内容で解く
-	// (POST /v1/calendar_exports/{calendar_export_id}/acceptances)
-	CreateCalendarExportAcceptance(c *gin.Context, calendarExportId CalendarExportID)
+	// CancelCalendarCutover 予定の正本の切り替えをやめる
+	// (POST /v1/calendar_cutovers/{calendar_cutover_id}/cancel)
+	CancelCalendarCutover(c *gin.Context, calendarCutoverId CalendarCutoverID)
+	// CreateCalendarCutoverCompletion 予定の正本の切り替えを完了する
+	// (POST /v1/calendar_cutovers/{calendar_cutover_id}/completions)
+	CreateCalendarCutoverCompletion(c *gin.Context, calendarCutoverId CalendarCutoverID)
 	// CreateCalendarExportRetry 確認が必要な書き出しを buddy の内容で書き直す
 	// (POST /v1/calendar_exports/{calendar_export_id}/retries)
 	CreateCalendarExportRetry(c *gin.Context, calendarExportId CalendarExportID)
 	// GetDepartment 部署を取得する
 	// (GET /v1/departments/{department_id})
 	GetDepartment(c *gin.Context, departmentId ID)
+	// UpdateDepartment 部署の名前を変える
+	// (PUT /v1/departments/{department_id})
+	UpdateDepartment(c *gin.Context, departmentId ID)
 	// RemoveExternalCalendar カレンダーを外す
 	// (DELETE /v1/external_calendars/{external_calendar_id})
 	RemoveExternalCalendar(c *gin.Context, externalCalendarId ExternalCalendarID)
@@ -1814,6 +2979,12 @@ type ServerInterface interface {
 	// GetFacility 事業所を取得する
 	// (GET /v1/facilities/{facility_id})
 	GetFacility(c *gin.Context, facilityId FacilityID)
+	// GetCalendarCutoverStatus 予定の正本の切り替えの状況を取得する
+	// (GET /v1/facilities/{facility_id}/calendar_cutover_status)
+	GetCalendarCutoverStatus(c *gin.Context, facilityId FacilityID)
+	// StartCalendarCutover 予定の正本の切り替えを始める
+	// (POST /v1/facilities/{facility_id}/calendar_cutovers)
+	StartCalendarCutover(c *gin.Context, facilityId FacilityID)
 	// ListCalendarExportIssues 確認が必要な書き出しを一覧する
 	// (GET /v1/facilities/{facility_id}/calendar_export_issues)
 	ListCalendarExportIssues(c *gin.Context, facilityId FacilityID)
@@ -1823,6 +2994,9 @@ type ServerInterface interface {
 	// ListDepartments 事業所の部署を一覧する
 	// (GET /v1/facilities/{facility_id}/departments)
 	ListDepartments(c *gin.Context, facilityId FacilityID)
+	// CreateDepartment 部署を作る
+	// (POST /v1/facilities/{facility_id}/departments)
+	CreateDepartment(c *gin.Context, facilityId FacilityID)
 	// ListExternalCalendars 事業所の結び付けたカレンダーを一覧する
 	// (GET /v1/facilities/{facility_id}/external_calendars)
 	ListExternalCalendars(c *gin.Context, facilityId FacilityID)
@@ -1868,6 +3042,24 @@ type ServerInterface interface {
 	// GetMe トークンの職員を取得する
 	// (GET /v1/me)
 	GetMe(c *gin.Context)
+	// GetMyExternalCalendar トークンの職員に結び付いたカレンダーを取得する
+	// (GET /v1/me/external_calendar)
+	GetMyExternalCalendar(c *gin.Context)
+	// GetPatient 利用者を取得する
+	// (GET /v1/patients/{patient_id})
+	GetPatient(c *gin.Context, patientId ID)
+	// UpdatePatient 利用者の名前、サービス、希望、担当の職員を変える
+	// (PUT /v1/patients/{patient_id})
+	UpdatePatient(c *gin.Context, patientId ID)
+	// EndPatientService 利用者の利用を終了する
+	// (POST /v1/patients/{patient_id}/end_service)
+	EndPatientService(c *gin.Context, patientId ID)
+	// GetPatientRemainingSchedules 利用者に残る予定を返す
+	// (GET /v1/patients/{patient_id}/remaining_schedules)
+	GetPatientRemainingSchedules(c *gin.Context, patientId ID)
+	// ResumePatientService 利用の終了の利用者を利用中に戻す
+	// (POST /v1/patients/{patient_id}/resume_service)
+	ResumePatientService(c *gin.Context, patientId ID)
 	// ListPolicies 権限を一覧する
 	// (GET /v1/policies)
 	ListPolicies(c *gin.Context)
@@ -1886,6 +3078,18 @@ type ServerInterface interface {
 	// ChangeOccurrence 繰り返しの予定の 1 回を置き換える
 	// (POST /v1/schedules/recurring/{recurring_schedule_id}/occurrences)
 	ChangeOccurrence(c *gin.Context, recurringScheduleId RecurringScheduleID)
+	// CancelOccurrence 繰り返しの予定の 1 回をキャンセルする
+	// (POST /v1/schedules/recurring/{recurring_schedule_id}/occurrences/cancel)
+	CancelOccurrence(c *gin.Context, recurringScheduleId RecurringScheduleID)
+	// DeleteOccurrence 誤って入れた繰り返しの予定の 1 回を削除する
+	// (POST /v1/schedules/recurring/{recurring_schedule_id}/occurrences/delete)
+	DeleteOccurrence(c *gin.Context, recurringScheduleId RecurringScheduleID)
+	// ChangeRecurringRule 繰り返しの予定の規則を、適用の日以降の回について変える
+	// (PUT /v1/schedules/recurring/{recurring_schedule_id}/rule)
+	ChangeRecurringRule(c *gin.Context, recurringScheduleId RecurringScheduleID)
+	// DeleteSchedule 誤って入れた単発の予定を削除する
+	// (DELETE /v1/schedules/{schedule_id})
+	DeleteSchedule(c *gin.Context, scheduleId ScheduleID)
 	// GetSchedule 単発の予定を取得する
 	// (GET /v1/schedules/{schedule_id})
 	GetSchedule(c *gin.Context, scheduleId ScheduleID)
@@ -1898,9 +3102,15 @@ type ServerInterface interface {
 	// GetTeam チームを取得する
 	// (GET /v1/teams/{team_id})
 	GetTeam(c *gin.Context, teamId ID)
+	// UpdateTeam チームの名前と色を変える
+	// (PUT /v1/teams/{team_id})
+	UpdateTeam(c *gin.Context, teamId ID)
 	// GetUser 職員を取得する
 	// (GET /v1/users/{user_id})
 	GetUser(c *gin.Context, userId ID)
+	// UpdateUser 職員の名前、電話番号、部署、チーム、訪問するかを変える
+	// (PUT /v1/users/{user_id})
+	UpdateUser(c *gin.Context, userId ID)
 	// StartUserLeave 職員を休職にする
 	// (POST /v1/users/{user_id}/leave)
 	StartUserLeave(c *gin.Context, userId ID)
@@ -1916,6 +3126,9 @@ type ServerInterface interface {
 	// ReinstateUser 休職の職員を復職にする
 	// (POST /v1/users/{user_id}/reinstate)
 	ReinstateUser(c *gin.Context, userId ID)
+	// GetUserRemainingAssignments 職員に残る予定と担当の利用者を返す
+	// (GET /v1/users/{user_id}/remaining_assignments)
+	GetUserRemainingAssignments(c *gin.Context, userId ID)
 	// RetireUser 職員を退職にする
 	// (POST /v1/users/{user_id}/retire)
 	RetireUser(c *gin.Context, userId ID)
@@ -1962,18 +3175,18 @@ func (siw *ServerInterfaceWrapper) GetReadyz(c *gin.Context) {
 	siw.Handler.GetReadyz(c)
 }
 
-// CreateCalendarExportAcceptance operation middleware
-func (siw *ServerInterfaceWrapper) CreateCalendarExportAcceptance(c *gin.Context) {
+// CancelCalendarCutover operation middleware
+func (siw *ServerInterfaceWrapper) CancelCalendarCutover(c *gin.Context) {
 
 	var err error
 	_ = err
 
-	// ------------- Path parameter "calendar_export_id" -------------
-	var calendarExportId CalendarExportID
+	// ------------- Path parameter "calendar_cutover_id" -------------
+	var calendarCutoverId CalendarCutoverID
 
-	err = runtime.BindStyledParameterWithOptions("simple", "calendar_export_id", c.Param("calendar_export_id"), &calendarExportId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	err = runtime.BindStyledParameterWithOptions("simple", "calendar_cutover_id", c.Param("calendar_cutover_id"), &calendarCutoverId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
 	if err != nil {
-		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter calendar_export_id: %w", err), http.StatusBadRequest)
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter calendar_cutover_id: %w", err), http.StatusBadRequest)
 		return
 	}
 
@@ -1984,7 +3197,32 @@ func (siw *ServerInterfaceWrapper) CreateCalendarExportAcceptance(c *gin.Context
 		}
 	}
 
-	siw.Handler.CreateCalendarExportAcceptance(c, calendarExportId)
+	siw.Handler.CancelCalendarCutover(c, calendarCutoverId)
+}
+
+// CreateCalendarCutoverCompletion operation middleware
+func (siw *ServerInterfaceWrapper) CreateCalendarCutoverCompletion(c *gin.Context) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "calendar_cutover_id" -------------
+	var calendarCutoverId CalendarCutoverID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "calendar_cutover_id", c.Param("calendar_cutover_id"), &calendarCutoverId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter calendar_cutover_id: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.CreateCalendarCutoverCompletion(c, calendarCutoverId)
 }
 
 // CreateCalendarExportRetry operation middleware
@@ -2035,6 +3273,31 @@ func (siw *ServerInterfaceWrapper) GetDepartment(c *gin.Context) {
 	}
 
 	siw.Handler.GetDepartment(c, departmentId)
+}
+
+// UpdateDepartment operation middleware
+func (siw *ServerInterfaceWrapper) UpdateDepartment(c *gin.Context) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "department_id" -------------
+	var departmentId ID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "department_id", c.Param("department_id"), &departmentId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter department_id: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.UpdateDepartment(c, departmentId)
 }
 
 // RemoveExternalCalendar operation middleware
@@ -2137,6 +3400,56 @@ func (siw *ServerInterfaceWrapper) GetFacility(c *gin.Context) {
 	siw.Handler.GetFacility(c, facilityId)
 }
 
+// GetCalendarCutoverStatus operation middleware
+func (siw *ServerInterfaceWrapper) GetCalendarCutoverStatus(c *gin.Context) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "facility_id" -------------
+	var facilityId FacilityID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "facility_id", c.Param("facility_id"), &facilityId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter facility_id: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.GetCalendarCutoverStatus(c, facilityId)
+}
+
+// StartCalendarCutover operation middleware
+func (siw *ServerInterfaceWrapper) StartCalendarCutover(c *gin.Context) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "facility_id" -------------
+	var facilityId FacilityID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "facility_id", c.Param("facility_id"), &facilityId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter facility_id: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.StartCalendarCutover(c, facilityId)
+}
+
 // ListCalendarExportIssues operation middleware
 func (siw *ServerInterfaceWrapper) ListCalendarExportIssues(c *gin.Context) {
 
@@ -2210,6 +3523,31 @@ func (siw *ServerInterfaceWrapper) ListDepartments(c *gin.Context) {
 	}
 
 	siw.Handler.ListDepartments(c, facilityId)
+}
+
+// CreateDepartment operation middleware
+func (siw *ServerInterfaceWrapper) CreateDepartment(c *gin.Context) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "facility_id" -------------
+	var facilityId FacilityID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "facility_id", c.Param("facility_id"), &facilityId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter facility_id: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.CreateDepartment(c, facilityId)
 }
 
 // ListExternalCalendars operation middleware
@@ -2334,6 +3672,14 @@ func (siw *ServerInterfaceWrapper) ListPatients(c *gin.Context) {
 	err = runtime.BindQueryParameterWithOptions("form", true, false, "assigned_staff", c.Request.URL.Query(), &params.AssignedStaff, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
 	if err != nil {
 		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter assigned_staff: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	// ------------- Optional query parameter "include_ended" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "include_ended", c.Request.URL.Query(), &params.IncludeEnded, runtime.BindQueryParameterOptions{Type: "boolean", Format: ""})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter include_ended: %w", err), http.StatusBadRequest)
 		return
 	}
 
@@ -2720,6 +4066,144 @@ func (siw *ServerInterfaceWrapper) GetMe(c *gin.Context) {
 	siw.Handler.GetMe(c)
 }
 
+// GetMyExternalCalendar operation middleware
+func (siw *ServerInterfaceWrapper) GetMyExternalCalendar(c *gin.Context) {
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.GetMyExternalCalendar(c)
+}
+
+// GetPatient operation middleware
+func (siw *ServerInterfaceWrapper) GetPatient(c *gin.Context) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "patient_id" -------------
+	var patientId ID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "patient_id", c.Param("patient_id"), &patientId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter patient_id: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.GetPatient(c, patientId)
+}
+
+// UpdatePatient operation middleware
+func (siw *ServerInterfaceWrapper) UpdatePatient(c *gin.Context) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "patient_id" -------------
+	var patientId ID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "patient_id", c.Param("patient_id"), &patientId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter patient_id: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.UpdatePatient(c, patientId)
+}
+
+// EndPatientService operation middleware
+func (siw *ServerInterfaceWrapper) EndPatientService(c *gin.Context) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "patient_id" -------------
+	var patientId ID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "patient_id", c.Param("patient_id"), &patientId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter patient_id: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.EndPatientService(c, patientId)
+}
+
+// GetPatientRemainingSchedules operation middleware
+func (siw *ServerInterfaceWrapper) GetPatientRemainingSchedules(c *gin.Context) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "patient_id" -------------
+	var patientId ID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "patient_id", c.Param("patient_id"), &patientId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter patient_id: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.GetPatientRemainingSchedules(c, patientId)
+}
+
+// ResumePatientService operation middleware
+func (siw *ServerInterfaceWrapper) ResumePatientService(c *gin.Context) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "patient_id" -------------
+	var patientId ID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "patient_id", c.Param("patient_id"), &patientId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter patient_id: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.ResumePatientService(c, patientId)
+}
+
 // ListPolicies operation middleware
 func (siw *ServerInterfaceWrapper) ListPolicies(c *gin.Context) {
 
@@ -2846,6 +4330,106 @@ func (siw *ServerInterfaceWrapper) ChangeOccurrence(c *gin.Context) {
 	siw.Handler.ChangeOccurrence(c, recurringScheduleId)
 }
 
+// CancelOccurrence operation middleware
+func (siw *ServerInterfaceWrapper) CancelOccurrence(c *gin.Context) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "recurring_schedule_id" -------------
+	var recurringScheduleId RecurringScheduleID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "recurring_schedule_id", c.Param("recurring_schedule_id"), &recurringScheduleId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter recurring_schedule_id: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.CancelOccurrence(c, recurringScheduleId)
+}
+
+// DeleteOccurrence operation middleware
+func (siw *ServerInterfaceWrapper) DeleteOccurrence(c *gin.Context) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "recurring_schedule_id" -------------
+	var recurringScheduleId RecurringScheduleID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "recurring_schedule_id", c.Param("recurring_schedule_id"), &recurringScheduleId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter recurring_schedule_id: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.DeleteOccurrence(c, recurringScheduleId)
+}
+
+// ChangeRecurringRule operation middleware
+func (siw *ServerInterfaceWrapper) ChangeRecurringRule(c *gin.Context) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "recurring_schedule_id" -------------
+	var recurringScheduleId RecurringScheduleID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "recurring_schedule_id", c.Param("recurring_schedule_id"), &recurringScheduleId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter recurring_schedule_id: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.ChangeRecurringRule(c, recurringScheduleId)
+}
+
+// DeleteSchedule operation middleware
+func (siw *ServerInterfaceWrapper) DeleteSchedule(c *gin.Context) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "schedule_id" -------------
+	var scheduleId ScheduleID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "schedule_id", c.Param("schedule_id"), &scheduleId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter schedule_id: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.DeleteSchedule(c, scheduleId)
+}
+
 // GetSchedule operation middleware
 func (siw *ServerInterfaceWrapper) GetSchedule(c *gin.Context) {
 
@@ -2946,6 +4530,31 @@ func (siw *ServerInterfaceWrapper) GetTeam(c *gin.Context) {
 	siw.Handler.GetTeam(c, teamId)
 }
 
+// UpdateTeam operation middleware
+func (siw *ServerInterfaceWrapper) UpdateTeam(c *gin.Context) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "team_id" -------------
+	var teamId ID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "team_id", c.Param("team_id"), &teamId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter team_id: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.UpdateTeam(c, teamId)
+}
+
 // GetUser operation middleware
 func (siw *ServerInterfaceWrapper) GetUser(c *gin.Context) {
 
@@ -2969,6 +4578,31 @@ func (siw *ServerInterfaceWrapper) GetUser(c *gin.Context) {
 	}
 
 	siw.Handler.GetUser(c, userId)
+}
+
+// UpdateUser operation middleware
+func (siw *ServerInterfaceWrapper) UpdateUser(c *gin.Context) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "user_id" -------------
+	var userId ID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "user_id", c.Param("user_id"), &userId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter user_id: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.UpdateUser(c, userId)
 }
 
 // StartUserLeave operation middleware
@@ -3105,6 +4739,31 @@ func (siw *ServerInterfaceWrapper) ReinstateUser(c *gin.Context) {
 	siw.Handler.ReinstateUser(c, userId)
 }
 
+// GetUserRemainingAssignments operation middleware
+func (siw *ServerInterfaceWrapper) GetUserRemainingAssignments(c *gin.Context) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "user_id" -------------
+	var userId ID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "user_id", c.Param("user_id"), &userId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter user_id: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.GetUserRemainingAssignments(c, userId)
+}
+
 // RetireUser operation middleware
 func (siw *ServerInterfaceWrapper) RetireUser(c *gin.Context) {
 
@@ -3187,10 +4846,13 @@ func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options
 	router.GET(options.BaseURL+"/readyz", wrapper.GetReadyz)
 	router.GET(options.BaseURL+"/v1/facilities/:facility_id", wrapper.GetFacility)
 	router.GET(options.BaseURL+"/v1/facilities/:facility_id/departments", wrapper.ListDepartments)
+	router.POST(options.BaseURL+"/v1/facilities/:facility_id/departments", wrapper.CreateDepartment)
 	router.GET(options.BaseURL+"/v1/departments/:department_id", wrapper.GetDepartment)
+	router.PUT(options.BaseURL+"/v1/departments/:department_id", wrapper.UpdateDepartment)
 	router.GET(options.BaseURL+"/v1/facilities/:facility_id/teams", wrapper.ListTeams)
 	router.POST(options.BaseURL+"/v1/facilities/:facility_id/teams", wrapper.CreateTeam)
 	router.GET(options.BaseURL+"/v1/teams/:team_id", wrapper.GetTeam)
+	router.PUT(options.BaseURL+"/v1/teams/:team_id", wrapper.UpdateTeam)
 	router.GET(options.BaseURL+"/v1/facilities/:facility_id/positions", wrapper.ListPositions)
 	router.POST(options.BaseURL+"/v1/facilities/:facility_id/positions", wrapper.CreatePosition)
 	router.GET(options.BaseURL+"/v1/positions/:position_id", wrapper.GetPosition)
@@ -3199,26 +4861,38 @@ func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options
 	router.GET(options.BaseURL+"/v1/facilities/:facility_id/users", wrapper.ListUsers)
 	router.POST(options.BaseURL+"/v1/facilities/:facility_id/users", wrapper.CreateUser)
 	router.GET(options.BaseURL+"/v1/users/:user_id", wrapper.GetUser)
+	router.PUT(options.BaseURL+"/v1/users/:user_id", wrapper.UpdateUser)
 	router.PUT(options.BaseURL+"/v1/users/:user_id/position", wrapper.ChangeUserPosition)
 	router.POST(options.BaseURL+"/v1/users/:user_id/leave", wrapper.StartUserLeave)
 	router.POST(options.BaseURL+"/v1/users/:user_id/reinstate", wrapper.ReinstateUser)
+	router.GET(options.BaseURL+"/v1/users/:user_id/remaining_assignments", wrapper.GetUserRemainingAssignments)
 	router.POST(options.BaseURL+"/v1/users/:user_id/retire", wrapper.RetireUser)
 	router.POST(options.BaseURL+"/v1/users/:user_id/policies", wrapper.AddUserPolicy)
 	router.DELETE(options.BaseURL+"/v1/users/:user_id/policies/:user_policy_id", wrapper.RemoveUserPolicy)
 	router.GET(options.BaseURL+"/v1/me", wrapper.GetMe)
+	router.GET(options.BaseURL+"/v1/me/external_calendar", wrapper.GetMyExternalCalendar)
 	router.GET(options.BaseURL+"/v1/facilities/:facility_id/patients", wrapper.ListPatients)
 	router.POST(options.BaseURL+"/v1/facilities/:facility_id/patients", wrapper.CreatePatient)
+	router.GET(options.BaseURL+"/v1/patients/:patient_id", wrapper.GetPatient)
+	router.PUT(options.BaseURL+"/v1/patients/:patient_id", wrapper.UpdatePatient)
+	router.POST(options.BaseURL+"/v1/patients/:patient_id/end_service", wrapper.EndPatientService)
+	router.GET(options.BaseURL+"/v1/patients/:patient_id/remaining_schedules", wrapper.GetPatientRemainingSchedules)
+	router.POST(options.BaseURL+"/v1/patients/:patient_id/resume_service", wrapper.ResumePatientService)
 	router.GET(options.BaseURL+"/v1/visit_infos/service_codes", wrapper.ListServiceCodes)
 	router.GET(options.BaseURL+"/v1/visit_infos/visit_categories", wrapper.ListVisitCategories)
 	router.GET(options.BaseURL+"/v1/schedule_types", wrapper.ListScheduleTypes)
 	router.GET(options.BaseURL+"/v1/facilities/:facility_id/schedules", wrapper.ListSchedules)
 	router.POST(options.BaseURL+"/v1/facilities/:facility_id/schedules", wrapper.CreateSchedule)
 	router.POST(options.BaseURL+"/v1/facilities/:facility_id/schedules/recurring", wrapper.CreateRecurringSchedule)
+	router.DELETE(options.BaseURL+"/v1/schedules/:schedule_id", wrapper.DeleteSchedule)
 	router.GET(options.BaseURL+"/v1/schedules/:schedule_id", wrapper.GetSchedule)
 	router.PUT(options.BaseURL+"/v1/schedules/:schedule_id", wrapper.UpdateSchedule)
 	router.POST(options.BaseURL+"/v1/schedules/:schedule_id/cancel", wrapper.CancelSchedule)
 	router.GET(options.BaseURL+"/v1/schedules/recurring/:recurring_schedule_id", wrapper.GetRecurringSchedule)
+	router.PUT(options.BaseURL+"/v1/schedules/recurring/:recurring_schedule_id/rule", wrapper.ChangeRecurringRule)
 	router.POST(options.BaseURL+"/v1/schedules/recurring/:recurring_schedule_id/occurrences", wrapper.ChangeOccurrence)
+	router.POST(options.BaseURL+"/v1/schedules/recurring/:recurring_schedule_id/occurrences/cancel", wrapper.CancelOccurrence)
+	router.POST(options.BaseURL+"/v1/schedules/recurring/:recurring_schedule_id/occurrences/delete", wrapper.DeleteOccurrence)
 	router.GET(options.BaseURL+"/v1/facilities/:facility_id/calendar_service_account", wrapper.GetCalendarServiceAccount)
 	router.GET(options.BaseURL+"/v1/facilities/:facility_id/external_calendars", wrapper.ListExternalCalendars)
 	router.POST(options.BaseURL+"/v1/facilities/:facility_id/external_calendars", wrapper.CreateExternalCalendar)
@@ -3228,7 +4902,10 @@ func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options
 	router.POST(options.BaseURL+"/v1/external_calendars/:external_calendar_id/imports", wrapper.CreateCalendarImport)
 	router.GET(options.BaseURL+"/v1/facilities/:facility_id/calendar_export_issues", wrapper.ListCalendarExportIssues)
 	router.POST(options.BaseURL+"/v1/calendar_exports/:calendar_export_id/retries", wrapper.CreateCalendarExportRetry)
-	router.POST(options.BaseURL+"/v1/calendar_exports/:calendar_export_id/acceptances", wrapper.CreateCalendarExportAcceptance)
+	router.GET(options.BaseURL+"/v1/facilities/:facility_id/calendar_cutover_status", wrapper.GetCalendarCutoverStatus)
+	router.POST(options.BaseURL+"/v1/facilities/:facility_id/calendar_cutovers", wrapper.StartCalendarCutover)
+	router.POST(options.BaseURL+"/v1/calendar_cutovers/:calendar_cutover_id/completions", wrapper.CreateCalendarCutoverCompletion)
+	router.POST(options.BaseURL+"/v1/calendar_cutovers/:calendar_cutover_id/cancel", wrapper.CancelCalendarCutover)
 }
 
 type AssignBadRequestJSONResponse Error
@@ -3312,17 +4989,17 @@ func (response GetReadyz503JSONResponse) VisitGetReadyzResponse(w http.ResponseW
 	return err
 }
 
-type CreateCalendarExportAcceptanceRequestObject struct {
-	CalendarExportId CalendarExportID `json:"calendar_export_id"`
+type CancelCalendarCutoverRequestObject struct {
+	CalendarCutoverId CalendarCutoverID `json:"calendar_cutover_id"`
 }
 
-type CreateCalendarExportAcceptanceResponseObject interface {
-	VisitCreateCalendarExportAcceptanceResponse(w http.ResponseWriter) error
+type CancelCalendarCutoverResponseObject interface {
+	VisitCancelCalendarCutoverResponse(w http.ResponseWriter) error
 }
 
-type CreateCalendarExportAcceptance200JSONResponse CalendarExport
+type CancelCalendarCutover200JSONResponse CalendarCutover
 
-func (response CreateCalendarExportAcceptance200JSONResponse) VisitCreateCalendarExportAcceptanceResponse(w http.ResponseWriter) error {
+func (response CancelCalendarCutover200JSONResponse) VisitCancelCalendarCutoverResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response); err != nil {
@@ -3334,9 +5011,9 @@ func (response CreateCalendarExportAcceptance200JSONResponse) VisitCreateCalenda
 	return err
 }
 
-type CreateCalendarExportAcceptance400JSONResponse struct{ BadRequestJSONResponse }
+type CancelCalendarCutover400JSONResponse struct{ BadRequestJSONResponse }
 
-func (response CreateCalendarExportAcceptance400JSONResponse) VisitCreateCalendarExportAcceptanceResponse(w http.ResponseWriter) error {
+func (response CancelCalendarCutover400JSONResponse) VisitCancelCalendarCutoverResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response); err != nil {
@@ -3348,9 +5025,9 @@ func (response CreateCalendarExportAcceptance400JSONResponse) VisitCreateCalenda
 	return err
 }
 
-type CreateCalendarExportAcceptance401JSONResponse struct{ UnauthorizedJSONResponse }
+type CancelCalendarCutover401JSONResponse struct{ UnauthorizedJSONResponse }
 
-func (response CreateCalendarExportAcceptance401JSONResponse) VisitCreateCalendarExportAcceptanceResponse(w http.ResponseWriter) error {
+func (response CancelCalendarCutover401JSONResponse) VisitCancelCalendarCutoverResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
@@ -3365,9 +5042,9 @@ func (response CreateCalendarExportAcceptance401JSONResponse) VisitCreateCalenda
 	return err
 }
 
-type CreateCalendarExportAcceptance403JSONResponse struct{ ForbiddenJSONResponse }
+type CancelCalendarCutover403JSONResponse struct{ ForbiddenJSONResponse }
 
-func (response CreateCalendarExportAcceptance403JSONResponse) VisitCreateCalendarExportAcceptanceResponse(w http.ResponseWriter) error {
+func (response CancelCalendarCutover403JSONResponse) VisitCancelCalendarCutoverResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response); err != nil {
@@ -3379,9 +5056,9 @@ func (response CreateCalendarExportAcceptance403JSONResponse) VisitCreateCalenda
 	return err
 }
 
-type CreateCalendarExportAcceptance404JSONResponse struct{ NotFoundJSONResponse }
+type CancelCalendarCutover404JSONResponse struct{ NotFoundJSONResponse }
 
-func (response CreateCalendarExportAcceptance404JSONResponse) VisitCreateCalendarExportAcceptanceResponse(w http.ResponseWriter) error {
+func (response CancelCalendarCutover404JSONResponse) VisitCancelCalendarCutoverResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response); err != nil {
@@ -3393,9 +5070,9 @@ func (response CreateCalendarExportAcceptance404JSONResponse) VisitCreateCalenda
 	return err
 }
 
-type CreateCalendarExportAcceptance409JSONResponse Error
+type CancelCalendarCutover409JSONResponse Error
 
-func (response CreateCalendarExportAcceptance409JSONResponse) VisitCreateCalendarExportAcceptanceResponse(w http.ResponseWriter) error {
+func (response CancelCalendarCutover409JSONResponse) VisitCancelCalendarCutoverResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response); err != nil {
@@ -3407,23 +5084,9 @@ func (response CreateCalendarExportAcceptance409JSONResponse) VisitCreateCalenda
 	return err
 }
 
-type CreateCalendarExportAcceptance422JSONResponse struct{ CalendarUnreadableJSONResponse }
+type CancelCalendarCutover500JSONResponse struct{ InternalErrorJSONResponse }
 
-func (response CreateCalendarExportAcceptance422JSONResponse) VisitCreateCalendarExportAcceptanceResponse(w http.ResponseWriter) error {
-
-	var buf bytes.Buffer
-	if err := json.NewEncoder(&buf).Encode(response); err != nil {
-		return err
-	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(422)
-	_, err := buf.WriteTo(w)
-	return err
-}
-
-type CreateCalendarExportAcceptance500JSONResponse struct{ InternalErrorJSONResponse }
-
-func (response CreateCalendarExportAcceptance500JSONResponse) VisitCreateCalendarExportAcceptanceResponse(w http.ResponseWriter) error {
+func (response CancelCalendarCutover500JSONResponse) VisitCancelCalendarCutoverResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response); err != nil {
@@ -3435,11 +5098,134 @@ func (response CreateCalendarExportAcceptance500JSONResponse) VisitCreateCalenda
 	return err
 }
 
-type CreateCalendarExportAcceptance502JSONResponse struct {
+type CreateCalendarCutoverCompletionRequestObject struct {
+	CalendarCutoverId CalendarCutoverID `json:"calendar_cutover_id"`
+}
+
+type CreateCalendarCutoverCompletionResponseObject interface {
+	VisitCreateCalendarCutoverCompletionResponse(w http.ResponseWriter) error
+}
+
+type CreateCalendarCutoverCompletion200JSONResponse CalendarCutover
+
+func (response CreateCalendarCutoverCompletion200JSONResponse) VisitCreateCalendarCutoverCompletionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateCalendarCutoverCompletion400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response CreateCalendarCutoverCompletion400JSONResponse) VisitCreateCalendarCutoverCompletionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateCalendarCutoverCompletion401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response CreateCalendarCutoverCompletion401JSONResponse) VisitCreateCalendarCutoverCompletionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateCalendarCutoverCompletion403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response CreateCalendarCutoverCompletion403JSONResponse) VisitCreateCalendarCutoverCompletionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateCalendarCutoverCompletion404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response CreateCalendarCutoverCompletion404JSONResponse) VisitCreateCalendarCutoverCompletionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateCalendarCutoverCompletion409JSONResponse CalendarCutoverIncomplete
+
+func (response CreateCalendarCutoverCompletion409JSONResponse) VisitCreateCalendarCutoverCompletionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateCalendarCutoverCompletion422JSONResponse struct{ CalendarUnreadableJSONResponse }
+
+func (response CreateCalendarCutoverCompletion422JSONResponse) VisitCreateCalendarCutoverCompletionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateCalendarCutoverCompletion500JSONResponse struct{ InternalErrorJSONResponse }
+
+func (response CreateCalendarCutoverCompletion500JSONResponse) VisitCreateCalendarCutoverCompletionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateCalendarCutoverCompletion502JSONResponse struct {
 	CalendarUnavailableJSONResponse
 }
 
-func (response CreateCalendarExportAcceptance502JSONResponse) VisitCreateCalendarExportAcceptanceResponse(w http.ResponseWriter) error {
+func (response CreateCalendarCutoverCompletion502JSONResponse) VisitCreateCalendarCutoverCompletionResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response); err != nil {
@@ -3451,11 +5237,11 @@ func (response CreateCalendarExportAcceptance502JSONResponse) VisitCreateCalenda
 	return err
 }
 
-type CreateCalendarExportAcceptance503JSONResponse struct {
+type CreateCalendarCutoverCompletion503JSONResponse struct {
 	CalendarNotConfiguredJSONResponse
 }
 
-func (response CreateCalendarExportAcceptance503JSONResponse) VisitCreateCalendarExportAcceptanceResponse(w http.ResponseWriter) error {
+func (response CreateCalendarCutoverCompletion503JSONResponse) VisitCreateCalendarCutoverCompletionResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response); err != nil {
@@ -3660,6 +5446,116 @@ func (response GetDepartment404JSONResponse) VisitGetDepartmentResponse(w http.R
 type GetDepartment500JSONResponse struct{ InternalErrorJSONResponse }
 
 func (response GetDepartment500JSONResponse) VisitGetDepartmentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateDepartmentRequestObject struct {
+	DepartmentId ID `json:"department_id"`
+	Body         *UpdateDepartmentJSONRequestBody
+}
+
+type UpdateDepartmentResponseObject interface {
+	VisitUpdateDepartmentResponse(w http.ResponseWriter) error
+}
+
+type UpdateDepartment200JSONResponse Unit
+
+func (response UpdateDepartment200JSONResponse) VisitUpdateDepartmentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateDepartment400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response UpdateDepartment400JSONResponse) VisitUpdateDepartmentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateDepartment401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response UpdateDepartment401JSONResponse) VisitUpdateDepartmentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateDepartment403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response UpdateDepartment403JSONResponse) VisitUpdateDepartmentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateDepartment404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response UpdateDepartment404JSONResponse) VisitUpdateDepartmentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateDepartment409JSONResponse Error
+
+func (response UpdateDepartment409JSONResponse) VisitUpdateDepartmentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateDepartment500JSONResponse struct{ InternalErrorJSONResponse }
+
+func (response UpdateDepartment500JSONResponse) VisitUpdateDepartmentResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response); err != nil {
@@ -4153,6 +6049,196 @@ func (response GetFacility500JSONResponse) VisitGetFacilityResponse(w http.Respo
 	return err
 }
 
+type GetCalendarCutoverStatusRequestObject struct {
+	FacilityId FacilityID `json:"facility_id"`
+}
+
+type GetCalendarCutoverStatusResponseObject interface {
+	VisitGetCalendarCutoverStatusResponse(w http.ResponseWriter) error
+}
+
+type GetCalendarCutoverStatus200JSONResponse CalendarCutoverState
+
+func (response GetCalendarCutoverStatus200JSONResponse) VisitGetCalendarCutoverStatusResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetCalendarCutoverStatus400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response GetCalendarCutoverStatus400JSONResponse) VisitGetCalendarCutoverStatusResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetCalendarCutoverStatus401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetCalendarCutoverStatus401JSONResponse) VisitGetCalendarCutoverStatusResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetCalendarCutoverStatus403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response GetCalendarCutoverStatus403JSONResponse) VisitGetCalendarCutoverStatusResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetCalendarCutoverStatus500JSONResponse struct{ InternalErrorJSONResponse }
+
+func (response GetCalendarCutoverStatus500JSONResponse) VisitGetCalendarCutoverStatusResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type StartCalendarCutoverRequestObject struct {
+	FacilityId FacilityID `json:"facility_id"`
+}
+
+type StartCalendarCutoverResponseObject interface {
+	VisitStartCalendarCutoverResponse(w http.ResponseWriter) error
+}
+
+type StartCalendarCutover201JSONResponse CalendarCutover
+
+func (response StartCalendarCutover201JSONResponse) VisitStartCalendarCutoverResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type StartCalendarCutover400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response StartCalendarCutover400JSONResponse) VisitStartCalendarCutoverResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type StartCalendarCutover401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response StartCalendarCutover401JSONResponse) VisitStartCalendarCutoverResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type StartCalendarCutover403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response StartCalendarCutover403JSONResponse) VisitStartCalendarCutoverResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type StartCalendarCutover404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response StartCalendarCutover404JSONResponse) VisitStartCalendarCutoverResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type StartCalendarCutover409JSONResponse Error
+
+func (response StartCalendarCutover409JSONResponse) VisitStartCalendarCutoverResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type StartCalendarCutover500JSONResponse struct{ InternalErrorJSONResponse }
+
+func (response StartCalendarCutover500JSONResponse) VisitStartCalendarCutoverResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type ListCalendarExportIssuesRequestObject struct {
 	FacilityId FacilityID `json:"facility_id"`
 }
@@ -4415,6 +6501,116 @@ func (response ListDepartments404JSONResponse) VisitListDepartmentsResponse(w ht
 type ListDepartments500JSONResponse struct{ InternalErrorJSONResponse }
 
 func (response ListDepartments500JSONResponse) VisitListDepartmentsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateDepartmentRequestObject struct {
+	FacilityId FacilityID `json:"facility_id"`
+	Body       *CreateDepartmentJSONRequestBody
+}
+
+type CreateDepartmentResponseObject interface {
+	VisitCreateDepartmentResponse(w http.ResponseWriter) error
+}
+
+type CreateDepartment201JSONResponse Unit
+
+func (response CreateDepartment201JSONResponse) VisitCreateDepartmentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateDepartment400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response CreateDepartment400JSONResponse) VisitCreateDepartmentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateDepartment401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response CreateDepartment401JSONResponse) VisitCreateDepartmentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateDepartment403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response CreateDepartment403JSONResponse) VisitCreateDepartmentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateDepartment404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response CreateDepartment404JSONResponse) VisitCreateDepartmentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateDepartment409JSONResponse Error
+
+func (response CreateDepartment409JSONResponse) VisitCreateDepartmentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateDepartment500JSONResponse struct{ InternalErrorJSONResponse }
+
+func (response CreateDepartment500JSONResponse) VisitCreateDepartmentResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response); err != nil {
@@ -5352,6 +7548,20 @@ func (response CreateSchedule404JSONResponse) VisitCreateScheduleResponse(w http
 	return err
 }
 
+type CreateSchedule409JSONResponse Error
+
+func (response CreateSchedule409JSONResponse) VisitCreateScheduleResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type CreateSchedule500JSONResponse struct{ InternalErrorJSONResponse }
 
 func (response CreateSchedule500JSONResponse) VisitCreateScheduleResponse(w http.ResponseWriter) error {
@@ -5362,6 +7572,20 @@ func (response CreateSchedule500JSONResponse) VisitCreateScheduleResponse(w http
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateSchedule503JSONResponse Error
+
+func (response CreateSchedule503JSONResponse) VisitCreateScheduleResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
 	_, err := buf.WriteTo(w)
 	return err
 }
@@ -5448,6 +7672,20 @@ func (response CreateRecurringSchedule404JSONResponse) VisitCreateRecurringSched
 	return err
 }
 
+type CreateRecurringSchedule409JSONResponse Error
+
+func (response CreateRecurringSchedule409JSONResponse) VisitCreateRecurringScheduleResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type CreateRecurringSchedule500JSONResponse struct{ InternalErrorJSONResponse }
 
 func (response CreateRecurringSchedule500JSONResponse) VisitCreateRecurringScheduleResponse(w http.ResponseWriter) error {
@@ -5462,6 +7700,20 @@ func (response CreateRecurringSchedule500JSONResponse) VisitCreateRecurringSched
 	return err
 }
 
+type CreateRecurringSchedule503JSONResponse Error
+
+func (response CreateRecurringSchedule503JSONResponse) VisitCreateRecurringScheduleResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type ListTeamsRequestObject struct {
 	FacilityId FacilityID `json:"facility_id"`
 }
@@ -5470,7 +7722,7 @@ type ListTeamsResponseObject interface {
 	VisitListTeamsResponse(w http.ResponseWriter) error
 }
 
-type ListTeams200JSONResponse []Unit
+type ListTeams200JSONResponse []Team
 
 func (response ListTeams200JSONResponse) VisitListTeamsResponse(w http.ResponseWriter) error {
 
@@ -5566,7 +7818,7 @@ type CreateTeamResponseObject interface {
 	VisitCreateTeamResponse(w http.ResponseWriter) error
 }
 
-type CreateTeam201JSONResponse Unit
+type CreateTeam201JSONResponse Team
 
 func (response CreateTeam201JSONResponse) VisitCreateTeamResponse(w http.ResponseWriter) error {
 
@@ -5928,6 +8180,563 @@ func (response GetMe403JSONResponse) VisitGetMeResponse(w http.ResponseWriter) e
 type GetMe500JSONResponse struct{ InternalErrorJSONResponse }
 
 func (response GetMe500JSONResponse) VisitGetMeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetMyExternalCalendarRequestObject struct {
+}
+
+type GetMyExternalCalendarResponseObject interface {
+	VisitGetMyExternalCalendarResponse(w http.ResponseWriter) error
+}
+
+type GetMyExternalCalendar200JSONResponse = GetMyExternalCalendar200JSONResponseBody
+
+func (response GetMyExternalCalendar200JSONResponse) VisitGetMyExternalCalendarResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetMyExternalCalendar401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetMyExternalCalendar401JSONResponse) VisitGetMyExternalCalendarResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetMyExternalCalendar403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response GetMyExternalCalendar403JSONResponse) VisitGetMyExternalCalendarResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetMyExternalCalendar500JSONResponse struct{ InternalErrorJSONResponse }
+
+func (response GetMyExternalCalendar500JSONResponse) VisitGetMyExternalCalendarResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetPatientRequestObject struct {
+	PatientId ID `json:"patient_id"`
+}
+
+type GetPatientResponseObject interface {
+	VisitGetPatientResponse(w http.ResponseWriter) error
+}
+
+type GetPatient200JSONResponse Patient
+
+func (response GetPatient200JSONResponse) VisitGetPatientResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetPatient400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response GetPatient400JSONResponse) VisitGetPatientResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetPatient401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetPatient401JSONResponse) VisitGetPatientResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetPatient403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response GetPatient403JSONResponse) VisitGetPatientResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetPatient404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response GetPatient404JSONResponse) VisitGetPatientResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetPatient500JSONResponse struct{ InternalErrorJSONResponse }
+
+func (response GetPatient500JSONResponse) VisitGetPatientResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdatePatientRequestObject struct {
+	PatientId ID `json:"patient_id"`
+	Body      *UpdatePatientJSONRequestBody
+}
+
+type UpdatePatientResponseObject interface {
+	VisitUpdatePatientResponse(w http.ResponseWriter) error
+}
+
+type UpdatePatient200JSONResponse Patient
+
+func (response UpdatePatient200JSONResponse) VisitUpdatePatientResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdatePatient400JSONResponse struct{ AssignBadRequestJSONResponse }
+
+func (response UpdatePatient400JSONResponse) VisitUpdatePatientResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdatePatient401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response UpdatePatient401JSONResponse) VisitUpdatePatientResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdatePatient403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response UpdatePatient403JSONResponse) VisitUpdatePatientResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdatePatient404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response UpdatePatient404JSONResponse) VisitUpdatePatientResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdatePatient500JSONResponse struct{ InternalErrorJSONResponse }
+
+func (response UpdatePatient500JSONResponse) VisitUpdatePatientResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type EndPatientServiceRequestObject struct {
+	PatientId ID `json:"patient_id"`
+}
+
+type EndPatientServiceResponseObject interface {
+	VisitEndPatientServiceResponse(w http.ResponseWriter) error
+}
+
+type EndPatientService200JSONResponse Patient
+
+func (response EndPatientService200JSONResponse) VisitEndPatientServiceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type EndPatientService400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response EndPatientService400JSONResponse) VisitEndPatientServiceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type EndPatientService401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response EndPatientService401JSONResponse) VisitEndPatientServiceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type EndPatientService403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response EndPatientService403JSONResponse) VisitEndPatientServiceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type EndPatientService404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response EndPatientService404JSONResponse) VisitEndPatientServiceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type EndPatientService409JSONResponse EndServiceConflict
+
+func (response EndPatientService409JSONResponse) VisitEndPatientServiceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type EndPatientService500JSONResponse struct{ InternalErrorJSONResponse }
+
+func (response EndPatientService500JSONResponse) VisitEndPatientServiceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetPatientRemainingSchedulesRequestObject struct {
+	PatientId ID `json:"patient_id"`
+}
+
+type GetPatientRemainingSchedulesResponseObject interface {
+	VisitGetPatientRemainingSchedulesResponse(w http.ResponseWriter) error
+}
+
+type GetPatientRemainingSchedules200JSONResponse PatientSchedules
+
+func (response GetPatientRemainingSchedules200JSONResponse) VisitGetPatientRemainingSchedulesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetPatientRemainingSchedules400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response GetPatientRemainingSchedules400JSONResponse) VisitGetPatientRemainingSchedulesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetPatientRemainingSchedules401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetPatientRemainingSchedules401JSONResponse) VisitGetPatientRemainingSchedulesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetPatientRemainingSchedules403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response GetPatientRemainingSchedules403JSONResponse) VisitGetPatientRemainingSchedulesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetPatientRemainingSchedules404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response GetPatientRemainingSchedules404JSONResponse) VisitGetPatientRemainingSchedulesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetPatientRemainingSchedules500JSONResponse struct{ InternalErrorJSONResponse }
+
+func (response GetPatientRemainingSchedules500JSONResponse) VisitGetPatientRemainingSchedulesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ResumePatientServiceRequestObject struct {
+	PatientId ID `json:"patient_id"`
+	Body      *ResumePatientServiceJSONRequestBody
+}
+
+type ResumePatientServiceResponseObject interface {
+	VisitResumePatientServiceResponse(w http.ResponseWriter) error
+}
+
+type ResumePatientService200JSONResponse Patient
+
+func (response ResumePatientService200JSONResponse) VisitResumePatientServiceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ResumePatientService400JSONResponse struct{ AssignBadRequestJSONResponse }
+
+func (response ResumePatientService400JSONResponse) VisitResumePatientServiceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ResumePatientService401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ResumePatientService401JSONResponse) VisitResumePatientServiceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ResumePatientService403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ResumePatientService403JSONResponse) VisitResumePatientServiceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ResumePatientService404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response ResumePatientService404JSONResponse) VisitResumePatientServiceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ResumePatientService500JSONResponse struct{ InternalErrorJSONResponse }
+
+func (response ResumePatientService500JSONResponse) VisitResumePatientServiceResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response); err != nil {
@@ -6466,6 +9275,461 @@ func (response ChangeOccurrence500JSONResponse) VisitChangeOccurrenceResponse(w 
 	return err
 }
 
+type ChangeOccurrence503JSONResponse Error
+
+func (response ChangeOccurrence503JSONResponse) VisitChangeOccurrenceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CancelOccurrenceRequestObject struct {
+	RecurringScheduleId RecurringScheduleID `json:"recurring_schedule_id"`
+	Body                *CancelOccurrenceJSONRequestBody
+}
+
+type CancelOccurrenceResponseObject interface {
+	VisitCancelOccurrenceResponse(w http.ResponseWriter) error
+}
+
+type CancelOccurrence201JSONResponse Cancel
+
+func (response CancelOccurrence201JSONResponse) VisitCancelOccurrenceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CancelOccurrence400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response CancelOccurrence400JSONResponse) VisitCancelOccurrenceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CancelOccurrence401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response CancelOccurrence401JSONResponse) VisitCancelOccurrenceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CancelOccurrence403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response CancelOccurrence403JSONResponse) VisitCancelOccurrenceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CancelOccurrence404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response CancelOccurrence404JSONResponse) VisitCancelOccurrenceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CancelOccurrence409JSONResponse Error
+
+func (response CancelOccurrence409JSONResponse) VisitCancelOccurrenceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CancelOccurrence500JSONResponse struct{ InternalErrorJSONResponse }
+
+func (response CancelOccurrence500JSONResponse) VisitCancelOccurrenceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeleteOccurrenceRequestObject struct {
+	RecurringScheduleId RecurringScheduleID `json:"recurring_schedule_id"`
+	Body                *DeleteOccurrenceJSONRequestBody
+}
+
+type DeleteOccurrenceResponseObject interface {
+	VisitDeleteOccurrenceResponse(w http.ResponseWriter) error
+}
+
+type DeleteOccurrence204Response struct {
+}
+
+func (response DeleteOccurrence204Response) VisitDeleteOccurrenceResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type DeleteOccurrence400JSONResponse Error
+
+func (response DeleteOccurrence400JSONResponse) VisitDeleteOccurrenceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeleteOccurrence401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response DeleteOccurrence401JSONResponse) VisitDeleteOccurrenceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeleteOccurrence403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response DeleteOccurrence403JSONResponse) VisitDeleteOccurrenceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeleteOccurrence404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response DeleteOccurrence404JSONResponse) VisitDeleteOccurrenceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeleteOccurrence409JSONResponse Error
+
+func (response DeleteOccurrence409JSONResponse) VisitDeleteOccurrenceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeleteOccurrence500JSONResponse struct{ InternalErrorJSONResponse }
+
+func (response DeleteOccurrence500JSONResponse) VisitDeleteOccurrenceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ChangeRecurringRuleRequestObject struct {
+	RecurringScheduleId RecurringScheduleID `json:"recurring_schedule_id"`
+	Body                *ChangeRecurringRuleJSONRequestBody
+}
+
+type ChangeRecurringRuleResponseObject interface {
+	VisitChangeRecurringRuleResponse(w http.ResponseWriter) error
+}
+
+type ChangeRecurringRule200JSONResponse RecurringSchedule
+
+func (response ChangeRecurringRule200JSONResponse) VisitChangeRecurringRuleResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ChangeRecurringRule400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response ChangeRecurringRule400JSONResponse) VisitChangeRecurringRuleResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ChangeRecurringRule401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ChangeRecurringRule401JSONResponse) VisitChangeRecurringRuleResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ChangeRecurringRule403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ChangeRecurringRule403JSONResponse) VisitChangeRecurringRuleResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ChangeRecurringRule404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response ChangeRecurringRule404JSONResponse) VisitChangeRecurringRuleResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ChangeRecurringRule409JSONResponse Error
+
+func (response ChangeRecurringRule409JSONResponse) VisitChangeRecurringRuleResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ChangeRecurringRule500JSONResponse struct{ InternalErrorJSONResponse }
+
+func (response ChangeRecurringRule500JSONResponse) VisitChangeRecurringRuleResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ChangeRecurringRule503JSONResponse Error
+
+func (response ChangeRecurringRule503JSONResponse) VisitChangeRecurringRuleResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeleteScheduleRequestObject struct {
+	ScheduleId ScheduleID `json:"schedule_id"`
+}
+
+type DeleteScheduleResponseObject interface {
+	VisitDeleteScheduleResponse(w http.ResponseWriter) error
+}
+
+type DeleteSchedule204Response struct {
+}
+
+func (response DeleteSchedule204Response) VisitDeleteScheduleResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type DeleteSchedule400JSONResponse Error
+
+func (response DeleteSchedule400JSONResponse) VisitDeleteScheduleResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeleteSchedule401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response DeleteSchedule401JSONResponse) VisitDeleteScheduleResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeleteSchedule403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response DeleteSchedule403JSONResponse) VisitDeleteScheduleResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeleteSchedule404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response DeleteSchedule404JSONResponse) VisitDeleteScheduleResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeleteSchedule409JSONResponse Error
+
+func (response DeleteSchedule409JSONResponse) VisitDeleteScheduleResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeleteSchedule500JSONResponse struct{ InternalErrorJSONResponse }
+
+func (response DeleteSchedule500JSONResponse) VisitDeleteScheduleResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type GetScheduleRequestObject struct {
 	ScheduleId ScheduleID `json:"schedule_id"`
 }
@@ -6671,6 +9935,20 @@ func (response UpdateSchedule500JSONResponse) VisitUpdateScheduleResponse(w http
 	return err
 }
 
+type UpdateSchedule503JSONResponse Error
+
+func (response UpdateSchedule503JSONResponse) VisitUpdateScheduleResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type CancelScheduleRequestObject struct {
 	ScheduleId ScheduleID `json:"schedule_id"`
 	Body       *CancelScheduleJSONRequestBody
@@ -6781,6 +10059,20 @@ func (response CancelSchedule500JSONResponse) VisitCancelScheduleResponse(w http
 	return err
 }
 
+type CancelSchedule503JSONResponse Error
+
+func (response CancelSchedule503JSONResponse) VisitCancelScheduleResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type GetTeamRequestObject struct {
 	TeamId ID `json:"team_id"`
 }
@@ -6789,7 +10081,7 @@ type GetTeamResponseObject interface {
 	VisitGetTeamResponse(w http.ResponseWriter) error
 }
 
-type GetTeam200JSONResponse Unit
+type GetTeam200JSONResponse Team
 
 func (response GetTeam200JSONResponse) VisitGetTeamResponse(w http.ResponseWriter) error {
 
@@ -6865,6 +10157,116 @@ func (response GetTeam404JSONResponse) VisitGetTeamResponse(w http.ResponseWrite
 type GetTeam500JSONResponse struct{ InternalErrorJSONResponse }
 
 func (response GetTeam500JSONResponse) VisitGetTeamResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateTeamRequestObject struct {
+	TeamId ID `json:"team_id"`
+	Body   *UpdateTeamJSONRequestBody
+}
+
+type UpdateTeamResponseObject interface {
+	VisitUpdateTeamResponse(w http.ResponseWriter) error
+}
+
+type UpdateTeam200JSONResponse Team
+
+func (response UpdateTeam200JSONResponse) VisitUpdateTeamResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateTeam400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response UpdateTeam400JSONResponse) VisitUpdateTeamResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateTeam401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response UpdateTeam401JSONResponse) VisitUpdateTeamResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateTeam403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response UpdateTeam403JSONResponse) VisitUpdateTeamResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateTeam404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response UpdateTeam404JSONResponse) VisitUpdateTeamResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateTeam409JSONResponse Error
+
+func (response UpdateTeam409JSONResponse) VisitUpdateTeamResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateTeam500JSONResponse struct{ InternalErrorJSONResponse }
+
+func (response UpdateTeam500JSONResponse) VisitUpdateTeamResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response); err != nil {
@@ -6960,6 +10362,116 @@ func (response GetUser404JSONResponse) VisitGetUserResponse(w http.ResponseWrite
 type GetUser500JSONResponse struct{ InternalErrorJSONResponse }
 
 func (response GetUser500JSONResponse) VisitGetUserResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateUserRequestObject struct {
+	UserId ID `json:"user_id"`
+	Body   *UpdateUserJSONRequestBody
+}
+
+type UpdateUserResponseObject interface {
+	VisitUpdateUserResponse(w http.ResponseWriter) error
+}
+
+type UpdateUser200JSONResponse StaffDetail
+
+func (response UpdateUser200JSONResponse) VisitUpdateUserResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateUser400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response UpdateUser400JSONResponse) VisitUpdateUserResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateUser401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response UpdateUser401JSONResponse) VisitUpdateUserResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateUser403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response UpdateUser403JSONResponse) VisitUpdateUserResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateUser404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response UpdateUser404JSONResponse) VisitUpdateUserResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateUser409JSONResponse RetireConflict
+
+func (response UpdateUser409JSONResponse) VisitUpdateUserResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateUser500JSONResponse struct{ InternalErrorJSONResponse }
+
+func (response UpdateUser500JSONResponse) VisitUpdateUserResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response); err != nil {
@@ -7520,6 +11032,101 @@ func (response ReinstateUser500JSONResponse) VisitReinstateUserResponse(w http.R
 	return err
 }
 
+type GetUserRemainingAssignmentsRequestObject struct {
+	UserId ID `json:"user_id"`
+}
+
+type GetUserRemainingAssignmentsResponseObject interface {
+	VisitGetUserRemainingAssignmentsResponse(w http.ResponseWriter) error
+}
+
+type GetUserRemainingAssignments200JSONResponse StaffAssignments
+
+func (response GetUserRemainingAssignments200JSONResponse) VisitGetUserRemainingAssignmentsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetUserRemainingAssignments400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response GetUserRemainingAssignments400JSONResponse) VisitGetUserRemainingAssignmentsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetUserRemainingAssignments401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetUserRemainingAssignments401JSONResponse) VisitGetUserRemainingAssignmentsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.WWWAuthenticate != nil {
+		w.Header().Set("WWW-Authenticate", fmt.Sprint(*response.Headers.WWWAuthenticate))
+	}
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetUserRemainingAssignments403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response GetUserRemainingAssignments403JSONResponse) VisitGetUserRemainingAssignmentsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetUserRemainingAssignments404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response GetUserRemainingAssignments404JSONResponse) VisitGetUserRemainingAssignmentsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetUserRemainingAssignments500JSONResponse struct{ InternalErrorJSONResponse }
+
+func (response GetUserRemainingAssignments500JSONResponse) VisitGetUserRemainingAssignmentsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type RetireUserRequestObject struct {
 	UserId ID `json:"user_id"`
 }
@@ -7769,15 +11376,21 @@ type StrictServerInterface interface {
 	// GetReadyz リクエストを受けられるかを返す
 	// (GET /readyz)
 	GetReadyz(ctx context.Context, request GetReadyzRequestObject) (GetReadyzResponseObject, error)
-	// CreateCalendarExportAcceptance 確認が必要な書き出しを Google カレンダーの内容で解く
-	// (POST /v1/calendar_exports/{calendar_export_id}/acceptances)
-	CreateCalendarExportAcceptance(ctx context.Context, request CreateCalendarExportAcceptanceRequestObject) (CreateCalendarExportAcceptanceResponseObject, error)
+	// CancelCalendarCutover 予定の正本の切り替えをやめる
+	// (POST /v1/calendar_cutovers/{calendar_cutover_id}/cancel)
+	CancelCalendarCutover(ctx context.Context, request CancelCalendarCutoverRequestObject) (CancelCalendarCutoverResponseObject, error)
+	// CreateCalendarCutoverCompletion 予定の正本の切り替えを完了する
+	// (POST /v1/calendar_cutovers/{calendar_cutover_id}/completions)
+	CreateCalendarCutoverCompletion(ctx context.Context, request CreateCalendarCutoverCompletionRequestObject) (CreateCalendarCutoverCompletionResponseObject, error)
 	// CreateCalendarExportRetry 確認が必要な書き出しを buddy の内容で書き直す
 	// (POST /v1/calendar_exports/{calendar_export_id}/retries)
 	CreateCalendarExportRetry(ctx context.Context, request CreateCalendarExportRetryRequestObject) (CreateCalendarExportRetryResponseObject, error)
 	// GetDepartment 部署を取得する
 	// (GET /v1/departments/{department_id})
 	GetDepartment(ctx context.Context, request GetDepartmentRequestObject) (GetDepartmentResponseObject, error)
+	// UpdateDepartment 部署の名前を変える
+	// (PUT /v1/departments/{department_id})
+	UpdateDepartment(ctx context.Context, request UpdateDepartmentRequestObject) (UpdateDepartmentResponseObject, error)
 	// RemoveExternalCalendar カレンダーを外す
 	// (DELETE /v1/external_calendars/{external_calendar_id})
 	RemoveExternalCalendar(ctx context.Context, request RemoveExternalCalendarRequestObject) (RemoveExternalCalendarResponseObject, error)
@@ -7790,6 +11403,12 @@ type StrictServerInterface interface {
 	// GetFacility 事業所を取得する
 	// (GET /v1/facilities/{facility_id})
 	GetFacility(ctx context.Context, request GetFacilityRequestObject) (GetFacilityResponseObject, error)
+	// GetCalendarCutoverStatus 予定の正本の切り替えの状況を取得する
+	// (GET /v1/facilities/{facility_id}/calendar_cutover_status)
+	GetCalendarCutoverStatus(ctx context.Context, request GetCalendarCutoverStatusRequestObject) (GetCalendarCutoverStatusResponseObject, error)
+	// StartCalendarCutover 予定の正本の切り替えを始める
+	// (POST /v1/facilities/{facility_id}/calendar_cutovers)
+	StartCalendarCutover(ctx context.Context, request StartCalendarCutoverRequestObject) (StartCalendarCutoverResponseObject, error)
 	// ListCalendarExportIssues 確認が必要な書き出しを一覧する
 	// (GET /v1/facilities/{facility_id}/calendar_export_issues)
 	ListCalendarExportIssues(ctx context.Context, request ListCalendarExportIssuesRequestObject) (ListCalendarExportIssuesResponseObject, error)
@@ -7799,6 +11418,9 @@ type StrictServerInterface interface {
 	// ListDepartments 事業所の部署を一覧する
 	// (GET /v1/facilities/{facility_id}/departments)
 	ListDepartments(ctx context.Context, request ListDepartmentsRequestObject) (ListDepartmentsResponseObject, error)
+	// CreateDepartment 部署を作る
+	// (POST /v1/facilities/{facility_id}/departments)
+	CreateDepartment(ctx context.Context, request CreateDepartmentRequestObject) (CreateDepartmentResponseObject, error)
 	// ListExternalCalendars 事業所の結び付けたカレンダーを一覧する
 	// (GET /v1/facilities/{facility_id}/external_calendars)
 	ListExternalCalendars(ctx context.Context, request ListExternalCalendarsRequestObject) (ListExternalCalendarsResponseObject, error)
@@ -7844,6 +11466,24 @@ type StrictServerInterface interface {
 	// GetMe トークンの職員を取得する
 	// (GET /v1/me)
 	GetMe(ctx context.Context, request GetMeRequestObject) (GetMeResponseObject, error)
+	// GetMyExternalCalendar トークンの職員に結び付いたカレンダーを取得する
+	// (GET /v1/me/external_calendar)
+	GetMyExternalCalendar(ctx context.Context, request GetMyExternalCalendarRequestObject) (GetMyExternalCalendarResponseObject, error)
+	// GetPatient 利用者を取得する
+	// (GET /v1/patients/{patient_id})
+	GetPatient(ctx context.Context, request GetPatientRequestObject) (GetPatientResponseObject, error)
+	// UpdatePatient 利用者の名前、サービス、希望、担当の職員を変える
+	// (PUT /v1/patients/{patient_id})
+	UpdatePatient(ctx context.Context, request UpdatePatientRequestObject) (UpdatePatientResponseObject, error)
+	// EndPatientService 利用者の利用を終了する
+	// (POST /v1/patients/{patient_id}/end_service)
+	EndPatientService(ctx context.Context, request EndPatientServiceRequestObject) (EndPatientServiceResponseObject, error)
+	// GetPatientRemainingSchedules 利用者に残る予定を返す
+	// (GET /v1/patients/{patient_id}/remaining_schedules)
+	GetPatientRemainingSchedules(ctx context.Context, request GetPatientRemainingSchedulesRequestObject) (GetPatientRemainingSchedulesResponseObject, error)
+	// ResumePatientService 利用の終了の利用者を利用中に戻す
+	// (POST /v1/patients/{patient_id}/resume_service)
+	ResumePatientService(ctx context.Context, request ResumePatientServiceRequestObject) (ResumePatientServiceResponseObject, error)
 	// ListPolicies 権限を一覧する
 	// (GET /v1/policies)
 	ListPolicies(ctx context.Context, request ListPoliciesRequestObject) (ListPoliciesResponseObject, error)
@@ -7862,6 +11502,18 @@ type StrictServerInterface interface {
 	// ChangeOccurrence 繰り返しの予定の 1 回を置き換える
 	// (POST /v1/schedules/recurring/{recurring_schedule_id}/occurrences)
 	ChangeOccurrence(ctx context.Context, request ChangeOccurrenceRequestObject) (ChangeOccurrenceResponseObject, error)
+	// CancelOccurrence 繰り返しの予定の 1 回をキャンセルする
+	// (POST /v1/schedules/recurring/{recurring_schedule_id}/occurrences/cancel)
+	CancelOccurrence(ctx context.Context, request CancelOccurrenceRequestObject) (CancelOccurrenceResponseObject, error)
+	// DeleteOccurrence 誤って入れた繰り返しの予定の 1 回を削除する
+	// (POST /v1/schedules/recurring/{recurring_schedule_id}/occurrences/delete)
+	DeleteOccurrence(ctx context.Context, request DeleteOccurrenceRequestObject) (DeleteOccurrenceResponseObject, error)
+	// ChangeRecurringRule 繰り返しの予定の規則を、適用の日以降の回について変える
+	// (PUT /v1/schedules/recurring/{recurring_schedule_id}/rule)
+	ChangeRecurringRule(ctx context.Context, request ChangeRecurringRuleRequestObject) (ChangeRecurringRuleResponseObject, error)
+	// DeleteSchedule 誤って入れた単発の予定を削除する
+	// (DELETE /v1/schedules/{schedule_id})
+	DeleteSchedule(ctx context.Context, request DeleteScheduleRequestObject) (DeleteScheduleResponseObject, error)
 	// GetSchedule 単発の予定を取得する
 	// (GET /v1/schedules/{schedule_id})
 	GetSchedule(ctx context.Context, request GetScheduleRequestObject) (GetScheduleResponseObject, error)
@@ -7874,9 +11526,15 @@ type StrictServerInterface interface {
 	// GetTeam チームを取得する
 	// (GET /v1/teams/{team_id})
 	GetTeam(ctx context.Context, request GetTeamRequestObject) (GetTeamResponseObject, error)
+	// UpdateTeam チームの名前と色を変える
+	// (PUT /v1/teams/{team_id})
+	UpdateTeam(ctx context.Context, request UpdateTeamRequestObject) (UpdateTeamResponseObject, error)
 	// GetUser 職員を取得する
 	// (GET /v1/users/{user_id})
 	GetUser(ctx context.Context, request GetUserRequestObject) (GetUserResponseObject, error)
+	// UpdateUser 職員の名前、電話番号、部署、チーム、訪問するかを変える
+	// (PUT /v1/users/{user_id})
+	UpdateUser(ctx context.Context, request UpdateUserRequestObject) (UpdateUserResponseObject, error)
 	// StartUserLeave 職員を休職にする
 	// (POST /v1/users/{user_id}/leave)
 	StartUserLeave(ctx context.Context, request StartUserLeaveRequestObject) (StartUserLeaveResponseObject, error)
@@ -7892,6 +11550,9 @@ type StrictServerInterface interface {
 	// ReinstateUser 休職の職員を復職にする
 	// (POST /v1/users/{user_id}/reinstate)
 	ReinstateUser(ctx context.Context, request ReinstateUserRequestObject) (ReinstateUserResponseObject, error)
+	// GetUserRemainingAssignments 職員に残る予定と担当の利用者を返す
+	// (GET /v1/users/{user_id}/remaining_assignments)
+	GetUserRemainingAssignments(ctx context.Context, request GetUserRemainingAssignmentsRequestObject) (GetUserRemainingAssignmentsResponseObject, error)
 	// RetireUser 職員を退職にする
 	// (POST /v1/users/{user_id}/retire)
 	RetireUser(ctx context.Context, request RetireUserRequestObject) (RetireUserResponseObject, error)
@@ -8008,25 +11669,51 @@ func (sh *strictHandler) GetReadyz(ctx *gin.Context) {
 	}
 }
 
-// CreateCalendarExportAcceptance operation middleware
-func (sh *strictHandler) CreateCalendarExportAcceptance(ctx *gin.Context, calendarExportId CalendarExportID) {
-	var request CreateCalendarExportAcceptanceRequestObject
+// CancelCalendarCutover operation middleware
+func (sh *strictHandler) CancelCalendarCutover(ctx *gin.Context, calendarCutoverId CalendarCutoverID) {
+	var request CancelCalendarCutoverRequestObject
 
-	request.CalendarExportId = calendarExportId
+	request.CalendarCutoverId = calendarCutoverId
 
 	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
-		return sh.ssi.CreateCalendarExportAcceptance(ctx, request.(CreateCalendarExportAcceptanceRequestObject))
+		return sh.ssi.CancelCalendarCutover(ctx, request.(CancelCalendarCutoverRequestObject))
 	}
 	for _, middleware := range sh.middlewares {
-		handler = middleware(handler, "CreateCalendarExportAcceptance")
+		handler = middleware(handler, "CancelCalendarCutover")
 	}
 
 	response, err := handler(ctx, request)
 
 	if err != nil {
 		sh.options.HandlerErrorFunc(ctx, err)
-	} else if validResponse, ok := response.(CreateCalendarExportAcceptanceResponseObject); ok {
-		if err := validResponse.VisitCreateCalendarExportAcceptanceResponse(ctx.Writer); err != nil {
+	} else if validResponse, ok := response.(CancelCalendarCutoverResponseObject); ok {
+		if err := validResponse.VisitCancelCalendarCutoverResponse(ctx.Writer); err != nil {
+			sh.options.ResponseErrorHandlerFunc(ctx, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(ctx, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreateCalendarCutoverCompletion operation middleware
+func (sh *strictHandler) CreateCalendarCutoverCompletion(ctx *gin.Context, calendarCutoverId CalendarCutoverID) {
+	var request CreateCalendarCutoverCompletionRequestObject
+
+	request.CalendarCutoverId = calendarCutoverId
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateCalendarCutoverCompletion(ctx, request.(CreateCalendarCutoverCompletionRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateCalendarCutoverCompletion")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		sh.options.HandlerErrorFunc(ctx, err)
+	} else if validResponse, ok := response.(CreateCalendarCutoverCompletionResponseObject); ok {
+		if err := validResponse.VisitCreateCalendarCutoverCompletionResponse(ctx.Writer); err != nil {
 			sh.options.ResponseErrorHandlerFunc(ctx, err)
 		}
 	} else if response != nil {
@@ -8079,6 +11766,39 @@ func (sh *strictHandler) GetDepartment(ctx *gin.Context, departmentId ID) {
 		sh.options.HandlerErrorFunc(ctx, err)
 	} else if validResponse, ok := response.(GetDepartmentResponseObject); ok {
 		if err := validResponse.VisitGetDepartmentResponse(ctx.Writer); err != nil {
+			sh.options.ResponseErrorHandlerFunc(ctx, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(ctx, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UpdateDepartment operation middleware
+func (sh *strictHandler) UpdateDepartment(ctx *gin.Context, departmentId ID) {
+	var request UpdateDepartmentRequestObject
+
+	request.DepartmentId = departmentId
+
+	var body UpdateDepartmentJSONRequestBody
+	if err := ctx.ShouldBindJSON(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(ctx, err)
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.UpdateDepartment(ctx, request.(UpdateDepartmentRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UpdateDepartment")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		sh.options.HandlerErrorFunc(ctx, err)
+	} else if validResponse, ok := response.(UpdateDepartmentResponseObject); ok {
+		if err := validResponse.VisitUpdateDepartmentResponse(ctx.Writer); err != nil {
 			sh.options.ResponseErrorHandlerFunc(ctx, err)
 		}
 	} else if response != nil {
@@ -8204,6 +11924,58 @@ func (sh *strictHandler) GetFacility(ctx *gin.Context, facilityId FacilityID) {
 	}
 }
 
+// GetCalendarCutoverStatus operation middleware
+func (sh *strictHandler) GetCalendarCutoverStatus(ctx *gin.Context, facilityId FacilityID) {
+	var request GetCalendarCutoverStatusRequestObject
+
+	request.FacilityId = facilityId
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.GetCalendarCutoverStatus(ctx, request.(GetCalendarCutoverStatusRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetCalendarCutoverStatus")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		sh.options.HandlerErrorFunc(ctx, err)
+	} else if validResponse, ok := response.(GetCalendarCutoverStatusResponseObject); ok {
+		if err := validResponse.VisitGetCalendarCutoverStatusResponse(ctx.Writer); err != nil {
+			sh.options.ResponseErrorHandlerFunc(ctx, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(ctx, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// StartCalendarCutover operation middleware
+func (sh *strictHandler) StartCalendarCutover(ctx *gin.Context, facilityId FacilityID) {
+	var request StartCalendarCutoverRequestObject
+
+	request.FacilityId = facilityId
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.StartCalendarCutover(ctx, request.(StartCalendarCutoverRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "StartCalendarCutover")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		sh.options.HandlerErrorFunc(ctx, err)
+	} else if validResponse, ok := response.(StartCalendarCutoverResponseObject); ok {
+		if err := validResponse.VisitStartCalendarCutoverResponse(ctx.Writer); err != nil {
+			sh.options.ResponseErrorHandlerFunc(ctx, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(ctx, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // ListCalendarExportIssues operation middleware
 func (sh *strictHandler) ListCalendarExportIssues(ctx *gin.Context, facilityId FacilityID) {
 	var request ListCalendarExportIssuesRequestObject
@@ -8275,6 +12047,39 @@ func (sh *strictHandler) ListDepartments(ctx *gin.Context, facilityId FacilityID
 		sh.options.HandlerErrorFunc(ctx, err)
 	} else if validResponse, ok := response.(ListDepartmentsResponseObject); ok {
 		if err := validResponse.VisitListDepartmentsResponse(ctx.Writer); err != nil {
+			sh.options.ResponseErrorHandlerFunc(ctx, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(ctx, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreateDepartment operation middleware
+func (sh *strictHandler) CreateDepartment(ctx *gin.Context, facilityId FacilityID) {
+	var request CreateDepartmentRequestObject
+
+	request.FacilityId = facilityId
+
+	var body CreateDepartmentJSONRequestBody
+	if err := ctx.ShouldBindJSON(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(ctx, err)
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateDepartment(ctx, request.(CreateDepartmentRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateDepartment")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		sh.options.HandlerErrorFunc(ctx, err)
+	} else if validResponse, ok := response.(CreateDepartmentResponseObject); ok {
+		if err := validResponse.VisitCreateDepartmentResponse(ctx.Writer); err != nil {
 			sh.options.ResponseErrorHandlerFunc(ctx, err)
 		}
 	} else if response != nil {
@@ -8729,6 +12534,174 @@ func (sh *strictHandler) GetMe(ctx *gin.Context) {
 	}
 }
 
+// GetMyExternalCalendar operation middleware
+func (sh *strictHandler) GetMyExternalCalendar(ctx *gin.Context) {
+	var request GetMyExternalCalendarRequestObject
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.GetMyExternalCalendar(ctx, request.(GetMyExternalCalendarRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetMyExternalCalendar")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		sh.options.HandlerErrorFunc(ctx, err)
+	} else if validResponse, ok := response.(GetMyExternalCalendarResponseObject); ok {
+		if err := validResponse.VisitGetMyExternalCalendarResponse(ctx.Writer); err != nil {
+			sh.options.ResponseErrorHandlerFunc(ctx, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(ctx, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetPatient operation middleware
+func (sh *strictHandler) GetPatient(ctx *gin.Context, patientId ID) {
+	var request GetPatientRequestObject
+
+	request.PatientId = patientId
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.GetPatient(ctx, request.(GetPatientRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetPatient")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		sh.options.HandlerErrorFunc(ctx, err)
+	} else if validResponse, ok := response.(GetPatientResponseObject); ok {
+		if err := validResponse.VisitGetPatientResponse(ctx.Writer); err != nil {
+			sh.options.ResponseErrorHandlerFunc(ctx, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(ctx, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UpdatePatient operation middleware
+func (sh *strictHandler) UpdatePatient(ctx *gin.Context, patientId ID) {
+	var request UpdatePatientRequestObject
+
+	request.PatientId = patientId
+
+	var body UpdatePatientJSONRequestBody
+	if err := ctx.ShouldBindJSON(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(ctx, err)
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.UpdatePatient(ctx, request.(UpdatePatientRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UpdatePatient")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		sh.options.HandlerErrorFunc(ctx, err)
+	} else if validResponse, ok := response.(UpdatePatientResponseObject); ok {
+		if err := validResponse.VisitUpdatePatientResponse(ctx.Writer); err != nil {
+			sh.options.ResponseErrorHandlerFunc(ctx, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(ctx, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// EndPatientService operation middleware
+func (sh *strictHandler) EndPatientService(ctx *gin.Context, patientId ID) {
+	var request EndPatientServiceRequestObject
+
+	request.PatientId = patientId
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.EndPatientService(ctx, request.(EndPatientServiceRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "EndPatientService")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		sh.options.HandlerErrorFunc(ctx, err)
+	} else if validResponse, ok := response.(EndPatientServiceResponseObject); ok {
+		if err := validResponse.VisitEndPatientServiceResponse(ctx.Writer); err != nil {
+			sh.options.ResponseErrorHandlerFunc(ctx, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(ctx, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetPatientRemainingSchedules operation middleware
+func (sh *strictHandler) GetPatientRemainingSchedules(ctx *gin.Context, patientId ID) {
+	var request GetPatientRemainingSchedulesRequestObject
+
+	request.PatientId = patientId
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.GetPatientRemainingSchedules(ctx, request.(GetPatientRemainingSchedulesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetPatientRemainingSchedules")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		sh.options.HandlerErrorFunc(ctx, err)
+	} else if validResponse, ok := response.(GetPatientRemainingSchedulesResponseObject); ok {
+		if err := validResponse.VisitGetPatientRemainingSchedulesResponse(ctx.Writer); err != nil {
+			sh.options.ResponseErrorHandlerFunc(ctx, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(ctx, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ResumePatientService operation middleware
+func (sh *strictHandler) ResumePatientService(ctx *gin.Context, patientId ID) {
+	var request ResumePatientServiceRequestObject
+
+	request.PatientId = patientId
+
+	var body ResumePatientServiceJSONRequestBody
+	if err := ctx.ShouldBindJSON(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(ctx, err)
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.ResumePatientService(ctx, request.(ResumePatientServiceRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ResumePatientService")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		sh.options.HandlerErrorFunc(ctx, err)
+	} else if validResponse, ok := response.(ResumePatientServiceResponseObject); ok {
+		if err := validResponse.VisitResumePatientServiceResponse(ctx.Writer); err != nil {
+			sh.options.ResponseErrorHandlerFunc(ctx, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(ctx, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // ListPolicies operation middleware
 func (sh *strictHandler) ListPolicies(ctx *gin.Context) {
 	var request ListPoliciesRequestObject
@@ -8888,6 +12861,131 @@ func (sh *strictHandler) ChangeOccurrence(ctx *gin.Context, recurringScheduleId 
 	}
 }
 
+// CancelOccurrence operation middleware
+func (sh *strictHandler) CancelOccurrence(ctx *gin.Context, recurringScheduleId RecurringScheduleID) {
+	var request CancelOccurrenceRequestObject
+
+	request.RecurringScheduleId = recurringScheduleId
+
+	var body CancelOccurrenceJSONRequestBody
+	if err := ctx.ShouldBindJSON(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(ctx, err)
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.CancelOccurrence(ctx, request.(CancelOccurrenceRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CancelOccurrence")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		sh.options.HandlerErrorFunc(ctx, err)
+	} else if validResponse, ok := response.(CancelOccurrenceResponseObject); ok {
+		if err := validResponse.VisitCancelOccurrenceResponse(ctx.Writer); err != nil {
+			sh.options.ResponseErrorHandlerFunc(ctx, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(ctx, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// DeleteOccurrence operation middleware
+func (sh *strictHandler) DeleteOccurrence(ctx *gin.Context, recurringScheduleId RecurringScheduleID) {
+	var request DeleteOccurrenceRequestObject
+
+	request.RecurringScheduleId = recurringScheduleId
+
+	var body DeleteOccurrenceJSONRequestBody
+	if err := ctx.ShouldBindJSON(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(ctx, err)
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.DeleteOccurrence(ctx, request.(DeleteOccurrenceRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DeleteOccurrence")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		sh.options.HandlerErrorFunc(ctx, err)
+	} else if validResponse, ok := response.(DeleteOccurrenceResponseObject); ok {
+		if err := validResponse.VisitDeleteOccurrenceResponse(ctx.Writer); err != nil {
+			sh.options.ResponseErrorHandlerFunc(ctx, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(ctx, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ChangeRecurringRule operation middleware
+func (sh *strictHandler) ChangeRecurringRule(ctx *gin.Context, recurringScheduleId RecurringScheduleID) {
+	var request ChangeRecurringRuleRequestObject
+
+	request.RecurringScheduleId = recurringScheduleId
+
+	var body ChangeRecurringRuleJSONRequestBody
+	if err := ctx.ShouldBindJSON(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(ctx, err)
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.ChangeRecurringRule(ctx, request.(ChangeRecurringRuleRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ChangeRecurringRule")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		sh.options.HandlerErrorFunc(ctx, err)
+	} else if validResponse, ok := response.(ChangeRecurringRuleResponseObject); ok {
+		if err := validResponse.VisitChangeRecurringRuleResponse(ctx.Writer); err != nil {
+			sh.options.ResponseErrorHandlerFunc(ctx, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(ctx, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// DeleteSchedule operation middleware
+func (sh *strictHandler) DeleteSchedule(ctx *gin.Context, scheduleId ScheduleID) {
+	var request DeleteScheduleRequestObject
+
+	request.ScheduleId = scheduleId
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.DeleteSchedule(ctx, request.(DeleteScheduleRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DeleteSchedule")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		sh.options.HandlerErrorFunc(ctx, err)
+	} else if validResponse, ok := response.(DeleteScheduleResponseObject); ok {
+		if err := validResponse.VisitDeleteScheduleResponse(ctx.Writer); err != nil {
+			sh.options.ResponseErrorHandlerFunc(ctx, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(ctx, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // GetSchedule operation middleware
 func (sh *strictHandler) GetSchedule(ctx *gin.Context, scheduleId ScheduleID) {
 	var request GetScheduleRequestObject
@@ -9006,6 +13104,39 @@ func (sh *strictHandler) GetTeam(ctx *gin.Context, teamId ID) {
 	}
 }
 
+// UpdateTeam operation middleware
+func (sh *strictHandler) UpdateTeam(ctx *gin.Context, teamId ID) {
+	var request UpdateTeamRequestObject
+
+	request.TeamId = teamId
+
+	var body UpdateTeamJSONRequestBody
+	if err := ctx.ShouldBindJSON(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(ctx, err)
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.UpdateTeam(ctx, request.(UpdateTeamRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UpdateTeam")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		sh.options.HandlerErrorFunc(ctx, err)
+	} else if validResponse, ok := response.(UpdateTeamResponseObject); ok {
+		if err := validResponse.VisitUpdateTeamResponse(ctx.Writer); err != nil {
+			sh.options.ResponseErrorHandlerFunc(ctx, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(ctx, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // GetUser operation middleware
 func (sh *strictHandler) GetUser(ctx *gin.Context, userId ID) {
 	var request GetUserRequestObject
@@ -9025,6 +13156,39 @@ func (sh *strictHandler) GetUser(ctx *gin.Context, userId ID) {
 		sh.options.HandlerErrorFunc(ctx, err)
 	} else if validResponse, ok := response.(GetUserResponseObject); ok {
 		if err := validResponse.VisitGetUserResponse(ctx.Writer); err != nil {
+			sh.options.ResponseErrorHandlerFunc(ctx, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(ctx, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UpdateUser operation middleware
+func (sh *strictHandler) UpdateUser(ctx *gin.Context, userId ID) {
+	var request UpdateUserRequestObject
+
+	request.UserId = userId
+
+	var body UpdateUserJSONRequestBody
+	if err := ctx.ShouldBindJSON(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(ctx, err)
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.UpdateUser(ctx, request.(UpdateUserRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UpdateUser")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		sh.options.HandlerErrorFunc(ctx, err)
+	} else if validResponse, ok := response.(UpdateUserResponseObject); ok {
+		if err := validResponse.VisitUpdateUserResponse(ctx.Writer); err != nil {
 			sh.options.ResponseErrorHandlerFunc(ctx, err)
 		}
 	} else if response != nil {
@@ -9184,6 +13348,32 @@ func (sh *strictHandler) ReinstateUser(ctx *gin.Context, userId ID) {
 	}
 }
 
+// GetUserRemainingAssignments operation middleware
+func (sh *strictHandler) GetUserRemainingAssignments(ctx *gin.Context, userId ID) {
+	var request GetUserRemainingAssignmentsRequestObject
+
+	request.UserId = userId
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.GetUserRemainingAssignments(ctx, request.(GetUserRemainingAssignmentsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetUserRemainingAssignments")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		sh.options.HandlerErrorFunc(ctx, err)
+	} else if validResponse, ok := response.(GetUserRemainingAssignmentsResponseObject); ok {
+		if err := validResponse.VisitGetUserRemainingAssignmentsResponse(ctx.Writer); err != nil {
+			sh.options.ResponseErrorHandlerFunc(ctx, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(ctx, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // RetireUser operation middleware
 func (sh *strictHandler) RetireUser(ctx *gin.Context, userId ID) {
 	var request RetireUserRequestObject
@@ -9263,235 +13453,417 @@ func (sh *strictHandler) ListVisitCategories(ctx *gin.Context) {
 // const string: with thousands of chunks the chained `+` fold is several
 // times slower for the Go compiler than parsing a slice literal.
 var swaggerSpec = []string{
-	"7L37dxNHti/+r/Tq7/nhe+8RWOYxGXzXXesQmEyYM8nkkNeawVwjpLatE7nlkVpMGK7XUrd5yJYcwDwd",
-	"O+ERwMIKckgmxGADf0xbsv0T/8Jdu15dVV0tddvyI8T5gchSdz127dp7196f2vucnswODWdNw7Tyes85",
-	"fTiRSwwZlpFDfx1JZAwzlcj94cvhbM46dhS+S5t6jz6csAb1mG4mhgy9R0+Sx/oM9FxfOqXH9Jzx90I6",
-	"Z6T0HitXMGJ6PjloDCWghX/LGf16j/7/dXldd+Ff813HjuojIzH9D19aRs5MZOgAcNcpI5/MpYetdBbG",
-	"cLqQSp3VXLveeHBzbbTq2nXXqbmj37ujP7mjRXd0ybXr2rGjbtH5YzY7kDG0oCc015517XnXnnPt83pM",
-	"NUODjKePTXXjc3wvkUxn0tbZQLL2kwc60NdxI1nI5dLmwMfJQSNVyBiBnebok3158mgHum/bayf7yuas",
-	"v+RSRs7PMSsztmtfdu1q8/altbsX3aKTB3btTxuZlOY6k+j38659x7Wrrj0BPDF6yR294TqP3dGaO1qi",
-	"HPTYHb3r2rXGlavosbuufdV1Jhsvr7n2I9cpUx76e8HIneUmCZ1l0dD4ORlmYUjvOaEn8kk9hkasn4zp",
-	"1tlh9I4Fa6GPwMxyRn44a+YNtDUP5/PpAfPdROq48feCkbfgu2TWtAwTfUwMD2fSyQRMvOu/8zD7c7rx",
-	"ZWJoOINfP51NnYX/5wtDQ4ncWb1Hb85837x5CbZT8YFrV1YfXW6MXUKTLLnOZbY5ziQyBQN3loIBps0z",
-	"iUw61Zc2hwuWHtOHjHw+MQC/rPzsLL+46Nr15pTTKC269vzazXJjtux945RcZ7zxquLaNde+5dqvXHsK",
-	"rWHW/LOROGOIA1xeurpq/+La9VX7l8a1e64z2axcQu/diTQuqR0t3v3B/k+OHPzk+B8P7ovH//Ovn3/y",
-	"t89/94fj+z//UEMDm3eL9vKLUqP+NXBO+QIsszPZGPvRdcablXnXqaCRT7vONR0vk4WZlx/8WrGIOoXR",
-	"bnD8/qY6PIWRsDvuD7lcNodfEDda48LDxvg02i1VtFuW3KJzCmZ2SnPteU2YHPxEZod+9d6x6yv1S82x",
-	"omtXV65cXLn+FAR10aat14CB7O9c+1HjwRjwqFN2i06vSWdKGaVoLy8srlbnGjcurxYvQANXKqv3KuRz",
-	"6fHK9Sp8tuuEMuxFuwbvEnYpU7pz/HfzB7QMl9lCEsHhOKuvr7v2lDCc6srzH1xnHP1yy7Xr9Pta89Z9",
-	"2GdsNezv2MripWtcqbj27cbL5/CMXUdr9Wr59TeNJ7eR6prAM5c3iD3fvPVwefE2oZQz5tpfu0VbwYr2",
-	"/PLiePPWQ7Ijxya44c1i+ebvrtfUR2L6WyqBUkZ/2kxjdubH6I7OuQ5iUec5UggVLTtsmInh9N6ziaEM",
-	"MkfqX6+8eryRcSO9AU1pvH6yK0LL9nm2Z3s01LaWzmtm1tKypqFl+zVr0NASmUz2H0YK/57XTvTqqYRl",
-	"9OqxXj1vJXJWn5Uewn8mc0bCMlJ9CatXP4lIABr62FF5+ldh4tRsqmif/pnaT5Fnyel8JBS8pvASYO0p",
-	"do9JD2swuTr3xHXsdfTrNWLXGy/vu3al+eQ7vI9d23GdcY6upBUtbwylk9lM1tTyBpjIVjanpU0ND/FX",
-	"LTFhD1Mr+8OsdSRr9qcHCkR/hdvOHNWZeWxmrb6k1xZP/0BznaxpcbX6BEmeirQc+sbJ7NrXkGgrNx8+",
-	"QWSqa/zh4GcYxug1YHHnPgzPeYSGB/ucjuoG0paP0P4D3hPXKYgAHJU/NRNnEulM4nTG2BiNC1xDoQhs",
-	"l11njMh1bwMR6qKdh4yRjZOZ0bTWeDoO3WJK2WW3aLPfKh7bOpNUK94JICc/V4GWOSOR6gQpWTuiqFBy",
-	"KEe0ouM/UjYuPG3OjMF54v6L1bkJNK9HSLrcBfaxz3eCkeVeKyvn7zEa+9m8JW/XyIh9vP1mqeQtl3Yg",
-	"vl9z7bJ2IH5A45fszdJY4KoxssKBN5s7nU6lDHNda9XP3hZWCM20eW1i+eWMa8+vVp82Ls+LE+mc9GCG",
-	"38rYc2obTfC8TdVjBRmEU9wCVMi7wqpU14AdLuJ32QPN6uO1qSuuPUtnxfUikNmjyEhMP2ZiDwUe/HoI",
-	"nCYtSDsA880V+Nee5TRNZWXqxcr1O9Rs6pDkEPsL1oZkqCMx/cOs9V62YK5PX4GU7kdvC5MGA+Ml2vDP",
-	"kSFadu0HSHp2VhkRbpn1jg9ix6pF90Y8EtM/NRMFazCbS//TSEU0v4lBIZt3JdT5PEgGu958MLNaXQL5",
-	"8OBp88atwLNqAQ3DMC3o0JBpyTcZaGohi28onc+Dt6PFmCqBBl+rQazOTaCJVBqvL6w+spmR2Yk1VIwO",
-	"b2gl9cTF9I950EikiPP1888/33OY+9nvzzr+3hHtd+8cjKOjQnIwkckY5oABOkk9KuLU0k69ayRyRu5U",
-	"4CDlJzUD5v+/e5lVbWW/MMxe/ZTgyPK5rDz6KrzJ/ul0a2ib1ZmFwmwzWdnVmtMLrj3RuPTCtacary64",
-	"9j236KAvL7PBw+zQN80pZ8V57jVs1xsXLzTqz+EEjx7QY/pwLjts5Kw03hwJyzKGhq28f4zohWtIaFcx",
-	"sRrT3zZv/ADsljbTQ+DKizPvHcipASMHWxVRsA/zqq/RmSI+g6LWr6LlKmM3ALHii85wzkhmzRQ6kvb1",
-	"J9IZA5+aqBe8Gkis+vLCveZNkDN0/hVi/aMe3iyVms9KVGXeYcRfm3oAtPMIDT4L7UD3PtD9jSs11yki",
-	"xW/3mkwmoREFjcPrnu8P7xX6U9lv13DSd4xZJQe6427RPhA/AIvsH729QMZKR8hUJT4utbLzA5jtKhXG",
-	"ds74byNpGeJk7YqfuRqXb4HjZPE2fbvMKH4gHqdD4yxbsUXZdl5eKAInf41sM14PP/uaeK2LdsFEct/X",
-	"mN9GfTDWnP4X7DEWRmH+KLBx7dfN6deujbxGDhEgveabpdLKzw44ioi/hBK8aLvOa9d5gARPDdpnbjVn",
-	"srF0g9GPPR/gDPsGKX0H/qWDfLM01mvqMeYnV+wEPSZoct5UpKulx3TxvMSRCvztZiGDfyExB1GYxfQv",
-	"92SH0kgqnNV7+hOZvDES09OpdooDghKxgKAKCJpM5i/9es+J9o2clDWPmoBFR3SrVJtfTS4v3tTXOcHO",
-	"DbcxcXtl6gU/UCVROjBkK2EVFJJ72DBTaXMAtgWW+lRv2PlCMmkYKSPFfptY+dkB5kd7Ck7xmXTSCinc",
-	"ONn6iEaTykhGlbhv6mD2QVdlcMrateaT++hcSeRhrxlh59ZI4ElqqGh7aoIoQnKyEM6KjYsTa3BirC8v",
-	"jKNfX9GhCUJL3IKYlnpMZ7TTYzolFOxA1LMijhXTC8Mp4miENerP5obgE/JL7gFvpO57Z4SPCJ7QUYhQ",
-	"Dhiqg5aEFwTtG/O0uzAYb6zZ0yAyeDcDiX/n8wUj/DYQX9ZHYudkKyOZNIYt6rxQe1D8y4+1iz27Ovsd",
-	"CjuWXbv8Zqn00V8+/kTrOtPdJQXj813n/OH5kS7St5k08vj43mvKOxR5DimPzbrOE3f0OxiJs4hEPHZq",
-	"jLOwgkdi5CxQ2ytljbcV6tRWq2mwwRGLkTU4nc1mjAQ62aaI7duK1kfhGbCyzBRyabd7/hN4BguL/v6+",
-	"sGIcP42juef8nO151MN1L/E1G4vQEZm/0Do3zxjPRX4W9msN4pJiJ6E50cKrIu/RN7yx3Lz1sDnluHaV",
-	"htOcAN1d12CoSNzMFBslaKQx/S1uYXnxNr+hjh0NZvlgHAdzkfjFL7b3vQdG78H3ozWw70bH4GF0AkC2",
-	"e5W6liFQz3wCmOj/Qf7em8wO6TF9KPHlnw1zwBrUe7rj+w4gI599oRBuR2BHZfQeeauHNxQS5Kzu5y5R",
-	"FYdAQrQVmqgvpdxDwaAPE0MGF9sTZ0R3AUehfQcPtiGQNCjUhqr/o2TLC9pBV9CbebvEwdFjFtVXcjDI",
-	"f+7mTUbelOR0GucfU/uNAxzzwTER9ouV+MIw+S8SGWj3bF8mbX5heBJhMJFnCCQY0RCS57mCaWJtTL4Y",
-	"zhln0sY/+pKDCXMAvU4kP4wgbfbhn8WvOTES4+BOqIU+3lbmx5JAIJQhYD6lrmceGHmvL794AUc7FO4B",
-	"+TLz/eocSIrVue+bt7+Cs/zNS6vVomvPe6F9cetiE0oK4DdKFxs/XkGOC+pkmV29V3Hti22tCmIb0BGr",
-	"uFIGpSn4jkOH9YSzDvC+96KvYY2imAAPCyVcwj6XSeStPsxKEYx+9PzxgqlQOs2Zous4DC0BEXhkojYu",
-	"3wQ98mrJtV+7Rcf7E6JRd9mCI2v1KjqG/qDBmSD4aEAWK+BoMJzLnkkTZBgVDQNI6yi5N5px0Bm7VsT8",
-	"cSYBG3tMFzGIHOsIgxDXUcXPFICo4ON1sGNYOgWaT50hIDGagqiiosP7RiJjDfqp4J0kKbNkv5DcCCfb",
-	"jYm0oeoW20Ce/UFAXO/H4//1Wfc77x6J/+nQZ/v3H9r/t490BMYA4aP36P/nRHzPOydPxPccOrzn/T/9",
-	"5wcffrTnk8/2/O3kuX0HR/5NtTB4Zx7JFkyVQ3N58Vnzxg+C44kz/eCXWfRvye+zwTgkbtcW6YvzWre2",
-	"vPgMpDMYgNfRPhY9RugZ+NWZJA/bNdIRRRf5vLJEKWKWNlL+yWDkkiBW7FlJrPCTa++1/XI4YaaMVF82",
-	"CSdMA85L/m7xgPCB5iL2KQikcib9ZCCWcYgxeJK4nSkv+m7PwwGtaKvWJ0K/fSZsxEyoSa8Vv24sLEgM",
-	"FLafM+l82grVDYbyRe3GNIxUnpo+fs7heAac5c7kGjiRn0XqgrkhWrXvFIOOT5G66Evk+3IFleuAPRLM",
-	"kK32bsRh0B0SdhziTphynXKkjvNfpIeHlVvfW8BXgqs5TLuyIsE7TmJNeUcESAeeDVTrpSSexJ7ePGN+",
-	"qafUJejHo0YynSeQRdnVRKGMklM0YaUNE7k2gd+RgOQNat9WA0Qsnr+GjHOCNGK0FsIAquiC+ASVhj7J",
-	"gb4v2kAG1JFvdXlvJJ4EOrmRlYH3lDYdO9kYZwzTIsZd1FM+6XDjTnG8LNhfxlaCecUAdtusXEL0mCJQ",
-	"PWCQvHIp1RIMW9Kjt5C75Jo7+pD4U3h2Q+Fj2jC4d+6/IEtFBlIneAxnwR2dRSFljFwpgUF+IH7ozVJJ",
-	"ffIE1yIs5Rz2tXB0/t2BaK4C/7pxtIhR/g7eGh95gl92FVC7qP3phthQG1UmRYe61Oprd+FkCgeVkEM4",
-	"jro8ZhlD+gibbCKXS5yFv3PotG6YqbD+UvwCci2GfSW6BBbni0/t7BscimBGIQ6FR6PJx3hEaqJIfMRP",
-	"mKdXjDJCoCQO5q3j0Iqfs4TFCCckMI0V5+c7azcRzo0ABcCjCjAPDH679ZBF5CGs5s1QW158uDY1gSnO",
-	"f4+j6WCAP/9Xc2au+aKI21GwROcGXvqGDJYfOB4II5WGw08Q0wKY/ivPPHAmPf5yiqHXtcWqGflCZn0O",
-	"Dn8kR9LRfYiZ1nU+mWWG+/LiODKW5mmc0AvGRTzDKO4uRvcgB1yBDJi6IhTBUZ7JMIUHzUyl4bSuOGaR",
-	"azBXJggZmZ1SdKhG5qNLEBNYefwirCz5CDdxhA5AJV+TGdwLcWHI0EXesAG+Rv5NwaRqXJlQHdFpiGtD",
-	"m40P2ADoJDBOExyeiRo+U1pTbXUhgEXKzLZQ+R1wuCdg+FXXZmOncZ9Hc9LrKip7wRWlESwwzzxnBVc4",
-	"rL9NH04MnU4PFLKFPHo4iDPtirZPW37xYnnx4fLCOLTglP2Wax8fcfB1oLRjcwY9cYTnG3YJ+Hgho2Kg",
-	"8EdEcjULBPkiEkr8bbH5Dflogw1cNJ4q9hwHMA3CwRlWYoBoOIBPO2XZei06MlPa1eWF4sovk65dQ9w5",
-	"zq7v+U1njNST4R6IodlnFffljdyZdDKa3OCRajjwr8c6HnduY1q3CT/TaYnCkW02gVNjvHhvoZkLihMs",
-	"XMfLD7Z2D28qhsuv29u4SDpm/vnNvI2Z7oHWSaALpSr4Eemv/BEzmhMHBh0xvOB3xnthTx6EFIg8UgUL",
-	"gk8DDDkkLbtMRGEyMYFLgxmcP7BEcWSBpiP3j+4wVAZDCItyZJ63ObzzAYqaIul2g/lRZFs205dKnOVC",
-	"NAosTkR+XtfG5I2RcP1h8eY/haCdg8h5x7Wv8KoKHKOvK/AAvRK8XjESZFwQcoKVQKCzRXuokLHS9Ftp",
-	"dG+WSvsO9MQB018DFCLSJ94ZiMNde9gDRCbSFjCFeDkWwQn/aeSyfRnkbUHOvhu/IA6gSECpNQvDh0WO",
-	"qqw8frEy9ZKku7DLzDco+fx8fRMVIdpXYtt1v6ZDUGzvS9f5CX0GhxIbdK+JI6RZsy8DCSNww/KdvZWf",
-	"r7j2TxSHze68V+h9+VsEl0lBBchqIFhzGrQmm1BAQdKdEtPZgqLwoLAsekznaC//bmU4HSqYgeLEguLT",
-	"OWu9W2QdTC5J0Ha4NEadFkAjcuhSOKwRssRI9UULwkuvBcaadxTeInCUwzmj38jljFTfgGES3ELLIyx9",
-	"/o/4caGJMPYha4DhIwlnUkBVkFWLHthWqAQxO6X5KmjoH7P4jR5TMJ+as6LBDHwOhnZMH8gXwQwjBCYi",
-	"Oni4lxk5VSNSzi2bSSfP+rUfS6SyvPAVDu0TDHrR+T257YWwmVS2O5Pu6LegF5wfkBBfcp1faMyh0rjw",
-	"EEBARfvwR8eIf4cX1T5LRn3ZanVuAl0RpugzPB67vvrkdqP0sPHkiggKJZDJvZaRGNoLklslGrYFL4P9",
-	"1FYiN2AojHmQ6hqKvICt0Jh/tfr0HpcapuyO2ojmd3EeImQRgSJkC6XEYndm55JtRnhMmEfELZXNsxwt",
-	"G0cwbYOAh21DRhzOSYn3mcI1uZkylY4y4uJI2og7uq1c/6VZnNVjeuPhT/BBZd2Iuoh7uTFRaoyBGxU+",
-	"vKooXxZdXb7N8Q/D+CKDrG8tlTjbl+3vg280lskNbPSsaQ2Kz6CvNGb/ukUb3uJ/qUrN1Vd+Ps/tLz53",
-	"ErfnQHit3b2wMl0nt1a5YAmyWuvN6Rl0TDjPQibNpy/AyKaNyW+w5EnYTYpvCN1hohKGZb+m+Ymm4Vof",
-	"XHOckSI1qKlac/6rteJT9FMJPTPn2o9RZHeeSy3DXdWnwA41iosnJgm+Y1fB/m7Ob9AdaKFSP0LAOYxb",
-	"APUN4wqZRtF+B/1162FzegYHp3HX73RiGGAId8Srr3D+rPOE2g+73TCTZ/nNhHcCTB/zu3I3CWwurNnB",
-	"jdNKEkPeKFUyxZfHsjOSvyMrFRhVER4712bx1hWFSWYK4K3tCwqcyTe7aisv66490bw8TW45gmywfSgx",
-	"EDSNBzfR5ztkPiGjaUcDImibpmPT+b7sGSOHCNf3j2zuC7UDy8NeUfBchIgJd4MGt9z6bcqjn5wdRndp",
-	"fA1EvHi2TdfUYjr2U4Rh3ehWSExH6Lq+tNmfDb8FP4N3jsErLXwZVGyEwNnLqyJ91T4M4me/WOCFPur2",
-	"4TepQAYfm/r3eDRT7LjR7xeUG7ReA8H36gFY6ZxxhF6mCr3OJO9KTH1SHqJZq8M19jEswmHuTb8MZ9dX",
-	"lXecOHBe0W7Wyxx4tcpyhzK/OyKRAgTRQnWx24Nhbxij50NsgdiG1GIYQb/ZSm5rFYdkNr6jNaccCqby",
-	"QZMoU6BLzMpj89blf7Dr7FqFpOOlwSLTfRSOKKp22tqYu7pwVxduni4Myucg6EgiLaNpQp4PN64So3F8",
-	"JI3pe90nlXyY+XkpEKe6KjPPvmmOXmjcfQqnytcX1u6WkFSYEuFJuAc9puOXlGfDj7Hr/Eg2paBnYNgg",
-	"9PbFrWNWEhAV0gmndFH3HTfV7zPERJgWWngvA5sOHLVymTNZK/CO/Qb0L38tPx6Px6Ip5A2F2z2xoLH8",
-	"2lso7tcrz+VEBm0JtiFZTdc8ushWyOd2EC1KQiUDwo8d8qIYw4mcNUTiua3P1f3wgjGUSGdUgs2foJ7H",
-	"FbLR4PdDLNXmXZWH4HxfzrAKOZP5+yRYLq0fAF7b0iJvNmLcCcpVcl9ExddWL801yjfwvOEtCtfh0vzP",
-	"iplnUSPqy/JyGo229MLTEmFaAalw6WjIRS6SV18eZasBhUPvQbRkMGsafWZh6LSRi841Xkzv3+OH4vS/",
-	"UP1yUaYQXE3qf7QmGx2tTDZuFiwNc0eI5+Hn2h6RP8aPgnA0EkMhZ70ea7eQN3IRvAvs8Rjb+QJLyJYs",
-	"J4/IVLi15CB+Pm5X7WthXSPanLLfof1uKnP8McWh5WvY68CSNCGnLD6W1tukVizafhcFl1OpEqFqCpwh",
-	"HyOmLPPpWlF4wsYmpKhNCLQgeOZ2ZXlhEaZHhghz5kfJoPXShbnt82j5rt75jix5FYRdWjQP4hewaA6u",
-	"YYI1Bca9yakFKNXhnp0vBKG8Zqi2Mjcn+MEHwiQHBpuZMMvOaLCo7qXNMjBVPEXmwCgTZLmFYbsozFYP",
-	"yOFHLrf4M3RG45/NyM+3Dcuy3rUIMNPzulo2xDyhGKgzjhoWMZAjOLgV3nIlzCQMVoqBozRy6I0ARYM+",
-	"wxvcGP7TB1q6L53KBw+l0rg87trPPPhS0eEBRMh5jwLLGl9KIdpVQDIkaauRIYIVEmqILF3iFo0PDSwS",
-	"2SWWlRrg11DGbMm08C9gKOFVOO2nItziGr3pjj5B6L8avnTFEjuSm4FTi2uVH/kEor5XoDwFSv1GkCi+",
-	"B2Y9owvdEkP2RY22HHSKaKN4ZCFQOM3jp9SXYnmbO9A+qq+MP2tegIlAqoMzJMvmWGP8uVu0efg7sSCL",
-	"NjFX4TtqTM6S1Hne6awqF7WDkpdPAH0JfsSfaO2RrxHWnkvhIaXfrLKfGsWp1e9mIEhy6QU7tIqoeTR+",
-	"PabTUXumtdrB6JHnyKD6pr0UDYwWAyT+kVAvEoGszNzK0LJDgUKdIdm8nF+HevbHxfRe//+JeDdK73Xy",
-	"/+47Ed+z/+T/6DkR33MQf6VM8PWpqUqctDZaXXn5I4/09ANkfxUgyU1ENkY5xSHX3ZGEZQxkc2e39+zh",
-	"RXy2/N5Edmg4YQIMYR3xy7ZGu9c6HUDbV8JOMBoy3ns+OHK4KTcjsE85ibksCjBY5M52xmmav2gu/KHG",
-	"/be6AcFzhG8JQ1y28E25JccHxkrWyfiby9BRuW7jPHOWmqbrNiRb3QpRsYU85pOqAEYeTkBp6yxENYdI",
-	"/VdUWQgKHHl/vUeF+58+/0SXXQzvn03lEhpn2YGNpkHe4nxeQwWJwDJ8+WPjysSbpdLxj/cd/B3KOP8H",
-	"+ISvTKbzebdoJwopt2gbXw5DLrPT/RpXqY/Blk/lC6dx+mBW7Per+zgnWaP0Dc7Lgl9qLpRQHpe6dgp5",
-	"JdFb2IxkP7FrMMJVRNTVys/nV55fR0bVPLnyMnr3zVLJV3l8XjuVzQ30pVOnYC52xasj50yKaHBalAmB",
-	"UBBdPRU5aFnDuI4VDVxJ9iZy+K3MlFef/CKVEGR+vpX6vZUrFzGxtMMfHUOd9pp7cAKGeW3f77TmzUuN",
-	"J6hgkFfV1aHj26PhAr9+5Dv5TCqxQ2kMZHdr9M7yFHmfYtPntb/+9a9/3fPBB3uOHgUHJy3zq73/fs8H",
-	"H/i65SDq8xqClmm0BqzXfnDRVVtKGw4VNmjacGAlenuTqxkCPEfShmv4Gn2vqWnBBTpZJcO6qogiNKzI",
-	"Mc5/LeYY5/o8ED+EJvvVncY03PlplC5iHtTELOR8Y2IWckjH58tCDhMUspB7X0i54PCW82UhJ8NTZiJH",
-	"rwRmIsdovPNwOiGuaHG1T3Wd6Ubr2LhQxRmV2kuQN0ulP33+CWwwZ1I7dZgU10NV9Ho0UjUN2Kr51OE2",
-	"nKYFlYFrU17tQLxbw0ANsYE6lQpVVdnICldpsu6rNMmKSnqd7GflOukGEu5o03rIb5ZKy6/KSNL8r1Ne",
-	"lS9cjglf+NAOxONSYwzE06PjZI/UxwWiAfS7kcP5XPT43u69cVA4pGK23qPv3xvfux+bH4NIK3QNomTM",
-	"/4TPyntty6+gDnnjQkmsr0piozpqPIcW7FgKikoY1vukRdBr+eGsmcf6Z188HqJkYrjygLgLdX1AVHli",
-	"9BvkdX1OSTeN0jlyilHvOXEyJlQ9vIUO4oukEmRwMyiyTBYE+WEG8qC3MR31k9BJF9rGwTQ9+i4rN3YV",
-	"nO774lBdjSs/Rr3xByVWUpH7OO5rm6gtVmenNdhIFTOcQvNgfP8WDIWjKSnh1ma924w8zDKvp/oP9g/n",
-	"Q+WXlooBMoOAq+rsLz64OM5VLapBUMKZwOnEheacSVJzC8lUVnYIUioh+CrLdyKlOSGVtYgkDizP5S8S",
-	"CNKOJnHSMJYQ1yhCpoAXcq1y5QkruPYx1EDujms4r6Kvr3kiXGkT7KpccC0lZnZ6ug85iskl3rpIeHJJ",
-	"0SsAxVXGobYZcS2/WSohnb13KGEmBgys2JoV27Uf0FdQa3alcXXJtZ9zJqS4sXFFGLGk1WHGRUiC5xJD",
-	"hoVqlwacnrxHpNpY5Di1aQJDrsQVXLA8sNxWCMbF9Y8PxONBw2Hz63o3kWIAMHilu/0rQqlf9NL+9i+9",
-	"x1eIPhA/0P4NVk0ZvXAoYlFhM0uZghQ18wRc6IJmQfV9g2rVyLXAPTRs0W7XqaKIHql36dV3pw94AyUl",
-	"Aqf/parsPoLqBx0zj7PcwB4N2knU2TCT5+v3tJp7iM7mVUWYOQs75AoyPRBUOFQ5oVYVhrx5te+UE6yt",
-	"S5iuf0k3XiY65Mq/WSqpVhppkHIIfhY3ka8LOByJXXg7ifXRovSkV5g5fNFY1F/gWmPoRwcKytJL6b1Y",
-	"1O3b117UUa3wKTtfY+swhPwWi+2jtyJ1yI7unD0a7t0Ps9YRdrzHFmVY8dKinrbEP5c5A5Oaj1FNzJxh",
-	"5dIbMC/bWJUs3kiroTbnr4P9YpMaBR6DLo4HbHRaOJxLVyAZuI1Lj5AxBQfu5vdgXjWuVpszd2g7l6Pa",
-	"nDRjzTgewHYZbscNK3d2U2y2fVtoswUs5a1dQ+zcr9oE2QnaFsD4U+jBWgs2wwpTqhi9XiUSUZS3tGGm",
-	"WgpwDxed7zrn/QFim3MR+Rw7R3k4tSQ60iSP9iANW/foQsM6H1TCwbJwa4xgSpt5NkTgCQUPYfjEWyZI",
-	"NsyXmCq4GEPj1S12Y5AyWzY3kDCJw9xjOF/pgHzXOVU5gRFsJWQMFVxYyhNHlCvS9yhHyZS/gqSQvlgu",
-	"VQSfG/OvGq9nwIuEYfWspijK5946kyg7LOCHSakLZ1Iu5+A4nANpfu3SBEnKRl3Wveam2wDHjaHsGcNX",
-	"vjSqASA3oDYBDijuVtIcMrvbSdxOfg7DrNxSfIfeTV1iIK6FLa6IQ9LKLdLhXiooiLbRYxRumpOc1IAy",
-	"pO/SCiboXOfLqL/y85XmtzOu4yy/htgOH8/pNYVzJas8gM2L64tr39xfXrzRnL2NeuCOBUKJlRqLC26x",
-	"uS3WnurYfkMb491s6mzHtCBfyGhkZETW1iObqIBFGimDOmqGeduM/N+kz0LYqM6kb60l+2Lj0rAjUpDo",
-	"foUwq2JrgIqpWVF8PeJMgWoriwQVxaX5cUsItPKT6zxDIUKWEJd3QoSpfOvrkK8sdR4X/lNXlAUJOq+l",
-	"SHlJlAfJX9eHOtDLW2PUqCTtdovYSJXEsLD1XdZhVFaZwG3rOBKsS4AqbN58Hq20Hqso2g4m6I1adckh",
-	"jEbp7rQyw/XdFApF3CX11erttcqPv3mXEYFpie6ioPJHwZKCFkRCdeoUbiQ1OEx0JAV0yp/i/LK6/ZCI",
-	"mwl5bqBciuPaF5cXio0Xj3w9KuN6tOCMQCH1UVEWxZW14o9eeT+nHEwY2onfsxatD/sVtsHJBWNYjkc4",
-	"CQWKrUSb+8ZdctEZqexB38hlJYG1WtecLQce4tutjNcuWQnsDlx+ecN1cHzgPH9pdtdyI5YbLRrc1mAj",
-	"F3HSRr7rHHcpp6Xr8T3yXGT9Tl/cbIQJG6CC9Rk2c9f7IXIQj2CP5E8MYqEuXyAyny8YeY6zwqF+qmvf",
-	"3QFkun0DyxoudSKpYk+979XgkOrywj1UWnCWl1rtwvg0munBUgLi6qQQbC8glinYnEk+JKau8s+9WSrh",
-	"wmjwDMLz4gArLW90mR8kKtJc4yC+6trtRZvF5KHEmAIJR0oyzvP1xrbCCfPndN6SopWYEbZTfEjXBakN",
-	"HsoYV0ym/R0v1LDiNk7EcNnOllqbH2lbXiiuPprdgGLzpBK9KpVIsgqMSrnEkuIESRdnsnHhaXNmDI9q",
-	"ZXqhOVbG9QFpENa7tiMWUbsPTTmPUFMlmnxsCeWLvA+BFYwz53y4LV+f5zq6jhwYNYYyOnz0+J54vHsf",
-	"tp86u+dVuHO6R0hCysNJWqBxp2x5lu3Ol7+u9V1g/FSYjdxird6+XdxBUzbs9mqxFQItmAhygovLBxrD",
-	"oNqOcs9tJ3uHUl04vu7TVcFWMqQbwlFmKe3XrvUcYD0zggUqq4hmtN+nHqiqaGjXOxH7NxOE6sQSnJKF",
-	"ucnKAfaM7Oj99dqC8kw6aQiKqySt5FtuCPL7qTUhQhmFsYAgE7Ho6OpppJahB63u1pYXn2HGZiF37kbR",
-	"NXQFir/6SNx6/qvlvSYDXgT4wir4e3Y9HRlvcNNP2rJbDVfdMFTFt1nXF8+Ry3OwaGLYA1v0HNaq1EIk",
-	"tQbXvXo3b12IxS+E3i5pso7wCaWEGD/x7TjXXsRpU1U5Ic6zStSKAIF4Tz9MgGAeHQhD9IeCBYj38FV/",
-	"aRIUCht5pGICgfBDvsaPt1X33sBZEi9v3FwLhAb+5Qg7JX/mA8VsuA4F0ofqlk5l47GWdc+bSnFhnsyr",
-	"uG5eBhellGPCYZpJcfZiNe7JfaTW/Me3LvLbb/w6kMcGrSvir/e4qkDeJAeN5BfBAJuoto9TRAFMXo1s",
-	"igs5pBVyBM3u12yKSMbFxi2KjRx72DbzypFCJyf9BbSkYbMXw5xpaKaTnY49/k2KKL9k4k46ZSkv1/qk",
-	"FJ96PtCj9hF9aCObO0auwfy9YOTOevdgaB48tgt83l71e8O0/jUr4xLKKhDLZodofQBX547cPqnqjXqQ",
-	"LubROgNMSlM/3iycmy/9CwUDp/GSqgYnpplrRzzp1AGZwy5DZBYaQ8kzbl8i+csVXeUhTNyfNjIpoRsi",
-	"jxR5Qk/GVGNowyYfZ3PWX3KIXFvidCX8HNXvypWu3PW1BvmG+IvoAW4gInNaeIG2xH6hXLAjLJZ15uek",
-	"+Vfl6lxDaZP+3a1KvCmLt6hSLSbL32hid12pPCUzh8genx5QiW6pM1Wmzu12GTGZpJBBL2cw8iS6AMKp",
-	"vH8jYkgQPS9ngoROW5OI1EBqYxOxp3Z8jJEONbK+e/kc5crfjTOG1X2YYGHjjFuj/cig7LovZS5pFo4V",
-	"1BeydmGC5tO7g86FXs7QIC3qVQzbAWp0vfqQVvJQ3Cph9GNE8hFydnnhK5xlj1C06DTmX60+vee9BQt1",
-	"iSGAvfUkyUD3FvJGbu//JLnw5PZrtNAEyT3RqeTVARn0t1jxMenUSvOhRfgtX0Lh4wcE0Cq42DGFNK/w",
-	"z+gc+gCOAwCZ+pBvXuCAyzEypW/cv46DpnxP+BumReiOqmDZ0hndz0Tvy5mWQred9hcqhqlT7PISXyoK",
-	"ZleD6s4zbDRDL64+KqMLgSUvTRcHLOR+vYw3PpfrmGZLmHpALzh6B3UEu0Z/ZuFIjQDG1aeNy/Mk1F18",
-	"QNQEzaFKfMdcQAY9409mnEpYRl9/LjuEukB/WVlo30cF0v7Kz9+2BCF/LJT76rBjSa7KHo6rVWXJ/ZXj",
-	"aCFaGo0J8J4wggndy8X62vpsovVnZTfWm+chgjc8DxFhAFRZieSXJ5eU1m6WG7PANzTB/OzywiNsf6zP",
-	"raQqNbeDfEyyn15Z2TKUjj5O36Vs17aGYahmg1uLWIUvTAQB7/ndY0HwsYAJ94BjAaW3cCRQ2dpsXbfJ",
-	"1m7Jc1yl/i22ID12b2FBRmTT35bjRNLfCiuK49HQFlQXEyl8zFvF2H45uE0cHrKQKM/rsWCFkCtkjNAq",
-	"4DjmYDmWK7S1/ckDFBqrxaZTGsO7e1B50Up5btjYTrSMxFBrL+Yn6Im38pYEXwJ314EZzlLxaBbdh6mS",
-	"68BeO9FYwaOD8902mSxBaTWZ5GQrsevzCvZ5MSJpfF22Hebt8vZURx1ewlbdoM8LnM+t9cSn6IkNemlk",
-	"wkUCvcAYw2CFApz3EXsb9qIaEXqjNYWj9pbiUwdH6I9jrahdWlgyrws55FUCBu/Q2tTEuvFD3KK2rzW8",
-	"gwFFqPp1VAMF+3N3zZFgc8QrQR/gOEFkbxtIJQJyHFJyhAiGsmCeW3ToVVubsyZZI/M+2V8nyUPsGmpq",
-	"M1Kqqur/11zHYXP1SvQXbd+TQmlHNjSUh8SZ1PKF06jUz4WHJAhcdFQF/9HlDZYYwZ5VlMQng/X1X+fb",
-	"8EKjQop4modL2SrEQy7yNSn8xOCHjB3UyuqSLAVWc+b75k1IRrlWtGntiVssMiNma+SmjRrw0gkyHgAB",
-	"3Dx/WSy3GRA8B7W6MwLnYjr6UKFllrBBUrk/XKblbbmqYPYjL3tx0SZ5NFi9RpQHnHvRKzfbeDBLv6xy",
-	"D5CtQWp5SouCVpX7sooymc3hxNG+7BIcVGD/vnh7qMBg1jT6zMLQaSPnn3x3t9a8Zy8vPmxcvABb/cYP",
-	"MNyi07hQWrv7BLbav4N5inTpecZj4ii694UpnU0MlNCrBQo/9MNML4tQiu59v29DH8l9xel3Sm657gEd",
-	"lzil7QYlIIV+1LBgzK2OaW+lDu/wGY3sQw2pu/8gr+1NojAypw9andjOb/pxjRMXbEwVfINOSJeoeqz5",
-	"5D66lIGzjz3i3wIBaNcVb3l6mkP2dMJ+Em0elbVEToNDBnfik0x9lDmeVlLm1TBvBlT5BHUrdx5yqLEa",
-	"slmeBaQi+sDYzPK3bbYuGz02w35NKRikIthspQNS60jrjTBuaaMdqpU8tDW4VEDdhTk2IVHwHJtaHsTO",
-	"59T9dSwjd9CIkI2GLl/XOQZWbJkTlBA3TCki1uDOLUNEWUVR5ozbxrunaB+PRUocypDvXefox/ZsFgT/",
-	"VTIaa3Qns1owHvWthKF2DnsZidkEfF5rrcSD8rZGNfE9hvPrEZjnSrW+du/bX1diJ2HooWBK0hJySI+u",
-	"c34cWTsZsnH0h6+FzU5oHQoGsTH0w28c9xBk1G6ECbuySfjaMJMtK+8GILi1bC49kIaMHhQY25j+luSJ",
-	"Ji5EVm3SDwyvrbysu/ZE8/I0cy73mo0Lo6QZe14zvkxmClAkBLWfR57Y8bukMkPRlpBs8IZylpAyBLcb",
-	"RNpm5RJNXe33S6IqAX9hdOrgVtw+RJawcIoFF1cGLUedYJyLjkRFWroIF8S/A5d5UHlu7PDnHYxBgGvB",
-	"QyYObfvxXS3lGU8n+47E4m8lrKujrrB98X2/29Md39O9T2O73kveJDAh50rqlOcLu6Ja9dqp4rxB8rNb",
-	"wwJT2m8hpfu5sObEuq2IrTIeWkInd42EUADl9uZBTB8uKG9vEXZsfgvQGZ/mVuhpDC6CV0YvNO4+xVEm",
-	"34uzUun6XjNoIyh2AafVUVgxWH3bC2IC1gkw2F9/A8XwlAr9UwSl6Nye2AE3B+Lboe12lVzIeI/zxB39",
-	"DsV1F93RWnOhhMvIMf6GUiqeimN17Teu31Qdb5L06YAG60omzKSRaXEzAv2+3RvXl5OOPBHpgr0/QR20",
-	"st0xXkzgEKy0G95tsd3ta/zm9mK2IgkBjth5i3YLd7xvPm39EujyRdc5gm9oabGqYfIKB7oHltihzvMg",
-	"XPvbCmfvKIw7kvscYba7zsH/2rGXGmWmYC/S2M5lr/XE9nd5zQcNCQcYkDisK2MkzhjBblMPeELqkXoY",
-	"TfoNh/bxgzvtr1VoE4KmoY07btH+hwEo1YqWSCaNfF6zsl8YpoZn5Z2/EMrzzVLpoNYoXcR4PJRcp7b8",
-	"EtcanyN5NYgn1vNS4KzLcAzzDbsOSVWgxngVoRehrJF2IL4fPK7N8iTOxyy/JNDjFgcudZqlK43xOxgQ",
-	"yT/j2ndoIgVqLNtf4/q+zdKi65S9I+ythwQKSTG0ontZ9fg8AiPdB6JTeBL6vrZ6aa5RvgHf2/PwIleR",
-	"kD22vPhwbWrC04tFW31ILdosyamXlM2uNOtlUmnXcYBgYAjAwyTg5EyuPnnUuDqOFg+IxNVY7CyMGuZa",
-	"ugj9FG0PxWTPBvXC2mzOFBGkuN6cGWuMP3ftOR7QzK2ih+oiQGier+vIiBjlatWTqrvNZyU080DEspKp",
-	"GGRaOyhlbOEQzbAlhE7ApjkvOix8zoOPrUQOqY8/o72/tTqkMwcWq5AzA/z+qu1RJ9uj6KzM2Cs3HhIZ",
-	"Zpc1gORqSGKMIV64w9JxyR7/NuDdkS1IJd5WiX5sJaxCHkd7lH5IUSAxzcoLDSoNarCvPUJW/Xt/9wQV",
-	"fIIissjb0uW1YlFQoLiokT1PpUrnfCakb7vcOTkITdEJcJwjSSxyjQPL+TsdBr6K9kd4A4dHSLbOzFhj",
-	"5NC6NVA1z37anAJQnslG8gnWQiQQhHsQmpXIDRhWH5lcXsOBauG40a5JOG1yTfaapE1yCs1rbP7Liw+X",
-	"F8b5DIdeCkQv8+EtLDEJ7bwyMI9d+x7yBzr0SUF70nGGum6lUGKHUylQYREAkTtLh3nwzHAXPcRFCg15",
-	"UuWLZK1RNtpQa5Ib0JvXDr/t4aVJfSZD4N/Kg2Zn1Zt3wYO4BjHNNKp7vLjYyi/VtemLGpWM33XYXcju",
-	"a5Brf3RVvYHxvXbomr5fY2BdEV0rka9E9HfKyBgq05bpIdItZ7gxsYxqTG2G0uqYJeGMURXxDf8iGvg0",
-	"d7ryifzjxlD2jLEdUj8W3PSvAGYfVhCy8mS7gjCyIFzvTpC2gT1Pt0HnjgOd3LjqXfsNb/a7RYdNBh8h",
-	"Oypypa4jiVxyBaDnnBpEwrrwoO/YUVe0/b03b/6A5nu+ffIBTDrnJ3f0OrrLfstXWfY6ol6NWSJMvjMr",
-	"Gbl3St4N/DYGv+BXsuvNsWLj6bdSKijpxZ2rMuosNYOf/3inDX2sJoIRghUKdpRghRLhwstOO0hEujPu",
-	"M9c3ej17y/SUvCt39dTW6KkNbr8dp8g88R5xPiVJzdEHqpzyHkPI/rHOX/32a6UoTrCckTbzFvGXq71g",
-	"/hAXpVwNBY54fSXE0dB13ZpU+BocRz/byJlzH3K4OI9QwcMSH6FCvPEqKM+MvG7OZOPVYyE64gXbpiTP",
-	"Woc0mMLjSaJo/DlFmbun8XQc9D48VSa5/7iAD6GdZ3IHhXowodZuXuO0uTLMSkYjhYYCM/U4k2xNlQct",
-	"wi2/GYyByFq7iiW8YlHuEUrOTkc2lCEIYe02IQThF4xcj1MRxbCVzoVBW8jBogBZFAS4kGQUyalQtMk5",
-	"gEt2hoL3gFVYs79qfLUo1Dy5MNu4UsK49Oa3MygH1iJGzaPAPw3ns+K1+GTiJWham15cffx05cZc4/Iv",
-	"9AgDXakE5rwqGVc1UIs4k6g1lEtKTuECCoadzrwQJxosyyKGROQ0G3UHoRBOmZf0CMBRxlAP7UD8kFBt",
-	"HtcrHAJeRPGYWRJyZcAJDymh5HyOS9QKseOBq81BWHDz2GyEhUyyzUFYHEf7/C3Tnu3ABSJpKZcWnbY4",
-	"Akid9vjFb13JcsIA/vRKeJ84qS7jgn7g/zyHoSr0SmL3nvg+PaYbJi3mqnfHe+JxPaaDp0CPd3+w/5Mj",
-	"B9+Px//rs+533j0S/9Ohz/bvP7T/bx+JRXp69PgheG0ELl8RS0ApwgSzgC53uYWcZCLAt/+JxQDSvfSQ",
-	"L9LXGPsRdmJlXkjpCJi/uwjadj68kYH36BFq0wTerVRohZazCpLwbtHh/tI8gA2W9jSNNFIEALfwpG3n",
-	"cByS/BONpTdLJWrhvVka6zU7i9+QLJpgm+lMOp+2+tJmfzbfxZf4bZNMBD95BD24JblEvA5D5bpyfkb2",
-	"yTXAmIIreMkdHftVpSlTTSA4rQhaRfWi4s/JhGUMZHPtUpd9Bg8f8Z7diqXl+wyVyIxdJW1UXjRKv6q0",
-	"ZdLQQywovA7aKG2dRTrntJHIGbnDBbgkduIkmCGwa6m1U8hl9B590LKGe7q6MtlkIjOYzVs9v4//Po5u",
-	"sJHmfSDOJ4vNfy2CtfDiZsOZAll3/8Xq3IRnMw0aiYw1qMhA70nKot0q0XPRJod71qRwJcPfMBZl3uN5",
-	"kh5cfo6pBO/RYVoG3N+ofAu57o5+i7bYa+91THvVVEEdvVkqkZtN0mmlaEv3m94sjfkrKapm8ODm2mgV",
-	"2ds1SOo7+hOuOPpmqfTHbHYgY2i+H8bE+8tX6RmBXo5GFvTqqyW4y8WGkExkDDOVgHzuI/9vAA==",
+	"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",
+	"PwA=",
 }
 
 // decodeSpec returns the embedded OpenAPI spec as raw JSON bytes,

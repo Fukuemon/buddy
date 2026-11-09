@@ -6,53 +6,55 @@
 
 ## Columns
 
-| Name                  | Type                     | Default         | Nullable | Children | Parents                                                                                                                                       | Comment                                                                                                                                   |
-| --------------------- | ------------------------ | --------------- | -------- | -------- | --------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
-| id                    | text                     |                 | false    |          |                                                                                                                                               |                                                                                                                                           |
-| facility_id           | text                     |                 | false    |          | [public.facilities](public.facilities.md) [public.recurring_schedules](public.recurring_schedules.md) [public.schedules](public.schedules.md) |                                                                                                                                           |
-| schedule_id           | text                     |                 | true     |          | [public.schedules](public.schedules.md)                                                                                                       |                                                                                                                                           |
-| recurring_schedule_id | text                     |                 | true     |          | [public.recurring_schedules](public.recurring_schedules.md)                                                                                   |                                                                                                                                           |
-| status                | text                     | 'pending'::text | false    |          |                                                                                                                                               | pending（書く）、succeeded（書いた）、conflict（外部で変わっていた）、failed（書けなかった）                                              |
-| revision              | integer                  | 1               | false    |          |                                                                                                                                               | 終わっていない行に積み直した回数に 1 を足した値。書いている間に積み直されたかを比べる                                                     |
-| attempts              | integer                  | 0               | false    |          |                                                                                                                                               | 書こうとした回数。再送の間隔と上限に使う                                                                                                  |
-| next_attempt_at       | timestamp with time zone | now()           | false    |          |                                                                                                                                               | この時刻より後に書く                                                                                                                      |
-| locked_until          | timestamp with time zone |                 | true     |          |                                                                                                                                               | 書いている処理が持つ期限。過ぎたら、ほかの処理が書いてよい                                                                                |
-| overwrite             | boolean                  | false           | false    |          |                                                                                                                                               | 外部の予定の etag を比べずに、buddy の内容で書き直すか                                                                                    |
-| error_code            | text                     |                 | true     |          |                                                                                                                                               | 最後に書けなかった理由。外部の予定の題名とカレンダーの ID を含めない。unappliable は、外部の変更を buddy の予定に読み替えられなかったこと |
-| finished_at           | timestamp with time zone |                 | true     |          |                                                                                                                                               |                                                                                                                                           |
-| created_at            | timestamp with time zone | now()           | false    |          |                                                                                                                                               |                                                                                                                                           |
-| updated_at            | timestamp with time zone | now()           | false    |          |                                                                                                                                               |                                                                                                                                           |
+| Name                  | Type                     | Default         | Nullable | Children | Parents                                                                                                                                                                                                 | Comment                                                                                                                                                                                                                |
+| --------------------- | ------------------------ | --------------- | -------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| id                    | text                     |                 | false    |          |                                                                                                                                                                                                         |                                                                                                                                                                                                                        |
+| facility_id           | text                     |                 | false    |          | [public.facilities](public.facilities.md) [public.recurring_schedules](public.recurring_schedules.md) [public.schedules](public.schedules.md) [public.schedule_deletions](public.schedule_deletions.md) |                                                                                                                                                                                                                        |
+| schedule_id           | text                     |                 | true     |          | [public.schedules](public.schedules.md)                                                                                                                                                                 |                                                                                                                                                                                                                        |
+| recurring_schedule_id | text                     |                 | true     |          | [public.recurring_schedules](public.recurring_schedules.md)                                                                                                                                             |                                                                                                                                                                                                                        |
+| status                | text                     | 'pending'::text | false    |          |                                                                                                                                                                                                         | pending（書く）、succeeded（書いた）、conflict（外部で変わっていた）、failed（書けなかった）                                                                                                                           |
+| revision              | integer                  | 1               | false    |          |                                                                                                                                                                                                         | 終わっていない行に積み直した回数に 1 を足した値。書いている間に積み直されたかを比べる                                                                                                                                  |
+| attempts              | integer                  | 0               | false    |          |                                                                                                                                                                                                         | 書こうとした回数。再送の間隔と上限に使う                                                                                                                                                                               |
+| next_attempt_at       | timestamp with time zone | now()           | false    |          |                                                                                                                                                                                                         | この時刻より後に書く                                                                                                                                                                                                   |
+| locked_until          | timestamp with time zone |                 | true     |          |                                                                                                                                                                                                         | 書いている処理が持つ期限。過ぎたら、ほかの処理が書いてよい                                                                                                                                                             |
+| overwrite             | boolean                  | false           | false    |          |                                                                                                                                                                                                         | 外部の予定の etag を比べずに、buddy の内容で書き直すか                                                                                                                                                                 |
+| error_code            | text                     |                 | true     |          |                                                                                                                                                                                                         | 最後に書けなかった理由。外部の予定の題名とカレンダーの ID を含めない。unappliable は、外部の変更を buddy の予定に読み替えられなかったこと。not_buddy_primary は、事業所が buddy を正本にしていないので書かなかったこと |
+| finished_at           | timestamp with time zone |                 | true     |          |                                                                                                                                                                                                         |                                                                                                                                                                                                                        |
+| created_at            | timestamp with time zone | now()           | false    |          |                                                                                                                                                                                                         |                                                                                                                                                                                                                        |
+| updated_at            | timestamp with time zone | now()           | false    |          |                                                                                                                                                                                                         |                                                                                                                                                                                                                        |
+| deleted_schedule_id   | text                     |                 | true     |          | [public.schedule_deletions](public.schedule_deletions.md)                                                                                                                                               | 削除した単発の予定の ID。外部の予定を消す待ち（ADR-0040）                                                                                                                                                              |
 
 ## Viewpoints
 
-| Name                                                               | Definition                                                                                 |
-| ------------------------------------------------------------------ | ------------------------------------------------------------------------------------------ |
-| [外部のカレンダーの取り込みと書き出し](viewpoint-calendar-sync.md) | 職員の外部のカレンダーと同期の状態、外部の予定と予定の対応、取り込みの記録、書き出しの待ち |
+| Name                                                               | Definition                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| ------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| [外部のカレンダーの取り込みと書き出し](viewpoint-calendar-sync.md) | 職員の外部のカレンダーと同期の状態、外部の予定と予定の対応、取り込みの記録、書き出しの待ち、Google カレンダーの予定の写し（Projection）。書き出しは、予定の正本のモードが buddy_primary の事業所に限る。同期は google_primary の事業所のカレンダーだけを読み、予定の写しに書く。google_primary の事業所で buddy から Google カレンダーに書いた予定は、訪問の情報と書き込みの保留の版を記録に持つ。切り替えは、google_primary の事業所の予定を取り込み、完了で事業所を buddy_primary にする |
 
 ## Constraints
 
-| Name                                      | Type        | Definition                                                                                                                                                        |
-| ----------------------------------------- | ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| calendar_exports_attempts_not_null        | n           | NOT NULL attempts                                                                                                                                                 |
-| calendar_exports_count_check              | CHECK       | CHECK (((revision >= 1) AND (attempts >= 0)))                                                                                                                     |
-| calendar_exports_created_at_not_null      | n           | NOT NULL created_at                                                                                                                                               |
-| calendar_exports_error_code_check         | CHECK       | CHECK ((error_code = ANY (ARRAY['precondition_failed'::text, 'not_found'::text, 'forbidden'::text, 'rejected'::text, 'unavailable'::text, 'unappliable'::text]))) |
-| calendar_exports_facility_id_not_null     | n           | NOT NULL facility_id                                                                                                                                              |
-| calendar_exports_finished_check           | CHECK       | CHECK (((status = 'succeeded'::text) = (finished_at IS NOT NULL)))                                                                                                |
-| calendar_exports_id_check                 | CHECK       | CHECK ((id ~ '^[0-7][0-9A-HJKMNP-TV-Z]{25}$'::text))                                                                                                              |
-| calendar_exports_id_not_null              | n           | NOT NULL id                                                                                                                                                       |
-| calendar_exports_next_attempt_at_not_null | n           | NOT NULL next_attempt_at                                                                                                                                          |
-| calendar_exports_overwrite_not_null       | n           | NOT NULL overwrite                                                                                                                                                |
-| calendar_exports_revision_not_null        | n           | NOT NULL revision                                                                                                                                                 |
-| calendar_exports_status_check             | CHECK       | CHECK ((status = ANY (ARRAY['pending'::text, 'succeeded'::text, 'conflict'::text, 'failed'::text])))                                                              |
-| calendar_exports_status_not_null          | n           | NOT NULL status                                                                                                                                                   |
-| calendar_exports_target_check             | CHECK       | CHECK ((num_nonnulls(schedule_id, recurring_schedule_id) = 1))                                                                                                    |
-| calendar_exports_updated_at_not_null      | n           | NOT NULL updated_at                                                                                                                                               |
-| calendar_exports_facility_fkey            | FOREIGN KEY | FOREIGN KEY (facility_id) REFERENCES facilities(id)                                                                                                               |
-| calendar_exports_recurring_schedule_fkey  | FOREIGN KEY | FOREIGN KEY (facility_id, recurring_schedule_id) REFERENCES recurring_schedules(facility_id, id) ON DELETE CASCADE                                                |
-| calendar_exports_schedule_fkey            | FOREIGN KEY | FOREIGN KEY (facility_id, schedule_id) REFERENCES schedules(facility_id, id) ON DELETE CASCADE                                                                    |
-| calendar_exports_pkey                     | PRIMARY KEY | PRIMARY KEY (id)                                                                                                                                                  |
-| calendar_exports_facility_id_key          | UNIQUE      | UNIQUE (facility_id, id)                                                                                                                                          |
+| Name                                      | Type        | Definition                                                                                                                                                                                   |
+| ----------------------------------------- | ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| calendar_exports_attempts_not_null        | n           | NOT NULL attempts                                                                                                                                                                            |
+| calendar_exports_count_check              | CHECK       | CHECK (((revision >= 1) AND (attempts >= 0)))                                                                                                                                                |
+| calendar_exports_created_at_not_null      | n           | NOT NULL created_at                                                                                                                                                                          |
+| calendar_exports_error_code_check         | CHECK       | CHECK ((error_code = ANY (ARRAY['precondition_failed'::text, 'not_found'::text, 'forbidden'::text, 'rejected'::text, 'unavailable'::text, 'unappliable'::text, 'not_buddy_primary'::text]))) |
+| calendar_exports_facility_id_not_null     | n           | NOT NULL facility_id                                                                                                                                                                         |
+| calendar_exports_finished_check           | CHECK       | CHECK (((status = 'succeeded'::text) = (finished_at IS NOT NULL)))                                                                                                                           |
+| calendar_exports_id_check                 | CHECK       | CHECK ((id ~ '^[0-7][0-9A-HJKMNP-TV-Z]{25}$'::text))                                                                                                                                         |
+| calendar_exports_id_not_null              | n           | NOT NULL id                                                                                                                                                                                  |
+| calendar_exports_next_attempt_at_not_null | n           | NOT NULL next_attempt_at                                                                                                                                                                     |
+| calendar_exports_overwrite_not_null       | n           | NOT NULL overwrite                                                                                                                                                                           |
+| calendar_exports_revision_not_null        | n           | NOT NULL revision                                                                                                                                                                            |
+| calendar_exports_status_check             | CHECK       | CHECK ((status = ANY (ARRAY['pending'::text, 'succeeded'::text, 'conflict'::text, 'failed'::text])))                                                                                         |
+| calendar_exports_status_not_null          | n           | NOT NULL status                                                                                                                                                                              |
+| calendar_exports_target_check             | CHECK       | CHECK ((num_nonnulls(schedule_id, recurring_schedule_id, deleted_schedule_id) = 1))                                                                                                          |
+| calendar_exports_updated_at_not_null      | n           | NOT NULL updated_at                                                                                                                                                                          |
+| calendar_exports_facility_fkey            | FOREIGN KEY | FOREIGN KEY (facility_id) REFERENCES facilities(id)                                                                                                                                          |
+| calendar_exports_recurring_schedule_fkey  | FOREIGN KEY | FOREIGN KEY (facility_id, recurring_schedule_id) REFERENCES recurring_schedules(facility_id, id) ON DELETE CASCADE                                                                           |
+| calendar_exports_schedule_fkey            | FOREIGN KEY | FOREIGN KEY (facility_id, schedule_id) REFERENCES schedules(facility_id, id) ON DELETE CASCADE                                                                                               |
+| calendar_exports_pkey                     | PRIMARY KEY | PRIMARY KEY (id)                                                                                                                                                                             |
+| calendar_exports_facility_id_key          | UNIQUE      | UNIQUE (facility_id, id)                                                                                                                                                                     |
+| calendar_exports_deleted_schedule_fkey    | FOREIGN KEY | FOREIGN KEY (facility_id, deleted_schedule_id) REFERENCES schedule_deletions(facility_id, schedule_id)                                                                                       |
 
 ## Indexes
 
@@ -66,6 +68,8 @@
 | calendar_exports_facility_status_idx             | CREATE INDEX calendar_exports_facility_status_idx ON public.calendar_exports USING btree (facility_id, status)                                                                                                |
 | calendar_exports_facility_schedule_idx           | CREATE INDEX calendar_exports_facility_schedule_idx ON public.calendar_exports USING btree (facility_id, schedule_id) WHERE (schedule_id IS NOT NULL)                                                         |
 | calendar_exports_facility_recurring_schedule_idx | CREATE INDEX calendar_exports_facility_recurring_schedule_idx ON public.calendar_exports USING btree (facility_id, recurring_schedule_id) WHERE (recurring_schedule_id IS NOT NULL)                           |
+| calendar_exports_open_deleted_schedule_key       | CREATE UNIQUE INDEX calendar_exports_open_deleted_schedule_key ON public.calendar_exports USING btree (deleted_schedule_id) WHERE ((status <> 'succeeded'::text) AND (deleted_schedule_id IS NOT NULL))       |
+| calendar_exports_facility_deleted_schedule_idx   | CREATE INDEX calendar_exports_facility_deleted_schedule_idx ON public.calendar_exports USING btree (facility_id, deleted_schedule_id) WHERE (deleted_schedule_id IS NOT NULL)                                 |
 
 ## Triggers
 
@@ -81,6 +85,7 @@ erDiagram
 "public.calendar_exports" }o--|| "public.facilities" : "FOREIGN KEY (facility_id) REFERENCES facilities(id)"
 "public.calendar_exports" }o--|| "public.recurring_schedules" : "FOREIGN KEY (facility_id, recurring_schedule_id) REFERENCES recurring_schedules(facility_id, id) ON DELETE CASCADE"
 "public.calendar_exports" }o--|| "public.schedules" : "FOREIGN KEY (facility_id, schedule_id) REFERENCES schedules(facility_id, id) ON DELETE CASCADE"
+"public.calendar_exports" }o--|| "public.schedule_deletions" : "FOREIGN KEY (facility_id, deleted_schedule_id) REFERENCES schedule_deletions(facility_id, schedule_id)"
 
 "public.calendar_exports" {
   text id
@@ -97,6 +102,7 @@ erDiagram
   timestamp_with_time_zone finished_at
   timestamp_with_time_zone created_at
   timestamp_with_time_zone updated_at
+  text deleted_schedule_id FK
 }
 "public.facilities" {
   text id
@@ -105,6 +111,7 @@ erDiagram
   text time_zone
   timestamp_with_time_zone created_at
   timestamp_with_time_zone updated_at
+  text source_mode
 }
 "public.recurring_schedules" {
   text id
@@ -126,6 +133,9 @@ erDiagram
   timestamp_with_time_zone created_at
   timestamp_with_time_zone updated_at
   integer version
+  boolean ends_next_day
+  smallint__ days_of_week
+  smallint interval_weeks
 }
 "public.schedules" {
   text id
@@ -144,6 +154,17 @@ erDiagram
   timestamp_with_time_zone created_at
   timestamp_with_time_zone updated_at
   integer version
+  boolean ends_next_day
+}
+"public.schedule_deletions" {
+  text id
+  text facility_id FK
+  text schedule_id
+  text recurring_schedule_id FK
+  date date
+  text staff_id FK
+  text deleted_by FK
+  timestamp_with_time_zone deleted_at
 }
 ```
 

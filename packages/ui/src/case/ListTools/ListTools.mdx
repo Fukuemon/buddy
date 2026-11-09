@@ -1,0 +1,38 @@
+import { ArgTypes, Canvas, Meta } from '@storybook/addon-docs/blocks'
+
+import { FilterSelect } from './ListTools'
+import * as Stories from './ListTools.stories'
+
+<Meta of={Stories} />
+
+# ListTools
+
+一覧の上に、名前の検索、絞り込み、件数を折り返して並べる行。同じファイルに、絞り込みのセレクト（`FilterSelect`）、件数（`ListCount`）、絞り込みで 0 件のときの知らせ（`ListEmpty`）を置く。
+
+## 規則
+
+規則の本文は、デザインシステムの文書の次のセクションにある。
+
+- 使う場面、使わない場面、キーボードの操作: コンポーネントの文書（`packages/ui/design/components.md`）の「コンポーネントの選び方」の `ListTools` の行
+- 使い方の規則と Do と Don't: コンポーネントの文書の「コンポーネントごとの規則」の「`ListTools`」
+- 当たる原則: DESIGN.md の「画面を作るときの原則」の次の ID
+  - `STATE-NOT-COLOR-ONLY`
+  - `LAYOUT-OVERFLOW`
+
+## 状態
+
+### デフォルト
+
+<Canvas of={Stories.Default} />
+
+### 絞り込んだ状態と無効
+
+<Canvas of={Stories.Filtered} />
+
+### 0 件
+
+<Canvas of={Stories.Empty} />
+
+## props
+
+<ArgTypes of={FilterSelect} />

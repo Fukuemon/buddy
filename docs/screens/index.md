@@ -1,41 +1,53 @@
 # 画面仕様書
 
 画面ごとに、何を表示し、何ができるかを書く。  
-画面の一覧は [PRD の画面の一覧](../PRD.md#画面の一覧)を元にし、PRD がカレンダーにまとめているモーダルは、URL が違うので画面を分けた。  
+画面を開ける職員は、[PRD の画面の一覧](../PRD.md#画面の一覧) にある。  
 新しい画面の仕様書は、テンプレートの `docs/screens/_template/` をコピーし、[画面仕様書の規約](rules.md) に従って書く。
 
 ## 画面の一覧
 
-| 画面の ID | 名前 | URL | 使う人 | 仕様書 |
-| --- | --- | --- | --- | --- |
-| `schedule-calendar` | 予定のカレンダー | `/schedule` | 全ての職員。表示する予定は権限で決まる | [予定のカレンダー](schedule-calendar_予定のカレンダー/index.md) |
-| `schedule-new` | 予定の作成 | `/schedule/new` | 全ての職員。予定を作れる職員の範囲は権限で決まる | [予定の作成](schedule-new_予定の作成/index.md) |
-| `schedule-detail` | 予定の詳細 | `/schedule/$scheduleId` | 予定を見る権限を持つ職員 | [予定の詳細](schedule-detail_予定の詳細/index.md) |
-| `schedule-edit` | 予定の編集 | `/schedule/$scheduleId/edit` | 予定を編集する権限を持つ職員 | [予定の編集](schedule-edit_予定の編集/index.md) |
-| `schedule-link` | カレンダーの連携（職員と Google カレンダーの結び付け） | `/schedule/link` | 職員の管理の権限を持つ職員（デフォルトはマネージャー） | [カレンダーの連携](schedule-link_カレンダーの連携/index.md) |
-| `schedule-import` | 予定の取り込み（期間の選択、プレビュー、確定） | `/schedule/import` | 職員の管理の権限を持つ職員（デフォルトはマネージャー） | [予定の取り込み](schedule-import_予定の取り込み/index.md) |
-| `schedule-review` | 確認が必要な予定（Google カレンダーと食い違った予定） | `/schedule/review` | 職員の管理の権限を持つ職員（デフォルトはマネージャー） | [確認が必要な予定](schedule-review_確認が必要な予定/index.md) |
-| `patient-list` | 利用者の一覧 | 未決 | 全ての職員 | なし |
-| `patient-new` | 利用者の登録 | 未決 | 職員の管理の権限を持つ職員（デフォルトはマネージャー） | なし |
-| `patient-edit` | 利用者の編集 | 未決 | 職員の管理の権限を持つ職員（デフォルトはマネージャー） | なし |
-| `staff-list` | 職員の一覧 | 未決 | 全ての職員 | なし |
-| `staff-detail` | 職員の詳細 | 未決 | 全ての職員 | なし |
-| `staff-new` | 職員の登録 | 未決 | 職員の管理の権限を持つ職員（デフォルトはマネージャー） | なし |
-| `staff-edit` | 職員の編集（権限の変更を含む） | 未決 | 職員の管理の権限を持つ職員（デフォルトはマネージャー） | なし |
-| `receipt-upload` | 照合（対象の月の選択、CSV のアップロード） | `/receipt` | 全ての職員 | [照合](receipt-upload_照合/index.md) |
-| `receipt-result` | 照合の結果 | `/receipt/result` | 全ての職員 | [照合の結果](receipt-result_照合の結果/index.md) |
-| `account-login` | ログイン | `/auth/login` | 全ての職員 | [ログイン](account-login_ログイン/index.md)。Hydra を通して、ID ブローカー（`services/broker`）のメールの入力の画面へリダイレクトする。ブローカーの画面は web の画面ではない |
-| `account-error` | ログインの失敗 | `/auth/error` | 全ての職員 | [ログインの失敗](account-error_ログインの失敗/index.md) |
-| `account-profile` | プロフィール | 未決 | 全ての職員 | なし |
+| 画面の ID | URL | 仕様書 |
+| --- | --- | --- |
+| `schedule-calendar` | `/schedule` | [予定のカレンダー](schedule-calendar_予定のカレンダー/index.md) |
+| `schedule-new` | `/schedule/new` | [予定の作成](schedule-new_予定の作成/index.md) |
+| `schedule-detail` | `/schedule/$scheduleId` | [予定の詳細](schedule-detail_予定の詳細/index.md) |
+| `schedule-edit` | `/schedule/$scheduleId/edit` | [予定の編集](schedule-edit_予定の編集/index.md) |
+| `schedule-recurrence` | `/schedule/$scheduleId/recurrence` | [繰り返しの変更](schedule-recurrence_繰り返しの変更/index.md) |
+| `schedule-link` | `/schedule/link` | [カレンダーの連携](schedule-link_カレンダーの連携/index.md) |
+| `schedule-import` | `/schedule/import` | [予定の取り込み](schedule-import_予定の取り込み/index.md) |
+| `schedule-review` | `/schedule/review` | [確認が必要な予定](schedule-review_確認が必要な予定/index.md) |
+| `schedule-cutover` | `/schedule/link/cutover` | [予定の正本の切り替え](schedule-cutover_予定の正本の切り替え/index.md) |
+| `patient-list` | `/patients` | [利用者の一覧](patient-list_利用者の一覧/index.md) |
+| `patient-new` | `/patients/new` | [利用者の登録](patient-new_利用者の登録/index.md) |
+| `patient-detail` | `/patients/$patientId` | [利用者の詳細](patient-detail_利用者の詳細/index.md) |
+| `staff-list` | `/staff` | [職員の一覧](staff-list_職員の一覧/index.md) |
+| `staff-new` | `/staff/new` | [職員の登録](staff-new_職員の登録/index.md) |
+| `staff-detail` | `/staff/$staffId` | [職員の詳細](staff-detail_職員の詳細/index.md) |
+| `organization-list` | `/organization` | [部署とチーム](organization-list_部署とチーム/index.md) |
+| `receipt-upload` | `/receipt` | [照合](receipt-upload_照合/index.md) |
+| `receipt-result` | `/receipt/result` | [照合の結果](receipt-result_照合の結果/index.md) |
+| `account-login` | `/auth/login` | [ログイン](account-login_ログイン/index.md) |
+| `account-error` | `/auth/error` | [ログインの失敗](account-error_ログインの失敗/index.md) |
+| `account-profile` | `/me` | [自分の情報](account-profile_自分の情報/index.md) |
 
-- 役職と権限の対応は、PRD の役職ごとの権限にある。利用者と職員の登録と編集は、職員の管理の権限を持つ職員だけが開ける。この権限をマネージャーに付ける役職のデフォルトは、PRD で仮決定である。
-- 予定の作成、詳細、編集は、予定のカレンダーの上にモーダルとして重ねて出す。URL は `/schedule` の子で、カレンダーの search params を引き継ぐ。
+- 役職と権限の対応は、[PRD の役職ごとの権限](../PRD.md#役職ごとの権限) にある。
+- 予定の作成、詳細、編集は、予定のカレンダーの上にモーダルとして重ねて出す。
+  - URL は `/schedule` の子で、カレンダーの search params を引き継ぐ。
+- 職員の登録は、職員の一覧の上にモーダルとして重ねて出す。
+  - 職員の編集は、職員の詳細の中で行うので、別の画面にしない。
+- 利用者の登録は、利用者の一覧の上にモーダルとして重ねて出す。
+  - 利用者の編集は、利用者の詳細の中で行うので、別の画面にしない。
 
 ## 画面の ID の規則
 
-- 形は `<ドメイン>-<種類>` にする。小文字の英語と `-` だけを使う。
-- ドメインは BCD Design の Domain の名詞にする。今使うのは `schedule`、`patient`、`staff`、`receipt`、`account`。
-- 種類は次の語から選ぶ。足すときはこの表に足す。
+- 形は `<ドメイン>-<種類>` にする。
+  - 小文字の英語と `-` だけを使う。
+- ドメインは BCD Design の Domain の名詞にする。
+  - 今使うのは `schedule`、`patient`、`staff`、`organization`、`receipt`、`account`。
+  - `organization` は、事業所の中の部署、チーム、役職を指す。
+    - 予定の API の Go のパッケージと OpenAPI の tag の名前にそろえた。
+- 種類は次の表の語から選ぶ。
+  - 足すときは、この表に足す。
 
 | 種類 | 意味 |
 | --- | --- |
@@ -49,16 +61,23 @@
 | `link` | 外部のサービスとの結び付け |
 | `import` | 外部のサービスからの取り込み |
 | `review` | 人が確認して決める必要があるものの一覧 |
+| `cutover` | 正本の切り替え |
+| `recurrence` | 繰り返しの規則の変更 |
 | `login`、`profile`、`error` | `account` のドメインだけで使う。`error` はログインの失敗 |
 
-- 固有の URL を持つものを 1 つの画面に数える。URL を持つモーダルも画面にする。URL を持たない確認のダイアログ（予定のキャンセルなど）は、親の画面の構成要素にする。
-- URL と ID をそろえる。`/schedule/new` は `schedule-new` にする。
-- 一度決めた ID は、画面の名前を変えても変えない。仕様書のファイル名、ワイヤーフレーム、E2E のシナリオの ID が ID を使うため。
+- 固有の URL を持つものを 1 つの画面に数える。
+  - URL を持つモーダルも画面にする。
+  - 予定のキャンセルのような、URL を持たない確認のダイアログは、親の画面の構成要素にする。
+- URL と ID をそろえる。
+  - `/schedule/new` は `schedule-new` にする。
+- 一度決めた ID は、画面の名前を変えても変えない。
+  - 仕様書のファイル名、ワイヤーフレーム、E2E のシナリオの ID が ID を使うためである。
 
 ## 画面の間の遷移
 
+ログインした後の画面は、左端のナビゲーションで互いに移れる。  
+ナビゲーションの見出しと項目、出す職員は、[職員の一覧のナビゲーション](staff-list_職員の一覧/index.md#ナビゲーション) にある。  
 予定と照合の画面の間の遷移は次のとおり。
-予定と照合の画面は、左端のナビゲーション（幅 768px 未満ではヘッダーのメニューのボタンで開くドロワー）で互いに移れる。
 
 ```mermaid
 flowchart TB
@@ -67,6 +86,7 @@ flowchart TB
   create["予定の作成<br/>/schedule/new"]
   detail["予定の詳細<br/>/schedule/$scheduleId"]
   edit["予定の編集<br/>/schedule/$scheduleId/edit"]
+  recurrence["繰り返しの変更<br/>/schedule/$scheduleId/recurrence"]
   upload["照合<br/>/receipt"]
   result["照合の結果<br/>/receipt/result"]
   root -- "リダイレクト" --> calendar
@@ -74,20 +94,22 @@ flowchart TB
   create -- "作成に成功、閉じる" --> calendar
   calendar -- "予定を押す" --> detail
   detail -- "閉じる" --> calendar
-  detail -- "編集" --> edit
+  detail -- "編集、繰り返しの回の「この予定を編集」" --> edit
   edit -- "保存に成功、閉じる" --> detail
   edit -- "取得の失敗から閉じる" --> calendar
+  detail -- "繰り返しの回の「繰り返しを変更」" --> recurrence
+  recurrence -- "保存に成功" --> calendar
+  recurrence -- "閉じる" --> detail
   calendar -- "ナビゲーションの「照合」" --> upload
-  upload -- "ナビゲーションの「予定」" --> calendar
+  upload -- "ナビゲーションの「カレンダー」" --> calendar
   upload -- "照合に成功" --> result
   result -- "別のファイルで照合する、照合の画面へ、ナビゲーションの「照合」" --> upload
-  result -- "ナビゲーションの「予定」" --> calendar
+  result -- "ナビゲーションの「カレンダー」" --> calendar
 ```
 
-職員の管理の権限を持つ職員が使う、Google カレンダーとの連携の画面の間の遷移は次のとおり。
-ナビゲーションに「取り込み」と「要確認」が出るのは、職員の管理の権限を持つ職員だけである。
-カレンダーの連携、予定の取り込み、確認が必要な予定の画面からも、ナビゲーションで予定と照合の画面へ移れる。
-図には、ナビゲーションのうち予定のカレンダーとの間の遷移だけを描く。
+カレンダーの連携、予定の取り込み、確認が必要な予定の画面にも、同じナビゲーションを出す。  
+職員の管理の権限を持つ職員が使う、Google カレンダーとの連携の画面の間の遷移は次のとおり。  
+図には、ナビゲーションによる遷移のうち、予定のカレンダーとの間の遷移だけを描く。
 
 ```mermaid
 flowchart TB
@@ -97,17 +119,70 @@ flowchart TB
   import["予定の取り込み<br/>/schedule/import"]
   review["確認が必要な予定<br/>/schedule/review"]
   calendar -- "ナビゲーションの「取り込み」" --> import
+  calendar -- "ナビゲーションの「連携」" --> link
   import -- "「カレンダーの連携」" --> link
   link -- "「取り込む」" --> import
-  import -- "「予定のカレンダーで見る」、ナビゲーションの「予定」" --> calendar
-  link -- "ナビゲーションの「予定」" --> calendar
+  cutover["予定の正本の切り替え<br/>/schedule/link/cutover"]
+  link -- "「予定の正本の切り替え」" --> cutover
+  cutover -- "「取り込む」" --> import
+  import -- "「切り替えの状況に戻る」" --> cutover
+  cutover -- "「カレンダーの連携」" --> link
+  import -- "「予定のカレンダーで見る」、ナビゲーションの「カレンダー」" --> calendar
+  link -- "ナビゲーションの「カレンダー」" --> calendar
   calendar -- "ナビゲーションの「要確認」" --> review
   review -- "「予定を開く」" --> detail
-  review -- "ナビゲーションの「予定」" --> calendar
+  review -- "ナビゲーションの「カレンダー」" --> calendar
 ```
 
+職員の画面の間の遷移は次のとおり。  
+図には、ナビゲーションによる遷移のうち、予定のカレンダーとの間の遷移だけを描く。
+
+```mermaid
+flowchart TB
+  calendar["予定のカレンダー<br/>/schedule"]
+  list["職員の一覧<br/>/staff"]
+  create["職員の登録<br/>/staff/new"]
+  staff["職員の詳細<br/>/staff/$staffId"]
+  scheduleDetail["予定の詳細<br/>/schedule/$scheduleId"]
+  calendar -- "ナビゲーションの「職員」" --> list
+  list -- "職員を登録" --> create
+  create -- "閉じる、キャンセル" --> list
+  create -- "登録に成功" --> staff
+  list -- "職員の名前" --> staff
+  staff -- "職員の一覧へ、ナビゲーションの「職員」" --> list
+  staff -- "休職と退職の確認の、残る予定" --> scheduleDetail
+  list -- "ナビゲーションの「カレンダー」" --> calendar
+```
+
+部署とチームの画面は、見出し「職員」の下の「部署とチーム」から開く。  
+部署とチームの作成と編集は URL を持たないダイアログで、画面の間の遷移は無い。
+
+利用者の画面の間の遷移は次のとおり。  
+図には、ナビゲーションによる遷移のうち、予定のカレンダーとの間の遷移だけを描く。
+
+```mermaid
+flowchart TB
+  calendar["予定のカレンダー<br/>/schedule"]
+  list["利用者の一覧<br/>/patients"]
+  create["利用者の登録<br/>/patients/new"]
+  patient["利用者の詳細<br/>/patients/$patientId"]
+  scheduleDetail["予定の詳細<br/>/schedule/$scheduleId"]
+  calendar -- "ナビゲーションの「利用者」" --> list
+  list -- "利用者を登録" --> create
+  create -- "閉じる、キャンセル" --> list
+  create -- "登録に成功" --> patient
+  list -- "利用者の名前" --> patient
+  patient -- "利用者の一覧へ、ナビゲーションの「利用者」" --> list
+  patient -- "利用の終了の確認の、残る予定" --> scheduleDetail
+  list -- "ナビゲーションの「カレンダー」" --> calendar
+```
+
+自分の情報の画面は、ヘッダーを出す全ての画面の、アカウントのメニューの「自分の情報」から開く。  
+職員の管理の権限を持つ職員は、自分の情報の「職員の詳細を開く」で、自分の職員の詳細へ移れる。
+
+ログアウトすると `/` へ移り、ログインしていないので、`/` からそのままログインへ進む。  
+ログインした後は、`/` を経て予定のカレンダーに戻る。  
 ログインしていないときと、ログインに失敗したときの遷移は次のとおり。
-ログアウトすると `/` へ移り、ログインしていないので、`/` からそのままログインへ進む。ログインした後は、`/` を経て予定のカレンダーに戻る。
 
 ```mermaid
 flowchart TB
@@ -128,13 +203,15 @@ flowchart TB
 
 ### 画面を表示できない
 
-画面を開く前の処理か画面の描画で、画面が扱っていない失敗が起きたときに、どの画面もこの表示に替わる。
-例えば、BFF を通すときに、ログインした職員を読むためのセッションの保存先に届かないと、この表示になる。
+画面を開く前の処理か画面の描画で、画面が扱っていない失敗が起きたときに、どの画面もこの表示に替わる。  
+例えば、BFF を通すときに、ログインした職員を読むためのセッションの保存先に届かないと、この表示になる。  
 画面ごとの仕様書は、この状態を状態のタブに数えない。
 
-- ヘッダーは「buddy」だけを出し、メニューのボタン、ナビゲーション、ログインした職員は出さない。
+- ヘッダーは「buddy」だけを出し、メニューのボタンとアカウントのボタンは出さない。
+  - ナビゲーションも出さない。
 - タイトルは「画面を表示できませんでした」、説明の文は「時間をおいて、読み直してください。」。
 - 「読み直す」のリンクを押すと、今の画面の URL を読み込み直す。
-- E2E が指す目印は、表示の全体の `page-error`。この状態はモックを持たないので、`page-error` の正本はこのセクションである。
-- 実装は `apps/web/src/routes/__root.tsx` の `RootError` と、`apps/web/src/components/site/PageErrorMessage.tsx`。
+- E2E が指す目印は、表示の全体の `page-error`。
+  - この状態はモックを持たないので、`page-error` の正本はこのセクションである。
+- 実装は `apps/web/src/routes/__root.tsx` の `RootError` と、`apps/web/src/components/page/PageErrorMessage.tsx`。
 - カタログ: [PageErrorMessage の Default](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-common-pageerrormessage--default)

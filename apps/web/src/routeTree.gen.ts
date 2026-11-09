@@ -11,20 +11,30 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as HealthzRouteImport } from './routes/healthz'
+import { Route as MeRouteImport } from './routes/me'
+import { Route as OrganizationRouteImport } from './routes/organization'
+import { Route as PatientsRouteImport } from './routes/patients'
 import { Route as ReadyzRouteImport } from './routes/readyz'
 import { Route as ScheduleRouteImport } from './routes/schedule'
+import { Route as StaffRouteImport } from './routes/staff'
 import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
 import { Route as AuthErrorRouteImport } from './routes/auth.error'
 import { Route as AuthLoginRouteImport } from './routes/auth.login'
 import { Route as AuthLogoutRouteImport } from './routes/auth.logout'
+import { Route as PatientsNewRouteImport } from './routes/patients.new'
+import { Route as PatientsPatientIdRouteImport } from './routes/patients_.$patientId'
 import { Route as ReceiptIndexRouteImport } from './routes/receipt.index'
 import { Route as ReceiptResultRouteImport } from './routes/receipt.result'
 import { Route as ScheduleNewRouteImport } from './routes/schedule.new'
 import { Route as ScheduleImportRouteImport } from './routes/schedule_.import'
 import { Route as ScheduleLinkRouteImport } from './routes/schedule_.link'
 import { Route as ScheduleReviewRouteImport } from './routes/schedule_.review'
+import { Route as StaffNewRouteImport } from './routes/staff.new'
+import { Route as StaffStaffIdRouteImport } from './routes/staff_.$staffId'
 import { Route as ScheduleScheduleIdIndexRouteImport } from './routes/schedule.$scheduleId.index'
 import { Route as ScheduleScheduleIdEditRouteImport } from './routes/schedule.$scheduleId.edit'
+import { Route as ScheduleScheduleIdRecurrenceRouteImport } from './routes/schedule.$scheduleId.recurrence'
+import { Route as ScheduleLinkCutoverRouteImport } from './routes/schedule_.link_.cutover'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -36,6 +46,21 @@ const HealthzRoute = HealthzRouteImport.update({
   path: '/healthz',
   getParentRoute: () => rootRouteImport,
 } as any)
+const MeRoute = MeRouteImport.update({
+  id: '/me',
+  path: '/me',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OrganizationRoute = OrganizationRouteImport.update({
+  id: '/organization',
+  path: '/organization',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PatientsRoute = PatientsRouteImport.update({
+  id: '/patients',
+  path: '/patients',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ReadyzRoute = ReadyzRouteImport.update({
   id: '/readyz',
   path: '/readyz',
@@ -44,6 +69,11 @@ const ReadyzRoute = ReadyzRouteImport.update({
 const ScheduleRoute = ScheduleRouteImport.update({
   id: '/schedule',
   path: '/schedule',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const StaffRoute = StaffRouteImport.update({
+  id: '/staff',
+  path: '/staff',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthCallbackRoute = AuthCallbackRouteImport.update({
@@ -64,6 +94,16 @@ const AuthLoginRoute = AuthLoginRouteImport.update({
 const AuthLogoutRoute = AuthLogoutRouteImport.update({
   id: '/auth/logout',
   path: '/auth/logout',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PatientsNewRoute = PatientsNewRouteImport.update({
+  id: '/new',
+  path: '/new',
+  getParentRoute: () => PatientsRoute,
+} as any)
+const PatientsPatientIdRoute = PatientsPatientIdRouteImport.update({
+  id: '/patients_/$patientId',
+  path: '/patients/$patientId',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ReceiptIndexRoute = ReceiptIndexRouteImport.update({
@@ -96,6 +136,16 @@ const ScheduleReviewRoute = ScheduleReviewRouteImport.update({
   path: '/schedule/review',
   getParentRoute: () => rootRouteImport,
 } as any)
+const StaffNewRoute = StaffNewRouteImport.update({
+  id: '/new',
+  path: '/new',
+  getParentRoute: () => StaffRoute,
+} as any)
+const StaffStaffIdRoute = StaffStaffIdRouteImport.update({
+  id: '/staff_/$staffId',
+  path: '/staff/$staffId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ScheduleScheduleIdIndexRoute = ScheduleScheduleIdIndexRouteImport.update({
   id: '/$scheduleId/',
   path: '/$scheduleId/',
@@ -106,60 +156,101 @@ const ScheduleScheduleIdEditRoute = ScheduleScheduleIdEditRouteImport.update({
   path: '/$scheduleId/edit',
   getParentRoute: () => ScheduleRoute,
 } as any)
+const ScheduleScheduleIdRecurrenceRoute =
+  ScheduleScheduleIdRecurrenceRouteImport.update({
+    id: '/$scheduleId/recurrence',
+    path: '/$scheduleId/recurrence',
+    getParentRoute: () => ScheduleRoute,
+  } as any)
+const ScheduleLinkCutoverRoute = ScheduleLinkCutoverRouteImport.update({
+  id: '/schedule_/link_/cutover',
+  path: '/schedule/link/cutover',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/healthz': typeof HealthzRoute
+  '/me': typeof MeRoute
+  '/organization': typeof OrganizationRoute
+  '/patients': typeof PatientsRouteWithChildren
   '/readyz': typeof ReadyzRoute
   '/schedule': typeof ScheduleRouteWithChildren
+  '/staff': typeof StaffRouteWithChildren
   '/auth/callback': typeof AuthCallbackRoute
   '/auth/error': typeof AuthErrorRoute
   '/auth/login': typeof AuthLoginRoute
   '/auth/logout': typeof AuthLogoutRoute
+  '/patients/new': typeof PatientsNewRoute
+  '/patients/$patientId': typeof PatientsPatientIdRoute
   '/receipt/result': typeof ReceiptResultRoute
   '/schedule/new': typeof ScheduleNewRoute
   '/schedule/import': typeof ScheduleImportRoute
   '/schedule/link': typeof ScheduleLinkRoute
   '/schedule/review': typeof ScheduleReviewRoute
+  '/staff/new': typeof StaffNewRoute
+  '/staff/$staffId': typeof StaffStaffIdRoute
   '/receipt/': typeof ReceiptIndexRoute
   '/schedule/$scheduleId/edit': typeof ScheduleScheduleIdEditRoute
+  '/schedule/$scheduleId/recurrence': typeof ScheduleScheduleIdRecurrenceRoute
+  '/schedule/link/cutover': typeof ScheduleLinkCutoverRoute
   '/schedule/$scheduleId/': typeof ScheduleScheduleIdIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/healthz': typeof HealthzRoute
+  '/me': typeof MeRoute
+  '/organization': typeof OrganizationRoute
+  '/patients': typeof PatientsRouteWithChildren
   '/readyz': typeof ReadyzRoute
   '/schedule': typeof ScheduleRouteWithChildren
+  '/staff': typeof StaffRouteWithChildren
   '/auth/callback': typeof AuthCallbackRoute
   '/auth/error': typeof AuthErrorRoute
   '/auth/login': typeof AuthLoginRoute
   '/auth/logout': typeof AuthLogoutRoute
+  '/patients/new': typeof PatientsNewRoute
+  '/patients/$patientId': typeof PatientsPatientIdRoute
   '/receipt/result': typeof ReceiptResultRoute
   '/schedule/new': typeof ScheduleNewRoute
   '/schedule/import': typeof ScheduleImportRoute
   '/schedule/link': typeof ScheduleLinkRoute
   '/schedule/review': typeof ScheduleReviewRoute
+  '/staff/new': typeof StaffNewRoute
+  '/staff/$staffId': typeof StaffStaffIdRoute
   '/receipt': typeof ReceiptIndexRoute
   '/schedule/$scheduleId/edit': typeof ScheduleScheduleIdEditRoute
+  '/schedule/$scheduleId/recurrence': typeof ScheduleScheduleIdRecurrenceRoute
+  '/schedule/link/cutover': typeof ScheduleLinkCutoverRoute
   '/schedule/$scheduleId': typeof ScheduleScheduleIdIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/healthz': typeof HealthzRoute
+  '/me': typeof MeRoute
+  '/organization': typeof OrganizationRoute
+  '/patients': typeof PatientsRouteWithChildren
   '/readyz': typeof ReadyzRoute
   '/schedule': typeof ScheduleRouteWithChildren
+  '/staff': typeof StaffRouteWithChildren
   '/auth/callback': typeof AuthCallbackRoute
   '/auth/error': typeof AuthErrorRoute
   '/auth/login': typeof AuthLoginRoute
   '/auth/logout': typeof AuthLogoutRoute
+  '/patients/new': typeof PatientsNewRoute
+  '/patients_/$patientId': typeof PatientsPatientIdRoute
   '/receipt/result': typeof ReceiptResultRoute
   '/schedule/new': typeof ScheduleNewRoute
   '/schedule_/import': typeof ScheduleImportRoute
   '/schedule_/link': typeof ScheduleLinkRoute
   '/schedule_/review': typeof ScheduleReviewRoute
+  '/staff/new': typeof StaffNewRoute
+  '/staff_/$staffId': typeof StaffStaffIdRoute
   '/receipt/': typeof ReceiptIndexRoute
   '/schedule/$scheduleId/edit': typeof ScheduleScheduleIdEditRoute
+  '/schedule/$scheduleId/recurrence': typeof ScheduleScheduleIdRecurrenceRoute
+  '/schedule_/link_/cutover': typeof ScheduleLinkCutoverRoute
   '/schedule/$scheduleId/': typeof ScheduleScheduleIdIndexRoute
 }
 export interface FileRouteTypes {
@@ -167,72 +258,109 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/healthz'
+    | '/me'
+    | '/organization'
+    | '/patients'
     | '/readyz'
     | '/schedule'
+    | '/staff'
     | '/auth/callback'
     | '/auth/error'
     | '/auth/login'
     | '/auth/logout'
+    | '/patients/new'
+    | '/patients/$patientId'
     | '/receipt/result'
     | '/schedule/new'
     | '/schedule/import'
     | '/schedule/link'
     | '/schedule/review'
+    | '/staff/new'
+    | '/staff/$staffId'
     | '/receipt/'
     | '/schedule/$scheduleId/edit'
+    | '/schedule/$scheduleId/recurrence'
+    | '/schedule/link/cutover'
     | '/schedule/$scheduleId/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/healthz'
+    | '/me'
+    | '/organization'
+    | '/patients'
     | '/readyz'
     | '/schedule'
+    | '/staff'
     | '/auth/callback'
     | '/auth/error'
     | '/auth/login'
     | '/auth/logout'
+    | '/patients/new'
+    | '/patients/$patientId'
     | '/receipt/result'
     | '/schedule/new'
     | '/schedule/import'
     | '/schedule/link'
     | '/schedule/review'
+    | '/staff/new'
+    | '/staff/$staffId'
     | '/receipt'
     | '/schedule/$scheduleId/edit'
+    | '/schedule/$scheduleId/recurrence'
+    | '/schedule/link/cutover'
     | '/schedule/$scheduleId'
   id:
     | '__root__'
     | '/'
     | '/healthz'
+    | '/me'
+    | '/organization'
+    | '/patients'
     | '/readyz'
     | '/schedule'
+    | '/staff'
     | '/auth/callback'
     | '/auth/error'
     | '/auth/login'
     | '/auth/logout'
+    | '/patients/new'
+    | '/patients_/$patientId'
     | '/receipt/result'
     | '/schedule/new'
     | '/schedule_/import'
     | '/schedule_/link'
     | '/schedule_/review'
+    | '/staff/new'
+    | '/staff_/$staffId'
     | '/receipt/'
     | '/schedule/$scheduleId/edit'
+    | '/schedule/$scheduleId/recurrence'
+    | '/schedule_/link_/cutover'
     | '/schedule/$scheduleId/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   HealthzRoute: typeof HealthzRoute
+  MeRoute: typeof MeRoute
+  OrganizationRoute: typeof OrganizationRoute
+  PatientsRoute: typeof PatientsRouteWithChildren
   ReadyzRoute: typeof ReadyzRoute
   ScheduleRoute: typeof ScheduleRouteWithChildren
+  StaffRoute: typeof StaffRouteWithChildren
   AuthCallbackRoute: typeof AuthCallbackRoute
   AuthErrorRoute: typeof AuthErrorRoute
   AuthLoginRoute: typeof AuthLoginRoute
   AuthLogoutRoute: typeof AuthLogoutRoute
+  PatientsPatientIdRoute: typeof PatientsPatientIdRoute
   ReceiptResultRoute: typeof ReceiptResultRoute
   ScheduleImportRoute: typeof ScheduleImportRoute
   ScheduleLinkRoute: typeof ScheduleLinkRoute
   ScheduleReviewRoute: typeof ScheduleReviewRoute
+  StaffStaffIdRoute: typeof StaffStaffIdRoute
   ReceiptIndexRoute: typeof ReceiptIndexRoute
+  ScheduleLinkCutoverRoute: typeof ScheduleLinkCutoverRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -251,6 +379,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof HealthzRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/me': {
+      id: '/me'
+      path: '/me'
+      fullPath: '/me'
+      preLoaderRoute: typeof MeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/organization': {
+      id: '/organization'
+      path: '/organization'
+      fullPath: '/organization'
+      preLoaderRoute: typeof OrganizationRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/patients': {
+      id: '/patients'
+      path: '/patients'
+      fullPath: '/patients'
+      preLoaderRoute: typeof PatientsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/readyz': {
       id: '/readyz'
       path: '/readyz'
@@ -263,6 +412,13 @@ declare module '@tanstack/react-router' {
       path: '/schedule'
       fullPath: '/schedule'
       preLoaderRoute: typeof ScheduleRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/staff': {
+      id: '/staff'
+      path: '/staff'
+      fullPath: '/staff'
+      preLoaderRoute: typeof StaffRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/auth/callback': {
@@ -291,6 +447,20 @@ declare module '@tanstack/react-router' {
       path: '/auth/logout'
       fullPath: '/auth/logout'
       preLoaderRoute: typeof AuthLogoutRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/patients/new': {
+      id: '/patients/new'
+      path: '/new'
+      fullPath: '/patients/new'
+      preLoaderRoute: typeof PatientsNewRouteImport
+      parentRoute: typeof PatientsRoute
+    }
+    '/patients_/$patientId': {
+      id: '/patients_/$patientId'
+      path: '/patients/$patientId'
+      fullPath: '/patients/$patientId'
+      preLoaderRoute: typeof PatientsPatientIdRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/receipt/': {
@@ -335,6 +505,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ScheduleReviewRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/staff/new': {
+      id: '/staff/new'
+      path: '/new'
+      fullPath: '/staff/new'
+      preLoaderRoute: typeof StaffNewRouteImport
+      parentRoute: typeof StaffRoute
+    }
+    '/staff_/$staffId': {
+      id: '/staff_/$staffId'
+      path: '/staff/$staffId'
+      fullPath: '/staff/$staffId'
+      preLoaderRoute: typeof StaffStaffIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/schedule/$scheduleId/': {
       id: '/schedule/$scheduleId/'
       path: '/$scheduleId'
@@ -349,18 +533,46 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ScheduleScheduleIdEditRouteImport
       parentRoute: typeof ScheduleRoute
     }
+    '/schedule/$scheduleId/recurrence': {
+      id: '/schedule/$scheduleId/recurrence'
+      path: '/$scheduleId/recurrence'
+      fullPath: '/schedule/$scheduleId/recurrence'
+      preLoaderRoute: typeof ScheduleScheduleIdRecurrenceRouteImport
+      parentRoute: typeof ScheduleRoute
+    }
+    '/schedule_/link_/cutover': {
+      id: '/schedule_/link_/cutover'
+      path: '/schedule/link/cutover'
+      fullPath: '/schedule/link/cutover'
+      preLoaderRoute: typeof ScheduleLinkCutoverRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
+
+interface PatientsRouteChildren {
+  PatientsNewRoute: typeof PatientsNewRoute
+}
+
+const PatientsRouteChildren: PatientsRouteChildren = {
+  PatientsNewRoute: PatientsNewRoute,
+}
+
+const PatientsRouteWithChildren = PatientsRoute._addFileChildren(
+  PatientsRouteChildren,
+)
 
 interface ScheduleRouteChildren {
   ScheduleNewRoute: typeof ScheduleNewRoute
   ScheduleScheduleIdEditRoute: typeof ScheduleScheduleIdEditRoute
+  ScheduleScheduleIdRecurrenceRoute: typeof ScheduleScheduleIdRecurrenceRoute
   ScheduleScheduleIdIndexRoute: typeof ScheduleScheduleIdIndexRoute
 }
 
 const ScheduleRouteChildren: ScheduleRouteChildren = {
   ScheduleNewRoute: ScheduleNewRoute,
   ScheduleScheduleIdEditRoute: ScheduleScheduleIdEditRoute,
+  ScheduleScheduleIdRecurrenceRoute: ScheduleScheduleIdRecurrenceRoute,
   ScheduleScheduleIdIndexRoute: ScheduleScheduleIdIndexRoute,
 }
 
@@ -368,31 +580,38 @@ const ScheduleRouteWithChildren = ScheduleRoute._addFileChildren(
   ScheduleRouteChildren,
 )
 
+interface StaffRouteChildren {
+  StaffNewRoute: typeof StaffNewRoute
+}
+
+const StaffRouteChildren: StaffRouteChildren = {
+  StaffNewRoute: StaffNewRoute,
+}
+
+const StaffRouteWithChildren = StaffRoute._addFileChildren(StaffRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   HealthzRoute: HealthzRoute,
+  MeRoute: MeRoute,
+  OrganizationRoute: OrganizationRoute,
+  PatientsRoute: PatientsRouteWithChildren,
   ReadyzRoute: ReadyzRoute,
   ScheduleRoute: ScheduleRouteWithChildren,
+  StaffRoute: StaffRouteWithChildren,
   AuthCallbackRoute: AuthCallbackRoute,
   AuthErrorRoute: AuthErrorRoute,
   AuthLoginRoute: AuthLoginRoute,
   AuthLogoutRoute: AuthLogoutRoute,
+  PatientsPatientIdRoute: PatientsPatientIdRoute,
   ReceiptResultRoute: ReceiptResultRoute,
   ScheduleImportRoute: ScheduleImportRoute,
   ScheduleLinkRoute: ScheduleLinkRoute,
   ScheduleReviewRoute: ScheduleReviewRoute,
+  StaffStaffIdRoute: StaffStaffIdRoute,
   ReceiptIndexRoute: ReceiptIndexRoute,
+  ScheduleLinkCutoverRoute: ScheduleLinkCutoverRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

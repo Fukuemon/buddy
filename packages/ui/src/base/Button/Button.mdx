@@ -7,27 +7,18 @@ import * as Stories from './Button.stories'
 
 # Button
 
-操作を 1 つ実行するボタン。`variant` で主、副、削除を、`size` で S、M、L を選ぶ。
+操作を 1 つ実行するボタン。`variant` で主、副、削除、確定の削除を、`size` で S、M、L を選ぶ。
 
-## 使う場面
+## 規則
 
-- フォームを送る、ダイアログを開くなど、操作を 1 つ実行する
+規則の本文は、デザインシステムの文書の次のセクションにある。
 
-## 使わない場面
-
-- 画面を移る。`Link` に `buttonClassName` を渡してボタンの見た目にする
-
-## Do
-
-- 主のボタン（`variant="primary"`）は、1 つの画面かダイアログに 1 つまでにする
-- 押せない理由があるときは `disabled` にし、理由の文を近くに出す
-- 押した後の待ちは `isLoading` で示す
-
-## Don't
-
-- 主のボタンを並べて、どれが主の操作か分からなくする
-- 削除のような取り消せない操作に `variant="primary"` を使う
-- `className` で色や角丸を変える
+- 使う場面、使わない場面、キーボードの操作: コンポーネントの文書（`packages/ui/design/components.md`）の「コンポーネントの選び方」の `Button` の行
+- 使い方の規則と Do と Don't: コンポーネントの文書の「コンポーネントごとの規則」の「`Button`」
+- 当たる原則: DESIGN.md の「画面を作るときの原則」の次の ID
+  - `PRIMARY-ACTION-ONE`
+  - `TARGET-SIZE`
+  - `FOCUS-ONE`
 
 ## 状態
 
@@ -45,6 +36,20 @@ hover は文字に下線が付き、フォーカスは `focus-ring` を出す。
 
 <Canvas of={Stories.Destructive} />
 
+### 確定の削除
+
+データを失う操作を、確認のダイアログで確定するボタン。
+
+<Canvas of={Stories.Danger} />
+
+### 確定の削除の無効
+
+<Canvas of={Stories.DangerDisabled} />
+
+### 文字を残した待ち
+
+<Canvas of={Stories.Busy} />
+
 ### 無効
 
 <Canvas of={Stories.PrimaryDisabled} />
@@ -60,13 +65,6 @@ hover は文字に下線が付き、フォーカスは `focus-ring` を出す。
 ### L
 
 <Canvas of={Stories.Large} />
-
-## キーボードの操作
-
-- Tab でボタンに移る
-- Enter と Space で押す
-- 無効の間は `aria-disabled="true"` にし、フォーカスは受けるが押しても何もしない
-- 読み込みの間は `aria-busy="true"` にし、押しても何もしない
 
 ## props
 

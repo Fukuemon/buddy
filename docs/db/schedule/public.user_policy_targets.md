@@ -69,6 +69,7 @@ erDiagram
   varchar_255_ name
   timestamp_with_time_zone created_at
   timestamp_with_time_zone updated_at
+  text color
 }
 "public.users" {
   text id
@@ -85,6 +86,7 @@ erDiagram
   timestamp_with_time_zone leave_started_at
   date leave_return_date
   timestamp_with_time_zone retired_at
+  boolean visits
 }
 "public.user_policies" {
   text id

@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
+import { createModalDocsParameters } from '@buddy/ui/storybook-preview'
 
 import { withAppRouter, type AppRouterParameters } from '#/storybook/withAppRouter'
 
@@ -19,18 +20,17 @@ const meta = {
       </div>
     ),
   ],
-  // showModal は文書の全体を操作できなくするので、Docs のページでは story ごとに iframe で描く
   parameters: {
     ...route({}),
+    ...createModalDocsParameters(778),
     layout: 'fullscreen',
-    docs: { story: { inline: false, iframeHeight: 778 } },
   },
 } satisfies Meta<typeof SchedulePageLayout>
 
 export default meta
 type Story = StoryObj<typeof meta>
 
-export const Month: Story = { parameters: route({ url: '/schedule' }) }
+export const Month: Story = { parameters: route({ url: '/schedule?view=month' }) }
 
 export const Week: Story = { parameters: route({ url: '/schedule?view=week' }) }
 
@@ -41,7 +41,7 @@ export const WeekAcrossYears: Story = {
 
 export const Day: Story = { parameters: route({ url: '/schedule?view=day' }) }
 
-/** 幅 768px 未満。日付と絞り込みは閉じたドロワーにあり、ツールバーのボタンで開く。 */
+/** 幅 768px 未満。週の表示は週の一覧で出す。日付と絞り込みは閉じたドロワーにあり、ヘッダーのメニューのボタンで開く。 */
 export const Mobile: Story = {
   parameters: route({ url: '/schedule?view=week' }),
   globals: { viewport: { value: 'mobile2', isRotated: false } },

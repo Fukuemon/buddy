@@ -1,27 +1,27 @@
 #!/usr/bin/env node
-// 意味の段のトークンの組が、WCAG 2.2 のコントラスト比の基準に届くかを確認する。
-// 写した後に、SOURCES、PREFIX、TEXT_PAIRS、NON_TEXT_PAIRS を、自分のトークンに合わせて書き換える。
-// 使い方: node check-contrast.mjs [--root <ブロック>]... [CSS のファイルかパッケージのパス]...
+// セマンティックトークンの組が、WCAG 2.2 のコントラスト比の基準に届くかを確認する。
+// コピーした後に、SOURCES、PREFIX、TEXT_PAIRS、NON_TEXT_PAIRS を、自分のトークンに合わせて書き換える。
+// 使い方: node check-contrast.mjs [--root <ブロック>]... [--resolve-from <ディレクトリ>] [CSS のファイルかパッケージのパス]...
 //   --root は、:root のほかに画面に効く値として読むブロックを、報告に出た形（`[data-theme=dark]`、`@media (prefers-color-scheme: dark) :root`）で渡す。
-//   ダークモードのように条件ごとの値があるときは、条件ごとに --root を替えて流す。--root を渡すと、ほかの条件つきのブロックの意味の段の宣言は読み飛ばして数を出す
+//   ダークモードのように条件ごとの値があるときは、条件ごとに --root を替えて流す。--root を渡すと、ほかの条件つきのブロックのセマンティックトークンの宣言は読み飛ばして数を出す
 //   引数を省くと SOURCES を読む。リポジトリの中のファイルは ./ で始める。
 //   パッケージのパス（`@scope/name/dist/tokens.css` の形）は、カレントディレクトリの package.json から解決する
+//   --resolve-from は、パッケージのパスを解決する package.json のディレクトリ。モノレポで、パッケージが下の階層のワークスペース（`packages/ui` など）の依存にだけあるときに渡す
 // 読む値: :root のブロック（`:root, :host` のようなセレクタの並びと、@layer の中を含む）の変数の宣言だけを、画面に効く値として読む。
 //   値は、var() の参照（空白とフォールバックを含む）、#rgb、#rrggbb を受ける。同じ変数の値は、CSS のカスケードの順（!important、@layer の順、後の宣言）で決める。
 //   rgb()、hsl()、色の名前、calc() は色に解決できないと報告する。
-//   :root 以外のブロックと @media などの中の宣言は、PREFIX の変数なら確認できないと報告し、ほかの変数（基本の段）は読み飛ばして数を出す
-// 終了コード: 0 は全部の組が基準に届いた、1 は届かない組か、色に解決できないトークンか、条件つきのブロックの中の意味の段の宣言か、CSS にない --root のブロックがある、2 は CSS が読めない
+//   :root 以外のブロックと @media などの中の宣言は、PREFIX の変数なら確認できないと報告し、ほかの変数（プリミティブトークン）は読み飛ばして数を出す
+// 終了コード: 0 は全部の組が基準に届いた、1 は届かない組か、色に解決できないトークンか、条件つきのブロックの中のセマンティックトークンの宣言か、CSS にない --root のブロックがある、2 は CSS が読めないか、--resolve-from の次にディレクトリがない
 import { readFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { isAbsolute, join, resolve } from "node:path";
 
-// 基本の段の CSS を先に、意味の段の CSS を後に並べる。同じ名前は後の値が勝つ
-// DADS の基本の段は packages/ui の依存なので、ルートの package.json からは解決できない。pnpm が packages/ui の下に置くリンクを読む
+// プリミティブトークンの CSS を先に、セマンティックトークンの CSS を後に並べる。同じ名前は後の値が勝つ
 const SOURCES = [
-  "./packages/ui/node_modules/@digital-go-jp/design-tokens/dist/tokens.css",
+  "./packages/ui/src/tokens/primitive.css",
   "./packages/ui/src/tokens/semantic.css",
 ];
-// 意味の段のトークンの接頭辞。組の名前に付けて CSS の変数の名前にする
+// セマンティックトークンの接頭辞。組の名前に付けて CSS の変数の名前にする
 const PREFIX = "--buddy-color-";
 
 // 文字と、その下の面の組。4.5:1 以上
@@ -40,6 +40,8 @@ const TEXT_PAIRS = [
     ["text", `${state}-surface`],
   ]),
   ["text-inverse", "primary"],
+  // 確認のダイアログの確定のボタン（Button の danger）は、赤い面に白の文字を載せる
+  ["text-inverse", "danger"],
   // 区別の色は、白の文字を載せる
   ...Array.from({ length: 10 }, (_, i) => ["text-inverse", `categorical-${i + 1}`]),
 ];
@@ -53,16 +55,36 @@ const NON_TEXT_PAIRS = [
   ["primary", "surface"],
   ["primary", "surface-canvas"],
   ["danger", "surface"],
+  ["danger", "primary-surface"],
+  // 表の見出しの行とデータの行の区切り
+  ["border-strong", "surface"],
+  // 入力の欄にマウスを乗せたときの枠
+  ["border-field-hover", "surface"],
+  ["border-field-hover", "primary-surface"],
+  ["danger-hover", "surface"],
+  ["danger-hover", "primary-surface"],
   ["focus-outline", "surface"],
   ["focus-outline", "surface-canvas"],
   ["focus-outline", "focus-halo"],
+  // チームの色は、名前の横の点として、白と薄い面に載る
+  ...["blue", "orange", "magenta", "cyan", "yellow", "purple", "green", "lime"].flatMap((color) =>
+    ["surface", "surface-canvas", "surface-subtle", "primary-surface"].map((bg) => [`team-${color}`, bg]),
+  ),
 ];
 
 const MAX_DEPTH = 10;
 const roots = [];
 const args = [];
+let resolveFrom = ".";
 for (let i = 2; i < process.argv.length; i++) {
   if (process.argv[i] === "--root") roots.push(process.argv[++i] ?? "");
+  else if (process.argv[i] === "--resolve-from") {
+    resolveFrom = process.argv[++i] ?? "";
+    if (!resolveFrom || resolveFrom.startsWith("--")) {
+      console.error(`--resolve-from の次には package.json のあるディレクトリを書く: ${resolveFrom}`);
+      process.exit(2);
+    }
+  }
   else args.push(process.argv[i]);
 }
 const sources = args.length ? args : SOURCES;
@@ -102,11 +124,11 @@ if (unmatched.length) {
   console.error(`--root のブロックが CSS にない: ${unmatched.map((r) => `"${r}"`).join("、")}。セレクタの名前を直す`);
   process.exit(1);
 }
-if (skipped) console.error(`:root 以外のブロックか条件つきのブロックにある基本の段の宣言を ${skipped} 個読み飛ばした`);
-if (otherConditions) console.error(`--root の外の条件つきのブロックにある意味の段の宣言を ${otherConditions} 個読み飛ばした`);
+if (skipped) console.error(`:root 以外のブロックか条件つきのブロックにあるプリミティブトークンの宣言を ${skipped} 個読み飛ばした`);
+if (otherConditions) console.error(`--root の外の条件つきのブロックにあるセマンティックトークンの宣言を ${otherConditions} 個読み飛ばした`);
 
 if (conditional.length) {
-  console.error(`条件つきのブロック（@media、:root 以外のセレクタなど）の中の意味の段の宣言は確認できない。画面に効く値として読むなら、ブロックを --root で渡して流す\n${conditional.join("\n")}`);
+  console.error(`条件つきのブロック（@media、:root 以外のセレクタなど）の中のセマンティックトークンの宣言は確認できない。画面に効く値として読むなら、ブロックを --root で渡して流す\n${conditional.join("\n")}`);
   process.exit(1);
 }
 
@@ -129,7 +151,7 @@ if (failures.length) {
 }
 console.log(`${TEXT_PAIRS.length + NON_TEXT_PAIRS.length} 組が基準に届いた`);
 
-// ブロックの入れ子をたどり、:root のブロックの宣言を properties に、ほかのブロックの意味の段の宣言を conditional に入れる
+// ブロックの入れ子をたどり、:root のブロックの宣言を properties に、ほかのブロックのセマンティックトークンの宣言を conditional に入れる
 function readDeclarations(css, source) {
   const blocks = [];
   let text = "";
@@ -191,7 +213,7 @@ function cascadeRank(layer, important) {
 
 function locate(source) {
   if (isAbsolute(source) || source.startsWith(".")) return resolve(source);
-  return createRequire(join(process.cwd(), "package.json")).resolve(source);
+  return createRequire(join(resolve(resolveFrom), "package.json")).resolve(source);
 }
 
 // var() の参照をたどり、6 桁の 16 進の色にする。参照の先がなければフォールバックを使う

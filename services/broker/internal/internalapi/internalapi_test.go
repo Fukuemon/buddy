@@ -14,7 +14,7 @@ import (
 	"github.com/Fukuemon/buddy/packages/go/oidc"
 
 	"github.com/Fukuemon/buddy/services/broker/internal/internalapi"
-	"github.com/Fukuemon/buddy/services/broker/internal/login"
+	"github.com/Fukuemon/buddy/services/broker/internal/staff"
 )
 
 const (
@@ -30,31 +30,34 @@ const (
 
 // fakeStore は、職員を ID で持つ internalapi.Store である。
 type fakeStore struct {
-	staff map[string]login.StaffMember
+	staff map[string]staff.Member
 	err   error
 }
 
-func (s *fakeStore) Get(_ context.Context, id string) (login.StaffMember, error) {
+func (s *fakeStore) Get(_ context.Context, id string) (staff.Member, error) {
 	if s.err != nil {
-		return login.StaffMember{}, s.err
+		return staff.Member{}, s.err
 	}
 	m, ok := s.staff[id]
 	if !ok {
-		return login.StaffMember{}, login.ErrNotFound
+		return staff.Member{}, staff.ErrNotFound
 	}
 	return m, nil
 }
 
-func (s *fakeStore) Register(_ context.Context, m login.StaffMember) (login.StaffMember, bool, error) {
+func (s *fakeStore) Register(_ context.Context, m staff.Member) (staff.Member, bool, error) {
 	if s.err != nil {
-		return login.StaffMember{}, false, s.err
+		return staff.Member{}, false, s.err
 	}
 	for _, cur := range s.staff {
 		if cur.Email != m.Email {
 			continue
 		}
 		if cur.OrgID != m.OrgID {
-			return login.StaffMember{}, false, internalapi.ErrEmailTaken
+			return staff.Member{}, false, staff.ErrEmailTaken
+		}
+		if cur.Status == staff.StatusSuspended {
+			return staff.Member{}, false, staff.ErrSuspended
 		}
 		return cur, false, nil
 	}
@@ -66,13 +69,13 @@ func (s *fakeStore) Activate(_ context.Context, id string) error {
 	m, ok := s.staff[id]
 	switch {
 	case !ok:
-		return login.ErrNotFound
-	case m.Status == login.StatusSuspended:
-		return internalapi.ErrSuspended
-	case m.Status == login.StatusRetired:
-		return internalapi.ErrRetired
+		return staff.ErrNotFound
+	case m.Status == staff.StatusSuspended:
+		return staff.ErrSuspended
+	case m.Status == staff.StatusRetired:
+		return staff.ErrRetired
 	}
-	m.Status = login.StatusActive
+	m.Status = staff.StatusActive
 	s.staff[id] = m
 	return nil
 }
@@ -80,10 +83,10 @@ func (s *fakeStore) Activate(_ context.Context, id string) error {
 func (s *fakeStore) Delete(_ context.Context, id string) error {
 	m, ok := s.staff[id]
 	if !ok {
-		return login.ErrNotFound
+		return staff.ErrNotFound
 	}
-	if m.Status != login.StatusPending {
-		return internalapi.ErrNotPending
+	if m.Status != staff.StatusPending {
+		return staff.ErrNotPending
 	}
 	delete(s.staff, id)
 	return nil
@@ -93,11 +96,11 @@ func (s *fakeStore) Suspend(_ context.Context, id string) error {
 	m, ok := s.staff[id]
 	switch {
 	case !ok:
-		return login.ErrNotFound
-	case m.Status == login.StatusRetired:
-		return internalapi.ErrRetired
+		return staff.ErrNotFound
+	case m.Status == staff.StatusRetired:
+		return staff.ErrRetired
 	}
-	m.Status = login.StatusSuspended
+	m.Status = staff.StatusSuspended
 	s.staff[id] = m
 	return nil
 }
@@ -106,13 +109,13 @@ func (s *fakeStore) Resume(_ context.Context, id string) error {
 	m, ok := s.staff[id]
 	switch {
 	case !ok:
-		return login.ErrNotFound
-	case m.Status == login.StatusRetired:
-		return internalapi.ErrRetired
-	case m.Status == login.StatusPending:
-		return internalapi.ErrNotSuspended
+		return staff.ErrNotFound
+	case m.Status == staff.StatusRetired:
+		return staff.ErrRetired
+	case m.Status == staff.StatusPending:
+		return staff.ErrNotSuspended
 	}
-	m.Status = login.StatusActive
+	m.Status = staff.StatusActive
 	s.staff[id] = m
 	return nil
 }
@@ -120,9 +123,9 @@ func (s *fakeStore) Resume(_ context.Context, id string) error {
 func (s *fakeStore) Retire(_ context.Context, id string) error {
 	m, ok := s.staff[id]
 	if !ok {
-		return login.ErrNotFound
+		return staff.ErrNotFound
 	}
-	m.Status, m.Email, m.Upstream = login.StatusRetired, "", login.UpstreamAccount{}
+	m.Status, m.Email, m.Upstream = staff.StatusRetired, "", staff.UpstreamAccount{}
 	s.staff[id] = m
 	return nil
 }
@@ -175,8 +178,8 @@ func newHandler(store *fakeStore, h *fakeHydra) http.Handler {
 	})
 }
 
-func newStore(members ...login.StaffMember) *fakeStore {
-	s := &fakeStore{staff: map[string]login.StaffMember{}}
+func newStore(members ...staff.Member) *fakeStore {
+	s := &fakeStore{staff: map[string]staff.Member{}}
 	for _, m := range members {
 		s.staff[m.ID] = m
 	}
@@ -206,13 +209,13 @@ var staffRoutes = []struct{ method, path string }{
 func TestStaffRoutesRequireClientToken(t *testing.T) {
 	for _, r := range staffRoutes {
 		for _, token := range []string{"", "forged"} {
-			store := newStore(login.StaffMember{ID: staffA, OrgID: "org-a", Email: "a@example.com", Status: login.StatusPending})
+			store := newStore(staff.Member{ID: staffA, OrgID: "org-a", Email: "a@example.com", Status: staff.StatusPending})
 			hy := &fakeHydra{}
 			rec := serve(newHandler(store, hy), r.method, r.path, token, `{"org_id":"org-a","email":"new@example.com"}`)
 			if rec.Code != http.StatusUnauthorized || rec.Header().Get("WWW-Authenticate") == "" {
 				t.Errorf("%s %s（トークン %q）= %d, want 401 と WWW-Authenticate", r.method, r.path, token, rec.Code)
 			}
-			if len(store.staff) != 1 || store.staff[staffA].Status != login.StatusPending || len(hy.login) != 0 {
+			if len(store.staff) != 1 || store.staff[staffA].Status != staff.StatusPending || len(hy.login) != 0 {
 				t.Errorf("%s %s（トークン %q）が職員を変えた: %+v", r.method, r.path, token, store.staff)
 			}
 		}
@@ -223,13 +226,13 @@ func TestStaffRoutesRequireClientToken(t *testing.T) {
 func TestStaffRoutesRejectOtherClients(t *testing.T) {
 	for _, r := range staffRoutes {
 		for _, token := range []string{otherToken, staffToken} {
-			store := newStore(login.StaffMember{ID: staffA, OrgID: "org-a", Email: "a@example.com", Status: login.StatusPending})
+			store := newStore(staff.Member{ID: staffA, OrgID: "org-a", Email: "a@example.com", Status: staff.StatusPending})
 			hy := &fakeHydra{}
 			rec := serve(newHandler(store, hy), r.method, r.path, token, `{"org_id":"org-a","email":"new@example.com"}`)
 			if rec.Code != http.StatusForbidden {
 				t.Errorf("%s %s（トークン %q）= %d, want 403", r.method, r.path, token, rec.Code)
 			}
-			if len(store.staff) != 1 || store.staff[staffA].Status != login.StatusPending || len(hy.login) != 0 {
+			if len(store.staff) != 1 || store.staff[staffA].Status != staff.StatusPending || len(hy.login) != 0 {
 				t.Errorf("%s %s（トークン %q）が職員を変えた: %+v", r.method, r.path, token, store.staff)
 			}
 		}
@@ -237,11 +240,11 @@ func TestStaffRoutesRejectOtherClients(t *testing.T) {
 }
 
 func TestRegister(t *testing.T) {
-	existing := login.StaffMember{ID: staffA, OrgID: "org-a", Email: "aoki@example.com", Status: login.StatusActive}
+	existing := staff.Member{ID: staffA, OrgID: "org-a", Email: "aoki@example.com", Status: staff.StatusActive}
 	pending := existing
-	pending.Status = login.StatusPending
+	pending.Status = staff.StatusPending
 	suspended := existing
-	suspended.Status = login.StatusSuspended
+	suspended.Status = staff.StatusSuspended
 	otherOrg := existing
 	otherOrg.OrgID = "org-b"
 	tests := []struct {
@@ -253,9 +256,9 @@ func TestRegister(t *testing.T) {
 		wantStatus string
 		wantCode   string
 	}{
-		{"新しいメールは発行した ID の登録の途中の職員で作る", newStore(existing), `{"org_id":"org-a","email":" New@Example.com "}`, http.StatusCreated, newID, login.StatusPending, ""},
-		{"同じ事業所の同じメールは、作らずにその職員を返す", newStore(existing), `{"org_id":"org-a","email":"AOKI@example.com"}`, http.StatusOK, staffA, login.StatusActive, ""},
-		{"同じ事業所の登録の途中の職員は、そのまま返す", newStore(pending), `{"org_id":"org-a","email":"aoki@example.com"}`, http.StatusOK, staffA, login.StatusPending, ""},
+		{"新しいメールは発行した ID の登録の途中の職員で作る", newStore(existing), `{"org_id":"org-a","email":" New@Example.com "}`, http.StatusCreated, newID, staff.StatusPending, ""},
+		{"同じ事業所の同じメールは、作らずにその職員を返す", newStore(existing), `{"org_id":"org-a","email":"AOKI@example.com"}`, http.StatusOK, staffA, staff.StatusActive, ""},
+		{"同じ事業所の登録の途中の職員は、そのまま返す", newStore(pending), `{"org_id":"org-a","email":"aoki@example.com"}`, http.StatusOK, staffA, staff.StatusPending, ""},
 		{"同じメールの職員が止められていれば 409", newStore(suspended), `{"org_id":"org-a","email":"aoki@example.com"}`, http.StatusConflict, "", "", "suspended"},
 		{"ほかの事業所に同じメールの職員がいれば 409", newStore(otherOrg), `{"org_id":"org-a","email":"aoki@example.com"}`, http.StatusConflict, "", "", "email_taken"},
 		{"上流の IdP の設定に無い組織は 400", newStore(), `{"org_id":"org-x","email":"new@example.com"}`, http.StatusBadRequest, "", "", "invalid"},
@@ -291,17 +294,17 @@ func TestRegister(t *testing.T) {
 }
 
 func TestActivate(t *testing.T) {
-	m := login.StaffMember{ID: staffA, OrgID: "org-a", Email: "a@example.com", Status: login.StatusPending}
+	m := staff.Member{ID: staffA, OrgID: "org-a", Email: "a@example.com", Status: staff.StatusPending}
 	store := newStore(m)
 	h := newHandler(store, &fakeHydra{})
 	for range 2 {
-		if rec := serve(h, http.MethodPost, "/internal/staff/"+staffA+"/activate", validToken, ""); rec.Code != http.StatusNoContent || store.staff[staffA].Status != login.StatusActive {
+		if rec := serve(h, http.MethodPost, "/internal/staff/"+staffA+"/activate", validToken, ""); rec.Code != http.StatusNoContent || store.staff[staffA].Status != staff.StatusActive {
 			t.Fatalf("code = %d, status = %s, want 204 と active", rec.Code, store.staff[staffA].Status)
 		}
 	}
-	m.Status = login.StatusSuspended
+	m.Status = staff.StatusSuspended
 	suspended := newStore(m)
-	if rec := serve(newHandler(suspended, &fakeHydra{}), http.MethodPost, "/internal/staff/"+staffA+"/activate", validToken, ""); rec.Code != http.StatusConflict || suspended.staff[staffA].Status != login.StatusSuspended {
+	if rec := serve(newHandler(suspended, &fakeHydra{}), http.MethodPost, "/internal/staff/"+staffA+"/activate", validToken, ""); rec.Code != http.StatusConflict || suspended.staff[staffA].Status != staff.StatusSuspended {
 		t.Errorf("止めた職員の code = %d, want 409 で止めたまま", rec.Code)
 	}
 	if rec := serve(newHandler(newStore(), &fakeHydra{}), http.MethodPost, "/internal/staff/"+staffA+"/activate", validToken, ""); rec.Code != http.StatusNotFound {
@@ -310,7 +313,7 @@ func TestActivate(t *testing.T) {
 }
 
 func TestDelete(t *testing.T) {
-	m := login.StaffMember{ID: staffA, OrgID: "org-a", Email: "a@example.com", Status: login.StatusPending}
+	m := staff.Member{ID: staffA, OrgID: "org-a", Email: "a@example.com", Status: staff.StatusPending}
 	store := newStore(m)
 	h := newHandler(store, &fakeHydra{})
 	if rec := serve(h, http.MethodDelete, "/internal/staff/"+staffA, validToken, ""); rec.Code != http.StatusNoContent || len(store.staff) != 0 {
@@ -319,7 +322,7 @@ func TestDelete(t *testing.T) {
 	if rec := serve(h, http.MethodDelete, "/internal/staff/"+staffA, validToken, ""); rec.Code != http.StatusNotFound {
 		t.Errorf("いない職員の code = %d, want 404", rec.Code)
 	}
-	m.Status = login.StatusActive
+	m.Status = staff.StatusActive
 	active := newStore(m)
 	if rec := serve(newHandler(active, &fakeHydra{}), http.MethodDelete, "/internal/staff/"+staffA, validToken, ""); rec.Code != http.StatusConflict || len(active.staff) != 1 {
 		t.Errorf("有効な職員の code = %d, want 409 で残る", rec.Code)
@@ -327,11 +330,11 @@ func TestDelete(t *testing.T) {
 }
 
 func TestSuspend(t *testing.T) {
-	m := login.StaffMember{ID: staffA, OrgID: "org-a", Email: "a@example.com", Status: login.StatusActive}
+	m := staff.Member{ID: staffA, OrgID: "org-a", Email: "a@example.com", Status: staff.StatusActive}
 	t.Run("止めて Hydra のセッションと同意を取り消す", func(t *testing.T) {
 		store, hy := newStore(m), &fakeHydra{}
 		rec := serve(newHandler(store, hy), http.MethodPost, "/internal/staff/"+staffA+"/suspend", validToken, "")
-		if rec.Code != http.StatusNoContent || store.staff[staffA].Status != login.StatusSuspended {
+		if rec.Code != http.StatusNoContent || store.staff[staffA].Status != staff.StatusSuspended {
 			t.Fatalf("code = %d, status = %s, want 204 と suspended", rec.Code, store.staff[staffA].Status)
 		}
 		if len(hy.login) != 1 || hy.login[0] != staffA || len(hy.consent) != 1 || hy.consent[0] != staffA {
@@ -341,7 +344,7 @@ func TestSuspend(t *testing.T) {
 	t.Run("取り消しに失敗すれば 502 で、職員は止めたまま", func(t *testing.T) {
 		store, hy := newStore(m), &fakeHydra{err: errors.New("down")}
 		rec := serve(newHandler(store, hy), http.MethodPost, "/internal/staff/"+staffA+"/suspend", validToken, "")
-		if rec.Code != http.StatusBadGateway || store.staff[staffA].Status != login.StatusSuspended {
+		if rec.Code != http.StatusBadGateway || store.staff[staffA].Status != staff.StatusSuspended {
 			t.Errorf("code = %d, status = %s, want 502 と suspended", rec.Code, store.staff[staffA].Status)
 		}
 		var got struct{ Code string }
@@ -358,10 +361,10 @@ func TestSuspend(t *testing.T) {
 	})
 	t.Run("退職した職員は 409 で、止めた状態に戻さない", func(t *testing.T) {
 		retired := m
-		retired.Status, retired.Email = login.StatusRetired, ""
+		retired.Status, retired.Email = staff.StatusRetired, ""
 		store, hy := newStore(retired), &fakeHydra{}
 		rec := serve(newHandler(store, hy), http.MethodPost, "/internal/staff/"+staffA+"/suspend", validToken, "")
-		if rec.Code != http.StatusConflict || store.staff[staffA].Status != login.StatusRetired || len(hy.login) != 0 {
+		if rec.Code != http.StatusConflict || store.staff[staffA].Status != staff.StatusRetired || len(hy.login) != 0 {
 			t.Errorf("code = %d, status = %s, want 409 で retired のまま", rec.Code, store.staff[staffA].Status)
 		}
 		if code := errorCode(t, rec); code != "retired" {
@@ -372,18 +375,18 @@ func TestSuspend(t *testing.T) {
 
 // 休職の職員を復職にしたとき、同じ上流のアカウントでログインできる（#268 の検証の観点 2）。
 func TestResume(t *testing.T) {
-	linked := login.UpstreamAccount{Issuer: "https://idp.example.com", Subject: "upstream-a"}
-	suspended := login.StaffMember{ID: staffA, OrgID: "org-a", Email: "a@example.com", Status: login.StatusSuspended, Upstream: linked}
+	linked := staff.UpstreamAccount{Issuer: "https://idp.example.com", Subject: "upstream-a"}
+	suspended := staff.Member{ID: staffA, OrgID: "org-a", Email: "a@example.com", Status: staff.StatusSuspended, Upstream: linked}
 	t.Run("止めた職員を有効に戻し、上流のアカウントを残す", func(t *testing.T) {
 		store := newStore(suspended)
 		rec := serve(newHandler(store, &fakeHydra{}), http.MethodPost, "/internal/staff/"+staffA+"/resume", validToken, "")
-		if got := store.staff[staffA]; rec.Code != http.StatusNoContent || got.Status != login.StatusActive || got.Upstream != linked {
+		if got := store.staff[staffA]; rec.Code != http.StatusNoContent || got.Status != staff.StatusActive || got.Upstream != linked {
 			t.Errorf("code = %d, 職員 = %+v, want 204 で active と同じ上流のアカウント", rec.Code, got)
 		}
 	})
 	t.Run("有効な職員を戻しても 204", func(t *testing.T) {
 		active := suspended
-		active.Status = login.StatusActive
+		active.Status = staff.StatusActive
 		if rec := serve(newHandler(newStore(active), &fakeHydra{}), http.MethodPost, "/internal/staff/"+staffA+"/resume", validToken, ""); rec.Code != http.StatusNoContent {
 			t.Errorf("code = %d, want 204", rec.Code)
 		}
@@ -394,8 +397,8 @@ func TestResume(t *testing.T) {
 		code   int
 		kind   string
 	}{
-		{"退職した職員は 409", login.StatusRetired, http.StatusConflict, "retired"},
-		{"登録の途中の職員は 409", login.StatusPending, http.StatusConflict, "not_suspended"},
+		{"退職した職員は 409", staff.StatusRetired, http.StatusConflict, "retired"},
+		{"登録の途中の職員は 409", staff.StatusPending, http.StatusConflict, "not_suspended"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			m := suspended
@@ -420,13 +423,13 @@ func TestResume(t *testing.T) {
 // 退職では、メールと上流のアカウントを消し、Hydra のセッションと同意を取り消す（#268 の検証の観点 4）。
 // 同じメールで新しい職員を登録できる（#268 の検証の観点 5）。
 func TestRetire(t *testing.T) {
-	m := login.StaffMember{ID: staffA, OrgID: "org-a", Email: "aoki@example.com", Status: login.StatusSuspended,
-		Upstream: login.UpstreamAccount{Issuer: "https://idp.example.com", Subject: "upstream-a"}}
+	m := staff.Member{ID: staffA, OrgID: "org-a", Email: "aoki@example.com", Status: staff.StatusSuspended,
+		Upstream: staff.UpstreamAccount{Issuer: "https://idp.example.com", Subject: "upstream-a"}}
 	t.Run("退職にしてメールと上流のアカウントを消し、取り消す", func(t *testing.T) {
 		store, hy := newStore(m), &fakeHydra{}
 		rec := serve(newHandler(store, hy), http.MethodPost, "/internal/staff/"+staffA+"/retire", validToken, "")
 		got := store.staff[staffA]
-		if rec.Code != http.StatusNoContent || got.Status != login.StatusRetired || got.Email != "" || got.Upstream != (login.UpstreamAccount{}) {
+		if rec.Code != http.StatusNoContent || got.Status != staff.StatusRetired || got.Email != "" || got.Upstream != (staff.UpstreamAccount{}) {
 			t.Fatalf("code = %d, 職員 = %+v, want 204 で retired、メールと上流のアカウントが空", rec.Code, got)
 		}
 		if len(hy.login) != 1 || hy.login[0] != staffA || len(hy.consent) != 1 || hy.consent[0] != staffA {
@@ -439,7 +442,7 @@ func TestRetire(t *testing.T) {
 	})
 	t.Run("退職した職員を退職にしても 204 で、取り消しをやり直す", func(t *testing.T) {
 		retired := m
-		retired.Status, retired.Email, retired.Upstream = login.StatusRetired, "", login.UpstreamAccount{}
+		retired.Status, retired.Email, retired.Upstream = staff.StatusRetired, "", staff.UpstreamAccount{}
 		hy := &fakeHydra{}
 		rec := serve(newHandler(newStore(retired), hy), http.MethodPost, "/internal/staff/"+staffA+"/retire", validToken, "")
 		if rec.Code != http.StatusNoContent || len(hy.login) != 1 {
@@ -449,7 +452,7 @@ func TestRetire(t *testing.T) {
 	t.Run("取り消しに失敗すれば 502 で、職員は退職のまま", func(t *testing.T) {
 		store := newStore(m)
 		rec := serve(newHandler(store, &fakeHydra{err: errors.New("down")}), http.MethodPost, "/internal/staff/"+staffA+"/retire", validToken, "")
-		if rec.Code != http.StatusBadGateway || store.staff[staffA].Status != login.StatusRetired {
+		if rec.Code != http.StatusBadGateway || store.staff[staffA].Status != staff.StatusRetired {
 			t.Errorf("code = %d, status = %s, want 502 と retired", rec.Code, store.staff[staffA].Status)
 		}
 		if code := errorCode(t, rec); code != "revoke_failed" {
@@ -491,13 +494,13 @@ func hookBody(clientID, grantType, subject string, authTime time.Time) string {
 }
 
 func TestTokenHook(t *testing.T) {
-	active := login.StaffMember{ID: staffA, OrgID: "org-a", Email: "a@example.com", Status: login.StatusActive}
+	active := staff.Member{ID: staffA, OrgID: "org-a", Email: "a@example.com", Status: staff.StatusActive}
 	suspended := active
-	suspended.Status = login.StatusSuspended
+	suspended.Status = staff.StatusSuspended
 	pending := active
-	pending.Status = login.StatusPending
+	pending.Status = staff.StatusPending
 	retired := active
-	retired.Status, retired.Email = login.StatusRetired, ""
+	retired.Status, retired.Email = staff.StatusRetired, ""
 	tests := []struct {
 		name  string
 		store *fakeStore

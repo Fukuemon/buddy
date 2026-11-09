@@ -1,0 +1,211 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>schedule-calendar 予定の正本を切り替えている</title>
+    <link rel="stylesheet" href="../../_common/mock.css" />
+    <link rel="stylesheet" href="../../_common/tokens.css" />
+    <link rel="stylesheet" href="../../_common/wireframe.css" />
+    <link rel="stylesheet" href="schedule-calendar.css" />
+  </head>
+  <body data-view="desktop">
+    <div class="stage">
+      <div class="screen">
+        <div class="screen-body">
+          <header class="wf-site-header">
+            <div class="wf-site-header__brand">
+              <span class="wf-btn wf-btn--icon wf-site-menu" aria-label="メニュー" data-open="site-nav" data-m="29" data-testid="site-nav-toggle"><svg width="24" height="24" viewBox="0 -960 960 960" aria-hidden="true"><path d="M120-240v-80h720v80H120Zm0-200v-80h720v80H120Zm0-200v-80h720v80H120Z" fill="currentColor" /></svg></span>
+              <strong>buddy</strong>
+            </div>
+            <div class="wf-site-header__viewer" data-testid="viewer-menu">
+              <span class="wf-site-account" aria-label="アカウント（青木 陽菜）" data-open="viewer-menu" data-m="2" data-testid="viewer-menu-open"><span class="wf-site-avatar" aria-hidden="true">青</span><span class="wf-site-account__name">青木 陽菜</span></span>
+              <div class="wf-site-viewer-menu" data-panel="viewer-menu" data-panel-dismiss>
+                <span class="wf-text wf-text--s">青木 陽菜</span>
+                <span class="wf-btn wf-btn--text" data-testid="viewer-profile" data-go="../../account-profile_自分の情報/mocks/02-manager.html">自分の情報</span>
+                <span class="wf-btn" data-m="3" data-testid="viewer-logout">ログアウト</span>
+              </div>
+            </div>
+          </header>
+          <div class="wf-site-body">
+            <nav class="wf-site-nav" aria-label="画面" data-start="rail" data-m="1" data-testid="site-nav" data-panel="site-nav" data-panel-wide="expand">
+              <div class="wf-site-nav__head">
+                <strong>buddy</strong>
+                <span class="wf-btn wf-btn--icon" aria-label="閉じる" data-escape data-close="site-nav" data-testid="site-nav-close"><svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><path d="M5 5l10 10M15 5 5 15" fill="none" stroke="currentColor" stroke-width="1.8" /></svg></span>
+              </div>
+              <div class="wf-site-nav__group" role="group" aria-label="予定">
+                <span class="wf-site-nav__heading" aria-hidden="true">予定</span>
+                <span class="wf-site-nav__item" aria-current="page" data-go="09-google-primary.html" data-testid="site-nav-schedule"><svg width="24" height="24" viewBox="0 -960 960 960" aria-hidden="true"><path d="M200-80q-33 0-56.5-23.5T120-160v-560q0-33 23.5-56.5T200-800h40v-80h80v80h320v-80h80v80h40q33 0 56.5 23.5T840-720v560q0 33-23.5 56.5T760-80H200Zm0-80h560v-400H200v400Zm0-480h560v-80H200v80Z" fill="currentColor" /></svg><span class="wf-site-nav__label">カレンダー</span></span>
+                <span class="wf-site-nav__item" data-m="28" data-go="../../schedule-import_予定の取り込み/mocks/01-initial.html" data-testid="site-nav-import"><svg width="24" height="24" viewBox="0 -960 960 960" aria-hidden="true"><path d="M480-320 280-520l56-58 104 104v-326h80v326l104-104 56 58-200 200ZM240-160q-33 0-56.5-23.5T160-240v-120h80v120h480v-120h80v120q0 33-23.5 56.5T720-160H240Z" fill="currentColor" /></svg><span class="wf-site-nav__label">取り込み</span></span>
+                <span class="wf-site-nav__item" aria-label="要確認 3 件" data-m="27" data-go="../../schedule-review_確認が必要な予定/mocks/01-list.html" data-testid="site-nav-review"><svg width="24" height="24" viewBox="0 -960 960 960" aria-hidden="true"><path d="M160-200v-80h80v-280q0-83 50-147.5T420-792v-28q0-25 17.5-42.5T480-880q25 0 42.5 17.5T540-820v28q80 20 130 84.5T720-560v280h80v80H160Zm320 120q-33 0-56.5-23.5T400-160h160q0 33-23.5 56.5T480-80Z" fill="currentColor" /></svg><span class="wf-site-nav__label">要確認</span><span class="wf-site-badge" data-testid="site-nav-review-count">3</span></span>
+                <span class="wf-site-nav__item" data-go="../../schedule-link_カレンダーの連携/mocks/01-list.html" data-testid="site-nav-link"><svg width="24" height="24" viewBox="0 -960 960 960" aria-hidden="true"><path d="M440-280H280q-83 0-141.5-58.5T80-480q0-83 58.5-141.5T280-680h160v80H280q-50 0-85 35t-35 85q0 50 35 85t85 35h160v80ZM320-440v-80h320v80H320Zm200 160v-80h160q50 0 85-35t35-85q0-50-35-85t-85-35H520v-80h160q83 0 141.5 58.5T880-480q0 83-58.5 141.5T680-280H520Z" fill="currentColor" /></svg><span class="wf-site-nav__label">連携</span></span>
+              </div>
+              <div class="wf-site-nav__group" role="group" aria-label="照合">
+                <span class="wf-site-nav__heading" aria-hidden="true">照合</span>
+                <span class="wf-site-nav__item" data-go="../../receipt-upload_照合/mocks/01-initial.html" data-testid="site-nav-receipt"><svg width="24" height="24" viewBox="0 -960 960 960" aria-hidden="true"><path d="M160-120q-33 0-56.5-23.5T80-200v-560q0-33 23.5-56.5T160-840h640q33 0 56.5 23.5T880-760v560q0 33-23.5 56.5T800-120H160Zm0-80h640v-560H160v560Zm40-80h200v-80H200v80Zm382-80 198-198-57-57-141 142-57-57-56 57 113 113Zm-382-80h200v-80H200v80Zm0-160h200v-80H200v80Z" fill="currentColor" /></svg><span class="wf-site-nav__label">照合</span></span>
+              </div>
+              <div class="wf-site-nav__group" role="group" aria-label="職員">
+                <span class="wf-site-nav__heading" aria-hidden="true">職員</span>
+                <span class="wf-site-nav__item" data-go="../../staff-list_職員の一覧/mocks/01-list.html" data-testid="site-nav-staff"><svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3.5" fill="none" stroke="currentColor" stroke-width="2" /><path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6" fill="none" stroke="currentColor" stroke-width="2" /><circle cx="17" cy="9" r="2.5" fill="none" stroke="currentColor" stroke-width="2" /><path d="M17.5 14.2c2.4.4 4 2.4 4 5.8" fill="none" stroke="currentColor" stroke-width="2" /></svg><span class="wf-site-nav__label">職員</span></span>
+                <span class="wf-site-nav__item" data-go="../../organization-list_部署とチーム/mocks/01-list.html" data-testid="site-nav-organization"><svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="5" rx="1" fill="none" stroke="currentColor" stroke-width="2" /><rect x="3" y="16" width="6" height="5" rx="1" fill="none" stroke="currentColor" stroke-width="2" /><rect x="15" y="16" width="6" height="5" rx="1" fill="none" stroke="currentColor" stroke-width="2" /><path d="M12 8v4M6 16v-4h12v4" fill="none" stroke="currentColor" stroke-width="2" /></svg><span class="wf-site-nav__label">部署とチーム</span></span>
+              </div>
+              <div class="wf-site-nav__group" role="group" aria-label="利用者">
+                <span class="wf-site-nav__heading" aria-hidden="true">利用者</span>
+                <span class="wf-site-nav__item" data-go="../../patient-list_利用者の一覧/mocks/01-list.html" data-testid="site-nav-patient"><svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11.5 12 4l9 7.5" fill="none" stroke="currentColor" stroke-width="2" /><path d="M5.5 10v10h13V10" fill="none" stroke="currentColor" stroke-width="2" /><circle cx="12" cy="12.5" r="2.2" fill="none" stroke="currentColor" stroke-width="1.8" /><path d="M8.5 20c0-2.2 1.6-3.8 3.5-3.8s3.5 1.6 3.5 3.8" fill="none" stroke="currentColor" stroke-width="1.8" /></svg><span class="wf-site-nav__label">利用者</span></span>
+              </div>
+            </nav>
+            <div class="wf-overlay wf-site-nav-overlay" tabindex="-1" data-close="site-nav"></div>
+            <div class="wf-site-drawer" role="dialog" aria-label="日付と絞り込み" data-testid="site-sidebar-drawer" data-panel="site-sidebar" data-panel-wide="collapse" data-panel-modal>
+              <div class="wf-site-drawer__head">
+                <strong>日付と絞り込み</strong>
+                <span class="wf-btn wf-btn--icon" aria-label="閉じる" data-escape data-close="site-sidebar" data-m="26" data-testid="site-sidebar-close"><svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><path d="M5 5l10 10M15 5 5 15" fill="none" stroke="currentColor" stroke-width="1.8" /></svg></span>
+              </div>
+              <div class="wf-site-sidebar">
+                <section class="sc-mini" aria-label="日付を選ぶ" data-m="11" data-testid="mini-calendar">
+                  <div class="sc-mini__head">
+                    <strong class="sc-mini__month" data-m="21" data-testid="mini-calendar-month">2026年10月</strong>
+                    <span class="sc-mini__nav"><span class="wf-btn wf-btn--icon sc-icon-btn" aria-label="前の月" data-m="22" data-testid="mini-calendar-prev"><svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><path d="M12 4 6 10l6 6" fill="none" stroke="currentColor" stroke-width="1.8" /></svg></span><span class="wf-btn wf-btn--icon sc-icon-btn" aria-label="次の月" data-m="23" data-testid="mini-calendar-next"><svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><path d="M8 4l6 6-6 6" fill="none" stroke="currentColor" stroke-width="1.8" /></svg></span></span>
+                  </div>
+                  <div class="sc-mini__grid">
+                    <span class="sc-mini__weekday">日</span><span class="sc-mini__weekday">月</span><span class="sc-mini__weekday">火</span><span class="sc-mini__weekday">水</span><span class="sc-mini__weekday">木</span><span class="sc-mini__weekday">金</span><span class="sc-mini__weekday">土</span>
+                    <span class="sc-mini__day sc-mini__day--out" aria-label="2026年9月27日" tabindex="-1" data-testid="mini-calendar-day-{日付}" data-close="site-sidebar"><span>27</span></span><span class="sc-mini__day sc-mini__day--out" aria-label="2026年9月28日" tabindex="-1" data-testid="mini-calendar-day-{日付}" data-close="site-sidebar"><span>28</span></span><span class="sc-mini__day sc-mini__day--out" aria-label="2026年9月29日" tabindex="-1" data-testid="mini-calendar-day-{日付}" data-close="site-sidebar"><span>29</span></span><span class="sc-mini__day sc-mini__day--out" aria-label="2026年9月30日" tabindex="-1" data-testid="mini-calendar-day-{日付}" data-close="site-sidebar"><span>30</span></span><span class="sc-mini__day" aria-label="2026年10月1日" tabindex="-1" data-m="24" data-testid="mini-calendar-day-{日付}" data-close="site-sidebar"><span>1</span></span><span class="sc-mini__day" aria-label="2026年10月2日" tabindex="-1" data-testid="mini-calendar-day-{日付}" data-close="site-sidebar"><span>2</span></span><span class="sc-mini__day" aria-label="2026年10月3日" tabindex="-1" data-testid="mini-calendar-day-{日付}" data-close="site-sidebar"><span>3</span></span>
+                    <span class="sc-mini__day" aria-label="2026年10月4日" tabindex="-1" data-testid="mini-calendar-day-{日付}" data-close="site-sidebar"><span>4</span></span><span class="sc-mini__day" aria-label="2026年10月5日" tabindex="-1" data-testid="mini-calendar-day-{日付}" data-close="site-sidebar"><span>5</span></span><span class="sc-mini__day" aria-label="2026年10月6日" tabindex="-1" data-testid="mini-calendar-day-{日付}" data-close="site-sidebar"><span>6</span></span><span class="sc-mini__day" aria-label="2026年10月7日" tabindex="-1" data-testid="mini-calendar-day-{日付}" data-close="site-sidebar"><span>7</span></span><span class="sc-mini__day" aria-label="2026年10月8日" tabindex="-1" data-testid="mini-calendar-day-{日付}" data-close="site-sidebar"><span>8</span></span><span class="sc-mini__day" aria-label="2026年10月9日" tabindex="-1" data-testid="mini-calendar-day-{日付}" data-close="site-sidebar"><span>9</span></span><span class="sc-mini__day" aria-label="2026年10月10日" tabindex="-1" data-testid="mini-calendar-day-{日付}" data-close="site-sidebar"><span>10</span></span>
+                    <span class="sc-mini__day" aria-label="2026年10月11日" tabindex="-1" data-testid="mini-calendar-day-{日付}" data-close="site-sidebar"><span>11</span></span><span class="sc-mini__day" aria-label="2026年10月12日" tabindex="-1" data-testid="mini-calendar-day-{日付}" data-close="site-sidebar"><span>12</span></span><span class="sc-mini__day" aria-label="2026年10月13日" tabindex="-1" data-testid="mini-calendar-day-{日付}" data-close="site-sidebar"><span>13</span></span><span class="sc-mini__day" aria-label="2026年10月14日" tabindex="-1" data-testid="mini-calendar-day-{日付}" data-close="site-sidebar"><span>14</span></span><span class="sc-mini__day" aria-label="2026年10月15日" tabindex="-1" data-testid="mini-calendar-day-{日付}" data-close="site-sidebar"><span>15</span></span><span class="sc-mini__day" aria-label="2026年10月16日" tabindex="-1" data-testid="mini-calendar-day-{日付}" data-close="site-sidebar"><span>16</span></span><span class="sc-mini__day" aria-label="2026年10月17日" tabindex="-1" data-testid="mini-calendar-day-{日付}" data-close="site-sidebar"><span>17</span></span>
+                    <span class="sc-mini__day" aria-label="2026年10月18日" tabindex="-1" data-testid="mini-calendar-day-{日付}" data-close="site-sidebar"><span>18</span></span><span class="sc-mini__day" aria-label="2026年10月19日" tabindex="-1" data-testid="mini-calendar-day-{日付}" data-close="site-sidebar"><span>19</span></span><span class="sc-mini__day" aria-label="2026年10月20日" tabindex="-1" data-testid="mini-calendar-day-{日付}" data-close="site-sidebar"><span>20</span></span><span class="sc-mini__day is-today" aria-label="2026年10月21日" aria-current="date" data-testid="mini-calendar-day-{日付}" data-close="site-sidebar"><span>21</span></span><span class="sc-mini__day" aria-label="2026年10月22日" tabindex="-1" data-testid="mini-calendar-day-{日付}" data-close="site-sidebar"><span>22</span></span><span class="sc-mini__day" aria-label="2026年10月23日" tabindex="-1" data-testid="mini-calendar-day-{日付}" data-close="site-sidebar"><span>23</span></span><span class="sc-mini__day" aria-label="2026年10月24日" tabindex="-1" data-testid="mini-calendar-day-{日付}" data-close="site-sidebar"><span>24</span></span>
+                    <span class="sc-mini__day" aria-label="2026年10月25日" tabindex="-1" data-testid="mini-calendar-day-{日付}" data-close="site-sidebar"><span>25</span></span><span class="sc-mini__day" aria-label="2026年10月26日" tabindex="-1" data-testid="mini-calendar-day-{日付}" data-close="site-sidebar"><span>26</span></span><span class="sc-mini__day" aria-label="2026年10月27日" tabindex="-1" data-testid="mini-calendar-day-{日付}" data-close="site-sidebar"><span>27</span></span><span class="sc-mini__day" aria-label="2026年10月28日" tabindex="-1" data-testid="mini-calendar-day-{日付}" data-close="site-sidebar"><span>28</span></span><span class="sc-mini__day" aria-label="2026年10月29日" tabindex="-1" data-testid="mini-calendar-day-{日付}" data-close="site-sidebar"><span>29</span></span><span class="sc-mini__day" aria-label="2026年10月30日" tabindex="-1" data-testid="mini-calendar-day-{日付}" data-close="site-sidebar"><span>30</span></span><span class="sc-mini__day" aria-label="2026年10月31日" tabindex="-1" data-testid="mini-calendar-day-{日付}" data-close="site-sidebar"><span>31</span></span>
+                    <span class="sc-mini__day sc-mini__day--out" aria-label="2026年11月1日" tabindex="-1" data-testid="mini-calendar-day-{日付}" data-close="site-sidebar"><span>1</span></span><span class="sc-mini__day sc-mini__day--out" aria-label="2026年11月2日" tabindex="-1" data-testid="mini-calendar-day-{日付}" data-close="site-sidebar"><span>2</span></span><span class="sc-mini__day sc-mini__day--out" aria-label="2026年11月3日" tabindex="-1" data-testid="mini-calendar-day-{日付}" data-close="site-sidebar"><span>3</span></span><span class="sc-mini__day sc-mini__day--out" aria-label="2026年11月4日" tabindex="-1" data-testid="mini-calendar-day-{日付}" data-close="site-sidebar"><span>4</span></span><span class="sc-mini__day sc-mini__day--out" aria-label="2026年11月5日" tabindex="-1" data-testid="mini-calendar-day-{日付}" data-close="site-sidebar"><span>5</span></span><span class="sc-mini__day sc-mini__day--out" aria-label="2026年11月6日" tabindex="-1" data-testid="mini-calendar-day-{日付}" data-close="site-sidebar"><span>6</span></span><span class="sc-mini__day sc-mini__day--out" aria-label="2026年11月7日" tabindex="-1" data-testid="mini-calendar-day-{日付}" data-close="site-sidebar"><span>7</span></span>
+                  </div>
+                </section>
+                <div class="sc-cancelled">
+                  <span class="wf-check" data-m="20" data-testid="calendar-show-cancelled" data-toggle>キャンセルした予定を出す</span>
+                </div>
+                <nav class="sc-side" aria-label="職員の絞り込み" data-m="4" data-testid="staff-filter-sidebar">
+                  <div class="sc-side__head">
+                    <strong class="wf-label">職員</strong>
+                    <span class="sc-side__actions"><span class="wf-btn wf-btn--text" data-m="18" data-testid="staff-filter-only-me">自分だけ</span><span class="wf-btn wf-btn--text" aria-disabled="true" data-m="5" data-testid="staff-filter-reset">全員を表示</span></span>
+                  </div>
+                  <div class="wf-search" data-m="19" data-testid="staff-filter-search">
+                    <span class="wf-label">名前で絞り込む</span>
+                  </div>
+                  <div class="sc-team">
+                    <span class="wf-check is-on" data-m="6" data-testid="staff-filter-team-{チームの id}" data-toggle><span class="wf-team"><span class="wf-dot wf-dot--blue" aria-hidden="true" data-testid="staff-filter-team-dot-{チームの id}"></span>チーム 1</span></span>
+                    <span class="wf-check is-on sc-member" data-m="7" data-testid="staff-filter-staff-{職員の id}" data-toggle>職員 A</span>
+                    <span class="wf-check is-on sc-member" data-testid="staff-filter-staff-{職員の id}" data-toggle>職員 B</span>
+                    <span class="wf-check is-on sc-member" data-testid="staff-filter-staff-{職員の id}" data-toggle>職員 C</span>
+                  </div>
+                  <div class="sc-team">
+                    <span class="wf-check is-on" data-testid="staff-filter-team-{チームの id}" data-toggle><span class="wf-team"><span class="wf-dot wf-dot--orange" aria-hidden="true" data-testid="staff-filter-team-dot-{チームの id}"></span>チーム 2</span></span>
+                    <span class="wf-check is-on sc-member" data-testid="staff-filter-staff-{職員の id}" data-toggle>職員 D</span>
+                    <span class="wf-check is-on sc-member" data-testid="staff-filter-staff-{職員の id}" data-toggle>職員 E</span>
+                    <span class="wf-check is-on sc-member" data-testid="staff-filter-staff-{職員の id}" data-toggle>職員 F</span>
+                  </div>
+                </nav>
+              </div>
+            </div>
+            <div class="wf-overlay wf-site-drawer-overlay" tabindex="-1" data-close="site-sidebar"></div>
+            <div class="wf-site-main">
+              <main class="sc-main">
+                <div class="sc-toolbar">
+                  <div class="sc-toolbar__group">
+                    <span class="wf-btn wf-btn--icon sc-icon-btn" aria-label="前へ" data-m="8" data-testid="calendar-prev"><svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><path d="M12 4 6 10l6 6" fill="none" stroke="currentColor" stroke-width="1.8" /></svg></span>
+                    <span class="wf-btn" data-m="9" data-testid="calendar-today">今日</span>
+                    <span class="wf-btn wf-btn--icon sc-icon-btn" aria-label="次へ" data-m="10" data-testid="calendar-next"><svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><path d="M8 4l6 6-6 6" fill="none" stroke="currentColor" stroke-width="1.8" /></svg></span>
+                    <span class="sc-title" data-m="17" data-testid="calendar-title">2026年10月</span>
+                  </div>
+                  <div class="sc-toolbar__group">
+                    <div class="wf-tabs sc-view" data-m="12" data-testid="calendar-view">
+                      <span class="wf-tab is-active" data-testid="calendar-view-month">月</span>
+                      <span class="wf-tab" data-testid="calendar-view-week" data-go="02-week.html">週</span>
+                      <span class="wf-tab" data-testid="calendar-view-day" data-go="10-google-primary-day.html">日</span>
+                    </div>
+                    <span class="wf-btn sc-filter-open" data-open="site-sidebar" data-m="25" data-testid="site-sidebar-open">日付と絞り込み</span>
+                  </div>
+                </div>
+                <div class="sc-notices">
+                  <section class="sc-notice" data-m="13" data-testid="schedule-calendar-google-primary">
+                    <h2 class="sc-notice__title">予定は Google カレンダーと同期しています</h2>
+                    <p class="sc-notice__text">この事業所の予定は、Google カレンダーと buddy のどちらでも作成、変更できます。buddy で保存した予定は Google カレンダーにも書き、Google カレンダーで変えた予定は数分のうちに buddy に出ます。</p>
+                  </section>
+                  <section class="sc-notice sc-notice--cutover" data-m="35" data-testid="schedule-calendar-cutover">
+                    <h2 class="sc-notice__title">予定の正本を buddy に切り替えています</h2>
+                    <p class="sc-notice__text">切り替えが終わるまで、Google カレンダーで予定を作成、変更しないでください。buddy でも予定を作成、変更できません。切り替えの間も、buddy には Google カレンダーの予定を表示します。</p>
+                    <p class="sc-notice__text" data-m="36" data-testid="schedule-calendar-cutover-started">開始: 職員 A、2026年10月20日（火） 19:00</p>
+                  </section>
+                  <section class="sc-notice sc-notice--warning" data-m="30" data-testid="schedule-calendar-sync-warning">
+                    <h2 class="sc-notice__title">予定が最新でない可能性があります</h2>
+                    <ul class="sc-notice__list">
+                      <li data-m="31" data-testid="schedule-calendar-sync-warning-{カレンダーの id}"><strong>職員 B</strong>: 同期に失敗しています（最後に同期できた時刻: 2026年10月21日（水） 08:40）</li>
+                      <li data-testid="schedule-calendar-sync-warning-{カレンダーの id}"><strong>職員 C</strong>: まだ同期していません（最後に同期できた時刻: なし）</li>
+                    </ul>
+                  </section>
+                  <section class="sc-notice sc-notice--warning" data-m="32" data-testid="schedule-calendar-needs-review">
+                    <h2 class="sc-notice__title">確認が必要な予定が 2 件あります</h2>
+                    <ul class="sc-notice__list sc-notice__list--review">
+                      <li><span class="wf-btn wf-btn--text sc-notice__item" data-m="33" data-testid="schedule-calendar-needs-review-{予定の id}" data-go="../../schedule-detail_予定の詳細/mocks/09-google-calendar-review.html">2026年10月13日（火） 14:00〜14:59 職員 D: タイトルの利用者が見つかりません</span></li>
+                      <li><span class="wf-btn wf-btn--text sc-notice__item" data-testid="schedule-calendar-needs-review-{予定の id}" data-go="../../schedule-detail_予定の詳細/mocks/09-google-calendar-review.html">2026年9月1日（火） 10:00〜10:59 職員 E: 繰り返しの規則を buddy で表せないため、最初の回だけを表示しています</span></li>
+                    </ul>
+                    <p class="sc-notice__text">Google カレンダーでタイトルか繰り返しの規則を直してください。</p>
+                  </section>
+                </div>
+                <div class="sc-month" data-m="14" data-testid="schedule-calendar">
+                  <div class="sc-head">日</div>
+                  <div class="sc-head">月</div>
+                  <div class="sc-head">火</div>
+                  <div class="sc-head">水</div>
+                  <div class="sc-head">木</div>
+                  <div class="sc-head">金</div>
+                  <div class="sc-head">土</div>
+                  <div class="sc-out">27</div>
+                  <div class="sc-out">28</div>
+                  <div class="sc-out">29</div>
+                  <div class="sc-out">30</div>
+                  <div>1</div>
+                  <div>2</div>
+                  <div>3</div>
+                  <div>4</div>
+                  <div>5<span class="sc-event" data-m="15" data-testid="schedule-event-{予定の id}" data-go="../../schedule-detail_予定の詳細/mocks/08-google-calendar.html">9時 利用者 A 訪問</span></div>
+                  <div>6</div>
+                  <div>7</div>
+                  <div>8</div>
+                  <div>9</div>
+                  <div>10</div>
+                  <div>11</div>
+                  <div>12</div>
+                  <div>13<span class="sc-event" data-testid="schedule-event-{予定の id}" data-go="../../schedule-detail_予定の詳細/mocks/08-google-calendar.html">10時 利用者 B 訪問</span><span class="sc-event" data-testid="schedule-event-{予定の id}" data-go="../../schedule-detail_予定の詳細/mocks/09-google-calendar-review.html"><strong class="sc-review-mark" data-m="34" data-testid="schedule-event-{予定の id}-needs-review">要確認<span class="wf-visually-hidden">、</span></strong>14時 利用者 X 訪看I2</span></div>
+                  <div>14</div>
+                  <div>15</div>
+                  <div>16</div>
+                  <div>17</div>
+                  <div>18</div>
+                  <div>19</div>
+                  <div class="sc-free" data-m="16" data-go="10-google-primary-day.html">20</div>
+                  <div class="sc-today">21<span class="sc-event" data-testid="schedule-event-{予定の id}" data-go="../../schedule-detail_予定の詳細/mocks/08-google-calendar.html">9:30 利用者 C 訪問</span><span class="sc-event" data-testid="schedule-event-{予定の id}" data-go="../../schedule-detail_予定の詳細/mocks/08-google-calendar.html">13時 会議</span></div>
+                  <div>22</div>
+                  <div>23</div>
+                  <div>24</div>
+                  <div>25</div>
+                  <div>26</div>
+                  <div>27</div>
+                  <div>28<span class="sc-event" data-testid="schedule-event-{予定の id}" data-go="../../schedule-detail_予定の詳細/mocks/08-google-calendar.html">11時 利用者 D 訪問</span></div>
+                  <div>29</div>
+                  <div>30</div>
+                  <div>31</div>
+                  <div class="sc-out">1</div>
+                  <div class="sc-out">2</div>
+                  <div class="sc-out">3</div>
+                  <div class="sc-out">4</div>
+                  <div class="sc-out">5</div>
+                  <div class="sc-out">6</div>
+                  <div class="sc-out">7</div>
+                </div>
+              </main>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="markers"></div>
+    </div>
+    <script src="../../_common/mock.js"></script>
+    <script src="../../_common/interact.js"></script>
+  </body>
+</html>

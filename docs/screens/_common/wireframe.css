@@ -1,6 +1,6 @@
 /*
  * モックの中の画面の共通の見た目。mock.css と tokens.css の後に読む。
- * 色は tokens.css の buddy の意味のトークン（packages/ui と同じ値）を、角丸と書体は DADS の基本のトークンを --wf-* に当てて使う。
+ * 色は tokens.css の buddy のセマンティックトークン（packages/ui と同じ値）を、角丸と書体はプリミティブトークンを --wf-* に当てて使う。
  * 部品の形は実装の形をまねず、箱と線で配置と状態だけを示す。
  * 画面の幅による切り替えは、.screen の幅を測る @container screen で書く。
  */
@@ -18,13 +18,25 @@
   --wf-primary-surface: var(--buddy-color-primary-surface);
   --wf-danger: var(--buddy-color-danger);
   --wf-danger-surface: var(--buddy-color-danger-surface);
+  --wf-warning: var(--buddy-color-warning);
   --wf-warning-surface: var(--buddy-color-warning-surface);
+  --wf-success: var(--buddy-color-success);
+  --wf-success-surface: var(--buddy-color-success-surface);
   --wf-overlay: var(--buddy-color-overlay);
-  --wf-radius: var(--border-radius-8);
+  /* チームの色。チームが持つ値（blue など）で塗る */
+  --wf-team-blue: var(--buddy-color-team-blue);
+  --wf-team-orange: var(--buddy-color-team-orange);
+  --wf-team-magenta: var(--buddy-color-team-magenta);
+  --wf-team-cyan: var(--buddy-color-team-cyan);
+  --wf-team-yellow: var(--buddy-color-team-yellow);
+  --wf-team-purple: var(--buddy-color-team-purple);
+  --wf-team-green: var(--buddy-color-team-green);
+  --wf-team-lime: var(--buddy-color-team-lime);
+  --wf-radius: var(--buddy-primitive-border-radius-8);
 
   color: var(--wf-ink);
   /* Web フォントは読み込まないので、DADS の書体（Noto Sans JP）がデバイスに無ければ sans-serif で描く */
-  font-family: var(--font-family-sans);
+  font-family: var(--buddy-primitive-font-family-sans);
 }
 
 /* 文字の大きさは body に置き、rem の基準（16px）をトークンの角丸と同じにする */
@@ -197,6 +209,7 @@ body {
 }
 
 .wf-tab.is-active,
+.wf-tab.is-on,
 .wf-tab[aria-selected='true'] {
   background: var(--wf-surface);
   color: var(--wf-ink);
@@ -302,6 +315,15 @@ body {
   font-weight: 700;
 }
 
+/* 読み終えた表示を残したまま、読み直して読めなかったことを示す帯。wf-alert と重ね、文と読み直すを横に並べる */
+.wf-refetch-error {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
 /* 仕様が決まっていない箇所。未決の内容を枠の中に書く */
 .wf-undecided {
   padding: 10px 12px;
@@ -320,14 +342,16 @@ body {
 /* モーダル。幅 768px 未満では、画面いっぱいのシートにする（apps/web の Modal と同じ切り替え） */
 .wf-modal-stage {
   position: relative;
-  /* 覆いを画面の下端まで届かせる。--mock-height は mock.js が .screen に置くデバイスの高さ。2px は枠線 */
-  min-height: calc(var(--mock-height, 900px) - 2px);
+  /* 覆いを画面の下端まで届かせる。--mock-height は mock.js が .screen に置くデバイスの高さ */
+  min-height: var(--mock-height, 900px);
   padding: 56px 16px;
 }
 
 .wf-overlay {
   position: absolute;
   inset: 0;
+  /* 中身が画面より短いときも、覆いを画面の下端まで届かせる。--mock-height は mock.js が .screen に置くデバイスの高さ */
+  min-height: var(--mock-height, 900px);
   background: var(--wf-overlay);
 }
 
@@ -350,7 +374,11 @@ body {
   border-bottom: 1px solid var(--wf-line-soft);
 }
 
+/* 閉じるボタン（×）の無いヘッダーでも、× を置いたヘッダーと同じ高さにする */
 .wf-modal__title {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
   margin: 0 0 0 auto;
   font-size: 15px;
   font-weight: 700;
@@ -440,37 +468,78 @@ body {
   background: var(--wf-fill);
 }
 
-/* サイトのヘッダー（SiteHeader）。左にメニューのボタンとサイトの名前、右にログインした職員を置く */
+/* サイトのヘッダー（SiteHeader）。左にナビゲーションを開閉するボタンとサイトの名前を、右にアカウントのボタンを置く */
 .wf-site-header {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: space-between;
   height: 56px;
-  padding: 0 24px;
+  padding: 0 8px;
   border-bottom: 1px solid var(--wf-line-soft);
   background: var(--wf-surface);
 }
 
 .wf-site-header__brand {
   display: flex;
+  align-self: stretch;
   align-items: center;
   gap: 8px;
 }
 
+.wf-site-menu {
+  display: inline-flex;
+  width: 44px;
+  height: 44px;
+}
+
+/* ログインした職員のメニュー（ViewerMenu）。名前の頭文字の丸と名前を並べたボタンで、名前、自分の情報、ログアウトを入れたメニューを開く */
 .wf-site-header__viewer {
   display: flex;
   align-items: center;
-  gap: 12px;
 }
 
-/* 幅 768px 以上では、メニューのボタンとドロワーの枠を出さない */
-.wf-site-menu,
-.wf-site-drawer__head,
-.wf-site-drawer-overlay {
+.wf-site-account {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 44px;
+  padding: 0 12px 0 4px;
+  border-radius: 22px;
+}
+
+.wf-site-avatar {
+  display: inline-grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--wf-primary);
+  color: var(--wf-surface);
+  font-weight: 700;
+}
+
+.wf-site-viewer-menu {
+  position: absolute;
+  top: 52px;
+  right: 8px;
+  z-index: 5;
   display: none;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+  min-width: 200px;
+  padding: 16px;
+  border-radius: var(--wf-radius);
+  background: var(--wf-surface);
+  box-shadow: 0 0 0 1px var(--wf-line);
 }
 
-/* ヘッダーの下を、左端のナビゲーションと画面の中身に分ける（SiteLayout） */
+.wf-site-viewer-menu.is-open {
+  display: flex;
+}
+
+/* ヘッダーの下を、ナビゲーション、予定のカレンダーの左の欄、画面の中身に分ける（SiteLayout） */
 .wf-site-body {
   display: flex;
 }
@@ -480,77 +549,165 @@ body {
   min-width: 0;
 }
 
-/* 幅 768px 以上では、ドロワーを左端の縦のナビゲーションとして常に出す */
-.wf-site-drawer {
+/* ナビゲーション（SiteNav）。予定と照合のグループの見出しの下に、画面のアイコンと名前を並べる */
+.wf-site-nav {
+  display: flex;
+  flex-direction: column;
   flex-shrink: 0;
-  padding: 8px;
+  gap: 16px;
+  width: 224px;
+  padding: 12px;
   border-right: 1px solid var(--wf-line-soft);
   background: var(--wf-surface);
 }
 
-/* 画面の間を移るリンクの並び（SiteNav）。幅 768px 以上ではアイコンの下に名前を置く */
-.wf-site-nav {
+.wf-site-nav__group {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 2px;
+}
+
+.wf-site-nav__heading {
+  padding: 4px 12px;
+  color: var(--wf-muted);
+  font-size: 12px;
+  font-weight: 700;
 }
 
 .wf-site-nav__item {
+  position: relative;
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 4px;
-  width: 72px;
-  padding: 8px 0;
-  border-radius: var(--wf-radius);
-  color: var(--wf-muted);
-  font-weight: 700;
-  white-space: nowrap;
+  gap: 12px;
+  height: 40px;
+  padding: 0 12px;
+  border-radius: 20px;
 }
 
 .wf-site-nav__item[aria-current='page'] {
   background: var(--wf-primary-surface);
   color: var(--wf-primary);
+  font-weight: 700;
 }
 
-@container screen (width < 768px) {
-  .wf-site-header {
-    padding: 0 8px;
+/* 要確認の件数の印 */
+.wf-site-badge {
+  min-width: 18px;
+  height: 18px;
+  margin-left: auto;
+  padding: 0 4px;
+  border-radius: 9px;
+  background: var(--buddy-color-danger);
+  color: var(--wf-surface);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 18px;
+  text-align: center;
+}
+
+/* 幅 768px 未満で開く、ナビゲーションのドロワーの見出しと覆い */
+.wf-site-nav__head,
+.wf-site-nav-overlay,
+.wf-site-drawer__head,
+.wf-site-drawer-overlay {
+  display: none;
+}
+
+/*
+ * 予定のカレンダーの左の欄。幅 768px 以上では開いた状態で始め、ツールバーの「日付と絞り込み」のボタンでたたむ。
+ * 幅 768px 以上の is-open は、たたんだ状態を表す
+ */
+.wf-site-drawer {
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  width: 288px;
+  border-right: 1px solid var(--wf-line-soft);
+  background: var(--wf-surface);
+}
+
+@container screen (width >= 768px) {
+  .wf-site-drawer.is-open {
+    display: none;
+  }
+}
+
+/* interact.js が、data-panel-wide の panel の形が幅 768px 以上のものかを、この値で読む */
+@container screen (width >= 768px) {
+  [data-panel-wide] {
+    --wf-panel-wide: 1;
+  }
+}
+
+/*
+ * 幅 768px 以上で、ナビゲーションをたたんだレール。アイコンの下に名前を置き、グループを区切り線で分ける。
+ * 予定のカレンダー（data-start="rail"）はたたんだ状態で始め、ほかの画面は開いた状態で始める。メニューのボタンで切り替える
+ */
+@container screen (width >= 768px) {
+  .wf-site-nav:is([data-start='rail']:not(.is-open), :not([data-start='rail']).is-open) {
+    gap: 8px;
+    width: 80px;
+    padding: 12px 4px;
   }
 
-  .wf-site-header__viewer .wf-text {
+  .wf-site-nav:is([data-start='rail']:not(.is-open), :not([data-start='rail']).is-open) .wf-site-nav__heading {
     display: none;
   }
 
-  .wf-site-menu {
-    display: inline-flex;
-    width: 44px;
-    height: 44px;
+  .wf-site-nav:is([data-start='rail']:not(.is-open), :not([data-start='rail']).is-open) .wf-site-nav__group + .wf-site-nav__group {
+    padding-top: 8px;
+    border-top: 1px solid var(--wf-line-soft);
   }
 
+  .wf-site-nav:is([data-start='rail']:not(.is-open), :not([data-start='rail']).is-open) .wf-site-nav__item {
+    flex-direction: column;
+    gap: 4px;
+    height: auto;
+    padding: 6px 0;
+    border-radius: var(--wf-radius);
+    font-size: 12px;
+    white-space: nowrap;
+  }
+
+  .wf-site-nav:is([data-start='rail']:not(.is-open), :not([data-start='rail']).is-open) .wf-site-badge {
+    position: absolute;
+    top: 2px;
+    right: 14px;
+  }
+}
+
+@container screen (width < 768px) {
+  .wf-site-nav,
   .wf-site-drawer {
     display: none;
   }
 
-  /* ドロワーと覆いは、画面の上端から下端まで届かせる。--mock-height は mock.js が .screen に置くデバイスの高さ。2px は枠線 */
+  /* ドロワーと覆いは、画面の上端から下端まで届かせる。--mock-height は mock.js が .screen に置くデバイスの高さ */
+  .wf-site-nav.is-open,
   .wf-site-drawer.is-open {
     position: absolute;
     top: 0;
     left: 0;
     z-index: 4;
     display: flex;
-    flex-direction: column;
     width: 320px;
-    min-height: calc(var(--mock-height, 844px) - 2px);
-    padding: 0;
+    min-height: var(--mock-height, 844px);
     border-right: 0;
     box-shadow: 0 0 0 1px var(--wf-line);
   }
 
+  .wf-site-nav.is-open + .wf-site-nav-overlay,
   .wf-site-drawer.is-open + .wf-site-drawer-overlay {
     z-index: 3;
     display: block;
-    min-height: calc(var(--mock-height, 844px) - 2px);
+    min-height: var(--mock-height, 844px);
+  }
+
+  .wf-site-nav__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 0 4px 12px;
   }
 
   .wf-site-drawer__head {
@@ -561,18 +718,9 @@ body {
     border-bottom: 1px solid var(--wf-line-soft);
   }
 
-  .wf-site-nav {
-    gap: 4px;
-    padding: 8px;
-  }
-
-  /* ドロワーの中では、アイコンの右に名前を置く */
-  .wf-site-nav__item {
-    flex-direction: row;
-    gap: 16px;
-    width: auto;
-    height: 48px;
-    padding: 0 16px;
+  /* 幅 768px 未満では、職員の名前を出さず、頭文字の丸だけにする */
+  .wf-site-account__name {
+    display: none;
   }
 }
 
@@ -697,11 +845,37 @@ body {
   font-size: 12px;
 }
 
+/* 押せないボタンと、その右に出す押せるようにする条件の文 */
+.wf-submit-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+
+/* ダイアログのフッターでは、条件の文を確定のボタンの上に右寄せで出す */
+.wf-dialog__footer > .wf-hint {
+  flex-basis: 100%;
+  margin: 0;
+  text-align: right;
+}
+
 /* 取り消せない操作のボタン */
 .wf-btn--danger {
   border-color: var(--wf-danger);
   background: var(--wf-danger);
   color: var(--wf-surface);
+}
+
+/* データを失う操作の確認のダイアログを開く起点のボタン（apps/web の Button の destructive）。白い面に赤い文字で出す */
+.wf-btn--destructive {
+  color: var(--wf-danger);
+}
+
+/* ダイアログとモーダルのフッターでは、起点のボタンを 1 つだけ左端に置き、閉じるボタンから離す（apps/web の mr-auto） */
+.wf-dialog__footer > .wf-btn--destructive,
+.wf-modal__footer > .wf-btn--destructive {
+  margin-right: auto;
 }
 
 /* タイトル、説明の文、リンクを縦に積む、画面の全体の知らせ（権限が無いときなど） */
@@ -737,6 +911,48 @@ body {
   margin: 0;
 }
 
+/* 入力のダイアログのヘッダー。左にタイトルを置く。フッターで閉じるので、閉じるボタン（×）を置かない */
+.wf-dialog__header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--wf-line-soft);
+}
+
+.wf-dialog__header > .wf-dialog__title {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.wf-dialog__body {
+  display: grid;
+  gap: 16px;
+  padding: 20px;
+}
+
+.wf-dialog__body > p {
+  margin: 0;
+}
+
+/* ダイアログのフッター。右に「キャンセル」と主ボタンをこの順に置く */
+.wf-dialog__footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 16px 20px;
+  border-top: 1px solid var(--wf-line-soft);
+}
+
+.wf-dialog__footer > .wf-alert {
+  flex-basis: 100%;
+}
+
 @container screen (width < 768px) {
   .wf-page {
     padding: 16px;
@@ -747,4 +963,406 @@ body {
     top: 56px;
     width: calc(100% - 16px);
   }
+}
+
+/* 状態の印。文字で状態を示し、色だけに頼らない。通常は枠だけ、注意は注意の面、終わったものは薄い面にする */
+.wf-status {
+  display: inline-block;
+  padding: 2px 8px;
+  border: 1px solid var(--wf-line-soft);
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 400;
+  white-space: nowrap;
+}
+
+.wf-status--warning {
+  border-color: var(--wf-ink);
+  background: var(--wf-warning-surface);
+  font-weight: 700;
+}
+
+.wf-status--muted {
+  background: var(--wf-fill-strong);
+  color: var(--wf-muted);
+}
+
+/* チームの名前と、その前の色の小さい点。色だけで区別せず、点は読み上げない */
+.wf-team {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.wf-dot {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--wf-muted);
+}
+
+.wf-dot--blue {
+  background: var(--wf-team-blue);
+}
+
+.wf-dot--orange {
+  background: var(--wf-team-orange);
+}
+
+.wf-dot--magenta {
+  background: var(--wf-team-magenta);
+}
+
+.wf-dot--cyan {
+  background: var(--wf-team-cyan);
+}
+
+.wf-dot--yellow {
+  background: var(--wf-team-yellow);
+}
+
+.wf-dot--purple {
+  background: var(--wf-team-purple);
+}
+
+.wf-dot--green {
+  background: var(--wf-team-green);
+}
+
+.wf-dot--lime {
+  background: var(--wf-team-lime);
+}
+
+/* ページの見出しの行。左に見出しを、右に主ボタンを置く */
+.wf-page-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+/*
+ * 見出しと、その右の ? のヘルプを並べる。
+ * ヘルプの説明は、? ではなく見出しの左端にそろえて開く。? の右から開くと、幅 768px 未満で説明が画面の右端で切れるため
+ */
+.wf-title {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/*
+ * ? のヘルプ。初めてのときだけ要る説明を、? を押したときだけ見出しの下に出す。
+ * 開くボタン .wf-help__toggle と説明 .wf-help__panel を .wf-help で囲み、.wf-title の中に置き、data-open、data-panel、data-panel-dismiss で開閉する
+ */
+.wf-help {
+  display: inline-flex;
+}
+
+.wf-help__toggle {
+  width: 28px;
+  min-width: 28px;
+  height: 28px;
+  border: 1px solid var(--wf-line);
+  border-radius: 50%;
+  color: var(--wf-muted);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.wf-help__panel {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  z-index: 5;
+  display: none;
+  width: max-content;
+  max-width: min(320px, calc(100cqw - 32px));
+  margin: 0;
+  padding: 12px 16px;
+  border-radius: var(--wf-radius);
+  background: var(--wf-surface);
+  box-shadow: 0 0 0 1px var(--wf-line);
+  font-size: 13px;
+  font-weight: 400;
+}
+
+.wf-help__panel.is-open {
+  display: block;
+}
+
+/*
+ * 「詳しく」で開く補足。常に出す 1 文の後に「詳しく」を置き、押すと続きの説明を開き、もう一度押すと閉じる。
+ * 開くボタン .wf-more__toggle と説明 .wf-more__body を .wf-more で囲み、data-open と data-panel で開閉する
+ */
+.wf-more {
+  display: grid;
+  justify-items: start;
+  gap: 8px;
+  max-width: 672px;
+}
+
+.wf-more > p {
+  margin: 0;
+}
+
+.wf-more__toggle::after {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-right: 1.5px solid currentcolor;
+  border-bottom: 1.5px solid currentcolor;
+  transform: translateY(-2px) rotate(45deg);
+}
+
+.wf-more__toggle[aria-expanded='true']::after {
+  transform: translateY(1px) rotate(-135deg);
+}
+
+.wf-more__body {
+  display: none;
+  padding: 12px 16px;
+  border-left: 3px solid var(--wf-line-soft);
+  background: var(--wf-fill);
+}
+
+.wf-more__body.is-open {
+  display: block;
+}
+
+.wf-more__body > :first-child {
+  margin-top: 0;
+}
+
+.wf-more__body > :last-child {
+  margin-bottom: 0;
+}
+
+/* 見せずに、読み上げにだけ出す文字（操作の列の見出しなど） */
+.wf-visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
+
+/* 一覧の上の行。名前の検索、絞り込み、件数を並べ、件数を右端に寄せる */
+.wf-list-tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+}
+
+.wf-list-tools > .wf-search {
+  flex: 1 1 200px;
+  max-width: 320px;
+}
+
+/* 絞り込みのセレクト。値を選んだものは枠を太くする */
+.wf-select {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 40px;
+  padding: 0 12px;
+  border: 1px solid var(--wf-line);
+  border-radius: var(--wf-radius);
+  background: var(--wf-surface);
+  white-space: nowrap;
+}
+
+.wf-select::after {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-right: 1.5px solid currentcolor;
+  border-bottom: 1.5px solid currentcolor;
+  transform: translateY(-2px) rotate(45deg);
+}
+
+.wf-select.is-on {
+  border: 2px solid var(--wf-ink);
+  font-weight: 700;
+}
+
+.wf-count {
+  margin-left: auto;
+  color: var(--wf-muted);
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+/*
+ * 行全体を押せる一覧。行を押すと詳細へ移り、右端の「›」で押せることを示す。横の線だけを引く。
+ * 名前の列は .wf-cell-primary、状態の印の列は .wf-cell-status、補足の値の列は .wf-cell-meta、「›」の列は .wf-cell-go にする
+ */
+.wf-table--rows th,
+.wf-table--rows td {
+  border-width: 0 0 1px;
+}
+
+.wf-table--rows th {
+  color: var(--wf-muted);
+  font-size: 12px;
+  font-weight: 400;
+}
+
+.wf-table--rows tbody tr {
+  cursor: pointer;
+}
+
+.wf-table--rows tbody tr:hover {
+  background: var(--wf-fill);
+}
+
+.wf-table--rows .wf-cell-primary {
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.wf-table--rows .wf-cell-go {
+  width: 40px;
+  color: var(--wf-muted);
+  text-align: right;
+}
+
+/*
+ * 幅 768px 未満では、表を 2 行のリストの行にする。1 行目に名前と状態の印、2 行目に補足の値を「・」でつなげて置く。
+ * 横にスクロールさせない
+ */
+@container screen (width < 768px) {
+  .wf-list-tools > .wf-search {
+    flex-basis: 100%;
+    max-width: none;
+  }
+
+  .wf-table--rows thead {
+    display: none;
+  }
+
+  .wf-table--rows,
+  .wf-table--rows tbody {
+    display: block;
+  }
+
+  .wf-table--rows {
+    border-top: 1px solid var(--wf-line-soft);
+  }
+
+  .wf-table--rows tbody tr {
+    position: relative;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    row-gap: 2px;
+    padding: 10px 40px 10px 12px;
+    border-bottom: 1px solid var(--wf-line-soft);
+  }
+
+  /* 1 行目と 2 行目を分ける、幅いっぱいの空の項目 */
+  .wf-table--rows tbody tr::after {
+    content: '';
+    order: 3;
+    flex-basis: 100%;
+  }
+
+  .wf-table--rows td {
+    display: block;
+    padding: 0;
+    border: 0;
+  }
+
+  .wf-table--rows .wf-cell-primary {
+    order: 1;
+    min-width: 0;
+    margin-right: 8px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .wf-table--rows .wf-cell-status {
+    order: 2;
+  }
+
+  .wf-table--rows .wf-cell-meta {
+    order: 4;
+    color: var(--wf-muted);
+    font-size: 12px;
+  }
+
+  .wf-table--rows .wf-cell-meta + .wf-cell-meta::before {
+    content: '・';
+  }
+
+  .wf-table--rows .wf-cell-go {
+    position: absolute;
+    top: 50%;
+    right: 8px;
+    width: auto;
+    transform: translateY(-50%);
+  }
+}
+
+/* 一覧が空のときと、絞り込みで 0 件のときの知らせ。説明の文と、条件を外すボタンを中央に積む */
+.wf-empty {
+  display: grid;
+  justify-items: center;
+  gap: 12px;
+  padding: 48px 16px;
+  color: var(--wf-muted);
+  text-align: center;
+}
+
+.wf-empty > p {
+  margin: 0;
+}
+
+/*
+ * 「…」のメニュー。開くボタンを .wf-menu-anchor で囲み、ボタンの下の右端にそろえて開く。
+ * データを失う操作の項目は .wf-menu__item--danger にし、ほかの項目と線で分けて最後に置く
+ */
+.wf-menu-anchor {
+  position: relative;
+  display: inline-flex;
+}
+
+.wf-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  z-index: 5;
+  display: none;
+  flex-direction: column;
+  min-width: 200px;
+  padding: 4px 0;
+  border-radius: var(--wf-radius);
+  background: var(--wf-surface);
+  box-shadow: 0 0 0 1px var(--wf-line);
+}
+
+.wf-menu.is-open {
+  display: flex;
+}
+
+.wf-menu__item {
+  padding: 10px 16px;
+  white-space: nowrap;
+}
+
+.wf-menu__item--danger {
+  border-top: 1px solid var(--wf-line-soft);
+  color: var(--wf-danger);
+}
+
+/* メニューを開いた状態の、見えない覆い。押すとメニューを閉じた状態へ戻る */
+.wf-menu-scrim {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
 }

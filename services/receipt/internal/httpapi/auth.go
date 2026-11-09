@@ -10,15 +10,12 @@ import (
 	"github.com/Fukuemon/buddy/services/receipt/internal/httpapi/openapi"
 )
 
-// TokenVerifier は、Authorization ヘッダーの Bearer のトークンを検証する。検証に失敗したときはエラーを返す。
-type TokenVerifier interface {
-	Verify(ctx context.Context, raw string) (oidc.Identity, error)
-}
-
 // publicPaths は、openapi.yaml で `security: []` にした、トークンを求めないパスである。
 var publicPaths = map[string]bool{"/healthz": true, "/readyz": true}
 
 type identityKey struct{}
+
+type tokenKey struct{}
 
 // identityFrom は、authenticate が ctx に入れたトークンの主張を返す。
 func identityFrom(ctx context.Context) oidc.Identity {
@@ -26,7 +23,13 @@ func identityFrom(ctx context.Context) oidc.Identity {
 	return id
 }
 
-// authenticate は、publicPaths 以外のリクエストの Bearer のトークンを検証し、主張を request の context に入れる。
+// tokenFrom は、authenticate が検証して ctx に入れた access token を返す。予定の API に同じトークンを付けて呼ぶのに使う。
+func tokenFrom(ctx context.Context) string {
+	raw, _ := ctx.Value(tokenKey{}).(string)
+	return raw
+}
+
+// authenticate は、publicPaths 以外のリクエストの Bearer のトークンを検証し、主張とトークンを request の context に入れる。
 // トークンがないか検証に失敗したときは 401 を返す。
 func (s *server) authenticate(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -45,7 +48,8 @@ func (s *server) authenticate(next http.Handler) http.Handler {
 			s.unauthorized(w, `Bearer error="invalid_token"`, "トークンが正しくない")
 			return
 		}
-		next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), identityKey{}, id)))
+		ctx := context.WithValue(context.WithValue(r.Context(), identityKey{}, id), tokenKey{}, raw)
+		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
 

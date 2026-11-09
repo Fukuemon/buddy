@@ -1,10 +1,10 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { userEvent, within } from 'storybook/test'
 
-import { ApiError, type BuddyApi } from '#/api/client'
+import { ApiError, type BuddyApi } from '#/api/BuddyApi'
 import { createFakeBuddyApi } from '#/api/fake/fakeBuddyApi'
-import { FAKE_VIEWER } from '#/api/fake/fixtures'
 import {
+  failOnSecondCall,
   failingBuddyApi,
   pendingBuddyApi,
   withAppRouter,
@@ -53,14 +53,6 @@ export const LoadError: Story = { parameters: route({ api: failingBuddyApi() }) 
 
 export const NotConfigured: Story = { parameters: route({ api: notConfiguredApi() }) }
 
-/** 職員の管理の権限を持たない職員。API を呼ばない（全ての API が失敗しても、権限が無いことだけを示す）。 */
-export const Forbidden: Story = {
-  parameters: route({
-    api: failingBuddyApi(),
-    viewer: { ...FAKE_VIEWER, canManageStaff: false },
-  }),
-}
-
 /** 結び付けていない職員の行で、結び付けるを押した。 */
 export const LinkDialog: Story = {
   play: async ({ canvasElement }) => {
@@ -92,10 +84,26 @@ export const LinkUnreadable: Story = {
   },
 }
 
-/** 結び付けた職員の行で、外すを押した。 */
+/** 結び付けた職員の行で、行の操作のメニューの外すを押した。 */
 export const UnlinkDialog: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement.ownerDocument.body)
+    await userEvent.click(await canvas.findByTestId('calendar-link-menu-staff-1'))
     await userEvent.click(await canvas.findByTestId('calendar-link-remove-staff-1'))
   },
 }
+
+/** 結び付いたカレンダーを、2 回目だけ読めないフェイクの API を作る。 */
+export const refetchFailingApi = (): BuddyApi => {
+  const base = createFakeBuddyApi()
+  return {
+    ...base,
+    calendars: {
+      ...base.calendars,
+      list: failOnSecondCall((...args) => base.calendars.list(...args)),
+    },
+  }
+}
+
+/** 読み終えた後に読み直して、結び付いたカレンダーを読めない。表示を残し、見出しの下に失敗の文と読み直すを出す。 */
+export const RefetchError: Story = { parameters: route({ api: refetchFailingApi() }) }

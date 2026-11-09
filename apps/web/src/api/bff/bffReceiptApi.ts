@@ -1,5 +1,5 @@
-import { ApiError, type ReceiptApi } from '../client'
-import { loginHref } from '../viewer'
+import { ApiError, type ReceiptApi } from '../BuddyApi'
+import { redirectToLogin } from '../viewer'
 import type { ReceiptCheckResult } from './receiptCall'
 import { checkReceiptFn } from './serverFns'
 
@@ -8,7 +8,7 @@ type CheckReceipt = (form: FormData) => Promise<ReceiptCheckResult>
 /**
  * BFF の server function で照合する ReceiptApi を作る。
  *
- * 失敗は status と行のエラーつきの ApiError で投げる。ブラウザで 401 を受けたら、今の画面に戻るログインへ移る。
+ * 失敗は status とコードと行のエラーつきの ApiError で投げる。ブラウザで 401 を受けたら、今の画面に戻るログインへ移る。
  */
 export const createBffReceiptApi = (
   checkReceipt: CheckReceipt = (data) => checkReceiptFn({ data }),
@@ -20,11 +20,7 @@ export const createBffReceiptApi = (
     if (input.month !== undefined) form.append('month', input.month)
     const result = await checkReceipt(form)
     if (result.ok) return result.report
-    if (result.status === 401 && typeof window !== 'undefined') {
-      window.location.assign(loginHref(window.location.pathname + window.location.search))
-      // 画面が移るまでの間に、呼び出し元がエラーの表示を出さないよう、終わらない Promise を返す
-      return new Promise<never>(() => {})
-    }
-    throw new ApiError(result.status, result.message, result.rowErrors)
+    if (result.status === 401 && typeof window !== 'undefined') return redirectToLogin()
+    throw new ApiError(result.status, result.message, result.csvErrors, result.code)
   },
 })

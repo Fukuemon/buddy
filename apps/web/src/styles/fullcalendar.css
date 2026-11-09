@@ -1,36 +1,61 @@
-/* FullCalendar の見た目の上書き。FullCalendar の DOM にはクラスを渡せないため、ここだけ CSS で書く。 */
+/*
+ * FullCalendar の見た目。FullCalendar 7 は CSS を自分で入れないので、骨組みと classic のテーマをここで読み込む。
+ * 色は classic のテーマの変数を buddy のトークンで上書きする。各部の上書きは、ScheduleCalendar.tsx が付けた schedule-calendar- のクラスで書く。
+ */
+@import '@fullcalendar/react/skeleton.css';
+@import '@fullcalendar/react/themes/classic/theme.css';
+@import '@fullcalendar/react/themes/classic/palette.css';
 
-.schedule-calendar .fc {
-  --fc-border-color: var(--buddy-color-border);
-  --fc-today-bg-color: var(--buddy-color-primary-surface);
-  --fc-now-indicator-color: var(--buddy-color-primary);
-
-  height: 100%;
+.schedule-calendar {
+  --fc-classic-border: var(--buddy-color-border);
+  --fc-classic-today: var(--buddy-color-primary-surface);
+  --fc-classic-now: var(--buddy-color-primary);
+  --fc-classic-background: var(--buddy-color-surface);
+  --fc-classic-foreground: var(--buddy-color-text);
 }
 
-.schedule-calendar .fc-scrollgrid-section-header.fc-scrollgrid-section-sticky {
-  @apply shadow-1;
+/* classic のテーマは見出しの文字を小さくするので、FullCalendar 6 と同じく本文の大きさにする。テーマの 1 つのクラスの指定より強くするため、2 つのクラスで書く */
+.schedule-calendar .schedule-calendar-day-header-inner,
+.schedule-calendar .schedule-calendar-time-label-inner {
+  font-size: var(--text-body);
 }
 
-.schedule-calendar .fc-daygrid-day-top {
+.schedule-calendar-day-top {
   justify-content: center;
 }
 
-.schedule-calendar .fc-daygrid-day:hover {
+.schedule-calendar-day:hover {
   @apply bg-surface-subtle;
   cursor: pointer;
 }
 
-.schedule-calendar .fc-event {
+.schedule-calendar-event {
   cursor: pointer;
   transition: filter 0.2s;
 }
 
-.schedule-calendar .fc-event:hover {
+.schedule-calendar-event:hover {
   filter: brightness(0.92);
 }
 
-/* 週の表示の 30 分の枠を、日の表示と同じく押せる領域の下限の 44px にする（packages/ui/DESIGN.md） */
-.schedule-calendar .fc-timegrid-slot {
-  height: 44px;
+/* FullCalendar 7 の classic のテーマは列の見出しを太字にしないので、FullCalendar 6 と同じく太字にする */
+.schedule-calendar-day-header {
+  font-weight: bold;
+}
+
+/* キャンセルした予定は、枠に職員の色を残し、背景を薄い色にする。テーマの 1 つのクラスの指定より強くするため、2 つのクラスで書く */
+.schedule-calendar .schedule-calendar-event-cancelled {
+  border: 1px solid var(--fc-event-color);
+  background-color: var(--buddy-color-surface-subtle);
+}
+
+/* Google カレンダーの終日の予定は押せないので、押せる予定の指の形と、押したときの色の変化を外す。面と線は AllDayEventLabel が描く */
+.schedule-calendar .schedule-calendar-all-day-event {
+  cursor: default;
+  border: none;
+  background-color: transparent;
+}
+
+.schedule-calendar .schedule-calendar-all-day-event:hover {
+  filter: none;
 }

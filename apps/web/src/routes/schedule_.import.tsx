@@ -1,12 +1,11 @@
 import { createFileRoute } from '@tanstack/react-router'
 
-import { SiteLayoutContainer } from '#/components/site/SiteLayoutContainer'
-import { IMPORT_NAV_ITEM } from '#/components/site/SiteNav'
+import { requirePermission, STAFF_MANAGE } from '#/api/permissions'
 import { CalendarImportContainer } from '#/features/calendar/components/CalendarImportContainer'
 import { calendarImportSearchSchema } from '#/features/calendar/schema/calendarImportSearch'
 
-// `/schedule` の子にすると予定のカレンダーの上に重なるので、名前の `_` で入れ子から外す
 export const Route = createFileRoute('/schedule_/import')({
+  beforeLoad: requirePermission(STAFF_MANAGE),
   validateSearch: calendarImportSearchSchema,
   // 期間のデフォルト値を、職員のデバイスの日付で決めるため、サーバーで描画しない
   ssr: false,
@@ -18,13 +17,9 @@ function CalendarImportPage() {
   const { staff } = Route.useSearch()
   const navigate = Route.useNavigate()
   return (
-    <SiteLayoutContainer current={IMPORT_NAV_ITEM.href}>
-      <main className="min-w-0 p-4 desktop:p-6">
-        <CalendarImportContainer
-          onStaffChange={(staffId) => navigate({ search: { staff: staffId }, replace: true })}
-          staffId={staff}
-        />
-      </main>
-    </SiteLayoutContainer>
+    <CalendarImportContainer
+      onStaffChange={(staffId) => navigate({ search: { staff: staffId }, replace: true })}
+      staffId={staff}
+    />
   )
 }

@@ -3,6 +3,7 @@ import { expect, test, type Locator, type Page } from '@playwright/test'
 import { BROKER_URL } from '../../fixtures/env'
 import { EVIDENCE_VARIANTS, PHONE_VIEWPORT, recordPrEvidence } from '../../fixtures/evidence'
 import { brokerPage } from '../../selectors/broker'
+import { pageBody } from '../../selectors/page'
 import { brokerLogin } from '../../selectors/idp'
 
 /** 録画の外では、ログインせずに web の origin を開いておく。録画の中で、ブローカーの画面を開く。 */
@@ -80,6 +81,35 @@ test.describe('ログイン', () => {
         )
       })
 
+      test(`${prefix}ログインの画面を開いた場合、メールアドレスを入れるとふだん使っているログインの画面が開くという補足が出ること`, async ({
+        browser,
+      }) => {
+        await recordPrEvidence(
+          browser,
+          {
+            name: 'broker-login-hint',
+            title:
+              'ブローカーのログインの画面を開くと、メールアドレスの欄の下に「事業所に登録したメールアドレスを入れると、ふだん使っているログインの画面が開きます。」が出る',
+            actor: 'ログインなし',
+            variant,
+          },
+          openWeb,
+          async ({ page, step, check }) => {
+            await page.goto('/schedule')
+            await expect(brokerLogin(page).email).toBeVisible()
+            const hint = brokerPage(page).emailHint
+            await expect(hint).toHaveText(
+              '事業所に登録したメールアドレスを入れると、ふだん使っているログインの画面が開きます。',
+            )
+            await expect(pageBody(page)).not.toContainText('事業所のログインの画面')
+            await step('ログインせずに予定のカレンダーを開いた')
+            await check(
+              'メールアドレスの欄の下に「事業所に登録したメールアドレスを入れると、ふだん使っているログインの画面が開きます。」が出て、「事業所のログインの画面」の語は出ない',
+            )
+          },
+        )
+      })
+
       test(`${prefix}スマートフォンの幅でログインの画面を開いた場合、カードが画面の幅に収まり、横にスクロールしないこと`, async ({
         browser,
       }) => {
@@ -106,6 +136,38 @@ test.describe('ログイン', () => {
             await check(
               `ブローカーのメールアドレスの入力の画面が出て、横に送れる幅（${width.scroll}px）が画面の幅（${width.client}px）を超えない`,
             )
+          },
+        )
+      })
+
+      test(`${prefix}メールアドレスの欄にフォーカスを当てた場合、web の focus-ring と同じフォーカスの表示が出ること`, async ({
+        browser,
+      }) => {
+        await recordPrEvidence(
+          browser,
+          {
+            name: 'broker-login-focus',
+            title:
+              'ブローカーのログインの画面でメールアドレスの欄にフォーカスを当てると、packages/ui の focus-ring と同じ 4px の線と 2px の間隔のフォーカスの表示が出る',
+            actor: 'ログインなし',
+            variant,
+          },
+          openWeb,
+          async ({ page, step, check }) => {
+            await page.goto('/schedule')
+            const email = brokerLogin(page).email
+            await expect(email).toBeVisible()
+            await step('ログインせずに予定のカレンダーを開いた')
+
+            await step('メールアドレスの欄を押す')
+            await email.click()
+            await expect(email).toBeFocused()
+            const outline = await email.evaluate((element) => {
+              const style = getComputedStyle(element)
+              return `${style.outlineStyle} ${style.outlineWidth}、間隔 ${style.outlineOffset}`
+            })
+            expect(outline).toBe('solid 4px、間隔 2px')
+            await check(`メールアドレスの欄に、${outline} のフォーカスの線が出る`)
           },
         )
       })

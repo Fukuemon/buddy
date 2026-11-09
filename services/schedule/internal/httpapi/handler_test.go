@@ -9,18 +9,21 @@ import (
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
+	"reflect"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/Fukuemon/buddy/services/schedule/internal/apperr"
 	"github.com/Fukuemon/buddy/services/schedule/internal/civil"
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/organization"
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/patient"
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/schedule"
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/scheduleview"
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/staff"
 	"github.com/Fukuemon/buddy/services/schedule/internal/httpapi"
 	"github.com/Fukuemon/buddy/services/schedule/internal/kernel"
-	"github.com/Fukuemon/buddy/services/schedule/internal/patient"
 	"github.com/Fukuemon/buddy/services/schedule/internal/principal"
-	"github.com/Fukuemon/buddy/services/schedule/internal/schedule"
-	"github.com/Fukuemon/buddy/services/schedule/internal/staff"
 )
 
 const (
@@ -35,9 +38,11 @@ type fakeSchedules struct {
 	lastCtx   context.Context
 	err       error
 	listCalls int
-	lastQuery schedule.ListQuery
+	lastQuery scheduleview.ListQuery
 	lastSlot  schedule.SlotInput
-	detail    schedule.Detail
+	detail    scheduleview.Detail
+	// listing は、List が返す値である。nil なら、detail の 1 件の buddy_primary の一覧を返す。
+	listing *scheduleview.Listing
 }
 
 func (f *fakeSchedules) ListTypes(ctx context.Context) ([]schedule.Type, error) {
@@ -45,41 +50,52 @@ func (f *fakeSchedules) ListTypes(ctx context.Context) ([]schedule.Type, error) 
 	return nil, f.err
 }
 
-func (f *fakeSchedules) Get(ctx context.Context, _ string) (schedule.Detail, error) {
+func (f *fakeSchedules) Get(ctx context.Context, _ string) (scheduleview.Detail, error) {
 	f.lastCtx = ctx
 	return f.detail, f.err
 }
 
-func (f *fakeSchedules) GetRecurring(context.Context, string) (schedule.RecurringDetail, error) {
-	return schedule.RecurringDetail{}, f.err
+func (f *fakeSchedules) GetRecurring(context.Context, string) (scheduleview.RecurringDetail, error) {
+	return scheduleview.RecurringDetail{}, f.err
 }
 
-func (f *fakeSchedules) List(_ context.Context, _ string, q schedule.ListQuery) (schedule.List, error) {
+func (f *fakeSchedules) List(_ context.Context, _ string, q scheduleview.ListQuery) (scheduleview.Listing, error) {
 	f.listCalls++
 	f.lastQuery = q
-	return schedule.List{Schedules: []schedule.Detail{f.detail}, RecurringSchedules: []schedule.RecurringDetail{}}, f.err
+	if f.listing != nil {
+		return *f.listing, f.err
+	}
+	return scheduleview.Listing{
+		Schedules: []scheduleview.Detail{f.detail}, RecurringSchedules: []scheduleview.RecurringDetail{},
+		SourceMode: organization.SourceBuddyPrimary, CalendarSyncs: []scheduleview.CalendarSync{},
+		AllDayEvents: []scheduleview.AllDayEvent{}, UnlistedEventCounts: []scheduleview.UnlistedEventCount{},
+	}, f.err
 }
 
-func (f *fakeSchedules) Create(_ context.Context, _ string, in schedule.SlotInput) (schedule.Detail, error) {
+func (f *fakeSchedules) Create(_ context.Context, _ string, in schedule.SlotInput) (schedule.Schedule, error) {
 	f.lastSlot = in
-	return f.detail, f.err
+	return f.detail.Schedule, f.err
 }
 
-func (f *fakeSchedules) CreateRecurring(context.Context, string, schedule.SlotInput, schedule.RuleInput) (schedule.RecurringDetail, error) {
-	return schedule.RecurringDetail{}, f.err
+func (f *fakeSchedules) CreateRecurring(context.Context, string, schedule.SlotInput, schedule.RuleInput) (schedule.RecurringSchedule, error) {
+	return schedule.RecurringSchedule{}, f.err
 }
 
-func (f *fakeSchedules) ChangeOccurrence(context.Context, string, civil.Date, schedule.SlotInput) (schedule.Detail, error) {
-	return f.detail, f.err
+func (f *fakeSchedules) ChangeOccurrence(context.Context, string, civil.Date, schedule.SlotInput) (schedule.Schedule, error) {
+	return f.detail.Schedule, f.err
 }
 
-func (f *fakeSchedules) Cancel(context.Context, string, string) (schedule.Cancel, error) {
-	return schedule.Cancel{}, f.err
+func (f *fakeSchedules) Cancel(context.Context, string, string) (schedule.Cancellation, error) {
+	return schedule.Cancellation{}, f.err
 }
 
-func (f *fakeSchedules) Update(_ context.Context, _ string, in schedule.SlotInput) (schedule.Detail, error) {
+func (f *fakeSchedules) CancelOccurrence(context.Context, string, civil.Date, string) (schedule.Cancellation, error) {
+	return schedule.Cancellation{}, f.err
+}
+
+func (f *fakeSchedules) Update(_ context.Context, _ string, in schedule.SlotInput) (schedule.Schedule, error) {
 	f.lastSlot = in
-	return f.detail, f.err
+	return f.detail.Schedule, f.err
 }
 
 type fakeStaff struct {
@@ -88,6 +104,8 @@ type fakeStaff struct {
 	lastPositionID   string
 	lastGrant        staff.GrantInput
 	lastUserPolicyID string
+	lastProfile      staff.Profile
+	lastCreate       staff.CreateInput
 	lastStopped      string
 	lastLeave        staff.LeaveInput
 	assignments      staff.Assignments
@@ -128,11 +146,24 @@ func (f *fakeStaff) ChangePosition(_ context.Context, _, positionID string) (sta
 	return staff.Detail{Summary: staff.Summary{Staff: staff.Staff{ID: staffID, PositionID: positionID}}, Policies: []staff.PolicyGrant{}}, f.err
 }
 
-func (f *fakeStaff) Create(context.Context, staff.CreateInput) (staff.Detail, error) {
-	return staff.Detail{Policies: []staff.PolicyGrant{}}, f.err
+func (f *fakeStaff) RemainingAssignments(_ context.Context, id string) (staff.Assignments, error) {
+	f.lastStopped = id
+	return f.assignments, f.err
 }
 
-func (f *fakeStaff) Get(context.Context, string) (staff.Detail, error) { return staff.Detail{}, nil }
+func (f *fakeStaff) UpdateProfile(_ context.Context, id string, p staff.Profile) (staff.Detail, error) {
+	f.lastProfile = p
+	return staff.Detail{Summary: staff.Summary{Staff: staff.Staff{ID: id, Username: p.Username, PhoneNumber: p.PhoneNumber, DepartmentID: p.DepartmentID, TeamID: p.TeamID, NonVisiting: p.NonVisiting}}, Policies: []staff.PolicyGrant{}}, f.err
+}
+
+func (f *fakeStaff) Create(_ context.Context, in staff.CreateInput) (staff.Detail, error) {
+	f.lastCreate = in
+	return staff.Detail{Summary: staff.Summary{Staff: staff.Staff{NonVisiting: in.NonVisiting}}, Policies: []staff.PolicyGrant{}}, f.err
+}
+
+func (f *fakeStaff) Get(_ context.Context, id string) (staff.Detail, error) {
+	return staff.Detail{Summary: staff.Summary{Staff: staff.Staff{ID: id, FacilityID: facilityID}}}, nil
+}
 
 func (f *fakeStaff) List(_ context.Context, _ string, q staff.ListQuery) ([]staff.Summary, error) {
 	f.listCalls++
@@ -141,21 +172,87 @@ func (f *fakeStaff) List(_ context.Context, _ string, q staff.ListQuery) ([]staf
 }
 
 type fakePatients struct {
-	listCalls int
-	err       error
+	listCalls  int
+	lastQuery  patient.ListQuery
+	lastID     string
+	lastUpdate patient.UpdateInput
+	lastStaff  string
+	remaining  patient.Remaining
+	err        error
+}
+
+func (f *fakePatients) Get(_ context.Context, id string) (patient.Detail, error) {
+	f.lastID = id
+	at := time.Date(2026, 10, 31, 9, 0, 0, 0, time.UTC)
+	return patient.Detail{Patient: patient.Patient{ID: id, Name: "見本 花子", PreferredTime: patient.Morning, PreferredGender: patient.Female, EndedAt: &at}}, f.err
+}
+
+func (f *fakePatients) RemainingSchedules(_ context.Context, id string) (patient.Remaining, error) {
+	f.lastID = id
+	return f.remaining, f.err
 }
 
 func (f *fakePatients) Create(context.Context, patient.CreateInput) (patient.Detail, error) {
 	return patient.Detail{}, f.err
 }
 
-func (f *fakePatients) List(context.Context, string, patient.ListQuery) ([]patient.Detail, error) {
+func (f *fakePatients) Update(_ context.Context, id string, in patient.UpdateInput) (patient.Detail, error) {
+	f.lastID, f.lastUpdate = id, in
+	return patient.Detail{Patient: patient.Patient{
+		ID: id, Name: in.Name, PreferredTime: in.PreferredTime, PreferredGender: in.PreferredGender,
+		ServiceCodeID: in.ServiceCodeID, AssignedStaffID: in.AssignedStaffID,
+	}}, f.err
+}
+
+func (f *fakePatients) End(_ context.Context, id string) (patient.Detail, error) {
+	f.lastID = id
+	at := time.Date(2026, 10, 31, 9, 0, 0, 0, time.UTC)
+	return patient.Detail{Patient: patient.Patient{ID: id, PreferredTime: patient.Morning, PreferredGender: patient.Female, EndedAt: &at}}, f.err
+}
+
+func (f *fakePatients) Resume(_ context.Context, id, assignedStaffID string) (patient.Detail, error) {
+	f.lastID, f.lastStaff = id, assignedStaffID
+	return patient.Detail{Patient: patient.Patient{ID: id, PreferredTime: patient.Morning, PreferredGender: patient.Female, AssignedStaffID: assignedStaffID}}, f.err
+}
+
+func (f *fakePatients) List(_ context.Context, _ string, q patient.ListQuery) ([]patient.Detail, error) {
 	f.listCalls++
+	f.lastQuery = q
 	return []patient.Detail{}, nil
 }
 
+// app は、f のメソッド値を ScheduleApp に入れる。
+func (f *fakeSchedules) app() httpapi.ScheduleApp {
+	return httpapi.ScheduleApp{
+		ListTypes: f.ListTypes, Get: f.Get, GetRecurring: f.GetRecurring, List: f.List, Create: f.Create,
+		CreateRecurring: f.CreateRecurring, ChangeOccurrence: f.ChangeOccurrence, Cancel: f.Cancel, CancelOccurrence: f.CancelOccurrence, Update: f.Update,
+	}
+}
+
+// app は、f のメソッド値を StaffApp に入れる。
+func (f *fakeStaff) app() httpapi.StaffApp {
+	return httpapi.StaffApp{
+		Create: f.Create, Get: f.Get, List: f.List, ChangePosition: f.ChangePosition, UpdateProfile: f.UpdateProfile,
+		AddGrant: f.AddGrant, RemoveGrant: f.RemoveGrant, Leave: f.Leave, Reinstate: f.Reinstate, Retire: f.Retire,
+		RemainingAssignments: f.RemainingAssignments,
+	}
+}
+
+// app は、f のメソッド値を PatientApp に入れる。
+func (f *fakePatients) app() httpapi.PatientApp {
+	return httpapi.PatientApp{
+		Create: f.Create, Update: f.Update, End: f.End, RemainingSchedules: f.RemainingSchedules,
+		Resume: f.Resume, Get: f.Get, List: f.List,
+	}
+}
+
+// buddyPrimary は、どの事業所も buddy_primary にする OrganizationApp である。予定の作成が事業所のモードを読む。
+var buddyPrimary = httpapi.OrganizationApp{GetFacility: func(_ context.Context, id string) (organization.Facility, error) {
+	return organization.Facility{ID: id, SourceMode: organization.SourceBuddyPrimary}, nil
+}}
+
 func newRouter(s *fakeSchedules, st *fakeStaff, p *fakePatients) http.Handler {
-	return httpapi.NewRouter(httpapi.Usecases{Schedules: s, Staff: st, Patients: p, Auth: fakeAuth{}}, httpapi.RouterConfig{
+	return httpapi.NewRouter(httpapi.Apps{Organization: buddyPrimary, Schedules: s.app(), Staff: st.app(), Patients: p.app(), Auth: fakeAuth{}}, httpapi.RouterConfig{
 		Logger:   slog.New(slog.NewTextHandler(io.Discard, nil)),
 		Verifier: testVerifier,
 	})
@@ -214,14 +311,14 @@ func TestListSchedulesRejectsUnsafeSort(t *testing.T) {
 				t.Errorf("body = %v", body)
 			}
 			if s.listCalls != 0 {
-				t.Error("usecase が呼ばれた")
+				t.Error("App が呼ばれた")
 			}
 		})
 	}
 }
 
 func TestListSchedules(t *testing.T) {
-	s := &fakeSchedules{detail: schedule.Detail{Schedule: schedule.Schedule{ID: scheduleID, Slot: schedule.Slot{
+	s := &fakeSchedules{detail: scheduleview.Detail{Schedule: schedule.Schedule{ID: scheduleID, Slot: schedule.Slot{
 		Date: civil.Date{Year: 2026, Month: 10, Day: 20}, StartTime: civil.Time{Hour: 9}, EndTime: civil.Time{Hour: 10},
 	}}}}
 	rec, body := do(t, newRouter(s, nil, nil), http.MethodGet,
@@ -229,7 +326,7 @@ func TestListSchedules(t *testing.T) {
 	if rec.Code != http.StatusOK {
 		t.Fatalf("status = %d, body = %s", rec.Code, rec.Body)
 	}
-	if s.lastQuery.Sort != (kernel.Sort{Field: "start_time", Desc: true}) ||
+	if s.lastQuery.Sort != (kernel.Sort{Field: "start_time", Descending: true}) ||
 		s.lastQuery.TypeName == nil || *s.lastQuery.TypeName != schedule.Visit ||
 		s.lastQuery.DateFrom == nil || s.lastQuery.DateTo != nil {
 		t.Errorf("query = %+v", s.lastQuery)
@@ -245,6 +342,80 @@ func TestListSchedules(t *testing.T) {
 	}
 	if rs, ok := body["recurring_schedules"].([]any); !ok || len(rs) != 0 {
 		t.Errorf("recurring_schedules = %v", body["recurring_schedules"])
+	}
+	if got["source"] != "buddy" || got["review_reason"] != nil {
+		t.Errorf("source = %v, review_reason = %v, want buddy, null", got["source"], got["review_reason"])
+	}
+	if cs, ok := body["calendar_syncs"].([]any); body["source_mode"] != "buddy_primary" || !ok || len(cs) != 0 {
+		t.Errorf("source_mode = %v, calendar_syncs = %v", body["source_mode"], body["calendar_syncs"])
+	}
+	for _, key := range []string{"all_day_events", "unlisted_event_counts"} {
+		if v, ok := body[key].([]any); !ok || len(v) != 0 {
+			t.Errorf("%s = %v, want []", key, body[key])
+		}
+	}
+}
+
+// TestListSchedulesProjected は、google_primary の事業所の一覧の応答が、正本のモード、カレンダーの同期の状況、
+// Projection の予定の読み元と確認が必要な理由、終日の予定、出せない予定の職員ごとの件数を返すことを確認する。
+func TestListSchedulesProjected(t *testing.T) {
+	succeeded := time.Date(2026, 10, 20, 9, 0, 0, 0, time.UTC)
+	code := "unavailable"
+	s := &fakeSchedules{listing: &scheduleview.Listing{
+		Schedules: []scheduleview.Detail{{
+			Schedule: schedule.Schedule{ID: scheduleID, Slot: schedule.Slot{Date: civil.Date{Year: 2026, Month: 10, Day: 20}, StartTime: civil.Time{Hour: 9}, EndTime: civil.Time{Hour: 10}}},
+			Source:   scheduleview.SourceGoogleCalendar, ReviewReason: scheduleview.ReviewPatientNotFound,
+		}},
+		RecurringSchedules: []scheduleview.RecurringDetail{},
+		SourceMode:         organization.SourceGooglePrimary,
+		CalendarSyncs: []scheduleview.CalendarSync{
+			{ExternalCalendarID: typeID, StaffID: staffID, StaffName: "岡田 葵", LastStatus: scheduleview.SyncFailed, LastSucceededAt: &succeeded, LastError: &code},
+			{ExternalCalendarID: scheduleID, StaffID: staffID, StaffName: "岡田 葵", LastStatus: scheduleview.SyncNever},
+		},
+		AllDayEvents: []scheduleview.AllDayEvent{{
+			ID: scheduleID, StaffID: staffID, StaffName: "岡田 葵",
+			StartDate: civil.Date{Year: 2026, Month: 10, Day: 20}, EndDate: civil.Date{Year: 2026, Month: 10, Day: 22}, Title: "研修",
+		}, {
+			ID: typeID, StaffID: staffID, StaffName: "岡田 葵",
+			StartDate: civil.Date{Year: 2026, Month: 10, Day: 1}, EndDate: civil.Date{Year: 2026, Month: 10, Day: 1}, Title: "当番",
+			ReviewReason: scheduleview.ReviewRecurrenceUnsupported,
+		}},
+		UnlistedEventCounts: []scheduleview.UnlistedEventCount{{StaffID: staffID, Count: 2}},
+	}}
+	rec, body := do(t, newRouter(s, nil, nil), http.MethodGet, "/v1/facilities/"+facilityID+"/schedules", "")
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, body = %s", rec.Code, rec.Body)
+	}
+	if body["source_mode"] != "google_primary" {
+		t.Errorf("source_mode = %v", body["source_mode"])
+	}
+	got := body["schedules"].([]any)[0].(map[string]any)
+	if got["source"] != "google_calendar" || got["review_reason"] != "patient_not_found" {
+		t.Errorf("source = %v, review_reason = %v", got["source"], got["review_reason"])
+	}
+	syncs := body["calendar_syncs"].([]any)
+	failed, never := syncs[0].(map[string]any), syncs[1].(map[string]any)
+	if failed["external_calendar_id"] != typeID || failed["staff_name"] != "岡田 葵" || failed["last_status"] != "failed" ||
+		failed["last_error"] != "unavailable" || failed["last_succeeded_at"] != "2026-10-20T09:00:00Z" {
+		t.Errorf("失敗したカレンダー = %v", failed)
+	}
+	for _, key := range []string{"last_error", "last_succeeded_at"} {
+		if v, ok := never[key]; !ok || v != nil {
+			t.Errorf("同期していないカレンダーの %s = %v, want null", key, v)
+		}
+	}
+	allDays := body["all_day_events"].([]any)
+	allDay := allDays[0].(map[string]any)
+	if reason, ok := allDay["review_reason"]; allDay["id"] != scheduleID || allDay["staff_id"] != staffID || allDay["staff_name"] != "岡田 葵" ||
+		allDay["start_date"] != "2026-10-20" || allDay["end_date"] != "2026-10-22" || allDay["title"] != "研修" || !ok || reason != nil {
+		t.Errorf("終日の予定 = %v", allDay)
+	}
+	if unsupported := allDays[1].(map[string]any); unsupported["review_reason"] != "recurrence_unsupported" {
+		t.Errorf("写せない繰り返しの終日の予定の review_reason = %v, want recurrence_unsupported", unsupported["review_reason"])
+	}
+	count := body["unlisted_event_counts"].([]any)[0].(map[string]any)
+	if count["staff_id"] != staffID || count["count"] != float64(2) {
+		t.Errorf("出せない予定の件数 = %v", count)
 	}
 }
 
@@ -262,7 +433,7 @@ func TestListUsersAndPatientsRejectUnsafeSort(t *testing.T) {
 		}
 	}
 	if st.listCalls != 0 || p.listCalls != 0 {
-		t.Error("usecase が呼ばれた")
+		t.Error("App が呼ばれた")
 	}
 	rec, _ := do(t, h, http.MethodGet, "/v1/facilities/"+facilityID+"/users?sort_field=username&sort_order=asc", "")
 	if rec.Code != http.StatusOK || st.lastQuery.Sort != (kernel.Sort{Field: "username"}) {
@@ -334,7 +505,7 @@ const validSlotBody = `{"schedule_type_id":"` + typeID + `","date":"2026-10-20",
 	`"staff_id":"` + staffID + `","title":"会議"}`
 
 func TestUpdateSchedule(t *testing.T) {
-	s := &fakeSchedules{detail: schedule.Detail{Schedule: schedule.Schedule{ID: scheduleID}}}
+	s := &fakeSchedules{detail: scheduleview.Detail{Schedule: schedule.Schedule{ID: scheduleID}}}
 	rec, body := do(t, newRouter(s, nil, nil), http.MethodPut, "/v1/schedules/"+scheduleID, validSlotBody)
 	if rec.Code != http.StatusOK || body["id"] != scheduleID {
 		t.Fatalf("status = %d, body = %s", rec.Code, rec.Body)
@@ -399,9 +570,38 @@ func TestCreateSchedule(t *testing.T) {
 	}
 }
 
+func TestCreateScheduleEndsNextDay(t *testing.T) {
+	overnight := strings.NewReplacer(`"09:00"`, `"22:00"`, `"10:00"`, `"01:00"`).Replace(validSlotBody)
+	tests := []struct {
+		name string
+		body string
+		want bool
+	}{
+		{name: "印を付ける", body: strings.Replace(overnight, `"title"`, `"ends_next_day":true,"title"`, 1), want: true},
+		{name: "印を省く", body: overnight},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			s := &fakeSchedules{detail: scheduleview.Detail{Schedule: schedule.Schedule{ID: scheduleID, Slot: schedule.Slot{
+				Date: civil.Date{Year: 2026, Month: 11, Day: 1}, StartTime: civil.Time{Hour: 22}, EndTime: civil.Time{Hour: 1}, EndsNextDay: tt.want,
+			}}}}
+			rec, body := do(t, newRouter(s, nil, nil), http.MethodPost, "/v1/facilities/"+facilityID+"/schedules", tt.body)
+			if rec.Code != http.StatusCreated {
+				t.Fatalf("status = %d, body = %s", rec.Code, rec.Body)
+			}
+			if s.lastSlot.EndsNextDay != tt.want || s.lastSlot.EndTime != (civil.Time{Hour: 1}) {
+				t.Errorf("slot = %+v", s.lastSlot)
+			}
+			if body["ends_next_day"] != tt.want || body["date"] != "2026-11-01" || body["end_time"] != "01:00" {
+				t.Errorf("ends_next_day = %v, date = %v, end_time = %v", body["ends_next_day"], body["date"], body["end_time"])
+			}
+		})
+	}
+}
+
 func TestHealth(t *testing.T) {
 	routerWithReady := func(err error) http.Handler {
-		return httpapi.NewRouter(httpapi.Usecases{Auth: fakeAuth{}}, httpapi.RouterConfig{
+		return httpapi.NewRouter(httpapi.Apps{Auth: fakeAuth{}}, httpapi.RouterConfig{
 			Logger:   slog.New(slog.NewTextHandler(io.Discard, nil)),
 			Verifier: testVerifier,
 			Ready:    func(context.Context) error { return err },
@@ -426,6 +626,31 @@ func TestHealth(t *testing.T) {
 				t.Fatalf("status = %d, body = %v", rec.Code, body)
 			}
 		})
+	}
+}
+
+func TestGetUserRemainingAssignments(t *testing.T) {
+	st := &fakeStaff{assignments: staff.Assignments{
+		Schedules: []staff.AssignedSchedule{{ID: "01M3TC5H00QV17BC0J9V3393ZP", Date: civil.Date{Year: 2026, Month: 11, Day: 2},
+			StartTime: civil.Time{Hour: 9}, EndTime: civil.Time{Hour: 10}}},
+		RecurringSchedules: []staff.AssignedRecurring{{ID: "01M3TC5H00QV17BC0J9V3393ZR", Date: civil.Date{Year: 2026, Month: 11, Day: 3},
+			StartTime: civil.Time{Hour: 22}, EndTime: civil.Time{Hour: 1}, EndsNextDay: true}},
+		Patients: []staff.AssignedPatient{{ID: "01M3TC5H00QV17BC0J9V3393ZQ", Name: "山田 花子"}},
+	}}
+	rec, body := do(t, newRouter(&fakeSchedules{}, st, &fakePatients{}), http.MethodGet, "/v1/users/"+staffID+"/remaining_assignments", "")
+	if rec.Code != http.StatusOK || st.lastStopped != staffID {
+		t.Fatalf("status = %d, 職員 = %s, body = %v", rec.Code, st.lastStopped, body)
+	}
+	scheds, recs, pats := body["schedules"].([]any), body["recurring_schedules"].([]any), body["patients"].([]any)
+	if len(scheds) != 1 || scheds[0].(map[string]any)["date"] != "2026-11-02" || len(recs) != 1 || len(pats) != 1 {
+		t.Fatalf("body = %v, want 予定 1 件と繰り返し 1 件と利用者 1 人", body)
+	}
+	if scheds[0].(map[string]any)["ends_next_day"] != false || recs[0].(map[string]any)["ends_next_day"] != true {
+		t.Errorf("ends_next_day = %v, %v, want 単発は false、翌日に終わる繰り返しは true（#923）", scheds[0], recs[0])
+	}
+	forbidden := newRouter(&fakeSchedules{}, &fakeStaff{err: apperr.ErrForbidden}, &fakePatients{})
+	if rec, body := do(t, forbidden, http.MethodGet, "/v1/users/"+staffID+"/remaining_assignments", ""); rec.Code != http.StatusForbidden || body["code"] != "forbidden" {
+		t.Errorf("職員の管理の権限が無い: status = %d, body = %v", rec.Code, body)
 	}
 }
 
@@ -490,7 +715,7 @@ func TestRetireUser(t *testing.T) {
 	}
 
 	assigned := &staff.AssignedError{Assignments: staff.Assignments{
-		Recurring: []staff.AssignedRecurring{{ID: "01M3TC5H00QV17BC0J9V3393ZP", Date: civil.Date{Year: 2026, Month: 10, Day: 5},
+		RecurringSchedules: []staff.AssignedRecurring{{ID: "01M3TC5H00QV17BC0J9V3393ZP", Date: civil.Date{Year: 2026, Month: 10, Day: 5},
 			StartTime: civil.Time{Hour: 13}, EndTime: civil.Time{Hour: 14}}},
 	}}
 	rec, body = do(t, newRouter(&fakeSchedules{}, &fakeStaff{err: assigned}, &fakePatients{}), http.MethodPost, "/v1/users/"+staffID+"/retire", "")
@@ -506,6 +731,127 @@ func TestRetireUser(t *testing.T) {
 	rec, body = do(t, newRouter(&fakeSchedules{}, &fakeStaff{err: apperr.Conflict("職員の管理の権限を持つ最後の有効な職員は、休職と退職にできません")}, &fakePatients{}), http.MethodPost, "/v1/users/"+staffID+"/retire", "")
 	if rec.Code != http.StatusConflict || body["code"] != "conflict" || body["assignments"] != nil {
 		t.Errorf("最後の管理者: status = %d, body = %v, want 一覧の無い 409 conflict", rec.Code, body)
+	}
+}
+
+const patientID = "01M3TC5H00QV17BC0J9V3393ZQ"
+
+// 利用者の一覧は、デフォルトで利用中の利用者だけを、include_ended=true なら利用の終了の利用者も返す（#346 の検証の観点 3）。
+func TestListPatientsIncludeEnded(t *testing.T) {
+	p := &fakePatients{}
+	h := newRouter(nil, &fakeStaff{}, p)
+	for target, want := range map[string]bool{
+		"/v1/facilities/" + facilityID + "/patients":                     false,
+		"/v1/facilities/" + facilityID + "/patients?include_ended=false": false,
+		"/v1/facilities/" + facilityID + "/patients?include_ended=true":  true,
+	} {
+		rec, _ := do(t, h, http.MethodGet, target, "")
+		if rec.Code != http.StatusOK || p.lastQuery.IncludeEnded != want {
+			t.Errorf("%s: status = %d, IncludeEnded = %v, want %v", target, rec.Code, p.lastQuery.IncludeEnded, want)
+		}
+	}
+	rec, _ := do(t, h, http.MethodGet, "/v1/facilities/"+facilityID+"/patients?include_ended=yes", "")
+	if rec.Code != http.StatusBadRequest {
+		t.Errorf("真偽値でない include_ended: status = %d, want 400", rec.Code)
+	}
+}
+
+const patientBody = `{"name":"見本 花子","preferred_time":"午後","preferred_gender":"女性","service_code_id":"` + typeID + `","assigned_staff_id":"` + staffID + `"}`
+
+// 利用者の変更は、本文の値を App に渡し、変えた利用者を返す。入力のエラーは 400、権限が無ければ 403 を返す（#346 の検証の観点 1、2、5）。
+func TestUpdatePatient(t *testing.T) {
+	p := &fakePatients{}
+	rec, body := do(t, newRouter(nil, &fakeStaff{}, p), http.MethodPut, "/v1/patients/"+patientID, patientBody)
+	want := patient.UpdateInput{Name: "見本 花子", PreferredTime: patient.Afternoon, PreferredGender: patient.Female, ServiceCodeID: typeID, AssignedStaffID: staffID}
+	if rec.Code != http.StatusOK || p.lastID != patientID || p.lastUpdate != want || body["name"] != "見本 花子" || body["ended_at"] != nil {
+		t.Fatalf("status = %d, id = %s, 入力 = %+v, body = %v", rec.Code, p.lastID, p.lastUpdate, body)
+	}
+	rec, body = do(t, newRouter(nil, &fakeStaff{}, &fakePatients{err: apperr.Invalid("休職の職員 %s には、予定と担当を割り振れません", staffID)}),
+		http.MethodPut, "/v1/patients/"+patientID, patientBody)
+	if rec.Code != http.StatusBadRequest || body["code"] != "invalid_input" {
+		t.Errorf("休職の担当: status = %d, body = %v, want 400", rec.Code, body)
+	}
+	rec, _ = do(t, newRouter(nil, &fakeStaff{}, &fakePatients{err: apperr.ErrForbidden}), http.MethodPut, "/v1/patients/"+patientID, patientBody)
+	if rec.Code != http.StatusForbidden {
+		t.Errorf("権限なし: status = %d, want 403", rec.Code)
+	}
+}
+
+// 利用の終了は、利用の終了にした時刻を返す。その日以降の予定が残れば、409 で残る一覧を返す（#346 の検証の観点 3）。
+func TestEndPatientService(t *testing.T) {
+	p := &fakePatients{}
+	rec, body := do(t, newRouter(nil, &fakeStaff{}, p), http.MethodPost, "/v1/patients/"+patientID+"/end_service", "")
+	if rec.Code != http.StatusOK || p.lastID != patientID || body["ended_at"] != "2026-10-31T09:00:00Z" {
+		t.Fatalf("status = %d, id = %s, body = %v", rec.Code, p.lastID, body)
+	}
+
+	scheduled := &patient.ScheduledError{Remaining: patient.Remaining{
+		Schedules: []patient.RemainingSchedule{{ID: scheduleID, Date: civil.Date{Year: 2026, Month: 11, Day: 2}, StartTime: civil.Time{Hour: 9}, EndTime: civil.Time{Hour: 10}}},
+	}}
+	rec, body = do(t, newRouter(nil, &fakeStaff{}, &fakePatients{err: scheduled}), http.MethodPost, "/v1/patients/"+patientID+"/end_service", "")
+	if rec.Code != http.StatusConflict || body["code"] != "patient_has_schedules" {
+		t.Fatalf("残る予定: status = %d, body = %v, want 409 patient_has_schedules", rec.Code, body)
+	}
+	r := body["schedules"].(map[string]any)
+	scheds := r["schedules"].([]any)
+	if len(scheds) != 1 || scheds[0].(map[string]any)["date"] != "2026-11-02" || len(r["recurring_schedules"].([]any)) != 0 {
+		t.Errorf("schedules = %v, want 予定 1 件と空の繰り返し", r)
+	}
+}
+
+// 利用者を 1 人読むと、利用の終了の利用者も、利用の終了にした時刻と一緒に返る。権限が無ければ 403 を返す（#353 の検証の観点 1、3）。
+func TestGetPatient(t *testing.T) {
+	p := &fakePatients{}
+	rec, body := do(t, newRouter(nil, &fakeStaff{}, p), http.MethodGet, "/v1/patients/"+patientID, "")
+	if rec.Code != http.StatusOK || p.lastID != patientID || body["name"] != "見本 花子" || body["ended_at"] != "2026-10-31T09:00:00Z" {
+		t.Fatalf("status = %d, id = %s, body = %v", rec.Code, p.lastID, body)
+	}
+	rec, body = do(t, newRouter(nil, &fakeStaff{}, &fakePatients{err: apperr.ErrForbidden}), http.MethodGet, "/v1/patients/"+patientID, "")
+	if rec.Code != http.StatusForbidden || body["code"] != "forbidden" {
+		t.Errorf("権限なし: status = %d, body = %v, want 403", rec.Code, body)
+	}
+	rec, _ = do(t, newRouter(nil, &fakeStaff{}, &fakePatients{err: apperr.ErrNotFound}), http.MethodGet, "/v1/patients/"+patientID, "")
+	if rec.Code != http.StatusNotFound {
+		t.Errorf("いない利用者: status = %d, want 404", rec.Code)
+	}
+}
+
+// 利用者に残る予定は、利用の終了の 409 の schedules と同じ形で返る。権限が無ければ 403 を返す（#353 の検証の観点 2、3）。
+func TestGetPatientRemainingSchedules(t *testing.T) {
+	rem := patient.Remaining{
+		Schedules:          []patient.RemainingSchedule{{ID: scheduleID, Date: civil.Date{Year: 2026, Month: 11, Day: 2}, StartTime: civil.Time{Hour: 9}, EndTime: civil.Time{Hour: 10}}},
+		RecurringSchedules: []patient.RemainingRecurring{{ID: patientID, Date: civil.Date{Year: 2026, Month: 9, Day: 1}, StartTime: civil.Time{Hour: 22}, EndTime: civil.Time{Hour: 1}, EndsNextDay: true}},
+	}
+	p := &fakePatients{remaining: rem}
+	rec, body := do(t, newRouter(nil, &fakeStaff{}, p), http.MethodGet, "/v1/patients/"+patientID+"/remaining_schedules", "")
+	if rec.Code != http.StatusOK || p.lastID != patientID {
+		t.Fatalf("status = %d, id = %s, body = %v", rec.Code, p.lastID, body)
+	}
+	scheds, recs := body["schedules"].([]any), body["recurring_schedules"].([]any)
+	if scheds[0].(map[string]any)["ends_next_day"] != false || recs[0].(map[string]any)["ends_next_day"] != true {
+		t.Errorf("ends_next_day = %v, %v, want 単発は false、翌日に終わる繰り返しは true（#923）", scheds[0], recs[0])
+	}
+	_, conflict := do(t, newRouter(nil, &fakeStaff{}, &fakePatients{err: &patient.ScheduledError{Remaining: rem}}), http.MethodPost, "/v1/patients/"+patientID+"/end_service", "")
+	if !reflect.DeepEqual(body, conflict["schedules"]) {
+		t.Errorf("body = %v, want 利用の終了の 409 の schedules（%v）と同じ", body, conflict["schedules"])
+	}
+	rec, body = do(t, newRouter(nil, &fakeStaff{}, &fakePatients{err: apperr.ErrForbidden}), http.MethodGet, "/v1/patients/"+patientID+"/remaining_schedules", "")
+	if rec.Code != http.StatusForbidden || body["code"] != "forbidden" {
+		t.Errorf("権限なし: status = %d, body = %v, want 403", rec.Code, body)
+	}
+}
+
+// 利用の再開は、本文の担当の職員を App に渡す。担当の職員を省くと 400 を返す（ADR-0005）。
+func TestResumePatientService(t *testing.T) {
+	p := &fakePatients{}
+	rec, body := do(t, newRouter(nil, &fakeStaff{}, p), http.MethodPost, "/v1/patients/"+patientID+"/resume_service", `{"assigned_staff_id":"`+staffID+`"}`)
+	if rec.Code != http.StatusOK || p.lastID != patientID || p.lastStaff != staffID || body["assigned_staff_id"] != staffID || body["ended_at"] != nil {
+		t.Fatalf("status = %d, id = %s, 担当 = %s, body = %v", rec.Code, p.lastID, p.lastStaff, body)
+	}
+	p = &fakePatients{}
+	rec, _ = do(t, newRouter(nil, &fakeStaff{}, p), http.MethodPost, "/v1/patients/"+patientID+"/resume_service", `{}`)
+	if rec.Code != http.StatusBadRequest || p.lastID != "" {
+		t.Errorf("担当なし: status = %d, App = %q, want 400 で App を呼ばない", rec.Code, p.lastID)
 	}
 }
 
@@ -527,6 +873,51 @@ func TestChangeUserPosition(t *testing.T) {
 	last := newRouter(&fakeSchedules{}, &fakeStaff{err: apperr.Conflict("職員の管理の権限を持つ最後の有効な職員の役職は、その権限を持たない役職に変えられません")}, &fakePatients{})
 	if rec, body := do(t, last, http.MethodPut, "/v1/users/"+staffID+"/position", `{"position_id":"`+positionID+`"}`); rec.Code != http.StatusConflict || body["code"] != "conflict" {
 		t.Errorf("最後の管理者: status = %d, body = %v, want 409 conflict", rec.Code, body)
+	}
+}
+
+func TestUpdateUser(t *testing.T) {
+	const depID, teamID = "01M3TC5HZ8A18D2TP3PTKDXJMN", "01M3TC5MX04QJ19X6XR1ZCBZRJ"
+	st := &fakeStaff{}
+	h := newRouter(&fakeSchedules{}, st, &fakePatients{})
+	rec, body := do(t, h, http.MethodPut, "/v1/users/"+staffID,
+		`{"username":"青木 ひな","phone_number":"09012345678","department_id":"`+depID+`","team_id":"`+teamID+`","visits":true}`)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, body = %s", rec.Code, rec.Body)
+	}
+	p := st.lastProfile
+	if p.Username != "青木 ひな" || p.PhoneNumber == nil || *p.PhoneNumber != "09012345678" || p.DepartmentID != depID || p.TeamID != teamID {
+		t.Errorf("入力 = %+v", p)
+	}
+	if body["username"] != "青木 ひな" || body["team"].(map[string]any)["id"] != teamID {
+		t.Errorf("body = %v", body)
+	}
+	if rec, _ := do(t, h, http.MethodPut, "/v1/users/"+staffID, `{"username":"青木","department_id":"`+depID+`","team_id":"`+teamID+`","visits":true}`); rec.Code != http.StatusOK || st.lastProfile.PhoneNumber != nil {
+		t.Errorf("電話番号を省く: status = %d, 電話番号 = %v, want 200 で nil", rec.Code, st.lastProfile.PhoneNumber)
+	}
+	for name, b := range map[string]string{
+		"名前が無い":         `{"department_id":"` + depID + `","team_id":"` + teamID + `","visits":true}`,
+		"チームの ID の形が誤り": `{"username":"青木","department_id":"` + depID + `","team_id":"x","visits":true}`,
+		"訪問するかが無い":      `{"username":"青木","department_id":"` + depID + `","team_id":"` + teamID + `"}`,
+	} {
+		if rec, _ := do(t, h, http.MethodPut, "/v1/users/"+staffID, b); rec.Code != http.StatusBadRequest {
+			t.Errorf("%s: status = %d", name, rec.Code)
+		}
+	}
+	valid := `{"username":"青木","department_id":"` + depID + `","team_id":"` + teamID + `","visits":true}`
+	for name, c := range map[string]struct {
+		err    error
+		status int
+		code   string
+	}{
+		"ほかの事業所のチーム":  {apperr.Invalid("チーム %s はこの事業所に属していません", teamID), http.StatusBadRequest, "invalid_input"},
+		"職員の管理の権限が無い": {apperr.ErrForbidden, http.StatusForbidden, "forbidden"},
+		"退職した職員":      {apperr.Conflict("退職した職員は変えられません"), http.StatusConflict, "conflict"},
+	} {
+		h := newRouter(&fakeSchedules{}, &fakeStaff{err: c.err}, &fakePatients{})
+		if rec, body := do(t, h, http.MethodPut, "/v1/users/"+staffID, valid); rec.Code != c.status || body["code"] != c.code {
+			t.Errorf("%s: status = %d, body = %v, want %d %s", name, rec.Code, body, c.status, c.code)
+		}
 	}
 }
 
@@ -573,19 +964,19 @@ func TestRemoveUserPolicy(t *testing.T) {
 	}
 }
 
-// TestUsecaseReceivesPrincipal は、操作が権限を判定できるよう、認証のミドルウェアが特定した職員を ctx で渡すことを確認する。
-func TestUsecaseReceivesPrincipal(t *testing.T) {
+// TestAppReceivesPrincipal は、操作が権限を判定できるよう、認証のミドルウェアが特定した職員を ctx で渡すことを確認する。
+func TestAppReceivesPrincipal(t *testing.T) {
 	s := &fakeSchedules{}
 	do(t, newRouter(s, &fakeStaff{}, &fakePatients{}), http.MethodGet, "/v1/schedules/"+scheduleID, "")
 	if s.lastCtx == nil {
-		t.Fatal("usecase が呼ばれなかった")
+		t.Fatal("App が呼ばれなかった")
 	}
 	if p, ok := principal.From(s.lastCtx); !ok || p.Staff.ID != staffID {
-		t.Fatalf("usecase の ctx の職員 = %+v, %v", p, ok)
+		t.Fatalf("App の ctx の職員 = %+v, %v", p, ok)
 	}
 }
 
-func TestUsecaseReceivesRequestCancellation(t *testing.T) {
+func TestAppReceivesRequestCancellation(t *testing.T) {
 	s := &fakeSchedules{}
 	h := newRouter(s, &fakeStaff{}, &fakePatients{})
 	ctx, cancel := context.WithCancel(context.Background())
@@ -594,17 +985,17 @@ func TestUsecaseReceivesRequestCancellation(t *testing.T) {
 	req.Header.Set("Authorization", "Bearer "+token(t, testOrgID))
 	serve(h, req)
 	if s.lastCtx == nil {
-		t.Fatal("usecase が呼ばれなかった")
+		t.Fatal("App が呼ばれなかった")
 	}
 	if !errors.Is(s.lastCtx.Err(), context.Canceled) {
-		t.Fatalf("usecase の context がリクエストの取り消しを受けない: %v", s.lastCtx.Err())
+		t.Fatalf("App の context がリクエストの取り消しを受けない: %v", s.lastCtx.Err())
 	}
 }
 
 // TestCORSPreflight は、許した origin からのプリフライトのリクエストに、API が使う全てのメソッドを許すことを確認する。
 func TestCORSPreflight(t *testing.T) {
 	const origin = "http://localhost:3000"
-	h := httpapi.NewRouter(httpapi.Usecases{Auth: fakeAuth{}}, httpapi.RouterConfig{
+	h := httpapi.NewRouter(httpapi.Apps{Auth: fakeAuth{}}, httpapi.RouterConfig{
 		Logger:       slog.New(slog.NewTextHandler(io.Discard, nil)),
 		Verifier:     testVerifier,
 		AllowOrigins: []string{origin},
@@ -642,6 +1033,9 @@ func TestRequestConstraints(t *testing.T) {
 		name, target, body, wantMessage string
 	}{
 		{"チームの名前が空", "/v1/facilities/" + facilityID + "/teams", `{"name":""}`, "name"},
+		{"チームの色が 8 色にない", "/v1/facilities/" + facilityID + "/teams", `{"name":"A","color":"red"}`, "color"},
+		{"部署の名前が空", "/v1/facilities/" + facilityID + "/departments", `{"name":""}`, "name"},
+		{"部署の名前が長すぎる", "/v1/facilities/" + facilityID + "/departments", `{"name":"` + strings.Repeat("あ", 256) + `"}`, "name"},
 		{"キャンセルの理由が空", "/v1/schedules/" + scheduleID + "/cancel", `{"reason":""}`, "reason"},
 		{"キャンセルの理由が長すぎる", "/v1/schedules/" + scheduleID + "/cancel", `{"reason":"` + strings.Repeat("あ", 256) + `"}`, "reason"},
 		{"電話番号が長すぎる", "/v1/facilities/" + facilityID + "/users", user + `,"phone_number":"+0900000000000"}`, "phone_number"},
@@ -675,6 +1069,9 @@ func TestRequestValidationMessages(t *testing.T) {
 		{"クエリの値が列挙に無い", http.MethodGet, list + "?sort_field=foo", "", []string{"query の sort_field が定義に合いません"}},
 		{"本文のエラーが複数", http.MethodPost, list, `{"date":"x","start_time":"x"}`, []string{"date", "start_time", "schedule_type_id"}},
 		{"本文が JSON でない", http.MethodPost, list, `{bad`, []string{bodyErrorPrefixForTest}},
+		{"変えるチームの色が 8 色にない", http.MethodPut, "/v1/teams/" + staffID, `{"name":"A","color":"red"}`, []string{"color"}},
+		{"変えるチームの色が無い", http.MethodPut, "/v1/teams/" + staffID, `{"name":"A"}`, []string{"color"}},
+		{"変える部署の名前が空", http.MethodPut, "/v1/departments/" + staffID, `{"name":""}`, []string{"name"}},
 		{"本文が大きすぎる", http.MethodPost, "/v1/schedules/" + scheduleID + "/cancel",
 			`{"reason":"` + strings.Repeat("a", 1<<20) + `"}`, []string{"バイトまでです"}},
 	}
@@ -691,5 +1088,63 @@ func TestRequestValidationMessages(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+// 職員の変更は、訪問するかを受け取る。予定か担当の利用者が残る職員を訪問しない職員に変えようとしたときは、409 で残る一覧を返す（ADR-0006）。
+func TestUpdateUserVisits(t *testing.T) {
+	const depID, teamID = "01M3TC5HZ8A18D2TP3PTKDXJMN", "01M3TC5MX04QJ19X6XR1ZCBZRJ"
+	nonVisiting := `{"username":"青木","department_id":"` + depID + `","team_id":"` + teamID + `","visits":false}`
+	st := &fakeStaff{}
+	rec, body := do(t, newRouter(&fakeSchedules{}, st, &fakePatients{}), http.MethodPut, "/v1/users/"+staffID, nonVisiting)
+	if rec.Code != http.StatusOK || !st.lastProfile.NonVisiting || body["visits"] != false {
+		t.Fatalf("status = %d, 入力 = %+v, body = %v, want 200 で訪問しない職員", rec.Code, st.lastProfile, body)
+	}
+
+	assigned := &staff.AssignedError{NonVisiting: true, Assignments: staff.Assignments{
+		Patients: []staff.AssignedPatient{{ID: patientID, Name: "見本 花子"}},
+	}}
+	rec, body = do(t, newRouter(&fakeSchedules{}, &fakeStaff{err: assigned}, &fakePatients{}), http.MethodPut, "/v1/users/"+staffID, nonVisiting)
+	if rec.Code != http.StatusConflict || body["code"] != "staff_has_assignments" || body["message"] != assigned.Error() {
+		t.Fatalf("残る担当: status = %d, body = %v, want 409 staff_has_assignments", rec.Code, body)
+	}
+	if pats := body["assignments"].(map[string]any)["patients"].([]any); len(pats) != 1 {
+		t.Errorf("assignments = %v, want 担当の利用者 1 件", body["assignments"])
+	}
+}
+
+// 職員の登録は、visits を省くと訪問する職員として登録する（ADR-0006）。
+func TestCreateUserVisits(t *testing.T) {
+	user := `{"username":"新人","email":"new@example.com","department_id":"` + staffID + `","team_id":"` + staffID + `","position_id":"` + staffID + `"`
+	for name, c := range map[string]struct {
+		body        string
+		nonVisiting bool
+	}{
+		"省く":    {user + `}`, false},
+		"訪問する":  {user + `,"visits":true}`, false},
+		"訪問しない": {user + `,"visits":false}`, true},
+	} {
+		st := &fakeStaff{}
+		rec, body := do(t, newRouter(&fakeSchedules{}, st, &fakePatients{}), http.MethodPost, "/v1/facilities/"+facilityID+"/users", c.body)
+		if rec.Code != http.StatusCreated || st.lastCreate.NonVisiting != c.nonVisiting || body["visits"] != !c.nonVisiting {
+			t.Errorf("%s: status = %d, 入力 = %+v, body = %v", name, rec.Code, st.lastCreate, body)
+		}
+	}
+}
+
+// TestGetFacility は、事業所の応答が、事業所の予定の正本のモードを返すことを確認する。
+func TestGetFacility(t *testing.T) {
+	h := httpapi.NewRouter(httpapi.Apps{
+		Organization: httpapi.OrganizationApp{GetFacility: func(_ context.Context, id string) (organization.Facility, error) {
+			return organization.Facility{ID: id, Name: "事業所", SourceMode: organization.SourceGooglePrimary}, nil
+		}},
+		Auth: fakeAuth{},
+	}, httpapi.RouterConfig{Logger: slog.New(slog.NewTextHandler(io.Discard, nil)), Verifier: testVerifier})
+	rec, body := do(t, h, http.MethodGet, "/v1/facilities/"+facilityID, "")
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, body = %s", rec.Code, rec.Body)
+	}
+	if body["id"] != facilityID || body["source_mode"] != "google_primary" {
+		t.Errorf("body = %v", body)
 	}
 }

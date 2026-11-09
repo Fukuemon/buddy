@@ -33,8 +33,12 @@ SELECT EXISTS (
 );
 
 -- name: CreateImportRun :exec
-INSERT INTO import_runs (id, facility_id, external_calendar_id, requested_by, range_start, range_end, status)
-VALUES ($1, $2, $3, $4, $5, $6, $7);
+-- range_end は、切り替えの取り込み（cutover_id がある）では NULL にする。
+INSERT INTO import_runs (id, facility_id, external_calendar_id, requested_by, range_start, range_end, status, cutover_id)
+VALUES (
+    sqlc.arg(id), sqlc.arg(facility_id), sqlc.arg(external_calendar_id), sqlc.arg(requested_by), sqlc.arg(range_start), sqlc.narg(range_end),
+    sqlc.arg(status), sqlc.narg(cutover_id)
+);
 
 -- name: FinishImportRun :one
 UPDATE import_runs
@@ -47,8 +51,11 @@ SELECT * FROM external_event_links WHERE external_calendar_id = $1 ORDER BY id;
 
 -- name: CreateExternalEventLink :exec
 INSERT INTO external_event_links (
-    id, facility_id, external_calendar_id, external_event_id, recurring_event_id, etag, synced_version, schedule_id, recurring_schedule_id
-) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9);
+    id, facility_id, external_calendar_id, external_event_id, recurring_event_id, etag, synced_version, schedule_id, recurring_schedule_id, cutover_id
+) VALUES (
+    sqlc.arg(id), sqlc.arg(facility_id), sqlc.arg(external_calendar_id), sqlc.arg(external_event_id), sqlc.narg(recurring_event_id), sqlc.arg(etag),
+    sqlc.narg(synced_version), sqlc.narg(schedule_id), sqlc.narg(recurring_schedule_id), sqlc.narg(cutover_id)
+);
 
 -- name: GetActiveExternalCalendarByStaff :one
 SELECT * FROM external_calendars WHERE staff_id = $1 AND disabled_at IS NULL;
@@ -67,3 +74,10 @@ DELETE FROM external_event_links WHERE id = $1;
 
 -- name: DisableExternalCalendarsByStaff :exec
 UPDATE external_calendars SET disabled_at = now() WHERE staff_id = $1 AND disabled_at IS NULL;
+
+-- name: GetExternalCalendarFacilityID :one
+-- access がパスの ID のリソースの事業所を確認するときに、事業所だけを読む。
+SELECT facility_id FROM external_calendars WHERE id = $1;
+
+-- name: GetExternalEventLinkByDeletedSchedule :one
+SELECT * FROM external_event_links WHERE deleted_schedule_id = $1;

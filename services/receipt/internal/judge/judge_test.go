@@ -1,6 +1,7 @@
 package judge
 
 import (
+	"reflect"
 	"testing"
 
 	"github.com/Fukuemon/buddy/services/receipt/internal/civil"
@@ -33,7 +34,7 @@ func build(t *testing.T, s spec) *record.Record {
 }
 
 func TestJudge(t *testing.T) {
-	normal := []string{RequiredAddition}
+	normal := []string{requiredAddition}
 	baseS := spec{"09:00", "09:29", new(29), "訪看I２", nil}
 	baseV := spec{"09:00", "09:29", new(29), "訪看I２", normal}
 	tests := []struct {
@@ -116,7 +117,7 @@ func TestJudge(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			r := Judge(match.Pair{Schedule: build(t, tt.s), Visit: build(t, tt.v)})
+			r := judgePair(match.Pair{Schedule: build(t, tt.s), Visit: build(t, tt.v)})
 			if r.Category != tt.want {
 				t.Errorf("Category = %s, want %s（%+v）", r.Category, tt.want, *r.Checks)
 			}
@@ -137,10 +138,10 @@ func expect(t *testing.T, ok bool, what string) {
 func TestJudgeOneSided(t *testing.T) {
 	s := build(t, spec{"09:00", "09:29", new(29), "訪看I２", nil})
 	v := build(t, spec{"09:00", "09:29", new(29), "訪看I２", []string{"通常"}})
-	if r := Judge(match.Pair{Schedule: s}); r.Category != ScheduleOnly || r.Checks != nil || r.Visit != nil {
+	if r := judgePair(match.Pair{Schedule: s}); r.Category != ScheduleOnly || r.Checks != nil || r.Visit != nil {
 		t.Errorf("予定のみ: %+v", r)
 	}
-	if r := Judge(match.Pair{Visit: v}); r.Category != VisitOnly || r.Checks != nil || r.Schedule != nil {
+	if r := judgePair(match.Pair{Visit: v}); r.Category != VisitOnly || r.Checks != nil || r.Schedule != nil {
 		t.Errorf("実績のみ: %+v", r)
 	}
 }
@@ -154,6 +155,119 @@ func TestAllOrder(t *testing.T) {
 	for i, r := range results {
 		if r.Category != want[i] {
 			t.Errorf("results[%d] = %s, want %s", i, r.Category, want[i])
+		}
+	}
+}
+
+func TestJudgeTimeBandAdditions(t *testing.T) {
+	tests := []struct {
+		name      string
+		start     string
+		additions []string
+		want      bool
+	}{
+		{"予定の開始が19時で加算が夜間だけなら合う", "19:00", []string{"夜間"}, true},
+		{"予定の開始が10時で加算が夜間なら合わない", "10:00", []string{"夜間"}, false},
+		{"予定の開始が7時で加算が早朝だけなら合う", "07:00", []string{"早朝"}, true},
+		{"予定の開始が23時で加算が深夜だけなら合う", "23:00", []string{"深夜"}, true},
+		{"予定の開始が5時59分で加算が深夜だけなら合う", "05:59", []string{"深夜"}, true},
+		{"予定の開始が19時で加算が深夜なら合わない", "19:00", []string{"深夜"}, false},
+		{"0時は深夜", "00:00", []string{"深夜"}, true},
+		{"早朝の開始の境界の6時は早朝", "06:00", []string{"早朝"}, true},
+		{"7時59分は早朝", "07:59", []string{"早朝"}, true},
+		{"日中の12時に加算が早朝なら合わない", "12:00", []string{"早朝"}, false},
+		{"17時59分は夜間でない", "17:59", []string{"夜間"}, false},
+		{"21時59分は夜間", "21:59", []string{"夜間"}, true},
+		{"早朝の終わりの8時は早朝でない", "08:00", []string{"早朝"}, false},
+		{"夜間の開始の境界の18時は夜間", "18:00", []string{"夜間"}, true},
+		{"夜間の終わりの22時は深夜", "22:00", []string{"夜間"}, false},
+		{"予定の開始が夜間でも加算が通常だけなら合う", "19:00", []string{"通常"}, true},
+		{"加算に緊急（イ）を含むなら合わない", "07:00", []string{"早朝", "緊急（イ）"}, false},
+		{"加算が通常と緊急（イ）なら合わない", "10:00", []string{"通常", "緊急（イ）"}, false},
+		{"加算が通常と夜間なら合わない", "19:00", []string{"通常", "夜間"}, false},
+		{"時間帯の加算が2つ並ぶなら合わない", "22:00", []string{"夜間", "深夜"}, false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			s := build(t, spec{tt.start, tt.start, new(29), "訪看I２", nil})
+			v := build(t, spec{tt.start, tt.start, new(29), "訪看I２", tt.additions})
+			r := judgePair(match.Pair{Schedule: s, Visit: v})
+			if r.Checks.Additions.OK != tt.want {
+				t.Errorf("Additions.OK = %v, want %v", r.Checks.Additions.OK, tt.want)
+			}
+		})
+	}
+}
+
+func TestJudgeNightService(t *testing.T) {
+	tests := []struct {
+		name         string
+		s, v         spec
+		wantRangeMin int
+		wantRangeMax int
+		wantCategory Category
+	}{
+		{
+			name:         "実績が訪看I２・夜で提供時間が29分なら許容範囲に入る",
+			s:            spec{"19:00", "19:29", new(29), "訪看I２", nil},
+			v:            spec{"19:00", "19:29", new(29), "訪看I２・夜", []string{"夜間"}},
+			wantRangeMin: 20, wantRangeMax: 29,
+			wantCategory: Match,
+		},
+		{
+			name:         "予防訪看I５・２超は41〜60分の許容範囲で判定する",
+			s:            spec{"10:00", "11:00", new(60), "予防訪看I５・２超", nil},
+			v:            spec{"10:00", "11:00", new(60), "予防訪看I５・２超", []string{"通常"}},
+			wantRangeMin: 41, wantRangeMax: 60,
+			wantCategory: Match,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r := judgePair(match.Pair{Schedule: build(t, tt.s), Visit: build(t, tt.v)})
+			c := *r.Checks
+			if r.Category != tt.wantCategory {
+				t.Errorf("Category = %s, want %s（%+v）", r.Category, tt.wantCategory, c)
+			}
+			if !c.VisitDuration.OK || c.VisitDuration.Range == nil ||
+				c.VisitDuration.Range.Min != tt.wantRangeMin || c.VisitDuration.Range.Max != tt.wantRangeMax {
+				t.Errorf("VisitDuration = %+v", c.VisitDuration)
+			}
+		})
+	}
+}
+
+// TestIsConsistentSeesAllChecks は、Checks の判定の項目（Check と RangeCheck）の 1 つだけが整合しないとき、
+// IsConsistent が false を返すことを確認する。項目を足して IsConsistent に足し忘れると失敗する。
+// 区分に影響しない bool の項目は notes に挙げる。
+func TestIsConsistentSeesAllChecks(t *testing.T) {
+	notes := map[string]bool{"DurationEqual": true, "EndEqual": true}
+	typ := reflect.TypeFor[Checks]()
+	allOK := func() reflect.Value {
+		v := reflect.New(typ).Elem()
+		for i := range typ.NumField() {
+			if f := v.Field(i); f.Kind() == reflect.Struct {
+				f.FieldByName("OK").SetBool(true)
+			}
+		}
+		return v
+	}
+	if !allOK().Interface().(Checks).IsConsistent() {
+		t.Fatal("全ての項目が整合するのに IsConsistent が false を返す")
+	}
+	for i := range typ.NumField() {
+		field := typ.Field(i)
+		switch field.Type {
+		case reflect.TypeFor[Check](), reflect.TypeFor[RangeCheck]():
+			v := allOK()
+			v.Field(i).FieldByName("OK").SetBool(false)
+			if v.Interface().(Checks).IsConsistent() {
+				t.Errorf("%s だけが整合しないのに IsConsistent が true を返す", field.Name)
+			}
+		default:
+			if !notes[field.Name] {
+				t.Errorf("%s の型 %s を、判定の項目か注記の項目かに分けていない", field.Name, field.Type)
+			}
 		}
 	}
 }

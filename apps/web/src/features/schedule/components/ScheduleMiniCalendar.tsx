@@ -4,16 +4,14 @@ import PrevIcon from '#/assets/icons/arrow-left.svg?react'
 import NextIcon from '#/assets/icons/arrow-right.svg?react'
 
 import type { CalendarView } from '../constants/calendarView'
-import { getCalendarRange } from '../lib/calendarRange'
-import { fromDateKey, toDateKey } from '../lib/dateTime'
-
-const WEEKDAYS = ['日', '月', '火', '水', '木', '金', '土'] as const
+import { getCalendarRange, shiftCalendarDate } from '../lib/calendarRange'
+import { WEEKDAYS, parseDateKey, toDateKey } from '../lib/dateTime'
 
 const toMonthKey = (dateKey: string) => `${dateKey.slice(0, 7)}-01`
 
 /** 月の 1 日を含む週の日曜から、6 週分の `YYYY-MM-DD` を返す。 */
 const monthGridDays = (monthKey: string) => {
-  const first = fromDateKey(monthKey)
+  const first = parseDateKey(monthKey)
   const start = new Date(first.getFullYear(), first.getMonth(), 1 - first.getDay())
   return Array.from({ length: 42 }, (_, index) =>
     toDateKey(new Date(start.getFullYear(), start.getMonth(), start.getDate() + index)),
@@ -21,20 +19,15 @@ const monthGridDays = (monthKey: string) => {
 }
 
 const shiftDays = (dateKey: string, days: number) => {
-  const date = fromDateKey(dateKey)
+  const date = parseDateKey(dateKey)
   return toDateKey(new Date(date.getFullYear(), date.getMonth(), date.getDate() + days))
 }
 
 /** 矢印のキーで動かす日数。 */
 const KEY_DAYS: Record<string, number> = { ArrowLeft: -1, ArrowRight: 1, ArrowUp: -7, ArrowDown: 7 }
 
-const shiftMonth = (monthKey: string, direction: 1 | -1) => {
-  const date = fromDateKey(monthKey)
-  return toDateKey(new Date(date.getFullYear(), date.getMonth() + direction, 1))
-}
-
 const formatDay = (dateKey: string) => {
-  const date = fromDateKey(dateKey)
+  const date = parseDateKey(dateKey)
   return `${date.getFullYear()}年${date.getMonth() + 1}月${date.getDate()}日`
 }
 
@@ -82,7 +75,7 @@ export const ScheduleMiniCalendar = ({
     view !== 'month' && dateKey >= range.from.slice(0, 10) && dateKey < range.to.slice(0, 10)
   const days = monthGridDays(shownMonth)
   const weeks = Array.from({ length: 6 }, (_, index) => days.slice(index * 7, index * 7 + 7))
-  const monthDate = fromDateKey(shownMonth)
+  const monthDate = parseDateKey(shownMonth)
   // 動かした日が表に無いとき（前後のボタンで月を変えた後）は、月の 1 日で止まる
   const tabbableDay = days.includes(focusedDay) ? focusedDay : shownMonth
 
@@ -97,7 +90,7 @@ export const ScheduleMiniCalendar = ({
   }
 
   return (
-    <section aria-label="日付を選ぶ" className="flex flex-col gap-1" data-testid="mini-calendar">
+    <section aria-label="日付を選ぶ" className="flex flex-col gap-2" data-testid="mini-calendar">
       <div className="flex items-center justify-between">
         <h2
           aria-live="polite"
@@ -111,7 +104,7 @@ export const ScheduleMiniCalendar = ({
             aria-label="前の月"
             className="grid size-11 place-items-center rounded-8 hover:bg-surface-subtle focus-visible:focus-ring"
             data-testid="mini-calendar-prev"
-            onClick={() => setShownMonth(shiftMonth(shownMonth, -1))}
+            onClick={() => setShownMonth(shiftCalendarDate('month', shownMonth, -1))}
             type="button"
           >
             <PrevIcon height={20} width={20} />
@@ -120,7 +113,7 @@ export const ScheduleMiniCalendar = ({
             aria-label="次の月"
             className="grid size-11 place-items-center rounded-8 hover:bg-surface-subtle focus-visible:focus-ring"
             data-testid="mini-calendar-next"
-            onClick={() => setShownMonth(shiftMonth(shownMonth, 1))}
+            onClick={() => setShownMonth(shiftCalendarDate('month', shownMonth, 1))}
             type="button"
           >
             <NextIcon height={20} width={20} />
@@ -173,7 +166,7 @@ export const ScheduleMiniCalendar = ({
                               : 'text-text',
                         )}
                       >
-                        {fromDateKey(dateKey).getDate()}
+                        {parseDateKey(dateKey).getDate()}
                       </span>
                     </button>
                   </td>

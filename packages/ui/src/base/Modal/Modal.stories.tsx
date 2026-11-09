@@ -2,14 +2,14 @@ import type { Meta, StoryObj } from '@storybook/react-vite'
 import { useState } from 'react'
 import { fn } from 'storybook/test'
 
+import { createModalDocsParameters } from '../../../.storybook/sharedPreview'
 import { Button } from '../Button/Button'
 import { Modal } from './Modal'
 
 const meta = {
   title: 'コンポーネント/Base/Modal',
   component: Modal,
-  // showModal は文書の全体を操作できなくするので、Docs のページでは story ごとに iframe で描く
-  parameters: { docs: { story: { inline: false, iframeHeight: 480 } } },
+  parameters: createModalDocsParameters(),
   args: {
     isOpen: true,
     title: '予定の詳細',
@@ -25,6 +25,38 @@ export const Default: Story = {}
 
 export const WithStickyFooter: Story = {
   args: { stickyFooter: <Button>作成</Button> },
+}
+
+/** 関数で渡した stickyFooter は、閉じる要求を受け取り、「キャンセル」で背景と Escape キーと同じく閉じる。右上に × を出さない。 */
+export const WithCancel: Story = {
+  args: {
+    isDirty: true,
+    stickyFooter: (requestClose) => (
+      <>
+        <Button onClick={requestClose} size="S" variant="secondary">
+          キャンセル
+        </Button>
+        <Button size="S">保存</Button>
+      </>
+    ),
+  },
+}
+
+/** データを失う操作の起点のボタンを 1 つだけ左端に置き、「閉じる」と編集を右にまとめる。 */
+export const WithDestructiveAction: Story = {
+  args: {
+    stickyFooter: (requestClose) => (
+      <>
+        <Button className="mr-auto" variant="destructive">
+          予定をキャンセル
+        </Button>
+        <Button onClick={requestClose} variant="secondary">
+          閉じる
+        </Button>
+        <Button variant="secondary">編集</Button>
+      </>
+    ),
+  },
 }
 
 /** headerContent は、タイトルの右に置き、ヘッダーの右端に寄せる。 */
@@ -61,7 +93,14 @@ export const WithOpener: Story = {
             args.onCloseRequest?.()
             setIsOpen(false)
           }}
-          stickyFooter={<Button>編集</Button>}
+          stickyFooter={(requestClose) => (
+            <>
+              <Button onClick={requestClose} variant="secondary">
+                閉じる
+              </Button>
+              <Button>編集</Button>
+            </>
+          )}
         />
       </>
     )

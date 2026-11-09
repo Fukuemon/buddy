@@ -1,0 +1,155 @@
+/* 利用者の管理の画面のモックだけの見た目。利用者の一覧、登録、詳細が同じ内容のファイルを持つ。職員の管理の画面の CSS を元にした */
+.pt-h3 {
+  margin: 8px 0 0;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.pt-link {
+  color: var(--wf-primary);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.pt-muted {
+  color: var(--wf-muted);
+}
+
+.pt-back {
+  justify-self: start;
+}
+
+.pt-avatar {
+  flex: none;
+  width: 48px;
+  height: 48px;
+  font-size: 18px;
+}
+
+/* 利用の終了の利用者の丸は、薄い面にする */
+.pt-avatar--muted {
+  background: var(--wf-fill-strong);
+  color: var(--wf-muted);
+}
+
+/* 詳細の見出し。左に頭文字の丸、名前、状態の印を、右に編集と「…」のメニューを置く */
+.pt-hero {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 16px;
+}
+
+.pt-hero__text {
+  display: grid;
+  flex: 1;
+  gap: 2px;
+  min-width: 0;
+}
+
+.pt-hero__name {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+}
+
+.pt-hero__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pt-section {
+  display: grid;
+  gap: 12px;
+  padding: 16px 20px;
+}
+
+/* プロフィールの、項目の名前と値の組 */
+.pt-dl {
+  display: grid;
+  grid-template-columns: 10em 1fr;
+  gap: 12px 16px;
+  margin: 0;
+}
+
+.pt-dl dt {
+  color: var(--wf-muted);
+}
+
+.pt-dl dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+/* 選ぶ欄。右端に下向きの印を置く */
+.pt-select {
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-start;
+}
+
+.pt-select::after {
+  content: '▾';
+  margin-left: auto;
+  color: var(--wf-muted);
+}
+
+.pt-fieldset {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.pt-radios {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 20px;
+}
+
+/* 利用を終了する前に残る予定 */
+.pt-warning {
+  display: grid;
+  gap: 6px;
+  padding: 12px 16px;
+  border-left: 4px solid var(--wf-ink);
+  background: var(--wf-warning-surface);
+}
+
+.pt-warning p {
+  margin: 0;
+}
+
+.pt-warning__title {
+  font-weight: 700;
+}
+
+.pt-assignments {
+  display: grid;
+  gap: 4px;
+}
+
+.pt-list {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding-left: 20px;
+}
+
+@container screen (width < 768px) {
+  .pt-hero__actions {
+    width: 100%;
+  }
+
+  .pt-dl {
+    grid-template-columns: 1fr;
+    gap: 2px;
+  }
+
+  .pt-dl dd {
+    margin-bottom: 10px;
+  }
+}

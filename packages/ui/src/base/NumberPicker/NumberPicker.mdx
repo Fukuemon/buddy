@@ -9,22 +9,17 @@ import * as Stories from './NumberPicker.stories'
 
 単位の決まった数を入力する欄。値は number。React Hook Form の `control` と `name` を受ける。
 
-## 使う場面
+## 規則
 
-- 提供時間（分）のような、単位の決まった数を入力する
+規則の本文は、デザインシステムの文書の次のセクションにある。
 
-## 使わない場面
-
-- 電話番号や番号のように、計算しない数字
-
-## Do
-
-- 単位を `label` に書く（例は「提供時間（分）」）
-- `min` と `max` で範囲を渡す
-
-## Don't
-
-- 単位を書かずに数だけを求める
+- 使う場面、使わない場面、キーボードの操作: コンポーネントの文書（`packages/ui/design/components.md`）の「コンポーネントの選び方」の `NumberPicker` の行
+- 使い方の規則と Do と Don't: コンポーネントの文書の「コンポーネントごとの規則」の「`FormField`、`NumberPicker`、`TextareaField`」
+- 欄の枠と面の状態: コンポーネントの文書の「入力の欄の状態」
+- 当たる原則: DESIGN.md の「画面を作るときの原則」の次の ID
+  - `SPACING-SCALE`
+  - `STATE-NOT-COLOR-ONLY`
+  - `FOCUS-ONE`
 
 ## 状態
 
@@ -32,19 +27,41 @@ import * as Stories from './NumberPicker.stories'
 
 <Canvas of={Stories.Default} />
 
+### hover
+
+枠を黒にする。
+
+<Canvas of={Stories.Hover} />
+
+### フォーカス
+
+<Canvas of={Stories.Focus} />
+
 ### エラー
 
 <Canvas of={Stories.WithError} />
+
+### エラーで hover
+
+誤りの枠を濃い赤にする。
+
+<Canvas of={Stories.WithErrorHover} />
+
+### エラーでフォーカス
+
+誤りのない欄と同じ `focus-ring` を出す。
+
+<Canvas of={Stories.WithErrorFocus} />
 
 ### 無効
 
 <Canvas of={Stories.Disabled} />
 
-## キーボードの操作
+### 無効で hover
 
-- Tab で欄に移る
-- ↑ と ↓ で数を増減する（ブラウザの操作）
-- エラーがあると `aria-invalid` を付け、`aria-describedby` でエラーの文を指す
+枠の色を変えない。
+
+<Canvas of={Stories.DisabledHover} />
 
 ## props
 

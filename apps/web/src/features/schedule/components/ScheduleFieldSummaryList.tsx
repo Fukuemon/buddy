@@ -1,11 +1,13 @@
 import { clsx } from 'clsx'
 import type { ReactNode } from 'react'
 
-/** 一覧の 1 項目。content に今の値の要約を渡す。 */
+/** 一覧の 1 項目。content に今の値の要約を渡す。値を入れていなければ content を省く。 */
 export type ScheduleFieldSummaryItem<Id extends string> = {
   id: Id
   label: string
-  content: ReactNode
+  content?: ReactNode
+  /** content を省いたときに薄い色で出す文。省くと何も出さない。読み上げでは、代わりに「未入力」を読ませる。 */
+  placeholder?: string
   /** 項目の中の検証のエラー。編集の欄が閉じていても気づけるよう、ここに出す。 */
   error?: string
 }
@@ -34,16 +36,26 @@ export const ScheduleFieldSummaryList = <Id extends string>({
               : 'ring-border-field hover:bg-surface-subtle',
             item.error !== undefined && 'ring-2 ring-danger',
           )}
+          data-invalid={item.error !== undefined || undefined}
           data-testid={`schedule-field-${item.id}`}
           onClick={() => onSelect(item.id)}
           type="button"
         >
           <span className="text-caption text-text-secondary">{item.label}</span>
-          <span className="text-body-dense">{item.content}</span>
+          <span className="min-h-[1lh] text-body-dense">
+            {item.content ?? (
+              <>
+                {item.placeholder !== undefined && (
+                  <span aria-hidden className="text-text-secondary">
+                    {item.placeholder}
+                  </span>
+                )}
+                <span className="sr-only">未入力</span>
+              </>
+            )}
+          </span>
           {item.error !== undefined && (
-            <span className="text-caption text-danger" role="alert">
-              {item.error}
-            </span>
+            <span className="text-caption text-danger">{item.error}</span>
           )}
         </button>
       </li>

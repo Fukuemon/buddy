@@ -1,10 +1,11 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { useNavigate, useRouteContext } from '@tanstack/react-router'
+import { useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
 
 import type { Staff } from '#/api/types'
+import { queryKeys } from '#/api/queryKeys'
+import { failedBeforeLoad, hasRefetchFailed, refetchFailedQueries } from '#/api/refetch'
 import { useBuddyApi } from '#/api/useBuddyApi'
-import { PageForbiddenMessage } from '#/components/site/PageForbiddenMessage'
 
 import {
   LINK_LOAD_ERROR_MESSAGE,
@@ -13,7 +14,6 @@ import {
   unlinkErrorMessage,
 } from '../lib/errorMessage'
 import {
-  calendarQueryKeys,
   externalCalendarListQueryOptions,
   serviceAccountQueryOptions,
   staffListQueryOptions,
@@ -42,7 +42,7 @@ const CalendarLinkContent = () => {
   const [calendarId, setCalendarId] = useState('')
 
   const queries = [staffQuery, calendarsQuery, accountQuery]
-  const failed = queries.find((query) => query.isError)
+  const failed = failedBeforeLoad(queries)
   // 退職した職員は、退職でカレンダーが外れ、結び付けられないので出さない
   const rows: CalendarLinkRow[] = (staffQuery.data ?? [])
     .filter((staff) => staff.status !== 'retired')
@@ -61,9 +61,9 @@ const CalendarLinkContent = () => {
   const retry = () =>
     Promise.all(
       [
-        calendarQueryKeys.staff(facilityId),
-        calendarQueryKeys.calendars(facilityId),
-        calendarQueryKeys.serviceAccount(facilityId),
+        queryKeys.staff.list(facilityId),
+        queryKeys.calendars.list(facilityId),
+        queryKeys.calendars.serviceAccount(facilityId),
       ].map((queryKey) => queryClient.resetQueries({ queryKey })),
     )
 
@@ -98,8 +98,10 @@ const CalendarLinkContent = () => {
       <CalendarLinkView
         onImport={(staffId) => navigate({ to: '/schedule/import', search: { staff: staffId } })}
         onLink={(staffId) => open('link', staffId)}
+        onRefetch={() => refetchFailedQueries(queries)}
         onRetry={retry}
         onUnlink={(staffId) => open('unlink', staffId)}
+        refetchFailed={hasRefetchFailed(queries)}
         state={state}
       />
       {dialog?.kind === 'link' && selected !== undefined && (
@@ -145,10 +147,9 @@ const CalendarLinkContent = () => {
 }
 
 /**
- * カレンダーの連携の画面。職員の管理の権限が無ければ、API を呼ばずに権限が無いことを示す。
+ * カレンダーの連携の画面。
  * 職員、結び付けたカレンダー、サービスアカウントを読み、結び付けると外すをダイアログで行う。
  */
 export const CalendarLinkContainer = () => {
-  const { viewer } = useRouteContext({ from: '__root__' })
-  return viewer?.canManageStaff ? <CalendarLinkContent /> : <PageForbiddenMessage />
+  return <CalendarLinkContent />
 }

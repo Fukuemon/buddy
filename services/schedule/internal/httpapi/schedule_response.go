@@ -1,10 +1,13 @@
 package httpapi
 
 import (
+	"slices"
+
 	"github.com/Fukuemon/buddy/services/schedule/internal/civil"
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/schedule"
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/scheduleview"
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/visit"
 	"github.com/Fukuemon/buddy/services/schedule/internal/httpapi/openapi"
-	"github.com/Fukuemon/buddy/services/schedule/internal/schedule"
-	"github.com/Fukuemon/buddy/services/schedule/internal/visit"
 )
 
 func toScheduleType(t schedule.Type) openapi.ScheduleType {
@@ -29,11 +32,11 @@ func toVisitInfo(v *visit.Detail) *openapi.VisitInfo {
 	}
 }
 
-func toCancel(c schedule.Cancel) openapi.Cancel {
+func toCancel(c schedule.Cancellation) openapi.Cancel {
 	return openapi.Cancel{Id: c.ID, ScheduleId: c.ScheduleID, Reason: c.Reason}
 }
 
-func toSchedule(d schedule.Detail) openapi.Schedule {
+func toSchedule(d scheduleview.Detail) openapi.Schedule {
 	r := openapi.Schedule{
 		Id:                  d.ID,
 		FacilityId:          d.FacilityID,
@@ -42,6 +45,7 @@ func toSchedule(d schedule.Detail) openapi.Schedule {
 		Date:                d.Date.String(),
 		StartTime:           d.StartTime.String(),
 		EndTime:             d.EndTime.String(),
+		EndsNextDay:         d.EndsNextDay,
 		IsOverTimeWork:      d.IsOverTimeWork,
 		StaffId:             d.StaffID,
 		StaffName:           d.StaffName,
@@ -49,6 +53,7 @@ func toSchedule(d schedule.Detail) openapi.Schedule {
 		Description:         d.Description,
 		RecurringScheduleId: d.RecurringScheduleID,
 		VisitInfo:           toVisitInfo(d.Visit),
+		Source:              openapi.Buddy,
 		CreatedAt:           d.CreatedAt,
 		UpdatedAt:           d.UpdatedAt,
 	}
@@ -56,25 +61,75 @@ func toSchedule(d schedule.Detail) openapi.Schedule {
 		c := toCancel(*d.Cancel)
 		r.Cancel = &c
 	}
+	if d.Rule != nil {
+		rule := toRecurringRule(*d.Rule)
+		r.RecurringRule = &rule
+	}
+	if d.Source == scheduleview.SourceGoogleCalendar {
+		r.Source = openapi.GoogleCalendar
+	}
+	if d.ReviewReason != "" {
+		reason := openapi.ScheduleReviewReason(d.ReviewReason)
+		r.ReviewReason = &reason
+	}
+	if d.ETag != "" {
+		etag := d.ETag
+		r.Etag = &etag
+	}
 	return r
 }
 
+func toCalendarSyncStatus(c scheduleview.CalendarSync) openapi.CalendarSyncStatus {
+	r := openapi.CalendarSyncStatus{
+		ExternalCalendarId: c.ExternalCalendarID, StaffId: c.StaffID, StaffName: c.StaffName,
+		LastStatus: openapi.CalendarSyncStatusLastStatus(c.LastStatus), LastSucceededAt: c.LastSucceededAt,
+	}
+	if c.LastError != nil {
+		code := openapi.CalendarSyncStatusLastError(*c.LastError)
+		r.LastError = &code
+	}
+	return r
+}
+
+func toAllDayEvent(e scheduleview.AllDayEvent) openapi.AllDayEvent {
+	r := openapi.AllDayEvent{
+		Id: e.ID, StaffId: e.StaffID, StaffName: e.StaffName, StartDate: e.StartDate.String(), EndDate: e.EndDate.String(), Title: e.Title,
+	}
+	if e.ReviewReason != "" {
+		reason := openapi.ScheduleReviewReason(e.ReviewReason)
+		r.ReviewReason = &reason
+	}
+	return r
+}
+
+func toUnlistedEventCount(c scheduleview.UnlistedEventCount) openapi.UnlistedEventCount {
+	return openapi.UnlistedEventCount{StaffId: c.StaffID, Count: c.Count}
+}
+
+// toRecurringRule は、規則 r を応答の規則にする。毎週の曜日の並びと間隔は、毎週のときだけ返す。
 func toRecurringRule(r schedule.Rule) openapi.RecurringRule {
-	var endDate *string
-	if r.EndDate != nil {
-		s := r.EndDate.String()
-		endDate = &s
+	var (
+		days     *[]int
+		interval *int
+	)
+	if r.Frequency == schedule.Weekly {
+		d := slices.Clone(r.DaysOfWeek)
+		days = &d
+		i := max(r.Interval, 1)
+		interval = &i
 	}
 	return openapi.RecurringRule{
 		Frequency:   openapi.RecurringRuleFrequency(r.Frequency),
+		DaysOfWeek:  days,
+		Interval:    interval,
 		DayOfWeek:   r.DayOfWeek,
 		DayOfMonth:  r.DayOfMonth,
 		WeekOfMonth: r.WeekOfMonth,
-		EndDate:     endDate,
+		EndDate:     stringPtr(r.EndDate),
 	}
 }
 
-func toRecurringSchedule(d schedule.RecurringDetail) openapi.RecurringSchedule {
+func toRecurringSchedule(d scheduleview.RecurringDetail) openapi.RecurringSchedule {
 	var exclusions []string
 	if d.ExclusionDates != nil {
 		exclusions = mapSlice(d.ExclusionDates, civil.Date.String)
@@ -87,6 +142,7 @@ func toRecurringSchedule(d schedule.RecurringDetail) openapi.RecurringSchedule {
 		Date:           d.Date.String(),
 		StartTime:      d.StartTime.String(),
 		EndTime:        d.EndTime.String(),
+		EndsNextDay:    d.EndsNextDay,
 		IsOverTimeWork: d.IsOverTimeWork,
 		StaffId:        d.StaffID,
 		StaffName:      d.StaffName,
@@ -97,5 +153,14 @@ func toRecurringSchedule(d schedule.RecurringDetail) openapi.RecurringSchedule {
 		ExclusionDates: exclusions,
 		CreatedAt:      d.CreatedAt,
 		UpdatedAt:      d.UpdatedAt,
+	}
+}
+
+func toOpenCalendarCutover(c *scheduleview.OpenCutover) *openapi.OpenCalendarCutover {
+	if c == nil {
+		return nil
+	}
+	return &openapi.OpenCalendarCutover{
+		StartedAt: c.StartedAt, StartedBy: c.StartedBy, StartedByName: c.StartedByName, RangeStart: c.RangeStart.String(),
 	}
 }

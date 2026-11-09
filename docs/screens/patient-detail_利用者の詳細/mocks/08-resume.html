@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>patient-detail 利用の再開</title>
+    <link rel="stylesheet" href="../../_common/mock.css" />
+    <link rel="stylesheet" href="../../_common/tokens.css" />
+    <link rel="stylesheet" href="../../_common/wireframe.css" />
+    <link rel="stylesheet" href="patient-detail.css" />
+  </head>
+  <body data-view="desktop">
+    <div class="stage">
+      <div class="screen">
+        <div class="screen-body">
+          <header class="wf-site-header">
+            <div class="wf-site-header__brand">
+              <span class="wf-btn wf-btn--icon wf-site-menu" aria-label="メニュー" data-open="site-nav" data-testid="site-nav-toggle"><svg width="24" height="24" viewBox="0 -960 960 960" aria-hidden="true"><path d="M120-240v-80h720v80H120Zm0-200v-80h720v80H120Zm0-200v-80h720v80H120Z" fill="currentColor" /></svg></span>
+              <strong>buddy</strong>
+            </div>
+            <div class="wf-site-header__viewer" data-testid="viewer-menu">
+              <span class="wf-site-account" aria-label="アカウント（青木 陽菜）" data-open="viewer-menu" data-testid="viewer-menu-open"><span class="wf-site-avatar" aria-hidden="true">青</span><span class="wf-site-account__name">青木 陽菜</span></span>
+              <div class="wf-site-viewer-menu" data-panel="viewer-menu" data-panel-dismiss>
+                <span class="wf-text wf-text--s">青木 陽菜</span>
+                <span class="wf-btn wf-btn--text" data-testid="viewer-profile" data-go="../../account-profile_自分の情報/mocks/02-manager.html">自分の情報</span>
+                <span class="wf-btn" data-testid="viewer-logout">ログアウト</span>
+              </div>
+            </div>
+          </header>
+          <div class="wf-site-body">
+            <nav class="wf-site-nav" aria-label="画面" data-testid="site-nav" data-panel="site-nav" data-panel-wide="collapse">
+              <div class="wf-site-nav__head">
+                <strong>buddy</strong>
+                <span class="wf-btn wf-btn--icon" aria-label="閉じる" data-escape data-close="site-nav" data-testid="site-nav-close"><svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><path d="M5 5l10 10M15 5 5 15" fill="none" stroke="currentColor" stroke-width="1.8" /></svg></span>
+              </div>
+              <div class="wf-site-nav__group" role="group" aria-label="予定">
+                <span class="wf-site-nav__heading" aria-hidden="true">予定</span>
+                <span class="wf-site-nav__item" data-go="../../schedule-calendar_予定のカレンダー/mocks/01-month.html" data-testid="site-nav-schedule"><svg width="24" height="24" viewBox="0 -960 960 960" aria-hidden="true"><path d="M200-80q-33 0-56.5-23.5T120-160v-560q0-33 23.5-56.5T200-800h40v-80h80v80h320v-80h80v80h40q33 0 56.5 23.5T840-720v560q0 33-23.5 56.5T760-80H200Zm0-80h560v-400H200v400Zm0-480h560v-80H200v80Z" fill="currentColor" /></svg><span class="wf-site-nav__label">カレンダー</span></span>
+                <span class="wf-site-nav__item" data-go="../../schedule-import_予定の取り込み/mocks/01-initial.html" data-testid="site-nav-import"><svg width="24" height="24" viewBox="0 -960 960 960" aria-hidden="true"><path d="M480-320 280-520l56-58 104 104v-326h80v326l104-104 56 58-200 200ZM240-160q-33 0-56.5-23.5T160-240v-120h80v120h480v-120h80v120q0 33-23.5 56.5T720-160H240Z" fill="currentColor" /></svg><span class="wf-site-nav__label">取り込み</span></span>
+                <span class="wf-site-nav__item" aria-label="要確認 3 件" data-go="../../schedule-review_確認が必要な予定/mocks/01-list.html" data-testid="site-nav-review"><svg width="24" height="24" viewBox="0 -960 960 960" aria-hidden="true"><path d="M160-200v-80h80v-280q0-83 50-147.5T420-792v-28q0-25 17.5-42.5T480-880q25 0 42.5 17.5T540-820v28q80 20 130 84.5T720-560v280h80v80H160Zm320 120q-33 0-56.5-23.5T400-160h160q0 33-23.5 56.5T480-80Z" fill="currentColor" /></svg><span class="wf-site-nav__label">要確認</span><span class="wf-site-badge" data-testid="site-nav-review-count">3</span></span>
+                <span class="wf-site-nav__item" data-go="../../schedule-link_カレンダーの連携/mocks/01-list.html" data-testid="site-nav-link"><svg width="24" height="24" viewBox="0 -960 960 960" aria-hidden="true"><path d="M440-280H280q-83 0-141.5-58.5T80-480q0-83 58.5-141.5T280-680h160v80H280q-50 0-85 35t-35 85q0 50 35 85t85 35h160v80ZM320-440v-80h320v80H320Zm200 160v-80h160q50 0 85-35t35-85q0-50-35-85t-85-35H520v-80h160q83 0 141.5 58.5T880-480q0 83-58.5 141.5T680-280H520Z" fill="currentColor" /></svg><span class="wf-site-nav__label">連携</span></span>
+              </div>
+              <div class="wf-site-nav__group" role="group" aria-label="照合">
+                <span class="wf-site-nav__heading" aria-hidden="true">照合</span>
+                <span class="wf-site-nav__item" data-go="../../receipt-upload_照合/mocks/01-initial.html" data-testid="site-nav-receipt"><svg width="24" height="24" viewBox="0 -960 960 960" aria-hidden="true"><path d="M160-120q-33 0-56.5-23.5T80-200v-560q0-33 23.5-56.5T160-840h640q33 0 56.5 23.5T880-760v560q0 33-23.5 56.5T800-120H160Zm0-80h640v-560H160v560Zm40-80h200v-80H200v80Zm382-80 198-198-57-57-141 142-57-57-56 57 113 113Zm-382-80h200v-80H200v80Zm0-160h200v-80H200v80Z" fill="currentColor" /></svg><span class="wf-site-nav__label">照合</span></span>
+              </div>
+              <div class="wf-site-nav__group" role="group" aria-label="職員">
+                <span class="wf-site-nav__heading" aria-hidden="true">職員</span>
+                <span class="wf-site-nav__item" data-go="../../staff-list_職員の一覧/mocks/01-list.html" data-testid="site-nav-staff"><svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3.5" fill="none" stroke="currentColor" stroke-width="2" /><path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6" fill="none" stroke="currentColor" stroke-width="2" /><circle cx="17" cy="9" r="2.5" fill="none" stroke="currentColor" stroke-width="2" /><path d="M17.5 14.2c2.4.4 4 2.4 4 5.8" fill="none" stroke="currentColor" stroke-width="2" /></svg><span class="wf-site-nav__label">職員</span></span>
+                <span class="wf-site-nav__item" data-go="../../organization-list_部署とチーム/mocks/01-list.html" data-testid="site-nav-organization"><svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="5" rx="1" fill="none" stroke="currentColor" stroke-width="2" /><rect x="3" y="16" width="6" height="5" rx="1" fill="none" stroke="currentColor" stroke-width="2" /><rect x="15" y="16" width="6" height="5" rx="1" fill="none" stroke="currentColor" stroke-width="2" /><path d="M12 8v4M6 16v-4h12v4" fill="none" stroke="currentColor" stroke-width="2" /></svg><span class="wf-site-nav__label">部署とチーム</span></span>
+              </div>
+              <div class="wf-site-nav__group" role="group" aria-label="利用者">
+                <span class="wf-site-nav__heading" aria-hidden="true">利用者</span>
+                <span class="wf-site-nav__item" aria-current="page" data-go="../../patient-list_利用者の一覧/mocks/01-list.html" data-testid="site-nav-patient"><svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11.5 12 4l9 7.5" fill="none" stroke="currentColor" stroke-width="2" /><path d="M5.5 10v10h13V10" fill="none" stroke="currentColor" stroke-width="2" /><circle cx="12" cy="12.5" r="2.2" fill="none" stroke="currentColor" stroke-width="1.8" /><path d="M8.5 20c0-2.2 1.6-3.8 3.5-3.8s3.5 1.6 3.5 3.8" fill="none" stroke="currentColor" stroke-width="1.8" /></svg><span class="wf-site-nav__label">利用者</span></span>
+              </div>
+            </nav>
+            <div class="wf-overlay wf-site-nav-overlay" tabindex="-1" data-close="site-nav"></div>
+            <div class="wf-site-main">
+              <main class="wf-page">
+                <span class="pt-back pt-link" data-testid="patient-detail-back" data-go="../../patient-list_利用者の一覧/mocks/02-ended.html">← 利用者の一覧</span>
+                <div class="pt-hero">
+                  <span class="wf-site-avatar pt-avatar pt-avatar--muted" aria-hidden="true">見</span>
+                  <div class="pt-hero__text">
+                    <div class="pt-hero__name">
+                      <h1 class="wf-heading" data-testid="patient-detail-name">見本 四季</h1>
+                      <span class="wf-status wf-status--muted" data-testid="patient-detail-status">利用の終了（2026年9月30日（水））</span>
+                    </div>
+                  </div>
+                  <div class="pt-hero__actions">
+                    <span class="wf-btn" data-testid="patient-detail-edit" data-go="03-edit.html">編集</span>
+                    <span class="wf-menu-anchor">
+                      <span class="wf-btn wf-btn--icon" aria-label="ほかの操作" aria-haspopup="menu" aria-expanded="false" data-testid="patient-detail-menu" data-go="07-ended-menu.html"><svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><circle cx="4" cy="10" r="1.6" fill="currentColor" /><circle cx="10" cy="10" r="1.6" fill="currentColor" /><circle cx="16" cy="10" r="1.6" fill="currentColor" /></svg></span>
+                      <div class="wf-menu" role="menu" data-testid="patient-detail-menu-list">
+                        <span class="wf-menu__item" role="menuitem" data-testid="patient-detail-resume" data-go="11-resume-unselected.html">利用を再開する</span>
+                      </div>
+                    </span>
+                  </div>
+                </div>
+                <section class="wf-panel pt-section" data-testid="patient-detail-profile">
+                  <dl class="pt-dl">
+                    <dt>サービス</dt><dd>訪看I2（20〜29 分）</dd>
+                    <dt>希望の時間帯</dt><dd>午後</dd>
+                    <dt>希望する担当の性別</dt><dd>女性</dd>
+                    <dt>担当の職員</dt><dd>西村 学（退職）</dd>
+                    <dt>利用</dt><dd data-testid="patient-detail-status-text">予定の利用者に選べません。</dd>
+                  </dl>
+                </section>
+              </main>
+              <div class="wf-overlay" tabindex="-1" data-m="1" data-go="06-ended.html"></div>
+              <div class="wf-dialog wf-dialog--narrow" role="alertdialog" aria-modal="true" aria-labelledby="resume-title" data-m="2" data-testid="patient-resume-dialog">
+                <div class="wf-dialog__body">
+                  <h2 class="wf-heading" id="resume-title">見本 四季 の利用を再開しますか</h2>
+                  <p data-m="3">予定の利用者の候補と、利用者の一覧に戻ります。利用の終了の前の予定は、同じ利用者の予定のまま残ります。</p>
+                  <div class="wf-field">
+                    <span class="wf-label">担当の職員</span>
+                    <div class="wf-input wf-field__input pt-select" data-m="4" data-testid="patient-resume-staff">林 さくら</div>
+                    <span class="wf-hint" data-m="5" data-testid="patient-resume-staff-note">今の担当の 西村 学 は退職しています。担当の職員を選んでください。</span>
+                  </div>
+                </div>
+                <div class="wf-dialog__footer">
+                  <span class="wf-btn" data-escape data-m="6" data-testid="patient-resume-cancel" data-go="06-ended.html">キャンセル</span>
+                  <span class="wf-btn wf-btn--primary" data-m="7" data-testid="patient-resume-submit" data-go="01-detail.html">利用を再開する</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="markers"></div>
+    </div>
+    <script src="../../_common/mock.js"></script>
+    <script src="../../_common/interact.js"></script>
+  </body>
+</html>

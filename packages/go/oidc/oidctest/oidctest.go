@@ -25,10 +25,10 @@ type Issuer struct {
 	url    string
 	server *httptest.Server
 
-	mu           sync.Mutex
-	published    []signingKey
-	current      signingKey
-	jwksRequests int
+	mu            sync.Mutex
+	publishedKeys []signingKey
+	current       signingKey
+	jwksRequests  int
 }
 
 type signingKey struct {
@@ -79,8 +79,8 @@ func (i *Issuer) AddKey(alg string) (string, error) {
 	}
 	i.mu.Lock()
 	defer i.mu.Unlock()
-	k.kid = fmt.Sprintf("key-%d", len(i.published)+1)
-	i.published = append(i.published, k)
+	k.kid = fmt.Sprintf("key-%d", len(i.publishedKeys)+1)
+	i.publishedKeys = append(i.publishedKeys, k)
 	i.current = k
 	return k.kid, nil
 }
@@ -148,8 +148,8 @@ func (i *Issuer) jwks() (jwkset.JWKSMarshal, error) {
 	i.mu.Lock()
 	defer i.mu.Unlock()
 	i.jwksRequests++
-	out := jwkset.JWKSMarshal{Keys: make([]jwkset.JWKMarshal, 0, len(i.published))}
-	for _, k := range i.published {
+	out := jwkset.JWKSMarshal{Keys: make([]jwkset.JWKMarshal, 0, len(i.publishedKeys))}
+	for _, k := range i.publishedKeys {
 		jwk, err := jwkset.NewJWKFromKey(k.priv.Public(), jwkset.JWKOptions{
 			Metadata: jwkset.JWKMetadataOptions{KID: k.kid, ALG: jwkset.ALG(k.method.Alg()), USE: jwkset.UseSig},
 		})

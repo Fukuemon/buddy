@@ -1,0 +1,34 @@
+import { ArgTypes, Canvas, Meta } from '@storybook/addon-docs/blocks'
+
+import { MoreText } from './MoreText'
+import * as Stories from './MoreText.stories'
+
+<Meta of={Stories} />
+
+# MoreText
+
+「詳しく」で開く補足。常に出す 1 文の下に「詳しく」のボタンを置き、押すと続きの説明を開く。
+
+## 規則
+
+規則の本文は、デザインシステムの文書の次のセクションにある。
+
+- 使う場面、使わない場面、キーボードの操作: コンポーネントの文書（`packages/ui/design/components.md`）の「コンポーネントの選び方」の `MoreText` の行
+- 使い方の規則と Do と Don't: コンポーネントの文書の「コンポーネントごとの規則」の「`HelpToggle`、`MoreText`」
+- 当たる原則: DESIGN.md の「画面を作るときの原則」の次の ID
+  - `FOCUS-ONE`
+  - `TARGET-SIZE`
+
+## 状態
+
+### デフォルト（閉じた状態）
+
+<Canvas of={Stories.Default} />
+
+### 開いた状態で始める
+
+<Canvas of={Stories.DefaultOpen} />
+
+## props
+
+<ArgTypes of={MoreText} />

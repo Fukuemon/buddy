@@ -6,7 +6,7 @@ import { userEvent } from 'vite-plus/test/browser/context'
 
 import * as stories from './Modal.stories'
 
-const { Default, Closed, WithOpener, WithHeaderContent } = composeStories(stories)
+const { Default, Closed, WithOpener, WithHeaderContent, WithCancel } = composeStories(stories)
 
 describe('Modal', () => {
   it('モーダルのダイアログとして開き、タイトルにフォーカスを移す', () => {
@@ -27,6 +27,24 @@ describe('Modal', () => {
     await userEvent.keyboard('{Escape}')
     expect(onCloseRequest).toHaveBeenCalledTimes(3)
     expect(screen.getByRole('dialog')).toHaveProperty('open', true)
+  })
+
+  it('stickyFooter を渡すと、右上の閉じるボタン（×）を出さない', () => {
+    render(<WithCancel />)
+    expect(screen.queryByTestId('modal-close')).toBeNull()
+  })
+
+  it('関数の stickyFooter のキャンセルは、Escape キーと同じく、変更を破棄するかを確認してから閉じる', async () => {
+    const onCloseRequest = fn()
+    const confirm = vi.spyOn(window, 'confirm').mockReturnValueOnce(false).mockReturnValueOnce(true)
+    render(<WithCancel onCloseRequest={onCloseRequest} />)
+    const cancel = screen.getByRole('button', { name: 'キャンセル' })
+    await userEvent.click(cancel)
+    expect(onCloseRequest).not.toHaveBeenCalled()
+    await userEvent.click(cancel)
+    expect(confirm).toHaveBeenCalledTimes(2)
+    expect(onCloseRequest).toHaveBeenCalledTimes(1)
+    confirm.mockRestore()
   })
 
   it('中身を押しても onCloseRequest を呼ばない', async () => {
@@ -69,6 +87,8 @@ describe('Modal', () => {
 
     // 開いた直後はタイトルにフォーカスがあり、タイトルの後ろから順に移る
     await userEvent.tab()
+    expect(close).toHaveFocus()
+    await userEvent.tab()
     expect(edit).toHaveFocus()
     await userEvent.tab()
     expect(close).toHaveFocus()
@@ -105,18 +125,18 @@ describe('Modal', () => {
     expect(rect.height).toBeGreaterThanOrEqual(44)
   })
 
-  it('headerContent を渡しても、タイトルは閉じるボタンの右隣に出し、headerContent を右端に寄せる', () => {
+  it('タイトルを左に、閉じるボタンを右端に置き、headerContent をその間の右に寄せる', () => {
     render(<WithHeaderContent />)
     const close = screen.getByRole('button', { name: '閉じる' }).getBoundingClientRect()
     const title = screen.getByRole('heading', { name: '予定の詳細' }).getBoundingClientRect()
     const content = screen.getByRole('button', { name: '切り替え' }).getBoundingClientRect()
     const dialog = screen.getByRole('dialog').getBoundingClientRect()
 
-    expect(title.left).toBeGreaterThan(close.right)
-    expect(title.left - close.right).toBeLessThanOrEqual(16)
     expect(content.left).toBeGreaterThan(title.right)
-    // ヘッダーの余白（p-3、12px）の分だけ、ダイアログの右端から離れる
-    expect(Math.round(dialog.right - content.right)).toBe(12)
+    expect(close.left).toBeGreaterThan(content.right)
+    expect(close.left - content.right).toBeLessThanOrEqual(16)
+    // ヘッダーの右の余白（pr-3、12px）の分だけ、ダイアログの右端から離れる
+    expect(Math.round(dialog.right - close.right)).toBe(12)
   })
 
   it('isOpen が false なら何も出さない', () => {

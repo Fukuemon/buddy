@@ -1,7 +1,6 @@
 package httpapi
 
 import (
-	"context"
 	"errors"
 	"log/slog"
 	"net/http"
@@ -14,17 +13,6 @@ import (
 	"github.com/Fukuemon/buddy/services/schedule/internal/principal"
 	"github.com/Fukuemon/buddy/services/schedule/internal/ulid"
 )
-
-// TokenVerifier は、Authorization ヘッダーの Bearer のトークンを検証する。検証に失敗したときはエラーを返す。
-type TokenVerifier interface {
-	Verify(ctx context.Context, raw string) (principal.Identity, error)
-}
-
-// AuthUsecase は、認証のミドルウェアが使う操作である。
-type AuthUsecase interface {
-	Authenticate(ctx context.Context, id principal.Identity) (principal.Principal, error)
-	FacilityOf(ctx context.Context, r access.Resource, id string) (string, error)
-}
 
 // pathResources は、/v1 のパスの引数の名前と、その ID が指すリソースである。
 // global は、ミドルウェアが事業所を確認しない引数である。事業所に属さないリソースか、同じパスのほかの引数で事業所を確認するリソースに付ける。
@@ -41,14 +29,16 @@ var pathResources = map[string]struct {
 	"recurring_schedule_id": {resource: access.ResourceRecurringSchedule},
 	"external_calendar_id":  {resource: access.ResourceExternalCalendar},
 	"calendar_export_id":    {resource: access.ResourceCalendarExport},
+	"calendar_cutover_id":   {resource: access.ResourceCalendarCutover},
+	"patient_id":            {resource: access.ResourcePatient},
 	"policy_id":             {global: true},
-	// 職員の権限の ID は、同じパスの user_id で事業所を確認し、staff.Usecase が職員の権限かを確認する。
+	// 職員の権限の ID は、同じパスの user_id で事業所を確認し、staff の RemoveGrant が職員の権限かを確認する。
 	"user_policy_id": {global: true},
 }
 
 type authMiddleware struct {
 	verifier TokenVerifier
-	uc       AuthUsecase
+	uc       AuthApp
 	log      *slog.Logger
 }
 
@@ -75,10 +65,10 @@ func (m authMiddleware) authenticate(c *gin.Context) {
 	c.Next()
 }
 
-// checkFacility は、パスの ID が指すリソースの事業所が、職員の事業所と違うときに 403 を返す。
-// ID の形が誤っているときとリソースが見つからないときは、requireULIDParams とハンドラが 400 と 404 を返すよう、そのまま通す。
+// requireFacility は、パスの ID が指すリソースの事業所が、職員の事業所と違うときに 403 を返す。
+// ID の形が誤っているときとリソースが見つからないときは、validateULIDParams とハンドラが 400 と 404 を返すよう、そのまま通す。
 // pathResources にない引数を持つ経路は、確認できないので 500 を返す。
-func (m authMiddleware) checkFacility(c *gin.Context) {
+func (m authMiddleware) requireFacility(c *gin.Context) {
 	p, ok := principal.From(c.Request.Context())
 	if !ok {
 		writeError(c, m.log, errors.New("認証のミドルウェアより前に事業所を確認しました"))
@@ -90,7 +80,7 @@ func (m authMiddleware) checkFacility(c *gin.Context) {
 			writeError(c, m.log, errors.New("事業所を確認できないパスの引数 "+param.Key+" です"))
 			return
 		}
-		if r.global || !ulid.Valid(param.Value) {
+		if r.global || !ulid.IsValid(param.Value) {
 			continue
 		}
 		facilityID, err := m.uc.FacilityOf(c.Request.Context(), r.resource, param.Value)

@@ -9,14 +9,14 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/Fukuemon/buddy/services/broker/internal/internalapi"
-	"github.com/Fukuemon/buddy/services/broker/internal/login"
+	"github.com/Fukuemon/buddy/services/broker/internal/staff"
 )
 
 // uniqueViolation は、一意の制約に反したときの PostgreSQL のエラーのコードである。
 const uniqueViolation = "23505"
 
-// StaffStore は、ブローカーの職員と上流のアカウントを読み書きする。login.Staff と internalapi.Store の約束を満たす。
+// StaffStore は、ブローカーの職員と上流のアカウントを読み書きする。login.Staff と internalapi.Store の約束を満たすが、
+// 2 つのパッケージを import しない。
 type StaffStore struct {
 	pool *pgxpool.Pool
 }
@@ -30,127 +30,100 @@ const staffColumns = `s.id, s.org_id, coalesce(s.email, ''), s.status, coalesce(
 
 const staffFrom = ` FROM staff s LEFT JOIN upstream_accounts u ON u.staff_id = s.id`
 
-func scanStaff(row pgx.Row) (login.StaffMember, error) {
-	var m login.StaffMember
+func scanStaff(row pgx.Row) (staff.Member, error) {
+	var m staff.Member
 	err := row.Scan(&m.ID, &m.OrgID, &m.Email, &m.Status, &m.Upstream.Issuer, &m.Upstream.Subject)
 	return m, err
 }
 
 // FindByEmail は、email（小文字にそろえた値）の職員を全ての事業所から返す。いなければ空を返す。
-func (s *StaffStore) FindByEmail(ctx context.Context, email string) ([]login.StaffMember, error) {
+func (s *StaffStore) FindByEmail(ctx context.Context, email string) ([]staff.Member, error) {
 	rows, err := s.pool.Query(ctx, `SELECT `+staffColumns+staffFrom+` WHERE s.email = $1 ORDER BY s.id`, email)
 	if err != nil {
 		return nil, fmt.Errorf("find staff by email: %w", err)
 	}
-	out, err := pgx.CollectRows(rows, func(r pgx.CollectableRow) (login.StaffMember, error) { return scanStaff(r) })
+	out, err := pgx.CollectRows(rows, func(r pgx.CollectableRow) (staff.Member, error) { return scanStaff(r) })
 	if err != nil {
 		return nil, fmt.Errorf("find staff by email: %w", err)
 	}
 	return out, nil
 }
 
-// Get は、ID が id の職員を返す。いなければ login.ErrNotFound を返す。
-func (s *StaffStore) Get(ctx context.Context, id string) (login.StaffMember, error) {
+// Get は、ID が id の職員を返す。いなければ staff.ErrNotFound を返す。
+func (s *StaffStore) Get(ctx context.Context, id string) (staff.Member, error) {
 	m, err := scanStaff(s.pool.QueryRow(ctx, `SELECT `+staffColumns+staffFrom+` WHERE s.id = $1`, id))
 	if errors.Is(err, pgx.ErrNoRows) {
-		return login.StaffMember{}, login.ErrNotFound
+		return staff.Member{}, staff.ErrNotFound
 	}
 	if err != nil {
-		return login.StaffMember{}, fmt.Errorf("get staff: %w", err)
+		return staff.Member{}, fmt.Errorf("get staff: %w", err)
 	}
 	return m, nil
 }
 
 // Link は、有効な職員 staffID に上流のアカウント a を結び付ける。職員が既に上流のアカウントを持つか、
-// a が別の職員に結び付いているか、職員が有効でないときは login.ErrConflict を返す。
+// a が別の職員に結び付いているか、職員が有効でないときは staff.ErrConflict を返す。
 // 職員の行を FOR SHARE で読むので、同時の退職と休職を待ち、その後の状態で判断する。ログインの途中に退職した職員に、
 // 上流のアカウントを結び付け直さないためである。
-func (s *StaffStore) Link(ctx context.Context, staffID string, a login.UpstreamAccount) error {
+func (s *StaffStore) Link(ctx context.Context, staffID string, a staff.UpstreamAccount) error {
 	tag, err := s.pool.Exec(ctx, `INSERT INTO upstream_accounts (staff_id, iss, sub)
-SELECT s.id, $2, $3 FROM staff s WHERE s.id = $1 AND s.status = $4 FOR SHARE`, staffID, a.Issuer, a.Subject, login.StatusActive)
+SELECT s.id, $2, $3 FROM staff s WHERE s.id = $1 AND s.status = $4 FOR SHARE`, staffID, a.Issuer, a.Subject, staff.StatusActive)
 	if pgErr, ok := errors.AsType[*pgconn.PgError](err); ok && pgErr.Code == uniqueViolation {
-		return login.ErrConflict
+		return staff.ErrConflict
 	}
 	if err != nil {
 		return fmt.Errorf("link upstream account: %w", err)
 	}
 	if tag.RowsAffected() == 0 {
-		return login.ErrConflict
+		return staff.ErrConflict
 	}
 	return nil
 }
 
 // Register は、m のメールの職員がいなければ m を書き、書いた職員と true を返す。メールは全ての事業所で一意である。
 // m の事業所に同じメールの職員がいれば、書かずにその職員と false を返す。予定の API が登録を送り直しても、職員は 1 人だけになる。
-// ほかの事業所に同じメールの職員がいれば internalapi.ErrEmailTaken を返す。
-func (s *StaffStore) Register(ctx context.Context, m login.StaffMember) (login.StaffMember, bool, error) {
+// その職員が止められていれば staff.ErrSuspended を、ほかの事業所に同じメールの職員がいれば staff.ErrEmailTaken を返す。
+func (s *StaffStore) Register(ctx context.Context, m staff.Member) (staff.Member, bool, error) {
 	tag, err := s.pool.Exec(ctx, `INSERT INTO staff (id, org_id, email, status) VALUES ($1, $2, $3, $4)
 ON CONFLICT ON CONSTRAINT staff_email_key DO NOTHING`, m.ID, m.OrgID, m.Email, m.Status)
 	if err != nil {
-		return login.StaffMember{}, false, fmt.Errorf("register staff: %w", err)
+		return staff.Member{}, false, fmt.Errorf("register staff: %w", err)
 	}
 	got, err := scanStaff(s.pool.QueryRow(ctx, `SELECT `+staffColumns+staffFrom+` WHERE s.email = $1`, m.Email))
 	if err != nil {
-		return login.StaffMember{}, false, fmt.Errorf("register staff: %w", err)
+		return staff.Member{}, false, fmt.Errorf("register staff: %w", err)
 	}
 	if got.OrgID != m.OrgID {
-		return login.StaffMember{}, false, internalapi.ErrEmailTaken
+		return staff.Member{}, false, staff.ErrEmailTaken
+	}
+	if got.Status == staff.StatusSuspended {
+		return staff.Member{}, false, staff.ErrSuspended
 	}
 	return got, tag.RowsAffected() == 1, nil
 }
 
-// Activate は、登録の途中の職員 id を有効にする。有効な職員を有効にしても成功する。いなければ login.ErrNotFound を、
-// 止めた職員なら internalapi.ErrSuspended を、退職した職員なら internalapi.ErrRetired を返す。
+// Activate は、登録の途中の職員 id を有効にする。有効な職員を有効にしても成功する。いなければ staff.ErrNotFound を、
+// 止めた職員なら staff.ErrSuspended を、退職した職員なら staff.ErrRetired を返す。
 func (s *StaffStore) Activate(ctx context.Context, id string) error {
-	tag, err := s.pool.Exec(ctx, `UPDATE staff SET status = $2 WHERE id = $1 AND status IN ($3, $2)`,
-		id, login.StatusActive, login.StatusPending)
-	if err != nil {
-		return fmt.Errorf("activate staff: %w", err)
-	}
-	if tag.RowsAffected() == 1 {
-		return nil
-	}
-	m, err := s.Get(ctx, id)
-	if err != nil {
-		return err
-	}
-	if m.Status == login.StatusRetired {
-		return internalapi.ErrRetired
-	}
-	return internalapi.ErrSuspended
+	return s.transition(ctx, id, staff.Activation(), "activate staff")
 }
 
 // Resume は、止めた職員 id を有効に戻す。上流のアカウントの結び付けはそのまま残す。有効な職員を戻しても成功する。
-// いなければ login.ErrNotFound を、退職した職員なら internalapi.ErrRetired を、登録の途中の職員なら internalapi.ErrNotSuspended を返す。
+// いなければ staff.ErrNotFound を、退職した職員なら staff.ErrRetired を、登録の途中の職員なら staff.ErrNotSuspended を返す。
 func (s *StaffStore) Resume(ctx context.Context, id string) error {
-	tag, err := s.pool.Exec(ctx, `UPDATE staff SET status = $2 WHERE id = $1 AND status IN ($3, $2)`,
-		id, login.StatusActive, login.StatusSuspended)
-	if err != nil {
-		return fmt.Errorf("resume staff: %w", err)
-	}
-	if tag.RowsAffected() == 1 {
-		return nil
-	}
-	m, err := s.Get(ctx, id)
-	if err != nil {
-		return err
-	}
-	if m.Status == login.StatusRetired {
-		return internalapi.ErrRetired
-	}
-	return internalapi.ErrNotSuspended
+	return s.transition(ctx, id, staff.Resumption(), "resume staff")
 }
 
 // Retire は、職員 id を退職にし、メールと上流のアカウントを消す。同じメールと上流のアカウントで、新しい職員を登録し直せる。
-// 退職した職員を退職にしても成功する。いなければ login.ErrNotFound を返す。
+// 退職した職員を退職にしても成功する。いなければ staff.ErrNotFound を返す。
 func (s *StaffStore) Retire(ctx context.Context, id string) error {
 	return pgx.BeginFunc(ctx, s.pool, func(tx pgx.Tx) error {
-		tag, err := tx.Exec(ctx, `UPDATE staff SET status = $2, email = NULL WHERE id = $1`, id, login.StatusRetired)
+		tag, err := tx.Exec(ctx, `UPDATE staff SET status = $2, email = NULL WHERE id = $1`, id, staff.StatusRetired)
 		if err != nil {
 			return fmt.Errorf("retire staff: %w", err)
 		}
 		if tag.RowsAffected() == 0 {
-			return login.ErrNotFound
+			return staff.ErrNotFound
 		}
 		if _, err := tx.Exec(ctx, `DELETE FROM upstream_accounts WHERE staff_id = $1`, id); err != nil {
 			return fmt.Errorf("retire staff: %w", err)
@@ -159,11 +132,11 @@ func (s *StaffStore) Retire(ctx context.Context, id string) error {
 	})
 }
 
-// Delete は、登録の途中で上流のアカウントを結び付けていない職員 id を消す。いなければ login.ErrNotFound を、
-// 有効か止めた職員なら internalapi.ErrNotPending を返す。
+// Delete は、登録の途中で上流のアカウントを結び付けていない職員 id を消す。いなければ staff.ErrNotFound を、
+// 有効か止めた職員なら staff.ErrNotPending を返す。
 func (s *StaffStore) Delete(ctx context.Context, id string) error {
 	tag, err := s.pool.Exec(ctx, `DELETE FROM staff s WHERE s.id = $1 AND s.status = $2
-AND NOT EXISTS (SELECT 1 FROM upstream_accounts u WHERE u.staff_id = s.id)`, id, login.StatusPending)
+AND NOT EXISTS (SELECT 1 FROM upstream_accounts u WHERE u.staff_id = s.id)`, id, staff.StatusPending)
 	if err != nil {
 		return fmt.Errorf("delete staff: %w", err)
 	}
@@ -173,22 +146,28 @@ AND NOT EXISTS (SELECT 1 FROM upstream_accounts u WHERE u.staff_id = s.id)`, id,
 	if _, err := s.Get(ctx, id); err != nil {
 		return err
 	}
-	return internalapi.ErrNotPending
+	return staff.ErrNotPending
 }
 
-// Suspend は、職員 id を止める。止めた職員を止めても成功する。いなければ login.ErrNotFound を、
-// 退職した職員なら internalapi.ErrRetired を返す。
+// Suspend は、職員 id を止める。止めた職員を止めても成功する。いなければ staff.ErrNotFound を、
+// 退職した職員なら staff.ErrRetired を返す。
 func (s *StaffStore) Suspend(ctx context.Context, id string) error {
-	tag, err := s.pool.Exec(ctx, `UPDATE staff SET status = $2 WHERE id = $1 AND status <> $3`,
-		id, login.StatusSuspended, login.StatusRetired)
+	return s.transition(ctx, id, staff.Suspension(), "suspend staff")
+}
+
+// transition は、状態が t.From のいずれかの職員 id を t.To にする。状態の条件と更新を 1 文で行うので、同時の遷移と競合しない。
+// 遷移しなかったときは、職員がいなければ staff.ErrNotFound を、いれば t.Refuse のエラーを返す。op は DB のエラーに付ける操作の名前である。
+func (s *StaffStore) transition(ctx context.Context, id string, t staff.Transition, op string) error {
+	tag, err := s.pool.Exec(ctx, `UPDATE staff SET status = $2 WHERE id = $1 AND status = ANY($3)`, id, t.To, t.From)
 	if err != nil {
-		return fmt.Errorf("suspend staff: %w", err)
+		return fmt.Errorf("%s: %w", op, err)
 	}
 	if tag.RowsAffected() == 1 {
 		return nil
 	}
-	if _, err := s.Get(ctx, id); err != nil {
+	m, err := s.Get(ctx, id)
+	if err != nil {
 		return err
 	}
-	return internalapi.ErrRetired
+	return t.Refuse(m.Status)
 }

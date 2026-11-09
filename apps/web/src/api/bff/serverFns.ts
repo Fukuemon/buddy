@@ -18,10 +18,9 @@ export const callBffFn = createServerFn({ method: 'POST' })
 
 /** ログインした職員を返す。ログインしていなければ null を返す。 */
 export const getViewerFn = createServerFn({ method: 'GET' }).handler(async () => {
-  const { readSession, viewerOf } = await import('#/server/auth')
+  const { readViewer } = await import('#/server/auth')
   const { getAuthDeps } = await import('#/server/runtime')
-  const session = await readSession(getRequest(), await getAuthDeps())
-  return session === undefined ? null : viewerOf(session)
+  return readViewer(getRequest(), await getAuthDeps())
 })
 
 /** 照合の入力を照合の API に送る。中身は src/server/receipt.ts の checkReceipt にある。 */

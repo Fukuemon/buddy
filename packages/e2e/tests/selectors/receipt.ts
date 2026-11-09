@@ -1,8 +1,12 @@
-import type { Page } from '@playwright/test'
+import type { Locator, Page } from '@playwright/test'
 
 /** 照合の結果の表で、利用者名を含む行。行には testid が無い。 */
 export const receiptResultRow = (page: Page, patient: string) =>
   page.getByTestId('receipt-result-table').getByRole('row').filter({ hasText: patient })
+
+/** 照合の結果の表の、列の見出しのセル。列の順に並ぶ。 */
+export const receiptResultHeaderCells = (page: Page) =>
+  page.getByTestId('receipt-result-table').getByRole('columnheader')
 
 /**
  * 照合の結果の表で、区分の中の、訪問日と利用者名を含む行のセル。区分ごとに tbody が分かれ、先頭に区分の見出しの行がある。
@@ -22,3 +26,15 @@ export const receiptCategoryRowCells = (
     .filter({ hasText: date })
     .filter({ hasText: patient })
     .getByRole('cell')
+
+/** 照合の失敗の文の下の、入力の CSV の誤りの文。1 つの誤りが 1 つの項目である。項目には testid が無い。 */
+export const receiptCheckErrorItems = (page: Page) =>
+  page.getByTestId('receipt-check-error').getByRole('listitem')
+
+/** 照合の結果の「照合に使わなかった予定」の、予定ごとの項目。項目には testid が無い。 */
+export const receiptWarningItems = (page: Page) =>
+  page.getByTestId('receipt-warnings').getByRole('listitem')
+
+/** 照合の結果の表の、確認することのセルの文。1 つの文が 1 つの項目である。項目には testid が無い。 */
+export const receiptFindingItems = (findingsCell: Locator) =>
+  findingsCell.getByTestId('receipt-findings').getByRole('listitem')

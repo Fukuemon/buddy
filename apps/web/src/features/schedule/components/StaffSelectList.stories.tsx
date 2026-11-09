@@ -7,7 +7,12 @@ import { storyStaff } from './storyData'
 const meta = {
   title: '画面/Schedule/StaffSelectList',
   component: StaffSelectList,
-  args: { staffList: storyStaff, value: 'staff-2', onChange: fn() },
+  args: {
+    staffList: storyStaff,
+    value: 'staff-2',
+    heading: '主訪問者を選んでください',
+    onChange: fn(),
+  },
 } satisfies Meta<typeof StaffSelectList>
 
 export default meta

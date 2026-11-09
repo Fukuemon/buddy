@@ -1,9 +1,9 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 
-import { ApiError } from '#/api/client'
+import type { BuddyApi } from '#/api/BuddyApi'
 import { createFakeBuddyApi } from '#/api/fake/fakeBuddyApi'
-import { FAKE_VIEWER } from '#/api/fake/fixtures'
 import {
+  failOnSecondCall,
   emptyBuddyApi,
   failingBuddyApi,
   pendingBuddyApi,
@@ -35,32 +35,17 @@ export const Loading: Story = { parameters: route({ api: pendingBuddyApi() }) }
 
 export const LoadError: Story = { parameters: route({ api: failingBuddyApi() }) }
 
-/** 職員の管理の権限を持たない職員。API を呼ばない。 */
-export const Forbidden: Story = {
-  parameters: route({
-    api: failingBuddyApi(),
-    viewer: { ...FAKE_VIEWER, canManageStaff: false },
-  }),
-}
-
-const unappliable = createFakeBuddyApi()
-
-/** Google の内容に合わせると、Google の予定を buddy の予定に読み替えられずに失敗する。 */
-export const AcceptFailed: Story = {
-  parameters: route({
-    api: {
-      ...unappliable,
-      calendars: {
-        ...unappliable.calendars,
-        acceptExport: async () => {
-          throw new ApiError(
-            409,
-            'Google カレンダーの予定を、buddy の予定に読み替えられません',
-            [],
-            'external_change_unappliable',
-          )
-        },
-      },
+/** 確認が必要な予定を、2 回目だけ読めないフェイクの API を作る。 */
+export const refetchFailingApi = (): BuddyApi => {
+  const base = createFakeBuddyApi()
+  return {
+    ...base,
+    calendars: {
+      ...base.calendars,
+      exportIssues: failOnSecondCall((...args) => base.calendars.exportIssues(...args)),
     },
-  }),
+  }
 }
+
+/** 読み終えた後に読み直して、確認が必要な予定を読めない。表示を残し、見出しの下に失敗の文と読み直すを出す。 */
+export const RefetchError: Story = { parameters: route({ api: refetchFailingApi() }) }

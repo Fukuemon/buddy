@@ -10,6 +10,7 @@ import {
 
 import { ScheduleCalendarContainer } from './ScheduleCalendarContainer'
 import { StaffFilterSidebarContainer } from './StaffFilterSidebarContainer'
+import { selfEditViewer } from './storyData'
 
 const route = (appRouter: Partial<AppRouterParameters>) => ({
   appRouter: { route: '/schedule', url: '/schedule', ...appRouter },
@@ -25,10 +26,10 @@ const meta = {
 export default meta
 type Story = StoryObj<typeof meta>
 
-/** 職員の絞り込みの幅（StaffFilterLayout の w-80）にそろえる。 */
+/** 予定の画面で職員の絞り込みを描く、SiteLayout の sidebar の aside の幅（w-72）にそろえる。 */
 const narrow: NonNullable<Story['decorators']> = [
   (Story) => (
-    <div className="w-80">
+    <div className="w-72">
       <Story />
     </div>
   ),
@@ -50,7 +51,7 @@ export const WithCalendar: Story = {
   parameters: { ...route({ url: '/schedule?view=day' }), layout: 'fullscreen' },
   render: () => (
     <div className="flex h-[720px]">
-      <div className="w-80 shrink-0 border-r border-border">
+      <div className="w-64 shrink-0 border-r border-border">
         <StaffFilterSidebarContainer />
       </div>
       <div className="min-w-0 grow">
@@ -88,4 +89,10 @@ export const WithSuspendedStaffWeek: Story = {
     ...route({ url: '/schedule?view=week', api: suspendedStaffBuddyApi() }),
     layout: 'fullscreen',
   },
+}
+
+/** A チームの予定だけを見られる職員。絞り込みに A チームの職員だけを出す。 */
+export const ReadableOnly: Story = {
+  decorators: narrow,
+  parameters: route({ viewer: selfEditViewer }),
 }

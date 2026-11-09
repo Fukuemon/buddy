@@ -13,6 +13,7 @@ import (
 	"strconv"
 	"sync"
 	"testing"
+	"time"
 
 	"google.golang.org/api/calendar/v3"
 	"google.golang.org/api/option"
@@ -27,13 +28,18 @@ type Server struct {
 	// 無いカレンダーには 404 を返す。作った予定は最後のページに足す。
 	Calendars map[string][][]*calendar.Event
 	// Instances は、繰り返しの親の予定の ID ごとの回である。1 ページで返す。無い予定には 404 を返す。
+	// 回を変える（events.patch）と、回をカレンダーのページに足し、例外の回として一覧と増分で返す。回を消す（events.delete）と、
+	// 取り消した回にして events.instances で返さない。回の ID、recurringEventId、originalStartTime は、テストが決めて持たせる。
 	Instances map[string][]*calendar.Event
 	// AccessRoles は、カレンダー ID ごとのレスポンスの accessRole である。無ければ reader を返す。
 	AccessRoles map[string]string
 	// Status が 0 でなければ、全てのリクエストにその状態のエラーのレスポンスを返す。
 	Status int
-	// Failures は、次からの書き込みのリクエストに順に返すエラーの状態である。返した値は消す。
+	// Failures は、次からの書き込みのリクエストに順に返すエラーの状態である。返した値は消す。0 の値は、そのリクエストを失敗させずに書く。
 	Failures []int
+	// LostResponses は、次からの書き込みのリクエストを書いた後に、成功の代わりに順に返すエラーの状態である。返した値は消す。
+	// Google が書いた後に応答だけが失われたときを再現する。
+	LostResponses []int
 
 	mu      sync.Mutex
 	queries []url.Values
@@ -81,8 +87,9 @@ func (s *Server) Edit(calendarID, eventID string, fn func(*calendar.Event)) bool
 	if ev == nil {
 		return false
 	}
+	prev := ev.Updated
 	fn(ev)
-	ev.Etag = s.nextETag()
+	s.stamp(ev, prev)
 	s.touch(calendarID, eventID)
 	return true
 }
@@ -92,7 +99,11 @@ func (s *Server) Edit(calendarID, eventID string, fn func(*calendar.Event)) bool
 func (s *Server) Put(calendarID string, ev *calendar.Event) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	ev.Etag = s.nextETag()
+	prev := ""
+	if cur := s.find(calendarID, ev.Id); cur != nil {
+		prev = cur.Updated
+	}
+	s.stamp(ev, prev)
 	for i, page := range s.Calendars[calendarID] {
 		for j, cur := range page {
 			if cur.Id == ev.Id {
@@ -162,7 +173,7 @@ func (s *Server) remove(calendarID string, ev *calendar.Event) {
 		}
 	}
 	ev.Status = "cancelled"
-	ev.Etag = s.nextETag()
+	s.stamp(ev, ev.Updated)
 	if s.deleted == nil {
 		s.deleted = map[string]map[string]*calendar.Event{}
 	}
@@ -184,12 +195,41 @@ func (s *Server) find(calendarID, eventID string) *calendar.Event {
 	}
 	for _, items := range s.Instances {
 		for _, ev := range items {
-			if ev.Id == eventID {
+			if ev.Id == eventID && ev.Status != "cancelled" {
 				return ev
 			}
 		}
 	}
 	return nil
+}
+
+// listed は、予定 ev がカレンダーのページにあるかを返す。繰り返しの回（Instances）だけにある予定では false である。s.mu を持って呼ぶ。
+func (s *Server) listed(calendarID string, ev *calendar.Event) bool {
+	for _, page := range s.Calendars[calendarID] {
+		if slices.Contains(page, ev) {
+			return true
+		}
+	}
+	return false
+}
+
+// stamp は、Google と同じく、変えた予定 ev の etag を新しくし、更新の時刻を前の時刻 prev より後にする。
+// ev の更新の時刻を、呼ぶ人が prev から変えていれば、その時刻を使う。
+func (s *Server) stamp(ev *calendar.Event, prev string) {
+	ev.Etag = s.nextETag()
+	if ev.Updated != "" && ev.Updated != prev {
+		return
+	}
+	ev.Updated = s.later(prev)
+}
+
+// later は、今の時刻と、時刻 prev の 1 ミリ秒後の、遅い方を RFC 3339 で返す。prev が読めなければ今の時刻を返す。
+func (s *Server) later(prev string) string {
+	t := time.Now().UTC()
+	if p, err := time.Parse(time.RFC3339Nano, prev); err == nil && !t.After(p) {
+		t = p.Add(time.Millisecond)
+	}
+	return t.Format(time.RFC3339Nano)
 }
 
 // nextETag は、新しい etag を返す。最初から持たせた予定の etag と重ならないよう、w を前に付ける。
@@ -319,7 +359,13 @@ func (s *Server) serveInstances(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	s.queries = append(s.queries, r.URL.Query())
-	writeJSON(w, http.StatusOK, calendar.Events{Items: items})
+	live := []*calendar.Event{}
+	for _, ev := range items {
+		if ev.Status != "cancelled" {
+			live = append(live, ev)
+		}
+	}
+	writeJSON(w, http.StatusOK, calendar.Events{Items: live})
 }
 
 // serveGet は、events.get に答える。消した予定は status が cancelled で返る。
@@ -352,13 +398,26 @@ func (s *Server) beginWrite(w http.ResponseWriter, r *http.Request) bool {
 	if len(s.Failures) > 0 {
 		status := s.Failures[0]
 		s.Failures = s.Failures[1:]
-		writeError(w, status, http.StatusText(status))
-		return false
+		if status != 0 {
+			writeError(w, status, http.StatusText(status))
+			return false
+		}
 	}
 	if _, ok := s.Calendars[r.PathValue("id")]; !ok {
 		writeError(w, http.StatusNotFound, "Not Found")
 		return false
 	}
+	return true
+}
+
+// loseResponse は、書いた後に返すエラーがあればレスポンスを書いて true を返す。s.mu を持って呼ぶ。
+func (s *Server) loseResponse(w http.ResponseWriter) bool {
+	if len(s.LostResponses) == 0 {
+		return false
+	}
+	status := s.LostResponses[0]
+	s.LostResponses = s.LostResponses[1:]
+	writeError(w, status, http.StatusText(status))
 	return true
 }
 
@@ -382,12 +441,15 @@ func (s *Server) serveInsert(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusConflict, "The requested identifier already exists.")
 		return
 	}
-	ev.Etag = s.nextETag()
+	s.stamp(&ev, "")
 	if ev.Status == "" {
 		ev.Status = "confirmed"
 	}
 	s.appendEvent(cal, &ev)
 	s.touch(cal, ev.Id)
+	if s.loseResponse(w) {
+		return
+	}
 	writeJSON(w, http.StatusOK, &ev)
 }
 
@@ -440,12 +502,15 @@ func (s *Server) servePatch(w http.ResponseWriter, r *http.Request) {
 	if _, ok := raw["status"]; ok {
 		ev.Status = patch.Status
 	}
-	ev.Etag = s.nextETag()
-	if wasDeleted && ev.Status != "cancelled" {
+	s.stamp(ev, ev.Updated)
+	if (wasDeleted && ev.Status != "cancelled") || (!wasDeleted && !s.listed(cal, ev)) {
 		delete(s.deleted[cal], id)
 		s.appendEvent(cal, ev)
 	}
 	s.touch(cal, id)
+	if s.loseResponse(w) {
+		return
+	}
 	writeJSON(w, http.StatusOK, ev)
 }
 
@@ -475,6 +540,9 @@ func (s *Server) serveDelete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	s.remove(cal, ev)
+	if s.loseResponse(w) {
+		return
+	}
 	w.WriteHeader(http.StatusNoContent)
 }
 

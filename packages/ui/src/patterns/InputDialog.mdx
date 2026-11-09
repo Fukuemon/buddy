@@ -1,0 +1,45 @@
+import { ArgTypes, Canvas, Meta } from '@storybook/addon-docs/blocks'
+
+import { InputDialog } from './InputDialog'
+import * as Stories from './InputDialog.stories'
+
+<Meta of={Stories} />
+
+# InputDialog
+
+入力のダイアログ。`Dialog` に、タイトルのヘッダーと、「キャンセル」と確定のボタンのフッターを組んだ形。
+
+## 規則
+
+規則の本文は、デザインシステムの文書の次のセクションにある。
+
+- 使う場面、使わない場面、使い方の規則、キーボードの操作: コンポーネントの文書（`packages/ui/design/components.md`）の「パターン」の「`InputDialog`」
+- 中で使うコンポーネントの規則: コンポーネントの文書の「コンポーネントごとの規則」の「`Modal`、`Dialog`」と「`Button`」
+- 当たる原則: DESIGN.md の「画面を作るときの原則」の次の ID
+  - `PRIMARY-ACTION-ONE`
+
+## 状態
+
+### デフォルト
+
+<Canvas of={Stories.Default} />
+
+### 送れない
+
+<Canvas of={Stories.CannotSubmit} />
+
+### 送っている間
+
+<Canvas of={Stories.Submitting} />
+
+### エラー
+
+<Canvas of={Stories.WithError} />
+
+### タイトルのヘルプ
+
+<Canvas of={Stories.WithTitleAddon} />
+
+## props
+
+<ArgTypes of={InputDialog} />

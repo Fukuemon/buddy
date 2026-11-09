@@ -1,0 +1,182 @@
+/* 繰り返しの変更のモックだけの見た目。状態をまたいで使う。幅による切り替えは @container screen で書く */
+
+/* 本文の段を縦に積む（apps/web の ScheduleRecurrenceModalContainer の form の gap-6） */
+.sr-body {
+  display: grid;
+  gap: 24px;
+}
+
+.sr-lead {
+  margin: 0;
+}
+
+/* 変えない項目。灰色の面に、見出しを左、値を右に置く（apps/web の bg-surface-subtle の dl） */
+.sr-summary {
+  display: grid;
+  grid-template-columns: 7rem minmax(0, 1fr);
+  gap: 8px 16px;
+  margin: 0;
+  padding: 16px;
+  border-radius: var(--wf-radius);
+  background: var(--wf-fill);
+}
+
+.sr-summary dt {
+  color: var(--wf-muted);
+}
+
+.sr-summary dd {
+  margin: 0;
+}
+
+/* 規則の欄。見出しを左、欄を右の 2 列にする（apps/web の RecurringRuleFields の Row） */
+.sr-rule {
+  display: grid;
+  grid-template-columns: 7rem minmax(0, 1fr);
+  gap: 24px 16px;
+  align-items: start;
+}
+
+.sr-rule__label {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+}
+
+.sr-rule__field {
+  min-width: 0;
+}
+
+.sr-preset {
+  justify-content: space-between;
+  width: 280px;
+  max-width: 100%;
+}
+
+/* 曜日の丸いボタン。選んだ曜日は主の色で塗る */
+.sr-days {
+  display: flex;
+  gap: 8px;
+}
+
+.sr-day {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 1px var(--wf-line);
+}
+
+.sr-day.is-on {
+  background: var(--wf-primary);
+  box-shadow: none;
+  color: var(--wf-surface);
+  font-weight: 700;
+}
+
+/* 毎月の「日にち」と「曜日」のラジオと、その右のセレクト */
+.sr-choices {
+  display: grid;
+  gap: 8px;
+}
+
+.sr-choice {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  min-height: 44px;
+}
+
+/* 押せないセレクトと日付の欄。apps/web の disabled と同じく薄くする */
+.sr-disabled {
+  background: var(--wf-fill);
+  color: var(--wf-muted);
+}
+
+/* 終了日の「なし」「あり」と、「あり」の右の日付の欄 */
+.sr-ends {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 12.5rem);
+  gap: 8px 16px;
+  align-items: start;
+}
+
+.sr-ends .wf-radio {
+  min-height: 44px;
+}
+
+.sr-field {
+  display: grid;
+  gap: 4px;
+}
+
+/* 見出しを隠した 44px の日付の欄（packages/ui の DatePicker の isLabelHidden） */
+.sr-date {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 12px;
+  border: 1px solid var(--wf-line);
+  border-radius: var(--wf-radius);
+}
+
+.sr-date--invalid {
+  border: 2px solid var(--wf-danger);
+}
+
+.sr-error {
+  color: var(--wf-danger);
+}
+
+/* 保存の失敗の文。危険の色の文字で出す（apps/web の text-danger） */
+.sr-submit-error {
+  margin: 0;
+  color: var(--wf-danger);
+}
+
+/* 欄を出さない状態の文。危険の色にせず、本文の色で出す */
+.sr-message {
+  margin: 0;
+}
+
+@container screen (width < 768px) {
+  .sr-summary {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 4px;
+  }
+
+  .sr-summary dd {
+    margin-bottom: 8px;
+  }
+
+  .sr-rule {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 4px;
+  }
+
+  .sr-rule__label {
+    min-height: 0;
+  }
+
+  .sr-rule__field {
+    margin-bottom: 12px;
+  }
+
+  .sr-days {
+    gap: 4px;
+  }
+}
+
+/* 間隔の欄。44px の数の欄の右に「週ごと」を置き、誤りの文は欄と「週ごと」の下に出す */
+.sr-interval {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.sr-interval__input {
+  width: 6rem;
+}

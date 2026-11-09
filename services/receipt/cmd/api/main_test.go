@@ -16,7 +16,7 @@ func TestLoadConfig(t *testing.T) {
 			if v, ok := m[k]; ok {
 				return v
 			}
-			return map[string]string{"OIDC_ISSUER": "http://idp/buddy", "OIDC_AUDIENCE": "receipt"}[k]
+			return map[string]string{"OIDC_ISSUER": "http://idp/buddy", "OIDC_AUDIENCE": "receipt", "SCHEDULE_URL": "http://schedule:8080"}[k]
 		}
 	}
 	cfg, err := loadConfig(env(nil))
@@ -40,11 +40,18 @@ func TestLoadConfig(t *testing.T) {
 	if err != nil || cfg.calendarsFile != "calendars.json" || cfg.accountsFile != "accounts.json" || cfg.calendarEndpoint != "http://localhost:9000/" {
 		t.Errorf("カレンダーの設定 = %+v, %v", cfg, err)
 	}
+	cfg, err = loadConfig(env(map[string]string{
+		"GOOGLE_CALENDARS_FILE": " calendars.json\n", "GOOGLE_CALENDAR_SERVICE_ACCOUNTS_FILE": "accounts.json\n",
+	}))
+	if err != nil || cfg.calendarsFile != "calendars.json" || cfg.accountsFile != "accounts.json" {
+		t.Errorf("ファイルのパスの前後の空白 = %+v, %v", cfg, err)
+	}
 	for _, bad := range []map[string]string{
+		{"PORT": "0"}, {"PORT": "70000"}, {"PORT": "http"},
 		{"MAX_UPLOAD_BYTES": "0"}, {"MAX_UPLOAD_BYTES": "x"}, {"LOG_LEVEL": "loud"},
 		{"GOOGLE_CALENDAR_ENDPOINT": "http://localhost:9000/"},
 		{"GOOGLE_CALENDARS_FILE": "calendars.json"}, {"GOOGLE_CALENDAR_SERVICE_ACCOUNTS_FILE": "accounts.json"},
-		{"OIDC_ISSUER": ""}, {"OIDC_AUDIENCE": ""},
+		{"OIDC_ISSUER": ""}, {"OIDC_AUDIENCE": ""}, {"SCHEDULE_URL": ""},
 	} {
 		if _, err := loadConfig(env(bad)); err == nil {
 			t.Errorf("%v でエラーにならない", bad)

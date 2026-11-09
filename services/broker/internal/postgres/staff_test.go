@@ -6,8 +6,7 @@ import (
 	"testing"
 
 	"github.com/Fukuemon/buddy/services/broker/db"
-	"github.com/Fukuemon/buddy/services/broker/internal/internalapi"
-	"github.com/Fukuemon/buddy/services/broker/internal/login"
+	"github.com/Fukuemon/buddy/services/broker/internal/staff"
 )
 
 func TestStaffStore(t *testing.T) {
@@ -30,36 +29,36 @@ func TestStaffStore(t *testing.T) {
 	if found, err := s.FindByEmail(ctx, "nobody@example.com"); err != nil || len(found) != 0 {
 		t.Fatalf("登録していないメールの FindByEmail = %+v, %v", found, err)
 	}
-	if _, err := s.Get(ctx, "01JCCCCCCCCCCCCCCCCCCCCCCC"); !errors.Is(err, login.ErrNotFound) {
+	if _, err := s.Get(ctx, "01JCCCCCCCCCCCCCCCCCCCCCCC"); !errors.Is(err, staff.ErrNotFound) {
 		t.Fatalf("いない職員の Get の err = %v, want ErrNotFound", err)
 	}
 
-	a := login.UpstreamAccount{Issuer: "https://idp.example.com", Subject: "sub-a"}
+	a := staff.UpstreamAccount{Issuer: "https://idp.example.com", Subject: "sub-a"}
 	if err := s.Link(ctx, staffA, a); err != nil {
 		t.Fatal(err)
 	}
 	got, err := s.Get(ctx, staffA)
-	want := login.StaffMember{ID: staffA, OrgID: "org-a", Email: "aoki@example.com", Status: login.StatusActive, Upstream: a}
+	want := staff.Member{ID: staffA, OrgID: "org-a", Email: "aoki@example.com", Status: staff.StatusActive, Upstream: a}
 	if err != nil || got != want {
 		t.Fatalf("Get = %+v, %v, want %+v", got, err, want)
 	}
-	if err := s.Link(ctx, staffA, login.UpstreamAccount{Issuer: "https://idp.example.com", Subject: "sub-x"}); !errors.Is(err, login.ErrConflict) {
+	if err := s.Link(ctx, staffA, staff.UpstreamAccount{Issuer: "https://idp.example.com", Subject: "sub-x"}); !errors.Is(err, staff.ErrConflict) {
 		t.Errorf("2 つ目の上流のアカウントの err = %v, want ErrConflict", err)
 	}
-	if err := s.Link(ctx, staffB, a); !errors.Is(err, login.ErrConflict) {
+	if err := s.Link(ctx, staffB, a); !errors.Is(err, staff.ErrConflict) {
 		t.Errorf("別の職員に結び付いたアカウントの err = %v, want ErrConflict", err)
 	}
 }
 
 // TestStaffStoreRegisterDeleteSuspend は、登録が同じ事業所の同じメールで 1 人にまとまり、ほかの事業所の同じメールを拒み、
-// 有効化と停止が何度でも成功し、削除が登録の途中の職員だけを消すことを確認する。
+// 止めた職員と同じメールの登録を拒み、有効化と停止が何度でも成功し、削除が登録の途中の職員だけを消すことを確認する。
 func TestStaffStoreRegisterDeleteSuspend(t *testing.T) {
 	pool := migrated(t)
 	ctx := context.Background()
 	t.Cleanup(func() { _, _ = pool.Exec(ctx, `DELETE FROM staff`) })
 	s := NewStaffStore(pool)
 
-	m := login.StaffMember{ID: staffA, OrgID: "org-a", Email: "new@example.com", Status: login.StatusPending}
+	m := staff.Member{ID: staffA, OrgID: "org-a", Email: "new@example.com", Status: staff.StatusPending}
 	got, created, err := s.Register(ctx, m)
 	if err != nil || !created || got != m {
 		t.Fatalf("Register = %+v, %v, %v, want 作った職員", got, created, err)
@@ -72,7 +71,7 @@ func TestStaffStoreRegisterDeleteSuspend(t *testing.T) {
 	}
 	other := again
 	other.OrgID = "org-b"
-	if got, created, err := s.Register(ctx, other); !errors.Is(err, internalapi.ErrEmailTaken) {
+	if got, created, err := s.Register(ctx, other); !errors.Is(err, staff.ErrEmailTaken) {
 		t.Fatalf("別の事業所の Register = %+v, %v, %v, want ErrEmailTaken", got, created, err)
 	}
 
@@ -81,13 +80,13 @@ func TestStaffStoreRegisterDeleteSuspend(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	if got, _ := s.Get(ctx, staffA); got.Status != login.StatusActive {
+	if got, _ := s.Get(ctx, staffA); got.Status != staff.StatusActive {
 		t.Errorf("Activate の後の status = %s", got.Status)
 	}
-	if err := s.Delete(ctx, staffA); !errors.Is(err, internalapi.ErrNotPending) {
+	if err := s.Delete(ctx, staffA); !errors.Is(err, staff.ErrNotPending) {
 		t.Errorf("有効な職員の Delete の err = %v, want ErrNotPending", err)
 	}
-	if err := s.Activate(ctx, "01JCCCCCCCCCCCCCCCCCCCCCCC"); !errors.Is(err, login.ErrNotFound) {
+	if err := s.Activate(ctx, "01JCCCCCCCCCCCCCCCCCCCCCCC"); !errors.Is(err, staff.ErrNotFound) {
 		t.Errorf("いない職員の Activate の err = %v, want ErrNotFound", err)
 	}
 
@@ -96,24 +95,27 @@ func TestStaffStoreRegisterDeleteSuspend(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	if got, _ := s.Get(ctx, staffA); got.Status != login.StatusSuspended {
+	if got, _ := s.Get(ctx, staffA); got.Status != staff.StatusSuspended {
 		t.Errorf("Suspend の後の status = %s", got.Status)
 	}
-	if err := s.Activate(ctx, staffA); !errors.Is(err, internalapi.ErrSuspended) {
+	if err := s.Activate(ctx, staffA); !errors.Is(err, staff.ErrSuspended) {
 		t.Errorf("止めた職員の Activate の err = %v, want ErrSuspended", err)
 	}
-	if err := s.Suspend(ctx, "01JCCCCCCCCCCCCCCCCCCCCCCC"); !errors.Is(err, login.ErrNotFound) {
+	if got, created, err := s.Register(ctx, again); !errors.Is(err, staff.ErrSuspended) {
+		t.Errorf("止めた職員と同じ事業所と同じメールの Register = %+v, %v, %v, want ErrSuspended", got, created, err)
+	}
+	if err := s.Suspend(ctx, "01JCCCCCCCCCCCCCCCCCCCCCCC"); !errors.Is(err, staff.ErrNotFound) {
 		t.Errorf("いない職員の Suspend の err = %v, want ErrNotFound", err)
 	}
 
-	pending := login.StaffMember{ID: staffB, OrgID: "org-b", Email: "pending@example.com", Status: login.StatusPending}
+	pending := staff.Member{ID: staffB, OrgID: "org-b", Email: "pending@example.com", Status: staff.StatusPending}
 	if _, _, err := s.Register(ctx, pending); err != nil {
 		t.Fatal(err)
 	}
 	if err := s.Delete(ctx, staffB); err != nil {
 		t.Fatal(err)
 	}
-	if err := s.Delete(ctx, staffB); !errors.Is(err, login.ErrNotFound) {
+	if err := s.Delete(ctx, staffB); !errors.Is(err, staff.ErrNotFound) {
 		t.Errorf("消した職員の Delete の err = %v, want ErrNotFound", err)
 	}
 }
@@ -128,14 +130,14 @@ func TestStaffStoreResumeRetire(t *testing.T) {
 	if _, err := pool.Exec(ctx, `INSERT INTO staff (id, org_id, email) VALUES ($1, 'org-a', 'aoki@example.com')`, staffA); err != nil {
 		t.Fatal(err)
 	}
-	a := login.UpstreamAccount{Issuer: "https://idp.example.com", Subject: "sub-a"}
+	a := staff.UpstreamAccount{Issuer: "https://idp.example.com", Subject: "sub-a"}
 	if err := s.Link(ctx, staffA, a); err != nil {
 		t.Fatal(err)
 	}
 	if err := s.Suspend(ctx, staffA); err != nil {
 		t.Fatal(err)
 	}
-	if err := s.Link(ctx, staffA, login.UpstreamAccount{Issuer: "https://idp.example.com", Subject: "sub-x"}); !errors.Is(err, login.ErrConflict) {
+	if err := s.Link(ctx, staffA, staff.UpstreamAccount{Issuer: "https://idp.example.com", Subject: "sub-x"}); !errors.Is(err, staff.ErrConflict) {
 		t.Errorf("休職の職員の Link の err = %v, want ErrConflict", err)
 	}
 
@@ -144,10 +146,10 @@ func TestStaffStoreResumeRetire(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	if got, _ := s.Get(ctx, staffA); got.Status != login.StatusActive || got.Upstream != a {
+	if got, _ := s.Get(ctx, staffA); got.Status != staff.StatusActive || got.Upstream != a {
 		t.Errorf("Resume の後の職員 = %+v, want active で同じ上流のアカウント", got)
 	}
-	if err := s.Resume(ctx, "01JCCCCCCCCCCCCCCCCCCCCCCC"); !errors.Is(err, login.ErrNotFound) {
+	if err := s.Resume(ctx, "01JCCCCCCCCCCCCCCCCCCCCCCC"); !errors.Is(err, staff.ErrNotFound) {
 		t.Errorf("いない職員の Resume の err = %v, want ErrNotFound", err)
 	}
 
@@ -157,7 +159,7 @@ func TestStaffStoreResumeRetire(t *testing.T) {
 		}
 	}
 	got, err := s.Get(ctx, staffA)
-	if err != nil || got.Status != login.StatusRetired || got.Email != "" || got.Upstream != (login.UpstreamAccount{}) {
+	if err != nil || got.Status != staff.StatusRetired || got.Email != "" || got.Upstream != (staff.UpstreamAccount{}) {
 		t.Errorf("Retire の後の職員 = %+v, %v, want retired でメールと上流のアカウントが空", got, err)
 	}
 	for name, err := range map[string]error{
@@ -165,29 +167,29 @@ func TestStaffStoreResumeRetire(t *testing.T) {
 		"Resume":   s.Resume(ctx, staffA),
 		"Activate": s.Activate(ctx, staffA),
 	} {
-		if !errors.Is(err, internalapi.ErrRetired) {
+		if !errors.Is(err, staff.ErrRetired) {
 			t.Errorf("退職した職員の %s の err = %v, want ErrRetired", name, err)
 		}
 	}
-	if got, _ := s.Get(ctx, staffA); got.Status != login.StatusRetired {
+	if got, _ := s.Get(ctx, staffA); got.Status != staff.StatusRetired {
 		t.Errorf("退職した職員の status = %s, want retired のまま", got.Status)
 	}
 	// ログインの途中に退職した職員に、コールバックが上流のアカウントを結び付け直さない
-	if err := s.Link(ctx, staffA, a); !errors.Is(err, login.ErrConflict) {
+	if err := s.Link(ctx, staffA, a); !errors.Is(err, staff.ErrConflict) {
 		t.Errorf("退職した職員の Link の err = %v, want ErrConflict", err)
 	}
-	if got, _ := s.Get(ctx, staffA); got.Upstream != (login.UpstreamAccount{}) {
+	if got, _ := s.Get(ctx, staffA); got.Upstream != (staff.UpstreamAccount{}) {
 		t.Errorf("退職した職員の上流のアカウント = %+v, want 空のまま", got.Upstream)
 	}
-	if err := s.Retire(ctx, "01JCCCCCCCCCCCCCCCCCCCCCCC"); !errors.Is(err, login.ErrNotFound) {
+	if err := s.Retire(ctx, "01JCCCCCCCCCCCCCCCCCCCCCCC"); !errors.Is(err, staff.ErrNotFound) {
 		t.Errorf("いない職員の Retire の err = %v, want ErrNotFound", err)
 	}
 
-	m := login.StaffMember{ID: staffB, OrgID: "org-a", Email: "aoki@example.com", Status: login.StatusPending}
+	m := staff.Member{ID: staffB, OrgID: "org-a", Email: "aoki@example.com", Status: staff.StatusPending}
 	if got, created, err := s.Register(ctx, m); err != nil || !created || got.ID != staffB {
 		t.Fatalf("退職した職員と同じメールの Register = %+v, %v, %v, want 新しい職員", got, created, err)
 	}
-	if err := s.Link(ctx, staffB, a); !errors.Is(err, login.ErrConflict) {
+	if err := s.Link(ctx, staffB, a); !errors.Is(err, staff.ErrConflict) {
 		t.Errorf("登録の途中の職員の Link の err = %v, want ErrConflict", err)
 	}
 	if err := s.Activate(ctx, staffB); err != nil {
@@ -200,7 +202,7 @@ func TestStaffStoreResumeRetire(t *testing.T) {
 	if _, err := pool.Exec(ctx, `INSERT INTO staff (id, org_id, email, status) VALUES ('01JCCCCCCCCCCCCCCCCCCCCCCC', 'org-a', 'pending@example.com', 'pending')`); err != nil {
 		t.Fatal(err)
 	}
-	if err := s.Resume(ctx, "01JCCCCCCCCCCCCCCCCCCCCCCC"); !errors.Is(err, internalapi.ErrNotSuspended) {
+	if err := s.Resume(ctx, "01JCCCCCCCCCCCCCCCCCCCCCCC"); !errors.Is(err, staff.ErrNotSuspended) {
 		t.Errorf("登録の途中の職員の Resume の err = %v, want ErrNotSuspended", err)
 	}
 	if _, err := pool.Exec(ctx, `UPDATE staff SET status = 'active', email = NULL WHERE id = '01JCCCCCCCCCCCCCCCCCCCCCCC'`); err == nil {

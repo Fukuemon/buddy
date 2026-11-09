@@ -1,23 +1,77 @@
 import type { components as ReceiptComponents } from './generated/receipt'
-import type { components as ScheduleComponents } from './generated/schedule'
+import type {
+  components as ScheduleComponents,
+  operations as ScheduleOperations,
+} from './generated/schedule'
 
 /** 事業所の ID。API の `/v1/facilities/{facility_id}` に入る。 */
 export type FacilityId = string
 
-/** 職員の管理の権限の code。予定の API のマイグレーションが入れる値と同じにする。 */
-export const STAFF_MANAGE = 'staff.manage'
+/** 事業所の予定の正本。google_primary は Google カレンダー、buddy_primary は buddy である（ADR-0029）。 */
+export type SourceMode = ScheduleComponents['schemas']['SourceMode']
+
+/** 事業所。API の型の ID、名前、予定の正本だけを使う。 */
+export type Facility = {
+  id: FacilityId
+  name: string
+  sourceMode: SourceMode
+}
 
 /** ログインした職員。 */
 export type Viewer = {
   staffId: string
   staffName: string
   facilityId: FacilityId
-  /** 職員の管理の権限（staff.manage）を持つか。画面の出し分けだけに使い、拒むのは API である。 */
-  canManageStaff: boolean
+  /**
+   * 職員が持つ権限の code の一覧。予定の API の code をそのまま写す。
+   * 画面の出し分けだけに使い、hasPermission で読む。拒むのは API である（ADR-0008）。
+   */
+  policyCodes: readonly string[]
+  /** 予定の権限（schedule.*）と対象。画面の出し分けだけに使い、拒むのは予定の API である。 */
+  schedulePolicies: readonly SchedulePolicy[]
 }
 
-/** チーム。API の型の ID と名前だけを使う。 */
-export type Team = Pick<ScheduleComponents['schemas']['Unit'], 'id' | 'name'>
+/** 予定の権限の code。予定の API のマイグレーションが入れる値と同じにする。 */
+export const SCHEDULE_POLICY_CODES = [
+  'schedule.self.edit',
+  'schedule.user.read',
+  'schedule.user.edit',
+  'schedule.team.read',
+  'schedule.team.edit',
+  'schedule.all.read',
+  'schedule.all.edit',
+] as const
+
+/** 予定の権限の code。 */
+export type SchedulePolicyCode = (typeof SCHEDULE_POLICY_CODES)[number]
+
+/** ログインした職員の予定の権限 1 つ。対象は、職員とチームを対象にする権限だけが持つ。 */
+export type SchedulePolicy = {
+  code: SchedulePolicyCode
+  targetStaffIds: readonly string[]
+  targetTeamIds: readonly string[]
+}
+
+/** チーム。API の型の ID、名前、色だけを使う。色はチームの色のトークンの名前（team- の後ろ）である。 */
+export type Team = Pick<ScheduleComponents['schemas']['Team'], 'id' | 'name' | 'color'>
+
+/** チームの色。packages/ui のチームの色のトークンの名前（team- の後ろ）である。 */
+export type TeamColor = Team['color']
+
+/** チームの色の 8 色。予定の API が色を省いたチームに選ぶ順で、画面の選択肢もこの順に並べる。 */
+export const TEAM_COLORS = [
+  'blue',
+  'orange',
+  'magenta',
+  'cyan',
+  'yellow',
+  'purple',
+  'green',
+  'lime',
+] as const satisfies readonly TeamColor[]
+
+/** チームを作るときと変えるときに送る値。 */
+export type TeamInput = Pick<Team, 'name' | 'color'>
 
 /** 職員。名前は API の username である。 */
 export type Staff = {
@@ -28,37 +82,31 @@ export type Staff = {
   email: string | null
   /** 休職（on_leave）か退職（retired）の職員の状態。有効な職員は持たない。 */
   status?: Exclude<ScheduleComponents['schemas']['StaffStatus'], 'active'>
+  /** 訪問しない職員は true を持つ。訪問する職員は持たない（ADR-0006）。 */
+  nonVisiting?: true
 }
 
-/** 利用者。API の型の ID と名前だけを使う。 */
-export type Patient = Pick<ScheduleComponents['schemas']['Patient'], 'id' | 'name'>
+/** 利用者。API の型の ID、名前、サービスコードと、利用の終了かだけを使う。 */
+export type Patient = Pick<ScheduleComponents['schemas']['Patient'], 'id' | 'name'> & {
+  /** 利用者のサービスコードの表記。API の service_code を、そのまま使う。 */
+  serviceCode: ServiceCode
+  /** 利用の終了の利用者は true を持つ。利用中の利用者は持たない（ADR-0005）。 */
+  ended?: true
+}
 
 export const SCHEDULE_KINDS = ['normal', 'visit'] as const
 /** 予定の種類。API の予定の種類の名前（通常、訪問）に当たる。 */
 export type ScheduleKind = (typeof SCHEDULE_KINDS)[number]
 
-export const SERVICE_CODES = [
-  '訪看I2',
-  '訪看I3',
-  '訪看I4',
-  '訪看I5',
-  '訪看I5・2超',
-  '予防看I2',
-  '予防看I3',
-  '予防看I4',
-  '予防看I5',
-  '予防看I5・2超',
-  '医',
-] as const
-/** 訪問のサービスコード。表記は予定の API のマイグレーションが入れる値と同じにする。 */
-export type ServiceCode = (typeof SERVICE_CODES)[number]
+/** 訪問のサービスコードの表記。予定の API のサービスコードの一覧（listServiceCodes）の code を、そのまま使う。 */
+export type ServiceCode = string
 
 export const SCHEDULE_CATEGORIES = ['night', 'emergency', 'hospitalization'] as const
 /** 訪問の区分。API の訪問の区分の名前（夜勤、緊急、入院）に当たる。 */
 export type ScheduleCategory = (typeof SCHEDULE_CATEGORIES)[number]
 
 /** 訪問の予定だけが持つ項目。 */
-export type VisitDetail = {
+type VisitDetail = {
   patientId: Patient['id']
   serviceCode: ServiceCode
   categories: ScheduleCategory[]
@@ -80,10 +128,113 @@ export type Schedule = {
   visit?: VisitDetail
   /** キャンセルした予定のときだけある。 */
   cancel?: { reason: string }
+  /**
+   * google_primary の事業所で、同期が写した Google カレンダーの予定（Projection）のときだけ true を持つ。
+   * buddy から変えると、予定の API が Google カレンダーに書く（ADR-0029）。
+   */
+  fromGoogleCalendar?: true
+  /**
+   * Google カレンダーの予定の etag。変更とキャンセルのときに送り、予定の API が If-Match に付ける。
+   * 繰り返しの予定の展開した回では、親の予定の etag である。buddy の予定には無い。
+   */
+  etag?: string
+  /** Google カレンダーの予定のうち、buddy の予定に読み替えられず確認が必要な予定のときだけ、その理由を持つ。 */
+  reviewReason?: ScheduleReviewReason
+  /**
+   * 繰り返しの予定のまだ変えていない回のときだけ、繰り返しの予定の ID と今の規則を持つ。規則の変更（changeRecurringRule）に使う。
+   * 1 回だけ変えた回とキャンセルした回は、単発の予定に替わっているので持たない。
+   */
+  recurrence?: { recurringScheduleId: string; rule: RecurringRule }
+}
+
+/** 繰り返しの規則。予定の API の RecurringRule と同じ組み合わせで、null の項目は最初の日付の曜日や日から決まる。 */
+export type RecurringRule = {
+  frequency: 'weekly' | 'monthly'
+  /** 毎週の、重ならない曜日を月曜から日曜の順に並べたもの。1 が月曜、7 が日曜。毎月は null。 */
+  daysOfWeek: number[] | null
+  /** 毎週の間隔の週の数。1 が毎週、2 が隔週。毎月は null。 */
+  interval: number | null
+  /** 毎月の第何週の曜日の曜日。1 が月曜、7 が日曜。毎週は null。 */
+  dayOfWeek: number | null
+  dayOfMonth: number | null
+  weekOfMonth: number | null
+  /** この日を含む YYYY-MM-DD。 */
+  endDate: string | null
+}
+
+/** 繰り返しの規則の変更。effectiveDate（YYYY-MM-DD）以降の回に rule を当てる（ADR-0037）。 */
+export type RecurringRuleChange = {
+  effectiveDate: string
+  /**
+   * 新しい規則の 1 週目を決める日（YYYY-MM-DD）。分けるときは、この日を含む週から毎週の間隔を数える（ADR-0038）。
+   * 画面は開いた回の日を渡す。省くと effectiveDate を使う。
+   */
+  firstWeekDate?: string
+  rule: RecurringRule
+  /** 繰り返しの予定を分けるときの、新しい繰り返しの予定の ID。送り直しでも同じ値を渡す。 */
+  id: string
+}
+
+/** Google カレンダーの予定を、buddy の予定に読み替えられなかった理由。予定の API の ScheduleReviewReason をそのまま使う。 */
+export type ScheduleReviewReason = ScheduleComponents['schemas']['ScheduleReviewReason']
+
+/** 結び付けたカレンダーの同期の状況。予定の API の CalendarSyncStatus をそのまま使う。 */
+export type CalendarSyncStatus = ScheduleComponents['schemas']['CalendarSyncStatus']
+
+/** 予定の一覧の結果。 */
+export type ScheduleList = {
+  /** 期間と職員で絞った予定。 */
+  schedules: Schedule[]
+  /**
+   * 確認が必要な予定（reviewReason を持つ予定）。期間で絞らず、職員の絞り込みだけを当てる。
+   * 繰り返しの規則を写せない予定（recurrence_unsupported）は最初の回の日時で返り、表示の期間の外のことがある。
+   */
+  needsReview: Schedule[]
+  sourceMode: SourceMode
+  /** google_primary の事業所のカレンダーの同期の状況。職員の絞り込みを当てる。buddy_primary の事業所では空である。 */
+  calendarSyncs: CalendarSyncStatus[]
+  /** google_primary の事業所で、予定の正本を buddy に切り替えている間の open の切り替え。無ければ null である。 */
+  cutover: OpenCalendarCutover | null
+  /** google_primary の事業所の、期間に重なる Google カレンダーの終日の予定。職員の絞り込みを当てる。buddy_primary の事業所では空である。 */
+  allDayEvents: AllDayEvent[]
+  /** 終日の予定のうち、確認が必要な予定（reviewReason を持つ予定）。期間で絞らず、職員の絞り込みだけを当てる（#972）。 */
+  needsReviewAllDayEvents: AllDayEvent[]
+  /**
+   * google_primary の事業所の、期間に重なる、カレンダーに出せない Google カレンダーの予定の職員ごとの件数。
+   * 職員の絞り込みを当て、件数が 1 以上の職員だけを持つ。buddy_primary の事業所では空である。
+   */
+  unlistedEventCounts: UnlistedEventCount[]
+}
+
+/** Google カレンダーの終日の予定。buddy の予定ではないので、開くことも変えることもできない。 */
+export type AllDayEvent = {
+  id: string
+  staffId: Staff['id']
+  staffName: string
+  /** 予定がかかる最初の日の YYYY-MM-DD。 */
+  startDate: string
+  /** 予定がかかる最後の日（この日を含む）の YYYY-MM-DD。 */
+  endDate: string
+  /** Google の予定のタイトル。空のことがある。 */
+  title: string
+  /**
+   * 確認が必要な理由。無ければ持たない。繰り返しの規則を buddy で表せない予定は、最初の回の 1 件で recurrence_unsupported を持ち、
+   * 表示の期間の外のことがある。
+   */
+  reviewReason?: ScheduleReviewReason
+}
+
+/** 職員の、カレンダーに出せない Google カレンダーの予定の件数。 */
+export type UnlistedEventCount = {
+  staffId: Staff['id']
+  count: number
 }
 
 /** 予定の作成と更新で送る値。 */
-export type ScheduleInput = Omit<Schedule, 'id' | 'facilityId'>
+export type ScheduleInput = Omit<
+  Schedule,
+  'id' | 'facilityId' | 'fromGoogleCalendar' | 'etag' | 'reviewReason' | 'recurrence'
+>
 
 /** 予定の一覧の条件。 */
 export type ScheduleListParams = {
@@ -109,8 +260,10 @@ export type ReceiptReport = ReceiptComponents['schemas']['Report']
 export type ReceiptRow = ReceiptComponents['schemas']['Result']
 /** 照合の結果の区分。mismatch は不整合、schedule_only は予定のみ、visit_only は実績のみ、match は整合。 */
 export type ReceiptCategory = ReceiptComponents['schemas']['Category']
-/** CSV の行を読めなかった理由。照合の API の RowError をそのまま使う。 */
-export type ReceiptRowError = ReceiptComponents['schemas']['RowError']
+/** 入力の CSV の誤りの 1 件。照合の API の CsvError をそのまま使う。 */
+export type ReceiptCsvError = ReceiptComponents['schemas']['CsvError']
+/** 照合に使わなかった Google カレンダーの予定。照合の API の Warning をそのまま使う。 */
+export type ReceiptWarning = ReceiptComponents['schemas']['Warning']
 
 type ScheduleSchemas = ScheduleComponents['schemas']
 
@@ -132,3 +285,59 @@ export type ImportResult = ScheduleSchemas['ImportResult']
 export type CalendarExport = ScheduleSchemas['CalendarExport']
 /** 確認が必要な書き出しと、その予定の日時と職員。予定のタイトルと利用者名は持たない。 */
 export type CalendarExportIssue = ScheduleSchemas['CalendarExportIssue']
+/** 予定の正本を Google カレンダーから buddy に切り替える作業の記録。予定の API の CalendarCutover をそのまま使う。 */
+export type CalendarCutover = ScheduleSchemas['CalendarCutover']
+/** 切り替えの状況。open の切り替えと、カレンダーごとの同期とこの切り替えの最後の取り込み。 */
+export type CalendarCutoverState = ScheduleSchemas['CalendarCutoverState']
+/** 切り替えの状況のうち、結び付けたカレンダー 1 つ。 */
+export type CalendarCutoverCalendar = ScheduleSchemas['CalendarCutoverCalendar']
+/** 切り替えの完了の確認を満たさないカレンダーか予定。予定のタイトルは持たない。 */
+export type CalendarCutoverUnmet = ScheduleSchemas['CalendarCutoverUnmet']
+/** 予定の一覧が返す、open の切り替えの開始の時刻と取り込みの期間の最初の日。 */
+export type OpenCalendarCutover = ScheduleSchemas['OpenCalendarCutover']
+/** 切り替えの完了の結果。完了の確認を満たさずに拒まれたときは、満たさないカレンダーと予定を unmet に持つ。 */
+export type CalendarCutoverCompletion =
+  | { completed: CalendarCutover }
+  | { unmet: CalendarCutoverUnmet[] }
+
+type RequestBody<K extends keyof ScheduleOperations> = ScheduleOperations[K] extends {
+  requestBody: { content: { 'application/json': infer Body } }
+}
+  ? Body
+  : never
+
+/** 職員の管理の画面で出す職員。予定の API の Staff をそのまま使う。 */
+export type StaffRecord = ScheduleSchemas['Staff']
+/** 職員と、職員が持つ権限。予定の API の StaffDetail をそのまま使う。 */
+export type StaffDetail = ScheduleSchemas['StaffDetail']
+/** 職員が持つ権限 1 つと、その対象。 */
+export type StaffPolicy = StaffDetail['policies'][number]
+/** 職員を休職、退職、訪問しない職員にするときに残る、今日以降の予定、繰り返しの予定、担当の利用者。 */
+export type StaffAssignments = ScheduleSchemas['StaffAssignments']
+/** 部署。API の型の ID と名前だけを使う。 */
+export type Department = Pick<ScheduleSchemas['Unit'], 'id' | 'name'>
+/** 役職と、そのデフォルトの権限。予定の API の Position をそのまま使う。 */
+export type Position = ScheduleSchemas['Position']
+/** 職員に与える権限。予定の API の Policy をそのまま使う。 */
+export type Policy = ScheduleSchemas['Policy']
+/** 職員の登録で送る値。予定の API の createUser の本文をそのまま使う。 */
+export type StaffCreateInput = RequestBody<'createUser'>
+/** 職員の名前、電話番号、部署、チーム、訪問するかの変更で送る値。予定の API の updateUser の本文をそのまま使う。 */
+export type StaffUpdateInput = RequestBody<'updateUser'>
+/** 職員に権限を足すときに送る値。予定の API の addUserPolicy の本文をそのまま使う。 */
+export type StaffPolicyInput = RequestBody<'addUserPolicy'>
+/** 退職の結果。予定か担当の利用者が残って拒まれたときは、残るものを assignments に持つ。 */
+export type StaffRetireResult = { retired: StaffDetail } | { assignments: StaffAssignments }
+/** 職員の変更の結果。予定か担当の利用者が残る職員を訪問しない職員に変えようとして拒まれたときは、残るものを assignments に持つ。 */
+export type StaffUpdateResult = { updated: StaffDetail } | { assignments: StaffAssignments }
+
+/** 利用者の管理の画面で出す利用者。予定の API の Patient をそのまま使う。 */
+export type PatientRecord = ScheduleSchemas['Patient']
+/** 利用者の登録と変更で送る値。予定の API の createPatient の本文をそのまま使う（updatePatient も同じ形）。 */
+export type PatientInput = RequestBody<'createPatient'>
+/** 利用者の利用を終了するときに残る、今日以降の予定と繰り返しの予定。 */
+export type PatientSchedules = ScheduleSchemas['PatientSchedules']
+/** サービスコードと提供時間の範囲。予定の API の ServiceCode をそのまま使う。 */
+export type ServiceCodeRecord = ScheduleSchemas['ServiceCode']
+/** 利用の終了の結果。予定が残って拒まれたときは、残る予定を schedules に持つ。 */
+export type PatientEndResult = { ended: PatientRecord } | { schedules: PatientSchedules }

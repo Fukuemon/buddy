@@ -22,9 +22,11 @@ const meta = {
 export default meta
 type Story = StoryObj<typeof meta>
 
-export const Calendar: Story = {}
+export const Calendar: Story = { args: { submitHint: '対象の月と実績の CSV を選んでください。' } }
 
-export const ScheduleCsv: Story = { args: { source: 'csv' } }
+export const ScheduleCsv: Story = {
+  args: { source: 'csv', submitHint: '予定の CSV と実績の CSV を選んでください。' },
+}
 
 export const Ready: Story = { args: { canSubmit: true } }
 
@@ -33,10 +35,10 @@ export const Submitting: Story = { args: { canSubmit: true, isSubmitting: true }
 export const RowErrors: Story = {
   args: {
     canSubmit: true,
-    errorMessage: '入力の CSV に誤りがあります。次の行を直して、もう一度照合してください。',
-    rowErrors: [
-      { source: 'visits', line: 3, column: '訪問日', message: '暦にない日付: 2024-13-01' },
-      { source: 'schedules', line: 5, message: '列の数が見出しと違う' },
+    errorMessage: '入力の CSV に誤りがあります。次のところを直して、もう一度照合してください。',
+    errorLines: [
+      '実績の CSV に「提供時間」の列がありません。電子カルテから書き出し直してください。',
+      '予定の CSV の 5 行目の「訪問日」を日付として読めません。',
     ],
   },
 }

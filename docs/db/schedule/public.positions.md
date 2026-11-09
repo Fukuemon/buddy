@@ -18,7 +18,7 @@
 
 | Name                                      | Definition                                                                         |
 | ----------------------------------------- | ---------------------------------------------------------------------------------- |
-| [事業所と組織](viewpoint-organization.md) | 事業所と、その中の部署、チーム、役職、職員                                         |
+| [事業所と組織](viewpoint-organization.md) | 事業所と、その中の部署、チーム、役職、職員。事業所は予定の正本のモードを持つ       |
 | [職員と権限](viewpoint-policies.md)       | 職員が持つ権限と、その対象。職員を登録するとき、役職のデフォルトの権限をコピーする |
 
 ## Constraints
@@ -85,6 +85,7 @@ erDiagram
   timestamp_with_time_zone leave_started_at
   date leave_return_date
   timestamp_with_time_zone retired_at
+  boolean visits
 }
 "public.facilities" {
   text id
@@ -93,6 +94,7 @@ erDiagram
   text time_zone
   timestamp_with_time_zone created_at
   timestamp_with_time_zone updated_at
+  text source_mode
 }
 ```
 

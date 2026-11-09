@@ -66,7 +66,7 @@ describe('parseBffCall', () => {
       op: 'teams.list',
       args: ['f'],
     })
-    expect(() => parseBffCall({ op: 'schedules.delete', args: [] })).toThrow('schedules.delete')
+    expect(() => parseBffCall({ op: 'schedules.purge', args: [] })).toThrow('schedules.purge')
     expect(() => parseBffCall({ op: 'teams.list' })).toThrow('配列')
     expect(() => parseBffCall(null)).toThrow('形が正しくない')
   })
@@ -86,16 +86,29 @@ describe('parseBffArgs', () => {
         args: [
           'f',
           { kind: 'other', title: '', staffId: 's', startsAt: 'a', endsAt: 'b', description: '' },
+          'schedule-1',
         ],
       }),
     ).toMatchObject({ ok: false, message: expect.stringContaining('kind') })
   })
 })
 
-describe('secureCookie', () => {
+describe('usesSecureCookie', () => {
   it('デフォルトで Secure を付け、SESSION_COOKIE_SECURE=false のときだけ外す', () => {
-    expect(loadServerConfig(env).secureCookie).toBe(true)
-    expect(loadServerConfig({ ...env, SESSION_COOKIE_SECURE: 'false' }).secureCookie).toBe(false)
+    expect(loadServerConfig(env).usesSecureCookie).toBe(true)
+    expect(loadServerConfig({ ...env, SESSION_COOKIE_SECURE: 'false' }).usesSecureCookie).toBe(
+      false,
+    )
+  })
+})
+
+describe('publicUrl', () => {
+  it('PUBLIC_URL を読み、空か未設定なら undefined にする', () => {
+    expect(
+      loadServerConfig({ ...env, PUBLIC_URL: 'https://web.example.localhost' }).publicUrl,
+    ).toBe('https://web.example.localhost')
+    expect(loadServerConfig({ ...env, PUBLIC_URL: '' }).publicUrl).toBeUndefined()
+    expect(loadServerConfig(env).publicUrl).toBeUndefined()
   })
 })
 

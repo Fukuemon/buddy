@@ -1,0 +1,43 @@
+import { ArgTypes, Canvas, Meta } from '@storybook/addon-docs/blocks'
+
+import { ChipPicker } from './ChipPicker'
+import * as Stories from './ChipPicker.stories'
+
+<Meta of={Stories} />
+
+# ChipPicker
+
+選んでいるものだけを × 付きのチップで並べ、最後の欄に名前を入れて候補から 1 つずつ足す、複数の選択。
+
+## 規則
+
+規則の本文は、デザインシステムの文書の次のセクションにある。
+
+- 使う場面、使わない場面、キーボードの操作: コンポーネントの文書（`packages/ui/design/components.md`）の「コンポーネントの選び方」の `ChipPicker` の行
+- 使い方の規則と Do と Don't: コンポーネントの文書の「コンポーネントごとの規則」の「`ChipPicker`」
+- 当たる原則: DESIGN.md の「画面を作るときの原則」の次の ID
+  - `STATE-NOT-COLOR-ONLY`
+  - `FOCUS-ONE`
+  - `TARGET-SIZE`
+
+## 状態
+
+### デフォルト
+
+<Canvas of={Stories.Default} />
+
+### 何も選んでいない
+
+<Canvas of={Stories.Empty} />
+
+### 全てを選んだ
+
+<Canvas of={Stories.AllSelected} />
+
+### 無効
+
+<Canvas of={Stories.Disabled} />
+
+## props
+
+<ArgTypes of={ChipPicker} />

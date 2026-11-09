@@ -49,15 +49,15 @@ CREATE VIEW visit_info_details AS (
 | Name                                            | Columns | Comment                                  | Type       |
 | ----------------------------------------------- | ------- | ---------------------------------------- | ---------- |
 | [public.visit_infos](public.visit_infos.md)     | 8       | 訪問の情報                               | BASE TABLE |
-| [public.patients](public.patients.md)           | 9       | 利用者                                   | BASE TABLE |
-| [public.users](public.users.md)                 | 14      | 職員                                     | BASE TABLE |
+| [public.patients](public.patients.md)           | 10      | 利用者                                   | BASE TABLE |
+| [public.users](public.users.md)                 | 15      | 職員                                     | BASE TABLE |
 | [public.service_codes](public.service_codes.md) | 6       | サービスコード。マイグレーションで入れる | BASE TABLE |
 
 ## Viewpoints
 
-| Name                                 | Definition                                           |
-| ------------------------------------ | ---------------------------------------------------- |
-| [予定と訪問](viewpoint-schedules.md) | 予定と、訪問のときの訪問の情報と区分、予定の取り消し |
+| Name                                 | Definition                                                                               |
+| ------------------------------------ | ---------------------------------------------------------------------------------------- |
+| [予定と訪問](viewpoint-schedules.md) | 予定と、訪問のときの訪問の情報と区分、予定の取り消し、誤って入れた予定の削除の監査の記録 |
 
 ## Relations
 

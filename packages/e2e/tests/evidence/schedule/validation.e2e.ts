@@ -1,17 +1,17 @@
 import { expect, test } from '@playwright/test'
 
-import { prepareApiReference, routeApiReference } from '../../fixtures/apiReference'
+import { issueAccessToken, routeApiReference } from '../../fixtures/apiReference'
 import { LOGIN_EMAIL, LOGIN_STAFF } from '../../fixtures/env'
 import { EVIDENCE_VARIANTS, recordPrEvidence } from '../../fixtures/evidence'
+import { STAFF_FORM } from '../../fixtures/staff'
+import { openApiClient, openApiReference } from '../../screens/apiReference'
 import {
   fillApiBody,
   fillApiToken,
   fillApiVariable,
-  openApiClient,
-} from '../../screens/apiReference'
+} from '../../widgets/apiClient/actions/apiClient'
 import { apiClient } from '../../selectors/apiReference'
 
-const FACILITY_ID = '01M3TC5H00QV17BC0J9V3393ZP'
 /** 初期のマイグレーションが入れる、通常の予定の種類。 */
 const NORMAL_TYPE = '01M3TC68E05E1N46YCCBT6ZQB2'
 
@@ -30,7 +30,11 @@ test.describe('予定の API', () => {
             actor: `${LOGIN_STAFF.name}（マネージャー）`,
             variant,
           },
-          prepareApiReference('schedule', LOGIN_EMAIL),
+          async (page) => {
+            await routeApiReference(page)
+            await openApiReference(page, 'schedule')
+            return issueAccessToken(page.request, LOGIN_EMAIL)
+          },
           async ({ page, step, check }, token) => {
             await routeApiReference(page)
             await openApiClient(page, 'schedule', {
@@ -44,7 +48,7 @@ test.describe('予定の API', () => {
             await fillApiToken(page, token)
 
             await step('開始時間を 9:00（時が 1 桁）にして、予定を作るリクエストを送る')
-            await fillApiVariable(page, 'facility_id', FACILITY_ID)
+            await fillApiVariable(page, 'facility_id', STAFF_FORM.facilityId)
             await fillApiBody(page, {
               schedule_type_id: NORMAL_TYPE,
               date: '2026-10-22',

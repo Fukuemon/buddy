@@ -15,6 +15,7 @@ linters:
       rules:
         - name: exported
         - name: package-comments
+        - name: var-naming
   exclusions:
     generated: lax
 

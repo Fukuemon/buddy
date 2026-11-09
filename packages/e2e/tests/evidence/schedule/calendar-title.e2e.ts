@@ -7,8 +7,7 @@ const ACTOR = 'ログインなし（Storybook の story）'
 // 表示の期間と今の時刻の線の位置を毎回同じにするため、ブラウザの時計を 2026/10/21（水）10:15 から進める。
 // ブラウザは Asia/Tokyo で動くので、spec を流す環境の時間帯によらないよう時差を付けて書く
 const NOW = new Date('2026-10-21T10:15:00+09:00')
-// Storybook の架空の職員の数
-const STAFF_COUNT = 4
+const STORY_STAFF_COUNT = 4
 
 test.describe('予定のカレンダー', () => {
   test.describe('表示の期間の見出しと今の時刻の線', () => {
@@ -84,7 +83,7 @@ test.describe('予定のカレンダー', () => {
             )
             const lines = page.getByTestId(/^day-grid-now-/)
             // 線の位置は StaffScheduleDayGrid.test.tsx で確認し、ここでは全ての列に出ることを見る
-            await expect(lines).toHaveCount(STAFF_COUNT)
+            await expect(lines).toHaveCount(STORY_STAFF_COUNT)
             await step('（撮影のため、今の時刻の線が見える位置まで送る）')
             await lines.first().scrollIntoViewIfNeeded()
             await check('全ての職員の列の 10:15 の位置に、主の色の横線が出る')

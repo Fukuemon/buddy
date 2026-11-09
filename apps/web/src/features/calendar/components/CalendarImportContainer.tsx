@@ -1,10 +1,11 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { useNavigate, useRouteContext } from '@tanstack/react-router'
+import { useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
 
 import type { ImportRange, Staff } from '#/api/types'
+import { queryKeys } from '#/api/queryKeys'
+import { failedBeforeLoad, hasRefetchFailed, refetchFailedQueries } from '#/api/refetch'
 import { useBuddyApi } from '#/api/useBuddyApi'
-import { PageForbiddenMessage } from '#/components/site/PageForbiddenMessage'
 
 import {
   IMPORT_LOAD_ERROR_MESSAGE,
@@ -13,10 +14,15 @@ import {
   loadErrorMessage,
   previewErrorMessage,
 } from '../lib/errorMessage'
-import { isImportRangeReady, nextMonthRange, validateImportRange } from '../lib/importRange'
+import {
+  type BoundedImportRange,
+  isImportRangeReady,
+  nextMonthRange,
+  validateImportRange,
+} from '../lib/importRange'
 import { toDecisions, type ReviewChoices } from '../lib/importSummary'
 import {
-  calendarQueryKeys,
+  cutoverStatusQueryOptions,
   externalCalendarListQueryOptions,
   patientListQueryOptions,
   staffListQueryOptions,
@@ -27,6 +33,7 @@ import { CalendarImportDone } from './CalendarImportDone'
 import { CalendarImportForm } from './CalendarImportForm'
 import { CalendarImportPreview } from './CalendarImportPreview'
 import { CalendarImportView, type CalendarImportViewState } from './CalendarImportView'
+import { activePatients } from '#/api/activePatients'
 
 export type CalendarImportContainerProps = {
   /** search params の staff。カレンダーが結び付いていない職員なら、名前の順で最初の職員を選ぶ。 */
@@ -41,10 +48,15 @@ const CalendarImportContent = ({ staffId, onStaffChange }: CalendarImportContain
   const navigate = useNavigate()
   const calendarsQuery = useQuery(externalCalendarListQueryOptions(api, facilityId))
   const staffQuery = useQuery(staffListQueryOptions(api, facilityId))
+  const cutoverQuery = useQuery(cutoverStatusQueryOptions(api, facilityId))
+  // 予定の正本の切り替えの間は、切り替えの期間（切り替えの月の初日から先の全て）だけで取り込む
+  const openCutover = cutoverQuery.data?.cutover ?? null
   const preview = usePreviewImport()
   const runImport = useImportCalendar()
   const [selected, setSelected] = useState(staffId)
   const [range, setRange] = useState(() => nextMonthRange(new Date()))
+  const previewRange: ImportRange =
+    openCutover === null ? range : { range_start: openCutover.range_start, range_end: null }
   const [choices, setChoices] = useState<ReviewChoices>({})
   const needsPatients = (preview.data?.needs_review.length ?? 0) > 0
   const patientsQuery = useQuery({
@@ -60,11 +72,12 @@ const CalendarImportContent = ({ staffId, onStaffChange }: CalendarImportContain
     .sort((a, b) => a.staff.name.localeCompare(b.staff.name, 'ja'))
   const current = options.find((o) => o.staff.id === selected) ?? options[0]
 
-  const failed = [calendarsQuery, staffQuery].find((query) => query.isError)
+  const screenQueries = [calendarsQuery, staffQuery, cutoverQuery]
+  const failed = failedBeforeLoad(screenQueries)
   const state: CalendarImportViewState =
     failed !== undefined
       ? { status: 'error', message: loadErrorMessage(failed.error, IMPORT_LOAD_ERROR_MESSAGE) }
-      : calendarsQuery.isPending || staffQuery.isPending
+      : calendarsQuery.isPending || staffQuery.isPending || cutoverQuery.isPending
         ? { status: 'loading' }
         : options.length === 0
           ? { status: 'no-calendar' }
@@ -75,15 +88,17 @@ const CalendarImportContent = ({ staffId, onStaffChange }: CalendarImportContain
     runImport.reset()
     setChoices({})
   }
-  const changeRange = (patch: Partial<ImportRange>) => {
+  const changeRange = (patch: Partial<BoundedImportRange>) => {
     setRange((prev) => ({ ...prev, ...patch }))
     clearResults()
   }
   const retry = () =>
     Promise.all(
-      [calendarQueryKeys.calendars(facilityId), calendarQueryKeys.staff(facilityId)].map(
-        (queryKey) => queryClient.resetQueries({ queryKey }),
-      ),
+      [
+        queryKeys.calendars.list(facilityId),
+        queryKeys.staff.list(facilityId),
+        queryKeys.calendars.cutover(facilityId),
+      ].map((queryKey) => queryClient.resetQueries({ queryKey })),
     )
 
   const isLocked = preview.isPending || runImport.isPending
@@ -95,11 +110,19 @@ const CalendarImportContent = ({ staffId, onStaffChange }: CalendarImportContain
   const decisions = previewed === undefined ? [] : toDecisions(previewed.needs_review, choices)
 
   return (
-    <CalendarImportView onRetry={retry} state={state}>
+    <CalendarImportView
+      onRefetch={() => refetchFailedQueries(screenQueries)}
+      onRetry={retry}
+      refetchFailed={hasRefetchFailed(screenQueries)}
+      state={state}
+    >
       {current !== undefined && (
         <>
           <CalendarImportForm
-            canPreview={isImportRangeReady(range.range_start, range.range_end)}
+            canPreview={
+              openCutover !== null || isImportRangeReady(range.range_start, range.range_end)
+            }
+            cutoverRangeStart={openCutover?.range_start}
             end={range.range_end}
             errorMessage={
               preview.isError ? previewErrorMessage(preview.error, current.staff.name) : undefined
@@ -109,7 +132,7 @@ const CalendarImportContent = ({ staffId, onStaffChange }: CalendarImportContain
             onEndChange={(value) => changeRange({ range_end: value })}
             onPreview={() => {
               clearResults()
-              preview.mutate({ calendarId: current.calendar.id, range })
+              preview.mutate({ calendarId: current.calendar.id, range: previewRange })
             }}
             onStaffChange={(id) => {
               setSelected(id)
@@ -144,21 +167,22 @@ const CalendarImportContent = ({ staffId, onStaffChange }: CalendarImportContain
                   decisions,
                 })
               }
-              patients={patientsQuery.data ?? []}
+              patients={activePatients(patientsQuery.data ?? [])}
               preview={previewed}
               staffName={current.staff.name}
             />
           )}
           {previewed !== undefined && runImport.data !== undefined && (
             <CalendarImportDone
-              decisions={decisions}
+              onBackToCutover={
+                openCutover === null ? undefined : () => navigate({ to: '/schedule/link/cutover' })
+              }
               onOpenCalendar={() =>
                 navigate({
                   to: '/schedule',
                   search: { view: 'month', date: previewed.range_start, staff: [current.staff.id] },
                 })
               }
-              preview={previewed}
               result={runImport.data}
             />
           )}
@@ -169,10 +193,9 @@ const CalendarImportContent = ({ staffId, onStaffChange }: CalendarImportContain
 }
 
 /**
- * 予定の取り込みの画面。職員の管理の権限が無ければ、API を呼ばずに権限が無いことを示す。
+ * 予定の取り込みの画面。
  * 結び付けたカレンダーと職員を読み、選んだ職員と期間でプレビューし、確認が必要な予定の取り込み方を選んで確定する。
  */
 export const CalendarImportContainer = (props: CalendarImportContainerProps) => {
-  const { viewer } = useRouteContext({ from: '__root__' })
-  return viewer?.canManageStaff ? <CalendarImportContent {...props} /> : <PageForbiddenMessage />
+  return <CalendarImportContent {...props} />
 }

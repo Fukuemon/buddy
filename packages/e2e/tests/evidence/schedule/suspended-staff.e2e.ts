@@ -10,15 +10,15 @@ import { signInAtBroker } from '../../screens/login'
 type ListedStaff = { id: string; username: string; status: string; leave_started_at: string | null }
 
 /** 予定の API の職員の一覧を、email の職員のトークンで取る。録画に映らない API の結果を字幕に出すのに使う。 */
-const fetchStaff = async (request: APIRequestContext, email: string, facilityId: string) => {
+const listOfficeStaff = async (request: APIRequestContext, email: string, facilityId: string) => {
   const res = await listStaff(request, await issueAccessToken(request, email), facilityId)
   expect(res.status()).toBe(200)
   return (await res.json()) as ListedStaff[]
 }
 
 /** 字幕に出す、API の職員の一覧の 1 行。休職の職員には休職にした時刻を添える。 */
-const describeStaff = (list: ListedStaff[]) =>
-  list
+const describeStaff = (staffList: ListedStaff[]) =>
+  staffList
     .map((staff) =>
       staff.leave_started_at === null
         ? staff.username
@@ -37,7 +37,7 @@ test.describe('予定のカレンダー', () => {
         browser,
         request,
       }) => {
-        const staff = await fetchStaff(request, OFFICE_B.email, OFFICE_B.facilityId)
+        const staff = await listOfficeStaff(request, OFFICE_B.email, OFFICE_B.facilityId)
         expect(staff.find(({ id }) => id === SUSPENDED_STAFF.id)?.status).toBe('on_leave')
         await recordPrEvidence(
           browser,
@@ -76,7 +76,7 @@ test.describe('予定のカレンダー', () => {
         browser,
         request,
       }) => {
-        const staff = await fetchStaff(request, OFFICE_B.email, OFFICE_B.facilityId)
+        const staff = await listOfficeStaff(request, OFFICE_B.email, OFFICE_B.facilityId)
         expect(staff.find(({ id }) => id === SUSPENDED_STAFF.id)?.status).toBe('on_leave')
         await recordPrEvidence(
           browser,
@@ -118,7 +118,7 @@ test.describe('予定のカレンダー', () => {
         browser,
         request,
       }) => {
-        const staff = await fetchStaff(request, LOGIN_EMAIL, STAFF_FORM.facilityId)
+        const staff = await listOfficeStaff(request, LOGIN_EMAIL, STAFF_FORM.facilityId)
         expect(staff.every(({ status }) => status === 'active')).toBe(true)
         await recordPrEvidence(
           browser,
@@ -165,18 +165,18 @@ test.describe('予定の作成', () => {
     for (const variant of EVIDENCE_VARIANTS) {
       const prefix = variant.label ? `${variant.label}: ` : ''
 
-      test(`${prefix}止めた職員がいる事業所で予定の作成の担当者の欄を開いた場合、止めた職員が候補に出ないこと`, async ({
+      test(`${prefix}止めた職員がいる事業所で予定の作成の主訪問者の欄を開いた場合、止めた職員が候補に出ないこと`, async ({
         browser,
         request,
       }) => {
-        const staff = await fetchStaff(request, OFFICE_B.email, OFFICE_B.facilityId)
+        const staff = await listOfficeStaff(request, OFFICE_B.email, OFFICE_B.facilityId)
         expect(staff.find(({ id }) => id === SUSPENDED_STAFF.id)?.status).toBe('on_leave')
         await recordPrEvidence(
           browser,
           {
             name: 'schedule-create-suspended-staff',
             title:
-              '止めた職員がいる事業所で予定の作成の担当者の欄を開くと、止めた職員が候補に出ない',
+              '止めた職員がいる事業所で予定の作成の主訪問者の欄を開くと、止めた職員が候補に出ない',
             actor: OFFICE_B_ACTOR,
             variant,
           },
@@ -194,7 +194,7 @@ test.describe('予定の作成', () => {
               ].join('\n'),
             )
 
-            await step('「予定を作成」を押し、項目の一覧の「担当者」を押す')
+            await step('「予定を作成」を押し、項目の一覧の「主訪問者」を押す')
             await page.getByTestId('schedule-create-open').click()
             await page.getByTestId('schedule-field-staff').click()
             await expect(page.getByTestId(`staff-select-option-${OFFICE_B.staff.id}`)).toBeVisible()
@@ -202,24 +202,24 @@ test.describe('予定の作成', () => {
               0,
             )
             await check(
-              `担当者の候補に${OFFICE_B.staff.name}だけが出て、止めた職員の${SUSPENDED_STAFF.name}は出ない`,
+              `主訪問者の候補に${OFFICE_B.staff.name}だけが出て、止めた職員の${SUSPENDED_STAFF.name}は出ない`,
             )
           },
         )
       })
 
-      test(`${prefix}URL の staffId が休職の職員を指す予定の作成の画面を開いた場合、担当者が未選択で開くこと`, async ({
+      test(`${prefix}URL の staffId が休職の職員を指す予定の作成の画面を開いた場合、主訪問者が未選択で開くこと`, async ({
         browser,
         request,
       }) => {
-        const staff = await fetchStaff(request, OFFICE_B.email, OFFICE_B.facilityId)
+        const staff = await listOfficeStaff(request, OFFICE_B.email, OFFICE_B.facilityId)
         expect(staff.find(({ id }) => id === SUSPENDED_STAFF.id)?.status).toBe('on_leave')
         await recordPrEvidence(
           browser,
           {
             name: 'schedule-create-on-leave-staff-url',
             title:
-              'URL の staffId が休職の職員を指す予定の作成の画面を開くと、担当者が未選択で開く',
+              'URL の staffId が休職の職員を指す予定の作成の画面を開くと、主訪問者が未選択で開く',
             actor: OFFICE_B_ACTOR,
             variant,
           },
@@ -245,15 +245,15 @@ test.describe('予定の作成', () => {
             )
             await expect(page.getByTestId('schedule-form-modal')).toBeVisible()
 
-            await step('項目の一覧の「担当者」を押す')
+            await step('項目の一覧の「主訪問者」を押す')
             await page.getByTestId('schedule-field-staff').click()
             await expect(page.getByTestId(`staff-select-option-${OFFICE_B.staff.id}`)).toBeVisible()
-            await expect(page.getByTestId('schedule-field-staff')).toContainText('未選択')
+            await expect(page.getByTestId('schedule-field-staff')).toContainText('選んでください')
             await expect(page.getByTestId('schedule-field-staff')).not.toContainText(
               SUSPENDED_STAFF.name,
             )
             await check(
-              `担当者が未選択で開き、休職の${SUSPENDED_STAFF.name}の名前は出ず、候補にも出ない`,
+              `主訪問者が「選んでください」で開き、休職の${SUSPENDED_STAFF.name}の名前は出ず、候補にも出ない`,
             )
           },
         )
@@ -271,7 +271,7 @@ test.describe('予定の編集', () => {
         browser,
         request,
       }) => {
-        const staff = await fetchStaff(request, OFFICE_B.email, OFFICE_B.facilityId)
+        const staff = await listOfficeStaff(request, OFFICE_B.email, OFFICE_B.facilityId)
         expect(staff.find(({ id }) => id === SUSPENDED_STAFF.id)?.status).toBe('on_leave')
         await recordPrEvidence(
           browser,

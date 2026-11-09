@@ -54,7 +54,11 @@
     screen.style.setProperty('--mock-width', `${view.width}px`)
     screen.style.setProperty('--mock-height', `${view.height}px`)
     const available = width - 32
-    stage.style.zoom = state.fit && view.width > available ? String(available / view.width) : ''
+    // .screen の枠線は幅の外にあるので、外形の幅で比べる
+    const style = getComputedStyle(screen)
+    const outer =
+      view.width + parseFloat(style.borderLeftWidth) + parseFloat(style.borderRightWidth)
+    stage.style.zoom = state.fit && outer > available ? String(available / outer) : ''
     return true
   }
 

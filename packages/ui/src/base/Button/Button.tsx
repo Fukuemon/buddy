@@ -1,8 +1,11 @@
 import { clsx } from 'clsx'
-import type { ComponentPropsWithoutRef, MouseEvent } from 'react'
+import type { ComponentPropsWithRef, MouseEvent } from 'react'
 
-/** ボタンの見た目の種類。destructive は削除の操作に使う。 */
-export type ButtonVariant = 'primary' | 'secondary' | 'destructive'
+/**
+ * ボタンの見た目の種類。danger は、確認のダイアログ（何が失われるかを示して確定する入力のダイアログを含む）でデータを失う操作を確定するボタンで、赤い面にする。
+ * destructive は、データを失う操作の確認のダイアログを開く起点のボタンで、赤い文字にする。
+ */
+export type ButtonVariant = 'primary' | 'secondary' | 'destructive' | 'danger'
 /** ボタンの高さ。S は 40px（押せる領域は 44px）、M は 48px、L は 56px。 */
 export type ButtonSize = 'S' | 'M' | 'L'
 
@@ -17,10 +20,10 @@ const variantClassName: Record<ButtonVariant, string> = {
   primary: 'bg-primary text-text-inverse',
   secondary: 'bg-surface text-primary ring-1 ring-border-field ring-inset',
   destructive: 'bg-surface text-danger ring-1 ring-border-field ring-inset',
+  danger: 'bg-danger text-text-inverse',
 }
 
 const sizeClassName: Record<ButtonSize, string> = {
-  // 見た目は 40px のまま、上下に 2px ずつ押せる領域を広げて 44px にする
   S: 'h-10 min-w-11 rounded-8 px-4 after:absolute after:inset-x-0 after:-inset-y-0.5',
   M: 'h-12 rounded-8 px-5',
   L: 'h-14 rounded-8 px-6',
@@ -45,7 +48,7 @@ export const buttonClassName = ({
     isWide && 'w-full',
   )
 
-export type ButtonProps = ComponentPropsWithoutRef<'button'> &
+export type ButtonProps = ComponentPropsWithRef<'button'> &
   ButtonStyleOptions & {
     /** true の間は子の上に回転するインジケーターを重ね、クリックを無視する。子の文はボタンの名前として残す。 */
     isLoading?: boolean

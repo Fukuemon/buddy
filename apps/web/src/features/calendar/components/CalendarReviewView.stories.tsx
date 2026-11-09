@@ -11,9 +11,7 @@ const meta = {
   args: {
     state: { status: 'ready', issues: mockExportIssues },
     onRetry: fn(),
-    onOpenSchedule: fn(),
-    onRewrite: fn(),
-    onAccept: fn(),
+    onSelect: fn(),
   },
 } satisfies Meta<typeof CalendarReviewView>
 
@@ -31,6 +29,24 @@ export const LoadError: Story = {
     state: {
       status: 'error',
       message: '確認が必要な予定を読み込めませんでした。時間をおいて、読み直してください。',
+    },
+  },
+}
+
+/** 終了が翌日の予定の行。日時の終了の時刻に「翌」が付く。 */
+export const OvernightIssue: Story = {
+  args: {
+    state: {
+      status: 'ready',
+      issues: [
+        {
+          ...mockExportIssues[0]!,
+          date: '2026-11-13',
+          start_time: '22:00',
+          end_time: '01:00',
+          ends_next_day: true,
+        },
+      ],
     },
   },
 }

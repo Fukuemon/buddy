@@ -8,10 +8,10 @@
 
 | Name                                            | Columns | Comment                                  | Type       |
 | ----------------------------------------------- | ------- | ---------------------------------------- | ---------- |
-| [public.facilities](public.facilities.md)       | 6       | 訪問看護の事業所                         | BASE TABLE |
-| [public.users](public.users.md)                 | 14      | 職員                                     | BASE TABLE |
+| [public.facilities](public.facilities.md)       | 7       | 訪問看護の事業所                         | BASE TABLE |
+| [public.users](public.users.md)                 | 15      | 職員                                     | BASE TABLE |
 | [public.service_codes](public.service_codes.md) | 6       | サービスコード。マイグレーションで入れる | BASE TABLE |
-| [public.patients](public.patients.md)           | 9       | 利用者                                   | BASE TABLE |
+| [public.patients](public.patients.md)           | 10      | 利用者                                   | BASE TABLE |
 
 ## Relations
 
@@ -30,6 +30,7 @@ erDiagram
   text time_zone
   timestamp_with_time_zone created_at
   timestamp_with_time_zone updated_at
+  text source_mode
 }
 "public.users" {
   text id
@@ -46,6 +47,7 @@ erDiagram
   timestamp_with_time_zone leave_started_at
   date leave_return_date
   timestamp_with_time_zone retired_at
+  boolean visits
 }
 "public.service_codes" {
   text id
@@ -65,6 +67,7 @@ erDiagram
   text assigned_staff_id
   timestamp_with_time_zone created_at
   timestamp_with_time_zone updated_at
+  timestamp_with_time_zone ended_at
 }
 ```
 

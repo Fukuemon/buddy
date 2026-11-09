@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>schedule-cutover 完了できない</title>
+    <link rel="stylesheet" href="../../_common/mock.css" />
+    <link rel="stylesheet" href="../../_common/tokens.css" />
+    <link rel="stylesheet" href="../../_common/wireframe.css" />
+    <link rel="stylesheet" href="schedule-cutover.css" />
+  </head>
+  <body data-view="desktop">
+    <div class="stage">
+      <div class="screen">
+        <div class="screen-body">
+          <main class="wf-page">
+            <div class="sc-title">
+              <h1 class="wf-heading" data-m="1">予定の正本の切り替え</h1>
+              <span class="wf-btn wf-btn--text" data-m="2" data-testid="calendar-cutover-link-settings" data-go="../../schedule-link_カレンダーの連携/mocks/01-list.html">カレンダーの連携</span>
+            </div>
+            <p class="wf-lead" data-m="3">Google カレンダーで管理している予定を buddy に取り込み、この事業所の予定の正本を buddy に切り替えます。切り替えた後は、予定を buddy で作成、変更し、Google カレンダーには buddy の予定を書き出します。</p>
+            <output class="sc-notice sc-notice--primary" data-m="4" data-testid="calendar-cutover-open">切り替え中です（2026年11月5日（木） 09:00 に開始）。取り込みの期間: 2026年11月1日（日）〜</output>
+            <section class="sc-notice sc-notice--warning" data-m="5" data-testid="calendar-cutover-no-edit">
+              <strong>切り替えの間は、Google カレンダーで予定を変えない</strong>
+              <p>職員に、切り替えが終わるまで Google カレンダーで予定を作成、変更しないよう頼んでください。取り込んだ後に変えた予定は、完了するときに見つかり、取り込み直すまで完了できません。</p>
+            </section>
+            <section class="wf-stack">
+              <h2 class="wf-heading">職員ごとの取り込み</h2>
+              <p class="wf-text wf-text--s">全ての職員を取り込み、最後の取り込みの後に同期が成功すると、完了できます。</p>
+              <table class="wf-table" data-m="6" data-testid="calendar-cutover-calendars">
+                <thead><tr><th>職員</th><th>この切り替えの最後の取り込み</th><th>最後の同期</th><th><span class="wf-visually-hidden">操作</span></th></tr></thead>
+                <tbody>
+                  <tr data-testid="calendar-cutover-calendar-{職員の id}"><td>青木 一郎</td><td data-testid="calendar-cutover-import-{職員の id}">2026年11月5日（木） 09:10</td><td data-testid="calendar-cutover-sync-{職員の id}">2026年11月5日（木） 09:12</td><td><span class="wf-btn" data-m="7" data-testid="calendar-cutover-open-import-{職員の id}" data-go="../../schedule-import_予定の取り込み/mocks/15-cutover.html">取り込み直す</span></td></tr>
+                  <tr data-testid="calendar-cutover-calendar-{職員の id}"><td>石川 二葉</td><td data-testid="calendar-cutover-import-{職員の id}">まだ取り込んでいない</td><td data-testid="calendar-cutover-sync-{職員の id}">2026年11月5日（木） 09:11</td><td><span class="wf-btn" data-m="7" data-testid="calendar-cutover-open-import-{職員の id}" data-go="../../schedule-import_予定の取り込み/mocks/15-cutover.html">取り込む</span></td></tr>
+                </tbody>
+              </table>
+            </section>
+            <section class="sc-unmet" data-m="8" data-testid="calendar-cutover-unmet">
+              <h2 class="wf-heading">完了できません（2 件）</h2>
+              <p>次のカレンダーと予定が、完了の条件を満たしていません。直してから、もう一度完了してください。</p>
+              <table class="wf-table" data-testid="calendar-cutover-unmet-table">
+                <thead><tr><th>職員</th><th>日時</th><th>理由</th><th>すること</th></tr></thead>
+                <tbody>
+                  <tr data-testid="calendar-cutover-unmet-{理由}"><td>青木 一郎</td><td>2026年11月10日（火） 10:00〜10:30</td><td>取り込んだ後に Google で変わった</td><td>取り込み直すと、Google の内容で上書きします</td></tr>
+                  <tr data-testid="calendar-cutover-unmet-{理由}"><td>石川 二葉</td><td><span class="wf-visually-hidden">日時なし</span></td><td>この切り替えで、まだ取り込んでいない</td><td>取り込んでください</td></tr>
+                </tbody>
+              </table>
+            </section>
+            <div class="sc-actions">
+              <span class="wf-btn wf-btn--primary" data-m="9" data-testid="calendar-cutover-complete" data-go="03-incomplete.html">完了する</span>
+              <span class="wf-btn wf-btn--destructive" data-m="10" data-testid="calendar-cutover-cancel" data-go="04-cancel.html">切り替えをやめる</span>
+            </div>
+          </main>
+
+        </div>
+      </div>
+      <div class="markers"></div>
+    </div>
+    <script src="../../_common/mock.js"></script>
+    <script src="../../_common/interact.js"></script>
+  </body>
+</html>

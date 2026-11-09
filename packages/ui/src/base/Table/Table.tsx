@@ -4,18 +4,18 @@ import type { ReactNode } from 'react'
 export type TableProps = {
   children: ReactNode
   /** true のとき、横に送っても先頭の列を固定する。 */
-  stickyColumn?: boolean
+  hasStickyColumn?: boolean
 }
 
 /**
  * 同じ項目を持つ行を並べる表。Table.Header、Table.Body、Table.Row、Table.HeaderCell、Table.Cell で組む。
  * 表の役割を保つため、table の要素の display は変えない。
  */
-export const Table = ({ children, stickyColumn = false }: TableProps) => (
+export const Table = ({ children, hasStickyColumn = false }: TableProps) => (
   <table
     className={clsx(
       'w-full border-collapse',
-      stickyColumn &&
+      hasStickyColumn &&
         '[&_tr>:first-child]:sticky [&_tr>:first-child]:left-0 [&_tr>:first-child]:bg-surface',
     )}
   >
@@ -23,10 +23,13 @@ export const Table = ({ children, stickyColumn = false }: TableProps) => (
   </table>
 )
 
+/** 見出しの行を入れる thead。 */
 const TableHeader = ({ children }: { children: ReactNode }) => <thead>{children}</thead>
 
+/** データの行を入れる tbody。 */
 const TableBody = ({ children }: { children: ReactNode }) => <tbody>{children}</tbody>
 
+/** 表の 1 行。 */
 const TableRow = ({ children, className }: { children: ReactNode; className?: string }) => (
   <tr className={clsx('border-b border-border bg-surface', className)}>{children}</tr>
 )
@@ -45,7 +48,10 @@ const cellClassName = (expanded: boolean) =>
 /** 列の見出しのセル。Table.Header の行に置く。 */
 const TableHeaderCell = ({ children, expanded = false, width }: TableCellProps) => (
   <th
-    className={clsx(cellClassName(expanded), 'font-normal text-text-secondary')}
+    className={clsx(
+      cellClassName(expanded),
+      'border-b border-border-strong font-bold text-text-secondary',
+    )}
     scope="col"
     style={{ minWidth: width }}
   >
@@ -53,6 +59,7 @@ const TableHeaderCell = ({ children, expanded = false, width }: TableCellProps) 
   </th>
 )
 
+/** データのセル。Table.Body の行に置く。 */
 const TableCell = ({ children, expanded = false, width }: TableCellProps) => (
   <td className={cellClassName(expanded)} style={{ minWidth: width }}>
     {children}

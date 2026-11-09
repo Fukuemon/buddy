@@ -9,7 +9,7 @@ import {
   shiftGoogleEvent,
 } from '../../fixtures/googleCalendar'
 import { SCHEDULE_DETAIL_URL, scheduleIdFromUrl } from '../../fixtures/schedule'
-import { linkStaffCalendar, unlinkStaffCalendar } from '../../screens/calendar'
+import { linkStaffCalendar, unlinkStaffCalendar } from '../../setup/calendar'
 import { signInAtBroker } from '../../screens/login'
 import { calendarpitEvent } from '../../selectors/calendarpit'
 
@@ -121,16 +121,18 @@ test.describe('確認が必要な予定', () => {
               await openReviewUntilRow(page, scheduleId)
               await expect(
                 reviewRow(page, scheduleId).getByTestId(/^calendar-review-reason-/),
-              ).toHaveText(
-                'buddy と Google カレンダーの両方で予定が変わりました。どちらの内容に合わせるかを選んでください。',
-              )
+              ).toHaveText('buddy と Google カレンダーの両方で予定が変わりました。')
               await check(
-                `${HAYASHI.name} の今回の予定の行（最後に変わった日時がいちばん新しい行）が、「buddy と Google カレンダーの両方で予定が変わりました。…」の理由で出る`,
+                `${HAYASHI.name} の今回の予定の行（最後に変わった日時がいちばん新しい行）が、「buddy と Google カレンダーの両方で予定が変わりました。」の理由で出る`,
               )
               await holdGoogleChanges(request, false)
 
-              await step('「buddy の内容で書き直す」を押し、確認のダイアログで書き直す')
-              await reviewRow(page, scheduleId)
+              await step(
+                '今回の予定の行を押し、出たダイアログの「buddy の内容で書き直す」を押し、確認のダイアログで書き直す',
+              )
+              await reviewRow(page, scheduleId).click()
+              await page
+                .getByTestId('calendar-review-dialog')
                 .getByTestId(/^calendar-review-rewrite-/)
                 .click()
               const dialog = page.getByTestId('calendar-rewrite-dialog')
@@ -205,11 +207,9 @@ test.describe('確認が必要な予定', () => {
               await openReviewUntilRow(page, scheduleId)
               await expect(
                 reviewRow(page, scheduleId).getByTestId(/^calendar-review-reason-/),
-              ).toHaveText(
-                'Google カレンダーで予定が見つかりません。予定が消されたか、カレンダーの共有が外れていないかを、職員に確認してください。',
-              )
+              ).toHaveText('Google カレンダーで予定が見つかりません。')
               await check(
-                `${HAYASHI.name} の今回の予定の行（最後に変わった日時がいちばん新しい行）が、「Google カレンダーで予定が見つかりません。…」の理由で出る`,
+                `${HAYASHI.name} の今回の予定の行（最後に変わった日時がいちばん新しい行）が、「Google カレンダーで予定が見つかりません。」の理由で出る`,
               )
             } finally {
               await holdGoogleChanges(request, false)
@@ -226,17 +226,18 @@ test.describe('確認が必要な予定', () => {
     for (const variant of EVIDENCE_VARIANTS) {
       const prefix = variant.label ? `${variant.label}: ` : ''
 
-      test(`${prefix}キャンセルした単発の予定が Google カレンダーで変わっていた場合、キャンセルした予定の理由が出て、Google の内容に合わせるボタンが出ないこと`, async ({
+      test(`${prefix}キャンセルした単発の予定が Google カレンダーで変わっていた場合、キャンセルした予定の理由が出て、buddy の内容で書き直すだけが出ること`, async ({
         browser,
       }) => {
-        const url = storyUrl('画面-calendar-calendarreviewview--default')
+        const url = storyUrl('画面-calendar-calendarreviewcontainer--default')
         const row = (page: Page) => page.getByTestId('calendar-review-row-schedule-schedule-4')
+        const dialog = (page: Page) => page.getByTestId('calendar-review-dialog')
         await recordPrEvidence(
           browser,
           {
             name: 'calendar-review-cancelled',
             title:
-              'buddy でキャンセルした単発の予定が Google カレンダーで変わっていたとき、確認が必要な予定にキャンセルした予定の理由が出て、「Google の内容に合わせる」が出ない',
+              'buddy でキャンセルした単発の予定が Google カレンダーで変わっていたとき、確認が必要な予定にキャンセルした予定の理由が出て、予定の確認のダイアログに「buddy の内容で書き直す」だけが出る',
             actor: 'ログインなし（Storybook の story）',
             variant,
           },
@@ -247,34 +248,45 @@ test.describe('確認が必要な予定', () => {
             await page.goto(url)
             await expect(row(page)).toBeVisible()
             await step(
-              '確認が必要な予定の画面（Storybook の CalendarReviewView の Default）を開いている\n江藤 四郎の 2026/11/06（金）15:00〜16:29 は、buddy でキャンセルした後に Google カレンダーで変えられた単発の予定である（架空のデータの export-5）',
+              '確認が必要な予定の画面（Storybook の CalendarReviewContainer の Default）を開いている\n江藤 四郎の 2026年11月6日（金） 15:00〜16:29 は、buddy でキャンセルした後に Google カレンダーで変えられた単発の予定である（架空のデータの export-5）',
             )
 
             await row(page).scrollIntoViewIfNeeded()
             await expect(row(page).getByTestId('calendar-review-reason-export-5')).toHaveText(
-              'buddy でキャンセルした予定が、Google カレンダーで変わっていました。buddy の内容で書き直すと Google カレンダーの予定を消すので、消してよいかを職員に確認してください。',
+              'buddy でキャンセルした予定が、Google カレンダーで変わっていました。',
             )
-            await expect(row(page).getByTestId(/^calendar-review-accept-/)).toHaveCount(0)
-            await expect(row(page).getByTestId('calendar-review-rewrite-export-5')).toBeVisible()
             await check(
-              '江藤 四郎の行に「buddy でキャンセルした予定が、Google カレンダーで変わっていました。…」の理由が出て、「Google の内容に合わせる」が出ず、「予定を開く」と「buddy の内容で書き直す」が出る',
+              '江藤 四郎の行に「buddy でキャンセルした予定が、Google カレンダーで変わっていました。」の理由が出る',
+            )
+
+            await step('江藤 四郎の行を押す')
+            await row(page).click()
+            await expect(dialog(page).getByTestId('calendar-review-dialog-reason')).toHaveText(
+              'buddy でキャンセルした予定が、Google カレンダーで変わっていました。書き直すと Google カレンダーの予定を消すので、消してよいかを職員に確認してください。',
+            )
+            await expect(dialog(page).getByTestId('calendar-review-rewrite-export-5')).toBeVisible()
+            await expect(dialog(page).getByTestId('calendar-review-open-export-5')).toBeVisible()
+            await expect(dialog(page)).not.toContainText('Google の内容に合わせる')
+            await check(
+              '予定の確認のダイアログに「…書き直すと Google カレンダーの予定を消すので、消してよいかを職員に確認してください。」の理由が出て、「Google の内容に合わせる」が出ず、「予定を開く」と「buddy の内容で書き直す」が出る',
             )
           },
         )
       })
 
-      test(`${prefix}キャンセルした単発の予定の行で buddy の内容で書き直すを押した場合、Google カレンダーの予定を消すことが分かるダイアログが出ること`, async ({
+      test(`${prefix}キャンセルした単発の予定のダイアログで buddy の内容で書き直すを押した場合、Google カレンダーの予定を消すことが分かるダイアログが出て、戻るで予定のダイアログに戻ること`, async ({
         browser,
       }) => {
         const url = storyUrl('画面-calendar-calendarreviewcontainer--default')
         const row = (page: Page) => page.getByTestId('calendar-review-row-schedule-schedule-4')
+        const reviewDialog = (page: Page) => page.getByTestId('calendar-review-dialog')
         const dialog = (page: Page) => page.getByTestId('calendar-rewrite-dialog')
         await recordPrEvidence(
           browser,
           {
             name: 'calendar-review-cancelled-rewrite',
             title:
-              'buddy でキャンセルした単発の予定の行で「buddy の内容で書き直す」を押すと、Google カレンダーの予定を消すことが分かるダイアログが出る',
+              'buddy でキャンセルした単発の予定のダイアログで「buddy の内容で書き直す」を押すと、Google カレンダーの予定を消すことが分かるダイアログが出て、「戻る」で予定のダイアログに戻る',
             actor: 'ログインなし（Storybook の story）',
             variant,
           },
@@ -285,25 +297,33 @@ test.describe('確認が必要な予定', () => {
             await page.goto(url)
             await expect(row(page)).toBeVisible()
             await step(
-              '確認が必要な予定の画面（Storybook の CalendarReviewContainer の Default）を開いている\n江藤 四郎の 2026/11/06（金）15:00〜16:29 は、buddy でキャンセルした後に Google カレンダーで変えられた単発の予定である（架空のデータの export-5）',
+              '確認が必要な予定の画面（Storybook の CalendarReviewContainer の Default）を開いている\n江藤 四郎の 2026年11月6日（金） 15:00〜16:29 は、buddy でキャンセルした後に Google カレンダーで変えられた単発の予定である（架空のデータの export-5）',
             )
 
             await row(page).scrollIntoViewIfNeeded()
-            await step('江藤 四郎の行の「buddy の内容で書き直す」を押す')
-            await row(page).getByTestId('calendar-review-rewrite-export-5').click()
+            await step('江藤 四郎の行を押し、出たダイアログの「buddy の内容で書き直す」を押す')
+            await row(page).click()
+            await reviewDialog(page).getByTestId('calendar-review-rewrite-export-5').click()
             await expect(dialog(page).getByTestId('calendar-rewrite-target')).toHaveText(
-              '2026/11/06（金）15:00〜16:29、江藤 四郎',
+              '2026年11月6日（金） 15:00〜16:29、江藤 四郎',
             )
             await expect(dialog(page).getByTestId('calendar-rewrite-notice')).toHaveText(
-              'buddy でキャンセルした予定なので、Google カレンダーの予定を消します。Google カレンダーで直したタイトルと日時も消えます。Google カレンダーの予定は、数十秒のうちに消えます。',
+              'buddy でキャンセルした予定なので、Google カレンダーの予定を消します。Google カレンダーで直したタイトルと日時も消えます。',
+            )
+            await expect(dialog(page).getByTestId('calendar-rewrite-submit')).toHaveClass(
+              /(^|\s)bg-danger(\s|$)/,
             )
             await check(
-              '書き直すダイアログに「buddy でキャンセルした予定なので、Google カレンダーの予定を消します。…」の注意が出て、「消された予定は作り直します。」が出ない',
+              '予定のダイアログに替わって書き直すダイアログが出て、「buddy でキャンセルした予定なので、Google カレンダーの予定を消します。…」の注意が出て、「消された予定は作り直します。」が出ない。「書き直す」は赤い',
             )
 
-            await step('（撮影のため、書き直さずに「キャンセル」で閉じる）')
+            await step('書き直さずに「戻る」を押す')
             await dialog(page).getByTestId('calendar-rewrite-cancel').click()
             await expect(dialog(page)).toBeHidden()
+            await expect(
+              reviewDialog(page).getByTestId('calendar-review-dialog-datetime'),
+            ).toHaveText('2026年11月6日（金） 15:00〜16:29')
+            await check('書き直すダイアログが閉じ、江藤 四郎の予定の確認のダイアログに戻る')
           },
         )
       })
@@ -317,8 +337,9 @@ test.describe('確認が必要な予定', () => {
       test(`${prefix}繰り返しの予定の行の場合、繰り返しの予定の ID の testid で指せること`, async ({
         browser,
       }) => {
-        const url = storyUrl('画面-calendar-calendarreviewview--default')
+        const url = storyUrl('画面-calendar-calendarreviewcontainer--default')
         const row = (page: Page) => page.getByTestId('calendar-review-row-recurring-recurring-1')
+        const dialog = (page: Page) => page.getByTestId('calendar-review-dialog')
         await recordPrEvidence(
           browser,
           {
@@ -335,7 +356,7 @@ test.describe('確認が必要な予定', () => {
             await page.goto(url)
             await expect(row(page)).toBeVisible()
             await step(
-              '確認が必要な予定の画面（Storybook の CalendarReviewView の Default）を開いている\n石川 二葉の 2026/11/03（火）から毎回 10:00〜11:00 は、Google カレンダーで消された繰り返しの予定である（架空のデータの recurring-1）',
+              '確認が必要な予定の画面（Storybook の CalendarReviewContainer の Default）を開いている\n石川 二葉の 2026年11月3日（火）から毎回 10:00〜11:00 は、Google カレンダーで消された繰り返しの予定である（架空のデータの recurring-1）',
             )
 
             await step(
@@ -344,13 +365,21 @@ test.describe('確認が必要な予定', () => {
             await row(page).scrollIntoViewIfNeeded()
             await row(page).hover()
             await expect(row(page).getByTestId(/^calendar-review-datetime-/)).toHaveText(
-              '2026/11/03（火）から毎回 10:00〜11:00',
+              '2026年11月3日（火）から毎回 10:00〜11:00',
             )
             await expect(row(page)).toContainText('石川 二葉')
-            await expect(row(page).getByTestId(/^calendar-review-open-/)).toHaveCount(0)
             await check(
-              '指した行が、石川 二葉の「2026/11/03（火）から毎回 10:00〜11:00」の行で、「予定を開く」が出ない',
+              '指した行が、石川 二葉の「2026年11月3日（火）から毎回 10:00〜11:00」の行である',
             )
+
+            await step('指した行を押す')
+            await row(page).click()
+            await expect(dialog(page).getByTestId('calendar-review-dialog-datetime')).toHaveText(
+              '2026年11月3日（火）から毎回 10:00〜11:00',
+            )
+            await expect(dialog(page).getByTestId(/^calendar-review-rewrite-/)).toBeVisible()
+            await expect(dialog(page).getByTestId(/^calendar-review-open-/)).toHaveCount(0)
+            await check('予定の確認のダイアログが開き、繰り返しの予定なので「予定を開く」が出ない')
           },
         )
       })

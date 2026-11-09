@@ -1,86 +1,51 @@
 import { randomBytes } from 'node:crypto'
 
+import type { MeResult } from '#/api/http/meApi'
 import type { Viewer } from '#/api/types'
 
+import { codeChallengeOf, randomCodeVerifier, randomNonce, randomState, type Tokens } from './oidc'
 import {
-  GrantRejectedError,
-  OIDC_TIMEOUT_SECONDS,
-  codeChallengeOf,
-  randomCodeVerifier,
-  randomNonce,
-  randomState,
-  type OidcClient,
-  type Tokens,
-} from './oidc'
-import type { SessionStore } from './sessionStore'
+  SESSION_COOKIE,
+  SESSION_TTL_SECONDS,
+  expiresAtOf,
+  readCookie,
+  readSession,
+  sessionIdOf,
+  sessionKey,
+  type Session,
+  type SessionDeps,
+} from './session'
 import { signValue, verifySignedValue } from './signedValue'
-
-/**
- * Valkey に置くセッション。トークンはブラウザに渡さない。
- * canManageStaff は、この項目を足す前に作ったセッションに無いので、省けるようにする。
- */
-export type Session = Omit<Viewer, 'canManageStaff'> & {
-  canManageStaff?: boolean
-  accessToken: string
-  refreshToken?: string
-  /** access token の期限の UNIX 時刻（ミリ秒）。分からなければ undefined。 */
-  expiresAt?: number
-  /** ログアウトで Hydra に添える ID token。この項目を足す前に作ったセッションには無い。 */
-  idToken?: string
-}
 
 type LoginTransaction = { codeVerifier: string; nonce: string; returnTo: string }
 
-/** GET /v1/me の結果。forbidden は、事業所に登録されていない職員である。 */
-export type MeResult = { ok: true; viewer: Viewer } | { ok: false; reason: 'forbidden' | 'failed' }
-
 /** ログイン、ログアウト、セッションの処理が使う依存。 */
-export type AuthDeps = {
-  store: SessionStore
-  oidc: OidcClient
-  secret: string
+export type AuthDeps = SessionDeps & {
   /** cookie に Secure を付けるか。 */
-  secureCookie: boolean
+  usesSecureCookie: boolean
+  /** ブラウザが開く web のオリジン。あれば、ログインとログアウトの戻り先の URL のオリジンをこれにする。 */
+  publicUrl?: string
   /** access token の職員を予定の API の GET /v1/me で引く。 */
-  fetchMe: (accessToken: string) => Promise<MeResult>
-  now?: () => number
-  /** ほかのリクエストが更新するのを待つときに使う。テストで替える。 */
-  wait?: (ms: number) => Promise<void>
+  getMe: (accessToken: string) => Promise<MeResult>
 }
 
-export const SESSION_COOKIE = 'buddy_session'
 const LOGIN_COOKIE = 'buddy_login'
-const SESSION_TTL_SECONDS = 12 * 60 * 60
 const LOGIN_TTL_SECONDS = 10 * 60
-/** 期限まで、この長さを切った access token は、使う前に更新する。 */
-const REFRESH_MARGIN_MS = 60 * 1000
-/** 更新の鍵を持つ長さ。Hydra のレスポンスを待つ上限の 2 倍にする。 */
-const REFRESH_LOCK_MS = OIDC_TIMEOUT_SECONDS * 2 * 1000
-/** ほかのリクエストの更新を待つ間隔。待つのは、鍵が放されるか期限が切れるまでである。 */
-const REFRESH_POLL_MS = 200
-
-const sessionKey = (id: string) => `session:${id}`
 const loginKey = (state: string) => `login:${state}`
-const refreshLockKey = (id: string) => `refresh-lock:${id}`
-const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms))
-
-/** Cookie のヘッダーから name の値を取り出す。値を読めなければ undefined を返す。 */
-export const readCookie = (header: string | null, name: string) => {
-  for (const part of (header ?? '').split(';')) {
-    const [key, ...rest] = part.trim().split('=')
-    if (key !== name) continue
-    try {
-      return decodeURIComponent(rest.join('='))
-    } catch {
-      return undefined
-    }
-  }
-  return undefined
-}
 
 const cookie = (deps: AuthDeps, name: string, value: string, maxAge: number) => {
-  const secure = deps.secureCookie ? '; Secure' : ''
+  const secure = deps.usesSecureCookie ? '; Secure' : ''
   return `${name}=${encodeURIComponent(value)}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${maxAge}${secure}`
+}
+
+/**
+ * リクエストの URL を、ブラウザが開く URL にする。publicUrl があれば、オリジン（スキーム、ホスト、ポート）をそれに置き換える。
+ * publicUrl にポートが無ければ、リクエストの URL のポートも外す。
+ */
+const browserUrlOf = (request: Request, deps: AuthDeps) => {
+  const url = new URL(request.url)
+  if (deps.publicUrl === undefined) return url
+  return new URL(url.pathname + url.search, new URL(deps.publicUrl).origin)
 }
 
 const redirect = (location: string, cookies: string[] = []) => {
@@ -109,9 +74,6 @@ export const safeReturnTo = (value: string | null) => {
   }
 }
 
-const expiresAtOf = (tokens: Tokens, now: number) =>
-  tokens.expiresIn === undefined ? undefined : now + tokens.expiresIn * 1000
-
 /**
  * GET /auth/login。ブラウザを Hydra の認可のエンドポイントへリダイレクトする。クエリの returnTo はログインの後に戻る先である。
  *
@@ -119,7 +81,7 @@ const expiresAtOf = (tokens: Tokens, now: number) =>
  * ログインの失敗の画面から入り直すときに使う。Hydra は失敗した職員のログインのセッションも保っているので、使うと同じ職員に戻ってしまう。
  */
 export const startLogin = async (request: Request, deps: AuthDeps): Promise<Response> => {
-  const url = new URL(request.url)
+  const url = browserUrlOf(request, deps)
   const state = randomState()
   const nonce = randomNonce()
   const codeVerifier = randomCodeVerifier()
@@ -145,12 +107,13 @@ export const startLogin = async (request: Request, deps: AuthDeps): Promise<Resp
  * GET /auth/callback。認可コードをトークンと交換し、職員を引いてセッションを作り、戻る先へリダイレクトする。
  *
  * state が cookie と合わない、ログインの途中の値が無い、トークンを取れない、のいずれかで /auth/error?reason=failed へ、
+ * ブローカーが試行の回数の上限で拒んだ（error が temporarily_unavailable）ら /auth/error?reason=too_many_attempts へ、
  * 職員が事業所に登録されていなければ /auth/error?reason=forbidden へリダイレクトする。
  */
 export const finishLogin = async (request: Request, deps: AuthDeps): Promise<Response> => {
-  const url = new URL(request.url)
+  const url = browserUrlOf(request, deps)
   const clearLogin = cookie(deps, LOGIN_COOKIE, '', 0)
-  const fail = (reason: 'failed' | 'forbidden', cause: string) => {
+  const fail = (reason: 'failed' | 'forbidden' | 'too_many_attempts', cause: string) => {
     console.warn(JSON.stringify({ msg: 'login failed', reason, cause }))
     return redirect(`/auth/error?reason=${reason}`, [clearLogin])
   }
@@ -162,6 +125,9 @@ export const finishLogin = async (request: Request, deps: AuthDeps): Promise<Res
   if (state === null || state !== cookieState) return fail('failed', 'state mismatch')
   const tx = await deps.store.take<LoginTransaction>(loginKey(state))
   if (tx === undefined) return fail('failed', 'login transaction not found')
+  // ブローカーの TooManyAttempts の reject。ほかの reject は、トークンと交換できずに failed になる
+  if (url.searchParams.get('error') === 'temporarily_unavailable')
+    return fail('too_many_attempts', 'broker: too many attempts')
   let tokens: Tokens
   try {
     tokens = await deps.oidc.exchangeCode(url, {
@@ -175,7 +141,7 @@ export const finishLogin = async (request: Request, deps: AuthDeps): Promise<Res
       `token exchange: ${error instanceof Error ? error.message : String(error)}`,
     )
   }
-  const me = await deps.fetchMe(tokens.accessToken)
+  const me = await deps.getMe(tokens.accessToken)
   if (!me.ok) return fail(me.reason, 'GET /v1/me')
   const previous = sessionIdOf(request, deps.secret)
   if (previous !== undefined) await deps.store.delete(sessionKey(previous))
@@ -208,101 +174,46 @@ export const logout = async (request: Request, deps: AuthDeps): Promise<Response
   if (session?.idToken === undefined) return redirect('/', [clearSession])
   const endSessionUrl = deps.oidc.endSessionUrl({
     idTokenHint: session.idToken,
-    postLogoutRedirectUri: new URL('/', request.url).toString(),
+    postLogoutRedirectUri: new URL('/', browserUrlOf(request, deps)).toString(),
   })
   return redirect(endSessionUrl.toString(), [clearSession])
 }
 
-const sessionIdOf = (request: Request, secret: string) =>
-  verifySignedValue(readCookie(request.headers.get('Cookie'), SESSION_COOKIE), secret)
-
-/**
- * リクエストの cookie のセッションを返す。access token の期限が近ければ refresh token で更新して置き直す。
- *
- * セッションが無いとき、期限が切れて更新できないときは undefined を返す。Hydra が refresh token を拒んだときだけ、
- * セッションを消す。通信の失敗では消さず、access token がまだ使えればそれを返し、使えなければ投げる。
- */
-export const readSession = async (
-  request: Request,
-  deps: AuthDeps,
-): Promise<Session | undefined> => {
-  const id = sessionIdOf(request, deps.secret)
-  if (id === undefined) return undefined
-  const session = await deps.store.get<Session>(sessionKey(id))
-  if (session === undefined) return undefined
-  const now = (deps.now ?? Date.now)()
-  if (session.expiresAt === undefined || session.expiresAt - REFRESH_MARGIN_MS > now) return session
-  if (session.refreshToken === undefined) return session.expiresAt > now ? session : undefined
-  return refreshOnce(id, session, now, deps)
-}
-
-/** 同じプロセスの中で、同じセッションの更新を 1 本にまとめる。 */
-const inFlight = new Map<string, Promise<Session | undefined>>()
-
-const refreshOnce = (id: string, session: Session, now: number, deps: AuthDeps) => {
-  const running = inFlight.get(id)
-  if (running !== undefined) return running
-  const refreshing = refresh(id, session, now, deps).finally(() => inFlight.delete(id))
-  inFlight.set(id, refreshing)
-  return refreshing
-}
-
-/**
- * Valkey の鍵で、ほかのプロセスとも更新を 1 本にする。refresh token をローテーションする Hydra は、使い回しを拒むためである。
- * 鍵を取れなかったリクエストは、更新した値が置かれるか鍵が放されるまで待つ。
- */
-const refresh = async (
-  id: string,
-  session: Session,
-  now: number,
-  deps: AuthDeps,
-): Promise<Session | undefined> => {
-  const stillValid = (s: Session) => s.expiresAt !== undefined && s.expiresAt > now
-  const lockKey = refreshLockKey(id)
-  const token = await deps.store.lock(lockKey, REFRESH_LOCK_MS)
-  if (token === undefined) {
-    for (let waited = 0; waited < REFRESH_LOCK_MS; waited += REFRESH_POLL_MS) {
-      await (deps.wait ?? sleep)(REFRESH_POLL_MS)
-      const latest = await deps.store.get<Session>(sessionKey(id))
-      if (latest === undefined) return undefined
-      if (latest.accessToken !== session.accessToken) return latest
-      if (!(await deps.store.exists(lockKey))) break
-    }
-    return stillValid(session) ? session : undefined
+/** 全てのリクエストに、accessToken の Bearer の Authorization のヘッダーを付けて送る fetch を返す。 */
+export const fetchWithAccessToken =
+  (accessToken: string): typeof globalThis.fetch =>
+  (input, init) => {
+    const authorized = new Request(input, init)
+    authorized.headers.set('Authorization', `Bearer ${accessToken}`)
+    return globalThis.fetch(authorized)
   }
-  try {
-    // 鍵を取る前に、ほかのリクエストが更新し終えていることがある。古い refresh token を送らないよう読み直す
-    const latest = await deps.store.get<Session>(sessionKey(id))
-    if (latest === undefined) return undefined
-    if (latest.accessToken !== session.accessToken || latest.refreshToken === undefined)
-      return latest
-    try {
-      const tokens = await deps.oidc.refresh(latest.refreshToken)
-      const refreshed: Session = {
-        ...latest,
-        accessToken: tokens.accessToken,
-        refreshToken: tokens.refreshToken ?? latest.refreshToken,
-        expiresAt: expiresAtOf(tokens, now),
-        idToken: tokens.idToken ?? latest.idToken,
-      }
-      return (await deps.store.replace(sessionKey(id), refreshed)) ? refreshed : undefined
-    } catch (error) {
-      if (error instanceof GrantRejectedError) {
-        await deps.store.delete(sessionKey(id))
-        return undefined
-      }
-      if (stillValid(latest)) return latest
-      throw error
-    }
-  } finally {
-    await deps.store.unlock(lockKey, token)
-  }
-}
 
 /** Session から、画面に渡してよい値だけを取り出す。 */
-export const viewerOf = ({ staffId, staffName, facilityId, canManageStaff }: Session): Viewer => ({
+export const viewerOf = ({
   staffId,
   staffName,
   facilityId,
-  canManageStaff: canManageStaff ?? false,
+  policyCodes,
+  schedulePolicies,
+}: Session): Viewer => ({
+  staffId,
+  staffName,
+  facilityId,
+  // policyCodes を足す前に作ったセッションには無い。GET /v1/me が失敗したときは、権限を持たないとみなす
+  policyCodes: policyCodes ?? [],
+  schedulePolicies,
 })
+
+/**
+ * リクエストの cookie のセッションの職員を返す。ログインしていなければ null を返す。
+ *
+ * 権限は、ログインのときにセッションへ写した値ではなく、その度に GET /v1/me で読み直す。
+ * ログインの後に職員の管理の画面で権限を変えても、ログインし直さずに画面の出し分けへ写すためである。
+ * GET /v1/me が失敗したとき、届かないときは、セッションの値を返す。拒むのは各 API である。
+ */
+export const readViewer = async (request: Request, deps: AuthDeps): Promise<Viewer | null> => {
+  const session = await readSession(request, deps)
+  if (session === undefined) return null
+  const me = await deps.getMe(session.accessToken).catch(() => undefined)
+  return me?.ok === true ? me.viewer : viewerOf(session)
+}

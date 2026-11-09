@@ -7,7 +7,6 @@ import { playwright } from 'vite-plus/test/browser-playwright'
 export default defineConfig({
   plugins: [tailwindcss(), viteReact()],
   test: {
-    // トークンのコントラストは、ルートの pnpm check:contrast（scripts/check-contrast.mjs）が計算する
     projects: [
       {
         // 押せる領域の大きさとフォーカスの移り方は、描画とブラウザのキーの操作がないと確認できない。
@@ -25,7 +24,6 @@ export default defineConfig({
         },
       },
       {
-        // story を描画し、play 関数と a11y のアドオン（axe）の確認をテストとして動かす。
         extends: true,
         plugins: [storybookTest({ configDir: '.storybook' })],
         test: {

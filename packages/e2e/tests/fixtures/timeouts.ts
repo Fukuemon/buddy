@@ -1,5 +1,5 @@
 /** 待つ時間（ミリ秒）。内側から expect < 操作 < 外部の読み込み < テストの全体の順に長くする。 */
-export const TIMEOUTS = {
+export const TIMEOUT_MS = {
   expect: 5_000,
   action: 10_000,
   navigation: 15_000,
@@ -13,8 +13,17 @@ export const TIMEOUTS = {
   evidence: 180_000,
 }
 
+/** Storybook の、応答を遅らせた story の読み込みと送信が終わるのを待つ expect に渡す。 */
+export const SLOW_STORY_WAIT = { timeout: TIMEOUT_MS.action }
+
+/**
+ * widgets/scroll の、スクロールが止まるのを待つ waitForFunction に渡す。スクロールは操作の続きなので、操作と同じ時間にする。
+ * CI の 5 回の実行で、スクロールを含むテストは 1 本が最大 715ms で終わり、止まるまでの待ちはこの時間に届かない
+ */
+export const SCROLL_IDLE_WAIT = { timeout: TIMEOUT_MS.action }
+
 /** 止めた職員がログインの画面へ戻るまで開き直す toPass に渡す。 */
-export const SUSPENSION_WAIT = { timeout: TIMEOUTS.suspension }
+export const SUSPENSION_WAIT = { timeout: TIMEOUT_MS.suspension }
 
 /** 止めた職員がログインの画面へ戻るのを待つ spec の describe.configure に渡す。待つ間とログインの手順を足す。 */
-export const SUSPENSION_TEST = { timeout: TIMEOUTS.suspension + TIMEOUTS.test }
+export const SUSPENSION_TEST = { timeout: TIMEOUT_MS.suspension + TIMEOUT_MS.test }

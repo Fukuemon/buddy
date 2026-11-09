@@ -10,19 +10,20 @@ import {
   exportOfIssue,
   mockExportIssues,
   mockExternalCalendars,
+  mockFacility,
   mockMe,
   mockServiceAccount,
   mockPatients,
   mockScheduleTypes,
   mockServiceCodes,
-  mockStaff,
+  mockStaffList,
   mockTeams,
   mockVisitCategories,
   scheduleFromRequest,
 } from './scheduleData'
 
 /**
- * 予定の API（baseUrl）のフェイクの handler を作る。成功のレスポンスだけを返し、作成と置き換えの結果は残さない。
+ * 予定の API（baseUrl）の MSW の handler を作る。成功のレスポンスだけを返し、作成と置き換えの結果は残さない。
  * 異常系は、テストごとに server.use() で上書きする。
  */
 export const createScheduleHandlers = (baseUrl: string) => {
@@ -31,6 +32,18 @@ export const createScheduleHandlers = (baseUrl: string) => {
     http.get(
       '/v1/me',
       withAuth(({ response }) => response(200).json(mockMe)),
+    ),
+    http.get(
+      '/v1/me/external_calendar',
+      withAuth(({ response }) =>
+        response(200).json({
+          external_calendar: mockExternalCalendars.find((c) => c.staff_id === mockMe.id) ?? null,
+        }),
+      ),
+    ),
+    http.get(
+      '/v1/facilities/{facility_id}',
+      withAuth(({ response }) => response(200).json(mockFacility)),
     ),
     http.get(
       '/v1/schedule_types',
@@ -50,16 +63,79 @@ export const createScheduleHandlers = (baseUrl: string) => {
     ),
     http.get(
       '/v1/facilities/{facility_id}/users',
-      withAuth(({ response }) => response(200).json(mockStaff)),
+      withAuth(({ response }) => response(200).json(mockStaffList)),
+    ),
+    http.put(
+      '/v1/users/{user_id}',
+      withAuth(async ({ params, request, response }) => {
+        const found = mockStaffList.find((s) => s.id === params.user_id)
+        if (found === undefined)
+          return response(404).json({ code: 'not_found', message: 'リソースが見つかりません' })
+        const { username, phone_number, department_id, team_id, visits } = await request.json()
+        const team = mockTeams.find((t) => t.id === team_id)
+        if (department_id !== found.department.id || team === undefined)
+          return response(400).json({
+            code: 'invalid_input',
+            message: '部署かチームがこの事業所に属していません',
+          })
+        return response(200).json({
+          ...found,
+          username,
+          phone_number: phone_number == null ? null : `+${phone_number.replace(/^\+/, '')}`,
+          team: { id: team.id, name: team.name },
+          visits,
+          sub: null,
+          policies: [],
+        })
+      }),
+    ),
+    http.get(
+      '/v1/users/{user_id}/remaining_assignments',
+      withAuth(({ params, response }) =>
+        mockStaffList.some((s) => s.id === params.user_id)
+          ? response(200).json({ schedules: [], recurring_schedules: [], patients: [] })
+          : response(404).json({ code: 'not_found', message: 'リソースが見つかりません' }),
+      ),
     ),
     http.get(
       '/v1/facilities/{facility_id}/patients',
-      withAuth(({ response }) => response(200).json(mockPatients)),
+      withAuth(({ query, response }) =>
+        response(200).json(
+          query.get('include_ended') === 'true'
+            ? mockPatients
+            : mockPatients.filter((patient) => patient.ended_at === null),
+        ),
+      ),
+    ),
+    http.get(
+      '/v1/patients/{patient_id}',
+      withAuth(({ params, response }) => {
+        const found = mockPatients.find((patient) => patient.id === params.patient_id)
+        return found
+          ? response(200).json(found)
+          : response(404).json({ code: 'not_found', message: 'リソースが見つかりません' })
+      }),
+    ),
+    http.get(
+      '/v1/patients/{patient_id}/remaining_schedules',
+      withAuth(({ params, response }) =>
+        mockPatients.some((patient) => patient.id === params.patient_id)
+          ? response(200).json({ schedules: [], recurring_schedules: [] })
+          : response(404).json({ code: 'not_found', message: 'リソースが見つかりません' }),
+      ),
     ),
     http.get(
       '/v1/facilities/{facility_id}/schedules',
       withAuth(({ response }) =>
-        response(200).json({ schedules: createMockSchedules(new Date()), recurring_schedules: [] }),
+        response(200).json({
+          schedules: createMockSchedules(new Date()),
+          recurring_schedules: [],
+          source_mode: mockFacility.source_mode,
+          calendar_syncs: [],
+          cutover: null,
+          all_day_events: [],
+          unlisted_event_counts: [],
+        }),
       ),
     ),
     http.get(
@@ -146,25 +222,6 @@ export const createScheduleHandlers = (baseUrl: string) => {
           status: 'pending',
           error_code: null,
           attempts: 0,
-        })
-      }),
-    ),
-    http.post(
-      '/v1/calendar_exports/{calendar_export_id}/acceptances',
-      withAuth(({ params, response }) => {
-        const found = mockExportIssues.find((i) => i.id === params.calendar_export_id)
-        if (found === undefined)
-          return response(404).json({ code: 'not_found', message: 'リソースが見つかりません' })
-        if (!found.acceptable)
-          return response(409).json({
-            code: 'export_not_acceptable',
-            message:
-              'この予定は、Google カレンダーの内容を buddy に当てられません。buddy の内容で書き直してください',
-          })
-        return response(200).json({
-          ...exportOfIssue(found),
-          status: 'succeeded',
-          error_code: null,
         })
       }),
     ),

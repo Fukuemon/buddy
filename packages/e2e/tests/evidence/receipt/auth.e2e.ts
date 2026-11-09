@@ -1,9 +1,10 @@
 import { expect, test } from '@playwright/test'
 
-import { prepareApiReference, routeApiReference } from '../../fixtures/apiReference'
+import { issueAccessToken, routeApiReference } from '../../fixtures/apiReference'
 import { LOGIN_EMAIL, LOGIN_STAFF } from '../../fixtures/env'
 import { EVIDENCE_VARIANTS, recordPrEvidence } from '../../fixtures/evidence'
-import { fillApiToken, openApiClient } from '../../screens/apiReference'
+import { openApiClient, openApiReference } from '../../screens/apiReference'
+import { fillApiToken } from '../../widgets/apiClient/actions/apiClient'
 import { apiClient } from '../../selectors/apiReference'
 
 test.describe('照合の API', () => {
@@ -21,7 +22,11 @@ test.describe('照合の API', () => {
             actor: `${LOGIN_STAFF.name}（マネージャー）`,
             variant,
           },
-          prepareApiReference('receipt', LOGIN_EMAIL),
+          async (page) => {
+            await routeApiReference(page)
+            await openApiReference(page, 'receipt')
+            return issueAccessToken(page.request, LOGIN_EMAIL)
+          },
           async ({ page, step, check }, token) => {
             await routeApiReference(page)
             await openApiClient(page, 'receipt', {

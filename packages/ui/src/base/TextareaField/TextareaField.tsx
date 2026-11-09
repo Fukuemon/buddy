@@ -3,12 +3,14 @@ import { useId } from 'react'
 import { useController, type Control, type FieldPath, type FieldValues } from 'react-hook-form'
 
 import { fieldErrorProps } from '../FieldFrame/FieldFrame'
+import { fieldControlClassName } from '../FieldFrame/fieldClassName'
 
 export type TextareaFieldProps<T extends FieldValues> = {
   control: Control<T>
   name: FieldPath<T>
   label: string
   placeholder?: string
+  disabled?: boolean
   /** textarea に付ける data-testid。 */
   'data-testid'?: string
 }
@@ -19,6 +21,7 @@ export const TextareaField = <T extends FieldValues>({
   name,
   label,
   placeholder = label,
+  disabled,
   'data-testid': testId,
 }: TextareaFieldProps<T>) => {
   const { field, fieldState } = useController({ control, name })
@@ -34,17 +37,15 @@ export const TextareaField = <T extends FieldValues>({
       <textarea
         {...field}
         {...fieldErrorProps(error, errorId)}
-        className={clsx(
-          'min-h-40 rounded-8 bg-surface p-3 text-body ring-1 ring-border-field ring-inset outline-none focus-visible:focus-ring',
-          error !== undefined && 'ring-2 ring-danger',
-        )}
+        className={clsx('min-h-40 p-3 text-body', fieldControlClassName)}
         data-testid={testId}
+        disabled={disabled}
         id={inputId}
         placeholder={placeholder}
         value={(field.value as string | undefined) ?? ''}
       />
       {error !== undefined && (
-        <span className="text-caption text-danger" id={errorId} role="alert">
+        <span className="text-caption text-danger" id={errorId}>
           {error}
         </span>
       )}

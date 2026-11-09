@@ -11,7 +11,7 @@ import {
   UNREGISTERED_EMAIL,
 } from '../../fixtures/env'
 import { EVIDENCE_VARIANTS, recordPrEvidence } from '../../fixtures/evidence'
-import { enterEmailAtBroker, signInAtBroker } from '../../screens/login'
+import { enterEmailAtBroker, signInAtBroker, signInAtUpstreamIdp } from '../../screens/login'
 import { brokerLogin, idpLogin } from '../../selectors/idp'
 
 /** 録画の外では、ログインせずに web の origin を開いておく。録画の中で、ログインの画面から操作する。 */
@@ -19,15 +19,10 @@ const openWeb = async (page: Page) => {
   await page.goto(`${BASE_URL}/auth/error`)
 }
 
-/** 上流の IdP のフェイクで、email を確認済みのクレームにして入る。 */
-const signInUpstream = async (page: Page, email: string) => {
-  const idp = idpLogin(page)
-  await idp.username.fill(email.split('@')[0])
-  await idp.claims.fill(JSON.stringify({ email, email_verified: true }))
-  await idp.signIn.click()
-}
-
 const DAY = `/schedule?view=day&date=${OFFICE_A_SCHEDULE.date}`
+
+/** 試行の回数の上限を使い切るメール。ほかの test の UNREGISTERED_EMAIL の上限を使わないよう分ける。 */
+const LIMITED_EMAIL = 'limited@example.com'
 
 /** 録画の外で、予定のカレンダーを開いてログインしておく。 */
 const signIn = async (page: Page) => {
@@ -65,7 +60,7 @@ test.describe('予定のカレンダー', () => {
             await check('1 つ目の事業所の上流の IdP（フェイク）のログインの画面に移る')
 
             await step('上流の IdP で、同じメールを確認済みにして入る')
-            await signInUpstream(page, LOGIN_EMAIL)
+            await signInAtUpstreamIdp(page, LOGIN_EMAIL)
             await expect(page.getByTestId('viewer-menu')).toContainText(LOGIN_STAFF.name)
             await expect(
               page.getByTestId(/^schedule-event-/).filter({ hasText: OFFICE_A_SCHEDULE.title }),
@@ -97,7 +92,7 @@ test.describe('予定のカレンダー', () => {
             await check('2 つ目の事業所の上流の IdP（フェイク）のログインの画面に移る')
 
             await step('上流の IdP で、同じメールを確認済みにして入る')
-            await signInUpstream(page, OFFICE_B.email)
+            await signInAtUpstreamIdp(page, OFFICE_B.email)
             await expect(page.getByTestId('viewer-menu')).toContainText(OFFICE_B.staff.name)
             const events = page.getByTestId(/^schedule-event-/)
             const officeBEvent = events.filter({ hasText: OFFICE_B.schedule.title })
@@ -139,6 +134,89 @@ test.describe('予定のカレンダー', () => {
             await page.goto(DAY)
             await expect(brokerLogin(page).email).toBeVisible()
             await check('予定のカレンダーは開かず、ブローカーのメールの入力の画面に移る')
+          },
+        )
+      })
+
+      test(`${prefix}同じメールで試行の回数の上限を超えてログインを試した場合、時間をおいてから試すよう伝える文が出ること`, async ({
+        browser,
+      }) => {
+        await recordPrEvidence(
+          browser,
+          {
+            name: 'login-too-many-attempts',
+            title:
+              '同じメールで試行の回数の上限を超えてログインを試すと、ログインの失敗の画面に時間をおいてから試すよう伝える文が出る',
+            actor: 'ログインなし',
+            variant,
+          },
+          async (page) => {
+            await openWeb(page)
+            // ブローカーは、入れたメールごとに続けて 10 回まで受け付ける。録画の外で 10 回を使い切る
+            for (let i = 0; i < 10; i++) {
+              await page.goto(DAY)
+              await enterEmailAtBroker(page, LIMITED_EMAIL)
+              await expect(page).toHaveURL(/\/auth\/error\?reason=failed$/)
+            }
+          },
+          async ({ page, step, check }) => {
+            await page.goto(DAY)
+            await step(
+              `録画の前に、登録していないメール ${LIMITED_EMAIL} で 10 回続けて試した。11 回目を入れて「次へ」を押す`,
+            )
+            await enterEmailAtBroker(page, LIMITED_EMAIL)
+            await expect(page).toHaveURL(/\/auth\/error\?reason=too_many_attempts$/)
+            const card = page.getByTestId('auth-error')
+            await expect(card).toContainText('しばらくログインできません')
+            await expect(card).toContainText(
+              '続けて何度もログインを試したため、受け付けを止めています。30 秒ほどおいてから、もう一度ログインしてください。',
+            )
+            await check(
+              'ログインの失敗の画面に「しばらくログインできません」と、30 秒ほどおいてから試すよう伝える文が出る',
+            )
+          },
+        )
+      })
+
+      test(`${prefix}ログインに失敗した場合、ログインの画面と同じ中央のカードで失敗の文が出ること`, async ({
+        browser,
+      }) => {
+        await recordPrEvidence(
+          browser,
+          {
+            name: 'login-failed-card',
+            title:
+              'ログインに失敗すると、ブローカーのログインの画面と同じ、画面の中央のカードに失敗の文が出る',
+            actor: 'ログインなし',
+            variant,
+          },
+          openWeb,
+          async ({ page, step, check }) => {
+            await page.goto(DAY)
+            await expect(brokerLogin(page).email).toBeVisible()
+            await check('ブローカーのログインの画面は、画面の中央のカードにメールの入力を出す')
+
+            await step(`登録していないメール ${UNREGISTERED_EMAIL} を入れて「次へ」を押す`)
+            await enterEmailAtBroker(page, UNREGISTERED_EMAIL)
+            await expect(page).toHaveURL(/\/auth\/error\?reason=failed$/)
+            const card = page.getByTestId('auth-error')
+            await expect(card).toContainText('ログインできませんでした')
+            await expect(card).toContainText('時間をおいて、もう一度ログインしてください。')
+            const viewport = page.viewportSize()
+            // カードの中心と画面の中心のずれ。中央に置けば、縦と横のどちらも 1px 未満になる
+            await expect
+              .poll(async () => {
+                const box = await card.boundingBox()
+                if (box === null || viewport === null) return Number.POSITIVE_INFINITY
+                return Math.max(
+                  Math.abs(box.x + box.width / 2 - viewport.width / 2),
+                  Math.abs(box.y + box.height / 2 - viewport.height / 2),
+                )
+              })
+              .toBeLessThan(1)
+            await check(
+              'ログインの失敗の画面も、サイトのヘッダーを出さずに、画面の中央のカードにロゴ、「ログインできませんでした」、説明の文、「もう一度ログインする」を出す',
+            )
           },
         )
       })
@@ -193,7 +271,7 @@ test.describe('予定のカレンダー', () => {
             await expect(idpLogin(page).username).toBeVisible()
 
             await step('上流の IdP で、別のメール someone.else@example.com を確認済みにして入る')
-            await signInUpstream(page, 'someone.else@example.com')
+            await signInAtUpstreamIdp(page, 'someone.else@example.com')
             await expect(page).toHaveURL(/\/auth\/error\?reason=failed$/)
             await expect(page.getByTestId('auth-error')).toContainText('ログインできませんでした')
             await check('web のログインの失敗の画面に「ログインできませんでした」が出る')
@@ -224,7 +302,8 @@ test.describe('予定のカレンダー', () => {
             await expect(page.getByTestId('viewer-menu')).toContainText(LOGIN_STAFF.name)
             await step('ログインして、予定のカレンダーを開いている')
 
-            await step('「ログアウト」を押す')
+            await step('アカウントのボタンを押し、メニューの「ログアウト」を押す')
+            await page.getByTestId('viewer-menu-open').click()
             await page.getByTestId('viewer-logout').click()
             await expect(brokerLogin(page).email).toBeVisible()
             await check('Hydra のログインのセッションが消え、ブローカーのメールの入力の画面に移る')
@@ -254,7 +333,8 @@ test.describe('予定のカレンダー', () => {
             await expect(page.getByTestId('viewer-menu')).toContainText(LOGIN_STAFF.name)
             await step('ログインして、予定のカレンダーを開いている')
 
-            await step('「ログアウト」を押す')
+            await step('アカウントのボタンを押し、メニューの「ログアウト」を押す')
+            await page.getByTestId('viewer-menu-open').click()
             await page.getByTestId('viewer-logout').click()
             await expect(brokerLogin(page).email).toBeVisible()
             await check('ブローカーのメールの入力の画面に移る')

@@ -1,13 +1,13 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useNavigate, useRouteContext } from '@tanstack/react-router'
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 
-import { MAX_RECEIPT_UPLOAD_BYTES } from '#/api/bff/receiptCall'
-import { ApiError, type ReceiptCheckInput } from '#/api/client'
+import { ApiError, MAX_RECEIPT_UPLOAD_BYTES, type ReceiptCheckInput } from '#/api/BuddyApi'
+import { queryKeys } from '#/api/queryKeys'
 
-import { TOO_LARGE_MESSAGE, checkErrorMessage } from '../lib/errorMessage'
+import { TOO_LARGE_MESSAGE, checkErrorMessage, csvErrorLines } from '../lib/errorMessage'
 import { isMonth, previousMonth } from '../lib/month'
-import { receiptResultKey, type ReceiptResult } from '../queries'
+import type { ReceiptResult } from '../queries'
 import { ReceiptCheckForm, type ScheduleSource } from './ReceiptCheckForm'
 
 /** 照合の入力を持ち、照合の API に送り、結果の画面へ移る。入力を変えたら、前の失敗の文を消す。 */
@@ -20,15 +20,23 @@ export const ReceiptCheckFormContainer = () => {
   const [schedules, setSchedules] = useState<File | null>(null)
   const [visits, setVisits] = useState<File | null>(null)
 
+  // 送っている途中かを、入力を変えた時点の値で読む。check.isPending は描画のときの値で、照合が終わった直後は古い。
+  const sending = useRef(false)
   const check = useMutation({
     mutationFn: (input: ReceiptCheckInput) => receiptApi.check(input),
+    onMutate: () => {
+      sending.current = true
+    },
+    onSettled: () => {
+      sending.current = false
+    },
     onSuccess: async (report, input) => {
       const result: ReceiptResult = {
         report,
         month: input.month,
         checkedAt: new Date().toISOString(),
       }
-      queryClient.setQueryData(receiptResultKey, result)
+      queryClient.setQueryData(queryKeys.receiptResult(), result)
       await navigate({ to: '/receipt/result' })
     },
   })
@@ -36,11 +44,12 @@ export const ReceiptCheckFormContainer = () => {
   const scheduleFile = source === 'csv' ? schedules : null
   const tooLarge = (visits?.size ?? 0) + (scheduleFile?.size ?? 0) > MAX_RECEIPT_UPLOAD_BYTES
   const ready = visits !== null && (source === 'calendar' ? isMonth(month) : scheduleFile !== null)
+  // 送っている途中は戻さない。戻すと照合するを押せるようになり、先の照合の失敗の文も出なくなる。
   const changed =
     <T,>(set: (value: T) => void) =>
     (value: T) => {
       set(value)
-      check.reset()
+      if (!sending.current) check.reset()
     }
 
   const submit = () => {
@@ -62,12 +71,21 @@ export const ReceiptCheckFormContainer = () => {
       onSchedulesChange={changed(setSchedules)}
       onVisitsChange={changed(setVisits)}
       canSubmit={ready && !tooLarge}
+      submitHint={
+        ready
+          ? undefined
+          : source === 'calendar'
+            ? '対象の月と実績の CSV を選んでください。'
+            : '予定の CSV と実績の CSV を選んでください。'
+      }
       isSubmitting={check.isPending}
       onSubmit={submit}
       errorMessage={
         tooLarge ? TOO_LARGE_MESSAGE : check.isError ? checkErrorMessage(check.error) : undefined
       }
-      rowErrors={!tooLarge && check.error instanceof ApiError ? check.error.rowErrors : []}
+      errorLines={
+        !tooLarge && check.error instanceof ApiError ? csvErrorLines(check.error.csvErrors) : []
+      }
     />
   )
 }

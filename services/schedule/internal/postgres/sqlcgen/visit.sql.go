@@ -54,6 +54,9 @@ DELETE FROM visit_infos vi
 WHERE vi.id = $1
   AND NOT EXISTS (SELECT 1 FROM schedules s WHERE s.visit_info_id = vi.id)
   AND NOT EXISTS (SELECT 1 FROM recurring_schedules rs WHERE rs.visit_info_id = vi.id)
+  AND NOT EXISTS (
+    SELECT 1 FROM calendar_event_records r WHERE r.visit_info_id = vi.id OR r.pending_visit_info_id = vi.id
+  )
 `
 
 // visit_info_visit_categories は外部キーの ON DELETE CASCADE で消える。
@@ -76,6 +79,28 @@ func (q *Queries) GetServiceCode(ctx context.Context, id string) (ServiceCode, e
 		&i.ServiceTimeRangeEnd,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const getVisitInfoDetail = `-- name: GetVisitInfoDetail :one
+SELECT id, facility_id, patient_id, patient_name, assigned_staff_id, assigned_staff_name, companion_id, companion_name, service_code_id, service_code FROM visit_info_details WHERE id = $1
+`
+
+func (q *Queries) GetVisitInfoDetail(ctx context.Context, id string) (VisitInfoDetail, error) {
+	row := q.db.QueryRow(ctx, getVisitInfoDetail, id)
+	var i VisitInfoDetail
+	err := row.Scan(
+		&i.ID,
+		&i.FacilityID,
+		&i.PatientID,
+		&i.PatientName,
+		&i.AssignedStaffID,
+		&i.AssignedStaffName,
+		&i.CompanionID,
+		&i.CompanionName,
+		&i.ServiceCodeID,
+		&i.ServiceCode,
 	)
 	return i, err
 }
@@ -196,6 +221,30 @@ func (q *Queries) ListVisitInfoCategories(ctx context.Context, visitInfoIds []st
 			return nil, err
 		}
 		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listVisitInfoCategoryIDs = `-- name: ListVisitInfoCategoryIDs :many
+SELECT visit_category_id FROM visit_info_visit_categories WHERE visit_info_id = $1 ORDER BY visit_category_id
+`
+
+func (q *Queries) ListVisitInfoCategoryIDs(ctx context.Context, visitInfoID string) ([]string, error) {
+	rows, err := q.db.Query(ctx, listVisitInfoCategoryIDs, visitInfoID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []string{}
+	for rows.Next() {
+		var visit_category_id string
+		if err := rows.Scan(&visit_category_id); err != nil {
+			return nil, err
+		}
+		items = append(items, visit_category_id)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err

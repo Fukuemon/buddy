@@ -1,11 +1,12 @@
 package httpapi
 
 import (
+	"github.com/Fukuemon/buddy/packages/go/servicecode"
+
 	"github.com/Fukuemon/buddy/services/receipt/internal/check"
 	"github.com/Fukuemon/buddy/services/receipt/internal/httpapi/openapi"
 	"github.com/Fukuemon/buddy/services/receipt/internal/judge"
 	"github.com/Fukuemon/buddy/services/receipt/internal/record"
-	"github.com/Fukuemon/buddy/services/receipt/internal/servicerule"
 )
 
 func report(rep check.Report) openapi.Report {
@@ -24,7 +25,8 @@ func report(rep check.Report) openapi.Report {
 	}
 	for _, w := range rep.Warnings {
 		out.Warnings = append(out.Warnings, openapi.Warning{
-			CalendarId: w.CalendarID, EventId: w.EventID, Start: w.Start, Message: w.Message,
+			CalendarId: w.CalendarID, EventId: w.EventID, Start: w.Start,
+			Reason: openapi.InputReason(w.Reason), Column: optional(w.Column), Message: w.Message,
 		})
 	}
 	return out
@@ -73,21 +75,33 @@ func rangeCheck(c judge.RangeCheck) openapi.RangeCheck {
 	return openapi.RangeCheck{Ok: c.OK, Minutes: c.Minutes, Range: rangeOf(c.Range)}
 }
 
-func rangeOf(r *servicerule.Range) *openapi.Range {
+func rangeOf(r *servicecode.Range) *openapi.Range {
 	if r == nil {
 		return nil
 	}
 	return &openapi.Range{Min: r.Min, Max: r.Max}
 }
 
-func rowErrors(rows []record.RowError) []openapi.RowError {
-	out := make([]openapi.RowError, 0, len(rows))
-	for _, r := range rows {
-		e := openapi.RowError{Source: openapi.InputSource(r.Source), Line: r.Line, Message: r.Message}
-		if r.Column != "" {
-			e.Column = &r.Column
+func csvErrors(errs []record.CSVError) []openapi.CsvError {
+	out := make([]openapi.CsvError, 0, len(errs))
+	for _, r := range errs {
+		e := openapi.CsvError{
+			Source:  openapi.InputSource(r.Input),
+			Reason:  openapi.InputReason(r.Reason),
+			Column:  optional(r.Column),
+			Message: r.Message,
+		}
+		if r.Line > 0 {
+			e.Line = &r.Line
 		}
 		out = append(out, e)
 	}
 	return out
+}
+
+func optional(s string) *string {
+	if s == "" {
+		return nil
+	}
+	return &s
 }

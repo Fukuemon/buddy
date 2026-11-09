@@ -18,8 +18,8 @@
             <div class="wf-overlay" data-m="1" tabindex="-1" data-go="../../schedule-calendar_予定のカレンダー/mocks/01-month.html"></div>
             <div aria-label="予定の詳細" class="wf-modal" data-m="2" data-testid="schedule-detail-modal" role="dialog">
               <div class="wf-modal__header">
-                <span aria-label="閉じる" class="wf-btn wf-btn--icon" data-m="3" data-testid="modal-close" data-escape data-go="../../schedule-calendar_予定のカレンダー/mocks/01-month.html">×</span>
-                <h2 class="wf-modal__title" data-m="4">予定の詳細</h2>
+                <h2 class="wf-modal__title wf-dialog__title" data-m="3">予定の詳細</h2>
+                <span aria-label="閉じる" class="wf-btn wf-btn--icon" data-m="4" data-testid="modal-close" data-escape data-go="../../schedule-calendar_予定のカレンダー/mocks/01-month.html">×</span>
               </div>
               <div class="wf-modal__body">
                 <p class="sd-cancel" data-m="5" data-testid="schedule-detail-cancel"><strong>キャンセルした予定です。</strong>理由: 利用者の体調不良</p>
@@ -30,13 +30,13 @@
                     <dd>訪問</dd>
                   </div>
                   <div class="wf-row" data-m="8">
-                    <dt>担当者</dt>
+                    <dt>主訪問者</dt>
                     <dd><span class="wf-text"></span></dd>
                   </div>
                 </dl>
-                <section class="sd-section" data-testid="schedule-detail-visit">
-                  <h3 class="sd-section__title" data-m="9">訪問の情報</h3>
-                  <dl class="wf-rows sd-rows sd-rows--2col" data-testid="schedule-detail-visit-fields">
+                <section class="sd-section" data-m="9" data-testid="schedule-detail-visit">
+                  <h3 class="sd-section__title">訪問の情報</h3>
+                  <dl class="wf-rows sd-rows" data-testid="schedule-detail-visit-fields">
                     <div class="wf-row" data-m="10">
                       <dt>利用者</dt>
                       <dd><span class="wf-text"></span></dd>
@@ -46,14 +46,14 @@
                       <dd>訪看I2</dd>
                     </div>
                     <div class="wf-row" data-m="12">
-                      <dt>訪問の種類</dt>
+                      <dt>訪問の区分</dt>
                       <dd>緊急</dd>
                     </div>
                   </dl>
                 </section>
-                <section class="sd-section" data-testid="schedule-detail-memo">
+                <section class="sd-section" data-m="13" data-testid="schedule-detail-memo">
                   <h3 class="sd-section__title">メモ</h3>
-                  <p class="sd-memo" data-m="13"><span class="wf-text wf-text--l"></span></p>
+                  <p class="sd-memo"><span class="wf-text wf-text--l"></span></p>
                 </section>
               </div>
               <div class="wf-modal__footer">

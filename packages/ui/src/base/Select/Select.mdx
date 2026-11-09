@@ -1,0 +1,72 @@
+import { ArgTypes, Canvas, Meta } from '@storybook/addon-docs/blocks'
+
+import { Select } from './Select'
+import * as Stories from './Select.stories'
+
+<Meta of={Stories} />
+
+# Select
+
+決まった選択肢から 1 つを選ぶ欄。ブラウザの `select` を使い、標準の矢印を消して、欄の右から 12px の位置に矢印の印を置く。
+右の余白を矢印の分だけ広げ、長い選択肢の文字が矢印に重ならないようにする。
+
+## 規則
+
+規則の本文は、デザインシステムの文書の次のセクションにある。
+
+- 使う場面、使わない場面、キーボードの操作: コンポーネントの文書（`packages/ui/design/components.md`）の「コンポーネントの選び方」の `Select` の行
+- 使い方の規則と Do と Don't: コンポーネントの文書の「コンポーネントごとの規則」の「`SegmentedControl`、`Select`」
+- 欄の枠と面の状態: コンポーネントの文書の「入力の欄の状態」
+- 当たる原則: DESIGN.md の「画面を作るときの原則」の次の ID
+  - `FOCUS-ONE`
+  - `TARGET-SIZE`
+
+## 状態
+
+### デフォルト
+
+<Canvas of={Stories.Default} />
+
+### 長い選択肢
+
+<Canvas of={Stories.LongOption} />
+
+### hover
+
+枠を黒にする。
+
+<Canvas of={Stories.Hover} />
+
+### フォーカス
+
+<Canvas of={Stories.Focus} />
+
+### エラー
+
+<Canvas of={Stories.WithError} />
+
+### エラーで hover
+
+誤りの枠を濃い赤にする。
+
+<Canvas of={Stories.WithErrorHover} />
+
+### エラーでフォーカス
+
+誤りのない欄と同じ `focus-ring` を出す。
+
+<Canvas of={Stories.WithErrorFocus} />
+
+### 無効
+
+<Canvas of={Stories.Disabled} />
+
+### 無効で hover
+
+枠の色を変えない。
+
+<Canvas of={Stories.DisabledHover} />
+
+## props
+
+<ArgTypes of={Select} />

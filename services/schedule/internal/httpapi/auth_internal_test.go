@@ -13,9 +13,9 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"github.com/Fukuemon/buddy/services/schedule/internal/access"
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/staff"
 	"github.com/Fukuemon/buddy/services/schedule/internal/httpapi/openapi"
 	"github.com/Fukuemon/buddy/services/schedule/internal/principal"
-	"github.com/Fukuemon/buddy/services/schedule/internal/staff"
 )
 
 // TestEveryV1RouteIsInSpec は、gin に登録した /v1 の経路が全て openapi.yaml の定義にあることを確認する。
@@ -30,7 +30,7 @@ func TestEveryV1RouteIsInSpec(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	r := NewRouter(Usecases{}, RouterConfig{Logger: slog.New(slog.NewTextHandler(io.Discard, nil))})
+	r := NewRouter(Apps{}, RouterConfig{Logger: slog.New(slog.NewTextHandler(io.Discard, nil))})
 	for _, route := range r.Routes() {
 		if !strings.HasPrefix(route.Path, "/v1/") {
 			continue
@@ -49,7 +49,7 @@ func TestEveryV1RouteIsInSpec(t *testing.T) {
 }
 
 func TestEveryPathParamHasResource(t *testing.T) {
-	r := NewRouter(Usecases{}, RouterConfig{Logger: slog.New(slog.NewTextHandler(io.Discard, nil))})
+	r := NewRouter(Apps{}, RouterConfig{Logger: slog.New(slog.NewTextHandler(io.Discard, nil))})
 	for _, route := range r.Routes() {
 		for _, seg := range strings.Split(route.Path, "/") {
 			if name, ok := strings.CutPrefix(seg, ":"); ok {
@@ -76,8 +76,8 @@ func (s stubAuth) Authenticate(context.Context, principal.Identity) (principal.P
 func (stubAuth) FacilityOf(context.Context, access.Resource, string) (string, error) { return "", nil }
 
 func TestAuthenticatePutsPrincipalInContext(t *testing.T) {
-	want := principal.Principal{Staff: staff.Detail{
-		Summary:  staff.Summary{Staff: staff.Staff{ID: "STAFF", FacilityID: "FACILITY"}},
+	want := principal.Principal{Staff: principal.Staff{
+		ID: "STAFF", FacilityID: "FACILITY",
 		Policies: []staff.PolicyGrant{{PolicyID: "POLICY", PolicyName: "すべてのカレンダーの閲覧"}},
 	}}
 	m := authMiddleware{verifier: stubVerifier{}, uc: stubAuth{principal: want}, log: slog.New(slog.NewTextHandler(io.Discard, nil))}

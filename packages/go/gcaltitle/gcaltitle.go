@@ -43,26 +43,6 @@ func Format(service, client string) string {
 	return "【" + service + "】" + client
 }
 
-// NormalizeService は、サービス内容の表記をそろえる。照合の API が予定と実績を比べるときと、予定の API がサービスコードを引くときに使う。
-// 全角スペースを半角にし、`Ⅰ` `１` `1` を `I` に、`･` を `・` に、残った半角数字を全角にする。
-func NormalizeService(s string) string {
-	s = strings.ReplaceAll(s, "　", " ")
-	var b strings.Builder
-	for _, r := range s {
-		switch {
-		case r == 'Ⅰ' || r == '１' || r == '1':
-			b.WriteRune('I')
-		case r == '･':
-			b.WriteRune('・')
-		case '0' <= r && r <= '9':
-			b.WriteRune(r - '0' + '０')
-		default:
-			b.WriteRune(r)
-		}
-	}
-	return b.String()
-}
-
 // NormalizeClient は、利用者名の全角と半角のスペースを除く。照合の API が予定と実績を比べるときと、予定の API が利用者を引くときに使う。
 func NormalizeClient(s string) string {
 	return strings.NewReplacer("　", "", " ", "").Replace(s)

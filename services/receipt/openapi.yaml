@@ -13,8 +13,8 @@ info:
 security:
   - bearerAuth: []
 servers:
-  # ローカル環境の compose の receipt（compose.yml の RECEIPT_PORT のデフォルト）
-  - url: http://localhost:8090
+  # main の checkout のローカル環境の compose の receipt（portless のホスト名）
+  - url: https://receipt.buddy.localhost
 tags:
   - name: health
     description: 死活と準備の確認
@@ -55,6 +55,7 @@ paths:
       operationId: createCheck
       summary: 実訪問の CSV と予定を照合する
       description: |
+        照合の権限（`receipt.check`）を持つ職員だけが呼べる。受けたトークンを付けて予定の API の `GET /v1/me` を呼び、返った権限で確認する（ADR-0007）。
         予定は、ファイル `schedules` があればそれを使う。無くてフォームの値 `month` があれば、その月の予定を Google カレンダーから取る。
         Google カレンダーは、トークンの組織に結び付けたカレンダーだけを読む。
         結果は Accept によらず JSON で返す。入力の CSV は、UTF-8（BOM の有無を問わない）と CP932 を受ける。
@@ -121,11 +122,17 @@ paths:
                   summary: トークンの検証に失敗した
                   value: { code: unauthenticated, message: "トークンが正しくない" }
         "403":
-          description: Google カレンダーから取るのに、トークンに組織がない（`forbidden`）
+          description: 職員が照合の権限を持たないか、予定の API が職員を拒んだ。または、Google カレンダーから取るのに、トークンに組織がない（`forbidden`）
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Error" }
-              example: { code: forbidden, message: "トークンに組織がないので、month では照合できない" }
+              examples:
+                noPermission:
+                  summary: 照合の権限がない
+                  value: { code: forbidden, message: "照合の権限がない" }
+                noOrg:
+                  summary: トークンに組織がない
+                  value: { code: forbidden, message: "トークンに組織がないので、month では照合できない" }
         "413":
           description: 本文が上限を超えている（`payload_too_large`）
           content:
@@ -133,7 +140,7 @@ paths:
               schema: { $ref: "#/components/schemas/Error" }
               example: { code: payload_too_large, message: "本文が上限を超えている" }
         "422":
-          description: 入力の CSV に誤りがある（`invalid_csv`）。行のエラーは `errors` に行番号つきで入る。CSV が空のとき、列が足りないとき、文字コードを読めないときは、`errors` を持たない
+          description: 入力の CSV に誤りがある（`invalid_csv`）。誤りは `errors` に、理由のコードと、分かれば行と列を付けて入る。画面は `errors` から文を作る
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Error" }
@@ -144,10 +151,21 @@ paths:
                     code: invalid_csv
                     message: 実績の CSV に誤りがある
                     errors:
-                      - { source: visits, line: 3, column: 利用者名, message: 空である }
+                      - { source: visits, reason: empty_value, line: 3, column: 利用者名, message: 空である }
                 missingColumn:
                   summary: 列が足りない
-                  value: { code: invalid_csv, message: "visits の CSV に列がない: 提供時間" }
+                  value:
+                    code: invalid_csv
+                    message: visits の CSV に列がない
+                    errors:
+                      - { source: visits, reason: missing_column, column: 提供時間, message: 列がない }
+                encoding:
+                  summary: 文字コードを読めない
+                  value:
+                    code: invalid_csv
+                    message: visits の CSV を読めない
+                    errors:
+                      - { source: visits, reason: encoding, message: 文字コードが UTF-8 でも CP932 でもない }
         "500":
           description: サーバーのエラー（`internal`）
           content:
@@ -155,11 +173,17 @@ paths:
               schema: { $ref: "#/components/schemas/Error" }
               example: { code: internal, message: "照合に失敗した" }
         "502":
-          description: Google カレンダーから予定を取れない（`schedule_source_failed`）
+          description: 予定の API で照合の権限を確認できない（`permission_check_failed`）か、Google カレンダーから予定を取れない（`schedule_source_failed`）
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Error" }
-              example: { code: schedule_source_failed, message: "Google カレンダーから予定を取れない" }
+              examples:
+                permission:
+                  summary: 予定の API に届かないか、予定の API がエラーを返した
+                  value: { code: permission_check_failed, message: "予定の API で照合の権限を確認できない" }
+                calendar:
+                  summary: Google カレンダーから予定を取れない
+                  value: { code: schedule_source_failed, message: "Google カレンダーから予定を取れない" }
         "503":
           description: サーバーに、トークンの組織の Google カレンダーの設定がないのに `month` で呼ばれた（`calendar_not_configured`）
           content:
@@ -202,26 +226,52 @@ components:
             - internal
             - calendar_not_configured
             - schedule_source_failed
+            - permission_check_failed
         message:
           type: string
           description: 人が読む日本語の説明。文言は変わることがあるので、利用者の分岐は `code` で行う
         errors:
           type: array
-          description: 入力の CSV の行ごとのエラー。`invalid_csv` のときだけ持つ
-          items: { $ref: "#/components/schemas/RowError" }
+          description: 入力の CSV の誤り。`invalid_csv` のときだけ持ち、1 件以上ある
+          items: { $ref: "#/components/schemas/CsvError" }
 
-    RowError:
+    CsvError:
       type: object
-      required: [source, line, message]
+      required: [source, reason, message]
       properties:
         source: { $ref: "#/components/schemas/InputSource" }
+        reason: { $ref: "#/components/schemas/InputReason" }
         line:
           type: integer
-          description: 入力の CSV の行番号。ヘッダーが 1 行目
+          description: 入力の CSV の行番号。ヘッダーが 1 行目。ファイルの全体の誤り（`encoding`、`empty_file`、`missing_column`）では省く
         column:
           type: string
-          description: エラーのある列の名前。行全体のエラーでは省く
-        message: { type: string }
+          description: 誤りのある列の名前。`missing_column` では無い列の名前。列を決められない誤りでは省く
+        message:
+          type: string
+          description: 人が読む日本語か、CSV のライブラリの英語の説明。画面には出さず、`reason` から文を作る
+
+    InputReason:
+      type: string
+      description: |
+        入力を照合に使えない理由。
+        encoding は文字コードが UTF-8 でも CP932 でもない、empty_file はヘッダーの行も無い、missing_column は要る列が無い、
+        malformed_row は引用符の閉じ忘れのように CSV として読めない行、empty_value は要る値が空、invalid_date は日付として読めないか暦に無い、
+        invalid_time は時刻として読めない、invalid_duration は提供時間が 0 以上の整数でない、
+        unreadable_title は予定のタイトルを `【サービス内容】利用者名` の形として読めない、unreadable_time は予定の開始か終了の日時を読めない、
+        spans_days は終了が開始の翌日より後か、24 時間以上の予定である。unreadable_title、unreadable_time、spans_days は Warning だけが使う
+      enum:
+        - encoding
+        - empty_file
+        - missing_column
+        - malformed_row
+        - empty_value
+        - invalid_date
+        - invalid_time
+        - invalid_duration
+        - unreadable_title
+        - unreadable_time
+        - spans_days
 
     InputSource:
       type: string
@@ -383,11 +433,17 @@ components:
     Warning:
       type: object
       description: 照合に使わなかった Google カレンダーの予定。利用者名を含むので、予定のタイトルは持たない
-      required: [calendar_id, event_id, start, message]
+      required: [calendar_id, event_id, start, reason, message]
       properties:
         calendar_id: { type: string }
         event_id: { type: string }
         start:
           type: string
           description: 予定の開始の日時（RFC 3339）
-        message: { type: string }
+        reason: { $ref: "#/components/schemas/InputReason" }
+        column:
+          type: string
+          description: "`reason` が列の値の誤り（`empty_value` など）のときの列の名前"
+        message:
+          type: string
+          description: 人が読む日本語の説明。画面には出さず、`reason` から文を作る

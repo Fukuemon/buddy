@@ -4,14 +4,13 @@ import (
 	"context"
 	"time"
 
-	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/Fukuemon/buddy/services/schedule/internal/apperr"
 	"github.com/Fukuemon/buddy/services/schedule/internal/civil"
-	"github.com/Fukuemon/buddy/services/schedule/internal/organization"
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/organization"
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/staff"
 	"github.com/Fukuemon/buddy/services/schedule/internal/postgres/sqlcgen"
-	"github.com/Fukuemon/buddy/services/schedule/internal/staff"
 )
 
 // StaffRepository は、staff.Repository を実装する。
@@ -33,6 +32,7 @@ func (r *StaffRepository) Create(ctx context.Context, s staff.Staff, grants []st
 		DepartmentID: s.DepartmentID,
 		TeamID:       s.TeamID,
 		PositionID:   s.PositionID,
+		Visits:       !s.NonVisiting,
 	})
 	if err != nil {
 		return translate("create user", err)
@@ -50,6 +50,28 @@ func (r *StaffRepository) ChangePosition(ctx context.Context, id, positionID str
 		return translate("delete user policies", err)
 	}
 	return addGrants(ctx, q, id, grants)
+}
+
+// UpdateProfile は、職員の更新と、チームの対象の移し替えを続けて書く。途中で失敗したときに残さないよう、呼び出し側がトランザクションの中で呼ぶ。
+// 職員が無いときは apperr.ErrNotFound を、退職した職員なら apperr.ErrConflict を返す。
+func (r *StaffRepository) UpdateProfile(ctx context.Context, id string, p staff.Profile, oldTeamID string) error {
+	q := r.q(ctx)
+	n, err := q.UpdateUserProfile(ctx, sqlcgen.UpdateUserProfileParams{
+		ID: id, Username: p.Username, PhoneNumber: p.PhoneNumber, DepartmentID: p.DepartmentID, TeamID: p.TeamID, Visits: !p.NonVisiting,
+	})
+	if err != nil {
+		return translate("update user profile", err)
+	}
+	if err := r.unchanged(ctx, id, n); err != nil || oldTeamID == p.TeamID {
+		return err
+	}
+	if err := q.DeleteUserTeamTargetsCovered(ctx, sqlcgen.DeleteUserTeamTargetsCoveredParams{
+		UserID: id, OldTeamID: ptr(oldTeamID), NewTeamID: ptr(p.TeamID),
+	}); err != nil {
+		return translate("delete user team targets", err)
+	}
+	err = q.MoveUserTeamTargets(ctx, sqlcgen.MoveUserTeamTargetsParams{UserID: id, OldTeamID: ptr(oldTeamID), NewTeamID: ptr(p.TeamID)})
+	return translate("move user team targets", err)
 }
 
 // AddGrant は、権限と対象を続けて書く。途中で失敗したときに残さないよう、呼び出し側がトランザクションの中で呼ぶ。
@@ -165,6 +187,7 @@ func staffSummary(u sqlcgen.ListUsersByFacilityRow) staff.Summary {
 			DepartmentID:    u.DepartmentID,
 			TeamID:          u.TeamID,
 			PositionID:      u.PositionID,
+			NonVisiting:     !u.Visits,
 			LeaveStartedAt:  u.LeaveStartedAt,
 			LeaveReturnDate: datePtr(u.LeaveReturnDate),
 			RetiredAt:       u.RetiredAt,
@@ -227,13 +250,6 @@ func (r *StaffRepository) Retire(ctx context.Context, id string) error {
 	return nil
 }
 
-// LockFacility は、事業所 facilityID の行に排他のロックを取る。呼び出し側がトランザクションの中で呼ぶ。
-// 事業所が無いときは apperr.ErrNotFound を返す。
-func (r *StaffRepository) LockFacility(ctx context.Context, facilityID string) error {
-	_, err := r.q(ctx).LockFacility(ctx, facilityID)
-	return translate("lock facility", err)
-}
-
 // ActiveManagers は、事業所 facilityID で職員の管理の権限を持つ、休職でも退職でもない職員の ID を ID の順に返す。
 func (r *StaffRepository) ActiveManagers(ctx context.Context, facilityID string) ([]string, error) {
 	ids, err := r.q(ctx).ListActiveStaffManagers(ctx, facilityID)
@@ -268,37 +284,28 @@ func (r *StaffAssignmentReader) From(ctx context.Context, facilityID, staffID st
 		return staff.Assignments{}, translate("list staff assigned patients", err)
 	}
 	out := staff.Assignments{
-		Schedules: make([]staff.AssignedSchedule, len(scheds)),
-		Recurring: make([]staff.AssignedRecurring, len(recs)),
-		Patients:  make([]staff.AssignedPatient, len(pats)),
+		Schedules:          make([]staff.AssignedSchedule, len(scheds)),
+		RecurringSchedules: make([]staff.AssignedRecurring, len(recs)),
+		Patients:           make([]staff.AssignedPatient, len(pats)),
 	}
 	for i, s := range scheds {
 		start, end, err := slotTimes(s.StartTime, s.EndTime)
 		if err != nil {
 			return staff.Assignments{}, err
 		}
-		out.Schedules[i] = staff.AssignedSchedule{ID: s.ID, Date: civil.DateOf(s.Date), StartTime: start, EndTime: end}
+		out.Schedules[i] = staff.AssignedSchedule{ID: s.ID, Date: civil.DateOf(s.Date), StartTime: start, EndTime: end, EndsNextDay: s.EndsNextDay}
 	}
 	for i, s := range recs {
 		start, end, err := slotTimes(s.StartTime, s.EndTime)
 		if err != nil {
 			return staff.Assignments{}, err
 		}
-		out.Recurring[i] = staff.AssignedRecurring{ID: s.ID, Date: civil.DateOf(s.Date), EndDate: datePtr(s.EndDate), StartTime: start, EndTime: end}
+		out.RecurringSchedules[i] = staff.AssignedRecurring{ID: s.ID, Date: civil.DateOf(s.Date), EndDate: datePtr(s.EndDate), StartTime: start, EndTime: end, EndsNextDay: s.EndsNextDay}
 	}
 	for i, p := range pats {
 		out.Patients[i] = staff.AssignedPatient{ID: p.ID, Name: p.Name}
 	}
 	return out, nil
-}
-
-func slotTimes(start, end pgtype.Time) (civil.Time, civil.Time, error) {
-	s, err := parseTimeOfDay(start)
-	if err != nil {
-		return civil.Time{}, civil.Time{}, err
-	}
-	e, err := parseTimeOfDay(end)
-	return s, e, err
 }
 
 // StaffRefRepository は、ほかの機能が職員を参照するための kernel.Finder[staff.Ref] を実装する。
@@ -309,16 +316,16 @@ func NewStaffRefRepository(pool *pgxpool.Pool) *StaffRefRepository {
 	return &StaffRefRepository{conn{pool}}
 }
 
-// Get は、ID が id の職員の事業所、チーム、状態を返す。無いときは apperr.ErrNotFound を返す。
+// Get は、ID が id の職員の事業所、チーム、訪問するか、状態を返す。無いときは apperr.ErrNotFound を返す。
 func (r *StaffRefRepository) Get(ctx context.Context, id string) (staff.Ref, error) {
 	row, err := r.q(ctx).GetUserRef(ctx, id)
 	if err != nil {
 		return staff.Ref{}, translate("get user ref", err)
 	}
-	return staffRef(row.ID, row.FacilityID, row.TeamID, row.LeaveStartedAt, row.RetiredAt), nil
+	return staffRef(row.ID, row.FacilityID, row.TeamID, row.Visits, row.LeaveStartedAt, row.RetiredAt), nil
 }
 
-// ListByFacility は、事業所 facilityID の職員の事業所、チーム、状態を ID の順に返す。
+// ListByFacility は、事業所 facilityID の職員の事業所、チーム、訪問するか、状態を ID の順に返す。
 func (r *StaffRefRepository) ListByFacility(ctx context.Context, facilityID string) ([]staff.Ref, error) {
 	rows, err := r.q(ctx).ListUserRefsByFacility(ctx, facilityID)
 	if err != nil {
@@ -326,20 +333,12 @@ func (r *StaffRefRepository) ListByFacility(ctx context.Context, facilityID stri
 	}
 	out := make([]staff.Ref, len(rows))
 	for i, row := range rows {
-		out[i] = staffRef(row.ID, row.FacilityID, row.TeamID, row.LeaveStartedAt, row.RetiredAt)
+		out[i] = staffRef(row.ID, row.FacilityID, row.TeamID, row.Visits, row.LeaveStartedAt, row.RetiredAt)
 	}
 	return out, nil
 }
 
-// LockStatuses は、事業所 facilityID の行に共有のロックを取る。呼び出し側がトランザクションの中で呼ぶ。
-// 職員の休職、復職、退職は事業所の行に排他のロックを取るので、トランザクションが終わるまで待つ。
-// 事業所が無いときは apperr.ErrNotFound を返す。
-func (r *StaffRefRepository) LockStatuses(ctx context.Context, facilityID string) error {
-	_, err := r.q(ctx).ShareFacility(ctx, facilityID)
-	return translate("share facility", err)
-}
-
-func staffRef(id, facilityID, teamID string, leaveStartedAt, retiredAt *time.Time) staff.Ref {
+func staffRef(id, facilityID, teamID string, visits bool, leaveStartedAt, retiredAt *time.Time) staff.Ref {
 	st := staff.Staff{LeaveStartedAt: leaveStartedAt, RetiredAt: retiredAt}
-	return staff.Ref{ID: id, FacilityID: facilityID, TeamID: teamID, Status: st.Status()}
+	return staff.Ref{ID: id, FacilityID: facilityID, TeamID: teamID, Status: st.Status(), NonVisiting: !visits}
 }

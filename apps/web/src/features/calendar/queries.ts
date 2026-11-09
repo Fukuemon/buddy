@@ -1,7 +1,8 @@
-import { queryOptions, useMutation, useQueryClient } from '@tanstack/react-query'
+import { type QueryClient, queryOptions, useMutation, useQueryClient } from '@tanstack/react-query'
 
-import { ApiError, type BuddyApi } from '#/api/client'
+import { ApiError, type BuddyApi } from '#/api/BuddyApi'
 import type {
+  CalendarCutover,
   CalendarExport,
   ExternalCalendar,
   FacilityId,
@@ -9,30 +10,27 @@ import type {
   ImportRange,
   Staff,
 } from '#/api/types'
+import { queryKeys } from '#/api/queryKeys'
 import { useBuddyApi } from '#/api/useBuddyApi'
 
-/** TanStack Query のキー。事業所ごとに分ける。 */
-export const calendarQueryKeys = {
-  calendars: (facilityId: FacilityId) => ['facilities', facilityId, 'calendars'] as const,
-  serviceAccount: (facilityId: FacilityId) =>
-    ['facilities', facilityId, 'calendar-service-account'] as const,
-  staff: (facilityId: FacilityId) => ['facilities', facilityId, 'staff', {}] as const,
-  patients: (facilityId: FacilityId) => ['facilities', facilityId, 'patients', {}] as const,
-  exportIssues: (facilityId: FacilityId) =>
-    ['facilities', facilityId, 'calendar-export-issues'] as const,
-}
-
-/** 事業所の、外していないカレンダーの一覧の query。 */
+/** 事業所の、外していないカレンダーを、最後の取り込みとともに読む query。外したカレンダーは含めない。 */
 export const externalCalendarListQueryOptions = (api: BuddyApi, facilityId: FacilityId) =>
   queryOptions({
-    queryKey: calendarQueryKeys.calendars(facilityId),
+    queryKey: queryKeys.calendars.list(facilityId),
     queryFn: () => api.calendars.list(facilityId),
+  })
+
+/** 事業所を読む query。予定の正本の切り替えの画面が、正本のモード（sourceMode）を読む。予定の画面と cache を共有する。 */
+export const facilityQueryOptions = (api: BuddyApi, facilityId: FacilityId) =>
+  queryOptions({
+    queryKey: queryKeys.facilityDetail(facilityId),
+    queryFn: () => api.facilities.get(facilityId),
   })
 
 /** サービスアカウントのメールアドレスの query。サービスアカウントが設定されていなければ null になる。 */
 export const serviceAccountQueryOptions = (api: BuddyApi, facilityId: FacilityId) =>
   queryOptions({
-    queryKey: calendarQueryKeys.serviceAccount(facilityId),
+    queryKey: queryKeys.calendars.serviceAccount(facilityId),
     queryFn: async () => {
       try {
         return await api.calendars.serviceAccount(facilityId)
@@ -43,10 +41,10 @@ export const serviceAccountQueryOptions = (api: BuddyApi, facilityId: FacilityId
     },
   })
 
-/** 事業所の確認が必要な書き出しの query。 */
+/** Google カレンダーで予定が変わっていたか消えていたか、書けなかった書き出しを、新しく変わった順に読む query。 */
 export const exportIssueListQueryOptions = (api: BuddyApi, facilityId: FacilityId) =>
   queryOptions({
-    queryKey: calendarQueryKeys.exportIssues(facilityId),
+    queryKey: queryKeys.calendars.exportIssues(facilityId),
     queryFn: () => api.calendars.exportIssues(facilityId),
   })
 
@@ -57,40 +55,29 @@ export const useRetryExport = () => {
   return useMutation({
     mutationFn: (exportId: CalendarExport['id']) => api.calendars.retryExport(facilityId, exportId),
     onSettled: () =>
-      queryClient.invalidateQueries({ queryKey: calendarQueryKeys.exportIssues(facilityId) }),
+      queryClient.invalidateQueries({ queryKey: queryKeys.calendars.exportIssues(facilityId) }),
   })
 }
 
-/** 確認が必要な書き出しの予定を、Google カレンダーの内容に合わせる mutation。成否によらず、一覧と予定を読み直す。 */
-export const useAcceptExport = () => {
-  const { api, facilityId } = useBuddyApi()
-  const queryClient = useQueryClient()
-  return useMutation({
-    mutationFn: (exportId: CalendarExport['id']) =>
-      api.calendars.acceptExport(facilityId, exportId),
-    onSettled: () =>
-      Promise.all([
-        queryClient.invalidateQueries({ queryKey: calendarQueryKeys.exportIssues(facilityId) }),
-        queryClient.invalidateQueries({ queryKey: ['facilities', facilityId, 'schedules'] }),
-      ]),
-  })
-}
-
-/** 事業所の全ての職員の query。 */
+/** 事業所の全ての職員を読む query。カレンダーを結び付ける職員の選択肢に使う。予定の画面の職員の一覧とキャッシュを共有する。 */
 export const staffListQueryOptions = (api: BuddyApi, facilityId: FacilityId) =>
   queryOptions({
-    queryKey: calendarQueryKeys.staff(facilityId),
+    queryKey: queryKeys.staff.list(facilityId),
     queryFn: () => api.staff.list(facilityId),
   })
 
 /** 事業所の全ての利用者の query。確認が必要な予定の利用者の選択肢に使う。 */
 export const patientListQueryOptions = (api: BuddyApi, facilityId: FacilityId) =>
   queryOptions({
-    queryKey: calendarQueryKeys.patients(facilityId),
+    queryKey: queryKeys.patients.list(facilityId),
     queryFn: () => api.patients.list(facilityId),
   })
 
-/** カレンダーを読めるかを確認する mutation。 */
+/**
+ * カレンダーを読めるかを確認する mutation。読めれば何も返さず、cache は変えない。
+ * 読めなければ code が calendar_unreadable、届かなければ calendar_unavailable、
+ * サービスアカウントの設定が無ければ calendar_not_configured の ApiError を error に持つ。
+ */
 export const useCheckCalendar = () => {
   const { api, facilityId } = useBuddyApi()
   return useMutation({
@@ -106,7 +93,7 @@ export const useLinkCalendar = () => {
     mutationFn: (input: { staffId: Staff['id']; calendarId: string }) =>
       api.calendars.link(facilityId, input),
     onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: calendarQueryKeys.calendars(facilityId) }),
+      queryClient.invalidateQueries({ queryKey: queryKeys.calendars.list(facilityId) }),
   })
 }
 
@@ -118,7 +105,7 @@ export const useUnlinkCalendar = () => {
     mutationFn: (externalCalendarId: ExternalCalendar['id']) =>
       api.calendars.unlink(facilityId, externalCalendarId),
     onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: calendarQueryKeys.calendars(facilityId) }),
+      queryClient.invalidateQueries({ queryKey: queryKeys.calendars.list(facilityId) }),
   })
 }
 
@@ -136,7 +123,7 @@ export const usePreviewImport = () => {
   })
 }
 
-/** 予定を取り込む mutation。成功したら、カレンダーの最後の取り込みと予定を読み直す。 */
+/** 予定を取り込む mutation。成功したら、カレンダーの最後の取り込みと予定と、切り替えの最後の取り込みを読み直す。 */
 export const useImportCalendar = () => {
   const { api, facilityId } = useBuddyApi()
   const queryClient = useQueryClient()
@@ -152,8 +139,74 @@ export const useImportCalendar = () => {
     }) => api.calendars.import(facilityId, calendarId, { ...range, decisions }),
     onSuccess: () =>
       Promise.all([
-        queryClient.invalidateQueries({ queryKey: calendarQueryKeys.calendars(facilityId) }),
-        queryClient.invalidateQueries({ queryKey: ['facilities', facilityId, 'schedules'] }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.calendars.list(facilityId) }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.schedules.all(facilityId) }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.calendars.cutover(facilityId) }),
       ]),
+  })
+}
+
+/** 予定の正本の切り替えの状況の query。open の切り替えが無ければ cutover は null である。 */
+export const cutoverStatusQueryOptions = (api: BuddyApi, facilityId: FacilityId) =>
+  queryOptions({
+    queryKey: queryKeys.calendars.cutover(facilityId),
+    queryFn: () => api.calendars.cutoverStatus(facilityId),
+  })
+
+/** 切り替えの操作の後に読み直す query。切り替えの状況、事業所の正本、カレンダーの最後の取り込み、予定の一覧の「切り替え中」の表示である。 */
+const invalidateCutover = (queryClient: QueryClient, facilityId: FacilityId) =>
+  Promise.all(
+    [
+      queryKeys.calendars.cutover(facilityId),
+      queryKeys.facilityDetail(facilityId),
+      queryKeys.calendars.list(facilityId),
+      queryKeys.schedules.all(facilityId),
+    ].map((queryKey) => queryClient.invalidateQueries({ queryKey })),
+  )
+
+/**
+ * 予定の正本の切り替えを始める mutation。始められたら、切り替えの状況と予定を読み直す。
+ * 始められなければ読み直さず、今の状態のまま始めるの失敗の文を出させる。
+ * 最後の同期が成功していない職員がいて始められないときだけ、カレンダーの一覧の最後の同期を出し直すため、切り替えの状況を読み直す。
+ */
+export const useStartCutover = () => {
+  const { api, facilityId } = useBuddyApi()
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: () => api.calendars.startCutover(facilityId),
+    onSuccess: () => invalidateCutover(queryClient, facilityId),
+    onError: (error) =>
+      error instanceof ApiError && error.code === 'cutover_sync_not_ready'
+        ? queryClient.invalidateQueries({ queryKey: queryKeys.calendars.cutover(facilityId) })
+        : undefined,
+  })
+}
+
+/**
+ * 切り替えを完了する mutation。完了の確認を満たさなければ、data に満たさないカレンダーと予定（unmet）を持つ。
+ * 完了したか満たさない一覧が返ったら、切り替えの状況、事業所の正本、予定を読み直す。
+ * 完了の操作が失敗したら読み直さず、今の状態のまま完了の失敗の文を出させる。
+ */
+export const useCompleteCutover = () => {
+  const { api, facilityId } = useBuddyApi()
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (cutoverId: CalendarCutover['id']) =>
+      api.calendars.completeCutover(facilityId, cutoverId),
+    onSuccess: () => invalidateCutover(queryClient, facilityId),
+  })
+}
+
+/**
+ * 切り替えをやめる mutation。やめられたら、切り替えの状況と予定を読み直す。
+ * やめられなければ読み直さず、確認のダイアログにやめるの失敗の文を出させる。
+ */
+export const useCancelCutover = () => {
+  const { api, facilityId } = useBuddyApi()
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (cutoverId: CalendarCutover['id']) =>
+      api.calendars.cancelCutover(facilityId, cutoverId),
+    onSuccess: () => invalidateCutover(queryClient, facilityId),
   })
 }

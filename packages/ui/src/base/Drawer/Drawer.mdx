@@ -9,24 +9,15 @@ import * as Stories from './Drawer.stories'
 
 画面の左端から重ねて出すモーダルのサイドバー。`<dialog>` の `showModal()` で開き、後ろの画面を操作できなくする。
 
-## 使う場面
+## 規則
 
-- 幅 768px 未満で、PC の幅では常に出している絞り込みやメニューを、ボタンで開閉する
+規則の本文は、デザインシステムの文書の次のセクションにある。
 
-## 使わない場面
-
-- 今の画面の上で、予定の詳細や入力を行う（`Modal` を使う）
-- PC の幅で常に出しておけるもの
-
-## Do
-
-- 開くボタンに、`aria-expanded` と、ドロワーの `id` を指す `aria-controls` を付ける
-- `title` に、開くボタンの文と同じ名前を渡す
-
-## Don't
-
-- ドロワーの中から別のダイアログを開く
-- 閉じるボタンを消す
+- 使う場面、使わない場面、キーボードの操作: コンポーネントの文書（`packages/ui/design/components.md`）の「コンポーネントの選び方」の `Drawer` の行
+- 使い方の規則と Do と Don't: コンポーネントの文書の「コンポーネントごとの規則」の「`Drawer`」
+- 当たる原則: DESIGN.md の「画面を作るときの原則」の次の ID
+  - `TARGET-SIZE`
+  - `FOCUS-ONE`
 
 ## 状態
 
@@ -37,13 +28,6 @@ import * as Stories from './Drawer.stories'
 ### 開くボタンから開く
 
 <Canvas of={Stories.WithOpener} />
-
-## キーボードの操作
-
-- 開くとタイトルにフォーカスが移る
-- Tab と Shift+Tab はドロワーの中だけを回る
-- Esc で閉じる要求（`onCloseRequest`）を出す。閉じるかは呼び出す側が決める
-- 閉じると、開いたボタンにフォーカスが戻る
 
 ## props
 

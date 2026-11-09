@@ -1,9 +1,19 @@
 import { Button, buttonClassName } from '@buddy/ui'
 
 import type { ReceiptReport } from '#/api/types'
+import { formatDateKey } from '#/components/dateFormat'
 
-import { RECEIPT_CATEGORIES } from '../lib/reportCells'
-import { ReceiptResultTable } from './ReceiptResultTable'
+import { warningReasonText } from '../lib/errorMessage'
+import { ReceiptResultRows } from './ReceiptResultRows'
+
+/**
+ * 照合に使わなかった予定の開始の日時を、予定に書かれた時差のまま `2024年4月5日（金） 10:00` の形にする。
+ * 開始の日時を読めない予定では、Google カレンダーの値が日時の形でないことがあるので、そのまま出す。
+ */
+const formatWarningStart = (start: string) =>
+  /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(start)
+    ? `${formatDateKey(start.slice(0, 10))} ${start.slice(11, 16)}`
+    : start
 
 export type ReceiptResultViewProps = {
   report: ReceiptReport
@@ -14,7 +24,7 @@ export type ReceiptResultViewProps = {
   checkAgainHref: string
 }
 
-/** 照合の結果。区分ごとの件数、CSV のダウンロード、照合に使わなかった予定、結果の表を並べる。 */
+/** 照合の結果。CSV のダウンロード、照合に使わなかった予定、表示する行の切り替え、印の意味、結果の表を並べる。 */
 export const ReceiptResultView = ({
   report,
   sourceLabel,
@@ -36,19 +46,6 @@ export const ReceiptResultView = ({
         </Button>
       </div>
     </div>
-    <dl className="flex flex-wrap gap-3" data-testid="receipt-summary">
-      {RECEIPT_CATEGORIES.map(({ category, label }) => (
-        <div
-          key={category}
-          className="flex min-w-36 flex-col gap-1 rounded-8 bg-surface p-4 ring-1 ring-border"
-        >
-          <dt className="text-body-dense text-text-secondary">{label}</dt>
-          <dd className="text-heading-md" data-testid={`receipt-summary-${category}`}>
-            {report.summary[category]} 件
-          </dd>
-        </div>
-      ))}
-    </dl>
     {report.warnings.length > 0 && (
       <div
         className="flex flex-col gap-2 rounded-8 bg-warning-surface p-4"
@@ -62,12 +59,12 @@ export const ReceiptResultView = ({
         <ul className="list-disc pl-6 text-body-dense">
           {report.warnings.map((w) => (
             <li key={`${w.calendar_id}-${w.event_id}`}>
-              {w.start.slice(0, 16).replace('T', ' ')}: {w.message}
+              {formatWarningStart(w.start)}: {warningReasonText(w)}
             </li>
           ))}
         </ul>
       </div>
     )}
-    <ReceiptResultTable rows={report.rows} />
+    <ReceiptResultRows rows={report.rows} />
   </section>
 )

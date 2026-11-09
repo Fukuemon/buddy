@@ -15,8 +15,8 @@ func (Generator) NewID() string { return ulid.Make().String() }
 
 const crockford = "0123456789ABCDEFGHJKMNPQRSTVWXYZ"
 
-// Valid は、s が 26 文字の正規の形の ULID かを返す。
-func Valid(s string) bool {
+// IsValid は、s が 26 文字の正規の形の ULID かを返す。
+func IsValid(s string) bool {
 	if len(s) != 26 || s[0] > '7' {
 		return false
 	}

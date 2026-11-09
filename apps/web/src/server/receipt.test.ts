@@ -2,8 +2,9 @@
 import { http, HttpResponse } from 'msw'
 import { describe, expect, it } from 'vite-plus/test'
 
-import { MAX_RECEIPT_UPLOAD_BYTES, parseReceiptForm } from '#/api/bff/receiptCall'
-import { fakeReceiptReport } from '#/api/fake/fakeReceiptApi'
+import { MAX_RECEIPT_UPLOAD_BYTES } from '#/api/BuddyApi'
+import { parseReceiptForm } from '#/api/bff/receiptCall'
+import { mockReceiptReport } from '#/mocks/receiptData'
 import { receiptHttp, server, TEST_RECEIPT_URL } from '#/test/server'
 
 import type { AuthDeps } from './auth'
@@ -51,9 +52,9 @@ describe('checkReceipt', () => {
     const auth: AuthDeps = {
       store,
       secret: SECRET,
-      secureCookie: false,
+      usesSecureCookie: false,
       oidc: {} as AuthDeps['oidc'],
-      fetchMe: async () => ({ ok: false, reason: 'failed' }),
+      getMe: async () => ({ ok: false, reason: 'failed' }),
     }
     return auth
   }
@@ -66,7 +67,7 @@ describe('checkReceipt', () => {
         const sent = await request.formData()
         return request.headers.get('Authorization') === 'Bearer access-1' &&
           sent.get('month') === '2024-04'
-          ? response(200).json(fakeReceiptReport)
+          ? response(200).json(mockReceiptReport)
           : response(400).json({ code: 'bad_request', message: 'token か月が違う' })
       }),
     )
@@ -75,11 +76,13 @@ describe('checkReceipt', () => {
       form({ visits: new Blob(['v']), month: '2024-04' }),
       { auth: await setup(), receiptApiUrl: TEST_RECEIPT_URL },
     )
-    expect(result).toEqual({ ok: true, report: fakeReceiptReport })
+    expect(result).toEqual({ ok: true, report: mockReceiptReport })
   })
 
-  it('行のエラーを rowErrors で返す', async () => {
-    const errors = [{ source: 'visits' as const, line: 2, message: 'x' }]
+  it('入力の CSV の誤りを csvErrors で返す', async () => {
+    const errors = [
+      { source: 'visits' as const, reason: 'empty_value' as const, line: 2, message: 'x' },
+    ]
     server.use(
       receiptHttp.post('/v1/checks', ({ response }) =>
         response(422).json({ code: 'invalid_csv', message: 'm', errors }),
@@ -90,7 +93,13 @@ describe('checkReceipt', () => {
       form({ visits: new Blob(['v']), schedules: new Blob(['s']) }),
       { auth: await setup(), receiptApiUrl: TEST_RECEIPT_URL },
     )
-    expect(failed).toEqual({ ok: false, status: 422, message: 'm', rowErrors: errors })
+    expect(failed).toEqual({
+      ok: false,
+      status: 422,
+      message: 'm',
+      csvErrors: errors,
+      code: 'invalid_csv',
+    })
   })
 
   it('セッションが無ければ 401 を返し、API を呼ばない', async () => {

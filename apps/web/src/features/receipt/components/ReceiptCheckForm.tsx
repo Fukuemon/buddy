@@ -1,7 +1,5 @@
-import { Button, SegmentedControl } from '@buddy/ui'
+import { Button, MonthPicker, SegmentedControl } from '@buddy/ui'
 import { useId, type FormEvent } from 'react'
-
-import type { ReceiptRowError } from '#/api/types'
 
 import { CsvFileField } from './CsvFileField'
 
@@ -23,17 +21,14 @@ export type ReceiptCheckFormProps = {
   onVisitsChange: (file: File | null) => void
   /** 入力がそろっていなければ false。送信のボタンを押せなくする。 */
   canSubmit: boolean
+  /** canSubmit が false の間に、送信のボタンの右に出す、押せるようにする条件の文。 */
+  submitHint?: string
   isSubmitting: boolean
   onSubmit: () => void
   /** 照合の失敗の文。 */
   errorMessage?: string
-  /** 入力の CSV の行ごとのエラー。 */
-  rowErrors?: readonly ReceiptRowError[]
-}
-
-const SOURCE_LABEL: Record<ReceiptRowError['source'], string> = {
-  schedules: '予定の CSV',
-  visits: '実績の CSV',
+  /** 失敗の文の下に並べる、入力の CSV の誤りの文。csvErrorLines で作る。 */
+  errorLines?: readonly string[]
 }
 
 /** 照合の入力。予定の取り方、対象の月か予定の CSV、実績の CSV を選んで送る。 */
@@ -45,12 +40,14 @@ export const ReceiptCheckForm = ({
   onSchedulesChange,
   onVisitsChange,
   canSubmit,
+  submitHint,
   isSubmitting,
   onSubmit,
   errorMessage,
-  rowErrors = [],
+  errorLines = [],
 }: ReceiptCheckFormProps) => {
-  const monthId = useId()
+  const hintId = useId()
+  const showsHint = !canSubmit && !isSubmitting && submitHint !== undefined
   const handleSubmit = (event: FormEvent) => {
     event.preventDefault()
     if (canSubmit && !isSubmitting) onSubmit()
@@ -62,7 +59,7 @@ export const ReceiptCheckForm = ({
       data-testid="receipt-check-form"
       noValidate
     >
-      <div className="flex flex-col gap-2">
+      <div className="flex flex-col gap-3">
         <span className="text-label">予定の取り方</span>
         <SegmentedControl
           label="予定の取り方"
@@ -73,22 +70,13 @@ export const ReceiptCheckForm = ({
         />
       </div>
       {source === 'calendar' ? (
-        <div className="flex flex-col gap-2">
-          <label className="text-label" htmlFor={monthId}>
-            対象の月
-          </label>
-          <input
-            id={monthId}
-            type="month"
-            value={month}
-            onChange={(event) => onMonthChange(event.target.value)}
-            className="min-h-11 w-56 rounded-8 bg-surface px-3 text-body ring-1 ring-border-field ring-inset focus-visible:focus-ring"
-            data-testid="receipt-month"
-          />
-          <span className="text-caption text-text-secondary">
-            その月の 1 日から月末までの予定を、職員の Google カレンダーから取ります。
-          </span>
-        </div>
+        <MonthPicker
+          label="対象の月"
+          hint="その月の 1 日から月末までの予定を、職員の Google カレンダーから取ります。"
+          value={month}
+          onChange={(event) => onMonthChange(event.target.value)}
+          data-testid="receipt-month"
+        />
       ) : (
         <CsvFileField
           label="予定の CSV"
@@ -98,27 +86,25 @@ export const ReceiptCheckForm = ({
       )}
       <CsvFileField
         label="実績の CSV"
-        description="電子カルテから書き出した CSV。UTF-8 か Shift_JIS で、10 MB まで。"
+        description="電子カルテから書き出した CSV。10 MB まで。"
         onChange={onVisitsChange}
         data-testid="receipt-visits-file"
       />
       {errorMessage !== undefined && (
         <div className="flex flex-col gap-2" role="alert" data-testid="receipt-check-error">
           <p className="text-body text-danger">{errorMessage}</p>
-          {rowErrors.length > 0 && (
+          {errorLines.length > 0 && (
             <ul className="list-disc pl-6 text-body-dense text-danger">
-              {rowErrors.map((e) => (
-                <li key={`${e.source}-${e.line}-${e.column ?? ''}`}>
-                  {SOURCE_LABEL[e.source]} の {e.line} 行目
-                  {e.column === undefined ? '' : `の「${e.column}」`}: {e.message}
-                </li>
+              {errorLines.map((line) => (
+                <li key={line}>{line}</li>
               ))}
             </ul>
           )}
         </div>
       )}
-      <div>
+      <div className="flex flex-wrap items-center gap-3">
         <Button
+          aria-describedby={showsHint ? hintId : undefined}
           type="submit"
           disabled={!canSubmit}
           isLoading={isSubmitting}
@@ -126,6 +112,15 @@ export const ReceiptCheckForm = ({
         >
           照合する
         </Button>
+        {showsHint && (
+          <span
+            className="text-caption text-text-secondary"
+            data-testid="receipt-check-submit-hint"
+            id={hintId}
+          >
+            {submitHint}
+          </span>
+        )}
       </div>
     </form>
   )

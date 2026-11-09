@@ -73,7 +73,7 @@ type Config struct {
 //   - HYDRA_ISSUER: Hydra のトークンの iss。内部の API が access token を検証する discovery の文書をここから読む
 //   - INTERNAL_API_AUDIENCE: 内部の API が access token の aud に求める値。デフォルトは broker
 //   - INTERNAL_API_CLIENTS: 内部の API を呼んでよいクライアントの ID をカンマで区切った値。デフォルトは schedule
-//   - TOKEN_HOOK_KEY: Hydra が oauth2.token_hook を呼ぶときにヘッダーに入れる値
+//   - TOKEN_HOOK_KEY: Hydra が oauth2.token_hook を呼ぶときにヘッダーに入れる値。前後の空白を除いて 32 バイト以上にする
 func Load(getenv func(string) string) (Config, error) {
 	return load(getenv, true)
 }
@@ -84,7 +84,10 @@ func LoadDB(getenv func(string) string) (DB, error) {
 	return c.DB, err
 }
 
-func load(getenv func(string) string, broker bool) (Config, error) {
+// minTokenHookKeyLen は、TOKEN_HOOK_KEY の最小のバイト数である。推測されない長さの乱数を求める。
+const minTokenHookKeyLen = 32
+
+func load(getenv func(string) string, includesBroker bool) (Config, error) {
 	get := func(key, def string) string {
 		if v := strings.TrimSpace(getenv(key)); v != "" {
 			return v
@@ -101,40 +104,44 @@ func load(getenv func(string) string, broker bool) (Config, error) {
 			Password: getenv("DB_PASSWORD"),
 			Name:     getenv("DB_NAME"),
 		},
-		HydraAdminURL:             strings.TrimSpace(getenv("HYDRA_ADMIN_URL")),
-		UpstreamIdPsFile:          strings.TrimSpace(getenv("UPSTREAM_IDPS_FILE")),
-		UpstreamClientSecretsFile: strings.TrimSpace(getenv("UPSTREAM_IDP_CLIENT_SECRETS_FILE")),
-		PublicURL:                 strings.TrimSuffix(strings.TrimSpace(getenv("PUBLIC_URL")), "/"),
-		UpstreamBrowserOrigin:     strings.TrimSpace(getenv("UPSTREAM_IDP_BROWSER_ORIGIN")),
-		ClientIPHeader:            strings.TrimSpace(getenv("CLIENT_IP_HEADER")),
-		HydraIssuer:               strings.TrimSpace(getenv("HYDRA_ISSUER")),
+		HydraAdminURL:             get("HYDRA_ADMIN_URL", ""),
+		UpstreamIdPsFile:          get("UPSTREAM_IDPS_FILE", ""),
+		UpstreamClientSecretsFile: get("UPSTREAM_IDP_CLIENT_SECRETS_FILE", ""),
+		PublicURL:                 strings.TrimSuffix(get("PUBLIC_URL", ""), "/"),
+		UpstreamBrowserOrigin:     get("UPSTREAM_IDP_BROWSER_ORIGIN", ""),
+		ClientIPHeader:            get("CLIENT_IP_HEADER", ""),
+		HydraIssuer:               get("HYDRA_ISSUER", ""),
 		InternalAPIAudience:       get("INTERNAL_API_AUDIENCE", "broker"),
-		TokenHookKey:              getenv("TOKEN_HOOK_KEY"),
+		TokenHookKey:              get("TOKEN_HOOK_KEY", ""),
 	}
 	c.AutoConsentClients = list(get("AUTO_CONSENT_CLIENTS", "web"))
 	c.InternalAPIClients = list(get("INTERNAL_API_CLIENTS", "schedule"))
 	required := []string{"DB_USER", "DB_PASSWORD", "DB_NAME"}
-	if broker {
+	if includesBroker {
 		required = append(required, "HYDRA_ADMIN_URL", "HYDRA_ISSUER", "UPSTREAM_IDPS_FILE", "UPSTREAM_IDP_CLIENT_SECRETS_FILE", "PUBLIC_URL", "TOKEN_HOOK_KEY")
 	}
-	var missing []string
+	var missingNames []string
 	for _, key := range required {
-		if strings.TrimSpace(getenv(key)) == "" {
-			missing = append(missing, key)
+		if get(key, "") == "" {
+			missingNames = append(missingNames, key)
 		}
 	}
-	if len(missing) > 0 {
-		return Config{}, fmt.Errorf("環境変数 %s が必要である", strings.Join(missing, "、"))
+	if len(missingNames) > 0 {
+		return Config{}, fmt.Errorf("環境変数 %s が必要である", strings.Join(missingNames, "、"))
 	}
 	for _, p := range []string{c.Port, c.InternalPort, c.DB.Port} {
 		if n, err := strconv.Atoi(p); err != nil || n < 1 || n > 65535 {
 			return Config{}, fmt.Errorf("ポート %q は 1 から 65535 の数にする", p)
 		}
 	}
-	if broker && c.Port == c.InternalPort {
-		return Config{}, fmt.Errorf("INTERNAL_PORT %q は PORT と違う値にする", c.InternalPort)
-	}
-	if broker {
+	if includesBroker {
+		if c.Port == c.InternalPort {
+			return Config{}, fmt.Errorf("INTERNAL_PORT %q は PORT と違う値にする", c.InternalPort)
+		}
+		// 値はシークレットなので、エラーの文に入れない
+		if len(c.TokenHookKey) < minTokenHookKeyLen {
+			return Config{}, fmt.Errorf("TOKEN_HOOK_KEY は %d バイト以上にする", minTokenHookKeyLen)
+		}
 		for _, v := range []struct{ key, value string }{
 			{"HYDRA_ADMIN_URL", c.HydraAdminURL},
 			{"HYDRA_ISSUER", c.HydraIssuer},

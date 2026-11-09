@@ -40,27 +40,6 @@ func TestParseTitle(t *testing.T) {
 	}
 }
 
-func TestNormalizeService(t *testing.T) {
-	tests := []struct{ in, want string }{
-		{"訪看I2", "訪看I２"},
-		{"訪看Ⅰ2", "訪看I２"},
-		{"訪看１2", "訪看I２"},
-		{"訪看12", "訪看I２"},
-		{"訪看I5･2超", "訪看I５・２超"},
-		{"訪看I5・2超", "訪看I５・２超"},
-		{"訪看　I2", "訪看 I２"},
-		{"基本療養費(1)", "基本療養費(I)"},
-		{"難病等複数回訪問加算(2回)", "難病等複数回訪問加算(２回)"},
-		{"医", "医"},
-		{"訪看I２", "訪看I２"},
-	}
-	for _, tt := range tests {
-		if got := NormalizeService(tt.in); got != tt.want {
-			t.Errorf("NormalizeService(%q) = %q, want %q", tt.in, got, tt.want)
-		}
-	}
-}
-
 func TestNormalizeClient(t *testing.T) {
 	tests := []struct{ in, want string }{
 		{"利用者A", "利用者A"},

@@ -15,7 +15,7 @@ export type ReviewChoice = { action: ImportAction; patientId?: string }
 export type ReviewChoices = Record<ImportReviewItem['external_event_id'], ReviewChoice>
 
 /** 取り込み方を選び終えたかを返す。patient は利用者も選んだときに選び終えたとする。 */
-export const isChoiceComplete = (choice: ReviewChoice | undefined): choice is ReviewChoice =>
+const isChoiceComplete = (choice: ReviewChoice | undefined): choice is ReviewChoice =>
   choice !== undefined && (choice.action !== 'patient' || choice.patientId !== undefined)
 
 /** 確認が必要な予定のうち、取り込み方を選び終えていない予定の数を返す。 */
@@ -46,22 +46,27 @@ export const toDecisions = (
     ]
   })
 
-/** 確定して取り込むを押せるかを返す。取り込む予定か確認が必要な予定があり、全てを選び終えたときに押せる。 */
+/**
+ * 確定して取り込むを押せるかを返す。取り込む予定か、確認が必要な予定か、切り替えの取り込みで上書きする予定があり、全てを選び終えたときに押せる。
+ */
 export const canSubmitImport = (preview: ImportPreview, choices: ReviewChoices) =>
-  (preview.counts.import > 0 || preview.needs_review.length > 0) &&
+  (preview.counts.import > 0 || preview.needs_review.length > 0 || preview.counts.overwrite > 0) &&
   countRemaining(preview.needs_review, choices) === 0
 
 /**
- * プレビューの結果が、全て前の取り込みで取り込み済みかを返す。休職の職員の新しい予定があれば、取り込み済みでない予定が
+ * プレビューの結果が、全て前の取り込みで取り込み済みかを返す。休職の職員か訪問しない職員の新しい予定があれば、取り込み済みでない予定が
  * 残るので偽にする。
  */
 export const isAllImported = (preview: ImportPreview) =>
   preview.counts.import === 0 &&
   preview.needs_review.length === 0 &&
+  preview.counts.overwrite === 0 &&
   preview.counts.already_imported > 0 &&
-  !preview.skipped.some((item) => item.reason === 'staff_on_leave')
+  !preview.skipped.some(
+    (item) => item.reason === 'staff_on_leave' || item.reason === 'staff_non_visiting',
+  )
 
-/** 取り込まない理由の文言。並びは、理由ごとの件数を出す順である。 */
+/** 取り込まない理由の文言。取り込まない予定の表の理由の列に出す。 */
 export const SKIP_REASON_LABEL: Record<ImportSkippedItem['reason'], string> = {
   all_day: '終日の予定',
   multi_day: '日をまたぐ予定',
@@ -70,103 +75,45 @@ export const SKIP_REASON_LABEL: Record<ImportSkippedItem['reason'], string> = {
   unreadable_title: 'タイトルを読めない予定',
   service_not_found: 'サービス内容を引けない予定',
   staff_on_leave: '休職の職員の新しい予定',
+  staff_non_visiting: '訪問しない職員の新しい予定',
 }
 
-const SKIP_REASON_SHORT: Record<ImportSkippedItem['reason'], string> = {
-  all_day: '終日',
-  multi_day: '日をまたぐ',
-  unreadable_time: '時刻を読めない',
-  zero_length: '長さの無い',
-  unreadable_title: 'タイトルを読めない',
-  service_not_found: 'サービス内容を引けない',
-  staff_on_leave: '休職の職員の新しい',
-}
-
-const SKIP_REASONS = Object.keys(SKIP_REASON_LABEL) as ImportSkippedItem['reason'][]
-
-/** 取り込まない予定を理由ごとに数え、件数のある理由だけを決まった順に返す。 */
-export const countSkippedByReason = (skipped: readonly ImportSkippedItem[]) =>
-  SKIP_REASONS.map((reason) => ({
-    reason,
-    count: skipped.filter((item) => item.reason === reason).length,
-  })).filter(({ count }) => count > 0)
-
-/** プレビューの件数の箱 1 つ。key は testid の末尾に使う。 */
+/** 件数の箱 1 つ。key は testid の末尾に使う。note は件数の内訳で、内訳の無い箱は空にする。 */
 export type CountBox = { key: string; label: string; count: number; note: string }
 
-/** プレビューの結果の 5 つの件数の箱を返す。件数が 0 の箱も返す。 */
+/** 件数が 0 の箱を除く。0 件の箱は、職員がすることも知ることも無いためである。 */
+export const nonZeroBoxes = (boxes: readonly CountBox[]) => boxes.filter((box) => box.count > 0)
+
+/**
+ * プレビューの結果の件数の箱を返す。件数が 0 の箱は返さない。
+ * 取り込まない予定の件数は、取り込まない予定の表の見出しに出すので、箱にしない。
+ * 補足の文は、画面のほかの場所に無い内訳だけにする。確認が必要と取り込み済みの意味は、見出しの ? のヘルプに出す。
+ */
 export const previewCountBoxes = ({ counts }: ImportPreview): CountBox[] => {
   const expanded =
-    counts.expanded_occurrences > 0 ? `。回ごとにした ${counts.expanded_occurrences} 件を含む` : ''
-  return [
+    counts.expanded_occurrences > 0
+      ? `。繰り返しの予定を 1 回ずつに分けた ${counts.expanded_occurrences} 件を含む`
+      : ''
+  return nonZeroBoxes([
     {
       key: 'import',
       label: '取り込む',
       count: counts.import,
-      note:
-        counts.import === 0
-          ? '取り込む予定は無い'
-          : `訪問 ${counts.import_visit} 件、通常 ${counts.import_normal} 件${expanded}`,
+      note: `訪問 ${counts.import_visit} 件、通常 ${counts.import_normal} 件${expanded}`,
     },
     {
       key: 'recurring',
       label: '繰り返し',
       count: counts.recurring,
-      note:
-        counts.recurring === 0
-          ? '取り込む繰り返しは無い'
-          : `繰り返しのまま ${counts.recurring_as_rule} 件、回ごとにする ${counts.recurring_expanded} 件`,
+      note: `繰り返しとして ${counts.recurring_as_rule} 件、1 回ずつに分ける ${counts.recurring_expanded} 件`,
     },
+    { key: 'needs_review', label: '確認が必要', count: counts.needs_review, note: '' },
     {
-      key: 'needs_review',
-      label: '確認が必要',
-      count: counts.needs_review,
-      note: '利用者を選んでから取り込む',
+      key: 'overwrite',
+      label: '上書き',
+      count: counts.overwrite,
+      note: '取り込んだ後に Google で変わったか消えた予定を、Google の今の内容で取り込み直す',
     },
-    {
-      key: 'skipped',
-      label: '取り込まない',
-      count: counts.skipped,
-      note: '理由ごとの件数は下にある',
-    },
-    {
-      key: 'already_imported',
-      label: '取り込み済み',
-      count: counts.already_imported,
-      note: '前の取り込みで取り込んだ予定。もう一度は取り込まない',
-    },
-  ]
-}
-
-const DECISION_PHRASE: Record<ImportAction, [string, string]> = {
-  patient: ['は利用者を選び', 'は利用者を選んだ'],
-  normal: ['は通常の予定にし', 'は通常の予定にした'],
-  skip: ['は取り込まず', 'は取り込まなかった'],
-}
-
-/** 取り込んだ件数の補足の文。繰り返しの予定の数と、確認した予定の取り込み方の内訳を入れる。 */
-export const importedNote = (preview: ImportPreview, decisions: readonly ImportDecision[]) => {
-  const parts: string[] = []
-  if (preview.counts.recurring > 0)
-    parts.push(`繰り返しの予定 ${preview.counts.recurring} 件を含む`)
-  const used = (['patient', 'normal', 'skip'] as const)
-    .map((action) => ({ action, count: decisions.filter((d) => d.action === action).length }))
-    .filter(({ count }) => count > 0)
-  if (used.length > 0) {
-    const phrases = used.map(
-      ({ action, count }, index) =>
-        `${count} 件${DECISION_PHRASE[action][index === used.length - 1 ? 1 : 0]}`,
-    )
-    parts.push(`確認した ${decisions.length} 件のうち ${phrases.join('、')}`)
-  }
-  return parts.join('。')
-}
-
-/** 取り込まなかった件数の補足の文。件数のある理由を「、」でつなぐ。 */
-export const notImportedNote = (preview: ImportPreview, decisions: readonly ImportDecision[]) => {
-  const reasons = countSkippedByReason(preview.skipped).map(
-    ({ reason }) => SKIP_REASON_SHORT[reason],
-  )
-  if (decisions.some((d) => d.action === 'skip')) reasons.push('取り込まないを選んだ')
-  return reasons.length === 0 ? '' : `${reasons.join('、')}予定`
+    { key: 'already_imported', label: '取り込み済み', count: counts.already_imported, note: '' },
+  ])
 }

@@ -27,7 +27,12 @@ type Config struct {
 	User     string
 	Password string
 	Name     string
+	// MaxConns は、Open が作る接続のプールの接続の数の上限である。0 なら defaultMaxConns にする。
+	MaxConns int32
 }
+
+// defaultMaxConns は、MaxConns を決めないときの接続のプールの接続の数の上限である。
+const defaultMaxConns = 25
 
 // URL は、scheme の接続の URL を返す。値は URL の書式で符号にするので、記号を含むパスワードも渡せる。
 // pgx は "postgres"、golang-migrate の pgx/v5 のドライバーは "pgx5" を使う。
@@ -47,7 +52,10 @@ func Open(ctx context.Context, c Config) (*pgxpool.Pool, error) {
 	if err != nil {
 		return nil, fmt.Errorf("parse postgres config: %w", err)
 	}
-	cfg.MaxConns = 25
+	cfg.MaxConns = defaultMaxConns
+	if c.MaxConns > 0 {
+		cfg.MaxConns = c.MaxConns
+	}
 	cfg.MaxConnLifetime = 5 * time.Minute
 	cfg.AfterConnect = func(_ context.Context, conn *pgx.Conn) error {
 		scanTimestamptzInUTC(conn)
@@ -234,4 +242,13 @@ func parseTimeOfDay(t pgtype.Time) (civil.Time, error) {
 	}
 	m := t.Microseconds / microsecondsPerMinute
 	return civil.Time{Hour: int(m / 60), Minute: int(m % 60)}, nil
+}
+
+func slotTimes(start, end pgtype.Time) (civil.Time, civil.Time, error) {
+	s, err := parseTimeOfDay(start)
+	if err != nil {
+		return civil.Time{}, civil.Time{}, err
+	}
+	e, err := parseTimeOfDay(end)
+	return s, e, err
 }

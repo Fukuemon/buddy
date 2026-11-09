@@ -1,6 +1,7 @@
 import { Outlet, createFileRoute, stripSearchParams } from '@tanstack/react-router'
 
-import { SiteLayoutContainer } from '#/components/site/SiteLayoutContainer'
+import { requirePermission } from '#/api/permissions'
+import { CalendarReviewBadgeContainer } from '#/features/calendar/components/CalendarReviewBadgeContainer'
 import { SchedulePageLayout } from '#/features/schedule/components/SchedulePageLayout'
 import {
   scheduleSearchDefaults,
@@ -8,19 +9,20 @@ import {
 } from '#/features/schedule/schema/scheduleSearch'
 
 export const Route = createFileRoute('/schedule')({
+  beforeLoad: requirePermission('none'),
   validateSearch: scheduleSearchSchema,
   search: { middlewares: [stripSearchParams(scheduleSearchDefaults)] },
-  // フェイクの API は予定をブラウザのメモリに持つため、サーバーで描画しない。bff ではサーバーで描画できるので見直す。
+  // 表示する日のデフォルトを職員のデバイスの日付で決め、FullCalendar がデバイスの時間帯で描くため、サーバーで描画しない
   ssr: false,
   head: () => ({ meta: [{ title: '予定 | buddy' }] }),
+  staticData: { ownsSiteLayout: true },
   component: SchedulePage,
 })
 
 function SchedulePage() {
   return (
-    <SiteLayoutContainer current="/schedule">
-      <SchedulePageLayout />
+    <SchedulePageLayout reviewBadge={<CalendarReviewBadgeContainer />}>
       <Outlet />
-    </SiteLayoutContainer>
+    </SchedulePageLayout>
   )
 }

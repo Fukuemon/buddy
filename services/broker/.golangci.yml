@@ -3,13 +3,61 @@ linters:
   default: standard
   enable:
     - bodyclose
+    - depguard
     - errorlint
     - revive
   settings:
+    # 依存の向きは context/codebase.md の Dependency Rules にある。
+    depguard:
+      rules:
+        leaf:
+          files:
+            - "**/internal/staff/*.go"
+            - "**/internal/hydra/*.go"
+            - "**/internal/upstream/*.go"
+            - "**/internal/config/*.go"
+            - "!$test"
+          deny:
+            - pkg: github.com/Fukuemon/buddy/services/broker/internal/
+              desc: staff、hydra、upstream、config は、ブローカーのほかの内部のパッケージを import しない
+        postgres:
+          files:
+            - "**/internal/postgres/*.go"
+          deny:
+            - pkg: github.com/Fukuemon/buddy/services/broker/internal/login
+              desc: DB のアダプタは HTTP のハンドラに依存しない。型とエラーは internal/staff から読む
+            - pkg: github.com/Fukuemon/buddy/services/broker/internal/internalapi
+              desc: DB のアダプタは HTTP のハンドラに依存しない。型とエラーは internal/staff から読む
+        handlers:
+          files:
+            - "**/internal/login/*.go"
+            - "**/internal/internalapi/*.go"
+          deny:
+            - pkg: github.com/Fukuemon/buddy/services/broker/internal/postgres
+              desc: ハンドラは DB のアダプタを import せず、インターフェースで受ける
+        login:
+          files:
+            - "**/internal/login/*.go"
+          deny:
+            - pkg: github.com/Fukuemon/buddy/services/broker/internal/internalapi
+              desc: ログインの画面と内部の API は互いを import しない
+        internalapi:
+          files:
+            - "**/internal/internalapi/*.go"
+          deny:
+            - pkg: github.com/Fukuemon/buddy/services/broker/internal/login
+              desc: ログインの画面と内部の API は互いを import しない
     revive:
       rules:
         - name: exported
         - name: package-comments
+        - name: var-naming
+  exclusions:
+    rules:
+      # IdP は Identity Provider の略の書き方である。revive は Id を ID の略語と読む。
+      # 出典: https://csrc.nist.gov/glossary/term/identity_provider
+      - linters: [revive]
+        text: "var-naming: .*IDP"
 formatters:
   enable:
     - gofmt

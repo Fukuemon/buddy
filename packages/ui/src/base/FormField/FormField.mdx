@@ -1,0 +1,80 @@
+import { ArgTypes, Canvas, Meta } from '@storybook/addon-docs/blocks'
+
+import { FormField } from './FormField'
+import * as Stories from './FormField.stories'
+
+<Meta of={Stories} />
+
+# FormField
+
+入力の欄の見出し、欄、補足の文、誤りの文を縦に並べる枠。見出しと補足と誤りの文を、欄に結び付ける。
+
+## 規則
+
+規則の本文は、デザインシステムの文書の次のセクションにある。
+
+- 使う場面、使わない場面、キーボードの操作: コンポーネントの文書（`packages/ui/design/components.md`）の「コンポーネントの選び方」の `FormField` の行
+- 使い方の規則と Do と Don't: コンポーネントの文書の「コンポーネントごとの規則」の「`FormField`、`NumberPicker`、`TextareaField`」
+- 欄の枠と面の状態: コンポーネントの文書の「入力の欄の状態」
+- 当たる原則: DESIGN.md の「画面を作るときの原則」の次の ID
+  - `SPACING-SCALE`
+  - `STATE-NOT-COLOR-ONLY`
+  - `FOCUS-ONE`
+
+## 状態
+
+### デフォルト
+
+<Canvas of={Stories.Default} />
+
+### hover
+
+枠を黒にする。
+
+<Canvas of={Stories.Hover} />
+
+### フォーカス
+
+<Canvas of={Stories.Focus} />
+
+### 補足の文
+
+<Canvas of={Stories.WithHint} />
+
+### エラー
+
+<Canvas of={Stories.Invalid} />
+
+### エラーで hover
+
+誤りの枠を濃い赤にする。
+
+<Canvas of={Stories.InvalidHover} />
+
+### エラーでフォーカス
+
+誤りのない欄と同じ `focus-ring` を出す。
+
+<Canvas of={Stories.InvalidFocus} />
+
+### 補足の文と誤りの文
+
+<Canvas of={Stories.WithHintAndError} />
+
+### 無効
+
+<Canvas of={Stories.Disabled} />
+
+### 無効で hover
+
+枠の色を変えない。
+
+<Canvas of={Stories.DisabledHover} />
+
+### ラジオボタンの組
+
+<Canvas of={Stories.Group} />
+
+## props
+
+<ArgTypes of={FormField} />

@@ -1,13 +1,26 @@
+import { formatDate, formatTimeRange, type TimeRangeDay } from '#/components/dateFormat'
+
 const pad = (value: number) => String(value).padStart(2, '0')
 
 /** 日付を、デバイスの時間帯で `YYYY-MM-DD` にする。 */
 export const toDateKey = (date: Date) =>
   `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`
 
+/** 日時を、事業所の時間帯（Asia/Tokyo）の `YYYY-MM-DD` にする。予定の API の「今日」と回の日付は、この時間帯で決まる。 */
+export const toTokyoDateKey = (date: Date) =>
+  new Date(date.getTime() + 9 * 60 * 60 * 1000).toISOString().slice(0, 10)
+
 /** `YYYY-MM-DD` を、デバイスの時間帯の 0 時の Date にする。 */
-export const fromDateKey = (dateKey: string) => {
+export const parseDateKey = (dateKey: string) => {
   const [year, month, day] = dateKey.split('-').map(Number) as [number, number, number]
   return new Date(year, month - 1, day)
+}
+
+/** `YYYY-MM-DD` に日数を足した `YYYY-MM-DD` を返す。 */
+export const addDaysToDateKey = (dateKey: string, days: number) => {
+  const date = parseDateKey(dateKey)
+  date.setDate(date.getDate() + days)
+  return toDateKey(date)
 }
 
 /** 日時を、デバイスの時間帯で `HH:mm` にする。 */
@@ -24,7 +37,7 @@ export const toOffsetDateTime = (date: Date) => {
 /** `YYYY-MM-DD` と `HH:mm` を、デバイスの時間帯のオフセットつきの ISO 8601 にする。 */
 export const combineDateTime = (dateKey: string, timeKey: string) => {
   const [hours, minutes] = timeKey.split(':').map(Number) as [number, number]
-  const date = fromDateKey(dateKey)
+  const date = parseDateKey(dateKey)
   date.setHours(hours, minutes, 0, 0)
   return toOffsetDateTime(date)
 }
@@ -46,8 +59,29 @@ export const diffMinutes = (startTimeKey: string, endTimeKey: string) => {
 }
 
 /** 曜日の 1 文字。`Date.getDay()` の値で引く。 */
-const WEEKDAYS = ['日', '月', '火', '水', '木', '金', '土'] as const
+export const WEEKDAYS = ['日', '月', '火', '水', '木', '金', '土'] as const
 
-/** 開始と終了の日時を、デバイスの時間帯で `2026年10月20日（火） 09:00〜09:29` の形にする。 */
+/**
+ * 開始と終了の日時を、デバイスの時間帯で `2026年10月20日（火） 09:00〜09:29` の形にする。
+ * 終了が開始の翌日なら `2026年10月20日（火） 22:00〜翌 01:00` の形にする。
+ */
 export const formatDateTimeRange = (start: Date, end: Date) =>
-  `${start.getFullYear()}年${start.getMonth() + 1}月${start.getDate()}日（${WEEKDAYS[start.getDay()]}） ${toTimeKey(start)}〜${toTimeKey(end)}`
+  `${formatDate(start)} ${formatScheduleTimeRange(start, end)}`
+
+/** 終了が開始の翌日なら `nextDay`、同じ日なら `sameDay` を返す。 */
+const timeRangeDayOf = (start: Date, end: Date): TimeRangeDay =>
+  toDateKey(start) === toDateKey(end) ? 'sameDay' : 'nextDay'
+
+/**
+ * 開始と終了の日時の時刻を、デバイスの時間帯で `09:00〜09:29` の形にする。
+ * 終了が開始の翌日なら `22:00〜翌 01:00`、startsBeforeDay が true なら `前日 22:00〜01:00` にする。
+ * startsBeforeDay は、表示する日より前に始まる予定を、その日の下に置くときに渡す。
+ */
+export const formatScheduleTimeRange = (start: Date, end: Date, startsBeforeDay = false) =>
+  formatTimeRange(
+    toTimeKey(start),
+    toTimeKey(end),
+    startsBeforeDay ? 'previousDay' : timeRangeDayOf(start, end),
+  )
+
+export { formatDateTime } from '#/components/dateFormat'

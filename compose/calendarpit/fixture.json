@@ -31,6 +31,18 @@
       "userId": "schedule",
       "summary": "misaki.sato@example.com",
       "timeZone": "Asia/Tokyo"
+    },
+    {
+      "id": "aoi.okada@example.com",
+      "userId": "schedule",
+      "summary": "aoi.okada@example.com",
+      "timeZone": "Asia/Tokyo"
+    },
+    {
+      "id": "ren.ishida@example.com",
+      "userId": "schedule",
+      "summary": "ren.ishida@example.com",
+      "timeZone": "Asia/Tokyo"
     }
   ],
   "events": [
@@ -130,7 +142,7 @@
         "timeZone": "Asia/Tokyo"
       },
       "recurrence": [
-        "RRULE:FREQ=WEEKLY;INTERVAL=2;BYDAY=FR"
+        "RRULE:FREQ=DAILY;INTERVAL=14"
       ]
     },
     {
@@ -163,13 +175,13 @@
       "calendarId": "kenta.mori@example.com",
       "id": "night1113",
       "status": "confirmed",
-      "summary": "夜勤",
+      "summary": "合宿研修",
       "start": {
         "dateTime": "2026-11-13T17:00:00+09:00",
         "timeZone": "Asia/Tokyo"
       },
       "end": {
-        "dateTime": "2026-11-14T09:00:00+09:00",
+        "dateTime": "2026-11-15T09:00:00+09:00",
         "timeZone": "Asia/Tokyo"
       }
     },
