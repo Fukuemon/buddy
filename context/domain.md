@@ -38,6 +38,7 @@ status: stable
 | 繰り返しの予定 | 規則に従って繰り返す予定 | Go `schedule.RecurringSchedule`、テーブル `recurring_schedules` |
 | 回の置き換え | 繰り返しの 1 回を、単発の予定に置き換えること | `ChangeOccurrence`、パス `.../occurrences` |
 | キャンセル | 予定の取り消し。理由を持つ | `schedule.Cancel`、テーブル `schedule_cancels` |
+| 削除 | 誤って入れた予定を消すこと。キャンセルと別の操作で、理由を持たず、監査の記録だけを残す | 未定（実装で決める） |
 | 時間外の勤務 | 17 時以降に始まる予定 | `Slot.IsOverTimeWork`、カラム `is_over_time_work`（開始の時刻から DB が生成する） |
 | 訪問の情報 | 訪問の予定に付く、利用者、主訪問者、同行者、サービスコード、訪問の区分 | Go `visit.Info`、テーブル `visit_infos`、API `VisitInfo`、web `VisitDetail` |
 | 主訪問者 | 訪問する職員で、役職を問わない業務の役割。予定の管理では訪問の情報の担当の職員、照合では実績の CSV の「主訪問者」のカラム | `Info.AssignedStaffID`、照合の `Key.Staff` |
@@ -102,7 +103,7 @@ status: stable
 
 ## Concepts
 
-- [予定](domain/schedule.md) — 単発の予定の種類、キャンセル、変更
+- [予定](domain/schedule.md) — 単発の予定の種類、キャンセル、削除、変更
 - [繰り返しの予定](domain/recurring-schedule.md) — 規則、回、除外、回の置き換え
 - [訪問の情報](domain/visit.md) — 訪問の予定に付く利用者と職員とサービス
 - [利用者](domain/patient.md) — 利用者の利用の終了と再開。終了の利用者を予定の候補と職員の退職の確認から外す規則
