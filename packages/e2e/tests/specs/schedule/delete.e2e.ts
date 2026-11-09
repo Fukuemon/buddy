@@ -3,6 +3,7 @@ import { expect, test, type APIRequestContext, type Page } from '@playwright/tes
 import { LOGIN_STAFF } from '../../fixtures/env'
 import { createNormalSchedule, createWeeklyNormalSchedule } from '../../fixtures/schedule'
 import { issueManagerToken, STAFF_FORM } from '../../fixtures/staff'
+import { openDetail } from '../../screens/scheduleDetail'
 
 /** 今日の Asia/Tokyo の日付から days 日後の日付（YYYY-MM-DD）。 */
 const daysFromToday = (days: number) =>
@@ -43,12 +44,6 @@ const createOwnSchedule = async (
   })
   expect(res.status()).toBe(201)
   return ((await res.json()) as { id: string }).id
-}
-
-// 同じ時刻のほかの spec の予定と重なり、カレンダーの予定を押せないことがあるので、詳細の URL を開く
-const openDetail = async (page: Page, scheduleId: string, date: string) => {
-  await page.goto(`/schedule/${scheduleId}?view=day&date=${date}`)
-  await expect(page.getByTestId('schedule-detail-modal')).toBeVisible()
 }
 
 test.describe('予定の削除', () => {
