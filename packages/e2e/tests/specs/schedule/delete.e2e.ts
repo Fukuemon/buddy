@@ -27,9 +27,16 @@ const openDay = async (page: Page, date: string, { cancelled = false } = {}) => 
   await expect(page.getByTestId(`day-grid-staff-${LOGIN_STAFF.id}`)).toBeVisible()
 }
 
-/** 青木 陽菜の、date の通常の予定 title を作り、予定の ID を返す。 */
-const createOwnSchedule = async (request: APIRequestContext, title: string, date: string) => {
-  const token = await issueAccessToken(request, LOGIN_EMAIL)
+/**
+ * 青木 陽菜の、date の通常の予定 title を、青木 陽菜のトークン token で作り、予定の ID を返す。
+ * トークンはテストごとに 1 回だけ取る。ブローカーはログインの試行の回数を制限し、増やすと後の spec のログインが拒まれる。
+ */
+const createOwnSchedule = async (
+  request: APIRequestContext,
+  token: string,
+  title: string,
+  date: string,
+) => {
   const res = await createNormalSchedule(request, token, STAFF_FORM.facilityId, {
     staffId: LOGIN_STAFF.id,
     title,
@@ -53,8 +60,9 @@ test.describe('予定の削除', () => {
     const title = `E2E の削除する予定 ${Date.now()}`
     const kept = `E2E の削除しない予定 ${Date.now()}`
     const date = daysFromToday(1)
-    const id = await createOwnSchedule(request, title, date)
-    await createOwnSchedule(request, kept, date)
+    const token = await issueAccessToken(request, LOGIN_EMAIL)
+    const id = await createOwnSchedule(request, token, title, date)
+    await createOwnSchedule(request, token, kept, date)
 
     await openDetail(page, id, date)
     await page.getByTestId('schedule-detail-delete-schedule').click()
@@ -76,7 +84,8 @@ test.describe('予定の削除', () => {
   }) => {
     const title = `E2E の残す予定 ${Date.now()}`
     const date = daysFromToday(1)
-    const id = await createOwnSchedule(request, title, date)
+    const token = await issueAccessToken(request, LOGIN_EMAIL)
+    const id = await createOwnSchedule(request, token, title, date)
 
     await openDetail(page, id, date)
     await page.getByTestId('schedule-detail-delete-schedule').click()
@@ -93,7 +102,8 @@ test.describe('予定の削除', () => {
     request,
   }) => {
     const date = daysFromToday(-1)
-    const id = await createOwnSchedule(request, `E2E の昨日の予定 ${Date.now()}`, date)
+    const token = await issueAccessToken(request, LOGIN_EMAIL)
+    const id = await createOwnSchedule(request, token, `E2E の昨日の予定 ${Date.now()}`, date)
 
     await openDetail(page, id, date)
 
@@ -118,7 +128,7 @@ test.describe('予定の削除', () => {
     await openDay(page, fromNextMonday(7))
     await ownEvent(page, title).click()
     // 同じ時刻に置くとカレンダーで回を押せないので、詳細を開いた後に、同じ日に残す予定を作る
-    await createOwnSchedule(request, kept, fromNextMonday(7))
+    await createOwnSchedule(request, token, kept, fromNextMonday(7))
     await page.getByTestId('schedule-detail-delete-schedule').click()
     await expect(page.getByTestId('schedule-delete-description')).toContainText(
       '繰り返しの予定のうち、この日の回だけを消します。ほかの回は残ります。',
