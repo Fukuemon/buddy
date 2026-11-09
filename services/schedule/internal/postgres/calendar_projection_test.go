@@ -368,6 +368,56 @@ func TestCalendarSyncClaimsByMode(t *testing.T) {
 	}
 }
 
+// TestCalendarProjectionRepositoryTimeUnreadable は、日時を読めない予定の行を、読めた方の日時だけで書いて TimeUnreadable のまま読み、
+// 親を取り消すと例外の回の印を外すことと、日時を読めない予定でない確定の行は、開始が無いと書けないことを確認する（#672）。
+func TestCalendarProjectionRepositoryTimeUnreadable(t *testing.T) {
+	ctx := txContext(t)
+	r := NewCalendarProjectionRepository(testDB)
+	base := scheduleview.Projection{
+		ExternalCalendarID: seedOkadaCalendar, FacilityID: seedGoogleFacility, StaffID: seedOkada, Status: scheduleview.ProjectionConfirmed,
+		Title: "会議", TimeUnreadable: true,
+	}
+	endOnly := base
+	endOnly.EventID, endOnly.ETag = "endonly", `"1"`
+	endOnly.End.At, endOnly.LastEndDate = timeAt(t, "2099-11-04T11:00:00+09:00"), civilDate(2099, 11, 4)
+	neither := base
+	neither.EventID, neither.ETag = "neither", `"2"`
+	occurrence := base
+	occurrence.EventID, occurrence.ETag, occurrence.RecurringEventID = "weekly_1104", `"3"`, "weekly"
+	occurrence.OriginalStart.At, occurrence.LastEndDate = timeAt(t, "2099-11-04T10:00:00+09:00"), civilDate(2099, 11, 4)
+	for _, p := range []scheduleview.Projection{endOnly, neither, occurrence} {
+		if err := r.Put(ctx, p); err != nil {
+			t.Fatalf("Put %s: %v", p.EventID, err)
+		}
+	}
+	if err := r.CancelOccurrences(ctx, seedOkadaCalendar, "weekly"); err != nil {
+		t.Fatal(err)
+	}
+	got, err := r.ListByFacility(ctx, seedGoogleFacility, civil.Date{Year: 2099, Month: 1, Day: 1})
+	if err != nil {
+		t.Fatal(err)
+	}
+	rows := map[string]scheduleview.Projection{}
+	for _, p := range got {
+		rows[p.EventID] = p.Projection
+	}
+	if p := rows["endonly"]; !p.TimeUnreadable || p.Start != (scheduleview.ProjectionTime{}) || !sameTime(p.End.At, endOnly.End.At) {
+		t.Errorf("終了だけを読めた予定の行 = %+v", p)
+	}
+	if p := rows["neither"]; !p.TimeUnreadable || p.Start != (scheduleview.ProjectionTime{}) || p.End != (scheduleview.ProjectionTime{}) || p.LastEndDate != nil {
+		t.Errorf("開始も終了も読めない予定の行 = %+v", p)
+	}
+	if p := rows["weekly_1104"]; p.Status != scheduleview.ProjectionCancelled || p.TimeUnreadable {
+		t.Errorf("親を取り消した、日時を読めない例外の回の行 = %+v, want 取り消した回で TimeUnreadable は false", p)
+	}
+
+	broken := neither
+	broken.EventID, broken.TimeUnreadable = "broken", false
+	if err := r.Put(txContext(t), broken); err == nil {
+		t.Error("開始と終了の無い確定の行を書けた")
+	}
+}
+
 // TestCalendarProjectionRepositoryListByFacility は、予定の表示の読み出しが、事業所の外していないカレンダーの行を職員の名前を付けて読み、
 // from より前に終わった行とほかの事業所の行と外したカレンダーの行を返さないことと、カレンダーの同期の状況を読むことを確認する。
 func TestCalendarProjectionRepositoryListByFacility(t *testing.T) {

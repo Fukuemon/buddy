@@ -42,7 +42,7 @@
 | [public.schedule_details](public.schedule_details.md)                           | 30      | 一覧の読み出しに使う、予定と訪問の情報と名前を結合したビュー                                                                                                   | VIEW       |
 | [public.recurring_schedule_details](public.recurring_schedule_details.md)       | 33      | 一覧の読み出しに使う、繰り返しの予定と訪問の情報と名前を結合したビュー                                                                                         | VIEW       |
 | [public.calendar_exports](public.calendar_exports.md)                           | 15      | 予定を外部のカレンダーに書き出す待ち。予定の変更と同じトランザクションで積む                                                                                   | BASE TABLE |
-| [public.calendar_event_projections](public.calendar_event_projections.md)       | 19      | Google カレンダーを予定の正本にする事業所の、Google カレンダーの予定の写し（Projection）。1 つの予定を 1 行にする                                              | BASE TABLE |
+| [public.calendar_event_projections](public.calendar_event_projections.md)       | 20      | Google カレンダーを予定の正本にする事業所の、Google カレンダーの予定の写し（Projection）。1 つの予定を 1 行にする                                              | BASE TABLE |
 | [public.calendar_cutovers](public.calendar_cutovers.md)                         | 9       | 事業所の予定の正本を Google カレンダーから buddy に切り替える作業の記録（切り替え）。事業所ごとに open は 1 つまで                                             | BASE TABLE |
 | [public.calendar_cutover_skips](public.calendar_cutover_skips.md)               | 6       | 切り替えの取り込みで、確認が必要な予定に取り込まないを選んだ記録                                                                                               | BASE TABLE |
 | [public.calendar_event_records](public.calendar_event_records.md)               | 15      | google_primary の事業所で、予定の API が Google カレンダーに書いた予定の、訪問の情報と書き込みの保留の版（ADR-0029）。通常の予定も保留の版を持つために行を作る | BASE TABLE |
@@ -472,6 +472,7 @@ erDiagram
   timestamp_with_time_zone google_updated_at
   date last_end_date
   timestamp_with_time_zone projected_at
+  boolean time_unreadable
 }
 "public.calendar_cutovers" {
   text id

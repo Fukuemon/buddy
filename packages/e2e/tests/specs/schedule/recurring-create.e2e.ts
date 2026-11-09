@@ -1,14 +1,9 @@
 import { expect, test, type Page } from '@playwright/test'
 
+import { fromNextMonday } from '../../fixtures/date'
 import { LOGIN_STAFF } from '../../fixtures/env'
-
-/** 明日以降で最初の月曜の日付から、days 日後の日付（YYYY-MM-DD）。Asia/Tokyo の今日から数える。 */
-const fromNextMonday = (days: number) => {
-  const now = Date.now() + 9 * 60 * 60 * 1000
-  const today = new Date(now).getUTCDay()
-  const offset = ((8 - today) % 7 || 7) + days
-  return new Date(now + offset * 24 * 60 * 60 * 1000).toISOString().slice(0, 10)
-}
+import { openDay } from '../../screens/scheduleCalendar'
+import { acceptBrowserDialog } from '../../widgets/browserDialog/actions/browserDialog'
 
 /** 日の表示のログインした職員の列の、title の予定。 */
 const ownEvent = (page: Page, title: string) =>
@@ -17,14 +12,9 @@ const ownEvent = (page: Page, title: string) =>
     .getByTestId(/^schedule-event-/)
     .filter({ hasText: title })
 
-const openDay = async (page: Page, date: string) => {
-  await page.goto(`/schedule?view=day&date=${date}`)
-  await expect(page.getByTestId(`day-grid-staff-${LOGIN_STAFF.id}`)).toBeVisible()
-}
-
 /** date の日の表示から予定の作成を開き、通常の予定のタイトルと予定者（ログインした職員）を入れて、繰り返しの入力を開く。 */
 const openRecurringNormal = async (page: Page, date: string, title: string) => {
-  await openDay(page, date)
+  await openDay(page, date, LOGIN_STAFF.id)
   await page.getByTestId('schedule-create-open').click()
   await expect(page.getByTestId('schedule-form-modal')).toBeVisible()
   await page.getByTestId('schedule-kind-tab-normal').check()
@@ -59,10 +49,10 @@ test.describe('予定のカレンダー', () => {
         await expect(page).toHaveURL(new RegExp(`/schedule\\?.*date=${start}`))
         await expect(ownEvent(page, title)).toBeVisible()
         for (const days of [3, 7, 10]) {
-          await openDay(page, fromNextMonday(days))
+          await openDay(page, fromNextMonday(days), LOGIN_STAFF.id)
           await expect(ownEvent(page, title)).toBeVisible()
         }
-        await openDay(page, fromNextMonday(14))
+        await openDay(page, fromNextMonday(14), LOGIN_STAFF.id)
         await expect(ownEvent(page, title)).toHaveCount(0)
       })
 
@@ -82,10 +72,13 @@ test.describe('予定のカレンダー', () => {
         )
         await expect(page.getByTestId('schedule-form-modal')).toBeVisible()
         // 送っていれば、次の火曜に回ができる。閉じて開き直した日の表示で、列が出てから数える
-        page.once('dialog', (dialog) => void dialog.accept())
-        await page.getByTestId('schedule-new-cancel').click()
+        const discard = '変更が破棄されますがよろしいですか？'
+        const confirm = await acceptBrowserDialog(page, discard, () =>
+          page.getByTestId('schedule-new-cancel').click(),
+        )
+        expect(confirm).toBe(discard)
         await expect(page.getByTestId('schedule-form-modal')).toBeHidden()
-        await openDay(page, fromNextMonday(1))
+        await openDay(page, fromNextMonday(1), LOGIN_STAFF.id)
         await expect(ownEvent(page, title)).toHaveCount(0)
       })
     })

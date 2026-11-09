@@ -3,6 +3,7 @@ import { expect, test } from '@playwright/test'
 import { LOGIN_EMAIL, LOGIN_STAFF } from '../../fixtures/env'
 import { EVIDENCE_VARIANTS, recordPrEvidence } from '../../fixtures/evidence'
 import { signInAtBroker } from '../../screens/login'
+import { recordBrowserDialogs } from '../../widgets/browserDialog/actions/browserDialog'
 
 test.describe('予定のカレンダー', () => {
   test.describe('予定の作成', () => {
@@ -54,11 +55,7 @@ test.describe('予定のカレンダー', () => {
           },
           async ({ page, step, check }) => {
             // 破棄の確認は window.confirm で、録画に映らない。出た回数を数えて字幕に出す
-            const confirms: string[] = []
-            page.on('dialog', (dialog) => {
-              confirms.push(dialog.message())
-              void dialog.dismiss()
-            })
+            const confirms = recordBrowserDialogs(page)
             await page.goto('/schedule?view=day')
             await expect(page.getByTestId(`day-grid-staff-${LOGIN_STAFF.id}`)).toBeVisible()
             await page.getByTestId('schedule-create-open').click()

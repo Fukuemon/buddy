@@ -1,5 +1,6 @@
 import type { APIRequestContext } from '@playwright/test'
 
+import { addDays } from './date'
 import { CALENDARPIT_URL, GCALHOLD_URL } from './env'
 
 /** calendarpit の予定のうち、spec が見る項目。 */
@@ -7,8 +8,9 @@ export type GoogleEvent = {
   id: string
   summary?: string
   status?: string
-  start?: { dateTime?: string; timeZone?: string }
-  end?: { dateTime?: string; timeZone?: string }
+  /** 時刻のある予定は dateTime を、終日の予定は date（YYYY-MM-DD）を持つ。 */
+  start?: { dateTime?: string; date?: string; timeZone?: string }
+  end?: { dateTime?: string; date?: string; timeZone?: string }
   /** 繰り返しの予定の RRULE と EXDATE の行。単発の予定は持たない。 */
   recurrence?: string[]
   extendedProperties?: { private?: Record<string, string> }
@@ -128,6 +130,71 @@ export const createGoogleEvent = async (
   })
   await ensureOk(res, '予定を作れない')
   return (await res.json()) as GoogleEvent
+}
+
+/**
+ * 終日の予定を作る。職員が Google カレンダーで終日の予定を足したときの代わりで、作った予定を返す。
+ * startDate から lastDate（この日を含む）にかかる予定にする。lastDate を渡さなければ startDate の 1 日の予定にする。
+ * Google の終日の予定の end.date は終わる日の翌日なので、lastDate の翌日を送る。
+ * recurrence（RRULE と EXDATE の行）を渡すと、Asia/Tokyo の繰り返しの予定にする。
+ */
+export const createGoogleAllDayEvent = async (
+  request: APIRequestContext,
+  calendarId: string,
+  event: { summary: string; startDate: string; lastDate?: string; recurrence?: string[] },
+) => {
+  const timeZone = event.recurrence === undefined ? {} : { timeZone: 'Asia/Tokyo' }
+  const res = await request.post(eventsUrl(calendarId), {
+    data: {
+      summary: event.summary,
+      start: { date: event.startDate, ...timeZone },
+      end: { date: addDays(event.lastDate ?? event.startDate, 1), ...timeZone },
+      ...(event.recurrence === undefined ? {} : { recurrence: event.recurrence }),
+    },
+  })
+  await ensureOk(res, '終日の予定を作れない')
+  return (await res.json()) as GoogleEvent
+}
+
+/**
+ * 繰り返しの予定 parent の、originalStart（+09:00 の日時）に始まる回を、例外の回にする。職員が Google カレンダーで 1 つの回だけを
+ * 直したか取り消したときの代わりで、作った例外の回を返す。
+ * 回の日時は start と end（+09:00 の日時）にする。isCancelled を渡すと、その回を取り消す。取り消す回には、元の日時を渡す。
+ */
+export const createGoogleOccurrenceException = async (
+  request: APIRequestContext,
+  calendarId: string,
+  parent: GoogleEvent,
+  occurrence: { originalStart: string; start: string; end: string; isCancelled?: boolean },
+) => {
+  const res = await request.post(eventsUrl(calendarId), {
+    data: {
+      summary: parent.summary,
+      recurringEventId: parent.id,
+      originalStartTime: { dateTime: occurrence.originalStart, timeZone: 'Asia/Tokyo' },
+      start: { dateTime: occurrence.start, timeZone: 'Asia/Tokyo' },
+      end: { dateTime: occurrence.end, timeZone: 'Asia/Tokyo' },
+      ...(occurrence.isCancelled === true ? { status: 'cancelled' } : {}),
+    },
+  })
+  await ensureOk(res, '例外の回を作れない')
+  return (await res.json()) as GoogleEvent
+}
+
+/**
+ * 中継の gcalhold が、タイトルが summary の予定の取得の応答で、終了の日時を読めない値にして返すかを変える。
+ * 日時を読めない予定（calendarpit は作れない）の代わりで、同期はその予定を日時を読めない予定として写す。
+ * 予定を作る前に壊しておく。壊すのをやめても、予定が変わるまで同期は読み直さない。
+ */
+export const breakGoogleEventEnd = async (
+  request: APIRequestContext,
+  summary: string,
+  isBroken: boolean,
+) => {
+  const res = await request.post(`${GCALHOLD_URL}/break`, {
+    data: { summary, break: isBroken },
+  })
+  await ensureOk(res, '予定の終了の日時を壊せない')
 }
 
 /**

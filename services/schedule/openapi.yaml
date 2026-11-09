@@ -1164,7 +1164,7 @@ paths:
             application/json:
               schema:
                 type: object
-                required: [schedules, recurring_schedules, source_mode, calendar_syncs, cutover]
+                required: [schedules, recurring_schedules, source_mode, calendar_syncs, cutover, all_day_events, unlisted_event_counts]
                 properties:
                   schedules:
                     type: array
@@ -1186,6 +1186,22 @@ paths:
                     x-omitempty: false
                     allOf:
                       - $ref: "#/components/schemas/OpenCalendarCutover"
+                  all_day_events:
+                    type: array
+                    description: |
+                      google_primary の事業所で、date_from から date_to までの期間に重なる、職員が見てよい職員の Google カレンダーの終日の予定。
+                      buddy の予定ではないので、取得、変更、取り消しはできず、照合の対象にもしない。繰り返しの終日の予定は回ごとに返す。
+                      buddy_primary の事業所と、schedule_type で絞ったときは空である（#672）
+                    items: { $ref: "#/components/schemas/AllDayEvent" }
+                  unlisted_event_counts:
+                    type: array
+                    description: |
+                      google_primary の事業所で、date_from から date_to までの期間に重なる、職員が見てよい職員の、schedules にも all_day_events にも出せない
+                      Google カレンダーの予定の、職員ごとの件数。2 日以上にわたる予定、24 時間以上の予定、開始か終了の日時を読めない予定、長さが 0 以下の予定を数える。
+                      繰り返しの予定は、期間に重なる回の数を数える。日時を読めない予定は、開始か終了の読めた方の日で期間に重なるかを決め、
+                      どちらも読めなければどの期間でも数える。件数が 1 以上の職員だけを返す。
+                      buddy_primary の事業所と、schedule_type で絞ったときは空である（#672）
+                    items: { $ref: "#/components/schemas/UnlistedEventCount" }
         "400": { $ref: "#/components/responses/BadRequest" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
@@ -2890,6 +2906,26 @@ components:
       type: string
       enum: [google_primary, buddy_primary]
       description: 事業所の予定の正本。google_primary は Google カレンダー、buddy_primary は buddy である（ADR-0029）
+    AllDayEvent:
+      type: object
+      description: Google カレンダーの終日の予定。buddy の予定ではない（#672）
+      required: [id, staff_id, staff_name, start_date, end_date, title]
+      properties:
+        id:
+          description: 一覧を読むたびに同じになる値。繰り返しの回は回ごとに違う値である。予定の ID としては使えない
+          type: string
+        staff_id: { $ref: "#/components/schemas/ID" }
+        staff_name: { type: string }
+        start_date: { type: string, format: date, description: 予定がかかる最初の日 }
+        end_date: { type: string, format: date, description: 予定がかかる最後の日（この日を含む）。1 日の予定では start_date と同じ }
+        title: { type: string, description: Google の予定のタイトル。空のことがある }
+    UnlistedEventCount:
+      type: object
+      description: 職員の、予定のカレンダーに出せない Google カレンダーの予定の件数。予定の中身は返さない（#672）
+      required: [staff_id, count]
+      properties:
+        staff_id: { $ref: "#/components/schemas/ID" }
+        count: { type: integer, minimum: 1 }
     CalendarSyncStatus:
       type: object
       description: 結び付けたカレンダーの同期の状況

@@ -74,6 +74,8 @@ type CalendarEventProjection struct {
 	LastEndDate *time.Time
 	// 同期が行を書いた時刻
 	ProjectedAt time.Time
+	// 開始か終了の日時を読めない予定のとき true。読めた方の日時か日付だけを持つ。予定のカレンダーは、出せない予定の件数に数える
+	TimeUnreadable bool
 }
 
 // google_primary の事業所で、予定の API が Google カレンダーに書いた予定の、訪問の情報と書き込みの保留の版（ADR-0029）。通常の予定も保留の版を持つために行を作る

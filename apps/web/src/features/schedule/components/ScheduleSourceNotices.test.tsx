@@ -7,9 +7,22 @@ import { describe, expect, it } from 'vite-plus/test'
 import { formatDateTime } from '../lib/dateTime'
 import * as stories from './ScheduleSourceNotices.stories'
 
-const { BuddyPrimary, Cutover, Default, GuideOnly } = composeStories(stories)
+const { BuddyPrimary, Cutover, Default, GuideOnly, Unlisted } = composeStories(stories)
 
 describe('ScheduleSourceNotices', () => {
+  it('カレンダーに出せない予定があれば、件数、職員ごとの件数、Google カレンダーで確認する案内を出す', () => {
+    render(<Unlisted />)
+    const notice = screen.getByTestId('schedule-calendar-unlisted')
+    expect(notice).toHaveTextContent('カレンダーに出せない予定が 3 件あります')
+    expect(within(notice).getByTestId('schedule-calendar-unlisted-staff-1')).toHaveTextContent(
+      '青木 一郎: 2 件',
+    )
+    expect(within(notice).getByTestId('schedule-calendar-unlisted-staff-3')).toHaveTextContent(
+      '上田 三奈: 1 件',
+    )
+    expect(notice).toHaveTextContent('Google カレンダーで確認してください。')
+  })
+
   it('同期に失敗したカレンダーと、まだ同期していないカレンダーを、職員と最後に同期できた時刻とともに出す', () => {
     render(<Default />)
     const warning = screen.getByTestId('schedule-calendar-sync-warning')
@@ -48,6 +61,7 @@ describe('ScheduleSourceNotices', () => {
     )
     expect(screen.queryByTestId('schedule-calendar-sync-warning')).toBeNull()
     expect(screen.queryByTestId('schedule-calendar-needs-review')).toBeNull()
+    expect(screen.queryByTestId('schedule-calendar-unlisted')).toBeNull()
   })
 
   it('buddy_primary の事業所では何も出さない', () => {

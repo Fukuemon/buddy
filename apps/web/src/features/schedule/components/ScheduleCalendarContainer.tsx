@@ -9,6 +9,7 @@ import { RefetchErrorMessage } from '#/components/page/RefetchErrorMessage'
 import { Loading, useIsDesktop } from '@buddy/ui'
 
 import { activeStaff, activeStaffIds, excludeInactiveStaffSchedules } from '../lib/activeStaff'
+import { toCalendarAllDayEvents } from '../lib/allDayEvents'
 import { getCalendarRange, shiftCalendarDate } from '../lib/calendarRange'
 import {
   canEditAnySchedule,
@@ -66,7 +67,8 @@ export type ScheduleCalendarContainerProps = {
  * 幅 768px 未満の週の表示は、時刻の格子の代わりに、予定を日ごとに縦に並べる週の一覧で出す。日の表示は、ログインした職員の列を左端に置く。
  * Google カレンダーを予定の正本にする事業所（google_primary）でも予定を作る操作を出し、予定の API が Google カレンダーに書く（ADR-0029）。
  * 予定の正本を buddy に切り替えている間は、予定を作る操作を出さない。カレンダーの上には、Google カレンダーと buddy のどちらでも
- * 予定を変えられる案内、切り替え中の案内、同期の警告、確認が必要な予定の通知を出す。事業所の正本は、予定の一覧か事業所から読む。
+ * 予定を変えられる案内、切り替え中の案内、同期の警告、確認が必要な予定の通知、カレンダーに出せない予定の件数を出す。
+ * Google カレンダーの終日の予定は、どの表示でも押せない終日の欄に出す。事業所の正本は、予定の一覧か事業所から読む。
  */
 export const ScheduleCalendarContainer = ({
   staffFilterToggle,
@@ -135,6 +137,11 @@ export const ScheduleCalendarContainer = ({
     staffList,
     patientsQuery.data ?? [],
   )
+  const allDayEvents = toCalendarAllDayEvents(schedulesQuery.data?.allDayEvents ?? [], staffList)
+  // 時刻のある予定と終日の予定と同じく、休職と退職の職員と訪問しない職員の件数は出さない
+  const unlistedEventCounts = (schedulesQuery.data?.unlistedEventCounts ?? []).filter((count) =>
+    staffList.some((staff) => staff.id === count.staffId),
+  )
 
   return (
     <div className="flex h-full flex-col">
@@ -161,6 +168,7 @@ export const ScheduleCalendarContainer = ({
             calendarSyncs={schedulesQuery.data?.calendarSyncs ?? []}
             cutover={schedulesQuery.data?.cutover ?? null}
             needsReview={schedulesQuery.data?.needsReview ?? []}
+            unlistedEventCounts={unlistedEventCounts}
             onOpenSchedule={openDetail}
             sourceMode={sourceMode}
             staffList={allStaff}
@@ -176,6 +184,7 @@ export const ScheduleCalendarContainer = ({
           </p>
         ) : view === 'week' && !isDesktop ? (
           <ScheduleWeekAgenda
+            allDayEvents={allDayEvents}
             date={date}
             events={events}
             onDayClick={(dateKey) => updateSearch({ view: 'day', date: dateKey })}
@@ -185,6 +194,7 @@ export const ScheduleCalendarContainer = ({
           />
         ) : view === 'day' ? (
           <DayGridWithNow
+            allDayEvents={allDayEvents}
             date={date}
             events={events}
             onEventClick={openDetail}
@@ -194,6 +204,7 @@ export const ScheduleCalendarContainer = ({
           />
         ) : (
           <ScheduleCalendar
+            allDayEvents={allDayEvents}
             date={date}
             events={events}
             onDateClick={(dateKey, time) =>

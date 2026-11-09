@@ -32,7 +32,7 @@ test.describe('職員の詳細', () => {
             variant,
           },
           async (page) => {
-            token = await issueManagerToken(request)
+            token = await issueManagerToken()
             const policyId = await policyIdOf(request, token, STAFF_MANAGE_CODE)
             const added = await addPolicy(request, token, LEADER.staff.id, policyId)
             expect(added.ok()).toBe(true)

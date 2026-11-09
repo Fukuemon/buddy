@@ -3,6 +3,11 @@ import { clsx } from 'clsx'
 import type { Staff } from '#/api/types'
 import { formatDateKey } from '#/components/dateFormat'
 
+import {
+  allDayEventsOn,
+  formatAllDayEventTitle,
+  type CalendarAllDayEvent,
+} from '../lib/allDayEvents'
 import { formatScheduleTimeRange } from '../lib/dateTime'
 import type { ScheduleCalendarEvent } from '../lib/toCalendarEvents'
 import { groupWeekAgenda, type WeekAgendaItem } from '../lib/weekAgenda'
@@ -25,6 +30,8 @@ export type ScheduleWeekAgendaProps = {
   /** 今日。`YYYY-MM-DD`。この日の見出しの色を変える */
   today: string
   events: ScheduleCalendarEvent[]
+  /** Google カレンダーの終日の予定。かかる日ごとに、日の見出しの下の、時刻のある予定の前に並べる。押せない。省くと出さない。 */
+  allDayEvents?: CalendarAllDayEvent[]
   /** 職員の名前と、同じ時刻の予定を並べる順に使う。 */
   staffList: Staff[]
   onDayClick: (dateKey: string) => void
@@ -39,6 +46,7 @@ export const ScheduleWeekAgenda = ({
   date,
   today,
   events,
+  allDayEvents = [],
   staffList,
   onDayClick,
   onEventClick,
@@ -66,6 +74,26 @@ export const ScheduleWeekAgenda = ({
               {dayHeading(dateKey)}
             </button>
           </h2>
+          {allDayEventsOn(allDayEvents, dateKey).map((event) => (
+            <div
+              className="grid min-h-11 w-full grid-cols-[7rem_minmax(0,1fr)] items-center gap-2 border-b border-border px-2 py-1"
+              data-testid={`all-day-event-${event.id}-${dateKey}`}
+              key={event.id}
+            >
+              <span className="text-caption text-text-secondary">終日</span>
+              <span className="flex min-w-0 flex-col">
+                <span className="truncate">{formatAllDayEventTitle(event)}</span>
+                <span className="flex items-center gap-1.5 text-caption text-text-secondary">
+                  <span
+                    aria-hidden
+                    className="size-2 shrink-0 rounded-full"
+                    style={{ backgroundColor: event.color }}
+                  />
+                  {event.staffName}
+                </span>
+              </span>
+            </div>
+          ))}
           {items.map((item) => {
             const { event } = item
             return (

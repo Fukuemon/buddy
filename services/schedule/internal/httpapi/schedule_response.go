@@ -91,6 +91,16 @@ func toCalendarSyncStatus(c scheduleview.CalendarSync) openapi.CalendarSyncStatu
 	return r
 }
 
+func toAllDayEvent(e scheduleview.AllDayEvent) openapi.AllDayEvent {
+	return openapi.AllDayEvent{
+		Id: e.ID, StaffId: e.StaffID, StaffName: e.StaffName, StartDate: e.StartDate.String(), EndDate: e.EndDate.String(), Title: e.Title,
+	}
+}
+
+func toUnlistedEventCount(c scheduleview.UnlistedEventCount) openapi.UnlistedEventCount {
+	return openapi.UnlistedEventCount{StaffId: c.StaffID, Count: c.Count}
+}
+
 // toRecurringRule は、規則 r を応答の規則にする。毎週の曜日の並びと間隔は、毎週のときだけ返す。
 func toRecurringRule(r schedule.Rule) openapi.RecurringRule {
 	var (

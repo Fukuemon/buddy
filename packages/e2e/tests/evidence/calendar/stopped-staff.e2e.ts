@@ -29,7 +29,7 @@ const prepareStaffWithCalendar = async (page: Page, label: string): Promise<Staf
   await page.goto('/schedule/link')
   await signInAtBroker(page, LOGIN_EMAIL)
   const staff = newStaff(label)
-  const token = await issueManagerToken(page.request)
+  const token = await issueManagerToken()
   const registered = await registerStaff(page.request, token, staff)
   expect(registered.status()).toBe(201)
   const { id } = (await registered.json()) as { id: string }

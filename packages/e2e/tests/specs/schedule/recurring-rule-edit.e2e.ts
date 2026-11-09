@@ -1,22 +1,14 @@
 import { expect, test, type Page } from '@playwright/test'
 
 import { issueAccessToken } from '../../fixtures/apiReference'
+import { daysFromToday, fromNextMonday } from '../../fixtures/date'
 import { LOGIN_EMAIL, LOGIN_STAFF } from '../../fixtures/env'
 import { createWeeklyNormalSchedule, replaceOccurrence } from '../../fixtures/schedule'
 import { STAFF_FORM } from '../../fixtures/staff'
-
-/** 今日の Asia/Tokyo の日付から days 日後の日付（YYYY-MM-DD）。 */
-const daysFromToday = (days: number) =>
-  new Date(Date.now() + 9 * 60 * 60 * 1000 + days * 24 * 60 * 60 * 1000).toISOString().slice(0, 10)
+import { openDay } from '../../screens/scheduleCalendar'
 
 /** YYYY-MM-DD の曜日。1 が月曜、7 が日曜。 */
 const isoWeekdayOf = (date: string) => new Date(`${date}T00:00:00Z`).getUTCDay() || 7
-
-/** 明日以降で最初の月曜の日付から、days 日後の日付（YYYY-MM-DD）。 */
-const fromNextMonday = (days: number) => {
-  const today = new Date(`${daysFromToday(0)}T00:00:00Z`).getUTCDay()
-  return daysFromToday(((8 - today) % 7 || 7) + days)
-}
 
 /** 日の表示のログインした職員の列の、title の予定。 */
 const ownEvent = (page: Page, title: string) =>
@@ -24,11 +16,6 @@ const ownEvent = (page: Page, title: string) =>
     .getByTestId(`day-grid-staff-${LOGIN_STAFF.id}`)
     .getByTestId(/^schedule-event-/)
     .filter({ hasText: title })
-
-const openDay = async (page: Page, date: string) => {
-  await page.goto(`/schedule?view=day&date=${date}`)
-  await expect(page.getByTestId(`day-grid-staff-${LOGIN_STAFF.id}`)).toBeVisible()
-}
 
 /** 予定の詳細の「編集」のメニューから「繰り返しを変更」を選ぶ。 */
 const openRecurrenceChange = async (page: Page) => {
@@ -55,7 +42,7 @@ test.describe('予定の編集', () => {
       })
       expect(created.status()).toBe(201)
 
-      await openDay(page, effective)
+      await openDay(page, effective, LOGIN_STAFF.id)
       await ownEvent(page, title).click()
       await openRecurrenceChange(page)
       await page.getByTestId('recurring-rule-preset').selectOption('custom')
@@ -66,9 +53,9 @@ test.describe('予定の編集', () => {
       await expect(page.getByTestId('schedule-recurrence-modal')).toBeHidden()
       await expect(page).toHaveURL(new RegExp(`/schedule\\?.*date=${tuesday}`))
       await expect(ownEvent(page, title)).toBeVisible()
-      await openDay(page, effective)
+      await openDay(page, effective, LOGIN_STAFF.id)
       await expect(ownEvent(page, title)).toHaveCount(0)
-      await openDay(page, start)
+      await openDay(page, start, LOGIN_STAFF.id)
       await expect(ownEvent(page, title)).toBeVisible()
     })
 
@@ -89,7 +76,7 @@ test.describe('予定の編集', () => {
       })
       expect(created.status()).toBe(201)
 
-      await openDay(page, past)
+      await openDay(page, past, LOGIN_STAFF.id)
       await ownEvent(page, title).click()
       await openRecurrenceChange(page)
       await expect(page.getByTestId('schedule-recurrence-lead')).toContainText(
@@ -102,7 +89,7 @@ test.describe('予定の編集', () => {
 
       await expect(page.getByTestId('schedule-recurrence-modal')).toBeHidden()
       await expect(ownEvent(page, title)).toBeVisible()
-      await openDay(page, past)
+      await openDay(page, past, LOGIN_STAFF.id)
       await expect(ownEvent(page, title)).toBeVisible()
     })
 

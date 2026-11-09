@@ -115,7 +115,15 @@ func sortedUniqueDates(dates []civil.Date) []civil.Date {
 }
 
 // tokyoStart は、w が Asia/Tokyo の日時なら、その日付と時刻を返す。
+// 終日の予定の開始（日付だけの w）は、その日付の 0:00 にする。暦の日付なので、タイムゾーンを問わない。
 func tokyoStart(w When) (civil.Date, civil.Time, error) {
+	if w.DateTime == "" && w.Date != "" {
+		d, err := civil.ParseDate(w.Date)
+		if err != nil {
+			return civil.Date{}, civil.Time{}, expansion("開始の日付 %q を読めない", w.Date)
+		}
+		return d, civil.Time{}, nil
+	}
 	t, err := w.Instant()
 	if err != nil {
 		return civil.Date{}, civil.Time{}, expansion("開始の日時 %q を読めない", w.DateTime)

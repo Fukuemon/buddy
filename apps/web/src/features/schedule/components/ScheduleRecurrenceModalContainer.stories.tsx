@@ -171,6 +171,8 @@ export const StaleCutoverCache: Story = {
         needsReview: [],
         sourceMode: 'google_primary',
         calendarSyncs: [],
+        allDayEvents: [],
+        unlistedEventCounts: [],
         cutover: {
           started_at: '2026-11-01T00:00:00Z',
           started_by: 'staff-1',

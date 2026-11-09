@@ -27,6 +27,7 @@ Google カレンダーを予定の正本にする事業所の、Google カレン
 | google_updated_at    | timestamp with time zone |              | true     |          |                                                                                           | Google で予定を最後に変えた時刻。行を書き直すのは、書く予定の時刻がこの時刻より新しいときだけにする                                                                                                                                          |
 | last_end_date        | date                     |              | true     |          |                                                                                           | Asia/Tokyo で予定が終わる日。繰り返しは最後の回、取り消した回は元の開始の日、取り消した単発の予定と親の予定は取り消しを写した日。終わりの無い繰り返しと、最後の回を決められない繰り返しは NULL。保持する期間より前に終わった行を消すのに使う |
 | projected_at         | timestamp with time zone | now()        | false    |          |                                                                                           | 同期が行を書いた時刻                                                                                                                                                                                                                         |
+| time_unreadable      | boolean                  | false        | false    |          |                                                                                           | 開始か終了の日時を読めない予定のとき true。読めた方の日時か日付だけを持つ。予定のカレンダーは、出せない予定の件数に数える                                                                                                                    |
 
 ## Viewpoints
 
@@ -36,24 +37,25 @@ Google カレンダーを予定の正本にする事業所の、Google カレン
 
 ## Constraints
 
-| Name                                                     | Type        | Definition                                                                                                       |
-| -------------------------------------------------------- | ----------- | ---------------------------------------------------------------------------------------------------------------- |
-| calendar_event_projections_end_check                     | CHECK       | CHECK (((status = 'cancelled'::text) OR (num_nonnulls(end_at, end_date) = 1)))                                   |
-| calendar_event_projections_etag_not_null                 | n           | NOT NULL etag                                                                                                    |
-| calendar_event_projections_external_calendar_id_not_null | n           | NOT NULL external_calendar_id                                                                                    |
-| calendar_event_projections_external_event_id_not_null    | n           | NOT NULL external_event_id                                                                                       |
-| calendar_event_projections_facility_id_not_null          | n           | NOT NULL facility_id                                                                                             |
-| calendar_event_projections_original_check                | CHECK       | CHECK ((num_nonnulls(original_start_at, original_start_date) <= 1))                                              |
-| calendar_event_projections_projected_at_not_null         | n           | NOT NULL projected_at                                                                                            |
-| calendar_event_projections_recurrence_not_null           | n           | NOT NULL recurrence                                                                                              |
-| calendar_event_projections_staff_id_not_null             | n           | NOT NULL staff_id                                                                                                |
-| calendar_event_projections_start_check                   | CHECK       | CHECK (((status = 'cancelled'::text) OR (num_nonnulls(start_at, start_date) = 1)))                               |
-| calendar_event_projections_status_check                  | CHECK       | CHECK ((status = ANY (ARRAY['confirmed'::text, 'cancelled'::text])))                                             |
-| calendar_event_projections_status_not_null               | n           | NOT NULL status                                                                                                  |
-| calendar_event_projections_title_not_null                | n           | NOT NULL title                                                                                                   |
-| calendar_event_projections_staff_fkey                    | FOREIGN KEY | FOREIGN KEY (facility_id, staff_id) REFERENCES users(facility_id, id) ON DELETE CASCADE                          |
-| calendar_event_projections_calendar_fkey                 | FOREIGN KEY | FOREIGN KEY (facility_id, external_calendar_id) REFERENCES external_calendars(facility_id, id) ON DELETE CASCADE |
-| calendar_event_projections_pkey                          | PRIMARY KEY | PRIMARY KEY (external_calendar_id, external_event_id)                                                            |
+| Name                                                     | Type        | Definition                                                                                                                                            |
+| -------------------------------------------------------- | ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| calendar_event_projections_end_check                     | CHECK       | CHECK (((num_nonnulls(end_at, end_date) <= 1) AND ((status = 'cancelled'::text) OR time_unreadable OR (num_nonnulls(end_at, end_date) = 1))))         |
+| calendar_event_projections_etag_not_null                 | n           | NOT NULL etag                                                                                                                                         |
+| calendar_event_projections_external_calendar_id_not_null | n           | NOT NULL external_calendar_id                                                                                                                         |
+| calendar_event_projections_external_event_id_not_null    | n           | NOT NULL external_event_id                                                                                                                            |
+| calendar_event_projections_facility_id_not_null          | n           | NOT NULL facility_id                                                                                                                                  |
+| calendar_event_projections_original_check                | CHECK       | CHECK ((num_nonnulls(original_start_at, original_start_date) <= 1))                                                                                   |
+| calendar_event_projections_projected_at_not_null         | n           | NOT NULL projected_at                                                                                                                                 |
+| calendar_event_projections_recurrence_not_null           | n           | NOT NULL recurrence                                                                                                                                   |
+| calendar_event_projections_staff_id_not_null             | n           | NOT NULL staff_id                                                                                                                                     |
+| calendar_event_projections_start_check                   | CHECK       | CHECK (((num_nonnulls(start_at, start_date) <= 1) AND ((status = 'cancelled'::text) OR time_unreadable OR (num_nonnulls(start_at, start_date) = 1)))) |
+| calendar_event_projections_status_check                  | CHECK       | CHECK ((status = ANY (ARRAY['confirmed'::text, 'cancelled'::text])))                                                                                  |
+| calendar_event_projections_status_not_null               | n           | NOT NULL status                                                                                                                                       |
+| calendar_event_projections_time_unreadable_not_null      | n           | NOT NULL time_unreadable                                                                                                                              |
+| calendar_event_projections_title_not_null                | n           | NOT NULL title                                                                                                                                        |
+| calendar_event_projections_staff_fkey                    | FOREIGN KEY | FOREIGN KEY (facility_id, staff_id) REFERENCES users(facility_id, id) ON DELETE CASCADE                                                               |
+| calendar_event_projections_calendar_fkey                 | FOREIGN KEY | FOREIGN KEY (facility_id, external_calendar_id) REFERENCES external_calendars(facility_id, id) ON DELETE CASCADE                                      |
+| calendar_event_projections_pkey                          | PRIMARY KEY | PRIMARY KEY (external_calendar_id, external_event_id)                                                                                                 |
 
 ## Indexes
 
@@ -94,6 +96,7 @@ erDiagram
   timestamp_with_time_zone google_updated_at
   date last_end_date
   timestamp_with_time_zone projected_at
+  boolean time_unreadable
 }
 "public.external_calendars" {
   text id
