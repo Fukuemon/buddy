@@ -65,6 +65,30 @@ describe('ScheduleSourceNotices', () => {
     expect(within(item).queryByRole('button')).toBeNull()
   })
 
+  it('何日かにわたる終日の予定は、最初の日から最後の日までを出し、確認が必要な予定の件数に数える', () => {
+    render(
+      <Default
+        needsReview={[]}
+        needsReviewAllDayEvents={[
+          {
+            id: 'span',
+            staffId: 'staff-2',
+            staffName: '石川 二葉',
+            startDate: '2026-10-05',
+            endDate: '2026-10-06',
+            title: '研修',
+            reviewReason: 'recurrence_unsupported',
+          },
+        ]}
+      />,
+    )
+    const notice = screen.getByTestId('schedule-calendar-needs-review')
+    expect(notice).toHaveTextContent('確認が必要な予定が 1 件あります')
+    expect(
+      within(notice).getByTestId('schedule-calendar-needs-review-all-day-span'),
+    ).toHaveTextContent('2026年10月5日（月）〜2026年10月6日（火） 終日 石川 二葉:')
+  })
+
   it('同期が新しく確認が必要な予定も無ければ、案内だけを出す', () => {
     render(<GuideOnly />)
     expect(screen.getByTestId('schedule-calendar-google-primary')).toHaveTextContent(
