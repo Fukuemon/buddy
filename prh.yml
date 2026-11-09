@@ -429,7 +429,7 @@ rules:
     pattern: 資源
   - expected: エビデンス
     pattern: 証跡
-    prh: 確認したことの記録はエビデンスと呼ぶ。スキル attach-evidence の名前に合わせる
+    prh: 確認したことの記録はエビデンスと呼ぶ。スキル capture-pull-request と kit の evidence の名前に合わせる
   - expected: 手動検証
     pattern: 人手検証
   - expected: タイトル
