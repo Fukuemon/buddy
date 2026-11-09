@@ -161,7 +161,7 @@ test.describe('予定のカレンダー', () => {
               )
               const weekly = timedEvent(page, weeklyTitle)
               // 13:00 の回と 15:00 の回の両方を、判定の画像に映す
-              await calendarTimeLabel(page, '16:00:00').scrollIntoViewIfNeeded()
+              await calendarTimeLabel(page, '14:00:00').scrollIntoViewIfNeeded()
               await expect(weekly).toHaveCount(2)
               await expect(weekly.filter({ hasText: '13:00〜14:00' })).toHaveCount(1)
               await expect(weekly.filter({ hasText: '15:00〜16:00' })).toHaveCount(1)
@@ -298,20 +298,21 @@ test.describe('予定のカレンダー', () => {
                 })
                 expect(res.status()).toBe(201)
               }
-              const events = [
-                { summary: visitTitle, start: '09:00', end: '10:00' },
-                { summary: notFoundTitle, start: '10:30', end: '11:30' },
-                { summary: codeTitle, start: '12:00', end: '13:00' },
-                { summary: twinTitle, start: '13:30', end: '14:30' },
-                { summary: '   ', start: '15:00', end: '16:00' },
-              ]
-              for (const e of events)
+              // 5 件を月曜から金曜の同じ時刻に置き、1 枚の判定の画像に全てを映す
+              const titles = [visitTitle, notFoundTitle, codeTitle, twinTitle, '   ']
+              for (const [i, summary] of titles.entries())
                 ids.push(
-                  (await createGoogleEvent(page.request, OKADA.calendarId, { ...e, date: monday }))
-                    .id,
+                  (
+                    await createGoogleEvent(page.request, OKADA.calendarId, {
+                      summary,
+                      date: addDays(monday, i),
+                      start: '10:00',
+                      end: '11:00',
+                    })
+                  ).id,
                 )
               await waitSynced(page, monday, async () => {
-                await expect(timedEvent(page, '15:00〜16:00')).toBeVisible()
+                await expect(timedEvent(page, '10:00〜11:00')).toHaveCount(5)
                 await expect(needsReviewNotice(page)).toContainText(
                   '確認が必要な予定が 4 件あります',
                 )
@@ -320,19 +321,12 @@ test.describe('予定のカレンダー', () => {
             async ({ page, step, check }) => {
               await openWeek(page, monday)
               await step(
-                `前提 ${OKADA.staff.name} の Google カレンダーの ${dayLabel(monday)} に、「${visitTitle}」（登録した利用者）、「${notFoundTitle}」（登録していない利用者）、「${codeTitle}」（サービスコードに無いサービス内容）、「${twinTitle}」（同じ名前の利用者が 2 人いる）、タイトルが空白だけの予定がある\nもし その週を週の表示で開く`,
+                `前提 ${OKADA.staff.name} の Google カレンダーの ${dayLabel(monday)} から ${dayLabel(addDays(monday, 4))} の 10:00〜11:00 に、順に「${visitTitle}」（登録した利用者）、「${notFoundTitle}」（登録していない利用者）、「${codeTitle}」（サービスコードに無いサービス内容）、「${twinTitle}」（同じ名前の利用者が 2 人いる）、タイトルが空白だけの予定がある\nもし その週を週の表示で開く`,
               )
-              await calendarTimeLabel(page, '12:00:00').scrollIntoViewIfNeeded()
-              for (const time of [
-                '09:00〜10:00',
-                '10:30〜11:30',
-                '12:00〜13:00',
-                '13:30〜14:30',
-                '15:00〜16:00',
-              ])
-                await expect(timedEvent(page, time)).toHaveCount(1)
+              await calendarTimeLabel(page, '10:00:00').scrollIntoViewIfNeeded()
+              await expect(timedEvent(page, '10:00〜11:00')).toHaveCount(5)
               await check(
-                `ならば ${dayLabel(monday)} の格子に 09:00、10:30、12:00、13:30、15:00 の 5 件の予定が出る`,
+                `ならば ${dayLabel(monday)} から ${dayLabel(addDays(monday, 4))} の格子の 10:00 に、5 件の予定が出る`,
               )
 
               const notice = needsReviewNotice(page)
@@ -396,9 +390,9 @@ test.describe('予定のカレンダー', () => {
                   await createGoogleEvent(page.request, OKADA.calendarId, {
                     summary: spanTitle,
                     date: wednesday,
-                    start: '18:00',
+                    start: '09:00',
                     endDate: thursday,
-                    end: '09:00',
+                    end: '18:00',
                   })
                 ).id,
               )
@@ -422,7 +416,7 @@ test.describe('予定のカレンダー', () => {
             async ({ page, step, check }) => {
               await openWeek(page, monday)
               await step(
-                `前提 ${OKADA.staff.name} の Google カレンダーに、${dayLabel(monday)} の終了の日時を読めない「${brokenTitle}」（中継の gcalhold が壊して返す）、${dayLabel(wednesday)} 18:00 から翌日 09:00 の「${spanTitle}」、${dayLabel(tuesday)} 13:00〜14:00 の「${controlTitle}」がある\nもし その週を週の表示で開く`,
+                `前提 ${OKADA.staff.name} の Google カレンダーに、${dayLabel(monday)} の終了の日時を読めない「${brokenTitle}」（中継の gcalhold が壊して返す）、${dayLabel(wednesday)} 09:00 から翌日 18:00 の「${spanTitle}」、${dayLabel(tuesday)} 13:00〜14:00 の「${controlTitle}」がある\nもし その週を週の表示で開く`,
               )
               const notice = unlistedNotice(page)
               await expect(notice).toContainText('カレンダーに出せない予定が 2 件あります')
