@@ -735,7 +735,250 @@ dependencies:
     .claude/skills/write-verification-spec/references/spec-template.e2e.ts: sha256:91ec8b1b7296d5446e3c44cc820db11b0a1b0f2220b4b35781edec415013b426
   content_hash: sha256:8f48d85ccf5d16396fe2416437aaf1f7102b96401b1b3cd6df0be71b51bc13b9
   declared_license: MIT
+- repo_url: fukuemon/agent-playbooks
+  materialization_repo_url: Fukuemon/agent-playbooks
+  name: playbooks
+  host: github.com
+  resolved_commit: bd81133c6aa4aae6fc64710c3ecf11a6869617e8
+  resolved_ref: playbooks-v0.3.0
+  version: 0.3.0
+  virtual_path: packages/playbooks
+  is_virtual: true
+  package_type: skill_bundle
+  deployed_files:
+  - .agents/skills/design-playbook
+  - .agents/skills/design-playbook/SKILL.md
+  - .agents/skills/run-playbook
+  - .agents/skills/run-playbook/SKILL.md
+  - .agents/skills/run-playbook/playbooks/bug-fix.md
+  - .agents/skills/run-playbook/playbooks/correct.md
+  - .agents/skills/run-playbook/playbooks/design-system.md
+  - .agents/skills/run-playbook/playbooks/feature.md
+  - .agents/skills/run-playbook/playbooks/investigation.md
+  - .agents/skills/run-playbook/playbooks/opening-a-pr.md
+  - .agents/skills/run-playbook/playbooks/pr-follow-up.md
+  - .agents/skills/run-playbook/playbooks/prototype.md
+  - .agents/skills/run-playbook/playbooks/refactoring.md
+  - .agents/skills/run-playbook/playbooks/reflect.md
+  - .agents/skills/run-playbook/playbooks/requirements.md
+  - .agents/skills/run-playbook/playbooks/screen-spec.md
+  - .agents/skills/run-playbook/playbooks/small-change.md
+  - .agents/skills/run-playbook/playbooks/verification-setup.md
+  - .agents/skills/run-playbook/playbooks/verification.md
+  - .agents/skills/run-playbook/principles/bound-every-wait.md
+  - .agents/skills/run-playbook/principles/encode-lessons.md
+  - .agents/skills/run-playbook/principles/fix-root-causes.md
+  - .agents/skills/run-playbook/principles/prove-it-works.md
+  - .agents/skills/run-playbook/principles/smallest-change.md
+  - .agents/skills/run-playbook/rules/decision-log.md
+  - .agents/skills/run-playbook/rules/pre-granted-permission.md
+  - .agents/skills/run-playbook/rules/workers-and-subagents.md
+  - .claude/skills/design-playbook
+  - .claude/skills/design-playbook/SKILL.md
+  - .claude/skills/run-playbook
+  - .claude/skills/run-playbook/SKILL.md
+  - .claude/skills/run-playbook/playbooks/bug-fix.md
+  - .claude/skills/run-playbook/playbooks/correct.md
+  - .claude/skills/run-playbook/playbooks/design-system.md
+  - .claude/skills/run-playbook/playbooks/feature.md
+  - .claude/skills/run-playbook/playbooks/investigation.md
+  - .claude/skills/run-playbook/playbooks/opening-a-pr.md
+  - .claude/skills/run-playbook/playbooks/pr-follow-up.md
+  - .claude/skills/run-playbook/playbooks/prototype.md
+  - .claude/skills/run-playbook/playbooks/refactoring.md
+  - .claude/skills/run-playbook/playbooks/reflect.md
+  - .claude/skills/run-playbook/playbooks/requirements.md
+  - .claude/skills/run-playbook/playbooks/screen-spec.md
+  - .claude/skills/run-playbook/playbooks/small-change.md
+  - .claude/skills/run-playbook/playbooks/verification-setup.md
+  - .claude/skills/run-playbook/playbooks/verification.md
+  - .claude/skills/run-playbook/principles/bound-every-wait.md
+  - .claude/skills/run-playbook/principles/encode-lessons.md
+  - .claude/skills/run-playbook/principles/fix-root-causes.md
+  - .claude/skills/run-playbook/principles/prove-it-works.md
+  - .claude/skills/run-playbook/principles/smallest-change.md
+  - .claude/skills/run-playbook/rules/decision-log.md
+  - .claude/skills/run-playbook/rules/pre-granted-permission.md
+  - .claude/skills/run-playbook/rules/workers-and-subagents.md
+  deployed_file_hashes:
+    .agents/skills/design-playbook/SKILL.md: sha256:c98720300575bd9f926e0a8d15d9fd89143f9893a0318f0a99c1ac7bb2c6e536
+    .agents/skills/run-playbook/SKILL.md: sha256:96caeea79284f0aea6e0191296ff64b16cd29bb8bf454e96b964b10313d9fe54
+    .agents/skills/run-playbook/playbooks/bug-fix.md: sha256:bb2eb56a02f5758d6dd38a24de69eef462ce526e9b02e9ba20eb1ac44f5d0305
+    .agents/skills/run-playbook/playbooks/correct.md: sha256:1b1f2541e2e607a8246b550f407ead350a2a7aef430583af5fa80c3c3f200d16
+    .agents/skills/run-playbook/playbooks/design-system.md: sha256:58ece2bae41971877e8e84a4b89e12dc11c21c871ff248a075e9b7fcd4df9c79
+    .agents/skills/run-playbook/playbooks/feature.md: sha256:a7a6c05c47e7baddd98588e64d562416cb694e183bef489eec44b3bfdcd4750d
+    .agents/skills/run-playbook/playbooks/investigation.md: sha256:b3e6d71a7e218b717e1f9fe636904effccdb7f4e7485aa718f6911ff813874f4
+    .agents/skills/run-playbook/playbooks/opening-a-pr.md: sha256:3eeb2d0295398ed0bb959a72affecbd83ff9e5fdb1862122d2915e7002ab6a86
+    .agents/skills/run-playbook/playbooks/pr-follow-up.md: sha256:123a0bef26eac968ead82345ef818e13d1a066eb1c6c514eb263855512f7b51b
+    .agents/skills/run-playbook/playbooks/prototype.md: sha256:050b98dd5fb072fd1d4b9c6e6445f33808e0955073b8c11e05537029729db632
+    .agents/skills/run-playbook/playbooks/refactoring.md: sha256:dfdd30c6e829d2e1a6c118d9a02c6a9f01baf2f34abf04a9d4cbbc4a8e47545a
+    .agents/skills/run-playbook/playbooks/reflect.md: sha256:9fdd0b4e832071ecd66731ced5e3e223566c4dbb7c25343007af7f5c2b1ac12c
+    .agents/skills/run-playbook/playbooks/requirements.md: sha256:acfd33f27495a220d7748cf0c7ce11ef1ae4c31e317e94a1eed686bdb8e0e74f
+    .agents/skills/run-playbook/playbooks/screen-spec.md: sha256:2e6351fd5ff3d1efd6e9fe7c1019fd0b2c90bbafe0e0b2c18735adf52fd386ca
+    .agents/skills/run-playbook/playbooks/small-change.md: sha256:0d791857ea75a9b6d1450f3065d8d584ba819aebba9c4abe9c96f1b448f8da47
+    .agents/skills/run-playbook/playbooks/verification-setup.md: sha256:c0d5059042e98dae5f2abd1f507e27f1fbd925bdcff9da3123591f0461baced5
+    .agents/skills/run-playbook/playbooks/verification.md: sha256:2cdda431ed310a345055e2b972dde82a3f763ab2ffe9ef136f156bd9834ec54d
+    .agents/skills/run-playbook/principles/bound-every-wait.md: sha256:9462b75c3eb5a632a110e9d1638bc34299d2a0cc5851adb2d7cee198c59b9b42
+    .agents/skills/run-playbook/principles/encode-lessons.md: sha256:b97c507c41354728d2b65bdd6cea5f9bfb554ccba3c521404bf7231d8b5c6d0c
+    .agents/skills/run-playbook/principles/fix-root-causes.md: sha256:50eefc2554a9cd194b79b2d4bde04c7b1ee086f842243d836a840f477897389c
+    .agents/skills/run-playbook/principles/prove-it-works.md: sha256:0627c6fae7cc6dab1fc4fe175aab5e7280e7eab28ea4679122d637135950777d
+    .agents/skills/run-playbook/principles/smallest-change.md: sha256:80d353dff32aa09d7906312413ca6a39d51b785301bd19e56fd334d214aaffd7
+    .agents/skills/run-playbook/rules/decision-log.md: sha256:c1d82317e2b2608ff270ab191cb2f67ffe2d24835c253d6231bd57c4a1b44a42
+    .agents/skills/run-playbook/rules/pre-granted-permission.md: sha256:9fa73d459302c3d9145c6df7a780981716580e185b8cb8456d02621469e0a732
+    .agents/skills/run-playbook/rules/workers-and-subagents.md: sha256:b42d4f6d199bea5e3f79c92b585c6c2fb589fb6af8334600ff03ea5664ee97dd
+    .claude/skills/design-playbook/SKILL.md: sha256:c98720300575bd9f926e0a8d15d9fd89143f9893a0318f0a99c1ac7bb2c6e536
+    .claude/skills/run-playbook/SKILL.md: sha256:96caeea79284f0aea6e0191296ff64b16cd29bb8bf454e96b964b10313d9fe54
+    .claude/skills/run-playbook/playbooks/bug-fix.md: sha256:bb2eb56a02f5758d6dd38a24de69eef462ce526e9b02e9ba20eb1ac44f5d0305
+    .claude/skills/run-playbook/playbooks/correct.md: sha256:1b1f2541e2e607a8246b550f407ead350a2a7aef430583af5fa80c3c3f200d16
+    .claude/skills/run-playbook/playbooks/design-system.md: sha256:58ece2bae41971877e8e84a4b89e12dc11c21c871ff248a075e9b7fcd4df9c79
+    .claude/skills/run-playbook/playbooks/feature.md: sha256:a7a6c05c47e7baddd98588e64d562416cb694e183bef489eec44b3bfdcd4750d
+    .claude/skills/run-playbook/playbooks/investigation.md: sha256:b3e6d71a7e218b717e1f9fe636904effccdb7f4e7485aa718f6911ff813874f4
+    .claude/skills/run-playbook/playbooks/opening-a-pr.md: sha256:3eeb2d0295398ed0bb959a72affecbd83ff9e5fdb1862122d2915e7002ab6a86
+    .claude/skills/run-playbook/playbooks/pr-follow-up.md: sha256:123a0bef26eac968ead82345ef818e13d1a066eb1c6c514eb263855512f7b51b
+    .claude/skills/run-playbook/playbooks/prototype.md: sha256:050b98dd5fb072fd1d4b9c6e6445f33808e0955073b8c11e05537029729db632
+    .claude/skills/run-playbook/playbooks/refactoring.md: sha256:dfdd30c6e829d2e1a6c118d9a02c6a9f01baf2f34abf04a9d4cbbc4a8e47545a
+    .claude/skills/run-playbook/playbooks/reflect.md: sha256:9fdd0b4e832071ecd66731ced5e3e223566c4dbb7c25343007af7f5c2b1ac12c
+    .claude/skills/run-playbook/playbooks/requirements.md: sha256:acfd33f27495a220d7748cf0c7ce11ef1ae4c31e317e94a1eed686bdb8e0e74f
+    .claude/skills/run-playbook/playbooks/screen-spec.md: sha256:2e6351fd5ff3d1efd6e9fe7c1019fd0b2c90bbafe0e0b2c18735adf52fd386ca
+    .claude/skills/run-playbook/playbooks/small-change.md: sha256:0d791857ea75a9b6d1450f3065d8d584ba819aebba9c4abe9c96f1b448f8da47
+    .claude/skills/run-playbook/playbooks/verification-setup.md: sha256:c0d5059042e98dae5f2abd1f507e27f1fbd925bdcff9da3123591f0461baced5
+    .claude/skills/run-playbook/playbooks/verification.md: sha256:2cdda431ed310a345055e2b972dde82a3f763ab2ffe9ef136f156bd9834ec54d
+    .claude/skills/run-playbook/principles/bound-every-wait.md: sha256:9462b75c3eb5a632a110e9d1638bc34299d2a0cc5851adb2d7cee198c59b9b42
+    .claude/skills/run-playbook/principles/encode-lessons.md: sha256:b97c507c41354728d2b65bdd6cea5f9bfb554ccba3c521404bf7231d8b5c6d0c
+    .claude/skills/run-playbook/principles/fix-root-causes.md: sha256:50eefc2554a9cd194b79b2d4bde04c7b1ee086f842243d836a840f477897389c
+    .claude/skills/run-playbook/principles/prove-it-works.md: sha256:0627c6fae7cc6dab1fc4fe175aab5e7280e7eab28ea4679122d637135950777d
+    .claude/skills/run-playbook/principles/smallest-change.md: sha256:80d353dff32aa09d7906312413ca6a39d51b785301bd19e56fd334d214aaffd7
+    .claude/skills/run-playbook/rules/decision-log.md: sha256:c1d82317e2b2608ff270ab191cb2f67ffe2d24835c253d6231bd57c4a1b44a42
+    .claude/skills/run-playbook/rules/pre-granted-permission.md: sha256:9fa73d459302c3d9145c6df7a780981716580e185b8cb8456d02621469e0a732
+    .claude/skills/run-playbook/rules/workers-and-subagents.md: sha256:b42d4f6d199bea5e3f79c92b585c6c2fb589fb6af8334600ff03ea5664ee97dd
+  content_hash: sha256:bcb232d9c9f2d55f306f6c6ab9b5f93979b984143eb7e6dff375e922e7ee86a6
+  declared_license: MIT
+- repo_url: fukuemon/agent-playbooks
+  materialization_repo_url: Fukuemon/agent-playbooks
+  name: review
+  host: github.com
+  resolved_commit: bd81133c6aa4aae6fc64710c3ecf11a6869617e8
+  resolved_ref: review-v0.1.0
+  version: 0.1.0
+  virtual_path: packages/review
+  is_virtual: true
+  package_type: skill_bundle
+  deployed_files:
+  - .agents/skills/review-by-viewpoints
+  - .agents/skills/review-by-viewpoints/SKILL.md
+  - .claude/agents/review-architecture.md
+  - .claude/agents/review-performance.md
+  - .claude/agents/review-quality.md
+  - .claude/agents/review-security.md
+  - .claude/agents/review-spec.md
+  - .claude/skills/review-by-viewpoints
+  - .claude/skills/review-by-viewpoints/SKILL.md
+  - .codex/agents/review-architecture.toml
+  - .codex/agents/review-performance.toml
+  - .codex/agents/review-quality.toml
+  - .codex/agents/review-security.toml
+  - .codex/agents/review-spec.toml
+  deployed_file_hashes:
+    .agents/skills/review-by-viewpoints/SKILL.md: sha256:d9ae4bc1c858f41e4a296483add02ca80de1b8fbd419b1b8e0d12f7297cac677
+    .claude/agents/review-architecture.md: sha256:10c77680598b2518082d728e7e0d06d74cd9691de29013792a7cecabad7195e2
+    .claude/agents/review-performance.md: sha256:c228790e5ba6f20228878723e5c308a2bb5be2c8e7ca8e5816237ff033df3bbf
+    .claude/agents/review-quality.md: sha256:9c079219dd8e7745cd233d1acce8cc191b5cae6c72c6e4f7242a641cf3802f1f
+    .claude/agents/review-security.md: sha256:1cf1759be6fb9a06252f2cee7559628623cc9e6674a2a60242307e9d5b213e2d
+    .claude/agents/review-spec.md: sha256:3ae841fbb39876e0056f0883866f979ca55758f847df1ed271c0e8f94a9f6d6b
+    .claude/skills/review-by-viewpoints/SKILL.md: sha256:d9ae4bc1c858f41e4a296483add02ca80de1b8fbd419b1b8e0d12f7297cac677
+    .codex/agents/review-architecture.toml: sha256:0c0e87bb1534983be158d2f7297f1d9bc7c45e24cebf259ffcfdbb34a1f58526
+    .codex/agents/review-performance.toml: sha256:745b54fa5d3e452d7bd03aa066ae4c1315f33302af3323593daef1c3381cf465
+    .codex/agents/review-quality.toml: sha256:51ff804228bebb94310931fc662866b4ed34aabce736d5f995ab7479c5b0518c
+    .codex/agents/review-security.toml: sha256:e49af2e62386b52bc3d9eaa994f0ec9bad683398d03c9602b9319f0523d57668
+    .codex/agents/review-spec.toml: sha256:9d8815ef58bb204e28e6b53f0c70b98acc492a0a827f60c0d6af3543086fa791
+  content_hash: sha256:dce5e79c3bdde456519488e61a8b5e152486213ed6e66cb65fea222fe0e4e0b1
+  declared_license: MIT
+- repo_url: fukuemon/agent-playbooks
+  materialization_repo_url: Fukuemon/agent-playbooks
+  name: sessions
+  host: github.com
+  resolved_commit: bd81133c6aa4aae6fc64710c3ecf11a6869617e8
+  resolved_ref: sessions-v0.1.0
+  version: 0.1.0
+  virtual_path: packages/sessions
+  is_virtual: true
+  package_type: skill_bundle
+  deployed_files:
+  - .agents/skills/run-session
+  - .agents/skills/run-session/SKILL.md
+  - .agents/skills/run-session/playbooks/autonomous-run.md
+  - .agents/skills/run-session/playbooks/coordinate-workers.md
+  - .agents/skills/run-session/playbooks/delegate-work.md
+  - .agents/skills/run-session/playbooks/pause-safely.md
+  - .agents/skills/run-session/playbooks/session-pickup.md
+  - .claude/skills/run-session
+  - .claude/skills/run-session/SKILL.md
+  - .claude/skills/run-session/playbooks/autonomous-run.md
+  - .claude/skills/run-session/playbooks/coordinate-workers.md
+  - .claude/skills/run-session/playbooks/delegate-work.md
+  - .claude/skills/run-session/playbooks/pause-safely.md
+  - .claude/skills/run-session/playbooks/session-pickup.md
+  deployed_file_hashes:
+    .agents/skills/run-session/SKILL.md: sha256:7bfd90e1740407e16175f1eb18ff1f5246c64188483dcdc32ee5273e71e3818f
+    .agents/skills/run-session/playbooks/autonomous-run.md: sha256:6fba5c2fdc8a4712b6b95e66db233542363a92be0253e1535a522dc4e1edf609
+    .agents/skills/run-session/playbooks/coordinate-workers.md: sha256:92b22f254d8eef3e484f9f478e974b5a0271acf1814f9de9ddd1449f3552e5b7
+    .agents/skills/run-session/playbooks/delegate-work.md: sha256:85f8ed6773db6b459888bb0229318d080adebcef35d6c036dd97f32c0a0219a7
+    .agents/skills/run-session/playbooks/pause-safely.md: sha256:3c4928b40100ee812c1d4504e11601f9be8e30ab515e8dfa182676a4b589bfb4
+    .agents/skills/run-session/playbooks/session-pickup.md: sha256:69c869563d186068dfdf1b2486550a35f73898fb6c458278e2785dd2791616f7
+    .claude/skills/run-session/SKILL.md: sha256:7bfd90e1740407e16175f1eb18ff1f5246c64188483dcdc32ee5273e71e3818f
+    .claude/skills/run-session/playbooks/autonomous-run.md: sha256:6fba5c2fdc8a4712b6b95e66db233542363a92be0253e1535a522dc4e1edf609
+    .claude/skills/run-session/playbooks/coordinate-workers.md: sha256:92b22f254d8eef3e484f9f478e974b5a0271acf1814f9de9ddd1449f3552e5b7
+    .claude/skills/run-session/playbooks/delegate-work.md: sha256:85f8ed6773db6b459888bb0229318d080adebcef35d6c036dd97f32c0a0219a7
+    .claude/skills/run-session/playbooks/pause-safely.md: sha256:3c4928b40100ee812c1d4504e11601f9be8e30ab515e8dfa182676a4b589bfb4
+    .claude/skills/run-session/playbooks/session-pickup.md: sha256:69c869563d186068dfdf1b2486550a35f73898fb6c458278e2785dd2791616f7
+  content_hash: sha256:8badf43095ffa4f809424cbb252ba9a91c8342412f6f1deab98fb0db98cfd12c
+  declared_license: MIT
 deployments:
+- kind: project-relative
+  target: claude
+  value: .claude/agents/review-architecture.md
+  runtime: null
+  scope: project
+  owners:
+  - fukuemon/agent-playbooks/packages/review
+  active_owner: fukuemon/agent-playbooks/packages/review
+  content_hash: sha256:10c77680598b2518082d728e7e0d06d74cd9691de29013792a7cecabad7195e2
+- kind: project-relative
+  target: claude
+  value: .claude/agents/review-performance.md
+  runtime: null
+  scope: project
+  owners:
+  - fukuemon/agent-playbooks/packages/review
+  active_owner: fukuemon/agent-playbooks/packages/review
+  content_hash: sha256:c228790e5ba6f20228878723e5c308a2bb5be2c8e7ca8e5816237ff033df3bbf
+- kind: project-relative
+  target: claude
+  value: .claude/agents/review-quality.md
+  runtime: null
+  scope: project
+  owners:
+  - fukuemon/agent-playbooks/packages/review
+  active_owner: fukuemon/agent-playbooks/packages/review
+  content_hash: sha256:9c079219dd8e7745cd233d1acce8cc191b5cae6c72c6e4f7242a641cf3802f1f
+- kind: project-relative
+  target: claude
+  value: .claude/agents/review-security.md
+  runtime: null
+  scope: project
+  owners:
+  - fukuemon/agent-playbooks/packages/review
+  active_owner: fukuemon/agent-playbooks/packages/review
+  content_hash: sha256:1cf1759be6fb9a06252f2cee7559628623cc9e6674a2a60242307e9d5b213e2d
+- kind: project-relative
+  target: claude
+  value: .claude/agents/review-spec.md
+  runtime: null
+  scope: project
+  owners:
+  - fukuemon/agent-playbooks/packages/review
+  active_owner: fukuemon/agent-playbooks/packages/review
+  content_hash: sha256:3ae841fbb39876e0056f0883866f979ca55758f847df1ed271c0e8f94a9f6d6b
 - kind: project-relative
   target: claude
   value: .claude/hooks/core/hooks/check-comments.mjs
@@ -1008,6 +1251,24 @@ deployments:
   content_hash: sha256:468bc7d49a21a9d1a577a63848201786fcf57de6b528405127d7e58917f3cbd5
 - kind: project-relative
   target: claude
+  value: .claude/skills/design-playbook
+  runtime: null
+  scope: project
+  owners:
+  - fukuemon/agent-playbooks/packages/playbooks
+  active_owner: fukuemon/agent-playbooks/packages/playbooks
+  content_hash: null
+- kind: project-relative
+  target: claude
+  value: .claude/skills/design-playbook/SKILL.md
+  runtime: null
+  scope: project
+  owners:
+  - fukuemon/agent-playbooks/packages/playbooks
+  active_owner: fukuemon/agent-playbooks/packages/playbooks
+  content_hash: sha256:c98720300575bd9f926e0a8d15d9fd89143f9893a0318f0a99c1ac7bb2c6e536
+- kind: project-relative
+  target: claude
   value: .claude/skills/design-test-cases
   runtime: null
   scope: project
@@ -1150,6 +1411,312 @@ deployments:
   - fukuemon/agent-harness/packages/docs-site
   active_owner: fukuemon/agent-harness/packages/docs-site
   content_hash: sha256:6b8228805366d4e7a4ae307daf511b0b173701cf14c9dc11f03a553671a0fd75
+- kind: project-relative
+  target: claude
+  value: .claude/skills/review-by-viewpoints
+  runtime: null
+  scope: project
+  owners:
+  - fukuemon/agent-playbooks/packages/review
+  active_owner: fukuemon/agent-playbooks/packages/review
+  content_hash: null
+- kind: project-relative
+  target: claude
+  value: .claude/skills/review-by-viewpoints/SKILL.md
+  runtime: null
+  scope: project
+  owners:
+  - fukuemon/agent-playbooks/packages/review
+  active_owner: fukuemon/agent-playbooks/packages/review
+  content_hash: sha256:d9ae4bc1c858f41e4a296483add02ca80de1b8fbd419b1b8e0d12f7297cac677
+- kind: project-relative
+  target: claude
+  value: .claude/skills/run-playbook
+  runtime: null
+  scope: project
+  owners:
+  - fukuemon/agent-playbooks/packages/playbooks
+  active_owner: fukuemon/agent-playbooks/packages/playbooks
+  content_hash: null
+- kind: project-relative
+  target: claude
+  value: .claude/skills/run-playbook/SKILL.md
+  runtime: null
+  scope: project
+  owners:
+  - fukuemon/agent-playbooks/packages/playbooks
+  active_owner: fukuemon/agent-playbooks/packages/playbooks
+  content_hash: sha256:96caeea79284f0aea6e0191296ff64b16cd29bb8bf454e96b964b10313d9fe54
+- kind: project-relative
+  target: claude
+  value: .claude/skills/run-playbook/playbooks/bug-fix.md
+  runtime: null
+  scope: project
+  owners:
+  - fukuemon/agent-playbooks/packages/playbooks
+  active_owner: fukuemon/agent-playbooks/packages/playbooks
+  content_hash: sha256:bb2eb56a02f5758d6dd38a24de69eef462ce526e9b02e9ba20eb1ac44f5d0305
+- kind: project-relative
+  target: claude
+  value: .claude/skills/run-playbook/playbooks/correct.md
+  runtime: null
+  scope: project
+  owners:
+  - fukuemon/agent-playbooks/packages/playbooks
+  active_owner: fukuemon/agent-playbooks/packages/playbooks
+  content_hash: sha256:1b1f2541e2e607a8246b550f407ead350a2a7aef430583af5fa80c3c3f200d16
+- kind: project-relative
+  target: claude
+  value: .claude/skills/run-playbook/playbooks/design-system.md
+  runtime: null
+  scope: project
+  owners:
+  - fukuemon/agent-playbooks/packages/playbooks
+  active_owner: fukuemon/agent-playbooks/packages/playbooks
+  content_hash: sha256:58ece2bae41971877e8e84a4b89e12dc11c21c871ff248a075e9b7fcd4df9c79
+- kind: project-relative
+  target: claude
+  value: .claude/skills/run-playbook/playbooks/feature.md
+  runtime: null
+  scope: project
+  owners:
+  - fukuemon/agent-playbooks/packages/playbooks
+  active_owner: fukuemon/agent-playbooks/packages/playbooks
+  content_hash: sha256:a7a6c05c47e7baddd98588e64d562416cb694e183bef489eec44b3bfdcd4750d
+- kind: project-relative
+  target: claude
+  value: .claude/skills/run-playbook/playbooks/investigation.md
+  runtime: null
+  scope: project
+  owners:
+  - fukuemon/agent-playbooks/packages/playbooks
+  active_owner: fukuemon/agent-playbooks/packages/playbooks
+  content_hash: sha256:b3e6d71a7e218b717e1f9fe636904effccdb7f4e7485aa718f6911ff813874f4
+- kind: project-relative
+  target: claude
+  value: .claude/skills/run-playbook/playbooks/opening-a-pr.md
+  runtime: null
+  scope: project
+  owners:
+  - fukuemon/agent-playbooks/packages/playbooks
+  active_owner: fukuemon/agent-playbooks/packages/playbooks
+  content_hash: sha256:3eeb2d0295398ed0bb959a72affecbd83ff9e5fdb1862122d2915e7002ab6a86
+- kind: project-relative
+  target: claude
+  value: .claude/skills/run-playbook/playbooks/pr-follow-up.md
+  runtime: null
+  scope: project
+  owners:
+  - fukuemon/agent-playbooks/packages/playbooks
+  active_owner: fukuemon/agent-playbooks/packages/playbooks
+  content_hash: sha256:123a0bef26eac968ead82345ef818e13d1a066eb1c6c514eb263855512f7b51b
+- kind: project-relative
+  target: claude
+  value: .claude/skills/run-playbook/playbooks/prototype.md
+  runtime: null
+  scope: project
+  owners:
+  - fukuemon/agent-playbooks/packages/playbooks
+  active_owner: fukuemon/agent-playbooks/packages/playbooks
+  content_hash: sha256:050b98dd5fb072fd1d4b9c6e6445f33808e0955073b8c11e05537029729db632
+- kind: project-relative
+  target: claude
+  value: .claude/skills/run-playbook/playbooks/refactoring.md
+  runtime: null
+  scope: project
+  owners:
+  - fukuemon/agent-playbooks/packages/playbooks
+  active_owner: fukuemon/agent-playbooks/packages/playbooks
+  content_hash: sha256:dfdd30c6e829d2e1a6c118d9a02c6a9f01baf2f34abf04a9d4cbbc4a8e47545a
+- kind: project-relative
+  target: claude
+  value: .claude/skills/run-playbook/playbooks/reflect.md
+  runtime: null
+  scope: project
+  owners:
+  - fukuemon/agent-playbooks/packages/playbooks
+  active_owner: fukuemon/agent-playbooks/packages/playbooks
+  content_hash: sha256:9fdd0b4e832071ecd66731ced5e3e223566c4dbb7c25343007af7f5c2b1ac12c
+- kind: project-relative
+  target: claude
+  value: .claude/skills/run-playbook/playbooks/requirements.md
+  runtime: null
+  scope: project
+  owners:
+  - fukuemon/agent-playbooks/packages/playbooks
+  active_owner: fukuemon/agent-playbooks/packages/playbooks
+  content_hash: sha256:acfd33f27495a220d7748cf0c7ce11ef1ae4c31e317e94a1eed686bdb8e0e74f
+- kind: project-relative
+  target: claude
+  value: .claude/skills/run-playbook/playbooks/screen-spec.md
+  runtime: null
+  scope: project
+  owners:
+  - fukuemon/agent-playbooks/packages/playbooks
+  active_owner: fukuemon/agent-playbooks/packages/playbooks
+  content_hash: sha256:2e6351fd5ff3d1efd6e9fe7c1019fd0b2c90bbafe0e0b2c18735adf52fd386ca
+- kind: project-relative
+  target: claude
+  value: .claude/skills/run-playbook/playbooks/small-change.md
+  runtime: null
+  scope: project
+  owners:
+  - fukuemon/agent-playbooks/packages/playbooks
+  active_owner: fukuemon/agent-playbooks/packages/playbooks
+  content_hash: sha256:0d791857ea75a9b6d1450f3065d8d584ba819aebba9c4abe9c96f1b448f8da47
+- kind: project-relative
+  target: claude
+  value: .claude/skills/run-playbook/playbooks/verification-setup.md
+  runtime: null
+  scope: project
+  owners:
+  - fukuemon/agent-playbooks/packages/playbooks
+  active_owner: fukuemon/agent-playbooks/packages/playbooks
+  content_hash: sha256:c0d5059042e98dae5f2abd1f507e27f1fbd925bdcff9da3123591f0461baced5
+- kind: project-relative
+  target: claude
+  value: .claude/skills/run-playbook/playbooks/verification.md
+  runtime: null
+  scope: project
+  owners:
+  - fukuemon/agent-playbooks/packages/playbooks
+  active_owner: fukuemon/agent-playbooks/packages/playbooks
+  content_hash: sha256:2cdda431ed310a345055e2b972dde82a3f763ab2ffe9ef136f156bd9834ec54d
+- kind: project-relative
+  target: claude
+  value: .claude/skills/run-playbook/principles/bound-every-wait.md
+  runtime: null
+  scope: project
+  owners:
+  - fukuemon/agent-playbooks/packages/playbooks
+  active_owner: fukuemon/agent-playbooks/packages/playbooks
+  content_hash: sha256:9462b75c3eb5a632a110e9d1638bc34299d2a0cc5851adb2d7cee198c59b9b42
+- kind: project-relative
+  target: claude
+  value: .claude/skills/run-playbook/principles/encode-lessons.md
+  runtime: null
+  scope: project
+  owners:
+  - fukuemon/agent-playbooks/packages/playbooks
+  active_owner: fukuemon/agent-playbooks/packages/playbooks
+  content_hash: sha256:b97c507c41354728d2b65bdd6cea5f9bfb554ccba3c521404bf7231d8b5c6d0c
+- kind: project-relative
+  target: claude
+  value: .claude/skills/run-playbook/principles/fix-root-causes.md
+  runtime: null
+  scope: project
+  owners:
+  - fukuemon/agent-playbooks/packages/playbooks
+  active_owner: fukuemon/agent-playbooks/packages/playbooks
+  content_hash: sha256:50eefc2554a9cd194b79b2d4bde04c7b1ee086f842243d836a840f477897389c
+- kind: project-relative
+  target: claude
+  value: .claude/skills/run-playbook/principles/prove-it-works.md
+  runtime: null
+  scope: project
+  owners:
+  - fukuemon/agent-playbooks/packages/playbooks
+  active_owner: fukuemon/agent-playbooks/packages/playbooks
+  content_hash: sha256:0627c6fae7cc6dab1fc4fe175aab5e7280e7eab28ea4679122d637135950777d
+- kind: project-relative
+  target: claude
+  value: .claude/skills/run-playbook/principles/smallest-change.md
+  runtime: null
+  scope: project
+  owners:
+  - fukuemon/agent-playbooks/packages/playbooks
+  active_owner: fukuemon/agent-playbooks/packages/playbooks
+  content_hash: sha256:80d353dff32aa09d7906312413ca6a39d51b785301bd19e56fd334d214aaffd7
+- kind: project-relative
+  target: claude
+  value: .claude/skills/run-playbook/rules/decision-log.md
+  runtime: null
+  scope: project
+  owners:
+  - fukuemon/agent-playbooks/packages/playbooks
+  active_owner: fukuemon/agent-playbooks/packages/playbooks
+  content_hash: sha256:c1d82317e2b2608ff270ab191cb2f67ffe2d24835c253d6231bd57c4a1b44a42
+- kind: project-relative
+  target: claude
+  value: .claude/skills/run-playbook/rules/pre-granted-permission.md
+  runtime: null
+  scope: project
+  owners:
+  - fukuemon/agent-playbooks/packages/playbooks
+  active_owner: fukuemon/agent-playbooks/packages/playbooks
+  content_hash: sha256:9fa73d459302c3d9145c6df7a780981716580e185b8cb8456d02621469e0a732
+- kind: project-relative
+  target: claude
+  value: .claude/skills/run-playbook/rules/workers-and-subagents.md
+  runtime: null
+  scope: project
+  owners:
+  - fukuemon/agent-playbooks/packages/playbooks
+  active_owner: fukuemon/agent-playbooks/packages/playbooks
+  content_hash: sha256:b42d4f6d199bea5e3f79c92b585c6c2fb589fb6af8334600ff03ea5664ee97dd
+- kind: project-relative
+  target: claude
+  value: .claude/skills/run-session
+  runtime: null
+  scope: project
+  owners:
+  - fukuemon/agent-playbooks/packages/sessions
+  active_owner: fukuemon/agent-playbooks/packages/sessions
+  content_hash: null
+- kind: project-relative
+  target: claude
+  value: .claude/skills/run-session/SKILL.md
+  runtime: null
+  scope: project
+  owners:
+  - fukuemon/agent-playbooks/packages/sessions
+  active_owner: fukuemon/agent-playbooks/packages/sessions
+  content_hash: sha256:7bfd90e1740407e16175f1eb18ff1f5246c64188483dcdc32ee5273e71e3818f
+- kind: project-relative
+  target: claude
+  value: .claude/skills/run-session/playbooks/autonomous-run.md
+  runtime: null
+  scope: project
+  owners:
+  - fukuemon/agent-playbooks/packages/sessions
+  active_owner: fukuemon/agent-playbooks/packages/sessions
+  content_hash: sha256:6fba5c2fdc8a4712b6b95e66db233542363a92be0253e1535a522dc4e1edf609
+- kind: project-relative
+  target: claude
+  value: .claude/skills/run-session/playbooks/coordinate-workers.md
+  runtime: null
+  scope: project
+  owners:
+  - fukuemon/agent-playbooks/packages/sessions
+  active_owner: fukuemon/agent-playbooks/packages/sessions
+  content_hash: sha256:92b22f254d8eef3e484f9f478e974b5a0271acf1814f9de9ddd1449f3552e5b7
+- kind: project-relative
+  target: claude
+  value: .claude/skills/run-session/playbooks/delegate-work.md
+  runtime: null
+  scope: project
+  owners:
+  - fukuemon/agent-playbooks/packages/sessions
+  active_owner: fukuemon/agent-playbooks/packages/sessions
+  content_hash: sha256:85f8ed6773db6b459888bb0229318d080adebcef35d6c036dd97f32c0a0219a7
+- kind: project-relative
+  target: claude
+  value: .claude/skills/run-session/playbooks/pause-safely.md
+  runtime: null
+  scope: project
+  owners:
+  - fukuemon/agent-playbooks/packages/sessions
+  active_owner: fukuemon/agent-playbooks/packages/sessions
+  content_hash: sha256:3c4928b40100ee812c1d4504e11601f9be8e30ab515e8dfa182676a4b589bfb4
+- kind: project-relative
+  target: claude
+  value: .claude/skills/run-session/playbooks/session-pickup.md
+  runtime: null
+  scope: project
+  owners:
+  - fukuemon/agent-playbooks/packages/sessions
+  active_owner: fukuemon/agent-playbooks/packages/sessions
+  content_hash: sha256:69c869563d186068dfdf1b2486550a35f73898fb6c458278e2785dd2791616f7
 - kind: project-relative
   target: claude
   value: .claude/skills/run-verification-scenarios
@@ -2421,6 +2988,24 @@ deployments:
   content_hash: sha256:468bc7d49a21a9d1a577a63848201786fcf57de6b528405127d7e58917f3cbd5
 - kind: project-relative
   target: codex
+  value: .agents/skills/design-playbook
+  runtime: null
+  scope: project
+  owners:
+  - fukuemon/agent-playbooks/packages/playbooks
+  active_owner: fukuemon/agent-playbooks/packages/playbooks
+  content_hash: null
+- kind: project-relative
+  target: codex
+  value: .agents/skills/design-playbook/SKILL.md
+  runtime: null
+  scope: project
+  owners:
+  - fukuemon/agent-playbooks/packages/playbooks
+  active_owner: fukuemon/agent-playbooks/packages/playbooks
+  content_hash: sha256:c98720300575bd9f926e0a8d15d9fd89143f9893a0318f0a99c1ac7bb2c6e536
+- kind: project-relative
+  target: codex
   value: .agents/skills/design-test-cases
   runtime: null
   scope: project
@@ -2563,6 +3148,312 @@ deployments:
   - fukuemon/agent-harness/packages/docs-site
   active_owner: fukuemon/agent-harness/packages/docs-site
   content_hash: sha256:6b8228805366d4e7a4ae307daf511b0b173701cf14c9dc11f03a553671a0fd75
+- kind: project-relative
+  target: codex
+  value: .agents/skills/review-by-viewpoints
+  runtime: null
+  scope: project
+  owners:
+  - fukuemon/agent-playbooks/packages/review
+  active_owner: fukuemon/agent-playbooks/packages/review
+  content_hash: null
+- kind: project-relative
+  target: codex
+  value: .agents/skills/review-by-viewpoints/SKILL.md
+  runtime: null
+  scope: project
+  owners:
+  - fukuemon/agent-playbooks/packages/review
+  active_owner: fukuemon/agent-playbooks/packages/review
+  content_hash: sha256:d9ae4bc1c858f41e4a296483add02ca80de1b8fbd419b1b8e0d12f7297cac677
+- kind: project-relative
+  target: codex
+  value: .agents/skills/run-playbook
+  runtime: null
+  scope: project
+  owners:
+  - fukuemon/agent-playbooks/packages/playbooks
+  active_owner: fukuemon/agent-playbooks/packages/playbooks
+  content_hash: null
+- kind: project-relative
+  target: codex
+  value: .agents/skills/run-playbook/SKILL.md
+  runtime: null
+  scope: project
+  owners:
+  - fukuemon/agent-playbooks/packages/playbooks
+  active_owner: fukuemon/agent-playbooks/packages/playbooks
+  content_hash: sha256:96caeea79284f0aea6e0191296ff64b16cd29bb8bf454e96b964b10313d9fe54
+- kind: project-relative
+  target: codex
+  value: .agents/skills/run-playbook/playbooks/bug-fix.md
+  runtime: null
+  scope: project
+  owners:
+  - fukuemon/agent-playbooks/packages/playbooks
+  active_owner: fukuemon/agent-playbooks/packages/playbooks
+  content_hash: sha256:bb2eb56a02f5758d6dd38a24de69eef462ce526e9b02e9ba20eb1ac44f5d0305
+- kind: project-relative
+  target: codex
+  value: .agents/skills/run-playbook/playbooks/correct.md
+  runtime: null
+  scope: project
+  owners:
+  - fukuemon/agent-playbooks/packages/playbooks
+  active_owner: fukuemon/agent-playbooks/packages/playbooks
+  content_hash: sha256:1b1f2541e2e607a8246b550f407ead350a2a7aef430583af5fa80c3c3f200d16
+- kind: project-relative
+  target: codex
+  value: .agents/skills/run-playbook/playbooks/design-system.md
+  runtime: null
+  scope: project
+  owners:
+  - fukuemon/agent-playbooks/packages/playbooks
+  active_owner: fukuemon/agent-playbooks/packages/playbooks
+  content_hash: sha256:58ece2bae41971877e8e84a4b89e12dc11c21c871ff248a075e9b7fcd4df9c79
+- kind: project-relative
+  target: codex
+  value: .agents/skills/run-playbook/playbooks/feature.md
+  runtime: null
+  scope: project
+  owners:
+  - fukuemon/agent-playbooks/packages/playbooks
+  active_owner: fukuemon/agent-playbooks/packages/playbooks
+  content_hash: sha256:a7a6c05c47e7baddd98588e64d562416cb694e183bef489eec44b3bfdcd4750d
+- kind: project-relative
+  target: codex
+  value: .agents/skills/run-playbook/playbooks/investigation.md
+  runtime: null
+  scope: project
+  owners:
+  - fukuemon/agent-playbooks/packages/playbooks
+  active_owner: fukuemon/agent-playbooks/packages/playbooks
+  content_hash: sha256:b3e6d71a7e218b717e1f9fe636904effccdb7f4e7485aa718f6911ff813874f4
+- kind: project-relative
+  target: codex
+  value: .agents/skills/run-playbook/playbooks/opening-a-pr.md
+  runtime: null
+  scope: project
+  owners:
+  - fukuemon/agent-playbooks/packages/playbooks
+  active_owner: fukuemon/agent-playbooks/packages/playbooks
+  content_hash: sha256:3eeb2d0295398ed0bb959a72affecbd83ff9e5fdb1862122d2915e7002ab6a86
+- kind: project-relative
+  target: codex
+  value: .agents/skills/run-playbook/playbooks/pr-follow-up.md
+  runtime: null
+  scope: project
+  owners:
+  - fukuemon/agent-playbooks/packages/playbooks
+  active_owner: fukuemon/agent-playbooks/packages/playbooks
+  content_hash: sha256:123a0bef26eac968ead82345ef818e13d1a066eb1c6c514eb263855512f7b51b
+- kind: project-relative
+  target: codex
+  value: .agents/skills/run-playbook/playbooks/prototype.md
+  runtime: null
+  scope: project
+  owners:
+  - fukuemon/agent-playbooks/packages/playbooks
+  active_owner: fukuemon/agent-playbooks/packages/playbooks
+  content_hash: sha256:050b98dd5fb072fd1d4b9c6e6445f33808e0955073b8c11e05537029729db632
+- kind: project-relative
+  target: codex
+  value: .agents/skills/run-playbook/playbooks/refactoring.md
+  runtime: null
+  scope: project
+  owners:
+  - fukuemon/agent-playbooks/packages/playbooks
+  active_owner: fukuemon/agent-playbooks/packages/playbooks
+  content_hash: sha256:dfdd30c6e829d2e1a6c118d9a02c6a9f01baf2f34abf04a9d4cbbc4a8e47545a
+- kind: project-relative
+  target: codex
+  value: .agents/skills/run-playbook/playbooks/reflect.md
+  runtime: null
+  scope: project
+  owners:
+  - fukuemon/agent-playbooks/packages/playbooks
+  active_owner: fukuemon/agent-playbooks/packages/playbooks
+  content_hash: sha256:9fdd0b4e832071ecd66731ced5e3e223566c4dbb7c25343007af7f5c2b1ac12c
+- kind: project-relative
+  target: codex
+  value: .agents/skills/run-playbook/playbooks/requirements.md
+  runtime: null
+  scope: project
+  owners:
+  - fukuemon/agent-playbooks/packages/playbooks
+  active_owner: fukuemon/agent-playbooks/packages/playbooks
+  content_hash: sha256:acfd33f27495a220d7748cf0c7ce11ef1ae4c31e317e94a1eed686bdb8e0e74f
+- kind: project-relative
+  target: codex
+  value: .agents/skills/run-playbook/playbooks/screen-spec.md
+  runtime: null
+  scope: project
+  owners:
+  - fukuemon/agent-playbooks/packages/playbooks
+  active_owner: fukuemon/agent-playbooks/packages/playbooks
+  content_hash: sha256:2e6351fd5ff3d1efd6e9fe7c1019fd0b2c90bbafe0e0b2c18735adf52fd386ca
+- kind: project-relative
+  target: codex
+  value: .agents/skills/run-playbook/playbooks/small-change.md
+  runtime: null
+  scope: project
+  owners:
+  - fukuemon/agent-playbooks/packages/playbooks
+  active_owner: fukuemon/agent-playbooks/packages/playbooks
+  content_hash: sha256:0d791857ea75a9b6d1450f3065d8d584ba819aebba9c4abe9c96f1b448f8da47
+- kind: project-relative
+  target: codex
+  value: .agents/skills/run-playbook/playbooks/verification-setup.md
+  runtime: null
+  scope: project
+  owners:
+  - fukuemon/agent-playbooks/packages/playbooks
+  active_owner: fukuemon/agent-playbooks/packages/playbooks
+  content_hash: sha256:c0d5059042e98dae5f2abd1f507e27f1fbd925bdcff9da3123591f0461baced5
+- kind: project-relative
+  target: codex
+  value: .agents/skills/run-playbook/playbooks/verification.md
+  runtime: null
+  scope: project
+  owners:
+  - fukuemon/agent-playbooks/packages/playbooks
+  active_owner: fukuemon/agent-playbooks/packages/playbooks
+  content_hash: sha256:2cdda431ed310a345055e2b972dde82a3f763ab2ffe9ef136f156bd9834ec54d
+- kind: project-relative
+  target: codex
+  value: .agents/skills/run-playbook/principles/bound-every-wait.md
+  runtime: null
+  scope: project
+  owners:
+  - fukuemon/agent-playbooks/packages/playbooks
+  active_owner: fukuemon/agent-playbooks/packages/playbooks
+  content_hash: sha256:9462b75c3eb5a632a110e9d1638bc34299d2a0cc5851adb2d7cee198c59b9b42
+- kind: project-relative
+  target: codex
+  value: .agents/skills/run-playbook/principles/encode-lessons.md
+  runtime: null
+  scope: project
+  owners:
+  - fukuemon/agent-playbooks/packages/playbooks
+  active_owner: fukuemon/agent-playbooks/packages/playbooks
+  content_hash: sha256:b97c507c41354728d2b65bdd6cea5f9bfb554ccba3c521404bf7231d8b5c6d0c
+- kind: project-relative
+  target: codex
+  value: .agents/skills/run-playbook/principles/fix-root-causes.md
+  runtime: null
+  scope: project
+  owners:
+  - fukuemon/agent-playbooks/packages/playbooks
+  active_owner: fukuemon/agent-playbooks/packages/playbooks
+  content_hash: sha256:50eefc2554a9cd194b79b2d4bde04c7b1ee086f842243d836a840f477897389c
+- kind: project-relative
+  target: codex
+  value: .agents/skills/run-playbook/principles/prove-it-works.md
+  runtime: null
+  scope: project
+  owners:
+  - fukuemon/agent-playbooks/packages/playbooks
+  active_owner: fukuemon/agent-playbooks/packages/playbooks
+  content_hash: sha256:0627c6fae7cc6dab1fc4fe175aab5e7280e7eab28ea4679122d637135950777d
+- kind: project-relative
+  target: codex
+  value: .agents/skills/run-playbook/principles/smallest-change.md
+  runtime: null
+  scope: project
+  owners:
+  - fukuemon/agent-playbooks/packages/playbooks
+  active_owner: fukuemon/agent-playbooks/packages/playbooks
+  content_hash: sha256:80d353dff32aa09d7906312413ca6a39d51b785301bd19e56fd334d214aaffd7
+- kind: project-relative
+  target: codex
+  value: .agents/skills/run-playbook/rules/decision-log.md
+  runtime: null
+  scope: project
+  owners:
+  - fukuemon/agent-playbooks/packages/playbooks
+  active_owner: fukuemon/agent-playbooks/packages/playbooks
+  content_hash: sha256:c1d82317e2b2608ff270ab191cb2f67ffe2d24835c253d6231bd57c4a1b44a42
+- kind: project-relative
+  target: codex
+  value: .agents/skills/run-playbook/rules/pre-granted-permission.md
+  runtime: null
+  scope: project
+  owners:
+  - fukuemon/agent-playbooks/packages/playbooks
+  active_owner: fukuemon/agent-playbooks/packages/playbooks
+  content_hash: sha256:9fa73d459302c3d9145c6df7a780981716580e185b8cb8456d02621469e0a732
+- kind: project-relative
+  target: codex
+  value: .agents/skills/run-playbook/rules/workers-and-subagents.md
+  runtime: null
+  scope: project
+  owners:
+  - fukuemon/agent-playbooks/packages/playbooks
+  active_owner: fukuemon/agent-playbooks/packages/playbooks
+  content_hash: sha256:b42d4f6d199bea5e3f79c92b585c6c2fb589fb6af8334600ff03ea5664ee97dd
+- kind: project-relative
+  target: codex
+  value: .agents/skills/run-session
+  runtime: null
+  scope: project
+  owners:
+  - fukuemon/agent-playbooks/packages/sessions
+  active_owner: fukuemon/agent-playbooks/packages/sessions
+  content_hash: null
+- kind: project-relative
+  target: codex
+  value: .agents/skills/run-session/SKILL.md
+  runtime: null
+  scope: project
+  owners:
+  - fukuemon/agent-playbooks/packages/sessions
+  active_owner: fukuemon/agent-playbooks/packages/sessions
+  content_hash: sha256:7bfd90e1740407e16175f1eb18ff1f5246c64188483dcdc32ee5273e71e3818f
+- kind: project-relative
+  target: codex
+  value: .agents/skills/run-session/playbooks/autonomous-run.md
+  runtime: null
+  scope: project
+  owners:
+  - fukuemon/agent-playbooks/packages/sessions
+  active_owner: fukuemon/agent-playbooks/packages/sessions
+  content_hash: sha256:6fba5c2fdc8a4712b6b95e66db233542363a92be0253e1535a522dc4e1edf609
+- kind: project-relative
+  target: codex
+  value: .agents/skills/run-session/playbooks/coordinate-workers.md
+  runtime: null
+  scope: project
+  owners:
+  - fukuemon/agent-playbooks/packages/sessions
+  active_owner: fukuemon/agent-playbooks/packages/sessions
+  content_hash: sha256:92b22f254d8eef3e484f9f478e974b5a0271acf1814f9de9ddd1449f3552e5b7
+- kind: project-relative
+  target: codex
+  value: .agents/skills/run-session/playbooks/delegate-work.md
+  runtime: null
+  scope: project
+  owners:
+  - fukuemon/agent-playbooks/packages/sessions
+  active_owner: fukuemon/agent-playbooks/packages/sessions
+  content_hash: sha256:85f8ed6773db6b459888bb0229318d080adebcef35d6c036dd97f32c0a0219a7
+- kind: project-relative
+  target: codex
+  value: .agents/skills/run-session/playbooks/pause-safely.md
+  runtime: null
+  scope: project
+  owners:
+  - fukuemon/agent-playbooks/packages/sessions
+  active_owner: fukuemon/agent-playbooks/packages/sessions
+  content_hash: sha256:3c4928b40100ee812c1d4504e11601f9be8e30ab515e8dfa182676a4b589bfb4
+- kind: project-relative
+  target: codex
+  value: .agents/skills/run-session/playbooks/session-pickup.md
+  runtime: null
+  scope: project
+  owners:
+  - fukuemon/agent-playbooks/packages/sessions
+  active_owner: fukuemon/agent-playbooks/packages/sessions
+  content_hash: sha256:69c869563d186068dfdf1b2486550a35f73898fb6c458278e2785dd2791616f7
 - kind: project-relative
   target: codex
   value: .agents/skills/run-verification-scenarios
@@ -3670,6 +4561,51 @@ deployments:
   - fukuemon/agent-harness/packages/verification
   active_owner: fukuemon/agent-harness/packages/verification
   content_hash: sha256:91ec8b1b7296d5446e3c44cc820db11b0a1b0f2220b4b35781edec415013b426
+- kind: project-relative
+  target: codex
+  value: .codex/agents/review-architecture.toml
+  runtime: null
+  scope: project
+  owners:
+  - fukuemon/agent-playbooks/packages/review
+  active_owner: fukuemon/agent-playbooks/packages/review
+  content_hash: sha256:0c0e87bb1534983be158d2f7297f1d9bc7c45e24cebf259ffcfdbb34a1f58526
+- kind: project-relative
+  target: codex
+  value: .codex/agents/review-performance.toml
+  runtime: null
+  scope: project
+  owners:
+  - fukuemon/agent-playbooks/packages/review
+  active_owner: fukuemon/agent-playbooks/packages/review
+  content_hash: sha256:745b54fa5d3e452d7bd03aa066ae4c1315f33302af3323593daef1c3381cf465
+- kind: project-relative
+  target: codex
+  value: .codex/agents/review-quality.toml
+  runtime: null
+  scope: project
+  owners:
+  - fukuemon/agent-playbooks/packages/review
+  active_owner: fukuemon/agent-playbooks/packages/review
+  content_hash: sha256:51ff804228bebb94310931fc662866b4ed34aabce736d5f995ab7479c5b0518c
+- kind: project-relative
+  target: codex
+  value: .codex/agents/review-security.toml
+  runtime: null
+  scope: project
+  owners:
+  - fukuemon/agent-playbooks/packages/review
+  active_owner: fukuemon/agent-playbooks/packages/review
+  content_hash: sha256:e49af2e62386b52bc3d9eaa994f0ec9bad683398d03c9602b9319f0523d57668
+- kind: project-relative
+  target: codex
+  value: .codex/agents/review-spec.toml
+  runtime: null
+  scope: project
+  owners:
+  - fukuemon/agent-playbooks/packages/review
+  active_owner: fukuemon/agent-playbooks/packages/review
+  content_hash: sha256:9d8815ef58bb204e28e6b53f0c70b98acc492a0a827f60c0d6af3543086fa791
 - kind: project-relative
   target: codex
   value: .codex/hooks/core/hooks/check-comments.mjs

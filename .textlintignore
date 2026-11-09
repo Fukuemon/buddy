@@ -8,8 +8,9 @@ site/**
 .cache/**
 packages/e2e/test-results/**
 packages/e2e/playwright-report/**
-# apm が配置するスキル。元のリポジトリで直す
+# apm が配置するスキルと subagent。元のリポジトリで直す
 .claude/skills/**
+.claude/agents/**
 .agents/**
 .codex/**
 # tbls の生成物。説明は services/schedule/.tbls.yml で直す
