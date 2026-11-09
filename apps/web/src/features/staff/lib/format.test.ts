@@ -3,7 +3,9 @@ import { describe, expect, it } from 'vite-plus/test'
 import {
   employmentText,
   formatRemainingRecurring,
+  formatRemainingRecurringParts,
   formatRemainingSchedule,
+  formatRemainingScheduleParts,
   policyTargetText,
   statusLabel,
 } from './format'
@@ -97,6 +99,33 @@ describe('formatRemainingSchedule', () => {
         ends_next_day: false,
       }),
     ).toBe('2026年11月2日（月） 09:00〜10:00')
+  })
+})
+
+describe('formatRemainingScheduleParts と formatRemainingRecurringParts', () => {
+  it('画面が時刻の範囲の中で折り返さないよう、時刻の範囲を「翌」と終了の時刻まで 1 つにして返す', () => {
+    expect(
+      formatRemainingScheduleParts({
+        id: 's',
+        date: '2026-11-02',
+        start_time: '22:00',
+        end_time: '01:00',
+        ends_next_day: true,
+      }),
+    ).toEqual({ date: '2026年11月2日（月）', time: '22:00〜翌 01:00' })
+    expect(
+      formatRemainingRecurringParts({
+        id: 'r',
+        date: '2026-10-06',
+        end_date: '2027-03-31',
+        start_time: '22:00',
+        end_time: '01:00',
+        ends_next_day: true,
+      }),
+    ).toEqual({
+      period: '2026年10月6日（火）から2027年3月31日（水）まで、',
+      time: '22:00〜翌 01:00',
+    })
   })
 })
 

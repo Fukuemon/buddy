@@ -63,22 +63,49 @@ export const editStaffOptions = (
 export const activeStaffOptions = (staff: readonly StaffRecord[]) =>
   staff.filter(isActiveStaffRecord).sort((a, b) => a.username.localeCompare(b.username, 'ja'))
 
-/** 残る単発の予定 1 件の、`2026年11月2日（月） 09:00〜09:29` の形の日時。翌日に終わる予定は `22:00〜翌 01:00` にする。 */
-export const formatRemainingSchedule = (schedule: PatientSchedules['schedules'][number]) =>
-  `${formatDate(schedule.date)} ${formatTimeRange(schedule.start_time, schedule.end_time, schedule.ends_next_day ? 'nextDay' : 'sameDay')}`
+/**
+ * 残る単発の予定 1 件の日付と時刻の範囲。`2026年11月2日（月）` と `09:00〜09:29` の形にし、翌日に終わる予定は `22:00〜翌 01:00` にする。
+ * 画面が時刻の範囲の中で折り返さないよう、日付と時刻の範囲を分けて返す。
+ */
+export const formatRemainingScheduleParts = (schedule: PatientSchedules['schedules'][number]) => ({
+  date: formatDate(schedule.date),
+  time: formatTimeRange(
+    schedule.start_time,
+    schedule.end_time,
+    schedule.ends_next_day ? 'nextDay' : 'sameDay',
+  ),
+})
 
-/** 残る繰り返しの予定 1 件の、最初の回の日付、終了日、時間。翌日に終わる繰り返しは `22:00〜翌 01:00` にする。職員の詳細の残る繰り返しの予定と同じ形にする。 */
-export const formatRemainingRecurring = (
+/** 残る単発の予定 1 件の、`2026年11月2日（月） 09:00〜09:29` の形の日時。翌日に終わる予定は `22:00〜翌 01:00` にする。 */
+export const formatRemainingSchedule = (schedule: PatientSchedules['schedules'][number]) => {
+  const { date, time } = formatRemainingScheduleParts(schedule)
+  return `${date} ${time}`
+}
+
+/**
+ * 残る繰り返しの予定 1 件の、最初の回の日付と終了日（`2026年10月6日（火）から終了日なし、`）と、時刻の範囲。職員の詳細の残る繰り返しの予定と同じ形にする。
+ * 翌日に終わる繰り返しの時刻の範囲は `22:00〜翌 01:00` にする。画面が時刻の範囲の中で折り返さないよう、2 つを分けて返す。
+ */
+export const formatRemainingRecurringParts = (
   recurring: PatientSchedules['recurring_schedules'][number],
-) => {
-  const time = formatTimeRange(
+) => ({
+  period:
+    recurring.end_date === null
+      ? `${formatDate(recurring.date)}から終了日なし、`
+      : `${formatDate(recurring.date)}から${formatDate(recurring.end_date)}まで、`,
+  time: formatTimeRange(
     recurring.start_time,
     recurring.end_time,
     recurring.ends_next_day ? 'nextDay' : 'sameDay',
-  )
-  return recurring.end_date === null
-    ? `${formatDate(recurring.date)}から終了日なし、${time}`
-    : `${formatDate(recurring.date)}から${formatDate(recurring.end_date)}まで、${time}`
+  ),
+})
+
+/** 残る繰り返しの予定 1 件の、最初の回の日付、終了日、時刻の範囲をつないだ文。 */
+export const formatRemainingRecurring = (
+  recurring: PatientSchedules['recurring_schedules'][number],
+) => {
+  const { period, time } = formatRemainingRecurringParts(recurring)
+  return `${period}${time}`
 }
 
 /** 残る予定と繰り返しの予定が 1 つも無いか。 */
