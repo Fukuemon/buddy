@@ -295,6 +295,9 @@ flowchart TB
 - 事業所ごとに、予定の正本を Google カレンダーか buddy の 1 つに決める。
   - 正本が Google カレンダーの事業所（`google_primary`）では、職員は Google カレンダーと buddy のどちらでも予定を作成、変更、キャンセルできる。buddy で直した予定は、buddy が Google カレンダーに書く。
     - キャンセルの理由は、Google カレンダーに書く場所が無いので残らない。
+    - Google カレンダーと buddy の両方で同じ予定を変えたときは、先に書かれた変更を残す。
+      - 後から buddy で保存した職員には、予定が Google カレンダーで変わったことと最新の予定を示し、入力を残す。職員は、最新の予定を見て入力し直す。
+      - ADR-0029: [buddy からの書き込み（`google_primary`）](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0029-google-calendar-sync.md#buddy-からの書き込みgoogle_primary)
     - 正本を切り替えている間は、buddy で予定を直せない。
   - 正本が buddy の事業所（`buddy_primary`）では、職員は buddy で予定を直し、buddy が Google カレンダーに書き出す。Google カレンダーで直した予定は、buddy に反映しない。
   - 新しい事業所は、Google カレンダーを正本にして始める。

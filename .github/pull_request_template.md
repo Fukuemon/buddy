@@ -21,7 +21,7 @@ Closes #
 ## 検証とエビデンス
 
 <!-- 機能の追加と改修で、観点ごとに条件、期待結果、確認の方法、結果、エビデンスを書く。文書、スキル、設定だけの変更のように、動作を確認しない変更では、セクションごと消す
-観点の設計と撮り方は、スキル attach-evidence にある。動画は、先にこの pull request のコメントに投稿し、確認を受けてから表に並べる（context/testing/evidence.md の Attachment）
+観点の設計と撮り方は、スキル capture-pull-request にある。動画は、先にこの pull request のスレッドに投稿し、確認を受けてから表に並べる（context/testing/evidence.md の Attachment）
 
 撮った条件: <compose か Storybook かモック>、<viewport>、<撮ったコミット>
 

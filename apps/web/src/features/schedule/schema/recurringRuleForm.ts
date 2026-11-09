@@ -60,22 +60,12 @@ export const toRecurringRuleFormValues = (
 })
 
 /** 毎週の繰り返しで送る曜日の並び。weeklyDays の重なりを除き、月曜から日曜の順に並べる。 */
-export const weeklyDaysOf = (values: RecurringRuleFormValues): number[] =>
+export const weeklyDaysOf = (values: Pick<RecurringRuleFormValues, 'weeklyDays'>): number[] =>
   [...new Set(values.weeklyDays)].sort((a, b) => a - b)
 
 /** 毎週の間隔として送れる値か。1〜52 の整数である（ADR-0038）。 */
 export const isValidInterval = (interval: number) =>
   Number.isInteger(interval) && interval >= 1 && interval <= 52
-
-/**
- * 毎週の間隔の文言。1 は「毎週」、2 は「隔週」、3 以上は「3 週ごと」の形である。
- * 欄を空にした間（NaN）は「毎週」を出す。範囲の外の数は、入れた数のまま出し、誤りの文で直させる。
- */
-export const weeklyIntervalLabel = (interval: number) => {
-  if (interval === 1 || Number.isNaN(interval)) return '毎週'
-  if (interval === 2) return '隔週'
-  return `${interval} 週ごと`
-}
 
 /** 繰り返しの欄の値を、頻度と決め方で使う項目だけを持つ規則にする。 */
 export const toRecurringRule = (values: RecurringRuleFormValues): RecurringRule => {

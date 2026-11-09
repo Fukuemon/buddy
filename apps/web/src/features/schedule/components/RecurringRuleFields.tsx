@@ -11,16 +11,20 @@ import {
 import { DatePicker, Select, fieldControlClassName } from '@buddy/ui'
 
 import {
+  ISO_WEEKDAYS,
+  repetitionLabel,
+  weekdayLabel,
+  weeklyIntervalLabel,
+} from '../lib/recurringRuleLabel'
+import {
   isoWeekdayOf,
   isValidInterval,
   weekOfMonthOf,
   weeklyDaysOf,
-  weeklyIntervalLabel,
   type RecurringRuleFormShape,
   type RecurringRuleFormValues,
 } from '../schema/recurringRuleForm'
 
-const WEEKDAYS = ['月', '火', '水', '木', '金', '土', '日'] as const
 const DAYS = Array.from({ length: 31 }, (_, i) => i + 1)
 const WEEKS = [1, 2, 3, 4, 5] as const
 
@@ -35,8 +39,6 @@ type Repetition = Pick<
   RecurringRuleFormValues,
   'frequency' | 'dayOfWeek' | 'monthlyBy' | 'dayOfMonth' | 'weekOfMonth'
 > & { weeklyDays?: number[] }
-
-const weekdayLabel = (day: number) => `${WEEKDAYS[day - 1]}曜日`
 
 type Presets = Record<'weekly' | 'monthly-day' | 'monthly-weekday', Repetition> & {
   current?: Repetition
@@ -88,15 +90,9 @@ const presetsOf = (baseDate: string, originalDays: number[]): Presets => {
   }
 }
 
-/** 選択肢の文言。毎週の選択肢は、送る間隔 interval を「毎週」「隔週」「3 週ごと」の形で前に付ける。 */
-const presetLabel = (preset: Exclude<Preset, 'custom'>, r: Repetition, interval: number) => {
-  if (preset === 'current') {
-    return `${weeklyIntervalLabel(interval)} ${(r.weeklyDays ?? []).map(weekdayLabel).join('、')}`
-  }
-  if (preset === 'weekly') return `${weeklyIntervalLabel(interval)} ${weekdayLabel(r.dayOfWeek)}`
-  if (preset === 'monthly-day') return `毎月 ${r.dayOfMonth} 日`
-  return `毎月 第 ${r.weekOfMonth} ${weekdayLabel(r.dayOfWeek)}`
-}
+/** 選択肢の文言。予定の詳細の繰り返しと同じ文にし、毎週の選択肢は、送る間隔 interval の文言を前に付ける。 */
+const presetLabel = (r: Repetition, interval: number) =>
+  repetitionLabel({ ...r, weeklyDays: r.weeklyDays ?? [], interval })
 
 /** 値が、どの選択肢と同じ回を決めるか。毎週は、送る曜日の並びで比べる。どれとも違えば custom である。 */
 const matchPreset = (values: RecurringRuleFormValues, presets: Presets): Preset => {
@@ -162,8 +158,9 @@ export type RecurringRuleFieldsProps<T extends RecurringRuleFormShape> = {
 /**
  * 繰り返しの欄。繰り返しを、baseDate から作った 3 つの選択肢か「カスタム…」から選び、終了日を「なし」か「あり」から選び、「あり」の右の日付の欄で終了日を入れる。
  * 開いた規則が複数の曜日の毎週のときは、先頭に今の規則の選択肢（「隔週 月曜日、木曜日」の形）を足す。
- * 毎週の選択肢と「繰り返す」の毎週は、間隔の値を「隔週」「3 週ごと」の形で出し、曜日を変えてもその間隔で送る（ADR-0038）。
- * 「カスタム…」を選ぶと、同じ欄の中に、繰り返す（毎週、毎月）と、毎週では間隔（1〜52 の週の数）と曜日（1 つ以上）の欄を、毎月では日の欄を開く。
+ * 選択肢の文言は、予定の詳細の繰り返しと同じ repetitionLabel で作る。
+ * 毎週の選択肢と「頻度」の毎週は、間隔の値を「隔週」「3 週ごと」の形で出し、曜日を変えてもその間隔で送る（ADR-0038）。
+ * 「カスタム…」を選ぶと、同じ欄の中に、頻度（毎週、毎月）と、毎週では間隔（1〜52 の週の数）と曜日（1 つ以上）の欄を、毎月では日の欄を開く。
  * 値がどの選択肢とも違うときも、開いた形で始める。
  * 予定の編集の「繰り返しを変更」と、予定の作成の繰り返しで使う。値の検証は、使う側の resolver が行う。
  * 選択肢や頻度を替えても、使わない欄の値は残す。testid は `recurring-rule-` で始める。
@@ -233,7 +230,7 @@ export const RecurringRuleFields = <T extends RecurringRuleFormShape>({
               const repetition = presets[key]
               return repetition === undefined ? null : (
                 <option key={key} value={key}>
-                  {presetLabel(key, repetition, recurrence.interval)}
+                  {presetLabel(repetition, recurrence.interval)}
                 </option>
               )
             })}
@@ -248,7 +245,7 @@ export const RecurringRuleFields = <T extends RecurringRuleFormShape>({
       </Row>
       {preset === 'custom' && (
         <>
-          <Row htmlFor={`${id}-frequency`} label="繰り返す">
+          <Row htmlFor={`${id}-frequency`} label="頻度">
             <Controller
               control={control}
               name="recurrence.frequency"
@@ -319,7 +316,7 @@ export const RecurringRuleFields = <T extends RecurringRuleFormShape>({
                         aria-labelledby={dayOfWeekLabelId}
                         className="flex flex-wrap gap-1 desktop:gap-2"
                       >
-                        {WEEKDAYS.map((label, i) => {
+                        {ISO_WEEKDAYS.map((label, i) => {
                           const day = i + 1
                           const checked = field.value.includes(day)
                           return (
@@ -457,7 +454,7 @@ export const RecurringRuleFields = <T extends RecurringRuleFormShape>({
                             onChange={(event) => field.onChange(Number(event.target.value))}
                             value={field.value}
                           >
-                            {WEEKDAYS.map((_, i) => (
+                            {ISO_WEEKDAYS.map((_, i) => (
                               <option key={i} value={i + 1}>
                                 {weekdayLabel(i + 1)}
                               </option>

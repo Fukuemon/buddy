@@ -53,7 +53,7 @@ describe('RecurringRuleFields', () => {
     expect(screen.getByTestId('recurring-rule-day-of-week-2')).not.toBeChecked()
   })
 
-  it('曜日は押すたびに足し外しでき、間隔を変えると繰り返すの文言も変わる', async () => {
+  it('曜日は押すたびに足し外しでき、間隔を変えると頻度の文言も変わる', async () => {
     render(<Weekly />)
     await userEvent.selectOptions(await screen.findByTestId('recurring-rule-preset'), 'custom')
     const friday = screen.getByTestId('recurring-rule-day-of-week-5')

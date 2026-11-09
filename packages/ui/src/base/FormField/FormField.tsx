@@ -2,7 +2,7 @@ import { useId, type ReactNode } from 'react'
 
 import { fieldControlClassName } from '../FieldFrame/fieldClassName'
 
-/** FormField の中に置く input と select のクラス名。状態ごとの枠と面は fieldControlClassName に従う。 */
+/** FormField の中に置く input のクラス名。状態ごとの枠と面は fieldControlClassName に従う。select には付けず、Select を使う。 */
 export const formFieldControlClassName = `min-h-11 w-full px-3 text-body ${fieldControlClassName}`
 
 /** FormField が children に渡す、欄に付ける属性。 */
