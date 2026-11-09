@@ -1,9 +1,8 @@
 import { expect, test, type APIRequestContext, type Page } from '@playwright/test'
 
-import { issueAccessToken } from '../../fixtures/apiReference'
-import { LOGIN_EMAIL, LOGIN_STAFF } from '../../fixtures/env'
+import { LOGIN_STAFF } from '../../fixtures/env'
 import { createNormalSchedule, createWeeklyNormalSchedule } from '../../fixtures/schedule'
-import { STAFF_FORM } from '../../fixtures/staff'
+import { issueManagerToken, STAFF_FORM } from '../../fixtures/staff'
 
 /** 今日の Asia/Tokyo の日付から days 日後の日付（YYYY-MM-DD）。 */
 const daysFromToday = (days: number) =>
@@ -29,7 +28,7 @@ const openDay = async (page: Page, date: string, { cancelled = false } = {}) => 
 
 /**
  * 青木 陽菜の、date の通常の予定 title を、青木 陽菜のトークン token で作り、予定の ID を返す。
- * トークンはテストごとに 1 回だけ取る。ブローカーはログインの試行の回数を制限し、増やすと後の spec のログインが拒まれる。
+ * トークンは issueManagerToken で worker の中で使い回す。ブローカーはログインの試行の回数を制限し、増やすと後の spec のログインが拒まれる。
  */
 const createOwnSchedule = async (
   request: APIRequestContext,
@@ -60,7 +59,7 @@ test.describe('予定の削除', () => {
     const title = `E2E の削除する予定 ${Date.now()}`
     const kept = `E2E の削除しない予定 ${Date.now()}`
     const date = daysFromToday(1)
-    const token = await issueAccessToken(request, LOGIN_EMAIL)
+    const token = await issueManagerToken(request)
     const id = await createOwnSchedule(request, token, title, date)
     await createOwnSchedule(request, token, kept, date)
 
@@ -84,7 +83,7 @@ test.describe('予定の削除', () => {
   }) => {
     const title = `E2E の残す予定 ${Date.now()}`
     const date = daysFromToday(1)
-    const token = await issueAccessToken(request, LOGIN_EMAIL)
+    const token = await issueManagerToken(request)
     const id = await createOwnSchedule(request, token, title, date)
 
     await openDetail(page, id, date)
@@ -102,7 +101,7 @@ test.describe('予定の削除', () => {
     request,
   }) => {
     const date = daysFromToday(-1)
-    const token = await issueAccessToken(request, LOGIN_EMAIL)
+    const token = await issueManagerToken(request)
     const id = await createOwnSchedule(request, token, `E2E の昨日の予定 ${Date.now()}`, date)
 
     await openDetail(page, id, date)
@@ -117,7 +116,7 @@ test.describe('予定の削除', () => {
   }) => {
     const title = `E2E の回を削除する定例 ${Date.now()}`
     const kept = `E2E の回を削除する日の予定 ${Date.now()}`
-    const token = await issueAccessToken(request, LOGIN_EMAIL)
+    const token = await issueManagerToken(request)
     const created = await createWeeklyNormalSchedule(request, token, STAFF_FORM.facilityId, {
       staffId: LOGIN_STAFF.id,
       title,
