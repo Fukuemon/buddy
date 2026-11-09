@@ -133,6 +133,8 @@ export const createScheduleHandlers = (baseUrl: string) => {
           source_mode: mockFacility.source_mode,
           calendar_syncs: [],
           cutover: null,
+          all_day_events: [],
+          unlisted_event_counts: [],
         }),
       ),
     ),

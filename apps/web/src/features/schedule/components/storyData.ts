@@ -10,12 +10,14 @@ import { createFakeBuddyApi } from '#/api/fake/fakeBuddyApi'
 import type { RecurringRule, Viewer } from '#/api/types'
 import { fromApiSchedule } from '#/api/http/scheduleMapper'
 import {
+  createMockAllDayEvents,
   createMockCalendarSyncs,
   createMockProjectionSchedules,
   MOCK_FACILITY_ID,
   mockServiceCodes,
 } from '#/mocks/scheduleData'
 
+import { toCalendarAllDayEvents } from '../lib/allDayEvents'
 import { toCalendarEvents } from '../lib/toCalendarEvents'
 
 /** story とテストで使う基準の日。 */
@@ -39,6 +41,25 @@ export const storyNeedsReview = storyProjectionSchedules.filter((s) => s.reviewR
 export const STORY_NOW = new Date(2026, 9, 20, 10, 0)
 /** google_primary の事業所の同期の状況。STORY_NOW の時点で、石川 二葉は同期に失敗し、上田 三奈はまだ同期していない。 */
 export const storyCalendarSyncs = createMockCalendarSyncs(STORY_NOW)
+
+/** google_primary の事業所の終日の予定。青木 一郎の STORY_DATE の「休み」と、石川 二葉の前日から翌日までの「研修」である。 */
+export const storyAllDayEvents = toCalendarAllDayEvents(
+  createMockAllDayEvents(new Date(2026, 9, 20)).map((event) => ({
+    id: event.id,
+    staffId: event.staff_id,
+    staffName: event.staff_name,
+    startDate: event.start_date,
+    endDate: event.end_date,
+    title: event.title,
+  })),
+  storyStaff,
+)
+
+/** google_primary の事業所の、カレンダーに出せない予定の件数。青木 一郎に 2 件、上田 三奈に 1 件ある。 */
+export const storyUnlistedEventCounts = [
+  { staffId: 'staff-1', count: 2 },
+  { staffId: 'staff-3', count: 1 },
+]
 
 /** 自分の予定だけを編集でき、A チームの予定を見られる、ログインした職員（青木 一郎）。 */
 export const selfEditViewer: Viewer = {

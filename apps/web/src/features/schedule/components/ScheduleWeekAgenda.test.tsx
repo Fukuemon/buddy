@@ -8,7 +8,7 @@ import type { ScheduleCalendarEvent } from '../lib/toCalendarEvents'
 import * as stories from './ScheduleWeekAgenda.stories'
 import { storyStaff } from './storyData'
 
-const { Default, Empty } = composeStories(stories)
+const { AllDay, Default, Empty } = composeStories(stories)
 
 const staff = storyStaff[0]!
 const event = (
@@ -29,6 +29,21 @@ const event = (
 })
 
 describe('ScheduleWeekAgenda', () => {
+  it('終日の予定を、かかる日ごとに「終日」と職員の名前を付けて、時刻のある予定の前に並べる', () => {
+    render(<AllDay events={[]} />)
+    const day = (dateKey: string) =>
+      screen.getByTestId(`schedule-agenda-day-${dateKey}`).closest('section')!
+    for (const dateKey of ['2026-10-19', '2026-10-20', '2026-10-21']) {
+      expect(
+        within(day(dateKey)).getByTestId(`all-day-event-gcal-allday-2-${dateKey}`),
+      ).toHaveTextContent('終日研修石川 二葉')
+    }
+    expect(
+      within(day('2026-10-20')).getByTestId('all-day-event-gcal-allday-1-2026-10-20'),
+    ).toHaveTextContent('終日休み青木 一郎')
+    expect(within(day('2026-10-22')).queryByText('終日')).toBeNull()
+  })
+
   it('予定の無い週でも、日曜から土曜の 7 日の見出しを出す', () => {
     render(<Empty />)
     expect(

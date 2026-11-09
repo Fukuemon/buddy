@@ -195,6 +195,32 @@ export type ScheduleList = {
   calendarSyncs: CalendarSyncStatus[]
   /** google_primary の事業所で、予定の正本を buddy に切り替えている間の open の切り替え。無ければ null である。 */
   cutover: OpenCalendarCutover | null
+  /** google_primary の事業所の、期間に重なる Google カレンダーの終日の予定。職員の絞り込みを当てる。buddy_primary の事業所では空である。 */
+  allDayEvents: AllDayEvent[]
+  /**
+   * google_primary の事業所の、期間に重なる、カレンダーに出せない Google カレンダーの予定の職員ごとの件数。
+   * 職員の絞り込みを当て、件数が 1 以上の職員だけを持つ。buddy_primary の事業所では空である。
+   */
+  unlistedEventCounts: UnlistedEventCount[]
+}
+
+/** Google カレンダーの終日の予定。buddy の予定ではないので、開くことも変えることもできない。 */
+export type AllDayEvent = {
+  id: string
+  staffId: Staff['id']
+  staffName: string
+  /** 予定がかかる最初の日の YYYY-MM-DD。 */
+  startDate: string
+  /** 予定がかかる最後の日（この日を含む）の YYYY-MM-DD。 */
+  endDate: string
+  /** Google の予定のタイトル。空のことがある。 */
+  title: string
+}
+
+/** 職員の、カレンダーに出せない Google カレンダーの予定の件数。 */
+export type UnlistedEventCount = {
+  staffId: Staff['id']
+  count: number
 }
 
 /** 予定の作成と更新で送る値。 */

@@ -48,3 +48,14 @@
   border: 1px solid var(--fc-event-color);
   background-color: var(--buddy-color-surface-subtle);
 }
+
+/* Google カレンダーの終日の予定は押せないので、押せる予定の指の形と、押したときの色の変化を外す。面と線は AllDayEventLabel が描く */
+.schedule-calendar .schedule-calendar-all-day-event {
+  cursor: default;
+  border: none;
+  background-color: transparent;
+}
+
+.schedule-calendar .schedule-calendar-all-day-event:hover {
+  filter: none;
+}

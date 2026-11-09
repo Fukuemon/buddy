@@ -1,5 +1,5 @@
 import { composeStories } from '@storybook/react-vite'
-import { render, screen } from '@testing-library/react'
+import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { fn } from 'storybook/test'
 import { describe, expect, it } from 'vite-plus/test'
@@ -7,9 +7,27 @@ import { describe, expect, it } from 'vite-plus/test'
 import * as stories from './StaffScheduleDayGrid.stories'
 import { storyStaff } from './storyData'
 
-const { Default, NextDayOfOvernight, WithNow } = composeStories(stories)
+const { AllDay, Default, NextDayOfOvernight, WithNow } = composeStories(stories)
 
 describe('StaffScheduleDayGrid', () => {
+  it('終日の予定がある日は職員の名前の下の「終日」の欄に予定を置き、押しても予定を開かない', async () => {
+    const onEventClick = fn()
+    render(<AllDay onEventClick={onEventClick} />)
+    expect(screen.getByTestId('day-grid-all-day')).toHaveTextContent('終日')
+    const off = screen.getByTestId('all-day-event-gcal-allday-1')
+    expect(screen.getByTestId('day-grid-all-day-staff-1')).toContainElement(off)
+    expect(off).toHaveTextContent('休み')
+    expect(screen.getByTestId('day-grid-all-day-staff-2')).toHaveTextContent('研修')
+    expect(within(off).queryByRole('button')).toBeNull()
+    await userEvent.click(off)
+    expect(onEventClick).not.toHaveBeenCalled()
+  })
+
+  it('終日の予定が無い日は「終日」の欄を出さない', () => {
+    render(<Default />)
+    expect(screen.queryByTestId('day-grid-all-day')).toBeNull()
+  })
+
   it('職員ごとの列に予定を置き、押すと予定の ID を渡す', async () => {
     const onEventClick = fn()
     render(<Default onEventClick={onEventClick} />)

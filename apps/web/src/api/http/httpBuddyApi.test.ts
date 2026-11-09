@@ -69,6 +69,8 @@ const BUDDY_PRIMARY_LIST = {
   source_mode: 'buddy_primary' as const,
   calendar_syncs: [],
   cutover: null,
+  all_day_events: [],
+  unlisted_event_counts: [],
 }
 
 describe('createHttpBuddyApi', () => {
@@ -135,6 +137,28 @@ describe('createHttpBuddyApi', () => {
             started_by_name: '管理 花子',
             range_start: '2026-10-01',
           },
+          all_day_events: [
+            {
+              id: 'allday-1',
+              staff_id: 'staff-1',
+              staff_name: '青木 一郎',
+              start_date: '2026-10-20',
+              end_date: '2026-10-21',
+              title: '休み',
+            },
+            {
+              id: 'allday-2',
+              staff_id: 'staff-2',
+              staff_name: '石川 二葉',
+              start_date: '2026-10-20',
+              end_date: '2026-10-20',
+              title: '研修',
+            },
+          ],
+          unlisted_event_counts: [
+            { staff_id: 'staff-1', count: 2 },
+            { staff_id: 'staff-2', count: 1 },
+          ],
         }),
       ),
     )
@@ -153,6 +177,17 @@ describe('createHttpBuddyApi', () => {
       ['recurrence', 'recurrence_unsupported'],
     ])
     expect(list.calendarSyncs.map((s) => s.staff_id)).toEqual(['staff-1'])
+    expect(list.allDayEvents).toEqual([
+      {
+        id: 'allday-1',
+        staffId: 'staff-1',
+        staffName: '青木 一郎',
+        startDate: '2026-10-20',
+        endDate: '2026-10-21',
+        title: '休み',
+      },
+    ])
+    expect(list.unlistedEventCounts).toEqual([{ staffId: 'staff-1', count: 2 }])
     expect(list.cutover).toEqual({
       started_at: '2026-10-05T00:00:00Z',
       started_by: 'manager-1',
