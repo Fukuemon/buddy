@@ -1,11 +1,8 @@
-import { expect, test, type APIRequestContext, type Page } from '@playwright/test'
+import { expect, test, type Page } from '@playwright/test'
 
 import { SATO } from '../../fixtures/env'
 import { findGoogleEvent, shiftGoogleEvent } from '../../fixtures/googleCalendar'
 import { detailDateTime, SCHEDULE_DETAIL_URL, scheduleIdFromUrl } from '../../fixtures/schedule'
-
-const findEvent = (request: APIRequestContext, summary: string) =>
-  findGoogleEvent(request, SATO.calendarId, summary)
 
 /** 日の表示で、佐藤の予定のうちタイトルが title のものを開き、予定の ID を返す。 */
 const openSchedule = async (page: Page, title: string) => {
@@ -74,8 +71,10 @@ test.describe('確認が必要な予定', () => {
         await page.getByTestId('schedule-create-submit').click()
         await expect(page.getByTestId('schedule-form-modal')).toBeHidden()
 
-        await expect.poll(async () => (await findEvent(request, created))?.status).toBe('confirmed')
-        const event = await findEvent(request, created)
+        await expect
+          .poll(async () => (await findGoogleEvent(request, SATO.calendarId, created))?.status)
+          .toBe('confirmed')
+        const event = await findGoogleEvent(request, SATO.calendarId, created)
         eventId = event?.id ?? ''
         createdDateTime = detailDateTime(event)
       })

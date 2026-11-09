@@ -1,10 +1,8 @@
 import { expect, test, type Page } from '@playwright/test'
 
+import { todayInTokyo } from '../../fixtures/date'
 import { ISHIDA, ISHIDA_STATE } from '../../fixtures/env'
 import { createGoogleEvent, shiftGoogleEvent } from '../../fixtures/googleCalendar'
-
-/** 今日の Asia/Tokyo の日付（YYYY-MM-DD）。切り替えの取り込みの期間は今月の初日から先の全てなので、今日に予定を作る。 */
-const todayInTokyo = () => new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().slice(0, 10)
 
 const CUTOVER_URL = '/schedule/link/cutover'
 
@@ -61,6 +59,7 @@ test.describe('予定の正本の切り替え', () => {
     page,
     request,
   }) => {
+    // 切り替えの取り込みの期間は今月の初日から先の全てなので、今日に予定を作る
     await createGoogleEvent(request, ISHIDA.calendarId, {
       summary: `E2E のやめる予定 ${Date.now()}`,
       date: todayInTokyo(),

@@ -27,7 +27,7 @@ const idOf = async (res: Awaited<ReturnType<typeof createNormalSchedule>>) => {
 const signInAndRegister = async (page: Page, label: string) => {
   await page.goto('/staff')
   await signInAtBroker(page, LOGIN_EMAIL)
-  const token = await issueManagerToken(page.request)
+  const token = await issueManagerToken()
   const staff = newStaff(label)
   return { token, id: await registerStaffId(page.request, token, staff), name: staff.name }
 }

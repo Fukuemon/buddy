@@ -1,17 +1,10 @@
-import { expect, test, type Page } from '@playwright/test'
+import { expect, test } from '@playwright/test'
 
+import { todayInTokyo } from '../../fixtures/date'
 import { OKADA, OKADA_STATE } from '../../fixtures/env'
 import { createGoogleEvent, failGoogleReads } from '../../fixtures/googleCalendar'
 import { detailDateTimeText } from '../../fixtures/schedule'
-
-/** 今日の Asia/Tokyo の日付（YYYY-MM-DD）。Projection は今日の前後の予定を持つので、今日に予定を作る。 */
-const todayInTokyo = () => new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().slice(0, 10)
-
-/** 日の表示を date で開き、岡田の列が出るまで待つ。 */
-const openDay = async (page: Page, date: string) => {
-  await page.goto(`/schedule?view=day&date=${date}`)
-  await expect(page.getByTestId(`day-grid-staff-${OKADA.staff.id}`)).toBeVisible()
-}
+import { openDay } from '../../screens/scheduleCalendar'
 
 // シードの 3 つ目の事業所は Google カレンダーを予定の正本にする（google_primary）。同期の Worker が岡田のカレンダーの予定を
 // Projection に写し、予定のカレンダーは Projection を読む（ADR-0029）。
@@ -23,6 +16,7 @@ test.describe('予定のカレンダー', () => {
       page,
       request,
     }) => {
+      // Projection は今日の前後の予定を持つので、今日に予定を作る
       const date = todayInTokyo()
       const title = `E2E の Google の予定 ${Date.now()}`
       await createGoogleEvent(request, OKADA.calendarId, {
@@ -32,7 +26,7 @@ test.describe('予定のカレンダー', () => {
         end: '07:00',
       })
 
-      await openDay(page, date)
+      await openDay(page, date, OKADA.staff.id)
       const event = page
         .getByTestId(`day-grid-staff-${OKADA.staff.id}`)
         .getByTestId(/^schedule-event-/)
@@ -57,7 +51,7 @@ test.describe('予定のカレンダー', () => {
     test('予定のカレンダーを開いた場合、予定の作成の操作と、buddy と Google カレンダーのどちらでも作成、変更できる案内が出ること', async ({
       page,
     }) => {
-      await openDay(page, todayInTokyo())
+      await openDay(page, todayInTokyo(), OKADA.staff.id)
       // 案内が出たことで、事業所のモードを読んで描き終えたとみなしてから、作成の操作を確認する
       await expect(page.getByTestId('schedule-calendar-google-primary')).toContainText(
         'Google カレンダーと buddy のどちらでも作成、変更できます',
@@ -78,7 +72,7 @@ test.describe('予定のカレンダー', () => {
           `schedule-calendar-sync-warning-${OKADA.externalCalendarId}`,
         )
         await failGoogleReads(request, OKADA.calendarId, true)
-        await openDay(page, todayInTokyo())
+        await openDay(page, todayInTokyo(), OKADA.staff.id)
         // 同期の Worker が失敗を書くまで、画面を開き直す
         await expect(async () => {
           await page.reload()

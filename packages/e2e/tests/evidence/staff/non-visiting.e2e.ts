@@ -42,7 +42,7 @@ const signInManager = async (page: Page) => {
 
 /** マネージャーのトークンで、職員を 1 人登録して訪問しない職員にし、ID と名前を返す。 */
 const registerNonVisiting = async (request: APIRequestContext, label: string) => {
-  const token = await issueManagerToken(request)
+  const token = await issueManagerToken()
   const staff = newStaff(label)
   const id = await registerStaffId(request, token, staff)
   const res = await setNonVisiting(request, token, id)
@@ -257,7 +257,7 @@ test.describe('職員の管理', () => {
           },
           async (page) => {
             await signInManager(page)
-            const token = await issueManagerToken(page.request)
+            const token = await issueManagerToken()
             const staff = newStaff('register-calendar')
             const res = await page.request.post(
               `${SCHEDULE_URL}/v1/facilities/${STAFF_FORM.facilityId}/users`,
@@ -308,11 +308,7 @@ test.describe('職員の管理', () => {
           async (page) => {
             await signInManager(page)
             const staff = newStaff('edit')
-            const id = await registerStaffId(
-              page.request,
-              await issueManagerToken(page.request),
-              staff,
-            )
+            const id = await registerStaffId(page.request, await issueManagerToken(), staff)
             return { id, name: staff.name }
           },
           async ({ page, step, check }, { id, name }) => {
@@ -350,7 +346,7 @@ test.describe('職員の管理', () => {
           },
           async (page) => {
             await signInManager(page)
-            const token = await issueManagerToken(page.request)
+            const token = await issueManagerToken()
             const staff = newStaff('refused')
             const id = await registerStaffId(page.request, token, staff)
             const res = await createNormalSchedule(page.request, token, STAFF_FORM.facilityId, {

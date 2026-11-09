@@ -4,9 +4,6 @@ import { HAYASHI } from '../../fixtures/env'
 import { deleteGoogleEvent, findGoogleEvent, shiftGoogleEvent } from '../../fixtures/googleCalendar'
 import { SCHEDULE_DETAIL_URL, scheduleIdFromUrl } from '../../fixtures/schedule'
 
-const findEvent = (request: APIRequestContext, summary: string) =>
-  findGoogleEvent(request, HAYASHI.calendarId, summary)
-
 /** 結び付けの画面で、林のカレンダーを読めると確認してから結び付ける。 */
 const linkHayashi = async (page: Page) => {
   await page.goto('/schedule/link')
@@ -33,8 +30,10 @@ const createHayashiSchedule = async (page: Page, request: APIRequestContext, tit
   await page.getByTestId('schedule-create-submit').click()
   await expect(page.getByTestId('schedule-form-modal')).toBeHidden()
 
-  await expect.poll(async () => (await findEvent(request, title))?.status).toBe('confirmed')
-  return (await findEvent(request, title))?.id ?? ''
+  await expect
+    .poll(async () => (await findGoogleEvent(request, HAYASHI.calendarId, title))?.status)
+    .toBe('confirmed')
+  return (await findGoogleEvent(request, HAYASHI.calendarId, title))?.id ?? ''
 }
 
 /** 日の表示で、林の予定のうちタイトルが from のものを開き、タイトルを to に変える。開いた予定の ID を返す。 */
@@ -132,13 +131,17 @@ test.describe('確認が必要な予定', () => {
         // 一覧は Google カレンダーのタイトルを出さない
         await expect(page.getByTestId('calendar-review-table')).not.toContainText(created)
         await expect(page.getByTestId('calendar-review-table')).not.toContainText(changed)
-        expect((await findEvent(request, created))?.status).toBe('confirmed')
+        expect((await findGoogleEvent(request, HAYASHI.calendarId, created))?.status).toBe(
+          'confirmed',
+        )
       })
 
       await test.step('buddy の内容で書き直すと、一覧から消え、Google カレンダーが buddy のタイトルになる', async () => {
         await rewriteRow(page, scheduleId, 'Google カレンダーで直したタイトルと日時は消えます。')
 
-        await expect.poll(async () => (await findEvent(request, changed))?.id).toBe(eventId)
+        await expect
+          .poll(async () => (await findGoogleEvent(request, HAYASHI.calendarId, changed))?.id)
+          .toBe(eventId)
       })
     })
 
@@ -172,7 +175,7 @@ test.describe('確認が必要な予定', () => {
 
         await expect
           .poll(async () => {
-            const event = await findEvent(request, changed)
+            const event = await findGoogleEvent(request, HAYASHI.calendarId, changed)
             return [event?.id, event?.status]
           })
           .toEqual([eventId, 'confirmed'])

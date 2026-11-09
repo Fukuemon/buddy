@@ -18,7 +18,7 @@ const RANGE = { start: '2027-03-01', end: '2027-03-31' }
 /** 新しい職員を登録し、その職員のカレンダーを calendarpit に作って、職員の ID とカレンダーの ID を返す。 */
 const staffWithCalendar = async (request: APIRequestContext, label: string) => {
   const staff = newStaff(label)
-  const manager = await issueManagerToken(request)
+  const manager = await issueManagerToken()
   const registered = await registerStaff(request, manager, staff)
   expect(registered.status()).toBe(201)
   const { id } = (await registered.json()) as { id: string }
@@ -56,7 +56,7 @@ test.describe('予定の取り込み', () => {
       const stamp = Date.now()
       const before = `E2E 休職の前 ${stamp}`
       const during = `E2E 休職の間 ${stamp}`
-      const manager = await issueManagerToken(request)
+      const manager = await issueManagerToken()
 
       await test.step('休職の前に足した予定を取り込む', async () => {
         await createGoogleEvent(request, staff.calendarId, {
@@ -128,7 +128,7 @@ test.describe('予定の取り込み', () => {
       request,
     }) => {
       const staff = await staffWithCalendar(request, 'retired-calendar')
-      const manager = await issueManagerToken(request)
+      const manager = await issueManagerToken()
       await linkCalendar(page, staff.id, staff.calendarId)
       const calendar = (await listExternalCalendars(request, manager, STAFF_FORM.facilityId)).find(
         ({ staff_id }) => staff_id === staff.id,
