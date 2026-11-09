@@ -5,7 +5,8 @@ import { describe, expect, it } from 'vite-plus/test'
 
 import * as stories from './RecurringRuleFields.stories'
 
-const { BiweeklyDays, CustomWeeklyInvalid, EveryThreeWeeks, Weekly } = composeStories(stories)
+const { BiweeklyDays, CustomWeeklyInvalid, Daily, EveryThreeWeeks, Weekly } =
+  composeStories(stories)
 
 const optionLabels = (select: HTMLElement) =>
   within(select)
@@ -41,6 +42,27 @@ describe('RecurringRuleFields', () => {
     expect(preset).toHaveValue('weekly')
     await userEvent.selectOptions(preset, 'current')
     expect(preset).toHaveValue('current')
+  })
+
+  it('7 つの曜日の毎週は、今の規則の選択肢を「毎日」にして選び、間隔を 2 にすると曜日の並びに戻す', async () => {
+    render(<Daily />)
+    const preset = await screen.findByTestId('recurring-rule-preset')
+    expect(preset).toHaveValue('current')
+    expect(optionLabels(preset)).toEqual([
+      '毎日',
+      '毎週 火曜日',
+      '毎月 20 日',
+      '毎月 第 3 火曜日',
+      'カスタム…',
+    ])
+
+    await userEvent.selectOptions(preset, 'custom')
+    const interval = screen.getByTestId('recurring-rule-interval')
+    await userEvent.clear(interval)
+    await userEvent.type(interval, '2')
+    expect(optionLabels(preset)[0]).toBe(
+      '隔週 月曜日、火曜日、水曜日、木曜日、金曜日、土曜日、日曜日',
+    )
   })
 
   it('「カスタム…」は、今の規則の間隔と曜日の並びのまま、間隔と曜日の欄を開く', async () => {
