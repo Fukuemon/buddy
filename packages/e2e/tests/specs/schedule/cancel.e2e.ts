@@ -69,8 +69,8 @@ test.describe('予定の詳細', () => {
       await expect(ownEvent(page, title)).toHaveCount(0)
 
       await page.getByTestId('calendar-show-cancelled').check()
-      await expect(ownEvent(page, title).getByTestId(/-cancelled$/)).toBeVisible()
-      await expect(ownEvent(page, kept).getByTestId(/-cancelled$/)).toHaveCount(0)
+      await expect(ownEvent(page, title).getByTestId(/^schedule-event-.*-cancelled$/)).toBeVisible()
+      await expect(ownEvent(page, kept).getByTestId(/^schedule-event-.*-cancelled$/)).toHaveCount(0)
 
       await openDetail(page, id, date)
       await expect(page.getByTestId('schedule-detail-cancel')).toHaveText(
@@ -127,7 +127,7 @@ test.describe('予定の詳細', () => {
       await expect(ownEvent(page, kept)).toBeVisible()
       await expect(ownEvent(page, title)).toHaveCount(0)
       await page.getByTestId('calendar-show-cancelled').check()
-      await expect(ownEvent(page, title).getByTestId(/-cancelled$/)).toBeVisible()
+      await expect(ownEvent(page, title).getByTestId(/^schedule-event-.*-cancelled$/)).toBeVisible()
 
       await openDay(page, fromNextMonday(0), LOGIN_STAFF.id)
       await expect(ownEvent(page, title)).toBeVisible()
