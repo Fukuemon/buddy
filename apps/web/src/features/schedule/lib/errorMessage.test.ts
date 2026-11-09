@@ -2,7 +2,37 @@ import { describe, expect, it } from 'vite-plus/test'
 
 import { ApiError } from '#/api/BuddyApi'
 
-import { scheduleLoadErrorMessage, scheduleSubmitErrorMessage } from './errorMessage'
+import {
+  scheduleDeleteErrorMessage,
+  scheduleLoadErrorMessage,
+  scheduleSubmitErrorMessage,
+} from './errorMessage'
+
+describe('scheduleDeleteErrorMessage', () => {
+  it('削除を拒まれた理由ごとに文を分ける', () => {
+    expect(scheduleDeleteErrorMessage(new ApiError(403, 'forbidden'))).toBe(
+      'この操作をする権限がありません。',
+    )
+    expect(scheduleDeleteErrorMessage(new ApiError(404, 'not found'))).toBe(
+      '予定が見つかりません。カレンダーに戻って、予定を確認してください。',
+    )
+    expect(scheduleDeleteErrorMessage(new ApiError(409, 'conflict', [], 'conflict'))).toBe(
+      '予定がキャンセルか変更されていたので、削除できませんでした。予定を開き直してください。',
+    )
+    expect(scheduleDeleteErrorMessage(new ApiError(409, 'google', [], 'google_primary'))).toBe(
+      'この事業所の予定は Google カレンダーで管理しています。予定は Google カレンダーで作成、変更してください。',
+    )
+    expect(scheduleDeleteErrorMessage(new ApiError(400, 'past', [], 'invalid_input'))).toBe(
+      '予定が変更されたか、今日より前になったので、削除できませんでした。予定を開き直してください。',
+    )
+    expect(scheduleDeleteErrorMessage(new ApiError(500, 'error'))).toBe(
+      '予定を削除できませんでした。',
+    )
+    expect(scheduleDeleteErrorMessage(new TypeError('Failed to fetch'))).toBe(
+      '予定を削除できませんでした。',
+    )
+  })
+})
 
 describe('scheduleLoadErrorMessage', () => {
   it('見つからないときと見る権限が無いときを、ほかの失敗と分ける', () => {

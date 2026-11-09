@@ -186,6 +186,28 @@ export const useCancelSchedule = (scheduleId: Schedule['id']) => {
 }
 
 /**
+ * 誤って入れた予定を削除する mutation（ADR-0040）。回の ID を渡すと、繰り返しの予定のその回だけを削除する。
+ * 成功すると、事業所の予定の一覧を読み直してから onDeleted で詳細を閉じ、閉じた後に予定の取得の結果を捨てる。
+ * 詳細を開いたまま取得の結果を捨てると、詳細が消した予定を取り直し、閉じる前に「予定が見つかりません。」を出すためである。
+ */
+export const useDeleteSchedule = (scheduleId: Schedule['id'], onDeleted: () => Promise<void>) => {
+  const { api, facilityId } = useBuddyApi()
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: () => api.schedules.delete(facilityId, scheduleId),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: [...queryKeys.schedules.all(facilityId), 'list'],
+      })
+      await onDeleted()
+      queryClient.removeQueries({
+        queryKey: scheduleQueryOptions(api, facilityId, scheduleId).queryKey,
+      })
+    },
+  })
+}
+
+/**
  * 画面を開いた時点で、事業所が予定の正本を buddy に切り替えている途中かを返す。切り替えている途中なら true である。
  * 予定の詳細と同じく、事業所の sourceMode と、カレンダーの search params の期間の予定の一覧の cutover で読む。
  * calendar_cutover_status は職員の管理の権限を求めるので使わない。buddy_primary の事業所では一覧を読まずに false にする。

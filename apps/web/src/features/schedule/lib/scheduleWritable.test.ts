@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vite-plus/test'
 
 import type { OpenCalendarCutover, Schedule } from '#/api/types'
 
-import { canChangeSchedule } from './scheduleWritable'
+import { canChangeSchedule, canDeleteSchedule } from './scheduleWritable'
 
 const schedule: Schedule = {
   id: 'schedule-1',
@@ -40,5 +40,38 @@ describe('canChangeSchedule', () => {
     expect(canChangeSchedule(unsupported, null)).toBe(false)
     const mismatch = { ...schedule, reviewReason: 'title_mismatch' as const }
     expect(canChangeSchedule(mismatch, null)).toBe(true)
+  })
+})
+
+describe('canDeleteSchedule', () => {
+  const startOfDay = new Date('2026-10-20T00:00:00+09:00')
+
+  it('buddy_primary の事業所の、開始の日が今日以降の有効な予定は削除できる', () => {
+    expect(canDeleteSchedule(schedule, 'buddy_primary', null, startOfDay)).toBe(true)
+    expect(
+      canDeleteSchedule(schedule, 'buddy_primary', null, new Date('2026-10-01T12:00:00+09:00')),
+    ).toBe(true)
+  })
+
+  it('開始の日が今日より前の予定は、Asia/Tokyo の日付で比べて削除できない', () => {
+    // 2026-10-20T15:00Z は Asia/Tokyo では 10 月 21 日の 0 時で、予定の開始の日の翌日である
+    expect(
+      canDeleteSchedule(schedule, 'buddy_primary', null, new Date('2026-10-20T15:00:00Z')),
+    ).toBe(false)
+    expect(
+      canDeleteSchedule(schedule, 'buddy_primary', null, new Date('2026-10-20T14:59:59Z')),
+    ).toBe(true)
+  })
+
+  it('google_primary の事業所の予定と、キャンセルした予定と、切り替えている間は削除できない', () => {
+    expect(canDeleteSchedule(schedule, 'google_primary', null, startOfDay)).toBe(false)
+    const cancelled = { ...schedule, cancel: { reason: '中止' } }
+    expect(canDeleteSchedule(cancelled, 'buddy_primary', null, startOfDay)).toBe(false)
+    expect(canDeleteSchedule(schedule, 'buddy_primary', cutover, startOfDay)).toBe(false)
+  })
+
+  it('buddy の繰り返しの規則に写せない予定は、削除できない', () => {
+    const unsupported = { ...schedule, reviewReason: 'recurrence_unsupported' as const }
+    expect(canDeleteSchedule(unsupported, 'buddy_primary', null, startOfDay)).toBe(false)
   })
 })

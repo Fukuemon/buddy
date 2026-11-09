@@ -51,8 +51,11 @@ export const detailDateTime = (event: GoogleEvent | undefined) => {
   return detailDateTimeText(start.slice(0, 10), start.slice(11, 16), end.slice(11, 16))
 }
 
-/** 通常の予定の値。日付と職員とタイトルのほかは、どの予定も同じにする。 */
-type NormalSchedule = { staffId: string; title: string; date: string }
+/**
+ * 通常の予定の値。日付と職員とタイトルと時刻のほかは、どの予定も同じにする。
+ * start と end（HH:mm）を省くと 10:00〜11:00 にする。同じ職員の同じ時刻の予定は日の表示で重なって押せないので、1 本の spec で何件も作るときに時刻をずらす。
+ */
+type NormalSchedule = { staffId: string; title: string; date: string; start?: string; end?: string }
 
 /**
  * token の職員で、予定の API の本文に入れる通常の予定の値を作る。
@@ -69,8 +72,8 @@ const normalSlot = async (request: APIRequestContext, token: string, schedule: N
   return {
     schedule_type_id: normal.id,
     date: schedule.date,
-    start_time: '10:00',
-    end_time: '11:00',
+    start_time: schedule.start ?? '10:00',
+    end_time: schedule.end ?? '11:00',
     staff_id: schedule.staffId,
     title: schedule.title,
   }

@@ -75,6 +75,14 @@
   bottom: calc(100% + 4px);
 }
 
+/*
+ * 下端の左に「予定をキャンセル」と「予定を削除」の 2 つの起点を並べる。
+ * wireframe.css は起点の全てに margin-right: auto を当てるので、後ろに起点が続くものは外し、左に並ぶ最後の起点だけで閉じると編集から離す
+ */
+.wf-modal__footer > .wf-btn--destructive:has(+ .wf-btn--destructive) {
+  margin-right: 0;
+}
+
 /* キャンセルの理由の欄の placeholder。apps/web の TextareaField と同じ薄い色にする */
 .sd-placeholder {
   color: var(--wf-muted);

@@ -49,10 +49,24 @@ describe('ScheduleDetailModal', () => {
     const cancel = screen.getByTestId('schedule-detail-cancel-schedule')
     const close = screen.getByTestId('schedule-detail-close')
     expect(cancel).toHaveClass('text-danger')
-    expect(cancel).toHaveClass('mr-auto')
+    expect(cancel.parentElement).toHaveClass('mr-auto')
     expect(cancel.compareDocumentPosition(close) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
     await userEvent.click(cancel)
     expect(onCancelSchedule).toHaveBeenCalledOnce()
+  })
+
+  it('予定を削除するボタンは、赤い文字の destructive にしてキャンセルの右に置き、押すと onDeleteSchedule を呼ぶ', async () => {
+    const onDeleteSchedule = fn()
+    render(<Normal onCancelSchedule={fn()} onDeleteSchedule={onDeleteSchedule} />)
+    const cancel = screen.getByTestId('schedule-detail-cancel-schedule')
+    const remove = screen.getByTestId('schedule-detail-delete-schedule')
+    const close = screen.getByTestId('schedule-detail-close')
+    expect(remove).toHaveClass('text-danger')
+    expect(remove.parentElement).toBe(cancel.parentElement)
+    expect(cancel.compareDocumentPosition(remove) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    expect(remove.compareDocumentPosition(close) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    await userEvent.click(remove)
+    expect(onDeleteSchedule).toHaveBeenCalledOnce()
   })
 
   it('メモが空の予定は、メモの見出しごと出さない', () => {
