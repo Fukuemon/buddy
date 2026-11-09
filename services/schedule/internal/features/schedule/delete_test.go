@@ -299,3 +299,21 @@ func TestSchedulesDeleteReplacedThenChangeRule(t *testing.T) {
 		})
 	}
 }
+
+// 削除した予定の ID で予定を作り直そうとすると、409 で拒む。削除の書き出しの待ちと監査の記録が、同じ ID の別の予定を指さないためである。
+func TestSchedulesCreateRejectsDeletedID(t *testing.T) {
+	s := inmem.Seeded()
+	uc, _ := newSchedules(s)
+	ctx := editorCtx()
+	in := futureSlot(normalSlot(), today)
+	in.ID = "01M3TD000000000000000000Z1"
+	if _, err := uc.Create(ctx, facilityID, in); err != nil {
+		t.Fatal(err)
+	}
+	if err := uc.Delete(ctx, in.ID); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := uc.Create(ctx, facilityID, in); !errors.Is(err, apperr.ErrConflict) {
+		t.Errorf("削除した ID での作成: err = %v, want ErrConflict", err)
+	}
+}

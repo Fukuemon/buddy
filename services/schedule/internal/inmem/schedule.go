@@ -34,6 +34,11 @@ type Schedules struct{ *Store }
 
 // Create は、schedule.Repository の Create を実装する。
 func (s Schedules) Create(_ context.Context, sc schedule.Schedule) error {
+	for _, d := range s.Deletions {
+		if d.ScheduleID == sc.ID {
+			return apperr.ErrConflict
+		}
+	}
 	s.Schedules[sc.ID] = scheduleview.Detail{Schedule: sc, TypeName: s.Types[sc.TypeID].Name, Version: 1}
 	return nil
 }

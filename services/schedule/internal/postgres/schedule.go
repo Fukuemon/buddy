@@ -2,6 +2,7 @@ package postgres
 
 import (
 	"context"
+	"github.com/Fukuemon/buddy/services/schedule/internal/apperr"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
@@ -56,7 +57,14 @@ func NewScheduleRepository(pool *pgxpool.Pool) *ScheduleRepository {
 
 // Create は、予定を書く。IsOverTimeWork は書かず、DB が開始の時刻から生成する。参照先（事業所、職員、予定の種類、繰り返しの予定、訪問の情報）が無いか、値がカラムの制約に合わないときは apperr.ErrInvalidInput のエラーを返す。
 func (r *ScheduleRepository) Create(ctx context.Context, s schedule.Schedule) error {
-	err := r.q(ctx).CreateSchedule(ctx, sqlcgen.CreateScheduleParams{
+	deleted, err := r.q(ctx).ScheduleIDDeleted(ctx, &s.ID)
+	if err != nil {
+		return translate("check deleted schedule id", err)
+	}
+	if deleted {
+		return apperr.ErrConflict
+	}
+	err = r.q(ctx).CreateSchedule(ctx, sqlcgen.CreateScheduleParams{
 		ID:                  s.ID,
 		FacilityID:          s.FacilityID,
 		StaffID:             s.StaffID,

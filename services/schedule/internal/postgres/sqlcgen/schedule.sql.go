@@ -806,6 +806,18 @@ func (q *Queries) MoveExternalEventLinkToDeletion(ctx context.Context, scheduleI
 	return err
 }
 
+const scheduleIDDeleted = `-- name: ScheduleIDDeleted :one
+SELECT EXISTS (SELECT 1 FROM schedule_deletions WHERE schedule_id = $1)::boolean
+`
+
+// 削除した予定の ID は、作り直しに使わせない。削除の書き出しの待ちと監査の記録が、同じ ID の別の予定を指さないためである。
+func (q *Queries) ScheduleIDDeleted(ctx context.Context, scheduleID *string) (bool, error) {
+	row := q.db.QueryRow(ctx, scheduleIDDeleted, scheduleID)
+	var column_1 bool
+	err := row.Scan(&column_1)
+	return column_1, err
+}
+
 const updateRecurringScheduleRule = `-- name: UpdateRecurringScheduleRule :exec
 UPDATE recurring_schedules
 SET date = $1, frequency = $2, day_of_week = $3,

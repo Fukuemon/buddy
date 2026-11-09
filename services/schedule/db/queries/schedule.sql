@@ -180,3 +180,7 @@ DELETE FROM schedules WHERE id = $1 RETURNING visit_info_id;
 
 -- name: GetDeletedScheduleStaffID :one
 SELECT staff_id FROM schedule_deletions WHERE schedule_id = $1;
+
+-- name: ScheduleIDDeleted :one
+-- 削除した予定の ID は、作り直しに使わせない。削除の書き出しの待ちと監査の記録が、同じ ID の別の予定を指さないためである。
+SELECT EXISTS (SELECT 1 FROM schedule_deletions WHERE schedule_id = $1)::boolean;

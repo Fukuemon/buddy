@@ -71,7 +71,7 @@ func createSchedule(ctx context.Context, schedules Repository, ids kernel.IDGene
 		sc.OriginalDate = &replaces.originalDate
 	}
 	if err := schedules.Create(ctx, sc); err != nil {
-		return Schedule{}, err
+		return Schedule{}, apperr.AsConflict(err, "予定の ID %s はすでに使われているか、削除した予定の ID です", sc.ID)
 	}
 	if err := scheduleChanged(ctx, exports, sc.Slot, sc.ID); err != nil {
 		return Schedule{}, err

@@ -84,6 +84,10 @@ func TestScheduleDeleteInDB(t *testing.T) {
 		Date: cur.Date, StaffID: cur.StaffID, DeletedBy: seedMori}); !errors.Is(err, apperr.ErrConflict) {
 		t.Errorf("削除した予定の 2 度目の削除: err = %v, want ErrConflict", err)
 	}
+	if err := schedules.Create(ctx, schedule.Schedule{ID: seedVisitSchedule, Slot: schedule.Slot{FacilityID: seedFacility, StaffID: cur.StaffID, TypeID: seedNormalType,
+		Date: cur.Date, StartTime: civil.Time{Hour: 9}, EndTime: civil.Time{Hour: 10}, Title: ptr("作り直し")}}); !errors.Is(err, apperr.ErrConflict) {
+		t.Errorf("削除した ID での作成: err = %v, want ErrConflict", err)
+	}
 	if staffID, err := schedules.StaffOfDeleted(ctx, seedVisitSchedule); err != nil || staffID != cur.StaffID {
 		t.Errorf("StaffOfDeleted = %q, %v, want %s", staffID, err, cur.StaffID)
 	}
