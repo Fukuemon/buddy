@@ -1,6 +1,6 @@
 import { writeFile } from 'node:fs/promises'
 
-import { expect, test, type APIRequestContext, type Page } from '@playwright/test'
+import { expect, test, type APIRequestContext, type Locator, type Page } from '@playwright/test'
 
 import { issueAccessToken } from '../../fixtures/apiReference'
 import { CALENDARPIT_URL, LEADER, LOGIN_EMAIL, LOGIN_STAFF } from '../../fixtures/env'
@@ -181,10 +181,12 @@ const createVisitRule = async (page: Page, rule: Rule, patientId: string) => {
 }
 
 /**
- * 予定のカレンダーの週の表示を WEEK_STARTS の週ごとに開き、規則ごとの利用者の繰り返しの回が、その週の rule.dates の日だけに出ることを確認する。
- * 回の予定の testid は `schedule-event-recurring-<繰り返しの予定の ID>-<回の日付>` である。
+ * 規則ごとの利用者の繰り返しの回が、予定のカレンダーで rule.dates の日だけに出ることを確認する。
+ * WEEK_STARTS の週ごとに週の表示で回の数を数え、rule.dates の日ごとに日の表示で森の列に回が 1 つ出ることを見る。
  */
 const expectBuddyOccurrences = async (page: Page, names: Record<Rule['key'], string>) => {
+  const visits = (scope: Locator, rule: Rule) =>
+    scope.getByTestId(/^schedule-event-/).filter({ hasText: names[rule.key] })
   for (const week of WEEK_STARTS) {
     await page.goto(`/schedule?view=week&date=${week}`)
     await expect(calendarTimeLabel(page, '06:00:00')).toBeVisible()
@@ -192,14 +194,15 @@ const expectBuddyOccurrences = async (page: Page, names: Record<Rule['key'], str
       .toISOString()
       .slice(0, 10)
     for (const rule of RULES) {
-      const dates = rule.dates.filter((date) => date >= week && date <= weekEnd)
-      const occurrences = (date: string) =>
-        page
-          .getByTestId('schedule-calendar')
-          .getByTestId(new RegExp(`^schedule-event-recurring-.+-${date}$`))
-          .filter({ hasText: names[rule.key] })
-      await expect(occurrences(String.raw`\d{4}-\d{2}-\d{2}`)).toHaveCount(dates.length)
-      for (const date of dates) await expect(occurrences(date)).toHaveCount(1)
+      const count = rule.dates.filter((date) => date >= week && date <= weekEnd).length
+      await expect(visits(page.getByTestId('schedule-calendar'), rule)).toHaveCount(count)
+    }
+  }
+  for (const rule of RULES) {
+    for (const date of rule.dates) {
+      await page.goto(`/schedule?view=day&date=${date}`)
+      const column = page.getByTestId(`day-grid-staff-${MORI.id}`)
+      await expect(visits(column, rule)).toHaveCount(1)
     }
   }
 }
