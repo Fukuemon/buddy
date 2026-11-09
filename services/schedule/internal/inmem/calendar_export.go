@@ -75,10 +75,24 @@ func (s Exports) Finish(_ context.Context, e calendar.Export, r calendar.ExportR
 	case cur.Revision != e.Revision:
 		cur.Attempts, cur.Overwrite, cur.ErrorCode, cur.NextAttemptAt = 0, false, nil, time.Now()
 	case r.Status == calendar.ExportSucceeded:
-		cur.Status, cur.ErrorCode, cur.Overwrite = calendar.ExportSucceeded, nil, false
+		cur.Status, cur.ErrorCode, cur.Overwrite, cur.WritingCalendarID = calendar.ExportSucceeded, nil, false, ""
 	default:
 		cur.Status, cur.ErrorCode, cur.NextAttemptAt = r.Status, r.ErrorCode, time.Now().Add(r.RetryAfter)
 	}
+	s.Exports[e.ID] = cur
+	return nil
+}
+
+// MarkWriting は、calendarexport.ExportRepository の MarkWriting を実装する。
+func (s Exports) MarkWriting(_ context.Context, e calendar.Export, calendarID string) error {
+	cur, err := get(s.Exports, e.ID)
+	if err != nil {
+		return err
+	}
+	if cur.Attempts != e.Attempts {
+		return apperr.ErrConflict
+	}
+	cur.WritingCalendarID = calendarID
 	s.Exports[e.ID] = cur
 	return nil
 }

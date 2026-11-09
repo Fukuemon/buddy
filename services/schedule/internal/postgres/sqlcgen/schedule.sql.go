@@ -188,7 +188,7 @@ const deleteSchedule = `-- name: DeleteSchedule :one
 DELETE FROM schedules WHERE id = $1 RETURNING visit_info_id
 `
 
-// 書き出しの待ちは外部キーの ON DELETE CASCADE で消える。
+// 終わっていない書き出しの待ちは、先に MoveScheduleExportToDeletion で削除の待ちに付け替える。終わった待ちは外部キーの ON DELETE CASCADE で消える。
 func (q *Queries) DeleteSchedule(ctx context.Context, id string) (*string, error) {
 	row := q.db.QueryRow(ctx, deleteSchedule, id)
 	var visit_info_id *string

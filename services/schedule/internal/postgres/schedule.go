@@ -270,7 +270,7 @@ func (r *ScheduleRepository) CreateCancel(ctx context.Context, c schedule.Cancel
 	return translate("bump schedule version", r.q(ctx).BumpScheduleVersion(ctx, c.ScheduleID))
 }
 
-// Delete は、監査の記録 d を書き、予定の対応を監査の記録に付け替えてから、予定 d.ScheduleID の行と訪問の情報を消す。
+// Delete は、監査の記録 d を書き、予定の対応と終わっていない書き出しの待ちを監査の記録に付け替えてから、予定 d.ScheduleID の行と訪問の情報を消す。
 // 呼び出し側が、同じトランザクションの GetForUpdate で予定があることを確かめてから呼ぶ。削除した予定をもう一度渡すと、監査の記録の一意の制約で apperr.ErrConflict を返す。
 func (r *ScheduleRepository) Delete(ctx context.Context, d schedule.Deletion) error {
 	if err := createDeletion(ctx, r.q(ctx), d); err != nil {
@@ -278,6 +278,9 @@ func (r *ScheduleRepository) Delete(ctx context.Context, d schedule.Deletion) er
 	}
 	if err := r.q(ctx).MoveExternalEventLinkToDeletion(ctx, &d.ScheduleID); err != nil {
 		return translate("move external event link to deletion", err)
+	}
+	if err := r.q(ctx).MoveScheduleExportToDeletion(ctx, &d.ScheduleID); err != nil {
+		return translate("move schedule export to deletion", err)
 	}
 	visitInfoID, err := r.q(ctx).DeleteSchedule(ctx, d.ScheduleID)
 	if err != nil {

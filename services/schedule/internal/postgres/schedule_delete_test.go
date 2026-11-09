@@ -14,7 +14,7 @@ import (
 )
 
 // TestScheduleDeleteInDB は、単発の予定の削除が、監査の記録を書き、予定の対応を監査の記録に付け替えてから、
-// 予定の行と訪問の情報を消すことを確認する。予定の書き出しの待ちは外部キーで消え、削除の待ちは積める（ADR-0040）。
+// 予定の行と訪問の情報を消すことを確認する（ADR-0040）。終わっていない書き出しの待ちは削除の待ちに付け替わり、終わった待ちは外部キーで消える（#964）。
 func TestScheduleDeleteInDB(t *testing.T) {
 	ctx := txContext(t)
 	schedules, calendars, exports := NewScheduleRepository(testDB), NewCalendarRepository(testDB), NewCalendarExportRepository(testDB)
@@ -23,6 +23,7 @@ func TestScheduleDeleteInDB(t *testing.T) {
 		linkID   = "01M3TD000000000000000000K1"
 		exportID = "01M3TD000000000000000000X5"
 		deleteID = "01M3TD000000000000000000X6"
+		doneID   = "01M3TD000000000000000000X7"
 		auditID  = "01M3TD000000000000000000D1"
 	)
 	cur, err := schedules.Get(ctx, seedVisitSchedule)
@@ -40,6 +41,15 @@ func TestScheduleDeleteInDB(t *testing.T) {
 	if err := exports.Enqueue(ctx, exportID, calendar.Target{FacilityID: seedFacility, ScheduleID: seedVisitSchedule}); err != nil {
 		t.Fatal(err)
 	}
+	tx := ctx.Value(txKey{}).(pgx.Tx)
+	// 終わっていない待ちは、外部で変わっていた確認が必要な待ちにし、終わった待ちを別に足す
+	if _, err := tx.Exec(ctx, `UPDATE calendar_exports SET status = 'conflict', error_code = 'precondition_failed', attempts = 3, writing_calendar_id = $2 WHERE id = $1`, exportID, calID); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := tx.Exec(ctx, `INSERT INTO calendar_exports (id, facility_id, schedule_id, status, finished_at) VALUES ($1, $2, $3, 'succeeded', now())`,
+		doneID, seedFacility, seedVisitSchedule); err != nil {
+		t.Fatal(err)
+	}
 
 	d := schedule.Deletion{ID: auditID, FacilityID: seedFacility, ScheduleID: seedVisitSchedule, Date: cur.Date, StaffID: cur.StaffID, DeletedBy: seedMori}
 	if err := schedules.Delete(ctx, d); err != nil {
@@ -52,17 +62,24 @@ func TestScheduleDeleteInDB(t *testing.T) {
 	if err != nil || l.ID != linkID || l.ScheduleID != nil {
 		t.Errorf("削除した予定の対応 = %+v, %v, want 監査の記録を指して残る", l, err)
 	}
-	if _, err := exports.Get(ctx, exportID); !errors.Is(err, apperr.ErrNotFound) {
-		t.Errorf("削除した予定の書き出しの待ち: err = %v, want 消える", err)
+	moved, err := exports.Get(ctx, exportID)
+	if err != nil || moved.DeletedScheduleID != seedVisitSchedule || moved.ScheduleID != "" || moved.Status != calendar.ExportPending ||
+		moved.Attempts != 0 || moved.ErrorCode != nil || moved.Revision != 2 || moved.WritingCalendarID != calID {
+		t.Errorf("終わっていない待ち = %+v, %v, want 作ろうとしたカレンダーを持ったまま、pending の削除の待ちに付け替わる", moved, err)
+	}
+	if _, err := exports.Get(ctx, doneID); !errors.Is(err, apperr.ErrNotFound) {
+		t.Errorf("終わった書き出しの待ち: err = %v, want 外部キーで消える", err)
 	}
 	if err := exports.Enqueue(ctx, deleteID, calendar.Target{FacilityID: seedFacility, DeletedScheduleID: seedVisitSchedule}); err != nil {
 		t.Fatal(err)
 	}
-	if e, err := exports.Get(ctx, deleteID); err != nil || e.DeletedScheduleID != seedVisitSchedule || e.ScheduleID != "" {
-		t.Errorf("削除の待ち = %+v, %v", e, err)
+	if e, err := exports.Get(ctx, exportID); err != nil || e.Revision != 3 {
+		t.Errorf("削除の待ちを積んだ後の待ち = %+v, %v, want 付け替えた待ちに積み直す", e, err)
+	}
+	if _, err := exports.Get(ctx, deleteID); !errors.Is(err, apperr.ErrNotFound) {
+		t.Errorf("削除の待ちを別に足した: err = %v", err)
 	}
 
-	tx := ctx.Value(txKey{}).(pgx.Tx)
 	var infos int
 	if err := tx.QueryRow(ctx, "SELECT COUNT(*) FROM visit_infos WHERE id = $1", infoID).Scan(&infos); err != nil {
 		t.Fatal(err)
@@ -90,6 +107,88 @@ func TestScheduleDeleteInDB(t *testing.T) {
 	}
 	if staffID, err := schedules.StaffOfDeleted(ctx, seedVisitSchedule); err != nil || staffID != cur.StaffID {
 		t.Errorf("StaffOfDeleted = %q, %v, want %s", staffID, err, cur.StaffID)
+	}
+}
+
+// TestScheduleDeleteMovesPendingExport は、予定の削除が、書いている処理が lease を持つ待ちの書き直しの回数を保ち、
+// 書き直しの間隔を空けている待ちの回数を数え直すことを確認する。前者は、書いている処理の Finish が回数で自分の待ちと分かるためである。
+func TestScheduleDeleteMovesPendingExport(t *testing.T) {
+	cases := []struct {
+		name   string
+		locked string
+		want   int
+	}{
+		{"書いている処理が lease を持つ", "now() + interval '1 minute'", 4},
+		{"書き直しの間隔を空けている", "NULL", 0},
+		{"lease が切れている", "now() - interval '1 second'", 0},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			ctx := txContext(t)
+			schedules, exports := NewScheduleRepository(testDB), NewCalendarExportRepository(testDB)
+			const exportID = "01M3TD000000000000000000X8"
+			cur, err := schedules.Get(ctx, seedVisitSchedule)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if err := exports.Enqueue(ctx, exportID, calendar.Target{FacilityID: seedFacility, ScheduleID: seedVisitSchedule}); err != nil {
+				t.Fatal(err)
+			}
+			tx := ctx.Value(txKey{}).(pgx.Tx)
+			if _, err := tx.Exec(ctx, "UPDATE calendar_exports SET attempts = 4, locked_until = "+tc.locked+" WHERE id = $1", exportID); err != nil {
+				t.Fatal(err)
+			}
+			if err := schedules.Delete(ctx, schedule.Deletion{ID: "01M3TD000000000000000000D9", FacilityID: seedFacility, ScheduleID: seedVisitSchedule,
+				Date: cur.Date, StaffID: cur.StaffID, DeletedBy: seedMori}); err != nil {
+				t.Fatal(err)
+			}
+			e, err := exports.Get(ctx, exportID)
+			if err != nil || e.DeletedScheduleID != seedVisitSchedule || e.Status != calendar.ExportPending || e.Attempts != tc.want {
+				t.Errorf("付け替えた待ち = %+v, %v, want 回数 %d の pending の削除の待ち", e, err, tc.want)
+			}
+		})
+	}
+}
+
+// TestCalendarExportMarkWriting は、作ろうとしたカレンダーを、取ったときの回数が今の回数と同じ待ちにだけ書くことを確認する。
+func TestCalendarExportMarkWriting(t *testing.T) {
+	ctx := txContext(t)
+	calendars, exports := NewCalendarRepository(testDB), NewCalendarExportRepository(testDB)
+	const (
+		calID    = "01M3TD000000000000000000C2"
+		exportID = "01M3TD000000000000000000X9"
+	)
+	if err := calendars.Create(ctx, calendar.ExternalCalendar{ID: calID, FacilityID: seedFacility, StaffID: seedMori, Provider: calendar.ProviderGoogle, CalendarID: "mori@example.com"}); err != nil {
+		t.Fatal(err)
+	}
+	if err := exports.Enqueue(ctx, exportID, calendar.Target{FacilityID: seedFacility, ScheduleID: seedVisitSchedule}); err != nil {
+		t.Fatal(err)
+	}
+	tx := ctx.Value(txKey{}).(pgx.Tx)
+	if _, err := tx.Exec(ctx, "UPDATE calendar_exports SET attempts = 2 WHERE id = $1", exportID); err != nil {
+		t.Fatal(err)
+	}
+	if err := exports.MarkWriting(ctx, calendar.Export{ID: exportID, Attempts: 1}, calID); !errors.Is(err, apperr.ErrConflict) {
+		t.Errorf("取り直された待ちへの MarkWriting: err = %v, want ErrConflict", err)
+	}
+	if e, _ := exports.Get(ctx, exportID); e.WritingCalendarID != "" {
+		t.Errorf("取り直された待ちに書いた: %q", e.WritingCalendarID)
+	}
+	e, err := exports.Get(ctx, exportID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := exports.MarkWriting(ctx, e, calID); err != nil {
+		t.Fatal(err)
+	}
+	if got, _ := exports.Get(ctx, exportID); got.WritingCalendarID != calID {
+		t.Errorf("作ろうとしたカレンダー = %q, want %s", got.WritingCalendarID, calID)
+	}
+	if err := exports.Finish(ctx, e, calendar.ExportResult{Status: calendar.ExportSucceeded}); err != nil {
+		t.Fatal(err)
+	}
+	if got, _ := exports.Get(ctx, exportID); got.Status != calendar.ExportSucceeded || got.WritingCalendarID != "" {
+		t.Errorf("書き終えた待ち = %+v, want 作ろうとしたカレンダーを空にする", got)
 	}
 }
 

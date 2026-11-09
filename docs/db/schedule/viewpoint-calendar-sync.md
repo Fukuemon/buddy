@@ -17,7 +17,7 @@
 | [public.calendar_sync_states](public.calendar_sync_states.md)             | 10      | 外部のカレンダーごとの同期の状態                                                                                                                               | BASE TABLE |
 | [public.external_event_links](public.external_event_links.md)             | 13      | 外部の予定と、buddy の単発か繰り返しの予定の対応                                                                                                               | BASE TABLE |
 | [public.import_runs](public.import_runs.md)                               | 15      | 外部のカレンダーからの取り込みの 1 回ごとの記録                                                                                                                | BASE TABLE |
-| [public.calendar_exports](public.calendar_exports.md)                     | 15      | 予定を外部のカレンダーに書き出す待ち。予定の変更と同じトランザクションで積む                                                                                   | BASE TABLE |
+| [public.calendar_exports](public.calendar_exports.md)                     | 16      | 予定を外部のカレンダーに書き出す待ち。予定の変更と同じトランザクションで積む                                                                                   | BASE TABLE |
 | [public.calendar_event_projections](public.calendar_event_projections.md) | 20      | Google カレンダーを予定の正本にする事業所の、Google カレンダーの予定の写し（Projection）。1 つの予定を 1 行にする                                              | BASE TABLE |
 | [public.calendar_cutovers](public.calendar_cutovers.md)                   | 9       | 事業所の予定の正本を Google カレンダーから buddy に切り替える作業の記録（切り替え）。事業所ごとに open は 1 つまで                                             | BASE TABLE |
 | [public.calendar_cutover_skips](public.calendar_cutover_skips.md)         | 6       | 切り替えの取り込みで、確認が必要な予定に取り込まないを選んだ記録                                                                                               | BASE TABLE |
@@ -52,6 +52,7 @@ erDiagram
 "public.calendar_exports" }o--|| "public.facilities" : "FOREIGN KEY (facility_id) REFERENCES facilities(id)"
 "public.calendar_exports" }o--|| "public.recurring_schedules" : "FOREIGN KEY (facility_id, recurring_schedule_id) REFERENCES recurring_schedules(facility_id, id) ON DELETE CASCADE"
 "public.calendar_exports" }o--|| "public.schedules" : "FOREIGN KEY (facility_id, schedule_id) REFERENCES schedules(facility_id, id) ON DELETE CASCADE"
+"public.calendar_exports" }o--|| "public.external_calendars" : "FOREIGN KEY (facility_id, writing_calendar_id) REFERENCES external_calendars(facility_id, id) ON DELETE SET NULL (writing_calendar_id)"
 "public.calendar_exports" }o--|| "public.schedule_deletions" : "FOREIGN KEY (facility_id, deleted_schedule_id) REFERENCES schedule_deletions(facility_id, schedule_id)"
 "public.calendar_event_projections" }o--|| "public.users" : "FOREIGN KEY (facility_id, staff_id) REFERENCES users(facility_id, id) ON DELETE CASCADE"
 "public.calendar_event_projections" }o--|| "public.external_calendars" : "FOREIGN KEY (facility_id, external_calendar_id) REFERENCES external_calendars(facility_id, id) ON DELETE CASCADE"
@@ -218,6 +219,7 @@ erDiagram
   timestamp_with_time_zone created_at
   timestamp_with_time_zone updated_at
   text deleted_schedule_id
+  text writing_calendar_id
 }
 "public.calendar_event_projections" {
   text external_calendar_id

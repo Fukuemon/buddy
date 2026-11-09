@@ -4,9 +4,11 @@ import (
 	"context"
 	"slices"
 	"strings"
+	"time"
 
 	"github.com/Fukuemon/buddy/services/schedule/internal/apperr"
 	"github.com/Fukuemon/buddy/services/schedule/internal/civil"
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendar"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/schedule"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/scheduleview"
 )
@@ -98,7 +100,7 @@ func (s Schedules) CreateCancel(_ context.Context, c schedule.Cancellation) erro
 	return nil
 }
 
-// Delete は、schedule.Repository の Delete を実装する。予定の書き出しの待ちは、外部キーの ON DELETE CASCADE と同じく消す。
+// Delete は、schedule.Repository の Delete を実装する。終わっていない書き出しの待ちは削除の待ちに付け替え、終わった待ちは ON DELETE CASCADE と同じく消す。
 func (s Schedules) Delete(_ context.Context, d schedule.Deletion) error {
 	sc, ok := s.Schedules[d.ScheduleID]
 	if !ok {
@@ -112,8 +114,17 @@ func (s Schedules) Delete(_ context.Context, d schedule.Deletion) error {
 		}
 	}
 	for id, e := range s.Exports {
-		if e.ScheduleID == d.ScheduleID {
+		switch {
+		case e.ScheduleID != d.ScheduleID:
+		case e.Status == calendar.ExportSucceeded:
 			delete(s.Exports, id)
+		default:
+			if e.Status != calendar.ExportPending || e.LockedUntil == nil || !e.LockedUntil.After(time.Now()) {
+				e.Attempts = 0
+			}
+			e.ScheduleID, e.DeletedScheduleID, e.Status, e.ErrorCode, e.NextAttemptAt = "", d.ScheduleID, calendar.ExportPending, nil, time.Now()
+			e.Revision++
+			s.Exports[id] = e
 		}
 	}
 	delete(s.Schedules, d.ScheduleID)

@@ -156,6 +156,7 @@ erDiagram
   timestamp_with_time_zone created_at
   timestamp_with_time_zone updated_at
   text deleted_schedule_id FK
+  text writing_calendar_id FK
 }
 ```
 

@@ -134,6 +134,8 @@ type CalendarExport struct {
 	UpdatedAt  time.Time
 	// 削除した単発の予定の ID。外部の予定を消す待ち（ADR-0040）
 	DeletedScheduleID *string
+	// 外部の予定を作ろうとしたカレンダー。作る前に書き、書き終えたら NULL にする。予定の対応が無いまま残った外部の予定を、次に書くときに消す
+	WritingCalendarID *string
 }
 
 // 外部のカレンダーごとの同期の状態

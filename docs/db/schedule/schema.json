@@ -5834,6 +5834,12 @@
           "type": "text",
           "nullable": true,
           "comment": "削除した単発の予定の ID。外部の予定を消す待ち（ADR-0040）"
+        },
+        {
+          "name": "writing_calendar_id",
+          "type": "text",
+          "nullable": true,
+          "comment": "外部の予定を作ろうとしたカレンダー。作る前に書き、書き終えたら NULL にする。予定の対応が無いまま残った外部の予定を、次に書くときに消す"
         }
       ],
       "indexes": [
@@ -5921,6 +5927,15 @@
           "columns": [
             "facility_id",
             "deleted_schedule_id"
+          ]
+        },
+        {
+          "name": "calendar_exports_facility_writing_calendar_idx",
+          "def": "CREATE INDEX calendar_exports_facility_writing_calendar_idx ON public.calendar_exports USING btree (facility_id, writing_calendar_id) WHERE (writing_calendar_id IS NOT NULL)",
+          "table": "public.calendar_exports",
+          "columns": [
+            "facility_id",
+            "writing_calendar_id"
           ]
         }
       ],
@@ -6116,6 +6131,21 @@
           "columns": [
             "facility_id",
             "schedule_id"
+          ],
+          "referenced_columns": [
+            "facility_id",
+            "id"
+          ]
+        },
+        {
+          "name": "calendar_exports_writing_calendar_fkey",
+          "type": "FOREIGN KEY",
+          "def": "FOREIGN KEY (facility_id, writing_calendar_id) REFERENCES external_calendars(facility_id, id) ON DELETE SET NULL (writing_calendar_id)",
+          "table": "public.calendar_exports",
+          "referenced_table": "public.external_calendars",
+          "columns": [
+            "facility_id",
+            "writing_calendar_id"
           ],
           "referenced_columns": [
             "facility_id",
@@ -8301,6 +8331,21 @@
       ],
       "parent_cardinality": "exactly_one",
       "def": "FOREIGN KEY (facility_id, schedule_id) REFERENCES schedules(facility_id, id) ON DELETE CASCADE"
+    },
+    {
+      "table": "public.calendar_exports",
+      "columns": [
+        "facility_id",
+        "writing_calendar_id"
+      ],
+      "cardinality": "zero_or_more",
+      "parent_table": "public.external_calendars",
+      "parent_columns": [
+        "facility_id",
+        "id"
+      ],
+      "parent_cardinality": "exactly_one",
+      "def": "FOREIGN KEY (facility_id, writing_calendar_id) REFERENCES external_calendars(facility_id, id) ON DELETE SET NULL (writing_calendar_id)"
     },
     {
       "table": "public.calendar_exports",
