@@ -25,7 +25,7 @@ status: stable
 置き換えた後の回をキャンセルするときは、置き換えた単発の予定をキャンセルする。
 
 1 つの回を削除すると、その日を除外する日に足すだけで、単発の予定を作らない。  
-監査の記録には、繰り返しの予定と回の日を残す。  
+監査の記録には、操作した職員、時刻、繰り返しの予定の ID、回の日を残す。  
 置き換えた後の回を削除するときは、置き換えた単発の予定を削除し、その日は除外する日のまま残す。  
 キャンセルした回は削除できない。  
 削除の規則は [予定](schedule.md) にあり、決めた理由は [ADR-0040](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0040-schedule-deletion.md) にある。
@@ -44,6 +44,7 @@ status: stable
   - 置き換えた回と、キャンセルした回の単発の予定は、単発の予定として残る。
   - 置き換えた回の元の日には、新しい規則の回が当たっても回を出さない。
   - 取り消した回は、新しい規則に引き継がない。
+  - 削除した回の日は、新しい規則に引き継がず、新しい規則の回が当たれば回を出す。置き換えた回を削除した後の元の日も同じである（ADR-0040）。
 
 決めた理由は [ADR-0037](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0037-recurring-rule-change.md) にある。間隔の数え方の理由は [ADR-0038](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0038-recurring-rule-scope.md) にある。
 
