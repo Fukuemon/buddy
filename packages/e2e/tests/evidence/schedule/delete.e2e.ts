@@ -47,6 +47,16 @@ const prepare =
     return { token, data }
   }
 
+/** 青木 陽菜のログインの cookie を持たない別の context で、google_primary の事業所の岡田 葵のトークンを取る。 */
+const okadaToken = async (page: Page) => {
+  const context = await page.context().browser()!.newContext({ ignoreHTTPSErrors: true })
+  try {
+    return await issueAccessToken(context.request, OKADA.email)
+  } finally {
+    await context.close()
+  }
+}
+
 const id = async (res: Awaited<ReturnType<APIRequestContext['post']>>) => {
   expect(res.status()).toBe(201)
   return ((await res.json()) as { id: string }).id
@@ -250,7 +260,7 @@ test.describe('予定の API の予定の削除', () => {
             },
           )
           expect(res.status()).toBe(201)
-          return { pastId, cancelledId, okada: await issueAccessToken(page.request, OKADA.email) }
+          return { pastId, cancelledId, okada: await okadaToken(page) }
         }),
         async ({ page, step, check }, { token, data }) => {
           await routeApiReference(page)
@@ -307,7 +317,7 @@ test.describe('予定の API の予定の削除', () => {
             },
           )
           expect(cancelled.status()).toBe(201)
-          return { recurringId, okada: await issueAccessToken(page.request, OKADA.email) }
+          return { recurringId, okada: await okadaToken(page) }
         }),
         async ({ page, step, check }, { token, data }) => {
           await routeApiReference(page)
@@ -430,7 +440,7 @@ test.describe('予定の API の予定の削除', () => {
               date: fromNextMonday(0),
             }),
           ),
-          okada: await issueAccessToken(page.request, OKADA.email),
+          okada: await okadaToken(page),
         })),
         async ({ page, step, check }, { token, data }) => {
           await routeApiReference(page)
@@ -452,7 +462,9 @@ test.describe('予定の API の予定の削除', () => {
           await cancel(token, data.recurringId, '201')
           await check('回のキャンセルの応答は 201 である')
           await checkDay(page, check, target, title, true, 'キャンセルの後（キャンセルした回）')
-          await step(`google_primary の事業所の ${OKADA.staff.name} のトークンで、回のキャンセルを送る`)
+          await step(
+            `google_primary の事業所の ${OKADA.staff.name} のトークンで、回のキャンセルを送る`,
+          )
           await cancel(data.okada, MISSING_ID, '409')
           await expect(apiClient(page).dialog).toContainText('"code": "google_primary"')
           await check('google_primary の事業所の回のキャンセルは 409（google_primary）である')
