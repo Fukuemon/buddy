@@ -2,31 +2,17 @@ import { expect, test, type APIRequestContext } from '@playwright/test'
 
 import { LOGIN_STAFF } from '../../fixtures/env'
 import { createNormalSchedule, getSchedule } from '../../fixtures/schedule'
-import {
-  issueManagerToken,
-  leaveStaff,
-  newStaff,
-  registerStaff,
-  reinstateStaff,
-  STAFF_FORM,
-} from '../../fixtures/staff'
+import { issueManagerToken, leaveStaff, reinstateStaff, STAFF_FORM } from '../../fixtures/staff'
+import { registerNewStaff } from '../../setup/staff'
 
 /** 予定の API で作る予定の日。 */
 const SCHEDULE_DATE = '2026-10-20'
 
-/** 職員を 1 人登録し、ID と名前を返す。 */
-const register = async (request: APIRequestContext, token: string, label: string) => {
-  const staff = newStaff(label)
-  const registered = await registerStaff(request, token, staff)
-  expect(registered.status()).toBe(201)
-  return { id: ((await registered.json()) as { id: string }).id, name: staff.name }
-}
-
 /** 有効な職員と止めた職員を 1 人ずつ登録し、それぞれの ID を返す。 */
 const registerActiveAndSuspended = async (request: APIRequestContext) => {
   const manager = await issueManagerToken()
-  const active = await register(request, manager, 'active')
-  const suspended = await register(request, manager, 'hidden')
+  const active = await registerNewStaff(request, manager, 'active')
+  const suspended = await registerNewStaff(request, manager, 'hidden')
   expect((await leaveStaff(request, manager, suspended.id)).status()).toBe(200)
   return { active: active.id, suspended: suspended.id }
 }
@@ -103,7 +89,7 @@ test.describe('予定の編集', () => {
       request,
     }) => {
       const manager = await issueManagerToken()
-      const assigned = await register(request, manager, 'assigned')
+      const assigned = await registerNewStaff(request, manager, 'assigned')
       const created = await createNormalSchedule(request, manager, STAFF_FORM.facilityId, {
         staffId: assigned.id,
         title: `E2E の会議 ${Date.now()}`,
@@ -127,7 +113,7 @@ test.describe('予定の編集', () => {
       request,
     }) => {
       const manager = await issueManagerToken()
-      const assigned = await register(request, manager, 'kept')
+      const assigned = await registerNewStaff(request, manager, 'kept')
       const stamp = Date.now()
       const created = await createNormalSchedule(request, manager, STAFF_FORM.facilityId, {
         staffId: assigned.id,

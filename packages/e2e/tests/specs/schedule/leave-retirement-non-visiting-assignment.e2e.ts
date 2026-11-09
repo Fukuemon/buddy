@@ -1,4 +1,4 @@
-import { expect, test, type APIRequestContext } from '@playwright/test'
+import { expect, test } from '@playwright/test'
 
 import { LOGIN_STAFF } from '../../fixtures/env'
 import { findSchedule } from '../../fixtures/externalCalendar'
@@ -11,12 +11,11 @@ import {
 import {
   issueManagerToken,
   leaveStaff,
-  newStaff,
-  registerStaff,
   retireStaff,
   setNonVisiting,
   STAFF_FORM,
 } from '../../fixtures/staff'
+import { registerNewStaff, registerStoppedStaff } from '../../setup/staff'
 
 /** 予定の API で作る予定の日。 */
 const SCHEDULE_DATE = '2026-10-20'
@@ -43,25 +42,6 @@ const STOPS = [
   },
 ] as const
 
-/** 職員を 1 人登録し、ID と名前を返す。 */
-const register = async (request: APIRequestContext, token: string, label: string) => {
-  const staff = newStaff(label)
-  const registered = await registerStaff(request, token, staff)
-  expect(registered.status()).toBe(201)
-  return { id: ((await registered.json()) as { id: string }).id, name: staff.name }
-}
-
-/** 職員を 1 人登録して stop で休職か退職か、訪問しない職員にし、ID と名前を返す。 */
-const registerStopped = async (
-  request: APIRequestContext,
-  token: string,
-  stop: (typeof STOPS)[number]['stop'],
-) => {
-  const staff = await register(request, token, 'stopped')
-  expect((await stop(request, token, staff.id)).status()).toBe(200)
-  return staff
-}
-
 test.describe('予定の作成', () => {
   test.describe('休職と退職の職員と、訪問しない職員への割り振り', () => {
     test('URL の staffId が休職の職員を指す予定の作成の画面を開いた場合、主訪問者が未選択で開くこと', async ({
@@ -69,7 +49,7 @@ test.describe('予定の作成', () => {
       request,
     }) => {
       const manager = await issueManagerToken()
-      const stopped = await registerStopped(request, manager, leaveStaff)
+      const stopped = await registerStoppedStaff(request, manager, leaveStaff)
 
       await page.goto(`/schedule/new?start=${SCHEDULE_DATE}&time=13:00&staffId=${stopped.id}`)
       // 職員の一覧が届くまで主訪問者は値に関わらず未選択に見えるので、候補が出てから確認する
@@ -85,7 +65,7 @@ test.describe('予定の作成', () => {
         request,
       }) => {
         const manager = await issueManagerToken()
-        const stopped = await registerStopped(request, manager, stop)
+        const stopped = await registerStoppedStaff(request, manager, stop)
         const title = `E2E の会議 ${Date.now()}`
 
         const res = await createNormalSchedule(request, manager, STAFF_FORM.facilityId, {
@@ -108,7 +88,7 @@ test.describe('予定の作成', () => {
         request,
       }) => {
         const manager = await issueManagerToken()
-        const stopped = await registerStopped(request, manager, stop)
+        const stopped = await registerStoppedStaff(request, manager, stop)
 
         const res = await createWeeklyNormalSchedule(request, manager, STAFF_FORM.facilityId, {
           staffId: stopped.id,
@@ -138,7 +118,7 @@ test.describe('予定の編集', () => {
         })
         expect(created.status()).toBe(201)
         const scheduleId = ((await created.json()) as { id: string }).id
-        const stopped = await registerStopped(request, manager, stop)
+        const stopped = await registerStoppedStaff(request, manager, stop)
 
         const res = await updateNormalSchedule(request, manager, scheduleId, {
           staffId: stopped.id,
@@ -157,7 +137,7 @@ test.describe('予定の編集', () => {
       request,
     }) => {
       const manager = await issueManagerToken()
-      const assigned = await register(request, manager, 'retired-past')
+      const assigned = await registerNewStaff(request, manager, 'retired-past')
       const title = `E2E の会議 ${Date.now()}`
       const created = await createNormalSchedule(request, manager, STAFF_FORM.facilityId, {
         staffId: assigned.id,
