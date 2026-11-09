@@ -62,9 +62,9 @@ const id = async (res: Awaited<ReturnType<APIRequestContext['post']>>) => {
   return ((await res.json()) as { id: string }).id
 }
 
-/** 前の送信のクライアントが開いていれば、ページを開き直して閉じる。開いたままだと、次の操作のボタンを押せない。 */
+/** 前の送信のクライアントを、ページを開き直して閉じる。開いたままだと、次の操作のボタンを押せない。 */
 const closeApiClient = async (page: Page) => {
-  if (await apiClient(page).dialog.isVisible()) await page.goto('about:blank')
+  await page.goto('about:blank')
 }
 
 /** API の参照のページで、予定 scheduleId の削除（deleteSchedule）を送り、応答に status が出るのを待つ。 */
