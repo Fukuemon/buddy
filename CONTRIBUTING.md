@@ -406,12 +406,35 @@ gitGraph
 ## Issues and Pull Requests
 
 - 作業は issue から始める。
-  - issue は、issue テンプレートの要求、不具合、タスクから選ぶ。
+  - issue は、issue テンプレートの要求、不具合と、設計、実装、検証、文書の 4 つのタスクから選ぶ。
+  - 要求は、テンプレートの「種別」で、`context/project.yml` の `process.presets` の種別を 1 つ選ぶ。種別で、行うプロセスと、子のタスクの種類が決まる。
   - 対象のアプリとパッケージは `pkg:` のラベルで示す。
+- 種類のラベルは、テンプレートが付ける。
+
+  | 種類 | ラベル |
+  | --- | --- |
+  | 要求 | `type:requirements` |
+  | 不具合 | `type:bug` |
+  | 設計のタスク | `type:design` |
+  | 実装のタスク | `type:impl` |
+  | 検証のタスク | `type:verify` |
+  | 文書のタスク | `type:docs` |
+
 - タスクと不具合は、親の要求の sub-issue にする。
   - 保守のタスク（依存の更新、Dependabot と CI の設定、開発の環境、規約とテンプレートの直し）は、保守の要求 #220 の sub-issue にする。
   - 不具合は、不具合が起きた機能の要求の sub-issue にする。当てはまる要求が無ければ #220 にする。
     - 不具合の form には親の欄が無いので、起票した後に sub-issue にする。
+- 1 つの要求の子は 10 件までにする。超えそうなら要求を分け、複数の要求を束ねるときは milestone にする。issue の親子は、要求とタスクの 1 段だけにする。
+- 親の要求は、pull request の `Closes` では閉じない。閉じた人かエージェントが、受け入れ条件を確認してチェックを付け、親を閉じる。
+  - 検証のタスクを子に持つ種別の要求は、検証のタスクが閉じたときに閉じる。
+  - 検証のタスクを持たない種別の要求は、最後の子が閉じたときに閉じる。
+  - 確認できない受け入れ条件が残れば、親を閉じずに、残った条件を親のコメントに書く。
+  - 規則の詳細は、スキル write-issue-pr の issue の書き方（`references/issue.md`）の「要求の大きさと親子」にある。
+- 要求とタスクの親子の崩れは、[scripts/check-issue-tree.mjs](scripts/check-issue-tree.mjs) が一覧する。issue は書き換えない。
+  - ローカルでは、ルートで `node scripts/check-issue-tree.mjs` を流す。合わない issue が無ければ終了コード 0、あれば 1 で終わる。
+  - CI の [issue-tree.yml](.github/workflows/issue-tree.yml) が、毎週月曜の 9:00（JST）に流す。手で流すときは `gh workflow run issue-tree.yml --ref develop` を流す。
+  - 失敗したら、スキル organize-issues で棚卸しする。issue を書き換える前に、変える内容を表にして承認を受ける。
+  - スクリプトは、agent-harness の core のスキル write-issue-pr から写したものである。core を上げたら写し直す。
 - タイトルと本文の書き方は、スキル write-issue-pr に従う。
   - pull request の本文は `.github/pull_request_template.md` のセクションで書く。
 - 起票の前の下書きは `.ai-out/issues/` か `.ai-out/prs/` に置き、`pnpm exec textlint --ignore-path /dev/null <下書きのパス>` で確認する。
