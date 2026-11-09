@@ -1,11 +1,18 @@
 import { expect, test } from '@playwright/test'
 
-import { LEADER_STATE } from '../../fixtures/env'
+import { LEADER_STATE, LOGIN_STATE } from '../../fixtures/env'
 import { issueManagerToken, newStaff, registerStaffId } from '../../fixtures/staff'
 
 test.describe('職員の一覧', () => {
   test.describe('権限が無い職員', () => {
     test.use({ storageState: LEADER_STATE })
+
+    // issueManagerToken は worker の中でトークンを使い回す。リーダーの状態の request で初めて取ると Hydra がリーダーのログインを覚えていて取れないので、先にマネージャーの状態で取っておく
+    test.beforeAll(async ({ playwright }) => {
+      const manager = await playwright.request.newContext({ storageState: LOGIN_STATE })
+      await issueManagerToken(manager)
+      await manager.dispose()
+    })
 
     test('職員の管理の権限を持たない職員が職員の画面の URL を開いた場合、職員の管理の画面が出ないこと', async ({
       page,
