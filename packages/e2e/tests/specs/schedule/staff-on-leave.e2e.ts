@@ -12,7 +12,7 @@ const SCHEDULE_DATE = '2026-10-20'
 const registerActiveAndOnLeave = async (request: APIRequestContext) => {
   const manager = await issueManagerToken()
   const active = await registerNewStaff(request, manager, 'active')
-  const onLeave = await registerNewStaff(request, manager, 'hidden')
+  const onLeave = await registerNewStaff(request, manager, 'on-leave')
   expect((await leaveStaff(request, manager, onLeave.id)).status()).toBe(200)
   return { active: active.id, onLeave: onLeave.id }
 }
