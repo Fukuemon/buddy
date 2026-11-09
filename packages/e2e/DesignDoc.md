@@ -72,7 +72,8 @@ flowchart TB
 ```
 
 - `specs/<dir>/` に置く spec 以外のファイルは、値だけを持つ。要求ごとの値をどの要求にも使う `fixtures/` に置くと、要求に関わるものが複数の配置先に分かれるためである。
-- `widgets/<UI>/` を操作しないテストは、spec から `waits/` を直接呼ぶ。
+- `widgets/<UI>/` は、操作を `actions/` に、待ちを `waits/` に置く。`actions/` の操作は、内部で `waits/` を呼んで完了まで待つ。
+- UI を操作せずに待ちだけが要るテストは、spec から `widgets/<UI>/waits/` を直接呼ぶ。
 
 ### 配置先の決め方
 

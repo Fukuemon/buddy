@@ -160,7 +160,12 @@ portless compose -p $p down -v
   - 幅だけをそろえ、タッチの操作は再現しない。
   - 幅は本文の撮った条件に書く。
 - API だけの変更のうち、画面から確認できない操作は、API の参照のページ（Scalar）の「Test Request」から送って撮る。
-  - `prepare` に `packages/e2e/tests/fixtures/apiReference.ts` の `prepareApiReference` を渡し、録画の中で `routeApiReference` を呼んでからページを開く。
+  - `prepare` で、次の順に呼ぶ。
+    1. `packages/e2e/tests/fixtures/apiReference.ts` の `routeApiReference`
+    2. `packages/e2e/tests/screens/apiReference.ts` の `openApiReference`
+    3. トークンが要るときは、fixtures の `issueAccessToken`
+  - 録画の中でも、`routeApiReference` を呼んでからページを開く。
+  - クライアントの欄への入力とレスポンスのスクロールには、`packages/e2e/tests/widgets/apiClient/actions/` の関数を使う。
   - ページはドキュメントサイトを起動せずに `docs/api/` のファイルから開く。リクエストは、撮る compose の API へ送り直す。
   - トークンは認証の欄に伏せ字のまま入れる。字幕には職員の名前だけを出し、トークンの値を出さない。
 
