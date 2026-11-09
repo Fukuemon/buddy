@@ -90,7 +90,7 @@ func (s server) ListSchedules(ctx context.Context, req openapi.ListSchedulesRequ
 		CalendarSyncs:       mapSlice(list.CalendarSyncs, toCalendarSyncStatus),
 		Cutover:             toOpenCalendarCutover(list.Cutover),
 		AllDayEvents:        mapSlice(list.AllDayEvents, toAllDayEvent),
-		UnlistedEventCounts: mapSlice(list.UnlistedCounts, toUnlistedEventCount),
+		UnlistedEventCounts: mapSlice(list.UnlistedEventCounts, toUnlistedEventCount),
 	}, nil
 }
 

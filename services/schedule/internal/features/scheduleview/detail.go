@@ -117,7 +117,7 @@ type Listing struct {
 	// AllDayEvents は、google_primary の事業所で、期間に重なる見てよい職員の終日の予定である。buddy_primary の事業所と、
 	// 予定の種類で絞ったときは空である（#672）。
 	AllDayEvents []AllDayEvent
-	// UnlistedCounts は、google_primary の事業所で、期間に重なる見てよい職員の、一覧に出せない予定の職員ごとの件数である。
+	// UnlistedEventCounts は、google_primary の事業所で、期間に重なる見てよい職員の、一覧に出せない予定の職員ごとの件数である。
 	// buddy_primary の事業所と、予定の種類で絞ったときは空である（#672）。
-	UnlistedCounts []UnlistedCount
+	UnlistedEventCounts []UnlistedEventCount
 }

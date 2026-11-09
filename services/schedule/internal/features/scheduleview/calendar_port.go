@@ -24,7 +24,7 @@ const (
 	// EventAllDay の予定は、時刻の無い終日の予定である。buddy の予定に読み替えず、一覧の終日の予定（AllDayEvent）に出す。
 	EventAllDay
 	// EventUnlisted の予定は、buddy の予定にも終日の予定にも読み替えられない予定である。2 日以上にわたる予定、24 時間以上の予定、
-	// 開始か終了の日時を読めない予定、長さが 0 以下の予定である。一覧には中身を出さず、職員ごとの件数（UnlistedCount）に数える。
+	// 開始か終了の日時を読めない予定、長さが 0 以下の予定である。一覧には中身を出さず、職員ごとの件数（UnlistedEventCount）に数える。
 	EventUnlisted
 )
 

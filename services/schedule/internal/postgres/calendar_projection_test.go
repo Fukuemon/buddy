@@ -368,8 +368,6 @@ func TestCalendarSyncClaimsByMode(t *testing.T) {
 	}
 }
 
-// TestCalendarProjectionRepositoryListByFacility は、予定の表示の読み出しが、事業所の外していないカレンダーの行を職員の名前を付けて読み、
-// from より前に終わった行とほかの事業所の行と外したカレンダーの行を返さないことと、カレンダーの同期の状況を読むことを確認する。
 // TestCalendarProjectionRepositoryTimeUnreadable は、日時を読めない予定の行を、読めた方の日時だけで書いて TimeUnreadable のまま読み、
 // 日時を読めない予定でない確定の行は、開始が無いと書けないことを確認する（#672）。
 func TestCalendarProjectionRepositoryTimeUnreadable(t *testing.T) {
@@ -411,6 +409,8 @@ func TestCalendarProjectionRepositoryTimeUnreadable(t *testing.T) {
 	}
 }
 
+// TestCalendarProjectionRepositoryListByFacility は、予定の表示の読み出しが、事業所の外していないカレンダーの行を職員の名前を付けて読み、
+// from より前に終わった行とほかの事業所の行と外したカレンダーの行を返さないことと、カレンダーの同期の状況を読むことを確認する。
 func TestCalendarProjectionRepositoryListByFacility(t *testing.T) {
 	ctx := txContext(t)
 	r := NewCalendarProjectionRepository(testDB)

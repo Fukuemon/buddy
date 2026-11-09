@@ -97,7 +97,7 @@ func toAllDayEvent(e scheduleview.AllDayEvent) openapi.AllDayEvent {
 	}
 }
 
-func toUnlistedEventCount(c scheduleview.UnlistedCount) openapi.UnlistedEventCount {
+func toUnlistedEventCount(c scheduleview.UnlistedEventCount) openapi.UnlistedEventCount {
 	return openapi.UnlistedEventCount{StaffId: c.StaffID, Count: c.Count}
 }
 

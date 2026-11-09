@@ -79,6 +79,7 @@ func TestProjectionRulesReadCalendarOnly(t *testing.T) {
 	}{
 		{"1 日の終日の予定", dates(d(20), d(21)), scheduleview.EventAllDay, d(20), d(20)},
 		{"3 日の終日の予定", dates(d(20), d(23)), scheduleview.EventAllDay, d(20), d(22)},
+		{"終了が開始の日の終日の予定", dates(d(20), d(20)), scheduleview.EventAllDay, d(20), d(20)},
 		{"2 日にわたる予定", projection("出張", at, 48*60), scheduleview.EventUnlisted, d(20), d(22)},
 		{"翌々日の 0:00 に終わる予定", projection("出張", time.Date(2026, 10, 20, 0, 0, 0, 0, calendar.Tokyo), 48*60), scheduleview.EventUnlisted, d(20), d(21)},
 		{"24 時間の予定", projection("当直", at, 24*60), scheduleview.EventUnlisted, d(20), d(21)},
@@ -86,6 +87,11 @@ func TestProjectionRulesReadCalendarOnly(t *testing.T) {
 		{"終了を読めない予定", startOnly, scheduleview.EventUnlisted, d(20), d(20)},
 		{"開始を読めない予定", endOnly, scheduleview.EventUnlisted, d(20), d(20)},
 		{"開始も終了も読めない予定", neither, scheduleview.EventUnlisted, civil.Date{}, civil.Date{}},
+	}
+	cancelled := projection("取り消した予定", at, 60)
+	cancelled.Status = scheduleview.ProjectionCancelled
+	if got := rules.Read(cancelled); got.Kind != scheduleview.EventSkipped {
+		t.Errorf("取り消した予定 = %v, want EventSkipped", got.Kind)
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

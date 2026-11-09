@@ -23,8 +23,8 @@ type AllDayEvent struct {
 	Title string
 }
 
-// UnlistedCount は、職員の、一覧に出せない予定（EventUnlisted）の件数である。予定の中身は出さない（#672）。
-type UnlistedCount struct {
+// UnlistedEventCount は、職員の、一覧に出せない予定（EventUnlisted）の件数である。予定の中身は出さない（#672）。
+type UnlistedEventCount struct {
 	StaffID string
 	Count   int
 }
@@ -32,7 +32,7 @@ type UnlistedCount struct {
 // calendarOnly は、Projection の行 rows のうち、buddy の予定に読み替えない予定を、from から to までの期間に重なる分だけ集めた結果である。
 type calendarOnly struct {
 	allDay   []AllDayEvent
-	unlisted []UnlistedCount
+	unlisted []UnlistedEventCount
 }
 
 // collectCalendarOnly は、rows の終日の予定と、出せない予定の職員ごとの件数を、from から to までの期間に重なる分だけ集める。
@@ -68,11 +68,11 @@ func collectCalendarOnly(rows []ProjectionDetail, rules EventRules, from, to civ
 	slices.SortFunc(out.allDay, func(a, b AllDayEvent) int {
 		return cmp.Or(a.StartDate.Time().Compare(b.StartDate.Time()), strings.Compare(a.StaffID, b.StaffID), strings.Compare(a.ID, b.ID))
 	})
-	out.unlisted = []UnlistedCount{}
+	out.unlisted = []UnlistedEventCount{}
 	for staffID, n := range counts {
-		out.unlisted = append(out.unlisted, UnlistedCount{StaffID: staffID, Count: n})
+		out.unlisted = append(out.unlisted, UnlistedEventCount{StaffID: staffID, Count: n})
 	}
-	slices.SortFunc(out.unlisted, func(a, b UnlistedCount) int { return strings.Compare(a.StaffID, b.StaffID) })
+	slices.SortFunc(out.unlisted, func(a, b UnlistedEventCount) int { return strings.Compare(a.StaffID, b.StaffID) })
 	return out
 }
 

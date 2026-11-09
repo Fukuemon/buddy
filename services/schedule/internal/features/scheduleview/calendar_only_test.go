@@ -101,8 +101,8 @@ func TestSchedulesListGooglePrimaryAllDayEvents(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(list.AllDayEvents) != 0 || len(list.UnlistedCounts) != 0 {
-		t.Errorf("種類で絞ったときの終日の予定 = %+v, 件数 = %+v, want 空", list.AllDayEvents, list.UnlistedCounts)
+	if len(list.AllDayEvents) != 0 || len(list.UnlistedEventCounts) != 0 {
+		t.Errorf("種類で絞ったときの終日の予定 = %+v, 件数 = %+v, want 空", list.AllDayEvents, list.UnlistedEventCounts)
 	}
 }
 
@@ -137,10 +137,10 @@ func TestSchedulesListGooglePrimaryUnlistedCounts(t *testing.T) {
 		t.Fatal(err)
 	}
 	// 合宿は 10/17〜10/19 と 10/24〜10/26 の回が重なる
-	want := []scheduleview.UnlistedCount{{StaffID: staffID, Count: 4}, {StaffID: viewerID, Count: 3}}
-	slices.SortFunc(want, func(a, b scheduleview.UnlistedCount) int { return strings.Compare(a.StaffID, b.StaffID) })
-	if !slices.Equal(list.UnlistedCounts, want) {
-		t.Errorf("件数 = %+v, want %+v", list.UnlistedCounts, want)
+	want := []scheduleview.UnlistedEventCount{{StaffID: staffID, Count: 4}, {StaffID: viewerID, Count: 3}}
+	slices.SortFunc(want, func(a, b scheduleview.UnlistedEventCount) int { return strings.Compare(a.StaffID, b.StaffID) })
+	if !slices.Equal(list.UnlistedEventCounts, want) {
+		t.Errorf("件数 = %+v, want %+v", list.UnlistedEventCounts, want)
 	}
 	if len(list.Schedules) != 0 || len(list.AllDayEvents) != 1 {
 		t.Errorf("予定 = %v, 終日の予定 = %+v, want 予定は無く、終日の予定は 1 件", detailTitles(list.Schedules), list.AllDayEvents)
@@ -151,16 +151,61 @@ func TestSchedulesListGooglePrimaryUnlistedCounts(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !slices.Equal(list.UnlistedCounts, []scheduleview.UnlistedCount{{StaffID: viewerID, Count: 1}}) {
-		t.Errorf("日時を読めない予定だけの期間の件数 = %+v, want 閲覧する職員の 1 件", list.UnlistedCounts)
+	if !slices.Equal(list.UnlistedEventCounts, []scheduleview.UnlistedEventCount{{StaffID: viewerID, Count: 1}}) {
+		t.Errorf("日時を読めない予定だけの期間の件数 = %+v, want 閲覧する職員の 1 件", list.UnlistedEventCounts)
 	}
 
 	list, err = newSchedules(s).List(viewerCtx(), facilityID, thirdWeek())
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !slices.Equal(list.UnlistedCounts, []scheduleview.UnlistedCount{{StaffID: viewerID, Count: 3}}) {
-		t.Errorf("見てよい職員の件数 = %+v, want 自分の 3 件", list.UnlistedCounts)
+	if !slices.Equal(list.UnlistedEventCounts, []scheduleview.UnlistedEventCount{{StaffID: viewerID, Count: 3}}) {
+		t.Errorf("見てよい職員の件数 = %+v, want 自分の 3 件", list.UnlistedEventCounts)
+	}
+}
+
+// TestSchedulesListGooglePrimaryAllDayRecurrence は、繰り返しの終日の予定の、変えた回を変えた日にその回の ID で返し、
+// buddy の規則に写せない繰り返し（毎年）を、回が期間に重なりうる間は最初の回の 1 件にし、終わった後は返さないことを確認する（#672）。
+func TestSchedulesListGooglePrimaryAllDayRecurrence(t *testing.T) {
+	s := googleStore()
+	putAllDay(s, targetCalendarID, "weekly", "在宅勤務", oct(5), oct(5), func(p *scheduleview.Projection) {
+		p.Recurrence = []string{"RRULE:FREQ=WEEKLY;UNTIL=20261231"}
+		p.LastEndDate = nil
+	})
+	putAllDay(s, targetCalendarID, "weekly_20261019", "在宅勤務（変更）", oct(21), oct(21), func(p *scheduleview.Projection) {
+		orig := oct(19)
+		p.RecurringEventID, p.OriginalStart = "weekly", scheduleview.ProjectionTime{Date: &orig}
+	})
+	putAllDay(s, targetCalendarID, "yearly", "創立記念日", oct(1), oct(1), func(p *scheduleview.Projection) {
+		p.Recurrence = []string{"RRULE:FREQ=YEARLY;UNTIL=20261031"}
+		end := oct(31)
+		p.LastEndDate = &end
+	})
+
+	uc := newSchedules(s)
+	list, err := uc.List(editorCtx(), facilityID, thirdWeek())
+	if err != nil {
+		t.Fatal(err)
+	}
+	var got []string
+	for _, e := range list.AllDayEvents {
+		got = append(got, e.StartDate.String()+" "+e.Title)
+	}
+	want := []string{"2026-10-01 創立記念日", "2026-10-21 在宅勤務（変更）"}
+	if !slices.Equal(got, want) {
+		t.Errorf("終日の予定 = %v, want %v", got, want)
+	}
+	if id := list.AllDayEvents[1].ID; id != scheduleview.OccurrenceScheduleID(targetCalendarID, "weekly", oct(19)) {
+		t.Errorf("変えた回の ID = %s", id)
+	}
+
+	nov := civil.Date{Year: 2026, Month: 11, Day: 2}
+	list, err = uc.List(editorCtx(), facilityID, scheduleview.ListQuery{DateFrom: &nov, DateTo: &nov})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(list.AllDayEvents) != 1 || list.AllDayEvents[0].Title != "在宅勤務" {
+		t.Errorf("写せない繰り返しが終わった後の終日の予定 = %+v, want 在宅勤務の回だけ", list.AllDayEvents)
 	}
 }
 
@@ -170,8 +215,8 @@ func TestSchedulesListBuddyPrimaryHasNoCalendarOnly(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if list.AllDayEvents == nil || len(list.AllDayEvents) != 0 || list.UnlistedCounts == nil || len(list.UnlistedCounts) != 0 {
-		t.Errorf("終日の予定 = %#v, 件数 = %#v, want 空", list.AllDayEvents, list.UnlistedCounts)
+	if list.AllDayEvents == nil || len(list.AllDayEvents) != 0 || list.UnlistedEventCounts == nil || len(list.UnlistedEventCounts) != 0 {
+		t.Errorf("終日の予定 = %#v, 件数 = %#v, want 空", list.AllDayEvents, list.UnlistedEventCounts)
 	}
 }
 

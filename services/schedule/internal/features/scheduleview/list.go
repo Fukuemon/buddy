@@ -74,12 +74,12 @@ func (s List) Do(ctx context.Context, facilityID string, q ListQuery) (Listing, 
 		return Listing{}, err
 	}
 	return Listing{
-		Schedules:          filter(single, func(d Detail) bool { return readable(d.StaffID) }),
-		RecurringSchedules: filter(recurring, func(d RecurringDetail) bool { return readable(d.StaffID) }),
-		SourceMode:         f.SourceMode,
-		CalendarSyncs:      []CalendarSync{},
-		AllDayEvents:       []AllDayEvent{},
-		UnlistedCounts:     []UnlistedCount{},
+		Schedules:           filter(single, func(d Detail) bool { return readable(d.StaffID) }),
+		RecurringSchedules:  filter(recurring, func(d RecurringDetail) bool { return readable(d.StaffID) }),
+		SourceMode:          f.SourceMode,
+		CalendarSyncs:       []CalendarSync{},
+		AllDayEvents:        []AllDayEvent{},
+		UnlistedEventCounts: []UnlistedEventCount{},
 	}, nil
 }
 
@@ -124,7 +124,7 @@ func (s List) listProjected(ctx context.Context, f organization.Facility, q List
 		}
 	}
 	sortDetails(details, q.Sort)
-	only := calendarOnly{allDay: []AllDayEvent{}, unlisted: []UnlistedCount{}}
+	only := calendarOnly{allDay: []AllDayEvent{}, unlisted: []UnlistedEventCount{}}
 	if q.TypeName == nil {
 		only = collectCalendarOnly(rows, s.projected.Rules, from, to)
 	}
@@ -139,13 +139,13 @@ func (s List) listProjected(ctx context.Context, f organization.Facility, q List
 		}
 	}
 	return Listing{
-		Schedules:          details,
-		RecurringSchedules: []RecurringDetail{},
-		SourceMode:         f.SourceMode,
-		CalendarSyncs:      filter(syncs, func(c CalendarSync) bool { return readable(c.StaffID) }),
-		Cutover:            cutover,
-		AllDayEvents:       only.allDay,
-		UnlistedCounts:     only.unlisted,
+		Schedules:           details,
+		RecurringSchedules:  []RecurringDetail{},
+		SourceMode:          f.SourceMode,
+		CalendarSyncs:       filter(syncs, func(c CalendarSync) bool { return readable(c.StaffID) }),
+		Cutover:             cutover,
+		AllDayEvents:        only.allDay,
+		UnlistedEventCounts: only.unlisted,
 	}, nil
 }
 
