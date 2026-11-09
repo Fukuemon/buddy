@@ -88,10 +88,14 @@ export const ISHIDA = {
 /** シードの職員の佐藤。Google カレンダーとの同期の spec が、佐藤にカレンダーを結び付ける。 */
 export const SATO = { ...TEAM_MEMBER, calendarId: 'misaki.sato@example.com' }
 
-/** シードの職員の林。Google カレンダーへの書き出しの spec が、林にカレンダーを結び付ける。 */
+/**
+ * シードの職員の林。Google カレンダーへの書き出しの spec が、林にカレンダーを結び付ける。
+ * 林はメンバーで、自分の予定の編集と、森の予定の閲覧の権限を持つ。森の予定は見られるが、編集できない。
+ */
 export const HAYASHI = {
   id: '01M3TC5WQ08KWBZX85WAZ1C4N7',
   name: '林 さくら',
+  email: 'sakura.hayashi@example.com',
   calendarId: 'sakura.hayashi@example.com',
 }
 
