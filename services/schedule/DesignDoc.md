@@ -3,7 +3,7 @@
 ---
 type: feature-design
 title: 予定の管理
-description: 予定の API のコードの構成、テーブルの構成（ER）、認証から事業所の確認までの流れ、繰り返しの予定、予定の変更とキャンセル。職員の管理、権限、Google カレンダーとの連携は別の Design Doc にある
+description: 予定の API のコードの構成、テーブルの構成（ER）、認証から事業所の確認までの流れ、繰り返しの予定、予定の変更、キャンセル、削除。職員の管理、権限、Google カレンダーとの連携は別の Design Doc にある
 status: stable
 governs: services/schedule
 verified_commit: 4e53ca5
@@ -24,7 +24,7 @@ verified_commit: 4e53ca5
   - 職員の登録、休職、復職、退職の設計は [職員の管理の Design Doc](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/internal/features/staff/DesignDoc.md) にある
 - 権限、役職のデフォルトの権限、職員ごとの権限とその対象
   - 設計は [権限の Design Doc](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/internal/access/DesignDoc.md) にある
-- 単発の予定、繰り返しの予定と繰り返しの規則、予定のキャンセル
+- 単発の予定、繰り返しの予定と繰り返しの規則、予定のキャンセルと削除
 - 職員と Google カレンダーの結び付けと、Google カレンダーの予定の取り込み、buddy の予定の Google カレンダーへの書き出し、Google カレンダーの変更の buddy の予定への反映
   - 設計は [Google カレンダーとの連携の Design Doc](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/internal/features/calendar/DesignDoc.md) にある
 - 訪問の情報、サービスコード、訪問の区分
@@ -134,6 +134,9 @@ erDiagram
   recurring_schedules ||--o{ recurring_schedule_exclusions : "除外する日"
   recurring_schedules |o--o{ schedules : "1 回だけ置き換えた予定"
   schedules ||--o| schedule_cancels : "取り消される"
+  facilities ||--o{ schedule_deletions : "削除の監査の記録"
+  recurring_schedules |o--o{ schedule_deletions : "削除した回"
+  users ||--o{ schedule_deletions : "削除した職員"
   schedules |o--o| visit_infos : "訪問の情報"
   recurring_schedules |o--o| visit_infos : "訪問の情報"
   patients ||--o{ visit_infos : "訪問される"
@@ -159,6 +162,8 @@ erDiagram
   facilities ||--o{ calendar_exports : "持つ"
   schedules |o--o{ calendar_exports : "書き出しの待ち"
   recurring_schedules |o--o{ calendar_exports : "書き出しの待ち"
+  schedule_deletions |o--o| external_event_links : "削除した予定の対応"
+  schedule_deletions |o--o{ calendar_exports : "削除の書き出しの待ち"
 ```
 
 #### 全てのテーブルの規則
@@ -432,6 +437,8 @@ sequenceDiagram
   - 内容を変えないので、休職と退職の職員と利用の終了の利用者を確認しない。
   - 回を消さずにキャンセルした予定として残すのは、単発の予定のキャンセルと同じく理由を残し、「キャンセルした予定を出す」でカレンダーに出すためである。
   - 置き換えた後の回は単発の予定なので、単発の予定のキャンセル（`cancelSchedule`）でキャンセルする。`cancelOccurrence` は、その回をすでに置き換えたので 409（`conflict`）で拒む。
+- 繰り返しの 1 回だけを削除するとき（`deleteOccurrence`）は、その日を除外する日に足し、監査の記録を書くだけで、単発の予定を作らない（[削除](#削除)）。
+  - 置き換えた後の回は単発の予定なので、`deleteSchedule` で削除する。`deleteOccurrence` は、その日をすでに除外したので 409（`conflict`）で拒む。
 - 予定の一覧の API は、単発の予定と繰り返しの予定を別々に返す。
   - 繰り返しの予定を期間の回に展開しない。
   - `date_from` と `date_to` は単発の予定だけを、予定の日付で絞る。
@@ -453,6 +460,7 @@ sequenceDiagram
 - 新しい規則の毎週の間隔は、数え始める日を含む週を 1 週目にして数える。数え始める日は、分けるときは `first_week_date`（省いたときは適用の日）、書き換えるときは元の最初の日付である。新しい最初の日付は、1 週目から数えて、適用の日以降で新しい規則が当たる最初の日にする。
   - `first_week_date` は、元の最初の日付以降、適用の日以前に限る。画面は開いた回の日を送る（ADR-0038）。
 
+- 回を削除した日は、置き換えた回の単発の予定を持たない除外する日なので、書き換えるときと終了日だけのときは消し、分けるときは新しい繰り返しの予定に足さない。新しい規則の回が当たれば、その日に回が出る。置き換えた回を削除した後の元の日も同じである（ADR-0040）。
 - 置き換えた回の単発の予定は、元の繰り返しの予定を指したまま残す。除外する日も、回が単発の予定と重ならないように残す。
   - 分けるときは、適用の日以降の置き換えた回の元の日に新しい規則が当たれば、その日を新しい繰り返しの予定の除外する日に足す（`ReplacedDates`）。その日の訪問は職員が移したので、新しい規則の回を出さない。
 - 分けたときは、元と新しい繰り返しの予定の両方を書き出しの待ちに積む。書き出しは、元の予定の RRULE を `UNTIL` で終え、新しい予定を Google に作る。
@@ -483,18 +491,20 @@ sequenceDiagram
 ### 事業所の正本のモードと予定の書き込み
 
 予定の API が buddy の予定のテーブルに予定を書けるのは、予定の正本のモードが `buddy_primary` の事業所だけである。  
-予定の作成、変更、キャンセル、繰り返しの予定の作成、回の置き換え、回のキャンセル、規則の変更の 7 つの操作は、トランザクションの中で事業所の行を共有のロックで読む（`schedule.FacilityLock` の `GetForShare`）。  
+予定を書く 9 つの操作は、トランザクションの中で事業所の行を共有のロックで読む（`schedule.FacilityLock` の `GetForShare`）。  
+9 つは、予定の作成、変更、キャンセル、削除、繰り返しの予定の作成、回の置き換え、回のキャンセル、回の削除、規則の変更である。  
 読んだ事業所のモードは、`schedule.RequireWritable` で確認する。  
 `google_primary` の事業所では、何も書かずに 409（`google_primary`）を返す。  
 Google カレンダーの手動の取り込みの確定も、同じ規則で拒む（[Google カレンダーとの連携の Design Doc](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/internal/features/calendar/DesignDoc.md#google-カレンダーの取り込み)）。  
 例外として、`open` の予定の正本の切り替えがある `google_primary` の事業所では、切り替えの取り込みだけを書ける（`calendarimport` の `requireImportable`）。  
 `google_primary` の事業所の単発の予定の作成、変更、キャンセルは、`httpapi` が `schedule` でなく `calendarwrite` を呼び、Google カレンダーに書く。  
+回のキャンセル、削除、回の削除は、`httpapi` が職員の事業所のモードを先に確認し、`google_primary` なら予定を読まずに 409（`google_primary`）を返す。`google_primary` の予定の ID は予定の写しの ID で、`schedule` に渡すと 404 になるためである。  
 手順は [Google カレンダーとの連携の Design Doc の Google カレンダーへの書き込み](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/internal/features/calendar/DesignDoc.md#google-カレンダーへの書き込み) にある。  
 切り替えの手順は [Google カレンダーとの連携の Design Doc の予定の正本の切り替え](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/internal/features/calendar/DesignDoc.md#予定の正本の切り替え) にある。
 
 ロックは、事業所が決まった時点で最初に取る。  
 予定の作成と繰り返しの予定の作成は、パスの事業所の行のロックから始める。  
-予定の変更、キャンセル、回の置き換え、回のキャンセル、規則の変更は、予定か繰り返しの予定の行を排他のロックで読んでから、その事業所の行を共有のロックで読む。  
+予定の変更、キャンセル、削除、回の置き換え、回のキャンセル、回の削除、規則の変更は、予定か繰り返しの予定の行を排他のロックで読んでから、その事業所の行を共有のロックで読む。  
 予定の行から事業所が決まるので、予定の行、事業所の行の順にする。  
 モードを切り替える切り替えの完了は、ADR-0026 のとおり事業所の行に排他のロックを取るので、確認した後に書き終えるまでモードは変わらない。
 
@@ -593,6 +603,42 @@ Google カレンダーの取り込みの確定、同期の予定ごとのトラ�
 予定の編集は、キャンセルした予定のフォームを出さない。  
 キャンセルした予定を変えると、予定の API が 409 で拒むためである。
 
+### 削除
+
+誤って入れた予定は、キャンセルと別の削除（`deleteSchedule`、`deleteOccurrence`）で消す。削除は理由を持たず、戻せない。
+
+- ADR-0040: [誤って入れた予定を、キャンセルと別の削除で消し、開始の日が今日以降の有効な予定に限り、監査の記録だけを残す](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0040-schedule-deletion.md)
+
+削除できるのは、`buddy_primary` の事業所の、開始の日が今日（Asia/Tokyo）以降の有効な予定だけである。  
+可否はキャンセルと同じく、予定の職員の予定を編集する権限で判定する。  
+確認は次の順に行う。
+
+1. 予定か繰り返しの予定の行を排他のロックで読み、事業所の行を共有のロックで読む（[事業所の正本のモードと予定の書き込み](#事業所の正本のモードと予定の書き込み)）。
+2. 予定の職員の予定を編集する権限を確認する。
+3. 単発の予定はキャンセル済みでないこと、回の削除は日が規則の回に当たることを確認する。
+4. 開始の日（回の削除では回の日）が今日以降であることを確認する。
+
+単発の予定の削除（`schedule.Delete`）は、1 つのトランザクションで次を行う。
+
+1. `schedule_deletions` に、操作した職員、予定の ID、開始の日、予定の職員を書く。時刻は DB が決める。
+2. 予定の対応（`external_event_links`）を、`schedule_id` から `deleted_schedule_id` に付け替える。
+3. 予定の行を消し、訪問の情報の行を消す。終わっていない書き出しの待ちは、外部キーの `ON DELETE CASCADE` で消える。
+4. 予定の対応があれば、削除した予定の書き出しの待ち（`calendar_exports.deleted_schedule_id`）を積む。
+
+予定の行に削除済みの印を付けて残さないのは、一覧、照合、取り込みの読み取りに、削除済みを外す条件を足さずに済むためである。  
+予定の対応を付け替えて残すのは、予定の行と一緒に消すと、書き出しが Google の予定を消せないためである。書き出しは、Google の予定を消してから予定の対応を消す（[Google カレンダーとの連携の Design Doc の書き出し](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/internal/features/calendar/DesignDoc.md#google-カレンダーへの書き出し)）。  
+監査の記録は、消した時点の訪問の情報と利用者を持たず、画面に出さない。
+
+回を置き換えた単発の予定を削除しても、元の回の除外する日は消さない。その日の予定が無くなり、元の回は出ない。
+
+回の削除（`schedule.DeleteOccurrence`）は、1 つのトランザクションで次を行う。
+
+1. その日を `recurring_schedule_exclusions` に足す。
+2. `schedule_deletions` に、繰り返しの予定の ID と回の日を書く。
+3. 繰り返しの予定の書き出しの待ちを積む。
+
+単発の予定を作らないので、削除した回は一覧に出ない。キャンセルした回と違い、「キャンセルした予定を出す」を選んでも出ない。
+
 ### 予定の画面の読み込みと保存
 
 予定のカレンダー、予定の詳細、予定の作成、予定の編集の画面が予定の API を読み書きする流れは、[予定の画面の Design Doc](https://github.com/Fukuemon/buddy/blob/develop/apps/web/src/features/schedule/DesignDoc.md) にある。
@@ -619,10 +665,11 @@ Google カレンダーの取り込みの確定、同期の予定ごとのトラ�
 | 400 | `invalid_input` | クエリを読めない、パスの ID が ULID でない、リクエストが `openapi.yaml` の定義に合わない、本文の値が規則に合わない、本文が指す参照が見つからないか別の事業所のもの | - |
 | 400 | `invalid_input` | 休職か退職の職員か、訪問しない職員に、予定か担当を新しく割り振った | [休職と退職の職員と、訪問しない職員への割り振り](#休職と退職の職員と訪問しない職員への割り振り) |
 | 400 | `invalid_input` | 利用の終了の利用者を、予定の利用者に新しく指した | [利用の終了の利用者への予定](#利用の終了の利用者への予定) |
+| 400 | `invalid_input` | 開始の日が今日より前の予定か回を削除しようとした | [削除](#削除) |
 | 401 | `unauthenticated` | トークンが無いか、検証に失敗した | [認証から事業所の確認までの流れ](#認証から事業所の確認までの流れ) |
 | 403 | `forbidden` | 職員を特定できない、職員が休職か退職している、事業所が違う、権限で許されない | [認証から事業所の確認までの流れ](#認証から事業所の確認までの流れ) |
 | 404 | `not_found` | パスで指したリソースが無い | - |
-| 409 | `conflict` | 一意の値が重なる、キャンセル済みの予定を変えるかキャンセルする、繰り返しの回をすでに置き換えた | - |
+| 409 | `conflict` | 一意の値が重なる、キャンセル済みの予定を変えるか、キャンセルするか、削除する、繰り返しの回をすでに置き換えたか、キャンセルしたか、削除した | - |
 | 409 | `conflict`（職員）、`staff_has_assignments` | 職員の管理で拒む原因 | [職員の管理の Design Doc の Interface](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/internal/features/staff/DesignDoc.md#interface) |
 | 409 | `patient_has_schedules` | 利用の終了にする利用者に、その日以降の予定か繰り返しの予定が残る。本文の `schedules` に残る一覧を持つ | [利用者の変更、利用の終了、利用の再開](#利用者の変更利用の終了利用の再開) |
 | 409 | `calendar_taken`、`calendar_already_linked`、`staff_has_calendar` | カレンダーを結び付けられない原因 | [Google カレンダーとの連携の Design Doc](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/internal/features/calendar/DesignDoc.md) |
