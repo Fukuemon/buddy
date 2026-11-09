@@ -21,6 +21,8 @@ OpenAPI の項目は、`getSchedule`（`GET /v1/schedules/{schedule_id}`）の�
 | 確認が必要な理由 | 理由と直し方 | `Schedule.reviewReason` | `listSchedules` の `Schedule.review_reason` |
 | キャンセルする予定の日時 | 年月日、曜日、開始と終了の時刻 | `Schedule.startsAt`、`Schedule.endsAt` | `date`、`start_time`、`end_time` |
 | キャンセルの理由の欄 | 理由 | `BuddyApi.schedules.cancel` の `reason` | `cancelSchedule` の本文の `reason` |
+| 削除する予定の日時 | 年月日、曜日、開始と終了の時刻 | `Schedule.startsAt`、`Schedule.endsAt` | `date`、`start_time`、`end_time` |
+| 削除の説明 | 繰り返しの予定のまだ変えていない回か | `Schedule.recurrence` | `recurring_schedule_id` と `recurring_rule` |
 | （画面に出さない） | 事業所が予定を Google カレンダーで管理しているか | `Facility.sourceMode` | `getFacility` の `Facility.source_mode` |
 | （画面に出さない） | キャンセルのダイアログを開いたときの予定の etag。`google_primary` の事業所の予定だけが持つ | `Schedule.etag` | `listSchedules` の `Schedule.etag`。送るのは `cancelSchedule` の本文の `etag` |
 
@@ -49,6 +51,13 @@ OpenAPI の項目は、`getSchedule`（`GET /v1/schedules/{schedule_id}`）の�
     - 予定の API は、その回を繰り返しの予定と同じ内容のキャンセルした単発の予定にする。予定のカレンダーで「キャンセルした予定を出す」を選ぶと、その予定を出す。
     - 規則は [予定の管理の Design Doc の繰り返しの予定](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/DesignDoc.md#繰り返しの予定) にある。
   - 成功すると、予定の 1 件の取得の結果を捨て、事業所の予定の取得の結果を捨てて取り直す。処理は `apps/web/src/features/schedule/queries.ts` の `useCancelSchedule` にある。
+- 予定の削除は、web の `BuddyApi.schedules.delete` が呼ぶ。本文に理由は無い。処理は `apps/web/src/api/http/httpBuddyApi.ts` にある。
+  - 単発の予定（1 回だけ変えた回を含む）は、`deleteSchedule`（`DELETE /v1/schedules/{schedule_id}`）で削除する。
+  - 繰り返しの予定のまだ変えていない回は、`deleteOccurrence`（`POST /v1/schedules/recurring/{recurring_schedule_id}/occurrences/delete`）で削除する。
+    - web のサーバーが、回の ID（`occurrenceId`）を繰り返しの予定の ID と回の日付に分け、`original_date` を送る。
+    - 予定の API は、その日を繰り返しの予定の除外する日に足し、単発の予定を作らない。
+  - 成功すると、キャンセルと同じく、予定の 1 件の取得の結果を捨て、事業所の予定の取得の結果を捨てて取り直す。処理は `apps/web/src/features/schedule/queries.ts` の `useDeleteSchedule` にある。
+  - 規則は [ADR-0040](../../adr/0040-schedule-deletion.md) にある。
 - 確認が必要な理由の直し方の文は、`apps/web/src/features/schedule/lib/reviewFix.ts` の `reviewFixMessage` が `reviewReason` で決める。
 - 画面に出していない同行者、時間外の勤務の印は、`Schedule` の `visit_info.companion_name`、`is_over_time_work` に当たる。
 - 繰り返しの予定の回は、回の ID（`occurrenceId`）で開く。
@@ -89,6 +98,9 @@ OpenAPI の項目は、`getSchedule`（`GET /v1/schedules/{schedule_id}`）の�
 | 開いた予定に、メモがある | `Schedule.description` が空の文字列でない |
 | 職員が、キャンセルを送っている途中である | `cancelSchedule` を呼ぶ mutation（`useCancelSchedule`）の `isPending` が `true`（`ScheduleCancelDialog` の `isSubmitting`） |
 | 職員が、キャンセルの理由の欄に、前後の空白を除いて 1 文字以上 255 文字以下を入れている | キャンセルの理由の欄の値の前後の空白を除いた長さが 1 以上 255 以下（`ScheduleCancelDialog` が `ConfirmDialog` に渡す `canSubmit`） |
+| 事業所が、予定を buddy で管理する事業所である | `Facility.sourceMode` が `buddy_primary`（`getFacility` の `Facility.source_mode`） |
+| 開いた予定の開始の日が、今日以降である | `Schedule.startsAt` の Asia/Tokyo の日付が、予定の詳細を開いた時刻の Asia/Tokyo の日付と同じか後 |
+| 職員が、削除を送っている途中である | `deleteSchedule` か `deleteOccurrence` を呼ぶ mutation（`useDeleteSchedule`）の `isPending` が `true`（`ScheduleDeleteDialog` の `isSubmitting`） |
 
 - 判定の処理は、`apps/web/src/features/schedule/components/ScheduleDetailModal.tsx` と `ScheduleDetailModalContainer.tsx` にある。
   - キャンセルした予定では、`ScheduleDetailModal` が下端（予定をキャンセル、下端の閉じる、編集）を描かない。
@@ -101,6 +113,10 @@ OpenAPI の項目は、`getSchedule`（`GET /v1/schedules/{schedule_id}`）の�
 - 予定と事業所の状態は、`apps/web/src/features/schedule/lib/scheduleWritable.ts` の `canChangeSchedule` が判定する。
   - キャンセルした予定、`cutover` が `null` でない間、`reviewReason` が `recurrence_unsupported` の予定で false を返す。編集と予定をキャンセルのボタンに使う。
   - 職員の権限の `canEditScheduleOf` と合わせて判定する。
+- 予定を削除のボタンは、同じファイルの `canDeleteSchedule` が判定する。
+  - `Facility.sourceMode` が `buddy_primary` で、`canChangeSchedule` が true で、開始の日が今日以降のときに true を返す。日付は `toTokyoDateKey` で Asia/Tokyo の日付にして比べる。今日は、`ScheduleDetailModalContainer` が予定の詳細を開いた時刻（`openedAt`）で決める。
+  - 職員の権限は、予定をキャンセルと同じく `canEditScheduleOf` で判定する。
+  - 予定を削除できない予定では、`ScheduleDetailModalContainer` が `onDeleteSchedule` を渡さない。
 - 理由の欄の長さの判定は、`apps/web/src/features/schedule/components/ScheduleCancelDialog.tsx` にある。
 - 編集の権限の項目と、OpenAPI の項目の対応は次のとおり。
   - `Viewer.schedulePolicies` の `code`、`targetStaffIds`、`targetTeamIds` は、`getMe` の `policies` の項目に当たる。
@@ -118,6 +134,7 @@ OpenAPI の項目は、`getSchedule`（`GET /v1/schedules/{schedule_id}`）の�
 - 出し分けは表示だけに使う。
   - 編集を拒むのは、予定の API の `updateSchedule` である。
   - キャンセルを拒むのは、予定の API の `cancelSchedule` と `cancelOccurrence` である。
+  - 削除を拒むのは、予定の API の `deleteSchedule` と `deleteOccurrence` である。
 
 ## 要素の testid
 
@@ -139,21 +156,24 @@ OpenAPI の項目は、`getSchedule`（`GET /v1/schedules/{schedule_id}`）の�
 | 11 | メモ | `schedule-detail-memo` |
 | 12 | メモ | `schedule-detail-memo` |
 | 13 | メモ | `schedule-detail-memo` |
-| 9 | 下端の閉じる | `schedule-detail-close` |
+| 10 | 下端の閉じる | `schedule-detail-close` |
 | 12 | 下端の閉じる | `schedule-detail-close` |
-| 13 | 下端の閉じる | `schedule-detail-close` |
 | 14 | 下端の閉じる | `schedule-detail-close` |
-| 10 | 編集 | `schedule-detail-edit` |
+| 15 | 下端の閉じる | `schedule-detail-close` |
+| 11 | 編集 | `schedule-detail-edit` |
 | 13 | 編集 | `schedule-detail-edit` |
-| 14 | 編集 | `schedule-detail-edit` |
 | 15 | 編集 | `schedule-detail-edit` |
+| 16 | 編集 | `schedule-detail-edit` |
 | 8 | 予定をキャンセル | `schedule-detail-cancel-schedule` |
 | 11 | 予定をキャンセル | `schedule-detail-cancel-schedule` |
 | 12 | 予定をキャンセル | `schedule-detail-cancel-schedule` |
 | 13 | 予定をキャンセル | `schedule-detail-cancel-schedule` |
-| 16 | 編集のメニュー | `schedule-detail-edit-list` |
-| 17 | この予定を編集 | `schedule-detail-edit-occurrence` |
-| 18 | 繰り返しを変更 | `schedule-detail-edit-recurrence` |
+| 9 | 予定を削除 | `schedule-detail-delete-schedule` |
+| 13 | 予定を削除 | `schedule-detail-delete-schedule` |
+| 14 | 予定を削除 | `schedule-detail-delete-schedule` |
+| 17 | 編集のメニュー | `schedule-detail-edit-list` |
+| 18 | この予定を編集 | `schedule-detail-edit-occurrence` |
+| 19 | 繰り返しを変更 | `schedule-detail-edit-recurrence` |
 | 2 | キャンセルのダイアログ | `schedule-cancel-dialog` |
 | 4 | キャンセルする予定の日時 | `schedule-cancel-datetime` |
 | 5 | キャンセルの説明 | `schedule-cancel-description` |
@@ -163,6 +183,14 @@ OpenAPI の項目は、`getSchedule`（`GET /v1/schedules/{schedule_id}`）の�
 | 8 | キャンセル | `schedule-cancel-cancel` |
 | 8 | 予定をキャンセルする | `schedule-cancel-submit` |
 | 9 | 予定をキャンセルする | `schedule-cancel-submit` |
+| 2 | 削除のダイアログ | `schedule-delete-dialog` |
+| 4 | 削除する予定の日時 | `schedule-delete-datetime` |
+| 5 | 削除の説明 | `schedule-delete-description` |
+| 6 | 削除の失敗の文 | `schedule-delete-error` |
+| 6 | 削除のダイアログのキャンセル | `schedule-delete-cancel` |
+| 7 | 削除のダイアログのキャンセル | `schedule-delete-cancel` |
+| 7 | 予定を削除する | `schedule-delete-submit` |
+| 8 | 予定を削除する | `schedule-delete-submit` |
 
 - 番号は、状態ごとの構成要素の表の番号である。同じ要素が状態ごとに違う番号を持つときは、番号ごとに行を分ける。
 - 閉じるの `modal-close` は、packages/ui の `Modal` が付ける。
@@ -194,12 +222,22 @@ OpenAPI の項目は、`getSchedule`（`GET /v1/schedules/{schedule_id}`）の�
 | キャンセルの失敗 | 「入力の内容では予定をキャンセルできません。内容を直してください。」 | `cancelSchedule` が 400 |
 | キャンセルの失敗 | 「予定をキャンセルできませんでした。」 | `cancelSchedule` が、ここまでのほかの失敗（404、409 `conflict`、500）。API に届かない |
 | キャンセルの送信中 | なし（ログインの画面へ移るまで続く） | `cancelSchedule` が 401 |
+| 削除の失敗 | 「この操作をする権限がありません。」 | `deleteSchedule` が 403 |
+| 削除の失敗 | 「この事業所の予定は Google カレンダーで管理しています。予定は Google カレンダーで作成、変更してください。」 | `deleteSchedule` が 409 `google_primary` |
+| 削除の失敗 | 「予定が見つかりません。カレンダーに戻って、予定を確認してください。」 | `deleteSchedule` が 404 |
+| 削除の失敗 | 「予定がキャンセルか変更されていたので、削除できませんでした。予定を開き直してください。」 | `deleteSchedule` が 409 `conflict`（予定がキャンセル済み。回が置き換え、キャンセル、削除のどれか済み） |
+| 削除の失敗 | 「今日より前の予定は削除できません。」 | `deleteSchedule` が 400（開始の日が今日より前） |
+| 削除の失敗 | 「予定を削除できませんでした。」 | `deleteSchedule` が、ここまでのほかの失敗（500）。API に届かない |
+| 削除の送信中 | なし（ログインの画面へ移るまで続く） | `deleteSchedule` が 401 |
 
 - `buddy_primary` の事業所の繰り返しの予定の回のキャンセルでは、表の `cancelSchedule` を `cancelOccurrence` に読み替える。
+- 繰り返しの予定のまだ変えていない回の削除では、表の `deleteSchedule` を `deleteOccurrence` に読み替える。
 
 - 文は `apps/web/src/features/schedule/lib/errorMessage.ts` の `scheduleLoadErrorMessage` が、`ApiError.status` で選ぶ。
 - キャンセルの失敗の文は、同じ `errorMessage.ts` の `scheduleSubmitErrorMessage` が、`ApiError.status` と `ApiError.code` で選ぶ。
   - `google_write_unknown` の文は、予定の作成とほかの操作で違う。キャンセルでは、開き直すことを案内する。
+- 削除の失敗の文は、同じ `errorMessage.ts` の `scheduleDeleteErrorMessage` が、`ApiError.status` と `ApiError.code` で選ぶ。
+  - `google_primary` の code を、404 と 409 より先に見る。
 - 4xx の失敗は取り直さず、すぐに出す。
   - ほかの失敗は、3 回まで取り直してから出す。
   - 取り直すかは `apps/web/src/appContext.ts` の `shouldRetryQuery` が決める。
