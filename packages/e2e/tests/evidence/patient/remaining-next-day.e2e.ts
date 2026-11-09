@@ -13,7 +13,10 @@ const OVERNIGHT_DATE = '2030-01-08'
 const RECURRING_DATE = '2030-01-09'
 const SAME_DAY_DATE = '2030-01-10'
 
-/** 予定の API のマスタから、名前（サービスコードは code）が name の 1 件の ID を返す。 */
+/**
+ * 予定の API のマスタから、名前（サービスコードは code）が name の 1 件の ID を返す。
+ * 古いシードのサービスコードは全角の数字で入っているので、NFKC にそろえて比べる。
+ */
 const masterId = async (request: APIRequestContext, token: string, path: string, name: string) => {
   const res = await request.get(`${SCHEDULE_URL}${path}`, {
     headers: { Authorization: `Bearer ${token}` },
@@ -26,10 +29,9 @@ const masterId = async (request: APIRequestContext, token: string, path: string,
 }
 
 /**
- * マネージャーでログインし、撮影の前に利用者を 1 人登録して、その利用者の訪問の予定を 3 つ作る。
- * 翌日に終わる単発の予定、翌日に終わる毎週の予定、同じ日に終わる単発の予定である。利用者の ID と名前と、予定の ID を返す。
+ * マネージャーでログインし、利用者を 1 人登録する。利用者の ID と、その利用者の訪問の予定を作って ID を返す関数を返す。
  */
-const preparePatient = (name: string) => async (page: Page) => {
+const registerVisitPatient = async (page: Page, name: string) => {
   await page.goto('/patients')
   await signInAtBroker(page, LOGIN_EMAIL)
   const token = await issueManagerToken(page.request)
@@ -66,16 +68,33 @@ const preparePatient = (name: string) => async (page: Page) => {
     expect(res.status()).toBe(201)
     return ((await res.json()) as { id: string }).id
   }
-  const overnight = { start_time: '22:00', end_time: '01:00', ends_next_day: true }
+  return { id, create }
+}
+
+/** 22:00 に始まり、翌日の 01:00 に終わる予定の時刻。 */
+const OVERNIGHT = { start_time: '22:00', end_time: '01:00', ends_next_day: true }
+
+/** 撮影の前に利用者を 1 人登録し、翌日に終わる訪問の単発の予定と毎週の予定を作る。利用者の ID と名前と、予定の ID を返す。 */
+const prepareOvernightPatient = (name: string) => async (page: Page) => {
+  const { id, create } = await registerVisitPatient(page, name)
   return {
     id,
     name,
-    overnight: await create('/schedules', { date: OVERNIGHT_DATE, ...overnight }),
+    overnight: await create('/schedules', { date: OVERNIGHT_DATE, ...OVERNIGHT }),
     recurring: await create(
       '/schedules/recurring',
-      { date: RECURRING_DATE, ...overnight },
+      { date: RECURRING_DATE, ...OVERNIGHT },
       { recurring_rule: { frequency: 'weekly' } },
     ),
+  }
+}
+
+/** 撮影の前に利用者を 1 人登録し、同じ日に終わる訪問の単発の予定だけを作る。利用者の ID と名前と、予定の ID を返す。 */
+const prepareSameDayPatient = (name: string) => async (page: Page) => {
+  const { id, create } = await registerVisitPatient(page, name)
+  return {
+    id,
+    name,
     sameDay: await create('/schedules', {
       date: SAME_DAY_DATE,
       start_time: '10:00',
@@ -111,7 +130,7 @@ test.describe('利用者の詳細', () => {
             actor: MANAGER,
             variant,
           },
-          preparePatient('見本 夜子'),
+          prepareOvernightPatient('見本 夜子'),
           async ({ page, step, check }, patient) => {
             await step(
               `撮影の前に ${patient.name} を登録し、22:00 から翌日の 01:00 の訪問の単発の予定と毎週の予定を作った`,
@@ -127,7 +146,7 @@ test.describe('利用者の詳細', () => {
             await expect(recurring).toContainText(recurringText)
             await recurring.scrollIntoViewIfNeeded()
             await check(
-              `${isBefore ? '改修前: ' : ''}単発は「${scheduleText}」、繰り返しは「${recurringText}」と出る`,
+              `${isBefore ? '改修前: ' : ''}単発は「${scheduleText}」、繰り返しは「${recurringText}」と出る${isBefore ? '' : '。時刻の範囲は折り返さない'}`,
             )
           },
         )
@@ -145,7 +164,7 @@ test.describe('利用者の詳細', () => {
             actor: MANAGER,
             variant,
           },
-          preparePatient('見本 昼子'),
+          prepareSameDayPatient('見本 昼子'),
           async ({ page, step, check }, patient) => {
             await step(`撮影の前に ${patient.name} を登録し、10:00 から 11:00 の訪問の予定を作った`)
             await step('利用者の詳細を開き、「…」から「利用を終了する」を押す')

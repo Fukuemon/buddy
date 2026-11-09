@@ -17,20 +17,27 @@ const OVERNIGHT_DATE = '2030-01-08'
 const RECURRING_DATE = '2030-01-09'
 const SAME_DAY_DATE = '2030-01-10'
 
-/**
- * マネージャーでログインし、撮影の前に職員を 1 人登録して、翌日に終わる単発の予定、翌日に終わる毎週の予定、
- * 同じ日に終わる単発の予定を割り振る。職員の ID と名前と、予定の ID を返す。
- */
-const prepareStaff = (label: string) => async (page: Page) => {
+/** 予定の API の作成のレスポンスが 201 であることを確認し、作った予定の ID を返す。 */
+const idOf = async (res: Awaited<ReturnType<typeof createNormalSchedule>>) => {
+  expect(res.status()).toBe(201)
+  return ((await res.json()) as { id: string }).id
+}
+
+/** マネージャーでログインし、職員を 1 人登録して、トークンと職員の ID と名前を返す。 */
+const signInAndRegister = async (page: Page, label: string) => {
   await page.goto('/staff')
   await signInAtBroker(page, LOGIN_EMAIL)
   const token = await issueManagerToken(page.request)
   const staff = newStaff(label)
-  const id = await registerStaffId(page.request, token, staff)
-  const idOf = async (res: Awaited<ReturnType<typeof createNormalSchedule>>) => {
-    expect(res.status()).toBe(201)
-    return ((await res.json()) as { id: string }).id
-  }
+  return { token, id: await registerStaffId(page.request, token, staff), name: staff.name }
+}
+
+/**
+ * 撮影の前に職員を 1 人登録し、翌日に終わる単発の予定と、翌日に終わる毎週の予定を割り振る。
+ * 職員の ID と名前と、予定の ID を返す。
+ */
+const prepareOvernightStaff = async (page: Page) => {
+  const { token, id, name } = await signInAndRegister(page, 'overnight')
   const slot = (date: string, title: string) => ({ staffId: id, date, title })
   const overnight = await idOf(
     await createOvernightSchedule(
@@ -48,15 +55,20 @@ const prepareStaff = (label: string) => async (page: Page) => {
       slot(RECURRING_DATE, '毎週の夜勤'),
     ),
   )
+  return { id, name, overnight, recurring }
+}
+
+/** 撮影の前に職員を 1 人登録し、同じ日に終わる単発の予定だけを割り振る。職員の ID と名前と、予定の ID を返す。 */
+const prepareSameDayStaff = async (page: Page) => {
+  const { token, id, name } = await signInAndRegister(page, 'sameday')
   const sameDay = await idOf(
-    await createNormalSchedule(
-      page.request,
-      token,
-      STAFF_FORM.facilityId,
-      slot(SAME_DAY_DATE, '日勤'),
-    ),
+    await createNormalSchedule(page.request, token, STAFF_FORM.facilityId, {
+      staffId: id,
+      date: SAME_DAY_DATE,
+      title: '日勤',
+    }),
   )
-  return { id, name: staff.name, overnight, recurring, sameDay }
+  return { id, name, sameDay }
 }
 
 /** 職員の詳細を開き、「…」のメニューから休職のダイアログを開く。 */
@@ -84,7 +96,7 @@ test.describe('職員の詳細', () => {
             actor: MANAGER,
             variant,
           },
-          prepareStaff('overnight'),
+          prepareOvernightStaff,
           async ({ page, step, check }, staff) => {
             await step(
               `撮影の前に ${staff.name} を登録し、22:00 から翌日の 01:00 の単発の予定と毎週の予定を割り振った`,
@@ -102,7 +114,7 @@ test.describe('職員の詳細', () => {
             await expect(recurring).toContainText(recurringText)
             await recurring.scrollIntoViewIfNeeded()
             await check(
-              `${isBefore ? '改修前: ' : ''}単発は「${scheduleText}」、繰り返しは「${recurringText}」と出る`,
+              `${isBefore ? '改修前: ' : ''}単発は「${scheduleText}」、繰り返しは「${recurringText}」と出る${isBefore ? '' : '。時刻の範囲は折り返さない'}`,
             )
           },
         )
@@ -119,7 +131,7 @@ test.describe('職員の詳細', () => {
             actor: MANAGER,
             variant,
           },
-          prepareStaff('sameday'),
+          prepareSameDayStaff,
           async ({ page, step, check }, staff) => {
             await step(
               `撮影の前に ${staff.name} を登録し、10:00 から 11:00 の単発の予定を割り振った`,
