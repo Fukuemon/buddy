@@ -1,5 +1,5 @@
 // 要求とタスクの親子が write-issue-pr の issue の書き方の「要求の大きさと親子」に合わない issue を一覧する。issue は読むだけで、書き換えない。
-// agent-harness の core の 0.3.0 の write-issue-pr の scripts/ から写した。CI の checkout にはスキルの配置先がないためである。core を上げたら写し直す
+// agent-harness の core の 0.3.1 の write-issue-pr の scripts/ から写した。CI の checkout にはスキルの配置先がないためである。core を上げたら写し直す
 // 使い方: node scripts/check-issue-tree.mjs [--repo <owner>/<name>] [--max-children <数>] [--project <project.yml>] [--from <issue の一覧の JSON>]
 // 既定は gh api graphql で、カレントディレクトリのリポジトリの issue を全部読む。--from は、同じ形の JSON の配列をファイルから読む
 // 要求の種別は本文の「種別」の欄から読み、--project（既定は context/project.yml）の process.presets の tasks に verify がない種別は、検証のタスクを求めない
@@ -43,7 +43,8 @@ const needsVerify = (issue) => {
 
 const checks = [
   ["子が全て閉じて、開いたままの親", (i) => isOpen(i) && childCount(i) > 0 && children(i).every((c) => !isOpen(c))],
-  [`子が ${maxChildren} 件を超えた親`, (i) => childCount(i) > maxChildren],
+  // 閉じた親は直す対象ではないので、子の数を数えない
+  [`子が ${maxChildren} 件を超えた開いた親`, (i) => isOpen(i) && childCount(i) > maxChildren],
   ["親が閉じて、開いたままの子", (i) => isOpen(i) && i.parent?.state === "CLOSED"],
   ["type: のラベルがない issue", (i) => !labels(i).some((l) => l.startsWith("type:"))],
   [
