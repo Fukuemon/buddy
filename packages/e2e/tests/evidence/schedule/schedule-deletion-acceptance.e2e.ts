@@ -445,8 +445,8 @@ test.describe('予定の詳細', () => {
               staffId: HAYASHI.id,
               title,
               date,
-              start: '14:00',
-              end: '15:00',
+              start: '16:00',
+              end: '17:00',
             })
             await expect.poll(exported).toBe(true)
             return id
@@ -456,7 +456,7 @@ test.describe('予定の詳細', () => {
               await openCalendarpit(page, HAYASHI.calendarId, date)
               await expect(calendarpitEvent(page, title)).toBeVisible()
               await step(
-                `前提: ${HAYASHI.name} に Google カレンダーを結び付けてあり、明日（${date}）の 14:00〜15:00 の「${title}」が calendarpit に書き出されている`,
+                `前提: ${HAYASHI.name} に Google カレンダーを結び付けてあり、明日（${date}）の 16:00〜17:00 の「${title}」が calendarpit に書き出されている`,
               )
               await check(`calendarpit の ${HAYASHI.calendarId} の ${date} に「${title}」がある`)
 
