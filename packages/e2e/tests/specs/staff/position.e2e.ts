@@ -14,7 +14,7 @@ test.describe('職員の詳細', () => {
       page,
       request,
     }) => {
-      const manager = await issueManagerToken(request)
+      const manager = await issueManagerToken()
       const staff = newStaff('policies')
       const id = await registerStaffId(request, manager, staff)
       const other = (await listPositions(request, manager)).find(

@@ -34,7 +34,7 @@ const masterId = async (request: APIRequestContext, token: string, path: string,
 const registerVisitPatient = async (page: Page, name: string) => {
   await page.goto('/patients')
   await signInAtBroker(page, LOGIN_EMAIL)
-  const token = await issueManagerToken(page.request)
+  const token = await issueManagerToken()
   const registered = await registerPatient(page.request, token, STAFF_FORM.facilityId, {
     name,
     assignedStaffId: LOGIN_STAFF.id,

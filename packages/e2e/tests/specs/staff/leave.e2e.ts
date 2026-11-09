@@ -27,7 +27,7 @@ test.describe('予定のカレンダー', () => {
       request,
     }) => {
       const staff = newStaff('suspended')
-      const manager = await issueManagerToken(request)
+      const manager = await issueManagerToken()
       const registered = await registerStaff(request, manager, staff)
       expect(registered.status()).toBe(201)
       const { id } = (await registered.json()) as { id: string }
@@ -51,7 +51,7 @@ test.describe('予定のカレンダー', () => {
       request,
     }) => {
       const staff = newStaff('stopped')
-      const manager = await issueManagerToken(request)
+      const manager = await issueManagerToken()
       const registered = await registerStaff(request, manager, staff)
       expect(registered.status()).toBe(201)
       const { id } = (await registered.json()) as { id: string }
@@ -70,7 +70,7 @@ test.describe('予定のカレンダー', () => {
       request,
     }) => {
       const staff = newStaff('reinstated')
-      const manager = await issueManagerToken(request)
+      const manager = await issueManagerToken()
       const registered = await registerStaff(request, manager, staff)
       expect(registered.status()).toBe(201)
       const { id } = (await registered.json()) as { id: string }
@@ -102,7 +102,7 @@ test.describe('予定のカレンダー', () => {
     })
 
     test('自分を休職にしようとした場合、409 が返ること', async ({ request }) => {
-      const manager = await issueManagerToken(request)
+      const manager = await issueManagerToken()
 
       const res = await leaveStaff(request, manager, LOGIN_STAFF.id)
 
@@ -124,7 +124,7 @@ test.describe('職員の詳細', () => {
       page,
       request,
     }) => {
-      const manager = await issueManagerToken(request)
+      const manager = await issueManagerToken()
       const id = await registerStaffId(request, manager, newStaff('leave-screen'))
       const created = await createNormalSchedule(request, manager, STAFF_FORM.facilityId, {
         staffId: id,
@@ -150,7 +150,7 @@ test.describe('職員の詳細', () => {
       page,
       request,
     }) => {
-      const manager = await issueManagerToken(request)
+      const manager = await issueManagerToken()
       const id = await registerStaffId(request, manager, newStaff('reinstate-screen'))
       expect((await leaveStaff(request, manager, id)).status()).toBe(200)
 

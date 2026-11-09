@@ -35,7 +35,7 @@ test.describe('部署とチーム', () => {
       page,
       request,
     }) => {
-      const token = await issueManagerToken(request)
+      const token = await issueManagerToken()
       const teamId = await createTeam(request, token, { name: newUnitName('color'), color: 'blue' })
       const staff = newStaff('team-color')
       const registered = await registerStaff(request, token, staff)

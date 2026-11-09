@@ -7,15 +7,10 @@ import { newPatientName } from './names'
 
 /** マネージャーで、担当を青木 陽菜にした利用者を登録し、ID を返す。 */
 const registerPatientId = async (request: APIRequestContext, name: string) => {
-  const res = await registerPatient(
-    request,
-    await issueManagerToken(request),
-    STAFF_FORM.facilityId,
-    {
-      name,
-      assignedStaffId: LOGIN_STAFF.id,
-    },
-  )
+  const res = await registerPatient(request, await issueManagerToken(), STAFF_FORM.facilityId, {
+    name,
+    assignedStaffId: LOGIN_STAFF.id,
+  })
   expect(res.status()).toBe(201)
   return ((await res.json()) as { id: string }).id
 }

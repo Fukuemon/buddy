@@ -24,7 +24,7 @@ const register = async (request: APIRequestContext, token: string, label: string
 
 /** 有効な職員と止めた職員を 1 人ずつ登録し、それぞれの ID を返す。 */
 const registerActiveAndSuspended = async (request: APIRequestContext) => {
-  const manager = await issueManagerToken(request)
+  const manager = await issueManagerToken()
   const active = await register(request, manager, 'active')
   const suspended = await register(request, manager, 'hidden')
   expect((await leaveStaff(request, manager, suspended.id)).status()).toBe(200)
@@ -52,9 +52,9 @@ test.describe('予定のカレンダー', () => {
       request,
     }) => {
       const { suspended } = await registerActiveAndSuspended(request)
-      expect(
-        (await reinstateStaff(request, await issueManagerToken(request), suspended)).status(),
-      ).toBe(200)
+      expect((await reinstateStaff(request, await issueManagerToken(), suspended)).status()).toBe(
+        200,
+      )
 
       await page.goto('/schedule?view=day')
 
@@ -102,7 +102,7 @@ test.describe('予定の編集', () => {
       page,
       request,
     }) => {
-      const manager = await issueManagerToken(request)
+      const manager = await issueManagerToken()
       const assigned = await register(request, manager, 'assigned')
       const created = await createNormalSchedule(request, manager, STAFF_FORM.facilityId, {
         staffId: assigned.id,
@@ -126,7 +126,7 @@ test.describe('予定の編集', () => {
       page,
       request,
     }) => {
-      const manager = await issueManagerToken(request)
+      const manager = await issueManagerToken()
       const assigned = await register(request, manager, 'kept')
       const stamp = Date.now()
       const created = await createNormalSchedule(request, manager, STAFF_FORM.facilityId, {

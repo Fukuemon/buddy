@@ -95,7 +95,7 @@ test.describe('利用者の登録', () => {
       test(`担当を${label}にして利用者を登録しようとした場合、400 が返ること`, async ({
         request,
       }) => {
-        const manager = await issueManagerToken(request)
+        const manager = await issueManagerToken()
         const stopped = await registerStopped(request, manager, stop)
 
         const res = await registerPatient(request, manager, STAFF_FORM.facilityId, {

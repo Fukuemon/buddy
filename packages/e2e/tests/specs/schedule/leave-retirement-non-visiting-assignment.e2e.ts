@@ -68,7 +68,7 @@ test.describe('予定の作成', () => {
       page,
       request,
     }) => {
-      const manager = await issueManagerToken(request)
+      const manager = await issueManagerToken()
       const stopped = await registerStopped(request, manager, leaveStaff)
 
       await page.goto(`/schedule/new?start=${SCHEDULE_DATE}&time=13:00&staffId=${stopped.id}`)
@@ -84,7 +84,7 @@ test.describe('予定の作成', () => {
       test(`${label}を指して予定を作ろうとした場合、400 が返り予定ができないこと`, async ({
         request,
       }) => {
-        const manager = await issueManagerToken(request)
+        const manager = await issueManagerToken()
         const stopped = await registerStopped(request, manager, stop)
         const title = `E2E の会議 ${Date.now()}`
 
@@ -107,7 +107,7 @@ test.describe('予定の作成', () => {
       test(`${label}を指して繰り返しの予定を作ろうとした場合、400 が返ること`, async ({
         request,
       }) => {
-        const manager = await issueManagerToken(request)
+        const manager = await issueManagerToken()
         const stopped = await registerStopped(request, manager, stop)
 
         const res = await createWeeklyNormalSchedule(request, manager, STAFF_FORM.facilityId, {
@@ -129,7 +129,7 @@ test.describe('予定の編集', () => {
       test(`予定の職員を${label}に変えようとした場合、400 が返り予定の職員が変わらないこと`, async ({
         request,
       }) => {
-        const manager = await issueManagerToken(request)
+        const manager = await issueManagerToken()
         const stamp = Date.now()
         const created = await createNormalSchedule(request, manager, STAFF_FORM.facilityId, {
           staffId: LOGIN_STAFF.id,
@@ -156,7 +156,7 @@ test.describe('予定の編集', () => {
     test('退職した職員の過去の予定を、職員を変えずに今日以降の日付へ動かそうとした場合、400 が返ること', async ({
       request,
     }) => {
-      const manager = await issueManagerToken(request)
+      const manager = await issueManagerToken()
       const assigned = await register(request, manager, 'retired-past')
       const title = `E2E の会議 ${Date.now()}`
       const created = await createNormalSchedule(request, manager, STAFF_FORM.facilityId, {
