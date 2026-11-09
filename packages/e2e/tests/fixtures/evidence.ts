@@ -3,9 +3,10 @@ import { fileURLToPath, pathToFileURL } from 'node:url'
 
 import type { Browser, Page } from '@playwright/test'
 
-import { variantsFromEnv, type Variant } from '@fukuemon/e2e-kit/evidence'
+import { prEvidenceDir, variants, type PrViewpoint, type Variant } from '@fukuemon/e2e-kit/evidence'
 import {
-  recordPrEvidence as recordKitPrEvidence,
+  recordEvidence,
+  worktreeVersion,
   type Recording,
   type Viewport,
 } from '@fukuemon/e2e-kit/recording'
@@ -15,11 +16,21 @@ import { BASE_URL, TIMEZONE_ID } from './env'
 const root = fileURLToPath(new URL('../../../..', import.meta.url))
 
 /**
+ * エビデンスの配置先の根。kit の prEvidenceDir に渡す。
+ * 入れる先（EVIDENCE_FOR）ごとに、`<入れる先>/evidence/<name>_<title>/` ができる
+ */
+export const EVIDENCE_ROOT = path.join(root, '.ai-out/evidence')
+
+/**
  * 撮る版。デフォルトは E2E_BASE_URL の 1 つの版を撮る。
  * EVIDENCE_BEFORE_URL を渡すと、E2E_BASE_URL を改修後、EVIDENCE_BEFORE_URL を改修前として両方を撮る。
  * EVIDENCE_ONLY に before か after を渡すと、E2E_BASE_URL をその版として 1 つだけ撮る。
  */
-export const EVIDENCE_VARIANTS = variantsFromEnv(BASE_URL)
+export const EVIDENCE_VARIANTS = variants({
+  baseUrl: BASE_URL,
+  beforeBaseUrl: process.env.EVIDENCE_BEFORE_URL,
+  only: process.env.EVIDENCE_ONLY,
+})
 
 /** パソコンの幅の画面と録画の大きさ。pull request の本文で読める大きさにする */
 export const DESKTOP_VIEWPORT: Viewport = { width: 1280, height: 800 }
@@ -47,12 +58,23 @@ export const mockUrl = (file: string): string =>
   pathToFileURL(path.join(root, 'docs/screens', file)).href
 
 /**
- * pull request か issue のエビデンスを 1 本撮る。kit の recordPrEvidence に buddy の値を渡す。
- * 環境変数 EVIDENCE_FOR（`issue-<番号>` か `pr-<番号>`）の `.ai-out/evidence/<EVIDENCE_FOR>/` に書き出す。
- * kit の録画は `<EVIDENCE_FOR>/<name>/` に mp4、スクリーンショット、README を書き、添付する mp4 を `<EVIDENCE_FOR>/<name>.mp4` にコピーする。
- * 改修前と改修後を撮るときは、`<name>-before.mp4` と `<name>-after.mp4` にする。
+ * 環境変数 EVIDENCE_FOR の入れる先（`issue-<番号>` か `pr-<番号>`）。形が違えば例外を投げるので、spec の中で呼ぶ
+ */
+const evidenceFor = (): string => {
+  const value = process.env.EVIDENCE_FOR
+  if (!value || !/^(issue|pr)-[1-9]\d*$/.test(value))
+    throw new Error(`EVIDENCE_FOR に issue-<番号> か pr-<番号> を渡す: ${value ?? ''}`)
+  return value
+}
+
+/**
+ * pull request か issue のエビデンスを 1 本撮る。kit の recordEvidence に buddy の値を渡す。
+ * 観点は、pr を入れる先、no を name、title を title にした PrViewpoint にする。
+ * `.ai-out/evidence/<EVIDENCE_FOR>/evidence/<name>_<title>/` に、`<name>_実施.mp4`（改修前と比べるときは `<name>_改修前.mp4` と `<name>_改修後.mp4`）、
+ * 判定のスクリーンショット、README を書き出す。
+ * actor は、kit の観点がアクターを持たないので、字幕と README には出ない。spec を読む人に、ログインする職員を示す。
  *
- * @param o.name 観点が分かる英小文字、数字、ハイフンの名前。添付したファイル名として動画の上に出る
+ * @param o.name 観点が分かる英小文字、数字、ハイフンの名前。配置先とファイル名の先頭になる
  * @param o.title 観点の文。README の見出しになる
  * @param o.actor ログインする職員の名前と役職。画面にログインしないものは「ログインなし」にする
  * @param o.viewport 画面と録画の大きさ。デフォルトは DESKTOP_VIEWPORT
@@ -70,16 +92,22 @@ export const recordPrEvidence = async <T>(
   },
   prepare: (page: Page) => Promise<T>,
   body: (r: Recording, prepared: T) => Promise<void>,
-): Promise<void> =>
-  recordKitPrEvidence(
+): Promise<void> => {
+  if (!/^[a-z0-9]+(-[a-z0-9]+)*$/.test(o.name))
+    throw new Error(`name は英小文字、数字、ハイフンにする: ${o.name}`)
+  const viewpoint: PrViewpoint = { pr: evidenceFor(), no: o.name, title: o.title }
+  await recordEvidence(
     browser,
     {
-      root,
+      dir: prEvidenceDir({ root: EVIDENCE_ROOT, viewpoint }),
       appName: 'buddy',
+      envLabel: 'ローカル環境',
       viewport: o.viewport ?? DESKTOP_VIEWPORT,
       timezoneId: TIMEZONE_ID,
+      readVersion: async () => worktreeVersion(root, o.variant),
     },
-    { name: o.name, title: o.title, actor: o.actor, variant: o.variant },
+    { viewpoint, variant: o.variant },
     prepare,
     body,
   )
+}
