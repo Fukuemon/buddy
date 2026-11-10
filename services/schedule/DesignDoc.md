@@ -51,7 +51,7 @@ verified_commit: 4e53ca5
 - `internal/features/` には、次の機能のパッケージを置く。
   - `organization`、`staff`、`servicecode`、`patient`、`visit`、`schedule`、`scheduleview`
   - Google カレンダーとの連携: `calendar`、`calendarimport`、`calendarsync`、`calendarexport`
-- `internal/` の直下には、アダプタ（`httpapi`、`postgres`、`gcal`、`broker`、`ulid`）と共通のパッケージ（`apperr`、`tx`、`kernel`、`civil`）を置く。
+- `internal/` の直下には、アダプタ（`httpapi`、`postgres`、`gcal`、`broker`、`ulid`）と共通のパッケージ（`apperr`、`tx`、`kernel`、`civil`、`audit`）を置く。
   - `access`、`principal`、`config`、テストの `inmem` も、`internal/` の直下に置く。
 - 依存の組み立ては、各 `cmd` に置く。
   - `cmd/api` は、`handler.go` でリポジトリと HTTP のハンドラを組み立て、`main.go` で HTTP のサーバーを起動する。
@@ -169,6 +169,9 @@ erDiagram
   recurring_schedules |o--o{ calendar_exports : "書き出しの待ち"
   schedule_deletions |o--o| external_event_links : "削除した予定の対応"
   schedule_deletions |o--o{ calendar_exports : "削除の書き出しの待ち"
+  facilities ||--o{ permission_audits : "権限の変更の監査の記録"
+  users |o--o{ permission_audits : "操作した職員、対象の職員"
+  positions |o--o{ permission_audits : "作った役職"
 ```
 
 #### 全てのテーブルの規則
@@ -292,6 +295,8 @@ CHECK が 8 つ以外を拒み、API は 400 を返す。
 ### 権限のレコード
 
 権限のレコード、照合の権限を足したマイグレーション、職員ごとの権限の足し外しは、[権限の Design Doc の権限のレコード](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/internal/access/DesignDoc.md#権限のレコード) にある。
+権限の変更の監査の記録と、記録とログをつなぐ相関 ID は、[権限の Design Doc の権限の変更の監査の記録](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/internal/access/DesignDoc.md#権限の変更の監査の記録) にある。  
+予定の API は、全てのリクエストに相関 ID を振り、ログの行に `request_id` として書く。
 
 ### 認証から事業所の確認までの流れ
 

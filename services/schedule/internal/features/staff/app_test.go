@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/Fukuemon/buddy/services/schedule/internal/apperr"
+	"github.com/Fukuemon/buddy/services/schedule/internal/audit"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/organization"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/staff"
 	"github.com/Fukuemon/buddy/services/schedule/internal/inmem"
@@ -263,6 +264,8 @@ type deps struct {
 	Calendars   staff.CalendarDetacher
 	Self        func(ctx context.Context) (string, bool)
 	Now         func() time.Time
+	// Audits は、監査の記録を書く先である。nil なら、どこからも読まないメモリ上の記録に書く。
+	Audits audit.Writer
 }
 
 // app は、テストが呼ぶ staff の操作の Do である。
@@ -280,19 +283,52 @@ type app struct {
 	RemainingAssignments func(ctx context.Context, id string) (staff.Assignments, error)
 }
 
-// build は、d の依存で staff の全ての操作の型を作る。
+// build は、d の依存で staff の全ての操作の型を作る。d.Self が nil なら、リクエストを送った職員を companionID にする。
+// 監査の記録を書く操作は、ctx に相関 ID testRequestID を入れてから呼ぶ。
 func build(d deps, tx tx.Transactor, ids kernel.IDGenerator, guard kernel.Guard) app {
+	self := d.Self
+	if self == nil {
+		self = func(context.Context) (string, bool) { return companionID, true }
+	}
+	audits := d.Audits
+	if audits == nil {
+		audits = inmem.PermissionAudits{Store: inmem.NewStore()}
+	}
+	rec := audit.NewRecorder(audits, ids, self)
+	create := staff.NewCreate(d.Facilities, d.Departments, d.Teams, d.Positions, d.Identities, d.Staff, rec, tx, ids, guard)
+	changePosition := staff.NewChangePosition(d.Staff, d.Facilities, d.Positions, rec, tx, ids, guard)
+	updateProfile := staff.NewUpdateProfile(d.Staff, d.Facilities, d.Departments, d.Teams, d.Assignments, d.Now, rec, tx, guard)
+	addGrant := staff.NewAddGrant(d.Staff, d.Facilities, d.Policies, d.Teams, rec, tx, ids, guard)
+	removeGrant := staff.NewRemoveGrant(d.Staff, d.Facilities, rec, tx, guard)
 	return app{
-		Create:               staff.NewCreate(d.Facilities, d.Departments, d.Teams, d.Positions, d.Identities, d.Staff, tx, ids, guard).Do,
-		Get:                  staff.NewGet(d.Staff).Do,
-		List:                 staff.NewList(d.Facilities, d.Staff).Do,
-		ChangePosition:       staff.NewChangePosition(d.Staff, d.Facilities, d.Positions, tx, ids, guard).Do,
-		UpdateProfile:        staff.NewUpdateProfile(d.Staff, d.Facilities, d.Departments, d.Teams, d.Assignments, d.Now, tx, guard).Do,
-		AddGrant:             staff.NewAddGrant(d.Staff, d.Policies, d.Teams, tx, ids, guard).Do,
-		RemoveGrant:          staff.NewRemoveGrant(d.Staff, d.Facilities, tx, guard).Do,
+		Create: func(ctx context.Context, in staff.CreateInput) (staff.Detail, error) {
+			return create.Do(withRequestID(ctx), in)
+		},
+		Get:  staff.NewGet(d.Staff).Do,
+		List: staff.NewList(d.Facilities, d.Staff).Do,
+		ChangePosition: func(ctx context.Context, id, positionID string) (staff.Detail, error) {
+			return changePosition.Do(withRequestID(ctx), id, positionID)
+		},
+		UpdateProfile: func(ctx context.Context, id string, p staff.Profile) (staff.Detail, error) {
+			return updateProfile.Do(withRequestID(ctx), id, p)
+		},
+		AddGrant: func(ctx context.Context, id string, in staff.GrantInput) (staff.Detail, error) {
+			return addGrant.Do(withRequestID(ctx), id, in)
+		},
+		RemoveGrant: func(ctx context.Context, id, userPolicyID string) (staff.Detail, error) {
+			return removeGrant.Do(withRequestID(ctx), id, userPolicyID)
+		},
 		Leave:                staff.NewLeave(d.Self, d.Staff, d.Facilities, d.Assignments, d.Now, d.Identities, tx, guard).Do,
 		Reinstate:            staff.NewReinstate(d.Staff, d.Facilities, d.Identities, tx, guard).Do,
 		Retire:               staff.NewRetire(d.Self, d.Staff, d.Facilities, d.Assignments, d.Now, d.Identities, d.Calendars, tx, guard).Do,
 		RemainingAssignments: staff.NewRemainingAssignments(d.Staff, d.Assignments, d.Now, guard).Do,
 	}
+}
+
+// testRequestID は、テストの操作が ctx に入れる相関 ID である。
+const testRequestID = "REQUEST-1"
+
+// withRequestID は、相関 ID testRequestID を持つ ctx を返す。予定の API ではミドルウェアが振る。
+func withRequestID(ctx context.Context) context.Context {
+	return audit.WithRequestID(ctx, testRequestID)
 }

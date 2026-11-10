@@ -37,7 +37,7 @@ status: stable
     - アダプタ、共通のパッケージ、`access`、`principal`、`config` は `internal/` の直下に置く。
   - `internal/` の直下のパッケージは次のとおり。
     - アダプタ: `httpapi`（HTTP）、`postgres`（DB）、`gcal`（Google カレンダー）、`broker`（ID ブローカーの内部の API）、`ulid`（ID の発行）
-    - 共通のパッケージ: `apperr`、`tx`、`kernel`、`civil`
+    - 共通のパッケージ: `apperr`、`tx`、`kernel`、`civil`、`audit`（権限の変更の監査の記録の型と相関 ID）
     - 認証と認可: `access`、`principal`
     - 設定: `config`
     - テストのためのメモリ上の実装: `inmem`
@@ -69,8 +69,8 @@ status: stable
 - web の画面のコード（`features/`、`src/components/`）は、`src/server/` を import しない。
 - web の画面のコードは、`api/fake/` と `api/http/` を import せず、API のクライアントを `useBuddyApi` から受け取る。
   - テスト、story、story のデータ（`storyData.ts`）だけは、`api/fake/` と `api/http/` を import してよい。
-- `services/schedule` の依存は、アダプタ（`httpapi`、`postgres`）、`access`、機能のパッケージ、共通のパッケージ（`apperr`、`tx`、`kernel`、`civil`）の 1 方向に限る。
-  - 共通のパッケージは、標準ライブラリと、共通のパッケージの間（`kernel` から `apperr`）だけに依存する。
+- `services/schedule` の依存は、アダプタ（`httpapi`、`postgres`）、`access`、機能のパッケージ、共通のパッケージ（`apperr`、`tx`、`kernel`、`civil`、`audit`）の 1 方向に限る。
+  - 共通のパッケージは、標準ライブラリと、共通のパッケージの間（`kernel` から `apperr`、`audit` から `kernel`）だけに依存する。
   - 機能のパッケージの間は、`organization`、`staff`、`servicecode`、`patient`、`visit`、`schedule`、`scheduleview`、`calendar` の順にだけ import する。
     - サービスコードは `servicecode` に、訪問の区分は `visit` に置く。`visit` は利用者を `patient` から受ける。
     - `scheduleview` は `schedule` まで import してよい。`calendarsync` は、Projection を書くために `scheduleview` を import してよい。

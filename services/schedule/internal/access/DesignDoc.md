@@ -24,6 +24,7 @@ verified_commit: c0514f20
 - 職員ごとの権限の足し外しと、チームを変えたときの対象の移し替え
 - 予定の認可
 - 照合の API が、予定の API から職員の権限を読んで照合を許す仕組み
+- 権限の変更の監査の記録を書く仕組みと、職員の権限を変えるマイグレーションが記録を書く規則
 
 持たないもの
 
@@ -93,7 +94,7 @@ verified_commit: c0514f20
 
 事業所で `staff.manage` を持つ最後の有効な職員からその権限を外そうとしたときは、何も書かずに 409 を返す。  
 権限を外す操作と、`staff.manage` を持たない役職に変える操作の両方が当たる。  
-役職を変える操作と権限を外す操作は、休職と退職と同じく、`staff` の操作が事業所の行をロックしたトランザクションの中で、職員を読み直してから行う。  
+役職を変える操作と権限を足し外す操作は、休職と退職と同じく、`staff` の操作が事業所の行をロックしたトランザクションの中で、職員を読み直してから行う。  
 同時に 2 人から外しても、後の操作は最後の有効な管理者を見つけて 409 になる。
 
 - ADR-0041: [権限を役職のデフォルトと職員ごとの上書きで持ち、役職を変えても職員ごとに足した権限を残し、職員の管理と照合も権限で許す](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0041-pbac-grants.md)
@@ -128,6 +129,78 @@ verified_commit: c0514f20
   - 対象は、サービスアカウントのメールアドレスの取得、カレンダーの一覧、読めるかの確認、結び付け、外す、取り込みのプレビューと確定である。
   - 確認が必要な予定の一覧と、buddy の内容で書き直すも対象にする。
   - 詳しくは [Google カレンダーとの連携の Design Doc の連携の操作の権限](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/internal/features/calendar/DesignDoc.md#連携の操作の権限) にある。
+
+### 権限の変更の監査の記録
+
+職員の権限を変える操作は、操作と同じトランザクションで、監査の記録（`permission_audits`）に 1 行を書く。  
+残す操作、列、操作した人の表し方は ADR-0042 で決めた。  
+列と CHECK 制約は [テーブル定義書](https://github.com/Fukuemon/buddy/blob/develop/docs/db/schedule/public.permission_audits.md) にある。
+
+- ADR-0042: [権限の変更を、操作した職員か運営者と変更の前後の権限の全量で、予定の API の DB の監査の記録に残す](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0042-permission-audit.md)
+
+予定の API の操作が書く記録は次のとおり。  
+操作した人は、リクエストを送った職員（`actor_kind` が `staff`）である。
+
+| 操作 | 操作の型 | `action` | 記録を書かないとき |
+| --- | --- | --- | --- |
+| 職員の登録 | `staff.Create` | `staff.create` | なし |
+| 権限を足す | `staff.AddGrant` | `grant.add` | なし |
+| 権限を外す | `staff.RemoveGrant` | `grant.remove` | なし |
+| 役職を変える | `staff.ChangePosition` | `position.change` | 役職、チーム、権限と対象が、変更の前と同じとき |
+| チームを変える | `staff.UpdateProfile` | `team.change` | 権限と対象が、変更の前と同じとき。チームを変えないときを含む |
+| 役職を作る | `organization.CreatePosition` | `position.create` | なし |
+
+- 記録を書けないときは、操作のトランザクションを戻し、操作も失敗する。
+  - 失敗した操作（400、403、404、409）は、記録を書く前に止まるので、記録も残らない。
+- 変更の後の全量は、変更を書いた後に職員を読み直して作る。
+  - 変更の前の全量は、事業所をロックした後に読んだ職員から作る。同じ職員に同時に権限を足しても、後の記録の変更の前は先の記録の変更の後と一致する。
+  - 役職の変更が職員ごとに足した権限を残すか（ADR-0041）によらず、記録は DB に残った権限と一致する。
+- 役職の変更は、変更の前後の全量を比べ、同じなら書かない。
+  - ADR-0041 のとおり、今と同じ役職に変えた操作は権限を変えないので、記録も残らない。
+- 運営者の操作（`facility.create`、`staff.create_forced`、運営者の `position.create` と `staff.create`）は、運営用の CLI が書く（#986）。テーブルは、`actor_kind` が `operator` の行を受ける。
+
+`before` と `after` は、`internal/audit` の型を JSON にして持つ。  
+職員を対象にする操作は、役職とチームの ID と、権限の並び（`StaffState`）を持つ。  
+権限は `code` の順に、対象の職員とチームの ID は ID の順に並べる。
+
+```json
+{
+  "position_id": "01M3TC5PVG7W2H1H20W0T1ZVEJ",
+  "team_id": "01M3TC5MX04QJ19X6XR1ZCBZRJ",
+  "grants": [
+    { "code": "schedule.self.edit" },
+    { "code": "schedule.team.read", "target_team_ids": ["01M3TC5MX04QJ19X6XR1ZCBZRJ"] },
+    { "code": "schedule.user.read", "target_user_ids": ["01M3TC5WQ08KWBZX85WAZ1C4N7"] }
+  ]
+}
+```
+
+役職の作成は、役職の名前と、デフォルトの権限の `code` を `code` の順に持つ（`PositionState`）。
+
+```json
+{ "name": "主任", "policy_codes": ["schedule.self.edit", "schedule.team.read"] }
+```
+
+相関 ID（`request_id`）は、予定の API のミドルウェアがリクエストごとに ULID で振る。  
+記録と、同じリクエストのログの `request_id` に、同じ値を書く。  
+web の BFF やクライアントが送った値は使わない。  
+外から送った値で、ほかのリクエストの記録とつながった記録を作らせないためである。
+
+監査のテーブルを作るマイグレーション（`000024_permission_audits`）は、その時点の全ての職員の権限を、記録の始まりとして書く。  
+退職した職員も含めて 1 人 1 行で、`action` は `grant.migrate`、`before` は NULL、`actor_operator` は `migration:000024` である。  
+全ての行を、マイグレーションの中で振った 1 つの相関 ID でつなぐ。  
+`after` は、予定の API が書く `StaffState` と同じ形である。  
+`000024` の down は、ほかのマイグレーションと同じく、テーブルごと記録を消す。本番で down を流すときは、運営者が先に記録を退避する。
+
+職員の権限を変えるマイグレーションを足すときは、次の規則で記録を書く。  
+`000024` より前のマイグレーションの分は、さかのぼって書かない。
+
+- 権限が変わった職員ごとに、`grant.migrate` の 1 行を、権限を変えるのと同じマイグレーションの中で書く。
+  - `actor_kind` は `operator`、`actor_operator` は `migration:<そのマイグレーションの番号>` にする。
+  - `before` と `after` は、変更の前と後の `StaffState` の形の全量にする。
+- 1 つのマイグレーションの行は、マイグレーションの中で振った 1 つの相関 ID でつなぐ。
+- down で権限を戻すときも、権限が変わった職員ごとに `grant.migrate` の 1 行を書き、記録を消さない。
+- ID の振り方と全量の組み立て方は、`000024_permission_audits.up.sql` を写す。
 
 ### 照合の API の権限の確認
 
