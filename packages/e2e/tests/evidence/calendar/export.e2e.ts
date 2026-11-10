@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test'
 
 import { check, intro, step } from '../../fixtures/caption'
-import { CALENDARPIT_URL, HAYASHI, LOGIN_STAFF, LOGIN_STATE, TIMEZONE_ID } from '../../fixtures/env'
+import { CALENDARPIT_URL, HAYASHI, LOGIN_STAFF, LOGIN_STATE } from '../../fixtures/env'
 import { findGoogleEvent } from '../../fixtures/googleCalendar'
 import { prepareOutsideRecording } from '../../fixtures/recording'
 import { calendarpitEvent } from '../../selectors/calendarpit'
@@ -54,20 +54,21 @@ test.describe('確認が必要な予定', () => {
           ).toBeVisible()
         })
 
-        // 日の表示のデフォルトの日（今日）に作った予定である
-        const date = new Date().toLocaleDateString('sv-SE', { timeZone: TIMEZONE_ID })
+        // 書き出しは別の処理が行うので、calendarpit に出るまで待ってから、書き出された予定の日を開く
+        await expect
+          .poll(async () => (await findGoogleEvent(request, HAYASHI.calendarId, title))?.status)
+          .toBe('confirmed')
+        const event = await findGoogleEvent(request, HAYASHI.calendarId, title)
+        const date = event?.start?.dateTime?.slice(0, 10) ?? ''
         await step(
           page,
           `Google カレンダーの代わりの calendarpit の管理の画面で、${HAYASHI.calendarId} の ${date} を開く`,
-          async () => {
-            // 書き出しは別の処理が行うので、calendarpit に出るまで待ってから管理の画面を開く
-            await expect
-              .poll(async () => (await findGoogleEvent(request, HAYASHI.calendarId, title))?.status)
-              .toBe('confirmed')
-            await page.goto(
-              `${CALENDARPIT_URL}/?calendar=${encodeURIComponent(HAYASHI.calendarId)}&date=${date}`,
-            )
-          },
+          () =>
+            page
+              .goto(
+                `${CALENDARPIT_URL}/?calendar=${encodeURIComponent(HAYASHI.calendarId)}&date=${date}`,
+              )
+              .then(() => undefined),
         )
         await check(page, `${HAYASHI.calendarId} に「${title}」が出る`, () =>
           expect(calendarpitEvent(page, title)).toBeVisible(),

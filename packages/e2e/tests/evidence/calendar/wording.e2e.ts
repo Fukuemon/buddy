@@ -11,6 +11,7 @@ const EXPECTED = {
 }
 
 test.describe('カレンダーの連携と取り込みの文言（ログインなし、Storybook の story）', () => {
+  // 改修前は別の story（CalendarReviewView）を開き、行を押す操作が無い。改修前と改修後で流れが違うので、改修後の流れだけを撮る
   test('wording-review-title 食い違った予定の画面を開いた場合、見出しが「確認が必要な予定」で出ること', async ({
     page,
   }) => {
