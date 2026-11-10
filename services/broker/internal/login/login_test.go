@@ -282,8 +282,8 @@ func TestShowLogin(t *testing.T) {
 // TestUnreadableChallenge は、Hydra の admin API で読めない challenge に、GET と POST の /login と同意で同じ 400 の失敗の画面を出すことを確認する。
 func TestUnreadableChallenge(t *testing.T) {
 	e := newEnv(10)
-	e.hydra.loginErr = errors.New("hydra: 404 Not Found")
-	e.hydra.consentErr = errors.New("hydra: 404 Not Found")
+	e.hydra.loginErr = &hydra.StatusError{Path: "/admin/oauth2/auth/requests/login", Code: http.StatusNotFound}
+	e.hydra.consentErr = &hydra.StatusError{Path: "/admin/oauth2/auth/requests/consent", Code: http.StatusNotFound}
 	for name, rec := range map[string]*httptest.ResponseRecorder{
 		"GET /login":   e.do(httptest.NewRequest(http.MethodGet, "/login?login_challenge=used", nil)),
 		"POST /login":  e.submit("hina.aoki@example.com"),
@@ -291,6 +291,27 @@ func TestUnreadableChallenge(t *testing.T) {
 	} {
 		if rec.Code != http.StatusBadRequest || !strings.Contains(rec.Body.String(), "ログインを続けられませんでした") {
 			t.Errorf("%s: code = %d, want 400 のログインの失敗の画面", name, rec.Code)
+		}
+	}
+}
+
+// TestChallengeReadOutage は、Hydra の admin API に届かないか 5xx のとき、challenge の読み出しを障害として 502 の画面にすることを確認する。
+func TestChallengeReadOutage(t *testing.T) {
+	for _, cause := range []error{
+		errors.New("hydra /admin/oauth2/auth/requests/login: connection refused"),
+		&hydra.StatusError{Path: "/admin/oauth2/auth/requests/login", Code: http.StatusServiceUnavailable},
+	} {
+		e := newEnv(10)
+		e.hydra.loginErr = cause
+		e.hydra.consentErr = cause
+		for name, rec := range map[string]*httptest.ResponseRecorder{
+			"GET /login":   e.do(httptest.NewRequest(http.MethodGet, "/login?login_challenge=ch", nil)),
+			"POST /login":  e.submit("hina.aoki@example.com"),
+			"GET /consent": e.do(httptest.NewRequest(http.MethodGet, "/consent?consent_challenge=ch", nil)),
+		} {
+			if rec.Code != http.StatusBadGateway || !strings.Contains(rec.Body.String(), "時間をおいて、もう一度ログインしてください。") {
+				t.Errorf("%s（%v）: code = %d, want 502 の障害の画面", name, cause, rec.Code)
+			}
 		}
 	}
 }
@@ -516,7 +537,7 @@ func TestSubmitEmailIPv6Prefix(t *testing.T) {
 // TestSubmitEmailInvalidChallenge は、Hydra が知らない login_challenge では、職員を引かずにログインの失敗の画面を出すことを確認する。
 func TestSubmitEmailInvalidChallenge(t *testing.T) {
 	e := newEnv(10)
-	e.hydra.loginErr = errors.New("hydra: 404 not found")
+	e.hydra.loginErr = &hydra.StatusError{Path: "/admin/oauth2/auth/requests/login", Code: http.StatusNotFound}
 	rec := e.submit("aoki@example.com")
 	if rec.Code != http.StatusBadRequest || !strings.Contains(rec.Body.String(), "ログインを続けられませんでした") {
 		t.Errorf("code = %d, body = %s", rec.Code, rec.Body)
@@ -832,18 +853,36 @@ func TestCallbackPassesIssuer(t *testing.T) {
 	}
 }
 
-// TestCallbackInactiveStaff は、ログインの途中に休職か退職になった職員を、メールを入れたときと同じ reject で拒むことを確認する。
+// TestCallbackInactiveStaff は、ログインの途中に休職か退職になった職員の reject を確認する。
+// 休職の職員は、メールを入れたときと同じ access_denied で拒む。退職ではメールと上流のアカウントが消え、ID token が職員のものと
+// 確認できないので、cookie の職員の ID を書き換えたときと同じ account_mismatch で拒み、退職したことを伝えない。
 func TestCallbackInactiveStaff(t *testing.T) {
-	for _, status := range []string{staff.StatusSuspended, staff.StatusRetired} {
-		t.Run(status, func(t *testing.T) {
+	for _, tt := range []struct {
+		name   string
+		linked bool
+		leave  func(m *staff.Member)
+		want   hydra.Rejection
+	}{
+		{"休職", false, func(m *staff.Member) { m.Status = staff.StatusSuspended }, hydra.AccessDenied},
+		{"結び付け済みで休職", true, func(m *staff.Member) { m.Status = staff.StatusSuspended }, hydra.AccessDenied},
+		{"退職", true, func(m *staff.Member) {
+			m.Status, m.Email, m.Upstream = staff.StatusRetired, "", staff.UpstreamAccount{}
+		}, hydra.AccountMismatch},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
 			e := newEnv(10)
 			e.upstream.identity = upstream.Identity{Issuer: issuerA, Subject: "u-aoki", Email: "aoki@example.com", EmailVerified: true}
+			if tt.linked {
+				m := e.staff.members[aokiID]
+				m.Upstream = staff.UpstreamAccount{Issuer: issuerA, Subject: "u-aoki"}
+				e.staff.members[aokiID] = m
+			}
 			submitted := e.submit("aoki@example.com")
 			m := e.staff.members[aokiID]
-			m.Status = status
+			tt.leave(&m)
 			e.staff.members[aokiID] = m
-			if got := location(t, e.callback(t, submitted, "code-1")); got != "http://hydra/login-rejected" || e.hydra.rejection != hydra.AccessDenied {
-				t.Errorf("Location = %q, rejection = %+v, want メールを入れたときと同じ reject", got, e.hydra.rejection)
+			if got := location(t, e.callback(t, submitted, "code-1")); got != "http://hydra/login-rejected" || e.hydra.rejection != tt.want {
+				t.Errorf("Location = %q, rejection = %+v, want %+v", got, e.hydra.rejection, tt.want)
 			}
 		})
 	}
@@ -1005,7 +1044,7 @@ func TestCallbackConsentLogoutRateLimit(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			e := newEnv(2)
-			e.hydra.consentErr = errors.New("not found")
+			e.hydra.consentErr = &hydra.StatusError{Path: "/admin/oauth2/auth/requests/consent", Code: http.StatusNotFound}
 			for range 2 {
 				e.do(tt.req())
 			}
