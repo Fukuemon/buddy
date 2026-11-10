@@ -24,14 +24,14 @@ test.describe('予定のカレンダー', () => {
       const ueda = page.getByTestId('staff-filter-staff-staff-3')
       await check(
         page,
-        '青木 一郎のチェックボックスと日の表の予定が同じ青で、上田 三奈のチェックボックスは別の色で出る',
+        '青木 一郎のチェックボックスと日の表の予定が同じ紫で、上田 三奈のチェックボックスは別の色で出る',
         async () => {
-          // categorical-1 は blue-800、categorical-3 は cyan-900
-          await expect(aoki).toHaveCSS('accent-color', 'rgb(0, 49, 216)')
-          await expect(ueda).toHaveCSS('accent-color', 'rgb(0, 111, 131)')
+          // categorical-1 は purple-800、categorical-3 は magenta-800
+          await expect(aoki).toHaveCSS('accent-color', 'rgb(92, 16, 190)')
+          await expect(ueda).toHaveCSS('accent-color', 'rgb(170, 0, 170)')
           await expect(page.getByTestId('schedule-event-schedule-1')).toHaveCSS(
             'background-color',
-            'rgb(0, 49, 216)',
+            'rgb(92, 16, 190)',
           )
         },
       )
