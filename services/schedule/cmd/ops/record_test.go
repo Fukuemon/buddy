@@ -16,27 +16,45 @@ import (
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/staff"
 )
 
-func record(t *testing.T, buf *bytes.Buffer) map[string]any {
+func records(t *testing.T, buf *bytes.Buffer) []map[string]any {
 	t.Helper()
-	var m map[string]any
-	if err := json.Unmarshal(buf.Bytes(), &m); err != nil {
-		t.Fatalf("ログ %q を読めない: %v", buf.String(), err)
+	var out []map[string]any
+	for _, line := range strings.Split(strings.TrimSpace(buf.String()), "\n") {
+		var m map[string]any
+		if err := json.Unmarshal([]byte(line), &m); err != nil {
+			t.Fatalf("ログ %q を読めない: %v", line, err)
+		}
+		out = append(out, m)
 	}
-	return m
+	return out
 }
 
-// 登録の記録は、実行者、操作の種類、事業所と職員の ID、相関の ID を持ち、メールと職員の名前を持たない。
+// 登録の記録は、ADR-0042 の監査の記録の行に合わせ、書いた操作ごとに 1 行を、同じ request_id で書く。
+// メールと職員の名前を持たない。
 func TestOnboardFacilityRecord(t *testing.T) {
 	tests := []struct {
-		name    string
-		dryRun  bool
-		created bool
-		want    map[string]any
-		absent  []string
+		name            string
+		dryRun          bool
+		facilityCreated bool
+		managerCreated  bool
+		want            []map[string]any
+		absent          []string
 	}{
-		{"登録した", false, true, map[string]any{"facility_id": "FAC1", "staff_id": "STAFF1", "manager_created": true, "msg": "事業所と最初のマネージャーを登録した"}, nil},
-		{"登録済み", false, false, map[string]any{"facility_id": "FAC1", "staff_id": "STAFF1", "manager_created": false, "msg": "同じメールの職員が登録済みで、何も書かなかった"}, nil},
-		{"dry-run", true, true, map[string]any{"facility_name": "新しい事業所", "manager_position_name": "マネージャー", "dry_run": true}, []string{"facility_id", "staff_id"}},
+		{"事業所を作って登録した", false, true, true, []map[string]any{
+			{"action": "facility.create", "facility_id": "FAC1"},
+			{"action": "position.create", "facility_id": "FAC1", "target_position_id": "POS1"},
+			{"action": "position.create", "facility_id": "FAC1", "target_position_id": "POS2"},
+			{"action": "staff.create", "facility_id": "FAC1", "target_user_id": "STAFF1"},
+		}, nil},
+		{"既にある事業所にフラグを付けて登録した", false, false, true, []map[string]any{
+			{"action": "staff.create_forced", "facility_id": "FAC1", "target_user_id": "STAFF1"},
+		}, nil},
+		{"登録済み", false, false, false, []map[string]any{
+			{"facility_id": "FAC1", "staff_id": "STAFF1", "msg": "同じメールの職員が登録済みで、何も書かなかった"},
+		}, []string{"action"}},
+		{"dry-run", true, true, true, []map[string]any{
+			{"facility_name": "新しい事業所", "manager_position_name": "マネージャー", "dry_run": true},
+		}, []string{"action", "facility_id", "staff_id", "target_user_id"}},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -50,31 +68,38 @@ func TestOnboardFacilityRecord(t *testing.T) {
 			}
 			var buf bytes.Buffer
 			do := func(_ context.Context, in staff.OnboardInput) (staff.OnboardResult, error) {
-				res := staff.OnboardResult{ManagerCreated: tt.created}
+				res := staff.OnboardResult{ManagerCreated: tt.managerCreated}
 				res.Setup.Facility = organization.Facility{ID: "FAC1", OrgID: in.Facility.OrgID, Name: in.Facility.Name}
-				res.Setup.FacilityCreated = tt.created
-				res.Setup.ManagerPosition.Name = "マネージャー"
+				res.Setup.FacilityCreated = tt.facilityCreated
+				res.Setup.Positions = []organization.Position{{ID: "POS1", Name: "マネージャー"}, {ID: "POS2", Name: "メンバー"}}
+				res.Setup.ManagerPosition = res.Setup.Positions[0]
 				res.Manager.ID, res.Manager.Username, res.Manager.Email = "STAFF1", in.Username, in.Email
 				return res, nil
 			}
 			if err := onboardFacility(context.Background(), do, a, slog.New(slog.NewJSONHandler(&buf, nil))); err != nil {
 				t.Fatal(err)
 			}
-			m := record(t, &buf)
-			want := map[string]any{"actor": "ops-01", "operation": "facility.onboard", "org_id": "org-new"}
-			maps.Copy(want, tt.want)
-			for k, v := range want {
-				if m[k] != v {
-					t.Errorf("%s = %v, want %v", k, m[k], v)
-				}
+			got := records(t, &buf)
+			if len(got) != len(tt.want) {
+				t.Fatalf("記録の行の数 = %d, want %d: %v", len(got), len(tt.want), got)
 			}
-			for _, k := range tt.absent {
-				if _, ok := m[k]; ok {
-					t.Errorf("%s を出した: %v", k, m)
-				}
+			requestID, _ := got[0]["request_id"].(string)
+			if requestID == "" {
+				t.Errorf("request_id が無い: %v", got[0])
 			}
-			if id, _ := m["correlation_id"].(string); id == "" {
-				t.Errorf("correlation_id が無い: %v", m)
+			for i, m := range got {
+				want := map[string]any{"actor_kind": "operator", "actor_operator": "ops-01", "request_id": requestID}
+				maps.Copy(want, tt.want[i])
+				for k, v := range want {
+					if m[k] != v {
+						t.Errorf("行 %d の %s = %v, want %v", i, k, m[k], v)
+					}
+				}
+				for _, k := range tt.absent {
+					if _, ok := m[k]; ok {
+						t.Errorf("行 %d に %s を出した: %v", i, k, m)
+					}
+				}
 			}
 			for _, secret := range []string{"Mao.Arai@example.com", "mao.arai@example.com", "新井 真央"} {
 				if strings.Contains(buf.String(), secret) {

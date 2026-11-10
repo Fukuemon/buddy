@@ -154,7 +154,7 @@ portless compose --profile ops run --rm --no-deps schedule-ops onboard-facility 
 - `--no-deps` を付け、起動した環境の後に流す。
   - 付けないと、compose が Hydra とブローカーのコンテナを作り直し、portless に登録したホスト名が古いポートを指して、ログインが 502 になる。
   - そのときは `portless compose up -d --wait` を流し直す。
-- `--dry-run` を外すと書く。出力の 1 行の JSON が登録の記録である。
+- `--dry-run` を外すと書く。出力の JSON の行が、書いた操作ごとの登録の記録である。
 - 足した後は、ブローカーのログインの画面で `mao.arai@example.com` を入れ、上流の IdP のフェイクのクレームの欄に同じメールを書くと、足したマネージャーとしてログインする。
 - 手順と引数の意味は、[基盤と運用の Adding a Facility](context/operations.md#adding-a-facility) にある。
 
