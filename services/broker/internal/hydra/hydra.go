@@ -6,6 +6,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -85,8 +86,20 @@ type Rejection struct {
 	ErrorDescription string `json:"error_description,omitempty"`
 }
 
-// AccessDenied は、職員にトークンを出さないときの reject である。理由はクライアントに伝えない。
+// AccessDenied は、登録されていないメールと有効でない職員（休職、退職、登録の途中）のログインの reject である。
+// 4 つの理由をクライアントに分けて伝えず、メールの登録の有無と職員の状態を明かさない。
 var AccessDenied = Rejection{Error: "access_denied", ErrorDescription: "ログインできませんでした"}
+
+// AccountMismatch は、上流の IdP で入ったアカウントが職員の登録と合わないときの reject である。
+// 上流のメールが確認済みでないか登録のメールと違うときと、結び付けた上流のアカウントと違うときに返す。
+// 独自の値で、Hydra はそのままクライアントの redirect_uri に渡す。
+var AccountMismatch = Rejection{Error: "account_mismatch", ErrorDescription: "登録と違うアカウントでログインしました"}
+
+// LoginInterrupted は、上流の IdP がログインを終えずに戻したときの reject である。独自の値で、Hydra はそのまま渡す。
+var LoginInterrupted = Rejection{Error: "login_interrupted", ErrorDescription: "ログインを終えられませんでした"}
+
+// ServerError は、ブローカーか上流の IdP の失敗で、ログインを続けられないときの reject である。
+var ServerError = Rejection{Error: "server_error", ErrorDescription: "ログインを続けられませんでした"}
 
 // TooManyAttempts は、ログインの試行の回数の上限を超えたときの reject である。
 // クライアントが「時間をおいてから試す」と伝えられるよう、AccessDenied と分けて OAuth 2.0 の temporarily_unavailable にする。
@@ -182,7 +195,7 @@ func (c *Client) do(ctx context.Context, method, path string, query url.Values, 
 	if resp.StatusCode/100 != 2 {
 		// 本文は Hydra のエラーの JSON で、秘密の値を含まない
 		msg, _ := io.ReadAll(io.LimitReader(resp.Body, 1024))
-		return fmt.Errorf("hydra %s: %d %s", path, resp.StatusCode, bytes.TrimSpace(msg))
+		return &StatusError{Path: path, Code: resp.StatusCode, Body: string(bytes.TrimSpace(msg))}
 	}
 	if out == nil {
 		return nil
@@ -191,4 +204,22 @@ func (c *Client) do(ctx context.Context, method, path string, query url.Values, 
 		return fmt.Errorf("hydra %s: %w", path, err)
 	}
 	return nil
+}
+
+// StatusError は、admin API が 2xx でないステータスを返したことを示す。
+type StatusError struct {
+	Path string
+	Code int
+	Body string
+}
+
+func (e *StatusError) Error() string {
+	return fmt.Sprintf("hydra %s: %d %s", e.Path, e.Code, e.Body)
+}
+
+// IsClientError は、err が admin API の 4xx かを返す。使い終えたか期限の切れた challenge では、Hydra は 4xx を返す。
+// 届かないときと 5xx のときは false を返し、呼ぶ側は Hydra の障害として扱う。
+func IsClientError(err error) bool {
+	se, ok := errors.AsType[*StatusError](err)
+	return ok && se.Code/100 == 4
 }
