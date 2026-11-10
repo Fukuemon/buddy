@@ -3,7 +3,13 @@ import type { ReactNode } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 
 import { AuthCard } from './AuthCard'
-import { loginFailedMessage, logoutFailedMessage, type AuthMessage } from './messages'
+import {
+  loginFailedMessage,
+  loginInterruptedMessage,
+  logoutFailedMessage,
+  tooManyAttemptsMessage,
+  type AuthMessage,
+} from './messages'
 
 /**
  * ID ブローカーが Go の html/template で埋める式。React は `{`、`}`、`.` をエスケープしないので、式はそのまま書き出される。
@@ -79,6 +85,8 @@ export const renderPages = (): Record<string, string> => {
   return {
     'login.html': render(<LoginPage />),
     'failure.html': render(<MessagePage message={loginFailedMessage} />),
+    'interrupted.html': render(<MessagePage message={loginInterruptedMessage} />),
+    'too-many-attempts.html': render(<MessagePage message={tooManyAttemptsMessage} />),
     'logout-failure.html': render(<MessagePage message={logoutFailedMessage} />),
   }
 }

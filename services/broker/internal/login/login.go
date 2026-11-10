@@ -148,9 +148,19 @@ func redirect(logger *slog.Logger, w http.ResponseWriter, r *http.Request, to st
 // failFunc は、fail と failLogout の型である。
 type failFunc func(logger *slog.Logger, w http.ResponseWriter, r *http.Request, code int, reason string, err error)
 
-// fail は、Hydra へ返せない失敗で、ログインの失敗の画面を出す。
+// fail は、Hydra へ返せない失敗で、ログインの失敗の画面を出す。画面の文は code で分ける。
+//   - 429: 試行の回数の上限を超えた。待つ長さを伝える（too-many-attempts）
+//   - 5xx: ブローカーか Hydra の障害。時間をおいて試すよう伝える（failure）
+//   - ほかの 4xx: ログインを始めた画面から続けられない。buddy を開き直すよう伝える（interrupted）
 func fail(logger *slog.Logger, w http.ResponseWriter, r *http.Request, code int, reason string, err error) {
-	failPage(logger, w, r, code, "failure", "ログインの失敗の画面を出す", reason, err)
+	page := "interrupted"
+	switch {
+	case code == http.StatusTooManyRequests:
+		page = "too-many-attempts"
+	case code >= http.StatusInternalServerError:
+		page = "failure"
+	}
+	failPage(logger, w, r, code, page, "ログインの失敗の画面を出す", reason, err)
 }
 
 // failLogout は、Hydra へ返せないログアウトの失敗で、ログアウトの失敗の画面を出す。
