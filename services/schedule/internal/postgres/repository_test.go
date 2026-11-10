@@ -13,6 +13,7 @@ import (
 	"github.com/jackc/pgx/v5"
 
 	"github.com/Fukuemon/buddy/services/schedule/internal/apperr"
+	"github.com/Fukuemon/buddy/services/schedule/internal/audit"
 	"github.com/Fukuemon/buddy/services/schedule/internal/civil"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/organization"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/patient"
@@ -1244,6 +1245,7 @@ func TestStaffConcurrentRemovalKeepsManager(t *testing.T) {
 		}
 	}
 	cleanup := func(t *testing.T) {
+		exec(t, `DELETE FROM permission_audits WHERE facility_id = $1`, facility)
 		exec(t, `DELETE FROM users WHERE facility_id = $1`, facility)
 		exec(t, `DELETE FROM positions WHERE facility_id = $1`, facility)
 		exec(t, `DELETE FROM teams WHERE facility_id = $1`, facility)
@@ -1268,8 +1270,10 @@ func TestStaffConcurrentRemovalKeepsManager(t *testing.T) {
 	t.Cleanup(func() { cleanup(t) })
 
 	allow := func(context.Context) error { return nil }
-	removeGrant := staff.NewRemoveGrant(NewStaffRepository(testDB), NewFacilityRepository(testDB), NewTransactor(testDB), allow)
-	changePosition := staff.NewChangePosition(NewStaffRepository(testDB), NewFacilityRepository(testDB), NewPositionRepository(testDB), NewTransactor(testDB), ulid.Generator{}, allow)
+	// 記録は、操作した職員を b にし、操作ごとに別の相関 ID で書く。
+	rec := audit.NewRecorder(NewPermissionAuditRepository(testDB), ulid.Generator{}, func(context.Context) (string, bool) { return b, true })
+	removeGrant := staff.NewRemoveGrant(NewStaffRepository(testDB), NewFacilityRepository(testDB), rec, NewTransactor(testDB), allow)
+	changePosition := staff.NewChangePosition(NewStaffRepository(testDB), NewFacilityRepository(testDB), NewPositionRepository(testDB), rec, NewTransactor(testDB), ulid.Generator{}, allow)
 	// race は、first と second を同時に始め、片方だけが成功して片方が ErrConflict になり、権限を持つ有効な職員が 1 人残ることを確認する。
 	race := func(t *testing.T, first, second func(ctx context.Context) error) {
 		t.Helper()
@@ -1280,7 +1284,7 @@ func TestStaffConcurrentRemovalKeepsManager(t *testing.T) {
 			for _, op := range []func(ctx context.Context) error{first, second} {
 				go func() {
 					<-start
-					errs <- op(bg)
+					errs <- op(audit.WithRequestID(bg, ulid.Generator{}.NewID()))
 				}()
 			}
 			close(start)

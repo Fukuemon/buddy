@@ -5,7 +5,7 @@
 | Name                                                               | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
 | ------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | [事業所と組織](viewpoint-organization.md)                          | 事業所と、その中の部署、チーム、役職、職員。事業所は予定の正本のモードを持つ                                                                                                                                                                                                                                                                                                                                                                                                               |
-| [職員と権限](viewpoint-policies.md)                                | 職員が持つ権限と、その対象。職員を登録するとき、役職のデフォルトの権限をコピーする                                                                                                                                                                                                                                                                                                                                                                                                         |
+| [職員と権限](viewpoint-policies.md)                                | 職員が持つ権限と、その対象。職員を登録するとき、役職のデフォルトの権限をコピーする。権限の変更は監査の記録に残す（ADR-0042）                                                                                                                                                                                                                                                                                                                                                               |
 | [利用者](viewpoint-patients.md)                                    | 利用者と、受けているサービスと、主に担当する職員                                                                                                                                                                                                                                                                                                                                                                                                                                           |
 | [予定と訪問](viewpoint-schedules.md)                               | 予定と、訪問のときの訪問の情報と区分、予定の取り消し、誤って入れた予定の削除の監査の記録                                                                                                                                                                                                                                                                                                                                                                                                   |
 | [繰り返しの予定](viewpoint-recurring.md)                           | 繰り返しの予定と規則、回にしない日。繰り返しの 1 回を置き換えた予定は schedules に入る                                                                                                                                                                                                                                                                                                                                                                                                     |
@@ -47,6 +47,7 @@
 | [public.calendar_cutover_skips](public.calendar_cutover_skips.md)               | 6       | 切り替えの取り込みで、確認が必要な予定に取り込まないを選んだ記録                                                                                               | BASE TABLE |
 | [public.calendar_event_records](public.calendar_event_records.md)               | 15      | google_primary の事業所で、予定の API が Google カレンダーに書いた予定の、訪問の情報と書き込みの保留の版（ADR-0029）。通常の予定も保留の版を持つために行を作る | BASE TABLE |
 | [public.schedule_deletions](public.schedule_deletions.md)                       | 8       | 誤って入れた予定を削除した監査の記録（ADR-0040）。画面に出さない。消した時点の内容（訪問の情報と利用者）は持たない                                             | BASE TABLE |
+| [public.permission_audits](public.permission_audits.md)                         | 12      | 権限の変更と運営者の登録の監査の記録（ADR-0042）。画面と API に出さず、運営者が DB で読む。消さず、書き換えない                                                | BASE TABLE |
 
 ## Stored procedures and functions
 
@@ -128,6 +129,10 @@ erDiagram
 "public.schedule_deletions" }o--|| "public.users" : "FOREIGN KEY (facility_id, deleted_by) REFERENCES users(facility_id, id)"
 "public.schedule_deletions" }o--|| "public.users" : "FOREIGN KEY (facility_id, staff_id) REFERENCES users(facility_id, id)"
 "public.schedule_deletions" }o--|| "public.recurring_schedules" : "FOREIGN KEY (facility_id, recurring_schedule_id) REFERENCES recurring_schedules(facility_id, id)"
+"public.permission_audits" }o--|| "public.facilities" : "FOREIGN KEY (facility_id) REFERENCES facilities(id)"
+"public.permission_audits" }o--|| "public.positions" : "FOREIGN KEY (facility_id, target_position_id) REFERENCES positions(facility_id, id)"
+"public.permission_audits" }o--|| "public.users" : "FOREIGN KEY (facility_id, actor_user_id) REFERENCES users(facility_id, id)"
+"public.permission_audits" }o--|| "public.users" : "FOREIGN KEY (facility_id, target_user_id) REFERENCES users(facility_id, id)"
 
 "public.facilities" {
   text id
@@ -521,6 +526,20 @@ erDiagram
   text staff_id FK
   text deleted_by FK
   timestamp_with_time_zone deleted_at
+}
+"public.permission_audits" {
+  text id
+  text facility_id FK
+  text action
+  text actor_kind
+  text actor_user_id FK
+  text actor_operator
+  text target_user_id FK
+  text target_position_id FK
+  jsonb before
+  jsonb after
+  text request_id
+  timestamp_with_time_zone occurred_at
 }
 ```
 

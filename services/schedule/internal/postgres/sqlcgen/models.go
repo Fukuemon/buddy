@@ -263,6 +263,32 @@ type Patient struct {
 	EndedAt *time.Time
 }
 
+// 権限の変更と運営者の登録の監査の記録（ADR-0042）。画面と API に出さず、運営者が DB で読む。消さず、書き換えない
+type PermissionAudit struct {
+	ID         string
+	FacilityID string
+	// 操作。facility.create、position.create、staff.create、staff.create_forced、grant.add、grant.remove、position.change、team.change、grant.migrate
+	Action string
+	// 操作した人の種類。staff か operator。マイグレーションは operator
+	ActorKind string
+	// 操作した職員。actor_kind が staff のときだけ持つ
+	ActorUserID *string
+	// 操作した運営者。運営用の CLI の引数 --operator で渡した運営者の ID か、マイグレーションの migration:<番号>。actor_kind が operator のときだけ持つ
+	ActorOperator *string
+	// 対象の職員。staff.*、grant.*、position.change、team.change で持つ
+	TargetUserID *string
+	// 対象の役職。position.create で持つ
+	TargetPositionID *string
+	// 変更の前の全量。職員は役職とチームの ID と権限の code と対象の ID の並び。登録と役職の作成と、始まりの行では持たない
+	Before []byte
+	// 変更の後の全量。職員は役職とチームの ID と権限の code と対象の ID の並び、役職の作成は名前とデフォルトの権限の code の並び
+	After []byte
+	// 相関 ID。API はリクエストごと、CLI は実行ごと、マイグレーションは 1 つのマイグレーションごとに振り、ログにも同じ値を書く
+	RequestID string
+	// 操作の時刻
+	OccurredAt time.Time
+}
+
 // 権限。マイグレーションで入れ、API では作らない
 type Policy struct {
 	ID string

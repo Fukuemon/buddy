@@ -10,6 +10,7 @@ import (
 	"github.com/Fukuemon/buddy/packages/go/oidc"
 
 	"github.com/Fukuemon/buddy/services/schedule/internal/access"
+	"github.com/Fukuemon/buddy/services/schedule/internal/audit"
 	"github.com/Fukuemon/buddy/services/schedule/internal/broker"
 	"github.com/Fukuemon/buddy/services/schedule/internal/config"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendar"
@@ -58,6 +59,7 @@ type repositories struct {
 	projections      *postgres.CalendarProjectionRepository
 	cutovers         *postgres.CalendarCutoverRepository
 	records          *postgres.CalendarEventRecordRepository
+	permissionAudits *postgres.PermissionAuditRepository
 }
 
 // newRepositories は、db の上に repositories を作る。db に接続せず、失敗しない。
@@ -86,6 +88,7 @@ func newRepositories(db *pgxpool.Pool) repositories {
 		projections:      postgres.NewCalendarProjectionRepository(db),
 		cutovers:         postgres.NewCalendarCutoverRepository(db),
 		records:          postgres.NewCalendarEventRecordRepository(db),
+		permissionAudits: postgres.NewPermissionAuditRepository(db),
 	}
 }
 
@@ -136,14 +139,15 @@ func newApps(r repositories, accounts *gcal.Accounts, cfg config.API, log *slog.
 		outbox = calendarexport.NewOutbox(r.facilities, r.exports, r.calendars, r.ids)
 	}
 	visitInfos := r.visitWriter()
+	self := func(ctx context.Context) (string, bool) {
+		p, ok := principal.From(ctx)
+		return p.Staff.ID, ok
+	}
+	rec := audit.NewRecorder(r.permissionAudits, r.ids, self)
 	return httpapi.Apps{
-		Organization: organizationApp(r.facilities, r.departments, r.teams, r.positions, r.policies, r.tx, r.ids, principal.RequireStaffManage),
+		Organization: organizationApp(r.facilities, r.departments, r.teams, r.positions, r.policies, rec, r.tx, r.ids, principal.RequireStaffManage),
 		Staff: staffApp(r.facilities, r.departments, r.teams, r.positions, r.policies, r.staff, r.facilities,
-			broker.New(broker.Config(cfg.Broker), nil), r.staffAssignments, r.calendars,
-			func(ctx context.Context) (string, bool) {
-				p, ok := principal.From(ctx)
-				return p.Staff.ID, ok
-			},
+			broker.New(broker.Config(cfg.Broker), nil), r.staffAssignments, r.calendars, self, rec,
 			r.tx, r.ids, principal.RequireStaffManage),
 		Patients:        patientApp(r.facilities, r.staffRefs, r.serviceCodes, r.patients, r.patientSchedules, r.facilities, r.tx, r.ids, principal.RequireStaffManage),
 		ServiceCodes:    httpapi.ServiceCodeApp{List: servicecode.NewList(r.serviceCodes).Do},
@@ -210,6 +214,7 @@ func organizationApp(
 	teams organization.TeamRepository,
 	positions organization.PositionRepository,
 	policies organization.PolicyRepository,
+	rec audit.Recorder,
 	tx tx.Transactor,
 	ids kernel.IDGenerator,
 	guard kernel.Guard,
@@ -226,7 +231,7 @@ func organizationApp(
 		UpdateTeam:       organization.NewUpdateTeam(teams, guard).Do,
 		GetPosition:      organization.NewGetPosition(positions).Do,
 		ListPositions:    organization.NewListPositions(facilities, positions).Do,
-		CreatePosition:   organization.NewCreatePosition(facilities, policies, positions, tx, ids, guard).Do,
+		CreatePosition:   organization.NewCreatePosition(facilities, policies, positions, rec, tx, ids, guard).Do,
 		GetPolicy:        organization.NewGetPolicy(policies).Do,
 		ListPolicies:     organization.NewListPolicies(policies).Do,
 	}
@@ -268,18 +273,19 @@ func staffApp(
 	assignments staff.AssignmentReader,
 	calendars staff.CalendarDetacher,
 	self func(ctx context.Context) (string, bool),
+	rec audit.Recorder,
 	tx tx.Transactor,
 	ids kernel.IDGenerator,
 	guard kernel.Guard,
 ) httpapi.StaffApp {
 	return httpapi.StaffApp{
-		Create:               staff.NewCreate(facilities, departments, teams, positions, identities, staffRepo, tx, ids, guard).Do,
+		Create:               staff.NewCreate(facilities, departments, teams, positions, identities, staffRepo, rec, tx, ids, guard).Do,
 		Get:                  staff.NewGet(staffRepo).Do,
 		List:                 staff.NewList(facilities, staffRepo).Do,
-		ChangePosition:       staff.NewChangePosition(staffRepo, locks, positions, tx, ids, guard).Do,
-		UpdateProfile:        staff.NewUpdateProfile(staffRepo, locks, departments, teams, assignments, nil, tx, guard).Do,
-		AddGrant:             staff.NewAddGrant(staffRepo, policies, teams, tx, ids, guard).Do,
-		RemoveGrant:          staff.NewRemoveGrant(staffRepo, locks, tx, guard).Do,
+		ChangePosition:       staff.NewChangePosition(staffRepo, locks, positions, rec, tx, ids, guard).Do,
+		UpdateProfile:        staff.NewUpdateProfile(staffRepo, locks, departments, teams, assignments, nil, rec, tx, guard).Do,
+		AddGrant:             staff.NewAddGrant(staffRepo, locks, policies, teams, rec, tx, ids, guard).Do,
+		RemoveGrant:          staff.NewRemoveGrant(staffRepo, locks, rec, tx, guard).Do,
 		Leave:                staff.NewLeave(self, staffRepo, locks, assignments, nil, identities, tx, guard).Do,
 		Reinstate:            staff.NewReinstate(staffRepo, locks, identities, tx, guard).Do,
 		Retire:               staff.NewRetire(self, staffRepo, locks, assignments, nil, identities, calendars, tx, guard).Do,

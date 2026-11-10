@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/Fukuemon/buddy/services/schedule/internal/apperr"
+	"github.com/Fukuemon/buddy/services/schedule/internal/audit"
 	"github.com/Fukuemon/buddy/services/schedule/internal/kernel"
 	"github.com/Fukuemon/buddy/services/schedule/internal/tx"
 )
@@ -13,18 +14,20 @@ type CreatePosition struct {
 	facilities FacilityRepository
 	policies   PolicyRepository
 	positions  PositionRepository
+	audit      audit.Recorder
 	tx         tx.Transactor
 	ids        kernel.IDGenerator
 	guard      kernel.Guard
 }
 
 // NewCreatePosition は CreatePosition を作る。
-func NewCreatePosition(facilities FacilityRepository, policies PolicyRepository, positions PositionRepository, tx tx.Transactor, ids kernel.IDGenerator, guard kernel.Guard) CreatePosition {
-	return CreatePosition{facilities: facilities, policies: policies, positions: positions, tx: tx, ids: ids, guard: guard}
+func NewCreatePosition(facilities FacilityRepository, policies PolicyRepository, positions PositionRepository, audit audit.Recorder, tx tx.Transactor, ids kernel.IDGenerator, guard kernel.Guard) CreatePosition {
+	return CreatePosition{facilities: facilities, policies: policies, positions: positions, audit: audit, tx: tx, ids: ids, guard: guard}
 }
 
 // Do は、事業所に役職を作り、保存した役職を返す。policyIDs に見つからない権限があると入力のエラーを、職員の管理の権限が無いときは apperr.ErrForbidden を、
 // 同じ事業所に同じ名前の役職があるときは apperr.ErrConflict を返す。
+// 役職を書くトランザクションで、役職の名前とデフォルトの権限を監査の記録に書き、書けなければ役職も作らない（ADR-0042）。
 func (o CreatePosition) Do(ctx context.Context, facilityID, name string, policyIDs []string) (Position, error) {
 	if err := o.guard(ctx); err != nil {
 		return Position{}, err
@@ -70,7 +73,17 @@ func (o CreatePosition) savePosition(ctx context.Context, p Position) (Position,
 		}
 		var err error
 		created, err = o.positions.Get(ctx, p.ID)
-		return err
+		if err != nil {
+			return err
+		}
+		codes := make([]string, 0, len(created.Policies))
+		for _, pol := range created.Policies {
+			codes = append(codes, string(pol.Code))
+		}
+		return o.audit.ByStaff(ctx, audit.Entry{
+			FacilityID: created.FacilityID, Action: audit.PositionCreate, TargetPositionID: created.ID,
+			After: audit.NewPositionState(created.Name, codes),
+		})
 	})
 	return created, err
 }
