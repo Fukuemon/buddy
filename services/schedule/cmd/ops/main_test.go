@@ -33,6 +33,7 @@ func TestParseOnboardArgsErrors(t *testing.T) {
 		{"実行者が無い", validArgs()[:len(validArgs())-2], "--operator"},
 		{"実行者がメール", append(validArgs()[:len(validArgs())-1], "ops@example.com"), "--operator"},
 		{"実行者が漢字の名前", append(validArgs()[:len(validArgs())-1], "新井真央"), "--operator"},
+		{"実行者がマイグレーションの形", append(validArgs()[:len(validArgs())-1], "migration:000024"), "--operator"},
 		{"空白で切れた名前の残り", append(validArgs(), "真央"), "1 個"},
 	}
 	for _, tt := range tests {

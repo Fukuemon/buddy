@@ -11,12 +11,12 @@ import (
 	"github.com/Fukuemon/buddy/services/schedule/internal/tx"
 )
 
-// CodeManagerExists は、有効なマネージャーがいる事業所に、明示の許可なしにマネージャーを足そうとしたことを表す 409 の code である。
+// CodeManagerExists は、既にある事業所に、明示の許可なしにマネージャーを足そうとしたことを表す 409 の code である。
 const CodeManagerExists = "manager_exists"
 
 // OnboardInput は、事業所と最初のマネージャーの登録の入力である。
-// AllowAdditionalManager は、職員の管理の権限を持つ有効な職員が既にいる事業所に、マネージャーを足すことを許す。
-// 全てのマネージャーが退職したときの復旧に使う。DryRun は、書き込まずに書く内容だけを返す。
+// AllowAdditionalManager は、既にある事業所に、マネージャーを足すことを許す。
+// 事業所のマネージャーが操作できなくなったときの復旧に使う。DryRun は、書き込まずに書く内容だけを返す。
 type OnboardInput struct {
 	Facility               organization.SetupFacilityInput
 	Username               string
@@ -57,8 +57,8 @@ var errDryRun = errors.New("dry run")
 //
 //   - 同じメールの職員が事業所に有効な職員としていれば、職員の管理の権限を持たなくても、何も書かずにその職員を返す（同じ引数での流し直し）。
 //   - 同じメールの職員が休職していれば、apperr.ErrConflict を返す。
-//   - 職員の管理の権限を持つ有効な職員がほかにいて、in.AllowAdditionalManager が false なら、code が CodeManagerExists の
-//     apperr.ErrConflict を返す。
+//   - この呼び出しで事業所を作らず、in.AllowAdditionalManager が false なら、有効なマネージャーの数によらず、code が
+//     CodeManagerExists の apperr.ErrConflict を返す。
 //   - in.DryRun なら、ブローカーを呼ばず、トランザクションを戻して、書くはずだったものを返す。
 func (o Onboard) Do(ctx context.Context, in OnboardInput) (OnboardResult, error) {
 	email := NormalizeEmail(in.Email)
@@ -85,12 +85,9 @@ func (o Onboard) Do(ctx context.Context, in OnboardInput) (OnboardResult, error)
 			}
 			return nil
 		}
-		managers, err := o.staff.ActiveManagers(ctx, fid)
-		if err != nil {
-			return err
-		}
-		if len(managers) > 0 && !in.AllowAdditionalManager {
-			return apperr.ConflictCode(CodeManagerExists, "事業所 %s には職員の管理の権限を持つ有効な職員がいます。足すときは明示のフラグを付けます", fid)
+		// 既にある事業所に事業所の外から管理者を作る操作を、全て明示の操作にする
+		if !setup.FacilityCreated && !in.AllowAdditionalManager {
+			return apperr.ConflictCode(CodeManagerExists, "事業所 %s は既にあります。マネージャーを足すときは明示のフラグを付けます", fid)
 		}
 		cin := CreateInput{
 			FacilityID:   fid,

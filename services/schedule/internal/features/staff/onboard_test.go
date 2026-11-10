@@ -15,7 +15,9 @@ import (
 
 // onboardFixture は、事業所 facilityID を SetupFacility が返したことにし、create の呼び出しを数える Onboard を作る。
 type onboardFixture struct {
-	store     *inmem.Store
+	store *inmem.Store
+	// existing は、SetupFacility が事業所を作らず、既にあった事業所を返したことにする。
+	existing  bool
 	creates   []staff.CreateInput
 	createErr error
 }
@@ -24,6 +26,7 @@ func (f *onboardFixture) onboard() staff.Onboard {
 	setup := func(context.Context, organization.SetupFacilityInput) (organization.FacilitySetup, error) {
 		return organization.FacilitySetup{
 			Facility:        organization.Facility{ID: facilityID},
+			FacilityCreated: !f.existing,
 			ManagerPosition: organization.Position{ID: "POS-M", Name: "マネージャー", Policies: []organization.Policy{{ID: "P-SM", Code: organization.StaffManage}}},
 			Department:      organization.Department{ID: "DEP", Name: "看護部"},
 			Team:            organization.Team{ID: "TEAM", Name: "A チーム"},
@@ -83,7 +86,7 @@ func TestOnboardExistingStaff(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			f := &onboardFixture{store: inmem.Seeded()}
+			f := &onboardFixture{store: inmem.Seeded(), existing: true}
 			putStaff(f.store, "EXIST", "mao.arai@example.com", tt.manages, tt.leave)
 			in := onboardIn()
 			in.DryRun = tt.dryRun
@@ -102,10 +105,9 @@ func TestOnboardExistingStaff(t *testing.T) {
 	}
 }
 
-// 職員の管理の権限を持つ有効な職員がほかにいれば、明示のフラグが無いときは拒み、あれば足す。
+// 既にある事業所には、有効なマネージャーがいなくても、明示のフラグが無いときは拒み、あれば足す。
 func TestOnboardAdditionalManagerFlag(t *testing.T) {
-	f := &onboardFixture{store: inmem.Seeded()}
-	putStaff(f.store, "OTHER", "kai.ito@example.com", true, nil)
+	f := &onboardFixture{store: inmem.Seeded(), existing: true}
 	_, err := f.onboard().Do(context.Background(), onboardIn())
 	if ce, ok := errors.AsType[*apperr.ConflictError](err); !ok || ce.Code != staff.CodeManagerExists {
 		t.Fatalf("err = %v, want %s", err, staff.CodeManagerExists)

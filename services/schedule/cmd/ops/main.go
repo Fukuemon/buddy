@@ -78,6 +78,7 @@ func run(args []string, getenv func(string) string, stdout, stderr io.Writer) in
 }
 
 // operatorIDPattern は、運営者の ID の形である。メールと名前を登録の記録に入れないよう、英数字と . _ - だけを受ける。
+// 監査の記録でマイグレーションを表す migration:<番号> も、: を受けないので拒む。
 var operatorIDPattern = regexp.MustCompile(`^[A-Za-z0-9._-]{1,64}$`)
 
 // errFlagParse は、flag が引数を読めず、エラーと使い方を stderr に書いた後に、parseOnboardArgs が返す。
@@ -101,7 +102,7 @@ func parseOnboardArgs(args []string, stderr io.Writer) (onboardArgs, error) {
 	fs.StringVar(&a.Username, "manager-name", "", "最初のマネージャーの名前")
 	fs.StringVar(&a.Email, "manager-email", "", "最初のマネージャーのメール。上流の IdP が確認したメールと同じにする")
 	fs.StringVar(&a.Operator, "operator", "", "流した運営者の ID。メールと名前を使わない")
-	fs.BoolVar(&a.AllowAdditionalManager, "allow-additional-manager", false, "職員の管理の権限を持つ有効な職員がいる事業所に、マネージャーを足す。全てのマネージャーが退職したときの復旧に使う")
+	fs.BoolVar(&a.AllowAdditionalManager, "allow-additional-manager", false, "既にある事業所に、マネージャーを足す。事業所のマネージャーが操作できなくなったときの復旧に使う")
 	fs.BoolVar(&a.DryRun, "dry-run", false, "DB とブローカーに書かずに、書く内容を出す")
 	if err := fs.Parse(args); err != nil {
 		if errors.Is(err, flag.ErrHelp) {
@@ -126,7 +127,7 @@ func parseOnboardArgs(args []string, stderr io.Writer) (onboardArgs, error) {
 		return onboardArgs{}, fmt.Errorf("引数 %s が必要です", strings.Join(missing, "、"))
 	}
 	if !operatorIDPattern.MatchString(a.Operator) {
-		return onboardArgs{}, errors.New("--operator には、英数字と . _ - の 64 文字までの運営者の ID を渡します。メールと名前を使いません")
+		return onboardArgs{}, errors.New("--operator には、英数字と . _ - の 64 文字までの運営者の ID を渡します。メール、名前、migration: で始まる値を使いません")
 	}
 	return a, nil
 }
