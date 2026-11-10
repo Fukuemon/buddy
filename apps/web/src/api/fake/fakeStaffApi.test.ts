@@ -62,9 +62,48 @@ describe('createFakeStaffApi', () => {
     await expect(
       api.staff.removePolicy(MOCK_FACILITY_ID, me.id, me.policies[0].user_policy_id),
     ).rejects.toHaveProperty('status', 409)
+  })
+
+  it('最後の有効な管理者は、変更の後に職員の管理の権限が残らない役職には変えられず、個別に足した権限が残る役職には変えられる', async () => {
+    const api = createFakeBuddyApi({ baseDate })
+    const moved = await api.staff.changePosition(
+      MOCK_FACILITY_ID,
+      FAKE_VIEWER.staffId,
+      'position-clerk',
+    )
+    expect(moved.policies.map((p) => p.code)).toContain('staff.manage')
+    await api.staff.changePosition(MOCK_FACILITY_ID, 'staff-2', 'position-manager')
+    const manage = moved.policies.find((p) => p.code === 'staff.manage')
+    if (manage === undefined) throw new Error('職員の管理の権限が無い')
+    await api.staff.removePolicy(MOCK_FACILITY_ID, FAKE_VIEWER.staffId, manage.user_policy_id)
     await expect(
-      api.staff.changePosition(MOCK_FACILITY_ID, me.id, 'position-1'),
+      api.staff.changePosition(MOCK_FACILITY_ID, 'staff-2', 'position-1'),
     ).rejects.toHaveProperty('status', 409)
+  })
+
+  it('役職を変えると、前の役職のデフォルトの権限だけを新しい役職のデフォルトに置き換え、個別に足した権限は対象ごと残す', async () => {
+    const api = createFakeBuddyApi({ baseDate })
+    await api.staff.addPolicy(MOCK_FACILITY_ID, 'staff-2', {
+      policy_id: 'policy-user-read',
+      target_user_ids: ['staff-3'],
+    })
+    await api.staff.addPolicy(MOCK_FACILITY_ID, 'staff-2', { policy_id: 'policy-all-read' })
+    const changed = await api.staff.changePosition(MOCK_FACILITY_ID, 'staff-2', 'position-manager')
+    expect(changed.position.id).toBe('position-manager')
+    expect(
+      changed.policies.map(({ code, target_user_ids }) => ({ code, target_user_ids })),
+    ).toEqual([
+      { code: 'schedule.user.read', target_user_ids: ['staff-3'] },
+      { code: 'schedule.all.read', target_user_ids: [] },
+      { code: 'schedule.self.edit', target_user_ids: [] },
+      { code: 'schedule.all.edit', target_user_ids: [] },
+      { code: 'staff.manage', target_user_ids: [] },
+      { code: 'receipt.check', target_user_ids: [] },
+    ])
+    const same = await api.staff.changePosition(MOCK_FACILITY_ID, 'staff-2', 'position-manager')
+    expect(same.policies.map((p) => p.user_policy_id)).toEqual(
+      changed.policies.map((p) => p.user_policy_id),
+    )
   })
 
   it('休職にして復職にすると有効に戻り、退職は今日以降の予定が残れば残るものを返す', async () => {
