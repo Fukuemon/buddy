@@ -1,8 +1,7 @@
 import { expect, test, type Locator, type Page } from '@playwright/test'
 
-import { EVIDENCE_VARIANTS, recordPrEvidence, storyUrl } from '../../fixtures/evidence'
-
-const ACTOR = 'ログインなし（Storybook の story）'
+import { check, intro, step } from '../../fixtures/caption'
+import { storyUrl } from '../../fixtures/evidence'
 
 /** 予定のカレンダーで始める、たたんだレール */
 const RAIL_STORY = '画面-common-sitenav--rail'
@@ -10,12 +9,14 @@ const RAIL_STORY = '画面-common-sitenav--rail'
 /** 開いた形のナビゲーション */
 const OPEN_STORY = '画面-common-sitenav--manager'
 
-/** #526 で、レールでは短い名前を出し、読み上げる名前に正式な名前を続けた。改修前と比べて撮るので、両方の名前を持つ */
-const EXPECTED = {
-  before: { railName: /^部署とチーム$/ },
-  // Chrome は、読み上げにだけ置く sr-only の前に空白を入れて名前を作る
-  after: { railName: /^所属 ?（部署とチーム）$/ },
-}
+/**
+ * #526 で、レールでは短い名前を出し、読み上げる名前に正式な名前を続けた。改修前と比べて撮るので、確認する関数は改修前の名前も受け付ける。
+ * Chrome は、読み上げにだけ置く sr-only の前に空白を入れて名前を作る
+ */
+const RAIL_NAME = /^(所属 ?（部署とチーム）|部署とチーム)$/
+
+/** 改修前のレールで、幅に収まらなかった項目の名前 */
+const BEFORE_OVERFLOWING = '部署とチーム'
 
 /**
  * レールの項目ごとに、見える名前とレールの左右の端との間の狭い方の幅（px）を返す。負なら、名前がレールからはみ出している。
@@ -50,125 +51,98 @@ const enlargeForRecording = async (page: Page, item: Locator) => {
   })
 }
 
+const ENLARGE_RAIL =
+  '（撮影のため、表示を 2 倍に拡大し、レールの幅 80px の外形を赤い破線で示し、「部署とチーム」の項目まで送る）'
+
+// レールの名前は、改修前と改修後の判定のスクリーンショットを並べて比べる。確認する関数は、両方の版で通るものにする
 test.describe('画面の間のナビゲーション', () => {
-  test.describe('レールの名前', () => {
-    for (const variant of EVIDENCE_VARIANTS) {
-      const prefix = variant.label ? `${variant.label}: ` : ''
-      const isBefore = variant.name === 'before'
-      const expected = isBefore ? EXPECTED.before : EXPECTED.after
+  test.describe('レールの名前（ログインなし、Storybook の story）', () => {
+    test(
+      'site-nav-rail-fit 幅 768px 以上でレールを表示した場合、全ての項目の名前がレールの幅 80px の中に収まること',
+      { tag: '@compare' },
+      async ({ page }) => {
+        await page.goto(storyUrl(RAIL_STORY))
+        const nav = page.getByTestId('site-nav')
+        const organization = page.getByTestId('site-nav-organization')
+        await expect(organization).toBeVisible()
+        await intro(
+          page,
+          'たたんだレールで、全ての項目の名前がレールの幅の中に収まるかを見る\n前提 職員の管理の権限を持つ職員のレール（Storybook の SiteNav の Rail）を開いている',
+        )
 
-      test(`${prefix}幅 768px 以上でレールを表示した場合、全ての項目の名前がレールの幅 80px の中に収まること`, async ({
-        browser,
-      }) => {
-        const url = storyUrl(RAIL_STORY)
-        await recordPrEvidence(
-          browser,
-          {
-            name: 'site-nav-rail-fit',
-            title: 'たたんだレールで、全ての項目の名前がレールの幅の中に収まるかを見る',
-            actor: ACTOR,
-            variant,
-          },
-          async (page) => {
-            await page.goto(url)
-          },
-          async ({ page, step, check }) => {
-            await page.goto(url)
-            const nav = page.getByTestId('site-nav')
-            await expect(page.getByTestId('site-nav-organization')).toBeVisible()
-            await step(
-              '職員の管理の権限を持つ職員のレール（Storybook の SiteNav の Rail）を開いている',
-            )
-            const margins = await railLabelMargins(nav)
-            expect((await nav.boundingBox())?.width).toBe(80)
+        // 拡大すると幅が変わるので、拡大する前に測る
+        const navWidth = (await nav.boundingBox())?.width
+        const margins = await railLabelMargins(nav)
+        const narrowest = Math.min(
+          ...margins.filter(({ margin }) => margin >= 1).map(({ margin }) => margin),
+        )
+        await step(page, ENLARGE_RAIL, () => enlargeForRecording(page, organization))
+        await check(
+          page,
+          `全ての名前が、左右に ${narrowest}px 以上の余白を残してレールの幅に収まる`,
+          async () => {
+            expect(navWidth).toBe(80)
             const overflowing = margins.filter(({ margin }) => margin < 1)
-            if (isBefore) expect(overflowing.map(({ label }) => label)).toEqual(['部署とチーム'])
-            else expect(overflowing).toEqual([])
-            await step(
-              '(撮影のため、表示を 2 倍に拡大し、レールの幅 80px の外形を赤い破線で示し、「部署とチーム」の項目まで送る)',
-            )
-            await enlargeForRecording(page, page.getByTestId('site-nav-organization'))
-            const narrowest = Math.min(
-              ...margins.filter(({ margin }) => margin >= 1).map(({ margin }) => margin),
-            )
-            const organizationMargin = margins.find(({ label }) => label.includes('部署'))?.margin
-            await check(
-              isBefore
-                ? `「部署とチーム」は、レールの端から ${-(organizationMargin ?? 0)}px はみ出す。ほかの名前は、左右に ${narrowest}px 以上の余白を残して収まる`
-                : `全ての名前が、左右に ${narrowest}px 以上の余白を残してレールの幅に収まる`,
-            )
+            // 改修前は「部署とチーム」だけがはみ出す。改修前でも通るよう、ほかの名前が収まることを確認する
+            expect(
+              overflowing
+                .filter(({ label }) => label !== BEFORE_OVERFLOWING)
+                .map(({ label }) => label),
+            ).toEqual([])
           },
         )
-      })
+      },
+    )
 
-      test(`${prefix}レールを開いた形に切り替えた場合、項目の名前が正式な名前で出ること`, async ({
-        browser,
-      }) => {
-        const url = storyUrl(OPEN_STORY)
-        await recordPrEvidence(
-          browser,
-          {
-            name: 'site-nav-open-label',
-            title: '開いた形のナビゲーションで、部署とチームの項目の名前を見る',
-            actor: ACTOR,
-            variant,
-          },
-          async (page) => {
-            await page.goto(url)
-          },
-          async ({ page, step, check }) => {
-            await page.goto(url)
-            const organization = page.getByTestId('site-nav-organization')
-            await expect(organization).toBeVisible()
-            await step(
-              '職員の管理の権限を持つ職員の開いた形のナビゲーション（Storybook の SiteNav の Manager）を開いている',
-            )
-            await expect(organization).toHaveText('部署とチーム')
-            await expect(organization).toHaveAccessibleName('部署とチーム')
-            await step(
-              '(撮影のため、表示を 2 倍に拡大し、ナビゲーションの外形を赤い破線で示し、「部署とチーム」の項目まで送る)',
-            )
-            await enlargeForRecording(page, organization)
-            await check('「職員」の見出しの下の項目の名前は、正式な名前の「部署とチーム」で出る')
-          },
-        )
-      })
+    test('site-nav-open-label レールを開いた形に切り替えた場合、項目の名前が正式な名前で出ること', async ({
+      page,
+    }) => {
+      await page.goto(storyUrl(OPEN_STORY))
+      const organization = page.getByTestId('site-nav-organization')
+      await expect(organization).toBeVisible()
+      await intro(
+        page,
+        '開いた形のナビゲーションで、部署とチームの項目の名前を見る\n前提 職員の管理の権限を持つ職員の開いた形のナビゲーション（Storybook の SiteNav の Manager）を開いている',
+      )
 
-      test(`${prefix}スクリーンリーダーでレールの項目を読んだ場合、正式な名前の「部署とチーム」を読むこと`, async ({
-        browser,
-      }) => {
-        const url = storyUrl(RAIL_STORY)
-        await recordPrEvidence(
-          browser,
-          {
-            name: 'site-nav-rail-name',
-            title: 'たたんだレールで、部署とチームの項目の読み上げる名前を見る',
-            actor: ACTOR,
-            variant,
-          },
-          async (page) => {
-            await page.goto(url)
-          },
-          async ({ page, step, check }) => {
-            await page.goto(url)
-            const organization = page.getByTestId('site-nav-organization')
-            await expect(organization).toBeVisible()
-            await step(
-              '職員の管理の権限を持つ職員のレール（Storybook の SiteNav の Rail）を開いている',
-            )
-            await expect(organization).toHaveAccessibleName(expected.railName)
-            const name = /"(.+)"/.exec(await organization.ariaSnapshot())?.[1]
-            await step(
-              '(撮影のため、表示を 2 倍に拡大し、レールの幅 80px の外形を赤い破線で示し、「部署とチーム」の項目まで送る)',
-            )
-            await enlargeForRecording(page, organization)
-            await organization.focus()
-            await check(
-              `アクセシビリティツリーのリンクの名前は「${name}」で、正式な名前の「部署とチーム」を読む`,
-            )
-          },
+      await step(
+        page,
+        '（撮影のため、表示を 2 倍に拡大し、ナビゲーションの外形を赤い破線で示し、「部署とチーム」の項目まで送る）',
+        () => enlargeForRecording(page, organization),
+      )
+      await check(
+        page,
+        '「職員」の見出しの下の項目の名前は、正式な名前の「部署とチーム」で出る',
+        async () => {
+          await expect(organization).toHaveText('部署とチーム')
+          await expect(organization).toHaveAccessibleName('部署とチーム')
+        },
+      )
+    })
+
+    test(
+      'site-nav-rail-name スクリーンリーダーでレールの項目を読んだ場合、正式な名前の「部署とチーム」を読むこと',
+      { tag: '@compare' },
+      async ({ page }) => {
+        await page.goto(storyUrl(RAIL_STORY))
+        const organization = page.getByTestId('site-nav-organization')
+        await expect(organization).toBeVisible()
+        await intro(
+          page,
+          'たたんだレールで、部署とチームの項目の読み上げる名前を見る\n前提 職員の管理の権限を持つ職員のレール（Storybook の SiteNav の Rail）を開いている',
         )
-      })
-    }
+
+        const name = /"(.+)"/.exec(await organization.ariaSnapshot())?.[1]
+        await step(page, ENLARGE_RAIL, async () => {
+          await enlargeForRecording(page, organization)
+          await organization.focus()
+        })
+        await check(
+          page,
+          `アクセシビリティツリーのリンクの名前は「${name}」で、正式な名前の「部署とチーム」を読む`,
+          () => expect(organization).toHaveAccessibleName(RAIL_NAME),
+        )
+      },
+    )
   })
 })

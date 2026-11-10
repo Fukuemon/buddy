@@ -1,10 +1,7 @@
 import { expect, test, type Page } from '@playwright/test'
 
-import { LOGIN_EMAIL, LOGIN_STAFF } from '../../fixtures/env'
-import { EVIDENCE_VARIANTS, recordPrEvidence } from '../../fixtures/evidence'
-import { signInAtBroker } from '../../screens/login'
-
-const MANAGER = `${LOGIN_STAFF.name}（マネージャー、職員の管理の権限あり）`
+import { check, intro, step } from '../../fixtures/caption'
+import { LOGIN_STAFF, LOGIN_STATE } from '../../fixtures/env'
 
 /** ヘッダーのナビゲーションの開閉のボタンと、ナビゲーションの要確認の項目の位置。照合待ちのバッジは要確認の項目の中に出る。 */
 const framePosition = async (page: Page) => {
@@ -18,78 +15,73 @@ const framePosition = async (page: Page) => {
 
 test.describe('画面の枠', () => {
   test.describe('画面をまたいだ枠の位置と出し分け', () => {
-    for (const variant of EVIDENCE_VARIANTS) {
-      const prefix = variant.label ? `${variant.label}: ` : ''
+    test.describe(`${LOGIN_STAFF.name}（マネージャー、職員の管理の権限あり）`, () => {
+      test.use({ storageState: LOGIN_STATE })
 
-      test(`${prefix}職員の管理の権限を持つ職員が予定、職員、利用者、組織、照合の画面を順に開いた場合、予定の画面に枠が出て、ほかの 4 つの画面でヘッダーとナビの要確認の項目が同じ位置に出ること`, async ({
-        browser,
+      test('site-frame-same-position 職員の管理の権限を持つ職員が予定、職員、利用者、組織、照合の画面を順に開いた場合、予定の画面に枠が出て、ほかの 4 つの画面でヘッダーとナビの要確認の項目が同じ位置に出ること', async ({
+        page,
       }) => {
-        await recordPrEvidence(
-          browser,
-          {
-            name: 'site-frame-same-position',
-            title:
-              '予定、職員、利用者、組織、照合の画面で、ヘッダーとナビと要確認の項目が同じ位置に出る',
-            actor: MANAGER,
-            variant,
-          },
-          async (page) => {
-            await page.goto('/schedule')
-            await signInAtBroker(page, LOGIN_EMAIL)
-          },
-          async ({ page, step, check }) => {
-            await step('予定の画面を開く')
-            await page.goto('/schedule')
+        await page.goto('/schedule')
+        await expect(page.getByTestId('site-nav')).toBeVisible()
+        await intro(
+          page,
+          '予定、職員、利用者、組織、照合の画面で、ヘッダーとナビと要確認の項目が同じ位置に出る',
+        )
+
+        await check(
+          page,
+          '予定の画面は、ナビゲーションをレールで始め、ヘッダーと要確認の項目を出す',
+          async () => {
             await expect(page.getByTestId('site-nav')).toBeVisible()
             await expect(page.getByTestId('site-nav-review')).toBeVisible()
-            await check('予定の画面は、ナビゲーションをレールで始め、ヘッダーと要確認の項目を出す')
+          },
+          { position: 'bottom' },
+        )
 
-            const screens = [
-              { url: '/staff', label: '職員' },
-              { url: '/patients', label: '利用者' },
-              { url: '/organization', label: '部署とチーム' },
-              { url: '/receipt', label: '照合' },
-            ]
-            let first: Awaited<ReturnType<typeof framePosition>> | undefined
-            for (const { url, label } of screens) {
-              await step(`${label}の画面を開く`)
-              await page.goto(url)
+        const screens = [
+          { url: '/staff', label: '職員' },
+          { url: '/patients', label: '利用者' },
+          { url: '/organization', label: '部署とチーム' },
+          { url: '/receipt', label: '照合' },
+        ]
+        let first: Awaited<ReturnType<typeof framePosition>> | undefined
+        for (const { url, label } of screens) {
+          await step(page, `${label}の画面を開く`, async () => {
+            await page.goto(url)
+          })
+          await check(
+            page,
+            `${label}の画面で、ヘッダーの開閉のボタンと要確認の項目が、職員の画面と同じ位置に出る`,
+            async () => {
               await expect(page.getByTestId('site-nav-review')).toBeVisible()
               const position = await framePosition(page)
               first ??= position
               expect(position).toEqual(first)
-              await check(
-                `${label}の画面で、ヘッダーの開閉のボタンと要確認の項目が、職員の画面と同じ位置に出る`,
-              )
-            }
-          },
-        )
+            },
+            { position: 'bottom' },
+          )
+        }
       })
+    })
 
-      test(`${prefix}ログインに失敗して /auth/error を開いた場合、画面の枠を出さないこと`, async ({
-        browser,
+    test.describe('ログインなし', () => {
+      test('site-frame-auth-error ログインに失敗して /auth/error を開いた場合、画面の枠を出さないこと', async ({
+        page,
       }) => {
-        await recordPrEvidence(
-          browser,
-          {
-            name: 'site-frame-auth-error',
-            title: 'ログインの失敗の画面（/auth/error）には、画面の枠を出さない',
-            actor: 'ログインなし',
-            variant,
-          },
-          async (page) => {
-            await page.goto('/auth/error')
-          },
-          async ({ page, step, check }) => {
-            await step('ログインの失敗の画面を開く')
-            await page.goto('/auth/error')
+        await page.goto('/auth/error')
+        await expect(page.getByTestId('auth-error-login')).toBeVisible()
+        await intro(page, 'ログインの失敗の画面（/auth/error）には、画面の枠を出さない')
+
+        await check(
+          page,
+          'ログインの失敗の案内だけを出し、ヘッダーとナビゲーションを出さない',
+          async () => {
             await expect(page.getByTestId('auth-error-login')).toBeVisible()
             await expect(page.getByTestId('site-nav')).toHaveCount(0)
             await expect(page.getByTestId('site-nav-toggle')).toHaveCount(0)
-            await check('ログインの失敗の案内だけを出し、ヘッダーとナビゲーションを出さない')
           },
         )
       })
-    }
+    })
   })
 })

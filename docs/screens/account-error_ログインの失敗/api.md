@@ -39,9 +39,9 @@ web のサーバーは、ログインの後の戻り（`/auth/callback`）で失
 | 障害でログインできない | 「時間をおいて、もう一度ログインしてください。」 | `reason` が `failed`。`error` が `server_error` かほかの値か、トークンと交換できないか、`getMe` が 403 以外の失敗を返す |
 
 - ブローカーが `error` を選ぶ条件は、[ID ブローカーの Design Doc のログインを拒む条件](../../design/services/broker.md#ログインを拒む条件) にある。
-  - `access_denied` は、登録していないメール、休職と退職の職員、登録の途中の職員、メールに当たる有効な職員が 2 人以上いるとき、ログインの途中に休職になった職員である。
+  - `access_denied` は、登録していないメール、休職と退職の職員、登録の途中の職員、メールに当たる有効な職員が 2 人以上いるとき、ログインの途中に休職か退職になった職員である。
   - 本人の確認の前の 5 つの要因は、同じ reject を返し、同じ状態コードで、同じ先へリダイレクトする。
-  - `account_mismatch` は、上流のメールが確認済みでないか登録のメールと違うとき、結び付けた上流のアカウントと違うとき、上流のアカウントが別の職員に結び付いているとき、ログインの途中に退職になった職員である。
+  - `account_mismatch` は、上流のメールが確認済みでないか登録のメールと違うとき、結び付けた上流のアカウントと違うとき、上流のアカウントが別の職員に結び付いているときである。
   - `login_interrupted` は、上流の IdP がログインを終えずに戻したときである。
 - `reason` は、`apps/web/src/server/auth.ts` の `finishLogin` が付ける。`error` から `reason` への読み替えは、同じファイルの `reasonOfBrokerError` にある。
 - `AuthErrorReason` の型は `apps/web/src/api/types.ts` に、理由ごとの文は `apps/web/src/components/page/AuthErrorMessage.tsx` にある。
