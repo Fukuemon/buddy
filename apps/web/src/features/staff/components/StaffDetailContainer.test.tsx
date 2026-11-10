@@ -10,6 +10,7 @@ import { ApiError, type BuddyApi } from '#/api/BuddyApi'
 import { createFakeBuddyApi } from '#/api/fake/fakeBuddyApi'
 import { FAKE_VIEWER } from '#/api/fake/fixtures'
 import { queryKeys } from '#/api/queryKeys'
+import { MOCK_FACILITY_ID } from '#/mocks/scheduleData'
 
 import * as stories from './StaffDetailContainer.stories'
 import { noAssignmentsApi, onLeaveApi } from './StaffDetailContainer.stories'
@@ -165,7 +166,7 @@ describe('StaffDetailContainer', () => {
     await expect.poll(viewerInvalidated).toBe(true)
   })
 
-  it('役職を変えると、個別に足した権限が消えることを示してから、権限を新しい役職のものに置き換える', async () => {
+  it('個別に足した権限が無い職員の役職を変えるときは、役職で付く権限が置き換わることだけを示し、権限を新しい役職のものに置き換える', async () => {
     render(<Default />)
     await userEvent.click(await screen.findByTestId('staff-detail-position-change'))
     const dialog = screen.getByTestId('staff-position-dialog')
@@ -176,12 +177,49 @@ describe('StaffDetailContainer', () => {
     await userEvent.click(
       await within(dialog).findByTestId('staff-position-option-position-manager'),
     )
+    expect(within(dialog).getByTestId('staff-position-note').textContent).toBe(
+      '役職を変えると、石川 二葉 の役職で付く権限は、新しい役職で付く権限に置き換わります。',
+    )
     expect(within(dialog).getByTestId('staff-position-submit')).toHaveClass('bg-danger')
     await userEvent.click(within(dialog).getByTestId('staff-position-submit'))
 
     expect(await screen.findByTestId('staff-detail-position-name')).toHaveTextContent(
       'マネージャー',
     )
+  })
+
+  it('個別に足した権限を持つ職員の役職を変えるときは、その権限が残ることを示し、変えた後も権限のタブの個別に足した権限に残す', async () => {
+    const api = createFakeBuddyApi()
+    await api.staff.addPolicy(MOCK_FACILITY_ID, 'staff-2', {
+      policy_id: 'policy-user-read',
+      target_user_ids: ['staff-3'],
+    })
+    const Story = storyWith(api)
+    render(<Story />)
+    await userEvent.click(await screen.findByTestId('staff-detail-position-change'))
+    const dialog = screen.getByTestId('staff-position-dialog')
+    await userEvent.click(
+      await within(dialog).findByTestId('staff-position-option-position-manager'),
+    )
+    expect(within(dialog).getByTestId('staff-position-note')).toHaveTextContent(
+      '役職を変えると、石川 二葉 の役職で付く権限は、新しい役職で付く権限に置き換わります。個別に足した権限（指定した職員の予定の閲覧）は残ります。',
+    )
+    await userEvent.click(within(dialog).getByTestId('staff-position-submit'))
+    expect(await screen.findByTestId('staff-detail-position-name')).toHaveTextContent(
+      'マネージャー',
+    )
+
+    await userEvent.click(screen.getByTestId('staff-detail-tab-policies'))
+    expect(await screen.findByTestId('staff-policy-group-position')).toHaveTextContent(
+      '役職「マネージャー」で付く権限',
+    )
+    const individual = screen.getByTestId('staff-policy-group-individual')
+    expect(within(individual).getByTestId('staff-policy-row-schedule.user.read')).toHaveTextContent(
+      '指定した職員の予定の閲覧',
+    )
+    expect(
+      within(individual).getByTestId('staff-policy-targets-schedule.user.read'),
+    ).toHaveTextContent('上田 三奈')
   })
 
   it('「…」の休職にするで残る予定を示し、休職にすると在籍を休職にする', async () => {
