@@ -208,15 +208,15 @@ sequenceDiagram
   Note over B,K: ブローカーのログインと結び付け（前の図）
   B->>W: GET /auth/callback
   break state が合わないか、値が無い
-    W-->>B: /auth/error?reason=failed へリダイレクト
+    W-->>B: /auth/error?reason=interrupted へリダイレクト
   end
-  break ブローカーが試行の上限で reject した（error が temporarily_unavailable）
-    W-->>B: /auth/error?reason=too_many_attempts へリダイレクト
+  break ブローカーが reject した（error がある）
+    W-->>B: error に合う reason の /auth/error へリダイレクト
   end
   W->>H: 認可コードをトークンと交換する
   H->>K: token_hook（職員が有効か）
   K-->>H: 204（有効でなければ 403）
-  break トークンと交換できない（ブローカーが reject したログインを含む）
+  break トークンと交換できない
     H-->>W: エラー
     W-->>B: /auth/error?reason=failed へリダイレクト
   end
@@ -234,26 +234,36 @@ sequenceDiagram
 ```
 
 web は、`/auth/login` で state、nonce、PKCE の code verifier、戻る先を Valkey に 10 分置き、署名した state だけを cookie に入れる。  
-`/auth/callback` は、state が合わないか、値が無いか、トークンと交換できなければ `reason=failed` へリダイレクトする。  
-ブローカーが reject したログインは、トークンと交換できずに `reason=failed` になる。  
-ブローカーが試行の上限で reject したログインでは、`/auth/callback` の `error` が `temporarily_unavailable` になる。  
-web は、トークンと交換せずに `reason=too_many_attempts` へリダイレクトする。  
+`/auth/callback` は、state が合わないか、値が無ければ `reason=interrupted` へリダイレクトする。  
+ブローカーが reject したログインでは、Hydra が reject の `error` を `/auth/callback` に渡す。  
+web は、トークンと交換せずに、`error` を下の表の `reason` に読み替えてリダイレクトする。  
+トークンと交換できないときと、予定の API が 403 以外の失敗を返したときは `reason=failed` へリダイレクトする。  
 図の token_hook は、[トークンの発行の確認](#トークンの発行の確認) にある。
 
 #### ログインを拒む条件
 
 ブローカーは、次のログインを Hydra へのログインの reject で拒み、web がログインの失敗の画面（account-error）を出す。  
-試行の上限だけは、ほかの理由と分けた文を出す。
+reject の `error` は、本人を上流の IdP で確認する前か後か、障害かで分ける。
 
-- 登録されていないメールと、有効でない職員（休職と退職の職員、登録の途中の職員）のログイン
-  - 上流の IdP へリダイレクトせずに拒む。web はログインの失敗の画面を出すので、事業所を示さず、ログインの失敗と同じ文言になる。
-  - 有効でない職員は、Hydra に保たせたログインのセッションでも拒む。
-  - メールに当たる有効な職員が 2 人以上いるとき（2 つの事業所に同じメールがあるとき）も、どちらの上流の IdP へリダイレクトするかを決められないので拒む。DB はメールを全ての事業所で一意にする（`000002_staff_email_pending`）ので、今の登録の手順ではこの状態は作れず、守りの分岐として残す。
-- メールの有無を確認する試行が、メールごとの上限を超えたログイン
-- 上流のメールが確認済みでない職員、登録のメールと上流のメールが違う職員、結び付けた上流のアカウントと違うアカウントで入った職員のログイン
-- ログインの途中に休職か退職になった職員のログイン
-- 上流の IdP の認可レスポンスに `iss` のパラメーター（RFC 9207）があり、事業所の上流の IdP の設定の issuer と違うログイン
+| 拒むログイン | reject の `error` | web の `reason` |
+| --- | --- | --- |
+| 登録されていないメール、有効でない職員（休職、退職、登録の途中）、メールに当たる有効な職員が 2 人以上いる | `access_denied` | `denied` |
+| ログインの途中に休職か退職になった職員、Hydra に保たせたログインのセッションの有効でない職員 | `access_denied` | `denied` |
+| 上流のメールが確認済みでないか登録のメールと違う、結び付けた上流のアカウントと違う、上流のアカウントが別の職員に結び付いている | `account_mismatch` | `account_mismatch` |
+| メールの有無を確認する試行が、メールごとの上限を超えた | `temporarily_unavailable` | `too_many_attempts` |
+| 上流の IdP がログインを終えずにコールバックへ戻した（`error` のあるコールバック） | `login_interrupted` | `interrupted` |
+| 上流の IdP の ID token を検証できない、職員を DB から引けない、上流のアカウントを結び付けられない | `server_error` | `failed` |
+
+- 登録されていないメールと有効でない職員は、上流の IdP へリダイレクトせずに拒む。
+  - メールを入れた時点では、入れた人が本人か分からない。理由を分けると、メールを入れるだけで、ある人がどの事業所の職員か、休職しているかを調べられる。
+  - 4 つの理由は、同じ `access_denied` の reject を返し、同じ 303 で Hydra へリダイレクトする。web は事業所の管理者に登録のメールアドレスを確認するよう伝える 1 つの文を出す。
+  - ログインの途中に休職か退職になった職員にも、本人の確認の後だが、同じ reject を返す。休職と退職の職員に状態を伝えない（2026-11-10 に決めた）。
+  - メールに当たる有効な職員が 2 人以上いるとき（2 つの事業所に同じメールがあるとき）は、どちらの上流の IdP へリダイレクトするかを決められないので拒む。DB はメールを全ての事業所で一意にする（`000002_staff_email_pending`）ので、今の登録の手順ではこの状態は作れず、守りの分岐として残す。
+- `account_mismatch` と `login_interrupted` は OAuth 2.0 の定めた値でない。Hydra は reject の `error` をそのまま redirect_uri に渡す（Hydra v26.2.0 で確認した）。
+- 上流の IdP の認可レスポンスに `iss` のパラメーター（RFC 9207）があり、事業所の上流の IdP の設定の issuer と違うログインは、ID token を検証できないログインとして拒む。
   - 認可コードを交換する前に比べる。
+- web は、知らない `error` を `failed` に読み替える。
+- 時間をおいて試すよう伝えるのは、`failed` だけである。
 
 #### メールの入力と試行の上限
 
@@ -272,7 +282,7 @@ web は、トークンと交換せずに `reason=too_many_attempts` へリダイ
    - 読めなければ、職員を引かずにログインの失敗の画面を出す。
 5. メールごとの試行の上限を確認する。
    - 超えていれば、ほかの理由と分けた reject（`hydra.TooManyAttempts`。OAuth 2.0 の `error` は `temporarily_unavailable`）で返す。
-   - Hydra は `error` を web の `/auth/callback` に渡し、web はログインの失敗の画面に、時間をおいてから試すよう伝える文を出す。
+   - Hydra は `error` を web の `/auth/callback` に渡し、web はログインの失敗の画面に、待つ長さを伝える文を出す。
 6. メールで職員を引く。
 
 次の 4 つの画面も、Hydra の admin API と DB を呼ぶ前に、`POST /login` と同じ送信元の IP アドレスごとの上限で数える。
@@ -295,8 +305,8 @@ web は、トークンと交換せずに `reason=too_many_attempts` へリダイ
 - メールごとには、続けて 10 回、以後は 30 秒に 1 回までにする。
   - 送信元の IP アドレスを替えて 1 つのメールを試す操作を、メールごとの上限で止める。その代わり、他人がそのメールを入れ続けると、その職員も上限まで待たされる。
 
-送信元の IP アドレスごとの上限を超えたときは、Hydra へ reject で返さないので、web の分けた文は出ない。  
-ブローカーのログインの失敗の画面が、時間をおいてからログインするよう伝える。
+送信元の IP アドレスごとの上限を超えたときは、Hydra へ reject で返さず、ブローカーのログインの失敗の画面を 429 で出す。  
+この画面も、web のログインの失敗の画面と同じく、待つ長さを伝える文を出す。
 
 送信元の IP アドレスは、デフォルトでは接続の相手のアドレスである。  
 リバースプロキシの後ろに置くと、全ての利用者がプロキシのアドレスで 1 つの上限を共有する。  
@@ -340,26 +350,35 @@ cookie は署名しない。
 
 #### ブローカーのログインの失敗の画面
 
-ブローカーの画面の文言は、web のログインの失敗の画面と同じにする。  
-ブローカーは、Hydra へ結果を返さずに終えるときに、自分のログインの失敗の画面（account-login の「ログインの失敗」の状態）を出す。  
+ブローカーは、Hydra へ結果を返さずに終えるときに、自分のログインの失敗の画面（account-login の 3 つの失敗の状態）を出す。  
 この画面には、もう一度ログインするリンクが無い。  
+画面の文は、ステータスで次の 3 つに分ける。
+
+| ステータス | 状態 | 伝えること |
+| --- | --- | --- |
+| 429 | 試行の回数の上限を超えた | 待つ長さ。web のログインの失敗の画面の `too_many_attempts` と同じ文 |
+| 5xx | 障害でログインできない | 時間をおいて試すこと。web のログインの失敗の画面の `failed` と同じ文 |
+| ほかの 4xx | ログインを続けられない | buddy を開き直すこと |
+
 画面を出すのは次のとき。
 
 - `login_challenge` か `consent_challenge` が無いか、Hydra の admin API で読めないとき（400）
   - 読めないときは、`GET /login`、`POST /login`、同意のどれでも 400 にする。
   - 使い終えたか期限の切れた challenge を、challenge が無いときと同じに扱うためである。
-- コールバックの値が、このブラウザで始めたログインのものと確認できないとき
+- コールバックの値が、このブラウザで始めたログインのものと確認できないとき（400）
+- `POST /login` の本文が大きすぎるとき（413）と、メールの形が正しくないとき（400）
+- ほかのサイトから `POST /login` が送られたとき（403）
+- 送信元の IP アドレスごとの試行の上限を超えたとき（429）
 - 上流の IdP の discovery の文書を読めず、リダイレクト先を作れないとき（502）
 - `POST /login` で、メールから職員を DB で引けないとき（500）
-  - コールバック、保ったセッション、同意で職員を引けないときは reject で返す。
+  - コールバック、保ったセッション、同意で職員を引けないときは、`server_error` の reject で返す。
 - `POST /login` で、ログインの途中の値を cookie に書けないとき（500）
-- ほかのサイトから `POST /login` が送られたとき（403）
 - Hydra へ accept か reject を返せないとき（502）
 
 ブローカーの画面のソースは `apps/broker`（`@buddy/broker`）にあり、web と同じ `packages/ui` のコンポーネントとトークンで書く。  
 画面の背景の中央に白いカード（`AuthCard`）を置き、上端にロゴを出す。  
 web のログインの失敗の画面も、同じカードを使う。  
-ログインの失敗の文言は `apps/broker` の定数（`loginFailedMessage`）にあり、ブローカーの画面と web の画面が同じ定数を読む。
+2 つの画面が同じ文を出す 2 つの状態の文言は、`apps/broker` の定数（`loginFailedMessage`、`tooManyAttemptsMessage`）にあり、ブローカーの画面と web の画面が同じ定数を読む。
 
 - ADR-0003: [ID ブローカーのログインの画面のソースを apps/broker に置き、@buddy/ui から生成したテンプレートを ID ブローカーが埋め込んで配信する](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0003-broker-login-pages-source.md)
 

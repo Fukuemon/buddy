@@ -61,7 +61,7 @@ status: stable
     - ADR-0023: [サービスの規則を packages/go/servicecode に置き、予定の API のサービスコードを visit から servicecode の機能に分ける](../docs/adr/0023-service-code-rules.md)
 - web は `@buddy/ui` に依存してよい。
   - `packages/ui` から `apps/` へは依存しない。
-- web は `@buddy/broker` の `AuthCard` と `loginFailedMessage` だけに依存してよい。`apps/broker` は `@buddy/ui` に依存し、web には依存しない。
+- web は `@buddy/broker` の `AuthCard` と、ログインの失敗の文言の定数（`loginFailedMessage`、`tooManyAttemptsMessage`）だけに依存してよい。`apps/broker` は `@buddy/ui` に依存し、web には依存しない。
 - web の `features/<機能>/` の間は import しない。
   - 2 つの機能が使うものは、`src/components/`、`src/api/`、`@buddy/ui` に置く。
     - API のデータを絞るだけの関数（`activePatients`）は `src/api/` に置く。

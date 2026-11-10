@@ -17,7 +17,7 @@
 
 なし。
 
-- ブローカーのテンプレートが埋める値は、`login_challenge` とスタイルだけで、要素を出し分ける値は無い。3 つの状態は別のテンプレート（`services/broker/internal/login/pages/`）である。
+- ブローカーのテンプレートが埋める値は、`login_challenge` とスタイルだけで、要素を出し分ける値は無い。5 つの状態は別のテンプレート（`services/broker/internal/login/pages/`）である。
 
 ## 要素の testid
 
@@ -33,16 +33,15 @@
 | 状態 | 出す文 | 要因 |
 | --- | --- | --- |
 | メールの入力 | なし | `GET /login` で、Hydra がログインのセッションを保っていない |
-| ログインの失敗 | 「時間をおいて、もう一度ログインしてください。」 | `GET /login`、`POST /login`、`GET /consent` で `login_challenge` か `consent_challenge` が無い（400）か、Hydra の admin API で読めない（`POST /login` は 400、ほかは 502） |
-| ログインの失敗 | 「時間をおいて、もう一度ログインしてください。」 | `GET /login`、`POST /login`、`GET /login/callback`、`GET /consent` で、送信元の IP アドレスごとの試行の回数の上限を超えた（429）。Hydra の admin API と DB を呼ばない |
-| ログインの失敗 | 「時間をおいて、もう一度ログインしてください。」 | `POST /login` の本文が 4 KB を超える（413）か、メールが職員のメールの形でない（400） |
-| ログインの失敗 | 「時間をおいて、もう一度ログインしてください。」 | `POST /login` がほかのサイトから送られた（403） |
-| ログインの失敗 | 「時間をおいて、もう一度ログインしてください。」 | `POST /login` で、職員を DB から引けない（500）か、ログインの途中の値を書けない（500）か、上流の IdP の discovery の文書を読めない（502） |
-| ログインの失敗 | 「時間をおいて、もう一度ログインしてください。」 | `GET /login/callback` で、ログインの途中の値の cookie が無いか、`state` が合わない（400） |
-| ログインの失敗 | 「時間をおいて、もう一度ログインしてください。」 | Hydra へログインか同意の accept か reject を返せない（502） |
+| ログインを続けられない | 「もう一度 buddy を開いて、ログインしてください。」 | `GET /login`、`POST /login`、`GET /consent` で `login_challenge` か `consent_challenge` が無いか、Hydra の admin API で読めない（400） |
+| ログインを続けられない | 「もう一度 buddy を開いて、ログインしてください。」 | `POST /login` の本文が 4 KB を超える（413）か、メールが職員のメールの形でない（400） |
+| ログインを続けられない | 「もう一度 buddy を開いて、ログインしてください。」 | `POST /login` がほかのサイトから送られた（403） |
+| ログインを続けられない | 「もう一度 buddy を開いて、ログインしてください。」 | `GET /login/callback` で、ログインの途中の値の cookie が無いか、`state` が合わない（400） |
+| 試行の回数の上限を超えた | 「続けて何度もログインを試したため、受け付けを止めています。30 秒ほどおいてから、もう一度ログインしてください。」 | `GET /login`、`POST /login`、`GET /login/callback`、`GET /consent` で、送信元の IP アドレスごとの試行の回数の上限を超えた（429）。Hydra の admin API と DB を呼ばない |
+| 障害でログインできない | 「時間をおいて、もう一度ログインしてください。」 | `POST /login` で、職員を DB から引けない（500）か、ログインの途中の値を書けない（500）か、上流の IdP の discovery の文書を読めない（502） |
+| 障害でログインできない | 「時間をおいて、もう一度ログインしてください。」 | Hydra へログインか同意の accept か reject を返せない（502） |
 | ログアウトの失敗 | 「時間をおいて、もう一度 buddy を開いてログアウトしてください。」 | `GET /logout` で `logout_challenge` が無い（400）か、Hydra へログアウトの accept を返せない（502）か、送信元の IP アドレスごとの試行の回数の上限を超えた（429） |
 
 - ブローカーがログインを reject で返したときは、この画面の状態でなく、web の [ログインの失敗](../account-error_ログインの失敗/index.md) を出す。
-  - reject で返す主な理由は、登録していないメール、休職と退職の職員、上流のメールの違いである。
-  - メールごとの試行の回数の上限を超えたときは、`temporarily_unavailable` の reject で返す。ログインの失敗の画面は、ほかの理由と分けた文を出す。
-- 失敗の画面を出す処理は、`services/broker/internal/login/login.go` の `fail` と `failLogout` にある。
+  - reject の `error` と、web のログインの失敗の画面の状態の対応は、[ログインの失敗の API との対応](../account-error_ログインの失敗/api.md#状態と失敗の要因) にある。
+- 失敗の画面を出す処理は、`services/broker/internal/login/login.go` の `fail` と `failLogout` にある。`fail` は、ステータスで 3 つの状態のテンプレートを選ぶ。
