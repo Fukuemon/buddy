@@ -34,7 +34,7 @@ func TestStaffAudit(t *testing.T) {
 		s.Staff[staffID] = d
 		c := s.Staff[companionID]
 		c.PositionID = managerPosID
-		c.Policies = []staff.PolicyGrant{{UserPolicyID: "UP-C", PolicyCode: organization.StaffManage}}
+		c.Policies = []staff.PolicyGrant{{UserPolicyID: "UP-C", PolicyID: "MANAGE", PolicyCode: organization.StaffManage}}
 		s.Staff[companionID] = c
 		return s
 	}

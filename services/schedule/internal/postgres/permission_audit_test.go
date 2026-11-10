@@ -203,20 +203,48 @@ func TestPermissionAudit(t *testing.T) {
 		requireStates(t, one(t, "REQUEST-GRANT-REMOVE", "grant.remove"), before, get(t, seedHayashi))
 	})
 
-	t.Run("役職を変えると、変更の前後の権限の全量が残る", func(t *testing.T) {
+	t.Run("役職を変えると、職員ごとに足した権限を含む変更の前後の権限の全量が残る", func(t *testing.T) {
+		// 林はチーム A のメンバーで、職員ごとに森の予定の閲覧と、チーム B を対象にするチームの予定の編集を足す。
+		// チームの予定の編集はリーダーのデフォルトにもあるので、役職を変えても行と対象が残り、デフォルトからコピーしない
+		prep := audit.WithRequestID(bg, "REQUEST-POSITION-CHANGE-PREP")
+		if _, err := addGrant(rec).Do(prep, seedHayashi, staff.GrantInput{PolicyID: seedUserRead, TargetUserIDs: []string{seedMori}}); err != nil {
+			t.Fatal(err)
+		}
+		if _, err := addGrant(rec).Do(prep, seedHayashi, staff.GrantInput{PolicyID: seedTeamEdit, TargetTeamIDs: []string{seedTeamB}}); err != nil {
+			t.Fatal(err)
+		}
 		before := get(t, seedHayashi)
+		var teamEdit string
+		for _, g := range before.Policies {
+			if g.PolicyID == seedTeamEdit {
+				teamEdit = g.UserPolicyID
+			}
+		}
 		ctx := audit.WithRequestID(bg, "REQUEST-POSITION-CHANGE")
 		if _, err := staff.NewChangePosition(staffRepo, facilities, NewPositionRepository(pool), rec, txr, ids, allow).Do(ctx, seedHayashi, seedLeader); err != nil {
 			t.Fatal(err)
 		}
 		after := get(t, seedHayashi)
-		requireStates(t, one(t, "REQUEST-POSITION-CHANGE", "position.change"), before, after)
+		r := one(t, "REQUEST-POSITION-CHANGE", "position.change")
+		requireStates(t, r, before, after)
 		if after.PositionID != seedLeader {
 			t.Errorf("役職 = %s, want リーダー", after.PositionID)
 		}
+		if !strings.Contains(string(r.After), `"target_user_ids": ["`+seedMori+`"]`) {
+			t.Errorf("after = %s, want 職員ごとに足した森の予定の閲覧が残る", r.After)
+		}
+		var kept []staff.PolicyGrant
+		for _, g := range after.Policies {
+			if g.PolicyID == seedTeamEdit {
+				kept = append(kept, g)
+			}
+		}
+		if len(kept) != 1 || kept[0].UserPolicyID != teamEdit || len(kept[0].TargetTeamIDs) != 1 || kept[0].TargetTeamIDs[0] != seedTeamB {
+			t.Errorf("チームの予定の編集 = %+v, want 職員ごとに足した行とチーム B の対象が残る", kept)
+		}
 	})
 
-	t.Run("今と同じ役職に変えて権限が変わらなければ、記録が残らない", func(t *testing.T) {
+	t.Run("今と同じ役職に変えると、記録が残らず権限の行も変わらない", func(t *testing.T) {
 		// 青木の権限は、管理者の役職のデフォルトと同じである
 		before := get(t, seedAoki)
 		ctx := audit.WithRequestID(bg, "REQUEST-SAME-POSITION")
@@ -225,6 +253,14 @@ func TestPermissionAudit(t *testing.T) {
 		}
 		if rows := auditRows(t, pool, "REQUEST-SAME-POSITION"); len(rows) != 0 {
 			t.Errorf("記録 = %+v, want 残らない", rows)
+		}
+		after := get(t, seedAoki)
+		same := len(after.Policies) == len(before.Policies)
+		for i := 0; same && i < len(after.Policies); i++ {
+			same = after.Policies[i].UserPolicyID == before.Policies[i].UserPolicyID
+		}
+		if !same || !toStaffState(after).Equal(toStaffState(before)) {
+			t.Errorf("権限 = %+v, want 行も対象も変わらない %+v", after.Policies, before.Policies)
 		}
 	})
 
@@ -279,7 +315,7 @@ func TestPermissionAudit(t *testing.T) {
 	})
 
 	t.Run("最後の有効な管理者から職員の管理の権限を外す 409 では、記録が残らず権限も変わらない", func(t *testing.T) {
-		// 同じ役職への変更が権限をコピーし直すことがあるので、職員の管理の権限の ID は読み直す
+		// 前のテストが権限を変えていても当たるよう、職員の管理の権限の ID は読み直す
 		var manage string
 		for _, g := range get(t, seedAoki).Policies {
 			if g.PolicyCode == organization.StaffManage {
