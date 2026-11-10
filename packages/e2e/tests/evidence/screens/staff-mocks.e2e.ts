@@ -154,7 +154,7 @@ test.describe('職員の管理の画面仕様書のモック', () => {
       )
     })
 
-    test('staff-new-dialog 職員の登録のモックを開いた場合、入力のダイアログの形で出て、Escape で一覧へ戻ること', async ({
+    test('staff-new-dialog 職員の登録のモックを開いた場合、入力のダイアログの形で出て、Escape で説明を閉じてから一覧へ戻ること', async ({
       page,
     }) => {
       await openMock(page, `${NEW}/01-initial.html`, 'staff-new-dialog')
@@ -168,19 +168,24 @@ test.describe('職員の管理の画面仕様書のモック', () => {
         '入力のダイアログに、?、キャンセル、登録が出て、右上に × が無い',
         async () => {
           await expect(page.getByTestId('staff-new-dialog')).toBeVisible()
+          await expect(page.getByTestId('staff-new-help')).toBeVisible()
           await expect(page.getByTestId('staff-new-cancel')).toHaveText('キャンセル')
+          await expect(page.getByTestId('staff-new-submit')).toHaveText('登録')
         },
       )
 
       await step(page, '? を押す', () => page.getByTestId('staff-new-help').click())
       await check(page, 'タイトルの下に、いつから使えるかの説明が出る', () =>
-        expect(page.getByTestId('staff-new-help-text')).toBeVisible(),
+        expect(page.getByTestId('staff-new-help-text')).toHaveText(
+          '登録した職員は、このメールアドレスで最初にログインしたときから使えます。',
+        ),
       )
 
       await step(page, 'Escape キーを押す', () => page.keyboard.press('Escape'))
       await check(page, '先に開いた説明が閉じ、ダイアログは開いたまま残る', async () => {
         await expect(page.getByTestId('staff-new-help-text')).toBeHidden()
         await expect(page.getByTestId('staff-new-dialog')).toBeVisible()
+        await expect(page).toHaveURL(/staff-new_.+\/01-initial\.html/)
       })
 
       await step(page, 'もう一度 Escape キーを押す', () => page.keyboard.press('Escape'))
@@ -295,7 +300,7 @@ test.describe('職員の管理の画面仕様書のモック', () => {
       await openMock(page, `${DETAIL}/01-detail.html`, 'staff-detail-position-change')
       await intro(
         page,
-        '役職を変えるダイアログに、個別に足した権限が残る注意と赤の「役職を変える」が出る\n前提 有効な職員の詳細のモック（01-detail.html）を開いている',
+        '役職を変えるダイアログに、個別に足した権限が残る注意と赤の「役職を変える」が出て、今の役職のままでは押せず、別の役職を選ぶと押せる\n前提 有効な職員の詳細のモック（01-detail.html）を開いている',
       )
 
       await step(page, '「役職を変える」を押す', () =>

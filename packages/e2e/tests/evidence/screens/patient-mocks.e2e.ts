@@ -405,6 +405,7 @@ test.describe('利用者の管理の画面仕様書のモック', () => {
         '利用の再開のダイアログ（11-resume-unselected.html）に、今の担当が退職している注意と、担当の職員の欄が出て、選ぶまで「利用を再開する」を押せない',
         async () => {
           await expect(page).toHaveURL(/11-resume-unselected\.html/)
+          await expect(page.getByTestId('patient-resume-staff')).toHaveText('選んでください')
           await expect(page.getByTestId('patient-resume-staff-note')).toHaveText(
             '今の担当の 西村 学 は退職しています。担当の職員を選んでください。',
           )
@@ -415,8 +416,10 @@ test.describe('利用者の管理の画面仕様書のモック', () => {
         },
       )
 
-      await step(page, '担当の職員の欄で「林 さくら」を選ぶ', () =>
-        page.getByTestId('patient-resume-staff').click(),
+      await step(
+        page,
+        '担当の職員の欄を押す（モックでは、押すと「林 さくら」を選んだ形になる）',
+        () => page.getByTestId('patient-resume-staff').click(),
       )
       await check(
         page,

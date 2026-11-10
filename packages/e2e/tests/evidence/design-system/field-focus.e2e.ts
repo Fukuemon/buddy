@@ -11,8 +11,8 @@ const STAFF_LIST_URL = storyUrl('画面-staff-stafflistcontainer--default')
 
 const FORM_FIELD_STORY =
   '前提 FormField の補足の文と誤りの文がある欄（Storybook の FormField の WithHintAndError）を開いている'
-const SHIFT_STORY = '(撮影のため、字幕に隠れないように下へずらし、2 倍に拡大する)'
-const SHIFT_STORY_ONLY = '(撮影のため、字幕に隠れないように下へずらす)'
+const SHIFT_STORY = '（撮影のため、字幕に隠れないように下へずらし、2 倍に拡大する）'
+const SHIFT_STORY_ONLY = '（撮影のため、字幕に隠れないように下へずらす）'
 
 /** 欄の 1 つ前に戻り、Tab キーで欄に移る。focus() だけでは select と file の欄が :focus-visible にならない。 */
 const focusByTab = async (page: Page, field: Locator) => {

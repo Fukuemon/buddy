@@ -9,7 +9,7 @@ const PATIENT_LIST_URL = storyUrl('画面-patient-patientlistcontainer--default'
 const LONG_OPTION_URL = storyUrl('コンポーネント-base-select--long-option')
 const FORM_FIELD_WITH_HINT_URL = storyUrl('コンポーネント-base-formfield--with-hint')
 
-const SHIFT_STORY = '(撮影のため、字幕に隠れないように下へずらし、2 倍に拡大する)'
+const SHIFT_STORY = '（撮影のため、字幕に隠れないように下へずらし、2 倍に拡大する）'
 
 /** 字幕の帯に隠れないように story の中身を下へずらし、zoom の倍率で拡大する。撮影のための操作なので、前に字幕で断る。 */
 const shiftStory = async (page: Page, zoom = 1) => {
