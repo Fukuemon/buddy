@@ -151,7 +151,7 @@ verified_commit: c0514f20
 | 職員の登録 | `staff.Create` | `staff.create` | なし |
 | 権限を足す | `staff.AddGrant` | `grant.add` | なし |
 | 権限を外す | `staff.RemoveGrant` | `grant.remove` | なし |
-| 役職を変える | `staff.ChangePosition` | `position.change` | 役職、チーム、権限と対象が、変更の前と同じとき |
+| 役職を変える | `staff.ChangePosition` | `position.change` | 今と同じ役職に変えたとき |
 | チームを変える | `staff.UpdateProfile` | `team.change` | 権限と対象が、変更の前と同じとき。チームを変えないときを含む |
 | 役職を作る | `organization.CreatePosition` | `position.create` | なし |
 
@@ -160,8 +160,7 @@ verified_commit: c0514f20
 - 変更の後の全量は、変更を書いた後に職員を読み直して作る。
   - 変更の前の全量は、事業所をロックした後に読んだ職員から作る。同じ職員に同時に権限を足しても、後の記録の変更の前は先の記録の変更の後と一致する。
   - 役職の変更が職員ごとに足した権限を残すか（ADR-0041）によらず、記録は DB に残った権限と一致する。
-- 役職の変更は、変更の前後の全量を比べ、同じなら書かない。
-  - ADR-0041 のとおり、今と同じ役職に変えた操作は権限を変えないので、記録も残らない。
+- ADR-0041 のとおり、今と同じ役職に変えた操作は権限を変えないので、記録も残らない。
 - 運営者の操作（`facility.create`、`staff.create_forced`、運営者の `position.create` と `staff.create`）は、運営用の CLI が書く（#986）。テーブルは、`actor_kind` が `operator` の行を受ける。
 
 `before` と `after` は、`internal/audit` の型を JSON にして持つ。  
