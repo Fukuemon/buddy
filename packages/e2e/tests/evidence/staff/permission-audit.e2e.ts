@@ -18,6 +18,7 @@ import {
   fillApiBody,
   fillApiToken,
   fillApiVariable,
+  scrollApiResponseTo,
 } from '../../widgets/apiClient/actions/apiClient'
 
 const ACTOR = `${LOGIN_STAFF.name}（マネージャー、職員の管理の権限あり）`
@@ -287,6 +288,7 @@ test.describe('職員の詳細', () => {
             await fillApiBody(page, { position_id: LEADER_POSITION.id })
             await apiClient(page).send.click()
             await expect(apiClient(page).dialog).toContainText('200 OK')
+            await scrollApiResponseTo(page, '"name": "リーダー"')
             await expect(apiClient(page).dialog).toContainText('"name": "リーダー"')
             await check('200 が返り、役職は前と同じ「リーダー」のままである')
           },
