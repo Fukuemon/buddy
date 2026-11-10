@@ -1,7 +1,7 @@
 ---
 type: feature-design
 title: 職員の管理
-description: 予定の API での職員の登録、休職、復職、退職の手順と、休職と退職の前の残る一覧、職員の管理の画面の読み込みと権限の保存、職員の管理で返す 409 のエラー
+description: 予定の API での職員の登録、休職、復職、退職の手順と、運営用の CLI の事業所と最初のマネージャーの登録の手順と、休職と退職の前の残る一覧、職員の管理の画面の読み込みと権限の保存、職員の管理で返す 409 のエラー
 status: stable
 governs: services/schedule/internal/features/staff
 verified_commit: 4e53ca5
@@ -21,6 +21,7 @@ verified_commit: 4e53ca5
 持つもの
 
 - 職員の登録、休職、復職、退職の手順
+- 運営用の CLI の、事業所と最初のマネージャーの登録の手順
 - 休職と退職を確定する前の残る一覧
 - 職員の管理の画面が職員と選択肢を読む時点と、権限の保存の送り方
 
@@ -55,6 +56,21 @@ verified_commit: 4e53ca5
   - 自分と、事業所で職員の管理の権限を持つ最後の有効な職員は、409 で拒む。
 - 休職、退職、復職の呼び出しの順と、2 か所の書き込みの片方だけが残ったときの扱いは、[ID ブローカーの Design Doc の職員の登録、休職、復職、退職](https://github.com/Fukuemon/buddy/blob/develop/services/broker/DesignDoc.md#職員の登録休職復職退職) の図と文にある。
 - ADR-0004: [職員の停止を、戻せる休職と、戻せない退職に分ける](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0004-staff-leave-and-retirement.md)
+
+### 事業所と最初のマネージャーの登録
+
+運営用の CLI（`cmd/ops` の `onboard-facility`）は、`staff` の操作 `Onboard` で、事業所、標準の 4 つの役職、最初のマネージャーを登録する。  
+`Onboard` は、1 つのトランザクションの中で、`organization` の操作 `SetupFacility` を呼んでから、web からの登録と同じ `Create` でマネージャーの役職の職員を登録する。  
+`Create` は、ブローカーの職員の有効化までをトランザクションの中で行うので、ブローカーへの登録か有効化が失敗すると、事業所を含む全ての書き込みが戻る。
+
+- `SetupFacility` は、組織の ID の事業所が無ければ、事業所と、標準の 4 つの役職（`organization.StandardPositions`）をデフォルトの権限とともに作る。
+  - 事業所があれば、事業所と役職を作らずに使い、職員の管理の権限をデフォルトに持つ役職をマネージャーの役職にする。名前が違えば 409 を返す。
+  - 部署とチームは、同じ名前があれば使い、無ければ作る。
+- `Onboard` は、事業所の行をロックしてから、同じメールの職員と、職員の管理の権限を持つ有効な職員を読む。
+  - 同じメールの職員が職員の管理の権限を持つ有効な職員なら、何も書かずにその職員を返す。ほかの状態なら 409 を返す。
+  - 職員の管理の権限を持つ有効な職員がほかにいれば、明示のフラグが無いときに `manager_exists` の 409 を返す。
+- 書き込まずに内容を表示するモードでは、`Create` を呼ばずに書く職員を組み立て、トランザクションを戻す。ブローカーを呼ばない。
+- ADR-0041: [事業所と最初のマネージャーを予定の API の運営用の CLI で登録し、ブローカーは運営用のクライアントに職員の登録だけを許す](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0041-facility-onboarding-cli.md)
 
 ### 職員の管理の画面の読み込みと保存
 

@@ -61,6 +61,12 @@ verified_commit: 4e53ca5
     - 常駐も 1 回の形も、取れるものが無くなるまで呼ぶ。常駐は、その後に間隔を待つ。
     - `cmd/api` と同じイメージに入れ、HTTP のポートを持たない。HTTP の層と OIDC の検証を import しない。
     - ADR-0032: [Google カレンダーの書き出しと同期を、予定の API と同じイメージの Worker のコマンドで役割ごとに動かし、繰り返しを Worker のコマンドに集める](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0032-calendar-worker.md)
+  - `cmd/ops` は、運営用の CLI で、`onboard.go` で事業所と最初のマネージャーの登録（`staff.Onboard`）を組み立てる。
+    - `cmd/api` と同じイメージに入れ、1 回のジョブとして流す。HTTP のポートを持たない。
+    - 職員の登録は、`cmd/api` と同じ `staff.Create` を組み立て、権限の確認は常に許す。運営者は、ジョブを流せる権限と運営用のクライアントの secret を持つ。
+    - ブローカーは、運営用のクライアント（`schedule-ops`）で呼ぶ。
+    - 手順は [職員の管理の Design Doc の事業所と最初のマネージャーの登録](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/internal/features/staff/DesignDoc.md#事業所と最初のマネージャーの登録) にある。
+    - ADR-0041: [事業所と最初のマネージャーを予定の API の運営用の CLI で登録し、ブローカーは運営用のクライアントに職員の登録だけを許す](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0041-facility-onboarding-cli.md)
 
 次の図は、2 つのコマンドが、それぞれの組み立てのファイルで機能のパッケージとアダプタを使う構成を示す。  
 矢印は、呼ぶ向きか、組み立てる向きである。  

@@ -56,9 +56,13 @@ flowchart TB
   schedule -->|JWKS で検証、client credentials でトークンを取る| hydra
   receipt -->|JWKS で検証| hydra
   schedule -->|職員の登録、休職、復職、退職| broker
+  ops["予定の API の運営用の CLI"]
+  ops -->|client credentials でトークンを取る| hydra
+  ops -->|職員の登録、有効化、削除| broker
 ```
 
-- ブローカーの内部の API を呼ぶのは予定の API だけである。
+- ブローカーの内部の API を呼ぶのは、予定の API と、予定の API の運営用の CLI だけである。
+  - 運営用の CLI は、事業所と最初のマネージャーの登録に、職員の登録、有効化、登録の途中の職員の削除だけを呼ぶ。
   - 照合の API は、ブローカーを呼ばない。
 - ブローカーの DB は、ブローカーの職員と上流のアカウントを持つ。
   - Hydra の DB とは分ける。
@@ -406,7 +410,7 @@ Hydra は、トークンを発行するたびに `oauth2.token_hook` でブロ�
 - 職員の ID は `session.id_token.subject` で読む。
   - `auth_time` か職員の ID が無いトークンは拒む。
 - client credentials のトークン（`request.grant_types` が `client_credentials` だけ）は、職員のものでないので、職員を見ない。
-  - `request.client_id` が内部の API を呼んでよいクライアント（`INTERNAL_API_CLIENTS`）にあれば 204 を、無ければ 403 を返す。
+  - `request.client_id` が内部の API を呼んでよいクライアント（`INTERNAL_API_CLIENTS` と `INTERNAL_API_ONBOARDING_CLIENTS`）にあれば 204 を、無ければ 403 を返す。
 - 200 を返すと、Hydra は access token の追加のクレームを本文の値で置き換え、同意で入れた `org_id` が消える。
   - ブローカーは 200 を返さない。
 - Hydra は、token_hook の設定のヘッダー `Token-Hook-Key` に、ブローカーと共有する値（`TOKEN_HOOK_KEY`）を入れて呼ぶ。
@@ -423,8 +427,11 @@ Hydra は、トークンを発行するたびに `oauth2.token_hook` でブロ�
   - 内部のポートは、ブラウザとリバースプロキシに開かず、予定の API と Hydra だけが届くようにする。
 - 内部の API は、Hydra の client credentials の access token（`aud` は `broker`）だけを受け、Hydra の JWKS で検証する。
   - トークンが無いか検証できなければ 401 を返す。
-- 検証できても、トークンの `sub`（client credentials ではクライアントの ID）が `INTERNAL_API_CLIENTS`（デフォルトは `schedule`）に無いか、トークンが `org_id` を持てば 403 を返す。
+- 検証できても、トークンの `sub`（client credentials ではクライアントの ID）が、呼んだ操作を許したクライアントに無いか、トークンが `org_id` を持てば 403 を返す。
   - `org_id` は同意で職員のトークンにだけ入る。
+  - `INTERNAL_API_CLIENTS`（デフォルトは `schedule`）のクライアントには、全ての操作を許す。
+  - `INTERNAL_API_ONBOARDING_CLIENTS`（デフォルトは `schedule-ops`）のクライアントには、職員の登録、有効化、登録の途中の職員の削除だけを許す。予定の API の運営用の CLI が、事業所と最初のマネージャーの登録に使う。
+  - ADR-0041: [事業所と最初のマネージャーを予定の API の運営用の CLI で登録し、ブローカーは運営用のクライアントに職員の登録だけを許す](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0041-facility-onboarding-cli.md)
 
 | パス | 働き | 主な応答 |
 | --- | --- | --- |
@@ -643,12 +650,13 @@ sequenceDiagram
 ### ローカル環境
 
 compose は、開発用の IdP（mock-oauth2-server）を、上流の IdP のフェイクとして置く。  
-mock-oauth2-server はパスの最初の部分を issuer にするので、1 つのコンテナで 3 つの事業所の IdP（`/office-a`、`/office-b`、`/office-c`）を立てる。
+mock-oauth2-server はパスの最初の部分を issuer にするので、1 つのコンテナで 5 つの事業所の IdP（`/office-a` から `/office-e`）を立てる。
 
 - compose は、E2E がトークンなしの呼び出しを試せるよう、内部のポートを `127.0.0.1` の 8101 に公開する。
 - 上流の IdP ごとの違い（署名の方式、Google の `hd`）は、フェイクで確認せず、ブローカーの単体テストで確認する。
 - ブローカーと予定の API のシードは、同じ職員の ID を持つ。
-  - 3 つの事業所（`org-sample`、`org-sample-b`、`org-sample-c`）の職員がいる。
+  - 4 つの事業所（`org-sample` から `org-sample-d`）の職員がいる。
+  - `org-sample-e` は、シードに無い。運営用の CLI で事業所と最初のマネージャーを足すのに使う。
   - `org-sample-b` には、両方で休職にした職員もいる。E2E は、この職員のログインが拒まれることを確認する。
 
 ## Interface

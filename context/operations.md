@@ -1,7 +1,7 @@
 ---
 type: context
 title: 基盤と運用
-description: 環境の種類、デプロイと切り戻しの条件、監視、Google カレンダーの Worker の動かし方、DB の分け方と権限、Hydra の DB と期限の切れた行の扱い、シークレットの配置先の方針、事業所を足すときの Google のサービスアカウントの手順、CI のランナーの切り替え
+description: 環境の種類、デプロイと切り戻しの条件、監視、Google カレンダーの Worker の動かし方、DB の分け方と権限、Hydra の DB と期限の切れた行の扱い、シークレットの配置先の方針、事業所を足す手順、CI のランナーの切り替え
 status: stable
 ---
 
@@ -202,6 +202,33 @@ hydra janitor -c <hydra serve の設定ファイル> -e --tokens --requests --gr
   - buddy に置いてよいのは、ローカルの compose の開発用の値（`compose.yml` と `compose/` の下のファイル）だけである。
 
 ## Adding a Facility
+
+運営側は、事業所を足すときに、次の順で事業所と最初のマネージャーを登録する。
+
+1. 事業所の上流の IdP の設定をブローカーに足し、ブローカーをデプロイし直す。
+   - 組織の ID、issuer、client ID は `UPSTREAM_IDPS_FILE` のファイルに、client secret は `UPSTREAM_IDP_CLIENT_SECRETS_FILE` のファイルに足す。
+2. 予定の API のイメージの `ops` を entrypoint にしたジョブを、内部のネットワークで、書き込まずに内容を表示するモード（`--dry-run`）で流す。
+   - ジョブに渡す環境変数は、DB の接続の値と、運営用のクライアントの値（`BROKER_URL`、`BROKER_TOKEN_URL`、`BROKER_CLIENT_ID`、`BROKER_CLIENT_SECRET`）である。
+   - 運営用のクライアントの secret は、予定の API の secret と分け、ジョブにだけ渡す。
+   - 最初のマネージャーのメールは引数で渡し、リポジトリと設定のファイルに書かない。
+
+   ```sh
+   ops onboard-facility --org-id <組織の ID> --facility-name <事業所の名前> --department <部署の名前> --team <チームの名前> \
+     --manager-name <マネージャーの名前> --manager-email <マネージャーのメール> --operator <運営者の ID> --dry-run
+   ```
+
+3. 出力の JSON の事業所、役職、部署、チームの名前と、作るかどうかを確認する。
+   - 出力は、メールと職員の名前を含まない。メールは、自分で渡した引数を読み直して確認する。
+4. 同じ引数から `--dry-run` を外して流す。
+   - 出力の 1 行が登録の記録で、実行者、操作の種類、事業所と職員の ID、作ったもの、相関の ID を持つ。
+   - 失敗したときは、何も書かれていない。同じ引数で流し直してよい。
+5. 最初のマネージャーに、上流の IdP のアカウントでログインしてもらう。
+   - 上流の IdP が確認したメールが、登録したメールと同じときだけ結び付く。
+
+職員の管理の権限を持つ有効な職員がいる事業所には、CLI はマネージャーを足さない。  
+全てのマネージャーが退職した事業所を戻すときだけ、`--allow-additional-manager` を付けて流す。
+
+- ADR-0041: [事業所と最初のマネージャーを予定の API の運営用の CLI で登録し、ブローカーは運営用のクライアントに職員の登録だけを許す](../docs/adr/0041-facility-onboarding-cli.md)
 
 運営側の GCP のプロジェクトでは、最初の事業所を足す前に 1 回だけ、IAM Service Account Credentials API を有効にする。  
 この API は、権限借用の短い期間の token を作るのに要る。  

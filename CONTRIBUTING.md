@@ -86,7 +86,7 @@ worktree では、ホスト名の `buddy` の部分が worktree ごとの名前�
 | receipt | `https://receipt.buddy.localhost` |
 | broker（ログインの画面と内部の API） | `https://broker.buddy.localhost`、`https://8081.broker.buddy.localhost` |
 | hydra（public API と admin API） | `https://hydra.buddy.localhost`、`https://4445.hydra.buddy.localhost` |
-| idp（上流の IdP のフェイク。事業所ごとに `/office-a`、`/office-b`、`/office-c`、`/office-d`） | `https://idp.buddy.localhost` |
+| idp（上流の IdP のフェイク。事業所ごとに `/office-a` から `/office-e`） | `https://idp.buddy.localhost` |
 | calendarpit（Google Calendar API のフェイク） | `https://calendarpit.buddy.localhost` |
 | gcalhold（予定の API と calendarpit の間の中継） | `https://gcalhold.buddy.localhost` |
 | postgres | `localhost:15432`（`POSTGRES_PORT` で変える） |
@@ -116,6 +116,8 @@ worktree では、ホスト名の `buddy` の部分が worktree ごとの名前�
   - 4 つ目の事業所（組織 `org-sample-d`）: `ren.ishida@example.com`（石田 蓮、マネージャー）
     - 3 つ目と同じく `google_primary` で、石田に calendarpit のカレンダー `ren.ishida@example.com` を結び付けてある。
     - 予定の正本の切り替えを確認するのに使う。切り替えを完了すると `buddy_primary` に移り、戻せない。戻すときは `portless compose down -v` で作り直す。
+  - 組織 `org-sample-e` は、上流の IdP の設定にだけあり、シードに事業所と職員が無い。
+    - 運営用の CLI で事業所と最初のマネージャーを足すのに使う。手順は下の「事業所と最初のマネージャーを足す」にある。
   - 1 つ目と 2 つ目の事業所のカレンダーは、同期が読まない。Google カレンダーでの変更は buddy の予定に当たらない。
   - シードは、空の DB にだけ適用される。
     - シードを変えた後は、`portless compose down -v` で作り直す。
@@ -137,6 +139,24 @@ worktree では、ホスト名の `buddy` の部分が worktree ごとの名前�
   - Node.js には、mise が `NODE_EXTRA_CA_CERTS` を渡す。
   - E2E のブラウザは、Playwright の設定（`packages/e2e/localhostResolver.ts`）で `*.localhost` を loopback に引き、https の URL では証明書のエラーを無視する。
 - CI は portless を使わず、`docker compose up` で `http://localhost:<ポート>` に起動する。ブラウザが開く URL とポートは、`.github/workflows/ci.yml` の `e2e` のジョブが渡す。
+
+### 事業所と最初のマネージャーを足す
+
+予定の API の運営用の CLI を、compose の `schedule-ops` で 1 回流す。  
+`portless compose up` は `schedule-ops` を起動しない。
+
+```sh
+portless compose --profile ops run --rm --no-deps schedule-ops onboard-facility \
+  --org-id org-sample-e --facility-name 5つ目の事業所 --department 看護部 --team Aチーム \
+  --manager-name 新井真央 --manager-email mao.arai@example.com --operator ops-local --dry-run
+```
+
+- `--no-deps` を付け、起動した環境の後に流す。
+  - 付けないと、compose が Hydra とブローカーのコンテナを作り直し、portless に登録したホスト名が古いポートを指して、ログインが 502 になる。
+  - そのときは `portless compose up -d --wait` を流し直す。
+- `--dry-run` を外すと書く。出力の 1 行の JSON が登録の記録である。
+- 足した後は、ブローカーのログインの画面で `mao.arai@example.com` を入れ、上流の IdP のフェイクのクレームの欄に同じメールを書くと、足したマネージャーとしてログインする。
+- 手順と引数の意味は、[基盤と運用の Adding a Facility](context/operations.md#adding-a-facility) にある。
 
 ### portless を通さずに起動する
 
