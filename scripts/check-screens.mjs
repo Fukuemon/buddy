@@ -90,31 +90,47 @@ const readCatalogIds = () => {
 let catalogIds = null
 
 /** 仕様書のカタログの欄のリンクが本番のカタログの URL で、その ID が story のファイルにあるかを確認する。 */
+/**
+ * カタログの欄のリンクを、行の番号と組にして返す。
+ * 「**カタログ**:」の後ろが空なら、続く箇条書きの項目からリンクを読む。リンクが 3 つ以上のときの形である
+ */
+const catalogTargets = (lines, index) => {
+  const rest = lines[index].slice('**カタログ**:'.length)
+  if (rest.trim() !== '')
+    return [...rest.matchAll(LINK_TARGET)].map((m) => ({ target: m[1], line: index + 1 }))
+  const targets = []
+  for (let i = index + 1; i < lines.length; i += 1) {
+    if (lines[i].trim() === '') continue
+    if (!/^[-*] /.test(lines[i])) break
+    for (const m of lines[i].matchAll(LINK_TARGET)) targets.push({ target: m[1], line: i + 1 })
+  }
+  return targets
+}
+
+/** 仕様書のカタログの欄のリンクが本番のカタログの URL で、その ID が story のファイルにあるかを確認する。 */
 const checkCatalogLinks = (markdown, specPath) => {
   catalogIds ??= readCatalogIds()
-  markdown.split(/\r?\n/).forEach((line, index) => {
+  // コメントの中の書き方の例を欄として読まないよう、コメントを改行だけ残して消す。行の番号はずらさない
+  const lines = markdown.replace(/<!--[\s\S]*?-->/g, (c) => c.replace(/[^\n]/g, '')).split(/\r?\n/)
+  lines.forEach((line, index) => {
     if (!line.startsWith('**カタログ**:')) return
-    const targets = [...line.matchAll(LINK_TARGET)].map((m) => m[1])
+    const targets = catalogTargets(lines, index)
     if (targets.length === 0) report(specPath, `カタログの欄にリンクが無い（${index + 1} 行目）`)
-    for (const target of targets) {
+    for (const { target, line: at } of targets) {
       const match = target.match(STORYBOOK_URL)
       if (match === null) {
-        report(
-          specPath,
-          `カタログの欄のリンク ${target} が本番のカタログの URL でない（${index + 1} 行目）`,
-        )
+        report(specPath, `カタログの欄のリンク ${target} が本番のカタログの URL でない（${at} 行目）`)
         continue
       }
       let id
       try {
         id = decodeURIComponent(match[2])
       } catch {
-        report(specPath, `カタログの欄のリンク ${target} の ID を読めない（${index + 1} 行目）`)
+        report(specPath, `カタログの欄のリンク ${target} の ID を読めない（${at} 行目）`)
         continue
       }
       const ids = match[1] === 'story' ? catalogIds.stories : catalogIds.docs
-      if (!ids.has(id))
-        report(specPath, `カタログの ${match[1]} の ${id} が無い（${index + 1} 行目）`)
+      if (!ids.has(id)) report(specPath, `カタログの ${match[1]} の ${id} が無い（${at} 行目）`)
     }
   })
 }
