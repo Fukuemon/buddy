@@ -215,7 +215,7 @@ func (h callback) match(ctx context.Context, m staff.Member, id upstream.Identit
 		case cur.Upstream == got:
 			return hydra.Rejection{}, ""
 		}
-		return hydra.AccountMismatch, "上流のアカウントが別の職員に結び付いている"
+		return hydra.AccountMismatch, "ほかの結び付きと重なり、上流のアカウントを結び付けられない"
 	}
 	if err != nil {
 		h.logger.ErrorContext(ctx, "上流のアカウントを結び付けられない", "staff_id", m.ID, "error", err)

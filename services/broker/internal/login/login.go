@@ -61,7 +61,7 @@ const cookieMaxAge = 10 * 60
 // pending は、上流の IdP へリダイレクトしている間の値である。
 //
 // 署名しない。値を書き換えられるのはブラウザの利用者だけである。職員の ID を書き換えても、ID token がその職員のものと確認できなければ、
-// 相手がいるか、相手の状態によらず同じ reject になる（callback と match）。
+// 相手の状態によらず同じ reject になる（callback と match）。相手がいるかは、職員の ID を知っていれば reject で分かる。
 // 事業所と上流の IdP は職員の ID から DB で引き直し、ID token のメールはその職員の登録のメールと照合する。
 // ログインの要求は、Hydra が自分の cookie でブラウザに結び付けている。
 type pending struct {
@@ -125,15 +125,20 @@ func accept(logger *slog.Logger, admin Hydra, w http.ResponseWriter, r *http.Req
 	redirect(logger, w, r, to, err)
 }
 
-// reject は、ログインを拒んで web へ返す。web はログインの失敗の画面を出す。
-// 理由はログにだけ書き、登録されていないメールと照合できなかった職員を、画面で区別できないようにする。
+// reject は、ログインを hydra.AccessDenied で拒んで web へ返す。web は、登録されていないメールと有効でない職員を分けない文を出す。
+// 理由はログにだけ書き、メールの登録の有無と職員の状態を、画面で区別できないようにする。
 func reject(logger *slog.Logger, admin Hydra, w http.ResponseWriter, r *http.Request, challenge, reason string, cause error) {
 	rejectAs(logger, admin, w, r, challenge, hydra.AccessDenied, reason, cause)
 }
 
 // rejectAs は、ログインを body で拒んで web へ返す。body の Error が web に渡り、web が出す文を分ける。
+// body が hydra.ServerError なら Error、ほかは Warn でログに書く。
 func rejectAs(logger *slog.Logger, admin Hydra, w http.ResponseWriter, r *http.Request, challenge string, body hydra.Rejection, reason string, cause error) {
-	logger.WarnContext(r.Context(), "ログインを拒む", "reason", reason, "error", cause)
+	level := slog.LevelWarn
+	if body == hydra.ServerError {
+		level = slog.LevelError
+	}
+	logger.Log(r.Context(), level, "ログインを拒む", "reason", reason, "error", cause)
 	to, err := admin.RejectLogin(r.Context(), challenge, body)
 	redirect(logger, w, r, to, err)
 }
