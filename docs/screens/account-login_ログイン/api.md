@@ -36,7 +36,7 @@
 | ログインを続けられない | 「もう一度 buddy を開いて、ログインしてください。」 | `GET /login`、`POST /login`、`GET /consent` で `login_challenge` か `consent_challenge` が無いか、Hydra の admin API が 4xx を返して読めない（400） |
 | ログインを続けられない | 「もう一度 buddy を開いて、ログインしてください。」 | `POST /login` の本文が 4 KB を超える（413）か、メールが職員のメールの形でない（400） |
 | ログインを続けられない | 「もう一度 buddy を開いて、ログインしてください。」 | `POST /login` がほかのサイトから送られた（403） |
-| ログインを続けられない | 「もう一度 buddy を開いて、ログインしてください。」 | `GET /login/callback` で、ログインの途中の値の cookie が無いか、`state` が合わない（400） |
+| ログインを続けられない | 「もう一度 buddy を開いて、ログインしてください。」 | `GET /login/callback` で、ログインの途中の値の cookie が無いか、署名が合わないか無いか、発行から 10 分を過ぎたか、`state` が合わない（400）。Hydra と DB を呼ばない |
 | 試行の回数の上限を超えた | 「続けて何度もログインを試したため、受け付けを止めています。30 秒ほどおいてから、もう一度ログインしてください。」 | `GET /login`、`POST /login`、`GET /login/callback`、`GET /consent` で、送信元の IP アドレスごとの試行の回数の上限を超えた（429）。Hydra の admin API と DB を呼ばない |
 | 障害でログインできない | 「時間をおいて、もう一度ログインしてください。」 | `GET /login`、`POST /login`、`GET /consent` で、Hydra の admin API に届かないか、5xx を返して challenge を読めない（502） |
 | 障害でログインできない | 「時間をおいて、もう一度ログインしてください。」 | `POST /login` で、職員を DB から引けない（500）か、ログインの途中の値を書けない（500）か、上流の IdP の discovery の文書を読めない（502） |
