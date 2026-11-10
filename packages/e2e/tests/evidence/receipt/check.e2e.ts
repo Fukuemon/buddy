@@ -167,14 +167,13 @@ test.describe('照合の結果', () => {
         const cells = [item.date, item.patient, LEADER.staff.name, ...item.cells]
         await check(page, item.scheduleResult, () => expect(row).toHaveText(cells))
 
-        await step(
+        // 送るのは操作の止めが入らず、step の字幕が読めないので、次の判定の字幕に書く
+        await scrollToRightEnd(page.getByTestId('receipt-result-table'))
+        await check(
           page,
-          '（撮影のため、結果の表を右端まで送り、実績の側の列を見せる）',
-          async () => {
-            await scrollToRightEnd(page.getByTestId('receipt-result-table'))
-          },
+          `（撮影のため、結果の表を右端まで送り、実績の側の列を見せる）\n${item.visitResult}`,
+          () => expect(row).toHaveText(cells),
         )
-        await check(page, item.visitResult, () => expect(row).toHaveText(cells))
       })
     }
   })
