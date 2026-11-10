@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
@@ -24,6 +25,9 @@ const (
 	aokiID  = "01JAAAAAAAAAAAAAAAAAAAAAAA"
 	uenoID  = "01JBBBBBBBBBBBBBBBBBBBBBBB"
 	issuerA = "https://idp-a.example.com"
+	// cookieKey と oldCookieKey は、ログインの途中の cookie に署名するテストの鍵である。
+	cookieKey    = "test-login-cookie-key-0123456789abcdef"
+	oldCookieKey = "test-old-login-cookie-key-0123456789ab"
 )
 
 type fakeStaff struct {
@@ -207,6 +211,7 @@ func newEnvWith(limit int, edit func(*login.Config)) *env {
 		EmailLimiter:       login.NewLimiter(time.Hour, 10),
 		PublicURL:          "https://login.example.com",
 		AutoConsentClients: []string{"web"},
+		CookieKeys:         [][]byte{[]byte(cookieKey)},
 	}
 	edit(&cfg)
 	h, err := login.NewHandler(cfg)
@@ -853,21 +858,24 @@ func TestCallbackPassesIssuer(t *testing.T) {
 	}
 }
 
-// TestCallbackInactiveStaff は、ログインの途中に休職か退職になった職員の reject を確認する。
-// 休職の職員は、メールを入れたときと同じ access_denied で拒む。退職ではメールと上流のアカウントが消え、ID token が職員のものと
-// 確認できないので、cookie の職員の ID を書き換えたときと同じ account_mismatch で拒み、退職したことを伝えない。
+// TestCallbackInactiveStaff は、ログインの途中に有効でなくなった職員を、上流の IdP の ID token を検証する前に、
+// メールを入れたときと同じ access_denied で拒むことを確認する。退職した職員はメールと上流のアカウントを持たないが、
+// 休職と同じ reject になる。
 func TestCallbackInactiveStaff(t *testing.T) {
 	for _, tt := range []struct {
 		name   string
 		linked bool
 		leave  func(m *staff.Member)
-		want   hydra.Rejection
 	}{
-		{"休職", false, func(m *staff.Member) { m.Status = staff.StatusSuspended }, hydra.AccessDenied},
-		{"結び付け済みで休職", true, func(m *staff.Member) { m.Status = staff.StatusSuspended }, hydra.AccessDenied},
+		{"休職", false, func(m *staff.Member) { m.Status = staff.StatusSuspended }},
+		{"結び付け済みで休職", true, func(m *staff.Member) { m.Status = staff.StatusSuspended }},
+		{"結び付け済みで休職し、ほかの上流のアカウントで来た", true, func(m *staff.Member) {
+			m.Status, m.Upstream = staff.StatusSuspended, staff.UpstreamAccount{Issuer: issuerA, Subject: "u-other"}
+		}},
 		{"退職", true, func(m *staff.Member) {
 			m.Status, m.Email, m.Upstream = staff.StatusRetired, "", staff.UpstreamAccount{}
-		}, hydra.AccountMismatch},
+		}},
+		{"登録の途中", false, func(m *staff.Member) { m.Status = staff.StatusPending }},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			e := newEnv(10)
@@ -881,57 +889,155 @@ func TestCallbackInactiveStaff(t *testing.T) {
 			m := e.staff.members[aokiID]
 			tt.leave(&m)
 			e.staff.members[aokiID] = m
-			if got := location(t, e.callback(t, submitted, "code-1")); got != "http://hydra/login-rejected" || e.hydra.rejection != tt.want {
-				t.Errorf("Location = %q, rejection = %+v, want %+v", got, e.hydra.rejection, tt.want)
+			if got := location(t, e.callback(t, submitted, "code-1")); got != "http://hydra/login-rejected" || e.hydra.rejection != hydra.AccessDenied {
+				t.Errorf("Location = %q, rejection = %+v, want access_denied", got, e.hydra.rejection)
+			}
+			// AuthURL の 1 回だけで、Exchange を呼んでいない
+			if len(e.upstream.orgs) != 1 {
+				t.Errorf("上流の IdP を %d 回呼んだ。ID token を検証する前に拒んでいない", len(e.upstream.orgs))
 			}
 		})
 	}
 }
 
-// TestCallbackForgedStaffID は、cookie の職員の ID をほかの職員に書き換えても、相手の状態が reject で分からないことを確認する。
-// いない職員の ID には、ID token を検証できないときと同じ server_error を返す。
-func TestCallbackForgedStaffID(t *testing.T) {
+// TestCallbackPendingCookie は、署名と発行の時刻が合う cookie のコールバックだけを受け入れ、署名が合わないか、署名が無いか、
+// 発行から 10 分を過ぎたか、発行の時刻が今より後の cookie を、Hydra と職員を呼ばずに、ブローカーのログインを続けられない画面（400）で
+// 拒むことを確認する。
+func TestCallbackPendingCookie(t *testing.T) {
 	const otherID = "01JCCCCCCCCCCCCCCCCCCCCCCC"
+	same := func(_ *testing.T, v string) string { return v }
 	tests := []struct {
-		name   string
-		member *staff.Member
-		want   hydra.Rejection
+		name     string
+		tamper   func(t *testing.T, value string) string
+		after    time.Duration
+		accepted bool
 	}{
-		{"有効な職員", &staff.Member{ID: otherID, OrgID: "org-a", Email: "sato@example.com", Status: staff.StatusActive}, hydra.AccountMismatch},
-		{"退職した職員", &staff.Member{ID: otherID, OrgID: "org-a", Email: "sato@example.com", Status: staff.StatusRetired}, hydra.AccountMismatch},
-		{"結び付け済みの休職の職員", &staff.Member{ID: otherID, OrgID: "org-a", Email: "sato@example.com", Status: staff.StatusSuspended,
-			Upstream: staff.UpstreamAccount{Issuer: issuerA, Subject: "u-sato"}}, hydra.AccountMismatch},
-		{"いない職員", nil, hydra.ServerError},
+		{"変えていない（期限の内）", same, 10 * time.Minute, true},
+		{"職員の ID を書き換えた", func(t *testing.T, v string) string {
+			body, sig, _ := strings.Cut(v, ".")
+			p := decodePending(t, body)
+			p["staff_id"] = otherID
+			return encodePending(t, p) + "." + sig
+		}, 0, false},
+		{"署名の中の 1 文字を変えた", func(_ *testing.T, v string) string {
+			// 署名の base64url の末尾の文字は余りのビットだけが変わることがあるので、先頭の文字を替える
+			i := strings.Index(v, ".") + 1
+			b := []byte(v)
+			if b[i] == 'A' {
+				b[i] = 'B'
+			} else {
+				b[i] = 'A'
+			}
+			return string(b)
+		}, 0, false},
+		{"署名を外した", func(_ *testing.T, v string) string {
+			body, _, _ := strings.Cut(v, ".")
+			return body
+		}, 0, false},
+		{"署名の無い前の形（発行の時刻も無い）", func(t *testing.T, v string) string {
+			body, _, _ := strings.Cut(v, ".")
+			p := decodePending(t, body)
+			delete(p, "iat")
+			return encodePending(t, p)
+		}, 0, false},
+		{"知らない鍵で署名した", func(t *testing.T, v string) string {
+			body, _, _ := strings.Cut(v, ".")
+			raw, err := base64.RawURLEncoding.DecodeString(body)
+			if err != nil {
+				t.Fatal(err)
+			}
+			return login.SignCookie("unknown-login-cookie-key-0123456789ab", raw)
+		}, 0, false},
+		{"発行から 10 分を過ぎた", same, 10*time.Minute + time.Second, false},
+		{"発行の時刻が今より後", same, -time.Second, false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			issued := time.Now()
+			restore := login.SetNow(func() time.Time { return issued })
+			defer restore()
 			e := newEnv(10)
-			if tt.member != nil {
-				e.staff.members[otherID] = *tt.member
-			}
+			e.staff.members[otherID] = staff.Member{ID: otherID, OrgID: "org-a", Email: "sato@example.com", Status: staff.StatusRetired}
 			e.upstream.identity = upstream.Identity{Issuer: issuerA, Subject: "u-aoki", Email: "aoki@example.com", EmailVerified: true}
 			submitted := e.submit("aoki@example.com")
 			to, _ := url.Parse(submitted.Header().Get("Location"))
 			req := httptest.NewRequest(http.MethodGet, "/login/callback?"+url.Values{"state": {to.Query().Get("state")}, "code": {"code-1"}}.Encode(), nil)
 			for _, c := range submitted.Result().Cookies() {
-				raw, err := base64.RawURLEncoding.DecodeString(c.Value)
-				if err != nil {
-					t.Fatal(err)
-				}
-				var p map[string]any
-				if err := json.Unmarshal(raw, &p); err != nil {
-					t.Fatal(err)
-				}
-				p["staff_id"] = otherID
-				forged, _ := json.Marshal(p)
-				c.Value = base64.RawURLEncoding.EncodeToString(forged)
+				c.Value = tt.tamper(t, c.Value)
 				req.AddCookie(c)
 			}
-			if got := location(t, e.do(req)); got != "http://hydra/login-rejected" || e.hydra.rejection != tt.want {
-				t.Errorf("Location = %q, rejection = %+v, want %+v", got, e.hydra.rejection, tt.want)
+			login.SetNow(func() time.Time { return issued.Add(tt.after) })
+			gets := e.staff.gets
+			rec := e.do(req)
+			if tt.accepted {
+				if got := location(t, rec); got != "http://hydra/login-accepted" {
+					t.Errorf("Location = %q, want accept", got)
+				}
+				return
+			}
+			if rec.Code != http.StatusBadRequest || !strings.Contains(rec.Body.String(), "もう一度 buddy を開いて、ログインしてください。") {
+				t.Errorf("code = %d, want ログインを続けられない画面の 400", rec.Code)
+			}
+			if e.staff.gets != gets || e.hydra.rejects != 0 || len(e.upstream.orgs) != 1 {
+				t.Errorf("職員を %d 回、Hydra の reject を %d 回、上流の IdP を %d 回呼んだ", e.staff.gets-gets, e.hydra.rejects, len(e.upstream.orgs))
 			}
 		})
 	}
+}
+
+// TestCookieKeyRotation は、鍵を足したブローカーが、古い鍵で署名した cookie のログインを続け、新しい cookie を先頭の鍵で
+// 署名することを確認する。
+func TestCookieKeyRotation(t *testing.T) {
+	withKeys := func(keys ...string) *env {
+		return newEnvWith(10, func(c *login.Config) {
+			c.CookieKeys = nil
+			for _, k := range keys {
+				c.CookieKeys = append(c.CookieKeys, []byte(k))
+			}
+		})
+	}
+	before := withKeys(oldCookieKey)
+	rotated := withKeys(cookieKey, oldCookieKey)
+	if got := location(t, rotated.callback(t, before.submit("aoki@example.com"), "code-1")); got != "http://hydra/login-accepted" {
+		t.Errorf("古い鍵の cookie の Location = %q, want accept", got)
+	}
+
+	submitted := rotated.submit("aoki@example.com")
+	if got := location(t, withKeys(cookieKey).callback(t, submitted, "code-1")); got != "http://hydra/login-accepted" {
+		t.Errorf("先頭の鍵だけのブローカーの Location = %q, want accept", got)
+	}
+	if rec := withKeys(oldCookieKey).callback(t, submitted, "code-1"); rec.Code != http.StatusBadRequest {
+		t.Errorf("古い鍵だけのブローカーの code = %d, want 400。新しい cookie を先頭の鍵で署名していない", rec.Code)
+	}
+}
+
+// TestNewHandlerWithoutCookieKeys は、cookie に署名する鍵が無ければ、ハンドラを作らないことを確認する。
+func TestNewHandlerWithoutCookieKeys(t *testing.T) {
+	if _, err := login.NewHandler(login.Config{PublicURL: "https://login.example.com"}); err == nil {
+		t.Error("err = nil, want 鍵が無いエラー")
+	}
+}
+
+func decodePending(t *testing.T, body string) map[string]any {
+	t.Helper()
+	raw, err := base64.RawURLEncoding.DecodeString(body)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var p map[string]any
+	if err := json.Unmarshal(raw, &p); err != nil {
+		t.Fatal(err)
+	}
+	return p
+}
+
+func encodePending(t *testing.T, p map[string]any) string {
+	t.Helper()
+	raw, err := json.Marshal(p)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return base64.RawURLEncoding.EncodeToString(raw)
 }
 
 func TestCallbackUpstreamError(t *testing.T) {
@@ -1002,12 +1108,12 @@ func TestLogout(t *testing.T) {
 
 // TestCallbackConsentLogoutRateLimit は、上流の IdP のコールバックと同意とログアウトの画面も、ログインの画面と同じ
 // 送信元の IP アドレスごとの上限で数え、超えた試行に Hydra と職員を呼ばずに失敗の画面を 429 で出すことを確認する。
-// ブローカーは cookie broker_login に署名しないので、送る側が cookie とクエリの state を合わせて書ける。
+// 署名した cookie は送り直せるので、コールバックも上限で数える。
 func TestCallbackConsentLogoutRateLimit(t *testing.T) {
-	forged := func(target string) *http.Request {
+	signed := func(target string) *http.Request {
 		req := httptest.NewRequest(http.MethodGet, target, nil)
-		raw := `{"challenge":"x","staff_id":"x","attempt":{"state":"s"}}`
-		req.AddCookie(&http.Cookie{Name: "broker_login", Value: base64.RawURLEncoding.EncodeToString([]byte(raw))})
+		raw := fmt.Sprintf(`{"challenge":"x","staff_id":"x","attempt":{"state":"s"},"iat":%d}`, time.Now().Unix())
+		req.AddCookie(&http.Cookie{Name: "broker_login", Value: login.SignCookie(cookieKey, []byte(raw))})
 		return req
 	}
 	tests := []struct {
@@ -1018,13 +1124,13 @@ func TestCallbackConsentLogoutRateLimit(t *testing.T) {
 	}{
 		{
 			name:  "上流の IdP のエラーのコールバック",
-			req:   func() *http.Request { return forged("/login/callback?state=s&error=a") },
+			req:   func() *http.Request { return signed("/login/callback?state=s&error=a") },
 			page:  "しばらくログインできません",
 			calls: func(e *env) int { return e.hydra.rejects + e.staff.gets },
 		},
 		{
 			name:  "DB にない職員のコールバック",
-			req:   func() *http.Request { return forged("/login/callback?state=s&code=code-1") },
+			req:   func() *http.Request { return signed("/login/callback?state=s&code=code-1") },
 			page:  "しばらくログインできません",
 			calls: func(e *env) int { return e.hydra.rejects + e.staff.gets },
 		},
