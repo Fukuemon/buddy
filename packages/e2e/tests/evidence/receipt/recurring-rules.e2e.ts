@@ -15,6 +15,8 @@ import { calendarpitEvent } from '../../selectors/calendarpit'
 import { receiptCategoryRowCells, receiptResultRow } from '../../selectors/receipt'
 import { calendarTimeLabel } from '../../selectors/scheduleCalendar'
 
+// DB を作り直してから単独で流す。作った利用者と 2026-12〜2027-01 の繰り返しの予定を撮った後に戻さないので、同じ DB で流し直すと回が重なる。
+
 // 照合の API は、compose/receipt-calendars.json の森のカレンダーを calendarpit から読む。
 // buddy を正本にする 1 つ目の事業所で森に Google カレンダーを結び付けると、予定の API が森の繰り返しの予定を RRULE で書き出す。
 // 書き出しの RRULE は、Google カレンダーを正本にする事業所の書き込みと同じ処理で作る（ADR-0039）。
