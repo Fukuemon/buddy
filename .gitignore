@@ -66,6 +66,8 @@ apps/docs-site/.cloudflare/
 packages/e2e/.auth/
 packages/e2e/test-results/
 packages/e2e/playwright-report/
+# 撮影の config（playwright.capture.config.ts）が書く元の録画、HTML report、JSON reporter の出力
+packages/e2e/evidence/
 
 # worktree ごとのポートの組。.config/wt.toml が書く
 .env
