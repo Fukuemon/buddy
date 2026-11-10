@@ -129,7 +129,14 @@
 | ログインを続けられない | 「ログインを続けられませんでした」 |
 | 障害でログインできない | 「ログインできませんでした」 |
 
-**カタログ**: [AuthErrorMessage の Denied](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-common-autherrormessage--denied)、[AuthErrorMessage の AccountMismatch](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-common-autherrormessage--account-mismatch)、[AuthErrorMessage の Failed](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-common-autherrormessage--failed)
+**カタログ**:
+
+- [AuthErrorMessage の Denied](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-common-autherrormessage--denied)
+- [AuthErrorMessage の AccountMismatch](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-common-autherrormessage--account-mismatch)
+- [AuthErrorMessage の Forbidden](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-common-autherrormessage--forbidden)
+- [AuthErrorMessage の TooManyAttempts](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-common-autherrormessage--too-many-attempts)
+- [AuthErrorMessage の Interrupted](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-common-autherrormessage--interrupted)
+- [AuthErrorMessage の Failed](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-common-autherrormessage--failed)
 
 ## 説明の文
 
@@ -159,7 +166,14 @@
   - buddy は、メールアドレスで職員を探す前に上限で止めるので、この文からは登録の有無が分からない。
 - 理由の詳細は buddy の記録に残す。
 
-**カタログ**: [AuthErrorMessage の Denied](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-common-autherrormessage--denied)、[AuthErrorMessage の AccountMismatch](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-common-autherrormessage--account-mismatch)、[AuthErrorMessage の Failed](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-common-autherrormessage--failed)
+**カタログ**:
+
+- [AuthErrorMessage の Denied](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-common-autherrormessage--denied)
+- [AuthErrorMessage の AccountMismatch](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-common-autherrormessage--account-mismatch)
+- [AuthErrorMessage の Forbidden](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-common-autherrormessage--forbidden)
+- [AuthErrorMessage の TooManyAttempts](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-common-autherrormessage--too-many-attempts)
+- [AuthErrorMessage の Interrupted](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-common-autherrormessage--interrupted)
+- [AuthErrorMessage の Failed](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-common-autherrormessage--failed)
 
 ## もう一度ログインする
 
