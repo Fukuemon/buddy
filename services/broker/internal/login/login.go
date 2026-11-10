@@ -6,7 +6,6 @@
 package login
 
 import (
-	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -47,6 +46,8 @@ type Config struct {
 	AutoConsentClients []string
 	// UsesSecureCookie が true なら、ログインの途中の cookie に Secure を付ける。
 	UsesSecureCookie bool
+	// CookieKeys は、ログインの途中の cookie に署名する鍵である。先頭の鍵で署名し、全ての鍵で検証する。1 つ以上を渡す。
+	CookieKeys [][]byte
 }
 
 // maxFormLen は、POST /login の本文を読む上限（バイト）である。login_challenge と staff.MaxEmailLen のメールが入る長さにする。
@@ -55,19 +56,23 @@ const maxFormLen = 4 << 10
 // cookieName は、上流の IdP へリダイレクトしている間の値を置く cookie である。
 const cookieName = "broker_login"
 
-// cookieMaxAge は、上流の IdP でログインし終えるのを待つ秒数である。
+// cookieMaxAge は、上流の IdP でログインし終えるのを待つ秒数である。cookie の期限と、署名した発行の時刻からの期限に使う。
 const cookieMaxAge = 10 * 60
+
+// now は、cookie の発行の時刻と期限に使う今の時刻である。テストで替える。
+var now = time.Now
 
 // pending は、上流の IdP へリダイレクトしている間の値である。
 //
-// 署名しない。値を書き換えられるのはブラウザの利用者だけである。職員の ID を書き換えても、ID token がその職員のものと確認できなければ、
-// 相手の状態によらず同じ reject になる（callback と match）。相手がいるかは、職員の ID を知っていれば reject で分かる。
-// 事業所と上流の IdP は職員の ID から DB で引き直し、ID token のメールはその職員の登録のメールと照合する。
-// ログインの要求は、Hydra が自分の cookie でブラウザに結び付けている。
+// ブローカーが CookieKeys で署名するので、ブラウザの利用者は職員の ID を書き換えられない。コールバックは、署名が合わない値と、
+// 発行から cookieMaxAge 秒を過ぎた値を、職員を引かずに拒む。cookie の期限はブラウザが守るだけなので、送り直した cookie を
+// 発行の時刻で拒む。ログインの要求は、Hydra が自分の cookie でブラウザに結び付けている。
 type pending struct {
 	Challenge string           `json:"challenge"`
 	StaffID   string           `json:"staff_id"`
 	Attempt   upstream.Attempt `json:"attempt"`
+	// IssuedAt は、POST /login が値を書いた時刻（Unix 秒）である。
+	IssuedAt int64 `json:"iat"`
 }
 
 // Paths は、NewHandler のハンドラが受けるパスである。/login/ は、/login/callback を受けるためにある。
@@ -80,20 +85,25 @@ var Paths = []string{"/login", "/login/", "/consent", "/logout"}
 //   - GET /consent: Hydra の consent_challenge を受け、組織の ID と audience を付けて accept する
 //   - GET /logout: Hydra の logout_challenge を受け、画面を出さずに accept する
 //
-// ほかのサイトから送られた POST は、Sec-Fetch-Site か Origin で見分けて 403 で拒む。cfg.PublicURL が URL として読めなければエラーを返す。
+// ほかのサイトから送られた POST は、Sec-Fetch-Site か Origin で見分けて 403 で拒む。cfg.PublicURL が URL として読めないときと、
+// cfg.CookieKeys が空のときはエラーを返す。
 // 呼ぶ側は、Paths のパスをこのハンドラに渡す。
 func NewHandler(cfg Config) (http.Handler, error) {
+	if len(cfg.CookieKeys) == 0 {
+		return nil, errors.New("ログインの途中の cookie に署名する鍵が無い")
+	}
+	signer := cookieSigner{keys: cfg.CookieKeys}
 	mux := http.NewServeMux()
 	mux.Handle("GET /login", showLogin{
 		logger: cfg.Logger, staff: cfg.Staff, hydra: cfg.Hydra, limiter: cfg.Limiter, clientIPHeader: cfg.ClientIPHeader,
 	})
 	mux.Handle("POST /login", submitEmail{
 		logger: cfg.Logger, staff: cfg.Staff, hydra: cfg.Hydra, upstream: cfg.Upstream, limiter: cfg.Limiter,
-		emailLimiter: cfg.EmailLimiter, clientIPHeader: cfg.ClientIPHeader, usesSecureCookie: cfg.UsesSecureCookie,
+		emailLimiter: cfg.EmailLimiter, clientIPHeader: cfg.ClientIPHeader, usesSecureCookie: cfg.UsesSecureCookie, signer: signer,
 	})
 	mux.Handle("GET /login/callback", callback{
 		logger: cfg.Logger, staff: cfg.Staff, hydra: cfg.Hydra, upstream: cfg.Upstream, limiter: cfg.Limiter,
-		clientIPHeader: cfg.ClientIPHeader, usesSecureCookie: cfg.UsesSecureCookie,
+		clientIPHeader: cfg.ClientIPHeader, usesSecureCookie: cfg.UsesSecureCookie, signer: signer,
 	})
 	mux.Handle("GET /consent", consent{
 		logger: cfg.Logger, staff: cfg.Staff, hydra: cfg.Hydra, limiter: cfg.Limiter, clientIPHeader: cfg.ClientIPHeader,
@@ -206,12 +216,15 @@ func setCookie(usesSecureCookie bool, w http.ResponseWriter, value string, maxAg
 	})
 }
 
-func readPending(r *http.Request) (pending, error) {
+// readPending は、ログインの途中の cookie を読む。cookie が無いとき、署名が合わないとき、値が欠けているとき、
+// 発行から cookieMaxAge 秒を過ぎたとき、発行の時刻が今より後のときはエラーを返す。署名と期限のエラーは errBadSignature と
+// errPendingExpired である。
+func readPending(signer cookieSigner, r *http.Request) (pending, error) {
 	c, err := r.Cookie(cookieName)
 	if err != nil {
 		return pending{}, err
 	}
-	raw, err := base64.RawURLEncoding.DecodeString(c.Value)
+	raw, err := signer.verify(c.Value)
 	if err != nil {
 		return pending{}, err
 	}
@@ -221,6 +234,9 @@ func readPending(r *http.Request) (pending, error) {
 	}
 	if p.Challenge == "" || p.StaffID == "" || p.Attempt.State == "" {
 		return pending{}, errors.New("ログインの途中の値が欠けている")
+	}
+	if age := now().Unix() - p.IssuedAt; age < 0 || age > cookieMaxAge {
+		return pending{}, errPendingExpired
 	}
 	return p, nil
 }

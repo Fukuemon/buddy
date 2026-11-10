@@ -27,6 +27,7 @@ func TestRunRejectsInvalidUpstreamConfig(t *testing.T) {
 		"PUBLIC_URL":                       "http://127.0.0.1:1",
 		"HYDRA_ISSUER":                     "http://127.0.0.1:1",
 		"TOKEN_HOOK_KEY":                   "hook-key-0123456789abcdef0123456789",
+		"LOGIN_COOKIE_KEYS":                "cookie-key-0123456789abcdef012345678",
 	}
 	err := run(func(k string) string { return env[k] })
 	if err == nil || !strings.Contains(err.Error(), "org-a の issuer が空") {
