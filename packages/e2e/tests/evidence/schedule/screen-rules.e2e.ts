@@ -1,3 +1,6 @@
+// DB を作り直してから単独で流す。
+// 予定の閲覧の権限だけを持つ職員を登録し、戻す API が無い。退職にしても職員の一覧に残るので、シードの職員を前提にする spec（suspended-staff.e2e.ts の schedule-active-staff-columns）が落ちる。
+
 import { expect, request, test, type APIRequestContext } from '@playwright/test'
 
 import { check, intro, step } from '../../fixtures/caption'

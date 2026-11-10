@@ -280,13 +280,17 @@ test.describe('予定の編集', () => {
       const token = await issueAccessToken(request, OFFICE_B.email)
       // 休職の職員には予定を作れないので、復職にして予定を作ってから休職に戻す
       expect((await reinstateStaff(request, token, SUSPENDED_STAFF.id)).status()).toBe(200)
-      const created = await createNormalSchedule(request, token, OFFICE_B.facilityId, {
-        staffId: SUSPENDED_STAFF.id,
-        title,
-        date: OFFICE_B.schedule.date,
-      })
+      let created: Awaited<ReturnType<typeof createNormalSchedule>>
+      try {
+        created = await createNormalSchedule(request, token, OFFICE_B.facilityId, {
+          staffId: SUSPENDED_STAFF.id,
+          title,
+          date: OFFICE_B.schedule.date,
+        })
+      } finally {
+        expect((await leaveStaff(request, token, SUSPENDED_STAFF.id)).status()).toBe(200)
+      }
       expect(created.status()).toBe(201)
-      expect((await leaveStaff(request, token, SUSPENDED_STAFF.id)).status()).toBe(200)
       const scheduleId = ((await created.json()) as { id: string }).id
 
       const page = await context.newPage()
