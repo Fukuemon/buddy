@@ -31,6 +31,27 @@ export type Viewer = {
   schedulePolicies: readonly SchedulePolicy[]
 }
 
+/**
+ * ログインできなかった理由。web のログインの失敗の画面が、URL の reason で受ける。
+ * - failed: ブローカー、Hydra、予定の API の障害
+ * - denied: 登録されていないメールか、有効でない職員（休職、退職、登録の途中）。4 つを分けない
+ * - account_mismatch: 上流の IdP で入ったアカウントが、職員の登録と合わない
+ * - interrupted: ログインの途中の値が無いか合わないか、上流の IdP がログインを終えずに戻した
+ * - forbidden: 事業所に登録されていない職員
+ * - too_many_attempts: ログインの試行の回数の上限を超えた
+ */
+export const AUTH_ERROR_REASONS = [
+  'failed',
+  'denied',
+  'account_mismatch',
+  'interrupted',
+  'forbidden',
+  'too_many_attempts',
+] as const
+
+/** ログインできなかった理由の 1 つ。値ごとの意味は AUTH_ERROR_REASONS にある。 */
+export type AuthErrorReason = (typeof AUTH_ERROR_REASONS)[number]
+
 /** 予定の権限の code。予定の API のマイグレーションが入れる値と同じにする。 */
 export const SCHEDULE_POLICY_CODES = [
   'schedule.self.edit',

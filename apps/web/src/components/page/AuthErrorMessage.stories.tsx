@@ -16,3 +16,9 @@ export const Failed: Story = {}
 export const Forbidden: Story = { args: { reason: 'forbidden' } }
 
 export const TooManyAttempts: Story = { args: { reason: 'too_many_attempts' } }
+
+export const Denied: Story = { args: { reason: 'denied' } }
+
+export const AccountMismatch: Story = { args: { reason: 'account_mismatch' } }
+
+export const Interrupted: Story = { args: { reason: 'interrupted' } }

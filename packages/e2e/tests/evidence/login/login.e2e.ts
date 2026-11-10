@@ -124,7 +124,7 @@ test.describe('予定のカレンダー', () => {
             await page.goto(DAY)
             await step(`登録していないメール ${UNREGISTERED_EMAIL} を入れて「次へ」を押す`)
             await enterEmailAtBroker(page, UNREGISTERED_EMAIL)
-            await expect(page).toHaveURL(/\/auth\/error\?reason=failed$/)
+            await expect(page).toHaveURL(/\/auth\/error\?reason=denied$/)
             await expect(page.getByTestId('auth-error')).toContainText('ログインできませんでした')
             await check(
               '上流の IdP へ移らず、web のログインの失敗の画面に「ログインできませんでした」が出る',
@@ -138,7 +138,7 @@ test.describe('予定のカレンダー', () => {
         )
       })
 
-      test(`${prefix}同じメールで試行の回数の上限を超えてログインを試した場合、時間をおいてから試すよう伝える文が出ること`, async ({
+      test(`${prefix}同じメールで試行の回数の上限を超えてログインを試した場合、待つ長さを伝える文が出ること`, async ({
         browser,
       }) => {
         await recordPrEvidence(
@@ -146,7 +146,7 @@ test.describe('予定のカレンダー', () => {
           {
             name: 'login-too-many-attempts',
             title:
-              '同じメールで試行の回数の上限を超えてログインを試すと、ログインの失敗の画面に時間をおいてから試すよう伝える文が出る',
+              '同じメールで試行の回数の上限を超えてログインを試すと、ログインの失敗の画面に待つ長さを伝える文が出る',
             actor: 'ログインなし',
             variant,
           },
@@ -156,7 +156,7 @@ test.describe('予定のカレンダー', () => {
             for (let i = 0; i < 10; i++) {
               await page.goto(DAY)
               await enterEmailAtBroker(page, LIMITED_EMAIL)
-              await expect(page).toHaveURL(/\/auth\/error\?reason=failed$/)
+              await expect(page).toHaveURL(/\/auth\/error\?reason=denied$/)
             }
           },
           async ({ page, step, check }) => {
@@ -198,10 +198,12 @@ test.describe('予定のカレンダー', () => {
 
             await step(`登録していないメール ${UNREGISTERED_EMAIL} を入れて「次へ」を押す`)
             await enterEmailAtBroker(page, UNREGISTERED_EMAIL)
-            await expect(page).toHaveURL(/\/auth\/error\?reason=failed$/)
+            await expect(page).toHaveURL(/\/auth\/error\?reason=denied$/)
             const card = page.getByTestId('auth-error')
             await expect(card).toContainText('ログインできませんでした')
-            await expect(card).toContainText('時間をおいて、もう一度ログインしてください。')
+            await expect(card).toContainText(
+              '入れたメールアドレスでは、ログインできません。事業所の管理者に、登録のメールアドレスを確認してください。',
+            )
             const viewport = page.viewportSize()
             // カードの中心と画面の中心のずれ。中央に置けば、縦と横のどちらも 1px 未満になる
             await expect
@@ -237,7 +239,7 @@ test.describe('予定のカレンダー', () => {
             await page.goto(DAY)
             await step(`止めた職員のメール ${SUSPENDED_STAFF.email} を入れて「次へ」を押す`)
             await enterEmailAtBroker(page, SUSPENDED_STAFF.email)
-            await expect(page).toHaveURL(/\/auth\/error\?reason=failed$/)
+            await expect(page).toHaveURL(/\/auth\/error\?reason=denied$/)
             await expect(page.getByTestId('auth-error')).toContainText('ログインできませんでした')
             await check(
               '上流の IdP へ移らず、web のログインの失敗の画面に「ログインできませんでした」が出る',
@@ -272,9 +274,13 @@ test.describe('予定のカレンダー', () => {
 
             await step('上流の IdP で、別のメール someone.else@example.com を確認済みにして入る')
             await signInAtUpstreamIdp(page, 'someone.else@example.com')
-            await expect(page).toHaveURL(/\/auth\/error\?reason=failed$/)
-            await expect(page.getByTestId('auth-error')).toContainText('ログインできませんでした')
-            await check('web のログインの失敗の画面に「ログインできませんでした」が出る')
+            await expect(page).toHaveURL(/\/auth\/error\?reason=account_mismatch$/)
+            await expect(page.getByTestId('auth-error')).toContainText(
+              '登録と違うアカウントでログインしました',
+            )
+            await check(
+              'web のログインの失敗の画面に「登録と違うアカウントでログインしました」が出る',
+            )
 
             await step('予定のカレンダーを開き直す')
             await page.goto(DAY)

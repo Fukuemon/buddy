@@ -39,7 +39,7 @@ test.describe('予定のカレンダー', () => {
       })
       await page.goto('/schedule')
       await enterEmailAtBroker(page, staff.email)
-      await expect(page).toHaveURL(/\/auth\/error\?reason=failed$/)
+      await expect(page).toHaveURL(/\/auth\/error\?reason=denied$/)
     })
 
     test('退職した職員と同じメールで職員を登録した場合、新しい職員として登録できること', async ({

@@ -60,7 +60,8 @@ const cookieMaxAge = 10 * 60
 
 // pending は、上流の IdP へリダイレクトしている間の値である。
 //
-// 署名しない。値を書き換えられるのはブラウザの利用者だけで、書き換えても、別のメールを入れたのと同じ結果にしかならない。
+// 署名しない。値を書き換えられるのはブラウザの利用者だけである。職員の ID を書き換えても、ID token がその職員のものと確認できなければ、
+// 相手の状態によらず同じ reject になる（callback と match）。相手がいるかは、職員の ID を知っていれば reject で分かる。
 // 事業所と上流の IdP は職員の ID から DB で引き直し、ID token のメールはその職員の登録のメールと照合する。
 // ログインの要求は、Hydra が自分の cookie でブラウザに結び付けている。
 type pending struct {
@@ -124,15 +125,20 @@ func accept(logger *slog.Logger, admin Hydra, w http.ResponseWriter, r *http.Req
 	redirect(logger, w, r, to, err)
 }
 
-// reject は、ログインを拒んで web へ返す。web はログインの失敗の画面を出す。
-// 理由はログにだけ書き、登録されていないメールと照合できなかった職員を、画面で区別できないようにする。
+// reject は、ログインを hydra.AccessDenied で拒んで web へ返す。web は、登録されていないメールと有効でない職員を分けない文を出す。
+// 理由はログにだけ書き、メールの登録の有無と職員の状態を、画面で区別できないようにする。
 func reject(logger *slog.Logger, admin Hydra, w http.ResponseWriter, r *http.Request, challenge, reason string, cause error) {
 	rejectAs(logger, admin, w, r, challenge, hydra.AccessDenied, reason, cause)
 }
 
 // rejectAs は、ログインを body で拒んで web へ返す。body の Error が web に渡り、web が出す文を分ける。
+// body が hydra.ServerError なら Error、ほかは Warn でログに書く。
 func rejectAs(logger *slog.Logger, admin Hydra, w http.ResponseWriter, r *http.Request, challenge string, body hydra.Rejection, reason string, cause error) {
-	logger.WarnContext(r.Context(), "ログインを拒む", "reason", reason, "error", cause)
+	level := slog.LevelWarn
+	if body == hydra.ServerError {
+		level = slog.LevelError
+	}
+	logger.Log(r.Context(), level, "ログインを拒む", "reason", reason, "error", cause)
 	to, err := admin.RejectLogin(r.Context(), challenge, body)
 	redirect(logger, w, r, to, err)
 }
@@ -148,9 +154,28 @@ func redirect(logger *slog.Logger, w http.ResponseWriter, r *http.Request, to st
 // failFunc は、fail と failLogout の型である。
 type failFunc func(logger *slog.Logger, w http.ResponseWriter, r *http.Request, code int, reason string, err error)
 
-// fail は、Hydra へ返せない失敗で、ログインの失敗の画面を出す。
+// fail は、Hydra へ返せない失敗で、ログインの失敗の画面を出す。画面の文は code で分ける。
+//   - 429: 試行の回数の上限を超えた。待つ長さを伝える（too-many-attempts）
+//   - 5xx: ブローカーか Hydra の障害。時間をおいて試すよう伝える（failure）
+//   - ほかの 4xx: ログインを始めた画面から続けられない。buddy を開き直すよう伝える（interrupted）
 func fail(logger *slog.Logger, w http.ResponseWriter, r *http.Request, code int, reason string, err error) {
-	failPage(logger, w, r, code, "failure", "ログインの失敗の画面を出す", reason, err)
+	page := "interrupted"
+	switch {
+	case code == http.StatusTooManyRequests:
+		page = "too-many-attempts"
+	case code >= http.StatusInternalServerError:
+		page = "failure"
+	}
+	failPage(logger, w, r, code, page, "ログインの失敗の画面を出す", reason, err)
+}
+
+// challengeReadStatus は、Hydra の admin API で login_challenge か consent_challenge を読めなかったときのステータスである。
+// Hydra が 4xx を返したら、使い終えたか期限の切れた challenge として 400 にする。届かないか 5xx なら、Hydra の障害として 502 にする。
+func challengeReadStatus(err error) int {
+	if hydra.IsClientError(err) {
+		return http.StatusBadRequest
+	}
+	return http.StatusBadGateway
 }
 
 // failLogout は、Hydra へ返せないログアウトの失敗で、ログアウトの失敗の画面を出す。

@@ -1,13 +1,24 @@
 import { describe, expect, it } from 'vite-plus/test'
 
-import { loginFailedMessage } from './messages'
+import {
+  loginFailedMessage,
+  loginInterruptedMessage,
+  tooManyAttemptsMessage,
+  type AuthMessage,
+} from './messages'
 import { renderPages } from './pages'
 
 describe('renderPages', () => {
   const pages = renderPages()
 
-  it('3 つの画面を書き出し、どれも CSS を ID ブローカーが埋める式で持つこと', () => {
-    expect(Object.keys(pages).sort()).toEqual(['failure.html', 'login.html', 'logout-failure.html'])
+  it('5 つの画面を書き出し、どれも CSS を ID ブローカーが埋める式で持つこと', () => {
+    expect(Object.keys(pages).sort()).toEqual([
+      'failure.html',
+      'interrupted.html',
+      'login.html',
+      'logout-failure.html',
+      'too-many-attempts.html',
+    ])
     for (const html of Object.values(pages)) {
       expect(html.startsWith('<!doctype html>\n')).toBe(true)
       expect(html).toContain('<style>{{css}}</style>')
@@ -28,8 +39,12 @@ describe('renderPages', () => {
     expect(html).toContain(`aria-describedby="${id}-hint"`)
   })
 
-  it('ログインの失敗の画面は、web と同じ定数の文言を出すこと', () => {
-    expect(pages['failure.html']).toContain(loginFailedMessage.title)
-    expect(pages['failure.html']).toContain(loginFailedMessage.body)
+  it.each<[string, AuthMessage]>([
+    ['failure.html', loginFailedMessage],
+    ['interrupted.html', loginInterruptedMessage],
+    ['too-many-attempts.html', tooManyAttemptsMessage],
+  ])('ログインの失敗の画面の %s は、その失敗の定数の文言を出すこと', (page, message) => {
+    expect(pages[page]).toContain(message.title)
+    expect(pages[page]).toContain(message.body)
   })
 })
