@@ -130,6 +130,16 @@ func TestOnboardCreatesFacilityAndManager(t *testing.T) {
 	if len(ids.Members) != 1 {
 		t.Errorf("ブローカーの職員 = %v, want 1 人", ids.Members)
 	}
+
+	// 部署とチームの名前が違っても、同じメールの有効な職員がいれば、部署とチームを作らずに成功する
+	renamed := onboardInput()
+	renamed.Facility.DepartmentName, renamed.Facility.TeamName = "リハビリ部", "B チーム"
+	if res, err := onboard(ctx, renamed); err != nil || res.ManagerCreated || res.Manager.ID != m.ID {
+		t.Fatalf("名前を変えた流し直し = %+v, %v", res, err)
+	}
+	if got := onboardRows(t, pool); !maps.Equal(got, want) {
+		t.Errorf("名前を変えた流し直しの後の行の数 = %v, want %v", got, want)
+	}
 }
 
 // ブローカーへの登録か有効化が失敗すると、予定の API に事業所も職員も残らない。上流の IdP の設定に無い組織の ID も、登録の失敗になる。

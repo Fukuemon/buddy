@@ -48,14 +48,15 @@ func NewOnboard(setup SetupFacilityFunc, create func(ctx context.Context, in Cre
 	return Onboard{setup: setup, create: create, staff: staff, locks: locks, tx: tx}
 }
 
-// errDryRun は、DryRun のときにトランザクションを戻すための番兵のエラーである。
-var errDryRun = errors.New("dry run")
+// errRollback は、何も書かずに成功するときに、トランザクションを戻すための番兵のエラーである。
+// DryRun のときと、同じメールの有効な職員がいるときに使う。
+var errRollback = errors.New("rollback")
 
 // Do は、1 つのトランザクションの中で、事業所と標準の役職と部署とチームを無ければ作り、web からの職員の登録と同じ create で
 // マネージャーの役職の職員を登録する。create はブローカーに職員を登録して有効にするので、ブローカーへの書き込みが失敗すると、
 // 事業所を含む予定の API の書き込みを全て戻す。
 //
-//   - 同じメールの職員が事業所に有効な職員としていれば、職員の管理の権限を持たなくても、何も書かずにその職員を返す（同じ引数での流し直し）。
+//   - 同じメールの職員が事業所に有効な職員としていれば、職員の管理の権限を持たなくても、トランザクションを戻し、何も書かずにその職員を返す（同じ引数での流し直し）。
 //   - 同じメールの職員が休職していれば、apperr.ErrConflict を返す。
 //   - この呼び出しで事業所を作らず、in.AllowAdditionalManager が false なら、有効なマネージャーの数によらず、code が
 //     CodeManagerExists の apperr.ErrConflict を返す。
@@ -80,10 +81,8 @@ func (o Onboard) Do(ctx context.Context, in OnboardInput) (OnboardResult, error)
 				return apperr.Conflict("メール %s の職員は、この事業所で有効でありません", email)
 			}
 			res.Manager = found
-			if in.DryRun {
-				return errDryRun
-			}
-			return nil
+			// setup が作った部署とチームを残さない
+			return errRollback
 		}
 		// 既にある事業所に事業所の外から管理者を作る操作を、全て明示の操作にする
 		if !setup.FacilityCreated && !in.AllowAdditionalManager {
@@ -103,7 +102,7 @@ func (o Onboard) Do(ctx context.Context, in OnboardInput) (OnboardResult, error)
 				return err
 			}
 			res.ManagerCreated = true
-			return errDryRun
+			return errRollback
 		}
 		if res.Manager, err = o.create(ctx, cin); err != nil {
 			// create の文は web からの登録の文で、予定の API に書いたと書くことがあるが、ここでは全てを戻す
@@ -112,7 +111,7 @@ func (o Onboard) Do(ctx context.Context, in OnboardInput) (OnboardResult, error)
 		res.ManagerCreated = true
 		return nil
 	})
-	if errors.Is(err, errDryRun) {
+	if errors.Is(err, errRollback) {
 		return res, nil
 	}
 	if err != nil {
