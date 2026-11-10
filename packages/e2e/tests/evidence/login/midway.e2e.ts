@@ -18,6 +18,12 @@ const openWeb = async (page: Page) => {
   await page.goto(`${BASE_URL}/auth/error`)
 }
 
+/**
+ * ブローカーのシード（services/broker/db/seed/seed.sql）の 青木 陽菜 の職員の ID。予定の API の職員の ID（LOGIN_STAFF.id）とは違う。
+ * 改修前に、いる職員の ID に書き換えた結果を示すために使う。
+ */
+const LOGIN_STAFF_BROKER_ID = '01M5J20JC0TFEK223R3MF68HVK'
+
 /** 登録していないメールと有効でない職員のログインで出す文。 */
 const DENIED_MESSAGE =
   '入れたメールアドレスでは、ログインできません。事業所の管理者に、登録のメールアドレスを確認してください。'
@@ -73,7 +79,7 @@ test.describe('予定のカレンダー', () => {
             await step(
               `撮影のため、cookie broker_login の職員の ID を ${LOGIN_STAFF.name} の ID に替える`,
             )
-            await forgeStaffId(page, LOGIN_STAFF.id)
+            await forgeStaffId(page, LOGIN_STAFF_BROKER_ID)
             await step(`上流の IdP で、本人のメール ${TEAM_MEMBER.email} を確認済みにして入る`)
             await signInAtUpstreamIdp(page, TEAM_MEMBER.email)
             await expect(
