@@ -114,10 +114,10 @@ const chooseMondayThursdayUntil = async (page: Page, endDate: string) => {
   await page.getByTestId('recurring-rule-end-date').fill(endDate)
 }
 
-/** YYYY-MM-DD を `2026年11月19日` の形にする。 */
+/** YYYY-MM-DD を `2026年11月19日（木）` の形にする。 */
 const japaneseDate = (date: string) => {
   const [year, month, day] = date.split('-').map(Number) as [number, number, number]
-  return `${year}年${month}月${day}日`
+  return `${year}年${month}月${day}日（${weekdayOf(date).slice(0, 1)}）`
 }
 
 /**

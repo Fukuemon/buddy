@@ -67,6 +67,9 @@ const openGoogleEvent = (page: Page, eventId: string) =>
 /** キャンセルする回の日を除外する日にした、Google の予定の recurrence の行。 */
 const CANCEL_EXDATE = 'EXDATE;TZID=Asia/Tokyo:20261123T100000'
 
+/** 書き出しが Google の予定の recurrence に書く、毎週月曜の規則の行。 */
+const WEEKLY_RULE = 'RRULE:FREQ=WEEKLY;INTERVAL=1;BYDAY=MO'
+
 test.describe('予定の詳細', () => {
   test.describe(`繰り返しの予定の回のキャンセル（${LOGIN_STAFF.name}、マネージャー）`, () => {
     test.use({ storageState: LOGIN_STATE })
@@ -139,7 +142,7 @@ test.describe('予定の詳細', () => {
         const event = await findGoogleEvent(request, HAYASHI.calendarId, title)
         const eventId = event?.id ?? ''
         await openGoogleEvent(page, eventId)
-        await expect(calendarpitText(page, 'RRULE:FREQ=WEEKLY;BYDAY=MO')).toBeVisible()
+        await expect(calendarpitText(page, WEEKLY_RULE)).toBeVisible()
         await expect(calendarpitText(page, 'EXDATE')).toHaveCount(0)
         await intro(
           page,
@@ -175,7 +178,7 @@ test.describe('予定の詳細', () => {
           `recurrence に ${CANCEL_DATE} の除外（${CANCEL_EXDATE}）だけが足され、毎週月曜の規則はそのまま。Google カレンダーからその回だけが消え、${NEXT_DATE} などのほかの回は残る`,
           async () => {
             await expect(calendarpitText(page, CANCEL_EXDATE)).toBeVisible()
-            await expect(calendarpitText(page, 'RRULE:FREQ=WEEKLY;BYDAY=MO')).toBeVisible()
+            await expect(calendarpitText(page, WEEKLY_RULE)).toBeVisible()
           },
         )
       } finally {

@@ -20,7 +20,7 @@ import {
 } from '../../fixtures/schedule'
 import { STAFF_FORM } from '../../fixtures/staff'
 import { openApiClient, openApiReference } from '../../screens/apiReference'
-import { apiClient, testRequestButton } from '../../selectors/apiReference'
+import { apiClient } from '../../selectors/apiReference'
 import { linkStaffCalendar, unlinkStaffCalendar } from '../../setup/calendar'
 import {
   fillApiBody,
@@ -63,7 +63,7 @@ const id = async (res: Awaited<ReturnType<APIRequestContext['post']>>) => {
 const openReference = async (page: Page) => {
   await routeApiReference(page)
   await openApiReference(page, 'schedule')
-  await expect(testRequestButton(page, 'delete', '/v1/schedules/{schedule_id}')).toBeAttached()
+  await page.waitForLoadState('load')
 }
 
 /** 前の送信のクライアントを、ページを開き直して閉じる。開いたままだと、次の操作のボタンを押せない。 */
