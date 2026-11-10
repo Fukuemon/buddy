@@ -20,7 +20,7 @@ test.describe('スマートフォンの幅', () => {
       page,
     }) => {
       await page.goto('/schedule')
-      await expect(page.getByTestId('schedule-calendar')).toBeVisible()
+      await expect(page.getByTestId(`day-grid-staff-${LOGIN_STAFF.id}`)).toBeVisible()
       await intro(
         page,
         '幅 390px で予定のカレンダーを開くと、ページが横にスクロールしない\n前提 幅 390px で予定のカレンダーを開いている',

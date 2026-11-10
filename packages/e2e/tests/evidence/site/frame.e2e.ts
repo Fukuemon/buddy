@@ -148,7 +148,7 @@ test.describe('画面の枠', () => {
       page,
     }) => {
       await page.goto('/schedule')
-      await expect(page.getByTestId('schedule-calendar')).toBeVisible()
+      await expect(page.getByTestId(`day-grid-staff-${LOGIN_STAFF.id}`)).toBeVisible()
       await expect(page.getByTestId('site-nav')).toBeHidden()
       await intro(
         page,
