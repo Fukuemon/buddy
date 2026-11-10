@@ -278,7 +278,9 @@ test.describe('予定のカレンダー', () => {
             await expect(page.getByTestId('auth-error')).toContainText(
               '登録と違うアカウントでログインしました',
             )
-            await check('web のログインの失敗の画面に「登録と違うアカウントでログインしました」が出る')
+            await check(
+              'web のログインの失敗の画面に「登録と違うアカウントでログインしました」が出る',
+            )
 
             await step('予定のカレンダーを開き直す')
             await page.goto(DAY)
