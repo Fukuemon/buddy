@@ -11,6 +11,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/Fukuemon/buddy/services/schedule/internal/apperr"
+	"github.com/Fukuemon/buddy/services/schedule/internal/audit"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/organization"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/staff"
 	"github.com/Fukuemon/buddy/services/schedule/internal/inmem"
@@ -38,9 +39,37 @@ func onboardWith(pool *pgxpool.Pool, ids *inmem.Identities) func(context.Context
 	tx, gen := NewTransactor(pool), ulid.Generator{}
 	facilities, departments, teams := NewFacilityRepository(pool), NewDepartmentRepository(pool), NewTeamRepository(pool)
 	positions, policies, staffRepo := NewPositionRepository(pool), NewPolicyRepository(pool), NewStaffRepository(pool)
-	setup := organization.NewSetupFacility(facilities, facilities, departments, teams, positions, policies, gen)
-	create := staff.NewCreate(facilities, departments, teams, positions, ids, staffRepo, tx, gen, func(context.Context) error { return nil })
-	return staff.NewOnboard(setup.Do, create.Do, staffRepo, facilities, tx).Do
+	rec := audit.NewRecorder(NewPermissionAuditRepository(pool), gen, func(context.Context) (string, bool) { return "", false })
+	setup := organization.NewSetupFacility(facilities, facilities, departments, teams, positions, policies, rec, gen)
+	create := staff.NewCreate(facilities, departments, teams, positions, ids, staffRepo, rec, tx, gen, func(context.Context) error { return nil })
+	do := staff.NewOnboard(setup.Do, create.Do, staffRepo, facilities, tx).Do
+	// cmd/ops と同じく、運営者と相関 ID を ctx に載せる
+	return func(ctx context.Context, in staff.OnboardInput) (staff.OnboardResult, error) {
+		return do(audit.WithOperator(audit.WithRequestID(ctx, gen.NewID()), "ops-01"), in)
+	}
+}
+
+// auditActions は、監査の記録の action を書いた順に返す。全ての行が運営者 ops-01 の操作でなければ失敗する。
+func auditActions(t *testing.T, pool *pgxpool.Pool) []string {
+	t.Helper()
+	rows, err := pool.Query(context.Background(),
+		"SELECT action, actor_kind, coalesce(actor_operator, '') FROM permission_audits ORDER BY occurred_at, id")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer rows.Close()
+	var out []string
+	for rows.Next() {
+		var action, kind, op string
+		if err := rows.Scan(&action, &kind, &op); err != nil {
+			t.Fatal(err)
+		}
+		if kind != "operator" || op != "ops-01" {
+			t.Errorf("%s の操作した人 = %s %s, want operator ops-01", action, kind, op)
+		}
+		out = append(out, action)
+	}
+	return out
 }
 
 func onboardInput() staff.OnboardInput {
@@ -55,7 +84,7 @@ func onboardInput() staff.OnboardInput {
 func onboardRows(t *testing.T, pool *pgxpool.Pool) map[string]int {
 	t.Helper()
 	out := map[string]int{}
-	for _, table := range []string{"facilities", "positions", "position_policies", "departments", "teams", "users", "user_policies"} {
+	for _, table := range []string{"facilities", "positions", "position_policies", "departments", "teams", "users", "user_policies", "permission_audits"} {
 		var n int
 		if err := pool.QueryRow(context.Background(), "SELECT count(*) FROM "+table).Scan(&n); err != nil {
 			t.Fatal(err)
@@ -112,9 +141,13 @@ func TestOnboardCreatesFacilityAndManager(t *testing.T) {
 		t.Errorf("ブローカーの職員 = %+v, want 有効", id)
 	}
 	// 役職ごとのデフォルトの権限の数は、PRD の表のとおり 5、3、1、3 である
-	want := map[string]int{"facilities": 1, "positions": 4, "position_policies": 12, "departments": 1, "teams": 1, "users": 1, "user_policies": 5}
+	want := map[string]int{"facilities": 1, "positions": 4, "position_policies": 12, "departments": 1, "teams": 1, "users": 1, "user_policies": 5, "permission_audits": 6}
 	if got := onboardRows(t, pool); !maps.Equal(got, want) {
 		t.Errorf("行の数 = %v, want %v", got, want)
+	}
+	wantActions := []string{"facility.create", "position.create", "position.create", "position.create", "position.create", "staff.create"}
+	if got := auditActions(t, pool); !slices.Equal(got, wantActions) {
+		t.Errorf("監査の記録 = %v, want %v", got, wantActions)
 	}
 
 	again, err := onboard(ctx, onboardInput())
@@ -227,6 +260,10 @@ func TestOnboardAdditionalManager(t *testing.T) {
 	}
 	if got := onboardRows(t, pool); got["users"] != 2 || got["positions"] != 4 {
 		t.Errorf("行の数 = %v", got)
+	}
+	// フラグを付けた登録は、staff.create を書かず、staff.create_forced の 1 行だけを書く
+	if got := auditActions(t, pool); len(got) != 7 || got[6] != "staff.create_forced" || slices.Contains(got[1:6], "staff.create_forced") {
+		t.Errorf("監査の記録 = %v, want 最後だけ staff.create_forced", got)
 	}
 }
 

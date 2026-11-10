@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"strings"
 
+	"github.com/Fukuemon/buddy/services/schedule/internal/audit"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/staff"
 	"github.com/Fukuemon/buddy/services/schedule/internal/ulid"
 )
@@ -27,11 +28,14 @@ var errOnboardFailed = errors.New("onboard failed")
 // 書いた操作ごとに 1 行を、action、actor_kind、actor_operator、facility_id、対象の ID と、実行ごとの request_id で書く。
 // メールと職員の名前は書かない。失敗したときは、メールを伏せた理由を書いてから errOnboardFailed を返す。
 func onboardFacility(ctx context.Context, do onboardFunc, a onboardArgs, log *slog.Logger) error {
+	rid := ulid.Generator{}.NewID()
 	log = log.With(
 		slog.String("actor_kind", actorKindOperator),
 		slog.String("actor_operator", a.Operator),
-		slog.String("request_id", ulid.Generator{}.NewID()),
+		slog.String("request_id", rid),
 	)
+	// 監査の記録（ADR-0042）を、運営者の操作として、ログと同じ相関 ID で書かせる
+	ctx = audit.WithOperator(audit.WithRequestID(ctx, rid), a.Operator)
 	res, err := do(ctx, a.OnboardInput)
 	if err != nil {
 		log.Error("事業所と最初のマネージャーを登録できなかった", slog.String("org_id", a.Facility.OrgID),

@@ -3,10 +3,12 @@ package organization_test
 import (
 	"context"
 	"errors"
+	"reflect"
 	"slices"
 	"testing"
 
 	"github.com/Fukuemon/buddy/services/schedule/internal/apperr"
+	"github.com/Fukuemon/buddy/services/schedule/internal/audit"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/organization"
 	"github.com/Fukuemon/buddy/services/schedule/internal/inmem"
 )
@@ -27,7 +29,14 @@ func policyStore() *inmem.Store {
 func newSetup(s *inmem.Store) organization.SetupFacility {
 	f := inmem.Facilities{Store: s}
 	return organization.NewSetupFacility(f, f, inmem.Departments{Store: s}, inmem.Teams{Store: s}, inmem.Positions{Store: s},
-		inmem.Policies{Store: s}, &inmem.SeqIDs{})
+		inmem.Policies{Store: s}, audit.NewRecorder(inmem.PermissionAudits{Store: s}, &inmem.SeqIDs{}, noStaff), &inmem.SeqIDs{})
+}
+
+func noStaff(context.Context) (string, bool) { return "", false }
+
+// operatorCtx は、運営用の CLI と同じく、運営者と相関 ID を載せた ctx を返す。
+func operatorCtx() context.Context {
+	return audit.WithOperator(audit.WithRequestID(context.Background(), "REQ1"), "ops-01")
 }
 
 var setupInput = organization.SetupFacilityInput{OrgID: "org-new", Name: "新しい事業所", DepartmentName: "看護部", TeamName: "A チーム"}
@@ -43,7 +52,7 @@ func codesOf(p organization.Position) []organization.PolicyCode {
 
 func TestSetupFacilityCreatesStandardPositions(t *testing.T) {
 	s := policyStore()
-	got, err := newSetup(s).Do(context.Background(), setupInput)
+	got, err := newSetup(s).Do(operatorCtx(), setupInput)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -60,13 +69,44 @@ func TestSetupFacilityCreatesStandardPositions(t *testing.T) {
 	if got.ManagerPosition.Name != "マネージャー" {
 		t.Errorf("マネージャーの役職 = %s", got.ManagerPosition.Name)
 	}
+	// 事業所と 4 つの役職を、運営者の操作として、同じ相関 ID で記録する（ADR-0042）
+	recs := s.PermissionAudits
+	if len(recs) != 5 || recs[0].Action != audit.FacilityCreate || recs[0].FacilityID != got.Facility.ID {
+		t.Fatalf("記録 = %+v, want facility.create と 4 つの position.create", recs)
+	}
+	for i, r := range recs {
+		if r.ActorKind != audit.ActorOperator || r.ActorOperator != "ops-01" || r.ActorUserID != "" || r.RequestID != "REQ1" {
+			t.Errorf("記録 %d の操作した人 = %+v", i, r)
+		}
+		if i == 0 {
+			continue
+		}
+		p := got.Positions[i-1]
+		want := audit.NewPositionState(p.Name, func() []string {
+			var out []string
+			for _, c := range codesOf(p) {
+				out = append(out, string(c))
+			}
+			return out
+		}())
+		if r.Action != audit.PositionCreate || r.TargetPositionID != p.ID || !reflect.DeepEqual(r.After, want) {
+			t.Errorf("記録 %d = %+v, want 役職 %s の position.create", i, r, p.Name)
+		}
+	}
+}
+
+// ctx に運営者がいなければ、記録を書けないので失敗する。
+func TestSetupFacilityRequiresOperator(t *testing.T) {
+	if _, err := newSetup(policyStore()).Do(audit.WithRequestID(context.Background(), "REQ1"), setupInput); !errors.Is(err, audit.ErrNoActor) {
+		t.Errorf("err = %v, want audit.ErrNoActor", err)
+	}
 }
 
 // 既にある事業所では役職を作らず、名前を変えた役職でも、職員の管理の権限をデフォルトに持つ役職をマネージャーの役職にする。
 // 部署は同じ名前を使い、チームは無ければ、使われていない色で作る。
 func TestSetupFacilityReusesExistingFacility(t *testing.T) {
 	s := policyStore()
-	ctx := context.Background()
+	ctx := operatorCtx()
 	first, err := newSetup(s).Do(ctx, setupInput)
 	if err != nil {
 		t.Fatal(err)
@@ -79,6 +119,9 @@ func TestSetupFacilityReusesExistingFacility(t *testing.T) {
 	got, err := newSetup(s).Do(ctx, in)
 	if err != nil {
 		t.Fatal(err)
+	}
+	if len(s.PermissionAudits) != 5 {
+		t.Errorf("記録の数 = %d, want 1 回目の 5 のまま", len(s.PermissionAudits))
 	}
 	if got.FacilityCreated || len(got.CreatedPositions) != 0 || len(s.Positions) != 4 {
 		t.Errorf("役職を作った: %+v, %d", got.CreatedPositions, len(s.Positions))
@@ -128,7 +171,7 @@ func TestSetupFacilityErrors(t *testing.T) {
 			if tt.input != nil {
 				in = tt.input(in)
 			}
-			_, err := newSetup(s).Do(context.Background(), in)
+			_, err := newSetup(s).Do(operatorCtx(), in)
 			if err == nil || (tt.want != nil && !errors.Is(err, tt.want)) {
 				t.Errorf("err = %v, want %v", err, tt.want)
 			}

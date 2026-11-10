@@ -95,6 +95,7 @@ func (o Onboard) Do(ctx context.Context, in OnboardInput) (OnboardResult, error)
 			DepartmentID: setup.Department.ID,
 			TeamID:       setup.Team.ID,
 			PositionID:   setup.ManagerPosition.ID,
+			forced:       !setup.FacilityCreated,
 		}
 		if in.DryRun {
 			res.Manager, err = newPlannedManager(cin, setup)

@@ -6,6 +6,7 @@ import (
 	"slices"
 
 	"github.com/Fukuemon/buddy/services/schedule/internal/apperr"
+	"github.com/Fukuemon/buddy/services/schedule/internal/audit"
 	"github.com/Fukuemon/buddy/services/schedule/internal/kernel"
 )
 
@@ -33,6 +34,7 @@ type FacilitySetup struct {
 }
 
 // SetupFacility は、事業所と、標準の 4 つの役職と、最初の職員の部署とチームを、無ければ作る。運営用の CLI が使う。
+// 呼び出し側は、audit.WithOperator と audit.WithRequestID で、運営者と相関 ID を ctx に載せる。
 type SetupFacility struct {
 	facilities  FacilityRepository
 	creator     FacilityCreator
@@ -40,12 +42,13 @@ type SetupFacility struct {
 	teams       TeamRepository
 	positions   PositionRepository
 	policies    PolicyRepository
+	audit       audit.Recorder
 	ids         kernel.IDGenerator
 }
 
-// NewSetupFacility は SetupFacility を作る。
-func NewSetupFacility(facilities FacilityRepository, creator FacilityCreator, departments DepartmentRepository, teams TeamRepository, positions PositionRepository, policies PolicyRepository, ids kernel.IDGenerator) SetupFacility {
-	return SetupFacility{facilities: facilities, creator: creator, departments: departments, teams: teams, positions: positions, policies: policies, ids: ids}
+// NewSetupFacility は SetupFacility を作る。事業所と役職を作ったときは、audit で運営者の操作の記録を書く（ADR-0042）。
+func NewSetupFacility(facilities FacilityRepository, creator FacilityCreator, departments DepartmentRepository, teams TeamRepository, positions PositionRepository, policies PolicyRepository, audit audit.Recorder, ids kernel.IDGenerator) SetupFacility {
+	return SetupFacility{facilities: facilities, creator: creator, departments: departments, teams: teams, positions: positions, policies: policies, audit: audit, ids: ids}
 }
 
 // Do は、組織の ID が in.OrgID の事業所を、無ければ作り、あれば使う。呼び出し側がトランザクションの中で呼ぶ。
@@ -108,6 +111,9 @@ func (o SetupFacility) createFacility(ctx context.Context, in SetupFacilityInput
 	if err := o.creator.Create(ctx, f); err != nil {
 		return Facility{}, apperr.AsConflict(err, "組織 %s の事業所はすでにあります", in.OrgID)
 	}
+	if err := o.audit.Record(ctx, audit.Entry{FacilityID: f.ID, Action: audit.FacilityCreate}); err != nil {
+		return Facility{}, err
+	}
 	return o.facilities.Get(ctx, f.ID)
 }
 
@@ -135,6 +141,16 @@ func (o SetupFacility) createStandardPositions(ctx context.Context, facilityID s
 			return nil, apperr.AsConflict(err, "役職 %s はこの事業所にすでにあります", p.Name)
 		}
 		if p, err = o.positions.Get(ctx, p.ID); err != nil {
+			return nil, err
+		}
+		codes := make([]string, 0, len(p.Policies))
+		for _, pol := range p.Policies {
+			codes = append(codes, string(pol.Code))
+		}
+		if err := o.audit.Record(ctx, audit.Entry{
+			FacilityID: facilityID, Action: audit.PositionCreate, TargetPositionID: p.ID,
+			After: audit.NewPositionState(p.Name, codes),
+		}); err != nil {
 			return nil, err
 		}
 		out = append(out, p)
