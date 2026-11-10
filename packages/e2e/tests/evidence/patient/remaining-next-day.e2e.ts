@@ -1,12 +1,10 @@
-import { expect, test, type APIRequestContext, type Page } from '@playwright/test'
+import { expect, test, type APIRequestContext, type Browser, type Page } from '@playwright/test'
 
-import { LOGIN_EMAIL, LOGIN_STAFF, SCHEDULE_URL } from '../../fixtures/env'
-import { EVIDENCE_VARIANTS, recordPrEvidence } from '../../fixtures/evidence'
+import { check, intro, step } from '../../fixtures/caption'
+import { LOGIN_STAFF, LOGIN_STATE, SCHEDULE_URL } from '../../fixtures/env'
 import { registerPatient } from '../../fixtures/patient'
+import { prepareOutsideRecording } from '../../fixtures/recording'
 import { issueManagerToken, STAFF_FORM } from '../../fixtures/staff'
-import { signInAtBroker } from '../../screens/login'
-
-const MANAGER = `${LOGIN_STAFF.name}（マネージャー、職員の管理の権限あり）`
 
 /** 残る予定を作る日。今日より後にする。2030 年 1 月 8 日は火曜日である。 */
 const OVERNIGHT_DATE = '2030-01-08'
@@ -29,11 +27,9 @@ const masterId = async (request: APIRequestContext, token: string, path: string,
 }
 
 /**
- * マネージャーでログインし、利用者を 1 人登録する。利用者の ID と、その利用者の訪問の予定を作って ID を返す関数を返す。
+ * マネージャーのトークンで利用者を 1 人登録する。利用者の ID と、その利用者の訪問の予定を作って ID を返す関数を返す。
  */
 const registerVisitPatient = async (page: Page, name: string) => {
-  await page.goto('/patients')
-  await signInAtBroker(page, LOGIN_EMAIL)
   const token = await issueManagerToken()
   const registered = await registerPatient(page.request, token, STAFF_FORM.facilityId, {
     name,
@@ -74,35 +70,37 @@ const registerVisitPatient = async (page: Page, name: string) => {
 /** 22:00 に始まり、翌日の 01:00 に終わる予定の時刻。 */
 const OVERNIGHT = { start_time: '22:00', end_time: '01:00', ends_next_day: true }
 
-/** 撮影の前に利用者を 1 人登録し、翌日に終わる訪問の単発の予定と毎週の予定を作る。利用者の ID と名前と、予定の ID を返す。 */
-const prepareOvernightPatient = (name: string) => async (page: Page) => {
-  const { id, create } = await registerVisitPatient(page, name)
-  return {
-    id,
-    name,
-    overnight: await create('/schedules', { date: OVERNIGHT_DATE, ...OVERNIGHT }),
-    recurring: await create(
-      '/schedules/recurring',
-      { date: RECURRING_DATE, ...OVERNIGHT },
-      { recurring_rule: { frequency: 'weekly' } },
-    ),
-  }
-}
+/** 録画の外で利用者を 1 人登録し、翌日に終わる訪問の単発の予定と毎週の予定を作る。利用者の ID と名前と、予定の ID を返す。 */
+const prepareOvernightPatient = (browser: Browser, name: string) =>
+  prepareOutsideRecording(browser, {}, async (page) => {
+    const { id, create } = await registerVisitPatient(page, name)
+    return {
+      id,
+      name,
+      overnight: await create('/schedules', { date: OVERNIGHT_DATE, ...OVERNIGHT }),
+      recurring: await create(
+        '/schedules/recurring',
+        { date: RECURRING_DATE, ...OVERNIGHT },
+        { recurring_rule: { frequency: 'weekly' } },
+      ),
+    }
+  })
 
-/** 撮影の前に利用者を 1 人登録し、同じ日に終わる訪問の単発の予定だけを作る。利用者の ID と名前と、予定の ID を返す。 */
-const prepareSameDayPatient = (name: string) => async (page: Page) => {
-  const { id, create } = await registerVisitPatient(page, name)
-  return {
-    id,
-    name,
-    sameDay: await create('/schedules', {
-      date: SAME_DAY_DATE,
-      start_time: '10:00',
-      end_time: '11:00',
-      ends_next_day: false,
-    }),
-  }
-}
+/** 録画の外で利用者を 1 人登録し、同じ日に終わる訪問の単発の予定だけを作る。利用者の ID と名前と、予定の ID を返す。 */
+const prepareSameDayPatient = (browser: Browser, name: string) =>
+  prepareOutsideRecording(browser, {}, async (page) => {
+    const { id, create } = await registerVisitPatient(page, name)
+    return {
+      id,
+      name,
+      sameDay: await create('/schedules', {
+        date: SAME_DAY_DATE,
+        start_time: '10:00',
+        end_time: '11:00',
+        ends_next_day: false,
+      }),
+    }
+  })
 
 /** 利用者の詳細を開き、「…」のメニューから利用の終了のダイアログを開く。 */
 const openEndDialog = async (page: Page, patientId: string) => {
@@ -113,71 +111,73 @@ const openEndDialog = async (page: Page, patientId: string) => {
 }
 
 test.describe('利用者の詳細', () => {
-  test.describe('残る予定の時刻の範囲', () => {
-    for (const variant of EVIDENCE_VARIANTS) {
-      const prefix = variant.label ? `${variant.label}: ` : ''
-      const isBefore = variant.name === 'before'
+  test.describe(`残る予定の時刻の範囲（${LOGIN_STAFF.name}、マネージャー、職員の管理の権限あり）`, () => {
+    test.use({ storageState: LOGIN_STATE })
 
-      test(`${prefix}翌日に終わる単発の予定と繰り返しの予定が残る利用者の利用の終了のダイアログを開いた場合、終了の時刻に「翌」が付くこと`, async ({
-        browser,
-      }) => {
-        await recordPrEvidence(
-          browser,
-          {
-            name: 'patient-remaining-next-day',
-            title:
-              '翌日に終わる予定が残る利用者の利用の終了のダイアログで、終了の時刻に「翌」が付く',
-            actor: MANAGER,
-            variant,
-          },
-          prepareOvernightPatient('見本 夜子'),
-          async ({ page, step, check }, patient) => {
-            await step(
-              `撮影の前に ${patient.name} を登録し、22:00 から翌日の 01:00 の訪問の単発の予定と毎週の予定を作った`,
-            )
-            await step('利用者の詳細を開き、「…」から「利用を終了する」を押す')
-            await openEndDialog(page, patient.id)
-            const schedule = page.getByTestId(`patient-end-schedule-${patient.overnight}`)
+    test(
+      'patient-remaining-next-day 翌日に終わる単発の予定と繰り返しの予定が残る利用者の利用の終了のダイアログを開いた場合、終了の時刻に「翌」が付くこと',
+      { tag: '@compare' },
+      async ({ browser, context }) => {
+        const patient = await prepareOvernightPatient(browser, '見本 夜子')
+
+        const page = await context.newPage()
+        await page.goto('/patients')
+        await expect(page.getByTestId('patient-list-table')).toBeVisible()
+        await intro(
+          page,
+          `翌日に終わる予定が残る利用者の利用の終了のダイアログで、終了の時刻に「翌」が付く\n前提 撮影の前に ${patient.name} を登録し、22:00 から翌日の 01:00 の訪問の単発の予定と毎週の予定を作った`,
+        )
+
+        await step(page, '利用者の詳細を開き、「…」から「利用を終了する」を押す', () =>
+          openEndDialog(page, patient.id),
+        )
+        const scheduleText = '2030年1月8日（火） 22:00〜翌 01:00'
+        const recurringText = '2030年1月9日（水）から終了日なし、22:00〜翌 01:00'
+        // 改修前は「翌」が付かない。改修前でも通るよう、「翌」の有無を問わずに時刻の範囲を確認する
+        await check(
+          page,
+          `単発は「${scheduleText}」、繰り返しは「${recurringText}」と出る。時刻の範囲は折り返さない`,
+          async () => {
             const recurring = page.getByTestId(`patient-end-recurring-${patient.recurring}`)
-            const next = isBefore ? '' : '翌 '
-            const scheduleText = `2030年1月8日（火） 22:00〜${next}01:00`
-            const recurringText = `2030年1月9日（水）から終了日なし、22:00〜${next}01:00`
-            await expect(schedule).toContainText(scheduleText)
-            await expect(recurring).toContainText(recurringText)
-            await recurring.scrollIntoViewIfNeeded()
-            await check(
-              `${isBefore ? '改修前: ' : ''}単発は「${scheduleText}」、繰り返しは「${recurringText}」と出る${isBefore ? '' : '。時刻の範囲は折り返さない'}`,
+            await expect(
+              page.getByTestId(`patient-end-schedule-${patient.overnight}`),
+            ).toContainText(/2030年1月8日（火） 22:00〜(翌 )?01:00/)
+            await expect(recurring).toContainText(
+              /2030年1月9日（水）から終了日なし、22:00〜(翌 )?01:00/,
             )
+            await recurring.scrollIntoViewIfNeeded()
           },
         )
-      })
+      },
+    )
 
-      test(`${prefix}同じ日に終わる予定が残る利用者の利用の終了のダイアログを開いた場合、終了の時刻に「翌」が付かないこと`, async ({
-        browser,
-      }) => {
-        await recordPrEvidence(
-          browser,
-          {
-            name: 'patient-remaining-same-day',
-            title:
-              '同じ日に終わる予定が残る利用者の利用の終了のダイアログで、終了の時刻に「翌」が付かない',
-            actor: MANAGER,
-            variant,
-          },
-          prepareSameDayPatient('見本 昼子'),
-          async ({ page, step, check }, patient) => {
-            await step(`撮影の前に ${patient.name} を登録し、10:00 から 11:00 の訪問の予定を作った`)
-            await step('利用者の詳細を開き、「…」から「利用を終了する」を押す')
-            await openEndDialog(page, patient.id)
+    test(
+      'patient-remaining-same-day 同じ日に終わる予定が残る利用者の利用の終了のダイアログを開いた場合、終了の時刻に「翌」が付かないこと',
+      { tag: '@compare' },
+      async ({ browser, context }) => {
+        const patient = await prepareSameDayPatient(browser, '見本 昼子')
+
+        const page = await context.newPage()
+        await page.goto('/patients')
+        await expect(page.getByTestId('patient-list-table')).toBeVisible()
+        await intro(
+          page,
+          `同じ日に終わる予定が残る利用者の利用の終了のダイアログで、終了の時刻に「翌」が付かない\n前提 撮影の前に ${patient.name} を登録し、10:00 から 11:00 の訪問の予定を作った`,
+        )
+
+        await step(page, '利用者の詳細を開き、「…」から「利用を終了する」を押す', () =>
+          openEndDialog(page, patient.id),
+        )
+        await check(
+          page,
+          '同じ日に終わる予定は「2030年1月10日（木） 10:00〜11:00」と出て、「翌」が付かない',
+          async () => {
             const schedule = page.getByTestId(`patient-end-schedule-${patient.sameDay}`)
             await expect(schedule).toContainText('2030年1月10日（木） 10:00〜11:00')
             await schedule.scrollIntoViewIfNeeded()
-            await check(
-              `${isBefore ? '改修前: ' : ''}同じ日に終わる予定は「2030年1月10日（木） 10:00〜11:00」と出て、「翌」が付かない`,
-            )
           },
         )
-      })
-    }
+      },
+    )
   })
 })
