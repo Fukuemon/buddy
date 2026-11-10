@@ -196,6 +196,25 @@ describe('ログイン', () => {
     expect(exchangeCode).not.toHaveBeenCalled()
   })
 
+  it('ログインの途中の値が無ければ、トークンを取らずに interrupted へリダイレクトする', async () => {
+    const exchangeCode = vi.fn<OidcClient['exchangeCode']>()
+    const { store, deps } = setup({ oidc: fakeOidc({ exchangeCode }) })
+    vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const start = await startLogin(new Request('http://web.test/auth/login'), deps)
+    const state = new URL(start.headers.get('Location') ?? '').searchParams.get('state')
+    for (const key of [...store.values.keys()].filter((k) => k.startsWith('login:'))) {
+      store.values.delete(key)
+    }
+    const res = await finishLogin(
+      new Request(`http://web.test/auth/callback?code=c&state=${state}`, {
+        headers: { Cookie: cookiesOf(start) },
+      }),
+      deps,
+    )
+    expect(res.headers.get('Location')).toBe('/auth/error?reason=interrupted')
+    expect(exchangeCode).not.toHaveBeenCalled()
+  })
+
   it('事業所に登録されていない職員は forbidden へリダイレクトし、セッションを作らない', async () => {
     const { store, deps } = setup({ getMe: async () => ({ ok: false, reason: 'forbidden' }) })
     const res = await login(deps)

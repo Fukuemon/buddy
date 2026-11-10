@@ -107,7 +107,7 @@ export const startLogin = async (request: Request, deps: AuthDeps): Promise<Resp
  * ブローカーが Hydra へ返した reject の error を、ログインの失敗の画面の理由に読み替える。
  * error の値は、ID ブローカーの internal/hydra の Rejection と同じにする。知らない値は failed にする。
  */
-export const reasonOfBrokerError = (error: string): AuthErrorReason => {
+const reasonOfBrokerError = (error: string): AuthErrorReason => {
   switch (error) {
     case 'access_denied':
       return 'denied'
