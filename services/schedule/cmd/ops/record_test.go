@@ -35,7 +35,7 @@ func TestOnboardFacilityRecord(t *testing.T) {
 		absent  []string
 	}{
 		{"登録した", false, true, map[string]any{"facility_id": "FAC1", "staff_id": "STAFF1", "manager_created": true, "msg": "事業所と最初のマネージャーを登録した"}, nil},
-		{"登録済み", false, false, map[string]any{"facility_id": "FAC1", "staff_id": "STAFF1", "manager_created": false, "msg": "マネージャーは登録済みで、何も書かなかった"}, nil},
+		{"登録済み", false, false, map[string]any{"facility_id": "FAC1", "staff_id": "STAFF1", "manager_created": false, "msg": "同じメールの職員が登録済みで、何も書かなかった"}, nil},
 		{"dry-run", true, true, map[string]any{"facility_name": "新しい事業所", "manager_position_name": "マネージャー", "dry_run": true}, []string{"facility_id", "staff_id"}},
 	}
 	for _, tt := range tests {

@@ -76,9 +76,9 @@ func TestOnboardExistingStaff(t *testing.T) {
 		dryRun   bool
 		conflict bool
 	}{
-		{"有効なマネージャーなら何も書かずに返す", true, nil, false, false},
+		{"有効なマネージャーなら、何も書かずに返す", true, nil, false, false},
 		{"dry-run でも何も書かずに返す", true, nil, true, false},
-		{"職員の管理の権限が無ければ 409", false, nil, false, true},
+		{"職員の管理の権限を持たない有効な職員でも、何も書かずに返す", false, nil, false, false},
 		{"休職のマネージャーなら 409", true, &ago, false, true},
 	}
 	for _, tt := range tests {

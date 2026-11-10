@@ -55,8 +55,8 @@ var errDryRun = errors.New("dry run")
 // マネージャーの役職の職員を登録する。create はブローカーに職員を登録して有効にするので、ブローカーへの書き込みが失敗すると、
 // 事業所を含む予定の API の書き込みを全て戻す。
 //
-//   - 同じメールの職員が事業所に職員の管理の権限を持つ有効な職員としていれば、何も書かずに、その職員を返す（同じ引数での流し直し）。
-//   - 同じメールの職員がそれ以外の状態でいれば、apperr.ErrConflict を返す。
+//   - 同じメールの職員が事業所に有効な職員としていれば、職員の管理の権限を持たなくても、何も書かずにその職員を返す（同じ引数での流し直し）。
+//   - 同じメールの職員が休職していれば、apperr.ErrConflict を返す。
 //   - 職員の管理の権限を持つ有効な職員がほかにいて、in.AllowAdditionalManager が false なら、code が CodeManagerExists の
 //     apperr.ErrConflict を返す。
 //   - in.DryRun なら、ブローカーを呼ばず、トランザクションを戻して、書くはずだったものを返す。
@@ -76,8 +76,8 @@ func (o Onboard) Do(ctx context.Context, in OnboardInput) (OnboardResult, error)
 		if found, ok, err := o.findByEmail(ctx, fid, email); err != nil {
 			return err
 		} else if ok {
-			if found.Status() != StatusActive || !hasStaffManage(found) {
-				return apperr.Conflict("メール %s の職員は、この事業所に職員の管理の権限を持たない職員としているか、有効でありません", email)
+			if found.Status() != StatusActive {
+				return apperr.Conflict("メール %s の職員は、この事業所で有効でありません", email)
 			}
 			res.Manager = found
 			if in.DryRun {
@@ -161,8 +161,4 @@ func newPlannedManager(in CreateInput, setup organization.FacilitySetup) (Detail
 		d.Policies = append(d.Policies, PolicyGrant{PolicyID: p.ID, PolicyCode: p.Code, PolicyName: p.Name})
 	}
 	return d, nil
-}
-
-func hasStaffManage(d Detail) bool {
-	return slices.ContainsFunc(d.Policies, func(g PolicyGrant) bool { return g.PolicyCode == organization.StaffManage })
 }
