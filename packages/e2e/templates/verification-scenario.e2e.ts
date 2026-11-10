@@ -39,11 +39,9 @@ test.describe('<機能>', () => {
         const page = await context.newPage()
         // URL は baseURL からの相対パスにする
         await page.goto('<前提の画面のパス>')
-        await intro(page, '<この録画で確認すること>')
-        // 前提でも、画面の状態を確認して静止画を残すときは check を使う
-        await check(page, '前提 <前提の文>', () =>
-          expect(page.getByTestId('<前提の画面の要素>')).toBeVisible(),
-        )
+        await expect(page.getByTestId('<前提の画面の要素>')).toBeVisible()
+        // 操作を持たない前提の文は、step にも check にもせず、intro の 2 行目に書く
+        await intro(page, '<この録画で確認すること>\n前提 <前提の文>')
         await step(page, 'もし <操作の文>', async () => {
           // <例の行の操作>
         })
