@@ -169,7 +169,9 @@ hydra janitor -c <hydra serve の設定ファイル> -e --tokens --requests --gr
 | `--requests` | 終わらなかったか、拒んだログインと同意の要求 | `ttl.login_consent_request`（buddy は設定せず、デフォルトの 30 分） |
 | `--grants` | JWT Bearer の信頼の関係のうち、期限の切れたもの。buddy は使わない | 期限まで |
 
-- janitor は、ログインのセッションと認可コードの行を消さない。これらはログインの回数だけ増え、refresh token より少ない。
+- janitor は、ログインのセッション、認可コード、トークンを発行し終えたログインの要求の行を消さない。
+  - これらはログインの回数だけ増えるので、refresh token の行より少ない。
+- v26.2.0 のローカル環境では、終わらなかったログインの要求と、ブローカーが拒んだログインの要求は、DB に行を作らなかった。`--requests` が消すのは、行が作られた要求だけである。
 - janitor は、Hydra を動かしたまま流せる。行を少しずつ消すので、テーブルを長く占有しない。
 - 出典: [hydra janitor](https://www.ory.sh/docs/hydra/cli/hydra-janitor)
 
