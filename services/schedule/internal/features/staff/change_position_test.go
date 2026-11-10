@@ -110,4 +110,16 @@ func TestStaffChangePosition(t *testing.T) {
 	if _, err := newUC(setup()).ChangePosition(ctx, "MISSING", leaderID); !errors.Is(err, apperr.ErrNotFound) {
 		t.Errorf("無い職員: err = %v, want ErrNotFound", err)
 	}
+	t.Run("職員の今の役職が見つからなければ、404 と読まれない内部のエラーを返し、何も書かない", func(t *testing.T) {
+		s := setup()
+		delete(s.Positions, memberID)
+		want := slices.Clone(s.Staff[staffID].Policies)
+		_, err := newUC(s).ChangePosition(ctx, staffID, leaderID)
+		if err == nil || errors.Is(err, apperr.ErrNotFound) || errors.Is(err, apperr.ErrInvalidInput) || errors.Is(err, apperr.ErrConflict) {
+			t.Errorf("err = %v, want apperr のどのエラーにも当たらない内部のエラー", err)
+		}
+		if d := s.Staff[staffID]; d.PositionID != memberID || len(d.Policies) != len(want) || len(s.Grants[staffID]) != 0 {
+			t.Errorf("職員 = %+v, want 変わらない", d)
+		}
+	})
 }

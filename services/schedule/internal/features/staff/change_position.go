@@ -2,6 +2,8 @@ package staff
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"slices"
 
 	"github.com/Fukuemon/buddy/services/schedule/internal/apperr"
@@ -31,6 +33,7 @@ func NewChangePosition(staff Repository, locks FacilityLock, positions kernel.Fi
 // 前の役職のデフォルトに無い権限は、職員ごとに足した権限として対象ごと残し、新しい役職のデフォルトにもあればコピーしない。
 // 今と同じ役職に変えたときは、何も書かずに今の職員を返す。
 // 職員が見つからないときは apperr.ErrNotFound を、役職が見つからないか別の事業所のものであるときは入力のエラーを返す。
+// 職員の今の役職が見つからないときは、データの不整合として、apperr のどのエラーにも当たらない内部のエラーを返す。
 // 事業所で職員の管理の権限を持つ最後の有効な職員が、変更の後にその権限を持たなくなるときは apperr.ErrConflict を返し、何も書かない。
 // 休職と退職と同じく事業所をロックするので、同時に役職を変えても、権限を持つ有効な職員は残る。
 // 職員の管理の権限が無いときは apperr.ErrForbidden を返す。
@@ -58,6 +61,10 @@ func (s ChangePosition) Do(ctx context.Context, id, positionID string) (Detail, 
 			return err
 		}
 		from, err := s.positions.Get(ctx, cur.PositionID)
+		if errors.Is(err, apperr.ErrNotFound) {
+			// 職員の役職は外部キーで役職を指すので、見つからないのはデータの不整合である。職員が見つからない 404 と読まれないよう、内部のエラーにする。
+			return fmt.Errorf("職員 %s の今の役職 %s が見つかりません", cur.ID, cur.PositionID)
+		}
 		if err != nil {
 			return err
 		}
