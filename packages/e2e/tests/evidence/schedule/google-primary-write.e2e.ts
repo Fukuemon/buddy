@@ -58,7 +58,7 @@ test.describe('予定のカレンダー', () => {
     test.use({ storageState: OKADA_STATE })
 
     test('google-primary-write-create 予定の作成の画面で訪問の予定を保存した場合、予定のカレンダーに予定が出て、calendarpit にも同じ予定ができること', async ({
-      page,
+      context,
       request,
     }) => {
       const patientName = `書込 花子${Date.now() % 100000}`
@@ -69,6 +69,7 @@ test.describe('予定のカレンダー', () => {
       })
       expect(registered.status()).toBe(201)
       const { id: patientId } = (await registered.json()) as { id: string }
+      const page = await context.newPage()
       try {
         await openDay(page, todayInTokyo())
         await intro(

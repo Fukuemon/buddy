@@ -22,27 +22,47 @@ test.describe('予定のカレンダー', () => {
         '予定のカレンダーで、次へと表示の単位を操作し、表示の期間の見出しを見る\n前提 予定のカレンダーの月の表示（Storybook の ScheduleCalendarContainer の Month）を、2026/10/21 として開いている',
       )
 
-      await check(page, '見出しが「2026年10月」になる', () =>
-        expect(title).toHaveText('2026年10月'),
+      await check(
+        page,
+        '見出しが「2026年10月」になる',
+        () => expect(title).toHaveText('2026年10月'),
+        { position: 'bottom' },
       )
 
-      await step(page, '「次へ」を押す', () => page.getByTestId('calendar-next').click())
-      await check(page, '見出しが「2026年11月」に変わる', () =>
-        expect(title).toHaveText('2026年11月'),
+      await step(page, '「次へ」を押す', () => page.getByTestId('calendar-next').click(), {
+        position: 'bottom',
+      })
+      await check(
+        page,
+        '見出しが「2026年11月」に変わる',
+        () => expect(title).toHaveText('2026年11月'),
+        { position: 'bottom' },
       )
 
-      await step(page, '表示の単位で「週」を選ぶ', () =>
-        page.getByTestId('calendar-view-week').check(),
+      await step(
+        page,
+        '表示の単位で「週」を選ぶ',
+        () => page.getByTestId('calendar-view-week').check(),
+        { position: 'bottom' },
       )
-      await check(page, '見出しが日曜から土曜の「2026年11月1日〜7日」に変わる', () =>
-        expect(title).toHaveText('2026年11月1日〜7日'),
+      await check(
+        page,
+        '見出しが日曜から土曜の「2026年11月1日〜7日」に変わる',
+        () => expect(title).toHaveText('2026年11月1日〜7日'),
+        { position: 'bottom' },
       )
 
-      await step(page, '表示の単位で「日」を選ぶ', () =>
-        page.getByTestId('calendar-view-day').check(),
+      await step(
+        page,
+        '表示の単位で「日」を選ぶ',
+        () => page.getByTestId('calendar-view-day').check(),
+        { position: 'bottom' },
       )
-      await check(page, '見出しが日付と曜日の「2026年11月1日（日）」に変わる', () =>
-        expect(title).toHaveText('2026年11月1日（日）'),
+      await check(
+        page,
+        '見出しが日付と曜日の「2026年11月1日（日）」に変わる',
+        () => expect(title).toHaveText('2026年11月1日（日）'),
+        { position: 'bottom' },
       )
     })
 

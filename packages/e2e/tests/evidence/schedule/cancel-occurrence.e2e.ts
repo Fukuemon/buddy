@@ -80,10 +80,12 @@ test.describe('予定の詳細', () => {
       context,
     }) => {
       const title = `定例 ${Date.now()}`
-      await prepareWeekly(browser, title)
-
-      const page = await context.newPage()
+      // 録画する page は前準備の後に開く。前準備で失敗したときは、結び付けを外すためだけに開く
+      let recorded: Page | undefined
       try {
+        await prepareWeekly(browser, title)
+        const page = await context.newPage()
+        recorded = page
         await openDay(page, CANCEL_DATE)
         const event = hayashiEvent(page, title)
         await expect(event).toBeVisible()
@@ -122,8 +124,9 @@ test.describe('予定の詳細', () => {
           expect(hayashiEvent(page, title)).toBeVisible(),
         )
       } finally {
-        await step(page, '（撮影のため、ほかの撮影の前提に戻すよう、結び付けを外す）', () =>
-          unlinkStaffCalendar(page, HAYASHI.id),
+        const opened = recorded ?? (await context.newPage())
+        await step(opened, '（撮影のため、ほかの撮影の前提に戻すよう、結び付けを外す）', () =>
+          unlinkStaffCalendar(opened, HAYASHI.id),
         )
       }
     })
@@ -135,10 +138,11 @@ test.describe('予定の詳細', () => {
       request,
     }) => {
       const title = `定例 ${Date.now()}`
-      await prepareWeekly(browser, title)
-
-      const page = await context.newPage()
+      let recorded: Page | undefined
       try {
+        await prepareWeekly(browser, title)
+        const page = await context.newPage()
+        recorded = page
         const event = await findGoogleEvent(request, HAYASHI.calendarId, title)
         const eventId = event?.id ?? ''
         await openGoogleEvent(page, eventId)
@@ -182,8 +186,9 @@ test.describe('予定の詳細', () => {
           },
         )
       } finally {
-        await step(page, '（撮影のため、ほかの撮影の前提に戻すよう、結び付けを外す）', () =>
-          unlinkStaffCalendar(page, HAYASHI.id),
+        const opened = recorded ?? (await context.newPage())
+        await step(opened, '（撮影のため、ほかの撮影の前提に戻すよう、結び付けを外す）', () =>
+          unlinkStaffCalendar(opened, HAYASHI.id),
         )
       }
     })
