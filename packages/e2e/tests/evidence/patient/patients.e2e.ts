@@ -1,52 +1,54 @@
-import { expect, test, type Page } from '@playwright/test'
+import { expect, test, type Browser, type BrowserContext, type Page } from '@playwright/test'
 
-import { LEADER, LOGIN_EMAIL, LOGIN_STAFF } from '../../fixtures/env'
-import { EVIDENCE_VARIANTS, recordPrEvidence } from '../../fixtures/evidence'
+import { check, intro, step } from '../../fixtures/caption'
+import { LEADER, LEADER_STATE, LOGIN_STAFF, LOGIN_STATE } from '../../fixtures/env'
 import { endPatientService, registerPatient } from '../../fixtures/patient'
-import type { APIRequestContext } from '@playwright/test'
+import { prepareOutsideRecording } from '../../fixtures/recording'
 import { issueManagerToken, STAFF_FORM } from '../../fixtures/staff'
-import { signInAtBroker } from '../../screens/login'
 
 /** 登録する利用者の名前。撮影の compose は撮るたびに作り直すので、固定の名前にする。 */
 const NEW_PATIENT = '見本 春香'
 
-const MANAGER = `${LOGIN_STAFF.name}（マネージャー、職員の管理の権限あり）`
-
-/** マネージャーで、担当を青木 陽菜にした利用者を登録し、名前と ID を返す。 */
-const registerPatientOf = async (request: APIRequestContext, name: string) => {
-  const res = await registerPatient(request, await issueManagerToken(), STAFF_FORM.facilityId, {
-    name,
-    assignedStaffId: LOGIN_STAFF.id,
+/**
+ * 録画の外で、マネージャーのトークンで担当を青木 陽菜にした利用者を登録し、名前と ID を返す。
+ * ended を渡すと、登録した利用者の利用を API で終了しておく。
+ */
+const preparePatient = (browser: Browser, name: string, { ended = false } = {}) =>
+  prepareOutsideRecording(browser, {}, async (page) => {
+    const token = await issueManagerToken()
+    const res = await registerPatient(page.request, token, STAFF_FORM.facilityId, {
+      name,
+      assignedStaffId: LOGIN_STAFF.id,
+    })
+    expect(res.status()).toBe(201)
+    const id = ((await res.json()) as { id: string }).id
+    if (ended) expect((await endPatientService(page.request, token, id)).status()).toBe(200)
+    return { name, id }
   })
-  expect(res.status()).toBe(201)
-  return { name, id: ((await res.json()) as { id: string }).id }
+
+/** 予定のカレンダーで「予定を作成」を押し、訪問の予定の利用者の候補を開く。 */
+const openPatientCandidates = async (page: Page) => {
+  await page.goto('/schedule?view=day')
+  await page.getByTestId('schedule-create-open').click()
+  await page.getByTestId('schedule-kind-tab-visit').check()
+  await page.getByTestId('schedule-field-patient').click()
 }
 
 test.describe('利用者の一覧', () => {
-  for (const variant of EVIDENCE_VARIANTS) {
-    const prefix = variant.label ? `${variant.label}: ` : ''
+  test.describe(`${LOGIN_STAFF.name}（マネージャー、職員の管理の権限あり）`, () => {
+    test.use({ storageState: LOGIN_STATE })
 
-    test(`${prefix}職員の管理の権限を持つ職員が利用者を登録した場合、利用者の一覧に出ること`, async ({
-      browser,
+    test('patient-register-list 職員の管理の権限を持つ職員が利用者を登録した場合、利用者の一覧に出ること', async ({
+      page,
     }) => {
-      await recordPrEvidence(
-        browser,
-        {
-          name: 'patient-register-list',
-          title: '職員の管理の権限を持つ職員が利用者を登録すると、利用者の一覧に出る',
-          actor: MANAGER,
-          variant,
-        },
-        async (page) => {
-          await page.goto('/patients')
-          await signInAtBroker(page, LOGIN_EMAIL)
-        },
-        async ({ page, step, check }) => {
-          await page.goto('/patients')
-          await expect(page.getByTestId('patient-list-table')).toBeVisible()
-          await step('利用者の一覧を開いている')
+      await page.goto('/patients')
+      await expect(page.getByTestId('patient-list-table')).toBeVisible()
+      await intro(page, '職員の管理の権限を持つ職員が利用者を登録すると、利用者の一覧に出る')
 
-          await step('「利用者を登録」を押し、名前、サービス、希望、担当の職員を入れて登録する')
+      await step(
+        page,
+        '「利用者を登録」を押し、名前、サービス、希望、担当の職員を入れて登録する',
+        async () => {
           await page.getByTestId('patient-list-new').click()
           const dialog = page.getByTestId('patient-new-dialog')
           await dialog.getByTestId('patient-new-name').fill(NEW_PATIENT)
@@ -56,65 +58,238 @@ test.describe('利用者の一覧', () => {
           await dialog.getByTestId('patient-new-staff').selectOption(LOGIN_STAFF.id)
           await dialog.getByTestId('patient-new-submit').click()
           await expect(page.getByTestId('patient-detail-name')).toHaveText(NEW_PATIENT)
-
-          await step(
-            `登録した利用者の詳細から利用者の一覧へ戻り、名前の検索に「${NEW_PATIENT}」を入れる`,
-          )
+        },
+      )
+      await step(
+        page,
+        `登録した利用者の詳細から利用者の一覧へ戻り、名前の検索に「${NEW_PATIENT}」を入れる`,
+        async () => {
           await page.getByTestId('patient-detail-back').click()
           await page.getByTestId('patient-list-search').fill(NEW_PATIENT)
+        },
+      )
+      await check(
+        page,
+        `利用者の一覧に ${NEW_PATIENT} が、担当の職員とサービスと希望とともに出る`,
+        async () => {
           await expect(page.getByTestId('patient-list-count')).toHaveText('1 人')
           await expect(page.getByTestId('patient-list-table')).toContainText(LOGIN_STAFF.name)
-          await check(`利用者の一覧に ${NEW_PATIENT} が、担当の職員とサービスと希望とともに出る`)
         },
       )
     })
 
-    test(`${prefix}職員の管理の権限を持つ職員が利用者を登録した場合、予定の作成の利用者の候補に出ること`, async ({
+    test('patient-register-candidate 職員の管理の権限を持つ職員が利用者を登録した場合、予定の作成の利用者の候補に出ること', async ({
       browser,
-      request,
+      context,
     }) => {
-      await recordPrEvidence(
-        browser,
-        {
-          name: 'patient-register-candidate',
-          title: '登録した利用者は、予定の作成の利用者の候補に出る',
-          actor: MANAGER,
-          variant,
-        },
-        async (page) => {
-          await page.goto('/patients')
-          await signInAtBroker(page, LOGIN_EMAIL)
-          const name = `${NEW_PATIENT} 候補`
-          const res = await registerPatient(
-            request,
-            await issueManagerToken(),
-            STAFF_FORM.facilityId,
-            { name, assignedStaffId: LOGIN_STAFF.id },
-          )
-          expect(res.status()).toBe(201)
-          return { name, id: ((await res.json()) as { id: string }).id }
-        },
-        async ({ page, step, check }, patient) => {
-          await page.goto('/patients')
-          await page.getByTestId('patient-list-search').fill(patient.name)
-          await expect(page.getByTestId(`patient-list-row-${patient.id}`)).toBeVisible()
-          await step(`利用者の一覧に、登録した ${patient.name} が出ている`)
+      const patient = await preparePatient(browser, `${NEW_PATIENT} 候補`)
 
-          await step('予定のカレンダーで「予定を作成」を押し、訪問の予定の利用者の候補を開く')
-          await page.goto('/schedule?view=day')
-          await page.getByTestId('schedule-create-open').click()
-          await page.getByTestId('schedule-kind-tab-visit').check()
-          await page.getByTestId('schedule-field-patient').click()
+      const page = await context.newPage()
+      await page.goto('/patients')
+      await page.getByTestId('patient-list-search').fill(patient.name)
+      await expect(page.getByTestId(`patient-list-row-${patient.id}`)).toBeVisible()
+      await intro(
+        page,
+        `登録した利用者は、予定の作成の利用者の候補に出る\n前提 利用者の一覧に、登録した ${patient.name} が出ている`,
+      )
 
-          await step(`利用者の検索に「${patient.name}」を入れる`)
-          await page.getByTestId('patient-select-search').fill(patient.name)
-          await expect(page.getByTestId(`patient-select-option-${patient.id}`)).toBeVisible()
-          await check(`予定の作成の利用者の候補に ${patient.name} が出る`)
+      await step(
+        page,
+        '予定のカレンダーで「予定を作成」を押し、訪問の予定の利用者の候補を開く',
+        () => openPatientCandidates(page),
+      )
+      await step(page, `利用者の検索に「${patient.name}」を入れる`, () =>
+        page.getByTestId('patient-select-search').fill(patient.name),
+      )
+      await check(page, `予定の作成の利用者の候補に ${patient.name} が出る`, () =>
+        expect(page.getByTestId(`patient-select-option-${patient.id}`)).toBeVisible(),
+      )
+    })
+
+    test('patient-edit-list 利用者の名前、サービス、希望、担当の職員を変えた場合、一覧に変えた値が出ること', async ({
+      browser,
+      context,
+    }) => {
+      const patient = await preparePatient(browser, '見本 夏美')
+      const renamed = `${patient.name} 改`
+
+      const page = await context.newPage()
+      await page.goto(`/patients/${patient.id}`)
+      await expect(page.getByTestId('patient-detail-name')).toHaveText(patient.name)
+      await intro(
+        page,
+        `利用者の名前、サービス、希望、担当の職員を変えると、一覧に変えた値が出る\n前提 ${patient.name} の詳細を開いている（午前、女性、担当は ${LOGIN_STAFF.name}）`,
+      )
+
+      await step(
+        page,
+        `編集で、名前を「${renamed}」に、サービスを訪看I3に、希望を午後と男性に、担当を ${LEADER.staff.name} に変えて保存する`,
+        async () => {
+          await page.getByTestId('patient-detail-edit').click()
+          const dialog = page.getByTestId('patient-detail-edit-dialog')
+          await dialog.getByTestId('patient-detail-name-input').fill(renamed)
+          await dialog
+            .getByTestId('patient-detail-service-input')
+            .selectOption({ label: '訪看I3（30〜59 分）' })
+          await dialog.getByTestId('patient-detail-time-input-afternoon').check()
+          await dialog.getByTestId('patient-detail-gender-input-male').check()
+          await dialog.getByTestId('patient-detail-staff-input').selectOption(LEADER.staff.id)
+          await dialog.getByTestId('patient-detail-save').click()
+          await expect(page.getByTestId('patient-detail-name')).toHaveText(renamed)
+        },
+      )
+      await step(page, '利用者の一覧へ戻り、名前で検索する', async () => {
+        await page.getByTestId('patient-detail-back').click()
+        await page.getByTestId('patient-list-search').fill(renamed)
+      })
+      await check(
+        page,
+        `一覧の行に、変えた名前、担当の ${LEADER.staff.name}、訪看I3、午後、男性が出る`,
+        async () => {
+          const row = page.getByTestId(`patient-list-row-${patient.id}`)
+          await expect(row).toContainText(LEADER.staff.name)
+          await expect(row).toContainText('訪看I3')
+          await expect(row).toContainText('午後')
+          await expect(row).toContainText('男性')
         },
       )
     })
 
-    for (const page of [
+    test('patient-end-list 利用者の利用を終了した場合、利用者の一覧のデフォルトの表示に出ないこと', async ({
+      browser,
+      context,
+    }) => {
+      const patient = await preparePatient(browser, '見本 秋子')
+
+      const page = await context.newPage()
+      await page.goto(`/patients/${patient.id}`)
+      await expect(page.getByTestId('patient-detail-name')).toHaveText(patient.name)
+      await intro(page, '利用者の利用を終了すると、利用者の一覧のデフォルトの表示に出ない')
+
+      await step(page, '「…」から「利用を終了する」を押す', async () => {
+        await page.getByTestId('patient-detail-menu').click()
+        await page.getByTestId('patient-detail-end').click()
+      })
+      const dialog = page.getByTestId('patient-end-dialog')
+      await check(page, '残る予定が無いことを示し、利用を終了するを押せる', () =>
+        expect(dialog.getByTestId('patient-end-schedules')).toHaveText(
+          '今日以降の予定は残っていません。',
+        ),
+      )
+
+      await step(page, 'ダイアログの「利用を終了する」を押す', async () => {
+        await dialog.getByTestId('patient-end-submit').click()
+        await expect(page.getByTestId('patient-detail-status')).toContainText('利用の終了')
+      })
+      await step(page, `利用者の一覧へ戻り、名前の検索に「${patient.name}」を入れる`, async () => {
+        await page.getByTestId('patient-detail-back').click()
+        await page.getByTestId('patient-list-search').fill(patient.name)
+      })
+      await check(
+        page,
+        `状態の絞り込みが「利用中」のデフォルトの表示に、${patient.name} が出ない`,
+        () => expect(page.getByTestId('patient-list-empty')).toBeVisible(),
+      )
+    })
+
+    test('patient-end-candidate 利用者の利用を終了した場合、予定の作成の利用者の候補に出ないこと', async ({
+      browser,
+      context,
+    }) => {
+      const patient = await preparePatient(browser, '見本 冬子')
+
+      const page = await context.newPage()
+      await openPatientCandidates(page)
+      await page.getByTestId('patient-select-search').fill(patient.name)
+      await expect(page.getByTestId(`patient-select-option-${patient.id}`)).toBeVisible()
+      await intro(
+        page,
+        `利用者の利用を終了すると、予定の作成の利用者の候補に出ない\n前提 利用中の ${patient.name} は、予定の作成の利用者の候補に出ている`,
+      )
+
+      await step(page, `${patient.name} の詳細で、「…」から利用を終了する`, async () => {
+        await page.goto(`/patients/${patient.id}`)
+        await page.getByTestId('patient-detail-menu').click()
+        await page.getByTestId('patient-detail-end').click()
+        const dialog = page.getByTestId('patient-end-dialog')
+        await expect(dialog.getByTestId('patient-end-schedules')).toHaveText(
+          '今日以降の予定は残っていません。',
+        )
+        await dialog.getByTestId('patient-end-submit').click()
+        await expect(page.getByTestId('patient-detail-status')).toContainText('利用の終了')
+      })
+      await step(
+        page,
+        `予定の作成の利用者の候補を開き、「${patient.name}」で検索する`,
+        async () => {
+          await openPatientCandidates(page)
+          await page.getByTestId('patient-select-search').fill(patient.name)
+        },
+      )
+      await check(page, `予定の作成の利用者の候補に、${patient.name} が出ない`, async () => {
+        await expect(page.getByTestId('patient-select-search')).toHaveValue(patient.name)
+        await expect(page.getByTestId(`patient-select-option-${patient.id}`)).toHaveCount(0)
+      })
+    })
+
+    test('patient-resume-list 利用の終了の利用者の利用を再開した場合、利用者の一覧のデフォルトの表示に戻ること', async ({
+      browser,
+      context,
+    }) => {
+      const patient = await preparePatient(browser, '見本 春男', { ended: true })
+
+      const page = await openEndedPatient(context, patient)
+      await intro(
+        page,
+        `利用の終了の利用者の利用を再開すると、利用者の一覧のデフォルトの表示に戻る\n前提 利用の終了の ${patient.name} の詳細を開いている（API で利用の終了にしてある）`,
+      )
+
+      await resumeService(page)
+      await step(page, `利用者の一覧へ戻り、名前の検索に「${patient.name}」を入れる`, async () => {
+        await page.getByTestId('patient-detail-back').click()
+        await page.getByTestId('patient-list-search').fill(patient.name)
+      })
+      await check(
+        page,
+        `状態の絞り込みが「利用中」のデフォルトの表示に、${patient.name} が戻る`,
+        async () => {
+          await expect(page.getByTestId('patient-list-filter-status')).toHaveValue('active')
+          await expect(page.getByTestId(`patient-list-row-${patient.id}`)).toBeVisible()
+        },
+      )
+    })
+
+    test('patient-resume-candidate 利用の終了の利用者の利用を再開した場合、予定の作成の利用者の候補に戻ること', async ({
+      browser,
+      context,
+    }) => {
+      const patient = await preparePatient(browser, '見本 夏男', { ended: true })
+
+      const page = await openEndedPatient(context, patient)
+      await intro(
+        page,
+        `利用の終了の利用者の利用を再開すると、予定の作成の利用者の候補に戻る\n前提 利用の終了の ${patient.name} の詳細を開いている（API で利用の終了にしてある）`,
+      )
+
+      await resumeService(page)
+      await step(
+        page,
+        `予定の作成の利用者の候補を開き、「${patient.name}」で検索する`,
+        async () => {
+          await openPatientCandidates(page)
+          await page.getByTestId('patient-select-search').fill(patient.name)
+        },
+      )
+      await check(page, `予定の作成の利用者の候補に、${patient.name} が戻る`, () =>
+        expect(page.getByTestId(`patient-select-option-${patient.id}`)).toBeVisible(),
+      )
+    })
+  })
+
+  test.describe(`${LEADER.staff.name}（チームリーダー、職員の管理の権限なし）`, () => {
+    test.use({ storageState: LEADER_STATE })
+
+    for (const target of [
       {
         name: 'patient-forbidden-list',
         url: '/patients',
@@ -130,279 +305,78 @@ test.describe('利用者の一覧', () => {
         result: '権限が無いことの案内が出て、登録のダイアログとナビゲーションの「利用者」が出ない',
       },
     ]) {
-      test(`${prefix}職員の管理の権限を持たない職員が${page.label}の URL を開いた場合、${page.label}の画面が出ないこと`, async ({
-        browser,
+      test(`${target.name} 職員の管理の権限を持たない職員が${target.label}の URL を開いた場合、${target.label}の画面が出ないこと`, async ({
+        page,
       }) => {
-        await recordPrEvidence(
-          browser,
-          {
-            name: page.name,
-            title: `職員の管理の権限を持たない職員が${page.label}の URL を開くと、${page.label}の画面が出ない`,
-            actor: `${LEADER.staff.name}（チームリーダー、職員の管理の権限なし）`,
-            variant,
-          },
-          async (p) => {
-            await p.goto('/schedule')
-            await signInAtBroker(p, LEADER.email)
-          },
-          async ({ page: p, step, check }) => {
-            await step(`${page.label}の URL（${page.url}）を開く`)
-            await p.goto(page.url)
-            await expect(p.getByTestId('page-forbidden')).toBeVisible()
-            await expect(p.getByTestId('site-nav')).not.toContainText('利用者')
-            await expect(page.hidden(p)).toHaveCount(0)
-            await check(page.result)
-          },
+        await page.goto('/schedule')
+        await expect(page.getByTestId('site-nav-schedule')).toBeVisible()
+        await intro(
+          page,
+          `職員の管理の権限を持たない職員が${target.label}の URL を開くと、${target.label}の画面が出ない`,
         )
+
+        await step(page, `${target.label}の URL（${target.url}）を開く`, async () => {
+          await page.goto(target.url)
+        })
+        await check(page, target.result, async () => {
+          await expect(page.getByTestId('page-forbidden')).toBeVisible()
+          await expect(page.getByTestId('site-nav')).not.toContainText('利用者')
+          await expect(target.hidden(page)).toHaveCount(0)
+        })
       })
     }
 
-    test(`${prefix}利用者の名前、サービス、希望、担当の職員を変えた場合、一覧に変えた値が出ること`, async ({
+    test('patient-forbidden-detail 職員の管理の権限を持たない職員が利用者の詳細の URL を開いた場合、利用者の管理の画面が出ないこと', async ({
       browser,
-      request,
+      context,
     }) => {
-      await recordPrEvidence(
-        browser,
-        {
-          name: 'patient-edit-list',
-          title: '利用者の名前、サービス、希望、担当の職員を変えると、一覧に変えた値が出る',
-          actor: MANAGER,
-          variant,
-        },
-        async (page) => {
-          await page.goto('/patients')
-          await signInAtBroker(page, LOGIN_EMAIL)
-          return registerPatientOf(request, '見本 夏美')
-        },
-        async ({ page, step, check }, patient) => {
-          const renamed = `${patient.name} 改`
-          await page.goto(`/patients/${patient.id}`)
-          await expect(page.getByTestId('patient-detail-name')).toHaveText(patient.name)
-          await step(`${patient.name} の詳細を開いている（午前、女性、担当は ${LOGIN_STAFF.name}）`)
+      const patient = await preparePatient(browser, '見本 一夫')
 
-          await step(
-            `編集で、名前を「${renamed}」に、サービスを訪看I3に、希望を午後と男性に、担当を ${LEADER.staff.name} に変えて保存する`,
-          )
-          await page.getByTestId('patient-detail-edit').click()
-          const dialog = page.getByTestId('patient-detail-edit-dialog')
-          await dialog.getByTestId('patient-detail-name-input').fill(renamed)
-          await dialog
-            .getByTestId('patient-detail-service-input')
-            .selectOption({ label: '訪看I3（30〜59 分）' })
-          await dialog.getByTestId('patient-detail-time-input-afternoon').check()
-          await dialog.getByTestId('patient-detail-gender-input-male').check()
-          await dialog.getByTestId('patient-detail-staff-input').selectOption(LEADER.staff.id)
-          await dialog.getByTestId('patient-detail-save').click()
-          await expect(page.getByTestId('patient-detail-name')).toHaveText(renamed)
-
-          await step('利用者の一覧へ戻り、名前で検索する')
-          await page.getByTestId('patient-detail-back').click()
-          await page.getByTestId('patient-list-search').fill(renamed)
-          const row = page.getByTestId(`patient-list-row-${patient.id}`)
-          await expect(row).toContainText(LEADER.staff.name)
-          await expect(row).toContainText('訪看I3')
-          await expect(row).toContainText('午後')
-          await expect(row).toContainText('男性')
-          await check(
-            `一覧の行に、変えた名前、担当の ${LEADER.staff.name}、訪看I3、午後、男性が出る`,
-          )
-        },
+      const page = await context.newPage()
+      await page.goto('/schedule')
+      await expect(page.getByTestId('site-nav-schedule')).toBeVisible()
+      await intro(
+        page,
+        '職員の管理の権限を持たない職員が利用者の詳細の URL を開くと、利用者の管理の画面が出ない',
       )
-    })
 
-    test(`${prefix}利用者の利用を終了した場合、利用者の一覧のデフォルトの表示に出ないこと`, async ({
-      browser,
-      request,
-    }) => {
-      await recordPrEvidence(
-        browser,
-        {
-          name: 'patient-end-list',
-          title: '利用者の利用を終了すると、利用者の一覧のデフォルトの表示に出ない',
-          actor: MANAGER,
-          variant,
-        },
-        async (page) => {
-          await page.goto('/patients')
-          await signInAtBroker(page, LOGIN_EMAIL)
-          return registerPatientOf(request, '見本 秋子')
-        },
-        async ({ page, step, check }, patient) => {
-          await page.goto(`/patients/${patient.id}`)
-          await expect(page.getByTestId('patient-detail-name')).toHaveText(patient.name)
-          await step(`${patient.name} の詳細を開いている`)
-
-          await step('「…」から「利用を終了する」を押す')
-          await page.getByTestId('patient-detail-menu').click()
-          await page.getByTestId('patient-detail-end').click()
-          const dialog = page.getByTestId('patient-end-dialog')
-          await expect(dialog.getByTestId('patient-end-schedules')).toHaveText(
-            '今日以降の予定は残っていません。',
-          )
-          await check('残る予定が無いことを示し、利用を終了するを押せる')
-
-          await step('ダイアログの「利用を終了する」を押す')
-          await dialog.getByTestId('patient-end-submit').click()
-          await expect(page.getByTestId('patient-detail-status')).toContainText('利用の終了')
-
-          await step(`利用者の一覧へ戻り、名前の検索に「${patient.name}」を入れる`)
-          await page.getByTestId('patient-detail-back').click()
-          await page.getByTestId('patient-list-search').fill(patient.name)
-          await expect(page.getByTestId('patient-list-empty')).toBeVisible()
-          await check(`状態の絞り込みが「利用中」のデフォルトの表示に、${patient.name} が出ない`)
-        },
-      )
-    })
-
-    test(`${prefix}利用者の利用を終了した場合、予定の作成の利用者の候補に出ないこと`, async ({
-      browser,
-      request,
-    }) => {
-      await recordPrEvidence(
-        browser,
-        {
-          name: 'patient-end-candidate',
-          title: '利用者の利用を終了すると、予定の作成の利用者の候補に出ない',
-          actor: MANAGER,
-          variant,
-        },
-        async (page) => {
-          await page.goto('/patients')
-          await signInAtBroker(page, LOGIN_EMAIL)
-          return registerPatientOf(request, '見本 冬子')
-        },
-        async ({ page, step, check }, patient) => {
-          await page.goto('/schedule?view=day')
-          await page.getByTestId('schedule-create-open').click()
-          await page.getByTestId('schedule-kind-tab-visit').check()
-          await page.getByTestId('schedule-field-patient').click()
-          await page.getByTestId('patient-select-search').fill(patient.name)
-          await expect(page.getByTestId(`patient-select-option-${patient.id}`)).toBeVisible()
-          await step(`利用中の ${patient.name} は、予定の作成の利用者の候補に出ている`)
-
-          await step(`${patient.name} の詳細で、「…」から利用を終了する`)
-          await page.goto(`/patients/${patient.id}`)
-          await page.getByTestId('patient-detail-menu').click()
-          await page.getByTestId('patient-detail-end').click()
-          const dialog = page.getByTestId('patient-end-dialog')
-          await expect(dialog.getByTestId('patient-end-schedules')).toHaveText(
-            '今日以降の予定は残っていません。',
-          )
-          await dialog.getByTestId('patient-end-submit').click()
-          await expect(page.getByTestId('patient-detail-status')).toContainText('利用の終了')
-
-          await step(`予定の作成の利用者の候補を開き、「${patient.name}」で検索する`)
-          await page.goto('/schedule?view=day')
-          await page.getByTestId('schedule-create-open').click()
-          await page.getByTestId('schedule-kind-tab-visit').check()
-          await page.getByTestId('schedule-field-patient').click()
-          await page.getByTestId('patient-select-search').fill(patient.name)
-          await expect(page.getByTestId('patient-select-search')).toHaveValue(patient.name)
-          await expect(page.getByTestId(`patient-select-option-${patient.id}`)).toHaveCount(0)
-          await check(`予定の作成の利用者の候補に、${patient.name} が出ない`)
-        },
-      )
-    })
-
-    test(`${prefix}職員の管理の権限を持たない職員が利用者の詳細の URL を開いた場合、利用者の管理の画面が出ないこと`, async ({
-      browser,
-      request,
-    }) => {
-      await recordPrEvidence(
-        browser,
-        {
-          name: 'patient-forbidden-detail',
-          title:
-            '職員の管理の権限を持たない職員が利用者の詳細の URL を開くと、利用者の管理の画面が出ない',
-          actor: `${LEADER.staff.name}（チームリーダー、職員の管理の権限なし）`,
-          variant,
-        },
-        async (page) => {
-          await page.goto('/patients')
-          await signInAtBroker(page, LEADER.email)
-          return registerPatientOf(request, '見本 一夫')
-        },
-        async ({ page, step, check }, patient) => {
-          await step(`利用者の ${patient.name} の詳細の URL を開く`)
-          await page.goto(`/patients/${patient.id}`)
+      await step(page, `利用者の ${patient.name} の詳細の URL を開く`, async () => {
+        await page.goto(`/patients/${patient.id}`)
+      })
+      await check(
+        page,
+        '権限が無いことの案内が出て、利用者の名前とプロフィールが出ない',
+        async () => {
           await expect(page.getByTestId('page-forbidden')).toBeVisible()
           await expect(page.getByTestId('patient-detail-name')).toHaveCount(0)
           await expect(page.getByTestId('site-nav')).not.toContainText('利用者')
-          await check('権限が無いことの案内が出て、利用者の名前とプロフィールが出ない')
         },
       )
     })
-
-    for (const shot of [
-      {
-        name: 'patient-resume-list',
-        patient: '見本 春男',
-        target: '利用者の一覧のデフォルトの表示',
-      },
-      {
-        name: 'patient-resume-candidate',
-        patient: '見本 夏男',
-        target: '予定の作成の利用者の候補',
-      },
-    ]) {
-      test(`${prefix}利用の終了の利用者の利用を再開した場合、${shot.target}に戻ること`, async ({
-        browser,
-        request,
-      }) => {
-        await recordPrEvidence(
-          browser,
-          {
-            name: shot.name,
-            title: `利用の終了の利用者の利用を再開すると、${shot.target}に戻る`,
-            actor: MANAGER,
-            variant,
-          },
-          async (page) => {
-            await page.goto('/patients')
-            await signInAtBroker(page, LOGIN_EMAIL)
-            const patient = await registerPatientOf(request, shot.patient)
-            const ended = await endPatientService(request, await issueManagerToken(), patient.id)
-            expect(ended.status()).toBe(200)
-            return patient
-          },
-          async ({ page, step, check }, patient) => {
-            await page.goto(`/patients/${patient.id}`)
-            await expect(page.getByTestId('patient-detail-status')).toContainText('利用の終了')
-            await step(
-              `利用の終了の ${patient.name} の詳細を開いている（API で利用の終了にしてある）`,
-            )
-
-            await step(
-              `「…」から「利用を再開する」を押し、担当の ${LOGIN_STAFF.name} のまま再開する`,
-            )
-            await page.getByTestId('patient-detail-menu').click()
-            await page.getByTestId('patient-detail-resume').click()
-            const dialog = page.getByTestId('patient-resume-dialog')
-            await expect(dialog.getByTestId('patient-resume-staff')).toHaveValue(LOGIN_STAFF.id)
-            await dialog.getByTestId('patient-resume-submit').click()
-            await expect(dialog).toHaveCount(0)
-            await expect(page.getByTestId('patient-detail-status')).toHaveCount(0)
-
-            if (shot.name === 'patient-resume-list') {
-              await step(`利用者の一覧へ戻り、名前の検索に「${patient.name}」を入れる`)
-              await page.getByTestId('patient-detail-back').click()
-              await page.getByTestId('patient-list-search').fill(patient.name)
-              await expect(page.getByTestId('patient-list-filter-status')).toHaveValue('active')
-              await expect(page.getByTestId(`patient-list-row-${patient.id}`)).toBeVisible()
-              await check(`状態の絞り込みが「利用中」のデフォルトの表示に、${patient.name} が戻る`)
-              return
-            }
-            await step(`予定の作成の利用者の候補を開き、「${patient.name}」で検索する`)
-            await page.goto('/schedule?view=day')
-            await page.getByTestId('schedule-create-open').click()
-            await page.getByTestId('schedule-kind-tab-visit').check()
-            await page.getByTestId('schedule-field-patient').click()
-            await page.getByTestId('patient-select-search').fill(patient.name)
-            await expect(page.getByTestId(`patient-select-option-${patient.id}`)).toBeVisible()
-            await check(`予定の作成の利用者の候補に、${patient.name} が戻る`)
-          },
-        )
-      })
-    }
-  }
+  })
 })
+
+/** 録画する page を開き、利用の終了の利用者の詳細を出す。 */
+async function openEndedPatient(context: BrowserContext, patient: { id: string }) {
+  const page = await context.newPage()
+  await page.goto(`/patients/${patient.id}`)
+  await expect(page.getByTestId('patient-detail-status')).toContainText('利用の終了')
+  return page
+}
+
+/** 「…」から「利用を再開する」を押し、担当の青木 陽菜のまま再開する。 */
+async function resumeService(page: Page) {
+  await step(
+    page,
+    `「…」から「利用を再開する」を押し、担当の ${LOGIN_STAFF.name} のまま再開する`,
+    async () => {
+      await page.getByTestId('patient-detail-menu').click()
+      await page.getByTestId('patient-detail-resume').click()
+      const dialog = page.getByTestId('patient-resume-dialog')
+      await expect(dialog.getByTestId('patient-resume-staff')).toHaveValue(LOGIN_STAFF.id)
+      await dialog.getByTestId('patient-resume-submit').click()
+      await expect(dialog).toHaveCount(0)
+      await expect(page.getByTestId('patient-detail-status')).toHaveCount(0)
+    },
+  )
+}

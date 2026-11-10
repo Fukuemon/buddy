@@ -1,8 +1,7 @@
 import { expect, test, type Locator, type Page } from '@playwright/test'
 
-import { EVIDENCE_VARIANTS, recordPrEvidence, storyUrl } from '../../fixtures/evidence'
-
-const ACTOR = 'ログインなし（Storybook の story）'
+import { check, intro, step } from '../../fixtures/caption'
+import { storyUrl } from '../../fixtures/evidence'
 
 /** 職員がほかのウィンドウからこの画面に戻ったときと同じ合図を送り、画面にデータを読み直させる。 */
 const returnToWindow = async (page: Page) => {
@@ -105,48 +104,38 @@ const SCREENS: Screen[] = [
 ]
 
 test.describe('読み直しの失敗', () => {
-  for (const variant of EVIDENCE_VARIANTS) {
-    const prefix = variant.label ? `${variant.label}: ` : ''
-
+  test.describe('ログインなし（Storybook の story）', () => {
     for (const screen of SCREENS) {
-      test(`${prefix}${screen.label}を読み終えた後にウィンドウに戻って読み直し、読めなかった場合、表示を残して失敗の文と読み直すが出て、読み直すで消えること`, async ({
-        browser,
+      test(`${screen.name} ${screen.label}を読み終えた後にウィンドウに戻って読み直し、読めなかった場合、表示を残して失敗の文と読み直すが出て、読み直すで消えること`, async ({
+        page,
       }) => {
-        const url = storyUrl(screen.storyId)
-        const open = async (page: Page) => {
-          await page.goto(url)
-          await expect(screen.shown(page)).toBeVisible()
-        }
-        await recordPrEvidence(
-          browser,
-          {
-            name: screen.name,
-            title: `${screen.label}で読み直して読めなかったときは、表示を残して失敗の文と読み直すを出す`,
-            actor: ACTOR,
-            variant,
-          },
-          open,
-          async ({ page, step, check }) => {
-            await open(page)
-            await step(
-              `${screen.label}（Storybook の ${screen.storyName}）を読み終えている。次の読み直しで${screen.what}を読めず、その次は読める（架空のデータ）`,
-            )
-            await returnToWindow(page)
-            await step('ほかのウィンドウからこの画面に戻り、画面がデータを読み直す')
+        await page.goto(storyUrl(screen.storyId))
+        await expect(screen.shown(page)).toBeVisible()
+        await intro(
+          page,
+          `${screen.label}で読み直して読めなかったときは、表示を残して失敗の文と読み直すを出す\n前提 ${screen.label}（Storybook の ${screen.storyName}）を読み終えている。次の読み直しで${screen.what}を読めず、その次は読める（架空のデータ）`,
+        )
+
+        await step(page, 'ほかのウィンドウからこの画面に戻り、画面がデータを読み直す', () =>
+          returnToWindow(page),
+        )
+        await check(
+          page,
+          '読み終えた表示を残し、見出しの下に「最新の情報を読み込めませんでした。」と読み直すが出る',
+          async () => {
             await expect(page.getByTestId('refetch-error')).toContainText(
               '最新の情報を読み込めませんでした。',
             )
             await expect(screen.shown(page)).toBeVisible()
-            await check(
-              '読み終えた表示を残し、見出しの下に「最新の情報を読み込めませんでした。」と読み直すが出る',
-            )
-            await page.getByTestId('refetch-retry').click()
-            await expect(page.getByTestId('refetch-error')).toBeHidden()
-            await expect(screen.shown(page)).toBeVisible()
-            await check('読み直すを押して読めると、失敗の文と読み直すが消える')
           },
         )
+
+        await step(page, '読み直すを押す', () => page.getByTestId('refetch-retry').click())
+        await check(page, '読み直すを押して読めると、失敗の文と読み直すが消える', async () => {
+          await expect(page.getByTestId('refetch-error')).toBeHidden()
+          await expect(screen.shown(page)).toBeVisible()
+        })
       })
     }
-  }
+  })
 })
