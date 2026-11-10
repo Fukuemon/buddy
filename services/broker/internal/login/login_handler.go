@@ -147,7 +147,14 @@ func (h callback) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	p, err := readPending(h.signer, r)
 	if err != nil {
-		fail(h.logger, w, r, http.StatusBadRequest, "ログインの途中の値がない", err)
+		reason := "ログインの途中の値がない"
+		switch {
+		case errors.Is(err, errBadSignature):
+			reason = "ログインの途中の値の署名が合わない"
+		case errors.Is(err, errPendingExpired):
+			reason = "ログインの途中の値の期限が切れている"
+		}
+		fail(h.logger, w, r, http.StatusBadRequest, reason, err)
 		return
 	}
 	q := r.URL.Query()

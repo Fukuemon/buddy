@@ -11,6 +11,9 @@ import (
 // errBadSignature は、cookie の署名が無いか、どの鍵の署名とも合わないことを示す。
 var errBadSignature = errors.New("ログインの途中の値の署名が合わない")
 
+// errPendingExpired は、cookie の値の発行から cookieMaxAge 秒を過ぎたか、発行の時刻が今より後であることを示す。
+var errPendingExpired = errors.New("ログインの途中の値の期限が切れている")
+
 // cookieSigner は、ログインの途中の cookie の値に HMAC-SHA256 で署名し、検証する。
 // 先頭の鍵で署名し、全ての鍵で検証する。鍵を替えるときに、古い鍵で署名した cookie のログインを続けさせるためである。
 type cookieSigner struct {

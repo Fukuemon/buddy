@@ -217,7 +217,8 @@ func setCookie(usesSecureCookie bool, w http.ResponseWriter, value string, maxAg
 }
 
 // readPending は、ログインの途中の cookie を読む。cookie が無いとき、署名が合わないとき、値が欠けているとき、
-// 発行から cookieMaxAge 秒を過ぎたときはエラーを返す。
+// 発行から cookieMaxAge 秒を過ぎたとき、発行の時刻が今より後のときはエラーを返す。署名と期限のエラーは errBadSignature と
+// errPendingExpired である。
 func readPending(signer cookieSigner, r *http.Request) (pending, error) {
 	c, err := r.Cookie(cookieName)
 	if err != nil {
@@ -235,7 +236,7 @@ func readPending(signer cookieSigner, r *http.Request) (pending, error) {
 		return pending{}, errors.New("ログインの途中の値が欠けている")
 	}
 	if age := now().Unix() - p.IssuedAt; age < 0 || age > cookieMaxAge {
-		return pending{}, errors.New("ログインの途中の値の期限が切れている")
+		return pending{}, errPendingExpired
 	}
 	return p, nil
 }

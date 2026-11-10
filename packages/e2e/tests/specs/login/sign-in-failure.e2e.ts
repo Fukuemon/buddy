@@ -66,11 +66,12 @@ test.describe('予定のカレンダー', () => {
       const cookies = await page.context().cookies()
       const pending = cookies.find((c) => c.name === 'broker_login')
       expect(pending).toBeDefined()
-      // 署名の前の値の先頭の 1 文字を替える
-      const value = pending!.value
-      await page
-        .context()
-        .addCookies([{ ...pending!, value: (value.startsWith('A') ? 'B' : 'A') + value.slice(1) }])
+      // 署名を残したまま、値の職員の ID をいない職員の ID に替える。署名を検証しないと、職員を引けない障害の画面になる
+      const [body, signature] = pending!.value.split('.')
+      const value = JSON.parse(Buffer.from(body, 'base64url').toString()) as Record<string, unknown>
+      value.staff_id = '01JZZZZZZZZZZZZZZZZZZZZZZZ'
+      const forged = `${Buffer.from(JSON.stringify(value)).toString('base64url')}.${signature}`
+      await page.context().addCookies([{ ...pending!, value: forged }])
 
       await signInAtUpstreamIdp(page, TEAM_MEMBER.email)
 

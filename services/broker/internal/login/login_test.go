@@ -900,43 +900,46 @@ func TestCallbackInactiveStaff(t *testing.T) {
 	}
 }
 
-// TestCallbackTamperedCookie は、署名が合わないか、署名が無いか、発行から 10 分を過ぎた cookie のコールバックを、
-// Hydra と職員を呼ばずに、ブローカーのログインを続けられない画面（400）で拒むことを確認する。
-func TestCallbackTamperedCookie(t *testing.T) {
+// TestCallbackPendingCookie は、署名と発行の時刻が合う cookie のコールバックだけを受け入れ、署名が合わないか、署名が無いか、
+// 発行から 10 分を過ぎたか、発行の時刻が今より後の cookie を、Hydra と職員を呼ばずに、ブローカーのログインを続けられない画面（400）で
+// 拒むことを確認する。
+func TestCallbackPendingCookie(t *testing.T) {
 	const otherID = "01JCCCCCCCCCCCCCCCCCCCCCCC"
+	same := func(_ *testing.T, v string) string { return v }
 	tests := []struct {
-		name   string
-		tamper func(t *testing.T, value string) string
-		after  time.Duration
+		name     string
+		tamper   func(t *testing.T, value string) string
+		after    time.Duration
+		accepted bool
 	}{
-		{"変えていない（期限の内）", func(_ *testing.T, v string) string { return v }, 0},
+		{"変えていない（期限の内）", same, 10 * time.Minute, true},
 		{"職員の ID を書き換えた", func(t *testing.T, v string) string {
 			body, sig, _ := strings.Cut(v, ".")
 			p := decodePending(t, body)
 			p["staff_id"] = otherID
 			return encodePending(t, p) + "." + sig
-		}, 0},
-		{"値を 1 文字変えた", func(_ *testing.T, v string) string {
+		}, 0, false},
+		{"署名の中の 1 文字を変えた", func(_ *testing.T, v string) string {
+			// 署名の base64url の末尾の文字は余りのビットだけが変わることがあるので、先頭の文字を替える
+			i := strings.Index(v, ".") + 1
 			b := []byte(v)
-			if b[0] == 'A' {
-				b[0] = 'B'
+			if b[i] == 'A' {
+				b[i] = 'B'
 			} else {
-				b[0] = 'A'
+				b[i] = 'A'
 			}
 			return string(b)
-		}, 0},
+		}, 0, false},
 		{"署名を外した", func(_ *testing.T, v string) string {
 			body, _, _ := strings.Cut(v, ".")
 			return body
-		}, 0},
-		{"署名の無い前の形", func(t *testing.T, v string) string {
+		}, 0, false},
+		{"署名の無い前の形（発行の時刻も無い）", func(t *testing.T, v string) string {
 			body, _, _ := strings.Cut(v, ".")
-			raw, err := base64.RawURLEncoding.DecodeString(body)
-			if err != nil {
-				t.Fatal(err)
-			}
-			return base64.RawURLEncoding.EncodeToString(raw)
-		}, 0},
+			p := decodePending(t, body)
+			delete(p, "iat")
+			return encodePending(t, p)
+		}, 0, false},
 		{"知らない鍵で署名した", func(t *testing.T, v string) string {
 			body, _, _ := strings.Cut(v, ".")
 			raw, err := base64.RawURLEncoding.DecodeString(body)
@@ -944,8 +947,9 @@ func TestCallbackTamperedCookie(t *testing.T) {
 				t.Fatal(err)
 			}
 			return login.SignCookie("unknown-login-cookie-key-0123456789ab", raw)
-		}, 0},
-		{"発行から 10 分を過ぎた", func(_ *testing.T, v string) string { return v }, 10*time.Minute + time.Second},
+		}, 0, false},
+		{"発行から 10 分を過ぎた", same, 10*time.Minute + time.Second, false},
+		{"発行の時刻が今より後", same, -time.Second, false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -965,7 +969,7 @@ func TestCallbackTamperedCookie(t *testing.T) {
 			login.SetNow(func() time.Time { return issued.Add(tt.after) })
 			gets := e.staff.gets
 			rec := e.do(req)
-			if tt.name == "変えていない（期限の内）" {
+			if tt.accepted {
 				if got := location(t, rec); got != "http://hydra/login-accepted" {
 					t.Errorf("Location = %q, want accept", got)
 				}
