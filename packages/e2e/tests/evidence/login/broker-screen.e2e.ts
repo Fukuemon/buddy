@@ -172,7 +172,7 @@ test.describe('ログイン', () => {
         )
       })
 
-      test(`${prefix}ブローカーがログインの結果を返せない場合、ログインの失敗の画面が同じカードの形で出ること`, async ({
+      test(`${prefix}ログインの途中の値を付けずにブローカーの画面を開いた場合、ログインを続けられない画面が同じカードの形で出ること`, async ({
         browser,
       }) => {
         await recordPrEvidence(
@@ -180,7 +180,7 @@ test.describe('ログイン', () => {
           {
             name: 'broker-login-failure',
             title:
-              'ブローカーがログインの結果を Hydra へ返せないと、ログインの失敗の画面が同じカードの形で出る',
+              'login_challenge を付けずにブローカーの画面を開くと、ログインを続けられない画面が同じカードの形で出る',
             actor: 'ログインなし',
             variant,
           },
