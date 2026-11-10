@@ -26,9 +26,11 @@ const banner = (text: string, position: Position, fallback: Kind) => {
   const { testId } = test.info()
   // 全角の空白で区切っても、頭の語として読む
   const word = text.split(/[ \u3000]/)[0]
-  const kind =
-    KINDS[word] ?? (CONTINUES.includes(word) && last.testId === testId ? last.kind : fallback)
-  last = { testId, kind }
+  const named =
+    KINDS[word] ?? (CONTINUES.includes(word) && last.testId === testId ? last.kind : undefined)
+  // 頭の語が無い文（撮影のための step など）は、「かつ」が引き継ぐ種類を変えない
+  if (named) last = { testId, kind: named }
+  const kind = named ?? fallback
   // 下の画面が見えるよう背景だけを透かし、ぼかして画面の文字が字幕の文字に重ならないようにする。opacity は文字まで薄くするので使わない。
   // 字幕は判定する要素に被せない。被るときは position を変える
   return `<div style="position:absolute;left:0;right:0;${position}:0;display:flex;align-items:stretch;font:18px/1.5 sans-serif;color:#fff;background:rgba(32,33,36,.6);backdrop-filter:blur(6px);text-shadow:0 1px 2px #000">
