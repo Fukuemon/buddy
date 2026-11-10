@@ -1,3 +1,5 @@
+// DB を作り直してから単独で流す。
+// cutover-conflict-complete は、石田の事業所の正本の切り替えを完了し、戻す API が無いので、ファイルの最後に置く。
 import { expect, test, type Page } from '@playwright/test'
 
 import { check, intro, step } from '../../fixtures/caption'

@@ -1,3 +1,6 @@
+// DB を作り直してから単独で流す。
+// cutover-complete と cutover-rejects-changed は、石田の事業所の正本の切り替えを完了し、戻す API が無い。
+// この 2 本は 1 本ごとに DB を作り直し、ほかの 2 本を先に流してから、-g で 1 本ずつ流す。
 import { expect, test, type Page } from '@playwright/test'
 
 import { check, intro, step } from '../../fixtures/caption'
