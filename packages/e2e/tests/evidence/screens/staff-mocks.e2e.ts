@@ -178,6 +178,12 @@ test.describe('職員の管理の画面仕様書のモック', () => {
       )
 
       await step(page, 'Escape キーを押す', () => page.keyboard.press('Escape'))
+      await check(page, '先に開いた説明が閉じ、ダイアログは開いたまま残る', async () => {
+        await expect(page.getByTestId('staff-new-help-text')).toBeHidden()
+        await expect(page.getByTestId('staff-new-dialog')).toBeVisible()
+      })
+
+      await step(page, 'もう一度 Escape キーを押す', () => page.keyboard.press('Escape'))
       await check(page, '職員の一覧のモック（01-list.html）へ戻る', () =>
         expect(page).toHaveURL(/staff-list_.+\/01-list\.html/),
       )
@@ -297,13 +303,36 @@ test.describe('職員の管理の画面仕様書のモック', () => {
       )
       await check(
         page,
-        '役職を変えるダイアログ（05-position.html）に、消える権限の注意と赤の「役職を変える」が出る',
+        '役職を変えるダイアログ（19-position-open.html）に、消える権限の注意と、今の役職を選んだままでは押せない赤の「役職を変える」が出る',
         async () => {
-          await expect(page).toHaveURL(/05-position\.html/)
+          await expect(page).toHaveURL(/19-position-open\.html/)
           await expect(page.getByTestId('staff-position-note')).toContainText(
             '個別に足した権限（指定した職員の予定の閲覧）は消えます。',
           )
           await expect(page.getByTestId('staff-position-submit')).toHaveClass(/wf-btn--danger/)
+          await expect(page.getByTestId('staff-position-submit')).toHaveAttribute(
+            'aria-disabled',
+            'true',
+          )
+        },
+      )
+
+      await step(page, '「チームリーダー」を選ぶ', () =>
+        page
+          .getByTestId('staff-position-option-{役職の id}')
+          .filter({ hasText: 'チームリーダー' })
+          .click(),
+      )
+      await check(
+        page,
+        '役職を選んだダイアログ（05-position.html）で、赤の「役職を変える」を押せるようになる',
+        async () => {
+          await expect(page).toHaveURL(/05-position\.html/)
+          await expect(page.getByTestId('staff-position-submit')).toHaveClass(/wf-btn--danger/)
+          await expect(page.getByTestId('staff-position-submit')).not.toHaveAttribute(
+            'aria-disabled',
+            'true',
+          )
         },
       )
     })
@@ -573,7 +602,7 @@ test.describe('職員の管理の画面仕様書のモック', () => {
   test.describe('スマートフォンの幅（ログインなし、画面仕様書のモック）', () => {
     test.use({ viewport: PHONE_VIEWPORT })
 
-    test('staff-list-phone スマートフォンの幅で職員の一覧のモックを開いた場合、2 行のリストになり、横にスクロールしないこと', async ({
+    test('staff-mocks-list-phone スマートフォンの幅で職員の一覧のモックを開いた場合、2 行のリストになり、横にスクロールしないこと', async ({
       page,
     }) => {
       await openMock(page, `${LIST}/01-list.html`, 'staff-list-row-{職員の id}')
