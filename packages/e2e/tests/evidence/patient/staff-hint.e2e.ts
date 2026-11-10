@@ -1,8 +1,8 @@
 import { expect, test, type Page } from '@playwright/test'
 
-import { EVIDENCE_VARIANTS, recordPrEvidence, storyUrl } from '../../fixtures/evidence'
+import { check, intro, step } from '../../fixtures/caption'
+import { storyUrl } from '../../fixtures/evidence'
 
-const ACTOR = 'ログインなし（Storybook の story）'
 /** 小林 冬馬の詳細。担当の青木 一郎を、訪問しない職員として返す。 */
 const NON_VISITING_DETAIL = storyUrl('画面-patient-patientdetailcontainer--non-visiting-staff')
 const CREATE_DIALOG = storyUrl('画面-patient-patientcreatedialogcontainer--default')
@@ -17,108 +17,70 @@ const openDetail = async (page: Page) => {
   await expect(page.getByTestId('patient-detail-profile')).toContainText('青木 一郎')
 }
 
-const openCreate = async (page: Page) => {
-  await page.goto(CREATE_DIALOG)
-  await expect(page.getByTestId('patient-new-name')).toBeVisible()
-}
-
 /** 編集のダイアログを開き、担当の職員の欄が今の担当を選んだ状態になるまで待つ。 */
 const openEditDialog = async (page: Page) => {
   await page.getByTestId('patient-detail-edit').click()
-  const dialog = page.getByTestId('patient-detail-edit-dialog')
-  await expect(dialog.getByTestId('patient-detail-staff-input')).toHaveValue('staff-1')
-  return dialog
+  await expect(
+    page.getByTestId('patient-detail-edit-dialog').getByTestId('patient-detail-staff-input'),
+  ).toHaveValue('staff-1')
 }
 
 test.describe('利用者の担当の職員の補足の文', () => {
-  for (const variant of EVIDENCE_VARIANTS) {
-    const prefix = variant.label ? `${variant.label}: ` : ''
-
-    test(`${prefix}利用者の編集のダイアログを開いた場合、訪問しない職員を含む補足の文が出ること`, async ({
-      browser,
+  test.describe('ログインなし（Storybook の story）', () => {
+    test('patient-edit-staff-hint 利用者の編集のダイアログを開いた場合、訪問しない職員を含む補足の文が出ること', async ({
+      page,
     }) => {
-      await recordPrEvidence(
-        browser,
-        {
-          name: 'patient-edit-staff-hint',
-          title: '利用者の編集のダイアログで、担当の職員の欄の下の補足の文を見る',
-          actor: ACTOR,
-          variant,
-        },
-        openDetail,
-        async ({ page, step, check }) => {
-          await openDetail(page)
-          await step(
-            '利用者の詳細（Storybook の PatientDetailContainer の NonVisitingStaff）を開いている',
-          )
+      await openDetail(page)
+      await intro(
+        page,
+        '利用者の編集のダイアログで、担当の職員の欄の下の補足の文を見る\n前提 利用者の詳細（Storybook の PatientDetailContainer の NonVisitingStaff）を開いている',
+      )
 
-          await step('「編集」を押す')
-          const dialog = await openEditDialog(page)
-          await expect(
-            dialog.getByTestId('patient-detail-staff-input'),
-          ).toHaveAccessibleDescription(EDIT_HINT)
-          await check(`担当の職員の欄の下に「${EDIT_HINT}」が出る`)
-        },
+      await step(page, '「編集」を押す', () => openEditDialog(page))
+      await check(page, `担当の職員の欄の下に「${EDIT_HINT}」が出る`, () =>
+        expect(
+          page.getByTestId('patient-detail-edit-dialog').getByTestId('patient-detail-staff-input'),
+        ).toHaveAccessibleDescription(EDIT_HINT),
       )
     })
 
-    test(`${prefix}利用者の登録のダイアログを開いた場合、訪問しない職員を含む補足の文が出ること`, async ({
-      browser,
+    test('patient-create-staff-hint 利用者の登録のダイアログを開いた場合、訪問しない職員を含む補足の文が出ること', async ({
+      page,
     }) => {
-      await recordPrEvidence(
-        browser,
-        {
-          name: 'patient-create-staff-hint',
-          title: '利用者の登録のダイアログで、担当の職員の欄の下の補足の文を見る',
-          actor: ACTOR,
-          variant,
-        },
-        openCreate,
-        async ({ page, step, check }) => {
-          await openCreate(page)
-          await step(
-            '利用者の登録のダイアログ（Storybook の PatientCreateDialogContainer の Default）を開いている',
-          )
-          await expect(page.getByTestId('patient-new-staff')).toHaveAccessibleDescription(
-            CREATE_HINT,
-          )
-          await check(`担当の職員の欄の下に「${CREATE_HINT}」が出る`)
-        },
+      await page.goto(CREATE_DIALOG)
+      await expect(page.getByTestId('patient-new-name')).toBeVisible()
+      await intro(
+        page,
+        '利用者の登録のダイアログで、担当の職員の欄の下の補足の文を見る\n前提 利用者の登録のダイアログ（Storybook の PatientCreateDialogContainer の Default）を開いている',
+      )
+
+      await check(page, `担当の職員の欄の下に「${CREATE_HINT}」が出る`, () =>
+        expect(page.getByTestId('patient-new-staff')).toHaveAccessibleDescription(CREATE_HINT),
       )
     })
 
-    test(`${prefix}今の担当が訪問しない職員の利用者を、担当を変えずに保存した場合、保存でき担当が変わらないこと`, async ({
-      browser,
+    test('patient-edit-keep-non-visiting-staff 今の担当が訪問しない職員の利用者を、担当を変えずに保存した場合、保存でき担当が変わらないこと', async ({
+      page,
     }) => {
-      await recordPrEvidence(
-        browser,
-        {
-          name: 'patient-edit-keep-non-visiting-staff',
-          title: '今の担当が訪問しない職員の利用者を、担当を変えずに保存する',
-          actor: ACTOR,
-          variant,
-        },
-        openDetail,
-        async ({ page, step, check }) => {
-          await openDetail(page)
-          await step(
-            '担当の職員が訪問しない青木 一郎の利用者の詳細（Storybook の PatientDetailContainer の NonVisitingStaff）を開いている',
-          )
-
-          await step('「編集」を押す')
-          const dialog = await openEditDialog(page)
-          await expect(dialog.getByTestId('patient-detail-staff-input')).toContainText(
-            CURRENT_STAFF,
-          )
-          await check(`担当の職員の欄に「${CURRENT_STAFF}」が選ばれている`)
-
-          await step('担当の職員を変えずに「保存」を押す')
-          await dialog.getByTestId('patient-detail-save').click()
-          await expect(dialog).toBeHidden()
-          await expect(page.getByTestId('patient-detail-profile')).toContainText('青木 一郎')
-          await check('ダイアログが閉じ、詳細の担当の職員は青木 一郎のまま')
-        },
+      await openDetail(page)
+      await intro(
+        page,
+        '今の担当が訪問しない職員の利用者を、担当を変えずに保存する\n前提 担当の職員が訪問しない青木 一郎の利用者の詳細（Storybook の PatientDetailContainer の NonVisitingStaff）を開いている',
       )
+
+      await step(page, '「編集」を押す', () => openEditDialog(page))
+      const dialog = page.getByTestId('patient-detail-edit-dialog')
+      await check(page, `担当の職員の欄に「${CURRENT_STAFF}」が選ばれている`, () =>
+        expect(dialog.getByTestId('patient-detail-staff-input')).toContainText(CURRENT_STAFF),
+      )
+
+      await step(page, '担当の職員を変えずに「保存」を押す', () =>
+        dialog.getByTestId('patient-detail-save').click(),
+      )
+      await check(page, 'ダイアログが閉じ、詳細の担当の職員は青木 一郎のまま', async () => {
+        await expect(dialog).toBeHidden()
+        await expect(page.getByTestId('patient-detail-profile')).toContainText('青木 一郎')
+      })
     })
-  }
+  })
 })
