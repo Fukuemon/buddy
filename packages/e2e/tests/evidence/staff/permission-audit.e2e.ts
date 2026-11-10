@@ -1,8 +1,9 @@
+// DB を作り直してから単独で流す。audit-position-create が作る役職「主任」は、役職を消す API が無く戻せない
 import { expect, test, type APIRequestContext, type Page } from '@playwright/test'
 
 import { routeApiReference } from '../../fixtures/apiReference'
 import { check, intro, step } from '../../fixtures/caption'
-import { LEADER, LOGIN_STAFF, LOGIN_STATE } from '../../fixtures/env'
+import { LEADER, LOGIN_STAFF, LOGIN_STATE, SCHEDULE_URL } from '../../fixtures/env'
 import {
   STAFF_FORM,
   addPolicy,
@@ -62,6 +63,37 @@ const registerFor = async (
 const openDetail = async (page: Page, id: string, name: string) => {
   await page.goto(`/staff/${id}`)
   await expect(page.getByTestId('staff-detail-name')).toHaveText(name)
+}
+
+/**
+ * 職員 id の名前、部署、チーム、訪問するか、電話番号を読み、その値に戻す関数を返す。
+ * シードの職員を変える観点で、ほかの撮影の前提に戻すために、撮った後に呼ぶ。
+ */
+const keepProfile = async (request: APIRequestContext, id: string) => {
+  const token = await issueManagerToken()
+  const headers = { Authorization: `Bearer ${token}` }
+  const res = await request.get(`${SCHEDULE_URL}/v1/users/${id}`, { headers })
+  if (!res.ok()) throw new Error(`職員を読めない: ${res.status()}`)
+  const staff = (await res.json()) as {
+    username: string
+    department: { id: string }
+    team: { id: string }
+    visits: boolean
+    phone_number: string | null
+  }
+  return async () => {
+    const put = await request.put(`${SCHEDULE_URL}/v1/users/${id}`, {
+      headers,
+      data: {
+        username: staff.username,
+        department_id: staff.department.id,
+        team_id: staff.team.id,
+        visits: staff.visits,
+        phone_number: staff.phone_number,
+      },
+    })
+    if (!put.ok()) throw new Error(`職員を戻せない: ${put.status()}`)
+  }
 }
 
 /** 録画する page で、API の参照のページの path のリクエストを開く。 */
@@ -274,69 +306,81 @@ test.describe('職員の詳細', () => {
 
       test('audit-team-change 職員の管理の権限を持つ職員がチームを対象にする権限を持つ職員のチームを A に変えて保存した場合、詳細のチームと権限の対象が A になること', async ({
         page,
+        request,
       }) => {
-        await openDetail(page, LEADER.staff.id, LEADER.staff.name)
-        await page.getByTestId('staff-detail-tab-policies').click()
-        await expect(page.getByTestId('staff-policy-targets-schedule.team.read')).toHaveText('B')
-        await intro(
-          page,
-          `チームを変えて対象を移すと記録が残る\n前提 ${LOGIN_STAFF.name} でログインし、${LEADER.staff.name} の権限のタブを開いている。チームの予定の閲覧と編集の対象はチーム B である`,
-        )
-
-        const dialog = page.getByTestId('staff-detail-edit-dialog')
-        await step(
-          page,
-          '基本の情報のタブで「編集」を押し、チームを A に変えて「保存」を押す',
-          async () => {
-            await page.getByTestId('staff-detail-tab-profile').click()
-            await page.getByTestId('staff-detail-edit').click()
-            await dialog.getByTestId('staff-detail-team-input').selectOption(STAFF_FORM.teamId)
-            await dialog.getByTestId('staff-detail-save').click()
-          },
-        )
-        await check(page, '詳細のチームが A になる', async () => {
-          await expect(dialog).toHaveCount(0)
-          await expect(staffProfileValue(page, 'チーム')).toHaveText(TEAM_A)
-        })
-
-        await step(page, '権限のタブを開く', () =>
-          page.getByTestId('staff-detail-tab-policies').click(),
-        )
-        await check(page, 'チームの予定の閲覧と編集の対象が A になる', async () => {
-          await expect(page.getByTestId('staff-policy-targets-schedule.team.read')).toHaveText(
-            TEAM_A,
+        const restore = await keepProfile(request, LEADER.staff.id)
+        try {
+          await openDetail(page, LEADER.staff.id, LEADER.staff.name)
+          await page.getByTestId('staff-detail-tab-policies').click()
+          await expect(page.getByTestId('staff-policy-targets-schedule.team.read')).toHaveText('B')
+          await intro(
+            page,
+            `チームを変えて対象を移すと記録が残る\n前提 ${LOGIN_STAFF.name} でログインし、${LEADER.staff.name} の権限のタブを開いている。チームの予定の閲覧と編集の対象はチーム B である`,
           )
-          await expect(page.getByTestId('staff-policy-targets-schedule.team.edit')).toHaveText(
-            TEAM_A,
+
+          const dialog = page.getByTestId('staff-detail-edit-dialog')
+          await step(
+            page,
+            '基本の情報のタブで「編集」を押し、チームを A に変えて「保存」を押す',
+            async () => {
+              await page.getByTestId('staff-detail-tab-profile').click()
+              await page.getByTestId('staff-detail-edit').click()
+              await dialog.getByTestId('staff-detail-team-input').selectOption(STAFF_FORM.teamId)
+              await dialog.getByTestId('staff-detail-save').click()
+            },
           )
-        })
+          await check(page, '詳細のチームが A になる', async () => {
+            await expect(dialog).toHaveCount(0)
+            await expect(staffProfileValue(page, 'チーム')).toHaveText(TEAM_A)
+          })
+
+          await step(page, '権限のタブを開く', () =>
+            page.getByTestId('staff-detail-tab-policies').click(),
+          )
+          await check(page, 'チームの予定の閲覧と編集の対象が A になる', async () => {
+            await expect(page.getByTestId('staff-policy-targets-schedule.team.read')).toHaveText(
+              TEAM_A,
+            )
+            await expect(page.getByTestId('staff-policy-targets-schedule.team.edit')).toHaveText(
+              TEAM_A,
+            )
+          })
+        } finally {
+          await restore()
+        }
       })
 
       test('audit-name-only 職員の管理の権限を持つ職員がチームを対象にする権限を持つ職員の名前だけを変えて保存した場合、詳細の名前が変えた名前になること', async ({
         page,
+        request,
       }) => {
-        const renamed = `${LEADER.staff.name} 改`
-        await page.goto(`/staff/${LEADER.staff.id}`)
-        await expect(page.getByTestId('staff-detail-name')).toBeVisible()
-        await intro(
-          page,
-          `名前だけを変えると記録が残らない\n前提 ${LOGIN_STAFF.name} でログインし、チームを対象にする権限を持つ ${LEADER.staff.name} の職員の詳細を開いている`,
-        )
+        const restore = await keepProfile(request, LEADER.staff.id)
+        try {
+          const renamed = `${LEADER.staff.name} 改`
+          await page.goto(`/staff/${LEADER.staff.id}`)
+          await expect(page.getByTestId('staff-detail-name')).toBeVisible()
+          await intro(
+            page,
+            `名前だけを変えると記録が残らない\n前提 ${LOGIN_STAFF.name} でログインし、チームを対象にする権限を持つ ${LEADER.staff.name} の職員の詳細を開いている`,
+          )
 
-        const dialog = page.getByTestId('staff-detail-edit-dialog')
-        await step(
-          page,
-          `「編集」を押し、名前だけを「${renamed}」に変えて「保存」を押す`,
-          async () => {
-            await page.getByTestId('staff-detail-edit').click()
-            await dialog.getByTestId('staff-detail-name-input').fill(renamed)
-            await dialog.getByTestId('staff-detail-save').click()
-          },
-        )
-        await check(page, `詳細の名前が「${renamed}」になる`, async () => {
-          await expect(dialog).toHaveCount(0)
-          await expect(page.getByTestId('staff-detail-name')).toHaveText(renamed)
-        })
+          const dialog = page.getByTestId('staff-detail-edit-dialog')
+          await step(
+            page,
+            `「編集」を押し、名前だけを「${renamed}」に変えて「保存」を押す`,
+            async () => {
+              await page.getByTestId('staff-detail-edit').click()
+              await dialog.getByTestId('staff-detail-name-input').fill(renamed)
+              await dialog.getByTestId('staff-detail-save').click()
+            },
+          )
+          await check(page, `詳細の名前が「${renamed}」になる`, async () => {
+            await expect(dialog).toHaveCount(0)
+            await expect(page.getByTestId('staff-detail-name')).toHaveText(renamed)
+          })
+        } finally {
+          await restore()
+        }
       })
 
       test('audit-staff-create 職員の管理の権限を持つ職員が役職をリーダーにして職員を登録した場合、登録した職員の詳細が開き、権限のタブに役職の権限が出ること', async ({

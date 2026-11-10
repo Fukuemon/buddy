@@ -1,3 +1,4 @@
+// DB を作り直してから単独で流す。担当の職員の選択肢は、ほかの spec が登録した職員が混ざると変わり、登録した職員は消せない
 import { expect, test, type Page } from '@playwright/test'
 
 import { check, intro, step } from '../../fixtures/caption'
