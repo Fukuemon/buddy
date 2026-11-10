@@ -112,12 +112,11 @@ test.describe('照合の権限', () => {
         await expect(nav.getByTestId('site-nav-receipt')).toHaveCount(0)
       })
 
-      await step(page, '照合の画面の URL（/receipt）を直に開く', async () => {
-        await page.goto('/receipt')
-      })
+      // goto には止めが入らず、step の字幕が読めないので、次の判定の字幕に書く
+      await page.goto('/receipt')
       await check(
         page,
-        '照合の入力を出さず、「この画面を開く権限がありません」と照合の権限が要ることが出る',
+        '（照合の画面の URL（/receipt）を直に開く）\n照合の入力を出さず、「この画面を開く権限がありません」と照合の権限が要ることが出る',
         async () => {
           const forbidden = page.getByTestId('page-forbidden')
           await expect(forbidden).toContainText('この画面を開く権限がありません')

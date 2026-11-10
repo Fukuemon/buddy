@@ -176,14 +176,16 @@ test.describe('照合の結果', () => {
           '2024年4月1日（月）',
           item.patient,
         )
-        await step(page, `結果の表で、${item.patient} の行の確認することの列を見る`, () =>
-          cells.nth(COLUMN.findings).scrollIntoViewIfNeeded(),
+        // 送る操作は止めが入らず、step の字幕が読めないので、次の判定の字幕に書く
+        await cells.nth(COLUMN.findings).scrollIntoViewIfNeeded()
+        await check(
+          page,
+          `（結果の表で、${item.patient} の行の確認することの列を見る）\n${item.findingsResult}`,
+          () => expectCellsStartWith(cells, ...item.values),
         )
-        await check(page, item.findingsResult, () => expectCellsStartWith(cells, ...item.values))
-        await step(page, `結果の表で、${item.patient} の行の観点のセルが見えるまで送る`, () =>
-          focusCell(cells, item.afterFocus ?? item.focus).scrollIntoViewIfNeeded(),
-        )
-        await check(page, item.afterResult, async () => {
+        await focusCell(cells, item.afterFocus ?? item.focus).scrollIntoViewIfNeeded()
+        const afterCaption = `（結果の表で、${item.patient} の行の観点のセルが見えるまで送る）\n${item.afterResult}`
+        await check(page, afterCaption, async () => {
           await expectCellsStartWith(cells, ...item.values)
           if (item.name === 'receipt-marks-one-side') {
             const visitOnly = receiptCategoryRowCells(

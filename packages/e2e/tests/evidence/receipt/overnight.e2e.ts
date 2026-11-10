@@ -108,11 +108,12 @@ test.describe('照合の結果', () => {
         () => expect(cells).toHaveText(expected),
       )
 
-      await step(page, '（撮影のため、結果の表を右端まで送り、実績の側の列を見せる）', () =>
-        scrollToVisitColumns(page),
-      )
-      await check(page, '実績の側も 23:00〜00:30、90 分、加算は深夜で、印が無い', () =>
-        expect(cells).toHaveText(expected),
+      // 送る操作は止めが入らず、step の字幕が読めないので、次の判定の字幕に書く
+      await scrollToVisitColumns(page)
+      await check(
+        page,
+        '（撮影のため、結果の表を右端まで送り、実績の側の列を見せる）\n実績の側も 23:00〜00:30、90 分、加算は深夜で、印が無い',
+        () => expect(cells).toHaveText(expected),
       )
     })
 
@@ -146,12 +147,11 @@ test.describe('照合の結果', () => {
       )
 
       const cells = receiptCategoryRowCells(page, 'visit_only', '2024年4月1日（月）', '利用者D')
-      await step(page, '（撮影のため、結果の表を右端まで送り、実績の側の列を見せる）', () =>
-        scrollToVisitColumns(page),
-      )
+      // 送る操作は止めが入らず、step の字幕が読めないので、次の判定の字幕に書く
+      await scrollToVisitColumns(page)
       await check(
         page,
-        '利用者D の 2024-04-01 の行が実績のみに入り、実績の側は 22:00〜01:00、180 分である',
+        '（撮影のため、結果の表を右端まで送り、実績の側の列を見せる）\n利用者D の 2024-04-01 の行が実績のみに入り、実績の側は 22:00〜01:00、180 分である',
         async () => {
           await expect(cells.nth(9)).toHaveText('22:00')
           await expect(cells.nth(10)).toHaveText('01:00')
@@ -217,11 +217,12 @@ test.describe('照合の結果', () => {
         () => expect(cells).toHaveText(expected),
       )
 
-      await step(page, '（撮影のため、結果の表を右端まで送り、実績の側の列を見せる）', () =>
-        scrollToVisitColumns(page),
-      )
-      await check(page, '実績の側も 23:00〜00:30、90 分、加算は深夜で、予定と対になっている', () =>
-        expect(cells).toHaveText(expected),
+      // 送る操作は止めが入らず、step の字幕が読めないので、次の判定の字幕に書く
+      await scrollToVisitColumns(page)
+      await check(
+        page,
+        '（撮影のため、結果の表を右端まで送り、実績の側の列を見せる）\n実績の側も 23:00〜00:30、90 分、加算は深夜で、予定と対になっている',
+        () => expect(cells).toHaveText(expected),
       )
     })
   })

@@ -91,12 +91,11 @@ test.describe('照合の結果', () => {
       const lines = csv.split('\r\n').filter((line) => line !== '')
       const rowOf = (client: string) => lines.find((line) => line.includes(`,${client},`))
 
-      await step(page, 'ダウンロードした CSV の中身を、文字列のままと列に分けた表で開く', () =>
-        showCsv(page, lines, 'ダウンロードした CSV（BOM 付きの UTF-8、CRLF）'),
-      )
+      // 中身を開く操作には止めが入らず、step の字幕が読めないので、次の判定の字幕に書く
+      await showCsv(page, lines, 'ダウンロードした CSV（BOM 付きの UTF-8、CRLF）')
       await check(
         page,
-        '1 行目が「区分,訪問日,…,加算,確認すること」で、「---」の区切りの行が無く、値に ❌ と ※ が無い',
+        '（ダウンロードした CSV の中身を、文字列のままと列に分けた表で開く）\n1 行目が「区分,訪問日,…,加算,確認すること」で、「---」の区切りの行が無く、値に ❌ と ※ が無い',
         async () => {
           expect(csv).not.toContain('"')
           expect(lines[0]).toBe(HEADER)
@@ -128,12 +127,14 @@ test.describe('照合の結果', () => {
       )
 
       const filtered = [lines[0], ...lines.slice(1).filter((line) => line.startsWith('予定のみ,'))]
-      await step(page, '区分の列で「予定のみ」の行に絞り込む', () =>
-        showCsv(page, filtered, '区分の列が「予定のみ」の行'),
+      await showCsv(page, filtered, '区分の列が「予定のみ」の行')
+      await check(
+        page,
+        '（区分の列で「予定のみ」の行に絞り込む）\n区分の列で絞り込むと、予定のみの利用者E の行だけが残る',
+        async () => {
+          expect(filtered).toHaveLength(2)
+        },
       )
-      await check(page, '区分の列で絞り込むと、予定のみの利用者E の行だけが残る', async () => {
-        expect(filtered).toHaveLength(2)
-      })
     })
   })
 })

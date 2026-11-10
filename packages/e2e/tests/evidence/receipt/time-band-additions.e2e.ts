@@ -64,12 +64,11 @@ test.describe('照合の結果', () => {
       )
       await step(page, '表示する行を「全ての行」に切り替える', () => showAllReceiptRows(page))
       const cells = receiptCategoryRowCells(page, 'match', '2024年4月1日（月）', '利用者A')
-      await step(page, '結果の表を、加算の列が見えるまで右へ送る', () =>
-        cells.nth(ADDITION_COLUMN).scrollIntoViewIfNeeded(),
-      )
+      // 送る操作は止めが入らず、step の字幕が読めないので、次の判定の字幕に書く
+      await cells.nth(ADDITION_COLUMN).scrollIntoViewIfNeeded()
       await check(
         page,
-        '利用者A の行が整合データに入り、加算は「夜間」で印が付かない',
+        '（結果の表を、加算の列が見えるまで右へ送る）\n利用者A の行が整合データに入り、加算は「夜間」で印が付かない',
         async () => {
           await expect(cells.nth(5)).toHaveText('19:00')
           await expect(cells.nth(ADDITION_COLUMN)).toHaveText('夜間')
@@ -90,12 +89,11 @@ test.describe('照合の結果', () => {
         checkWithCsv(page, schedules, visits),
       )
       const cells = receiptCategoryRowCells(page, 'mismatch', '2024年4月1日（月）', '利用者C')
-      await step(page, '結果の表を、加算の列が見えるまで右へ送る', () =>
-        cells.nth(ADDITION_COLUMN).scrollIntoViewIfNeeded(),
-      )
+      // 送る操作は止めが入らず、step の字幕が読めないので、次の判定の字幕に書く
+      await cells.nth(ADDITION_COLUMN).scrollIntoViewIfNeeded()
       await check(
         page,
-        '利用者C の行が不整合データに入り、加算の「夜間」に不一致の印が付く',
+        '（結果の表を、加算の列が見えるまで右へ送る）\n利用者C の行が不整合データに入り、加算の「夜間」に不一致の印が付く',
         async () => {
           await expect(cells.nth(5)).toHaveText('10:00')
           await expect(cells.nth(ADDITION_COLUMN)).toHaveText('夜間（不一致）')
