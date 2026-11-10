@@ -49,6 +49,7 @@ export const AUTH_ERROR_REASONS = [
   'too_many_attempts',
 ] as const
 
+/** ログインできなかった理由の 1 つ。値ごとの意味は AUTH_ERROR_REASONS にある。 */
 export type AuthErrorReason = (typeof AUTH_ERROR_REASONS)[number]
 
 /** 予定の権限の code。予定の API のマイグレーションが入れる値と同じにする。 */
