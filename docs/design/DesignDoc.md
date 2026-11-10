@@ -328,7 +328,7 @@ Hydra は discovery の `end_session_endpoint` を Issuer の URL から作る�
 - 予定の閲覧と編集は、職員の権限で予定の API が判定する。
   - 職員が見てはいけない予定は一覧から除き、1 件を指す操作には 403 を返す。
   - 規則は [権限の Design Doc の予定の認可](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/internal/access/DesignDoc.md#予定の認可) にある。
-  - ADR-0007: [権限を役職のデフォルトと職員ごとの上書きで持ち、職員の管理と照合も権限で許す](../adr/0007-pbac.md)
+  - ADR-0041: [権限を役職のデフォルトと職員ごとの上書きで持ち、役職を変えても職員ごとに足した権限を残し、職員の管理と照合も権限で許す](../adr/0041-pbac-grants.md)
 - 照合は、照合の権限を持つ職員だけに照合の API が許す。
   - 照合の API は権限を持たず、照合のたびに予定の API に問い合わせる。
   - 確認の仕方は [権限の Design Doc の照合の API の権限の確認](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/internal/access/DesignDoc.md#照合の-api-の権限の確認) にある。

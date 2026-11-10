@@ -131,6 +131,12 @@ nav = [
     "adr/0034-e2e-functions-without-page-object.md",
     "adr/0035-local-hostnames-with-portless.md",
     "adr/0036-main-checkout-with-portless.md",
+    "adr/0037-recurring-rule-change.md",
+    "adr/0038-recurring-rule-scope.md",
+    "adr/0039-recurring-rrule-mapping.md",
+    "adr/0040-schedule-deletion.md",
+    "adr/0041-pbac-grants.md",
+    "adr/0042-permission-audit.md",
   ] },
 ]
 
