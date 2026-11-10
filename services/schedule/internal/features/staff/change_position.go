@@ -61,17 +61,17 @@ func (s ChangePosition) Do(ctx context.Context, id, positionID string) (Detail, 
 		if err != nil {
 			return err
 		}
-		drop, grants, manages := replaceGrants(cur.Policies, from, pos, cur.TeamID, s.ids)
+		dropPolicyIDs, grants, manages := replaceGrants(cur.Policies, from, pos, cur.TeamID, s.ids)
 		if !manages {
 			if err := lastManager(ctx, s.staff, cur, "職員の管理の権限を持つ最後の有効な職員の役職は、その権限を持たない役職に変えられません"); err != nil {
 				return err
 			}
 		}
-		if err := s.staff.ChangePosition(ctx, cur.ID, pos.ID, drop, grants); err != nil {
+		if err := s.staff.ChangePosition(ctx, cur.ID, pos.ID, dropPolicyIDs, grants); err != nil {
 			return err
 		}
 		changed, err = s.staff.Get(ctx, cur.ID)
-		if err != nil || before.Equal(toStaffState(changed)) {
+		if err != nil {
 			return err
 		}
 		return recordChange(ctx, s.audit, audit.PositionChange, &before, changed)
@@ -82,20 +82,20 @@ func (s ChangePosition) Do(ctx context.Context, id, positionID string) (Detail, 
 // replaceGrants は、権限 cur を持つチーム teamID の職員の役職を from から to に変えるときに、消す権限の ID、コピーする権限、
 // 変更の後に職員の管理の権限が残るかを返す。消すのは from のデフォルトの権限で、cur のうちそれ以外は残す。
 // 残す権限が to のデフォルトにもあれば、コピーしない。
-func replaceGrants(cur []PolicyGrant, from, to organization.Position, teamID string, ids kernel.IDGenerator) (drop []string, grants []Grant, manages bool) {
+func replaceGrants(cur []PolicyGrant, from, to organization.Position, teamID string, ids kernel.IDGenerator) (dropPolicyIDs []string, grants []Grant, manages bool) {
 	for _, p := range from.Policies {
-		drop = append(drop, p.ID)
+		dropPolicyIDs = append(dropPolicyIDs, p.ID)
 	}
-	var kept []string
+	var keptPolicyIDs []string
 	for _, g := range cur {
-		if !slices.Contains(drop, g.PolicyID) {
-			kept = append(kept, g.PolicyID)
+		if !slices.Contains(dropPolicyIDs, g.PolicyID) {
+			keptPolicyIDs = append(keptPolicyIDs, g.PolicyID)
 			manages = manages || g.PolicyCode == organization.StaffManage
 		}
 	}
-	to.Policies = slices.DeleteFunc(slices.Clone(to.Policies), func(p organization.Policy) bool { return slices.Contains(kept, p.ID) })
+	to.Policies = slices.DeleteFunc(slices.Clone(to.Policies), func(p organization.Policy) bool { return slices.Contains(keptPolicyIDs, p.ID) })
 	for _, p := range to.Policies {
 		manages = manages || p.Code == organization.StaffManage
 	}
-	return drop, DefaultGrants(to, teamID, ids), manages
+	return dropPolicyIDs, DefaultGrants(to, teamID, ids), manages
 }

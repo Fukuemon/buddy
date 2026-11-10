@@ -46,7 +46,7 @@ func (r *StaffRepository) ChangePosition(ctx context.Context, id, positionID str
 	if err := q.UpdateUserPosition(ctx, sqlcgen.UpdateUserPositionParams{ID: id, PositionID: positionID}); err != nil {
 		return translate("update user position", err)
 	}
-	if err := q.DeleteUserPoliciesByPolicy(ctx, sqlcgen.DeleteUserPoliciesByPolicyParams{UserID: id, PolicyIds: dropPolicyIDs}); err != nil {
+	if err := q.DeleteUserPoliciesByPolicies(ctx, sqlcgen.DeleteUserPoliciesByPoliciesParams{UserID: id, PolicyIds: dropPolicyIDs}); err != nil {
 		return translate("delete user policies", err)
 	}
 	return addGrants(ctx, q, id, grants)

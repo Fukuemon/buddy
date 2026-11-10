@@ -39,7 +39,7 @@ FROM user_policies up
 WHERE up.id = upt.user_policy_id AND up.user_id = sqlc.arg(user_id)
   AND upt.target_team_id = sqlc.arg(old_team_id);
 
--- name: DeleteUserPoliciesByPolicy :exec
+-- name: DeleteUserPoliciesByPolicies :exec
 -- 職員の権限のうち、権限 policy_ids のものを消す。user_policy_targets は外部キーの ON DELETE CASCADE で消える。
 DELETE FROM user_policies WHERE user_id = sqlc.arg(user_id) AND policy_id = ANY(sqlc.arg(policy_ids)::text[]);
 

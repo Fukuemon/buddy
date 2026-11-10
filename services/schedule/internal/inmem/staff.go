@@ -33,15 +33,22 @@ func (s Staff) Create(_ context.Context, st staff.Staff, grants []staff.Grant) e
 }
 
 // ChangePosition は、職員の役職を替え、Grants と職員の Policies から権限 dropPolicyIDs のものを外してから、grants を Grants に足す。
+// DB の一意の制約と同じく、残した権限と同じ権限が grants にあれば apperr.ErrConflict を返す。
 func (s Staff) ChangePosition(_ context.Context, id, positionID string, dropPolicyIDs []string, grants []staff.Grant) error {
 	d, ok := s.Staff[id]
 	if !ok {
 		return apperr.ErrNotFound
 	}
-	d.PositionID = positionID
-	d.Policies = slices.DeleteFunc(slices.Clone(d.Policies), func(g staff.PolicyGrant) bool { return slices.Contains(dropPolicyIDs, g.PolicyID) })
-	s.Staff[id] = d
+	policies := slices.DeleteFunc(slices.Clone(d.Policies), func(g staff.PolicyGrant) bool { return slices.Contains(dropPolicyIDs, g.PolicyID) })
 	kept := slices.DeleteFunc(slices.Clone(s.Grants[id]), func(g staff.Grant) bool { return slices.Contains(dropPolicyIDs, g.PolicyID) })
+	for _, g := range grants {
+		if slices.ContainsFunc(policies, func(p staff.PolicyGrant) bool { return p.PolicyID == g.PolicyID }) ||
+			slices.ContainsFunc(kept, func(k staff.Grant) bool { return k.PolicyID == g.PolicyID }) {
+			return apperr.ErrConflict
+		}
+	}
+	d.PositionID, d.Policies = positionID, policies
+	s.Staff[id] = d
 	s.Grants[id] = append(kept, grants...)
 	return nil
 }

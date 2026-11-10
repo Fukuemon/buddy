@@ -177,7 +177,7 @@ func TestStaffKeepsLastManager(t *testing.T) {
 			t.Errorf("有効な管理者 = %v, want 権限が残る", got)
 		}
 	})
-	t.Run("最後の有効な管理者の役職を職員の管理の権限の無い役職に変えると 409 で役職と権限が変わらない", func(t *testing.T) {
+	t.Run("役職のデフォルトの職員の管理の権限しか持たない最後の有効な管理者の役職を、その権限の無い役職に変えると 409 で役職と権限が変わらない", func(t *testing.T) {
 		s := fixture(false)
 		if _, err := uc(s).ChangePosition(ctx, companionID, leaderID); !errors.Is(err, apperr.ErrConflict) {
 			t.Fatalf("err = %v, want ErrConflict", err)

@@ -96,18 +96,18 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) error {
 	return err
 }
 
-const deleteUserPoliciesByPolicy = `-- name: DeleteUserPoliciesByPolicy :exec
+const deleteUserPoliciesByPolicies = `-- name: DeleteUserPoliciesByPolicies :exec
 DELETE FROM user_policies WHERE user_id = $1 AND policy_id = ANY($2::text[])
 `
 
-type DeleteUserPoliciesByPolicyParams struct {
+type DeleteUserPoliciesByPoliciesParams struct {
 	UserID    string
 	PolicyIds []string
 }
 
 // 職員の権限のうち、権限 policy_ids のものを消す。user_policy_targets は外部キーの ON DELETE CASCADE で消える。
-func (q *Queries) DeleteUserPoliciesByPolicy(ctx context.Context, arg DeleteUserPoliciesByPolicyParams) error {
-	_, err := q.db.Exec(ctx, deleteUserPoliciesByPolicy, arg.UserID, arg.PolicyIds)
+func (q *Queries) DeleteUserPoliciesByPolicies(ctx context.Context, arg DeleteUserPoliciesByPoliciesParams) error {
+	_, err := q.db.Exec(ctx, deleteUserPoliciesByPolicies, arg.UserID, arg.PolicyIds)
 	return err
 }
 
