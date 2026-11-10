@@ -432,3 +432,5 @@ flowchart TB
 | ADR-0033 | ADR-0034 | #851 |
 | ADR-0034 | ADR-0035 | #851 |
 | ADR-0041（#986 の pull request の中の番号） | ADR-0043 | #986 |
+| ADR-0044（#1022 の pull request の中の番号） | ADR-0045 | #1022 |
+| ADR-0045（#1022 の pull request の中の番号） | ADR-0046 | #1022 |
