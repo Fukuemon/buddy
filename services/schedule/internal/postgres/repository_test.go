@@ -1506,12 +1506,15 @@ func TestStaffCreateRejectsTarget(t *testing.T) {
 	}
 }
 
-// TestStaffChangePosition は、役職を変えると、前の権限と対象が消え、渡した権限だけになることを確認する。
+// TestStaffChangePosition は、役職を変えると、消すと渡した権限だけが対象ごと消え、ほかの権限は行のまま残り、渡した権限が足されることを確認する。
 func TestStaffChangePosition(t *testing.T) {
 	ctx := txContext(t)
 	r := NewStaffRepository(testDB)
-	grants := []staff.Grant{{ID: "01M3TD00000000000000000030", PolicyID: seedSelfEdit}}
-	if err := r.ChangePosition(ctx, seedMori, seedMember, grants); err != nil {
+	// 森はリーダーで、自分の予定の編集と、所属のチームを対象にするチームの予定の閲覧と編集を持つ
+	const kept = "01M3TC5ZMRRY639KSB3B4T0V19"
+	target := staff.Target{ID: "01M3TD00000000000000000031", UserID: seedHayashi}
+	grants := []staff.Grant{{ID: "01M3TD00000000000000000030", PolicyID: seedUserRead, Targets: []staff.Target{target}}}
+	if err := r.ChangePosition(ctx, seedMori, seedMember, []string{seedTeamRead, seedTeamEdit}, grants); err != nil {
 		t.Fatal(err)
 	}
 	got, err := r.Get(ctx, seedMori)
@@ -1521,16 +1524,21 @@ func TestStaffChangePosition(t *testing.T) {
 	if got.PositionID != seedMember || got.PositionName != "メンバー" {
 		t.Errorf("役職 = %s %s", got.PositionID, got.PositionName)
 	}
-	if len(got.Policies) != 1 || got.Policies[0].PolicyID != seedSelfEdit || len(got.Policies[0].TargetTeamIDs) != 0 {
-		t.Errorf("Policies = %+v, want 自分の予定の編集だけ", got.Policies)
+	ids := map[string]staff.PolicyGrant{}
+	for _, p := range got.Policies {
+		ids[p.PolicyID] = p
+	}
+	if len(ids) != 2 || ids[seedSelfEdit].UserPolicyID != kept || ids[seedUserRead].UserPolicyID != grants[0].ID ||
+		len(ids[seedUserRead].TargetUserIDs) != 1 || ids[seedUserRead].TargetUserIDs[0] != seedHayashi {
+		t.Errorf("Policies = %+v, want 残した自分の予定の編集と、足した林の予定の閲覧", got.Policies)
 	}
 	var targets int
 	tx := ctx.Value(txKey{}).(pgx.Tx)
 	if err := tx.QueryRow(ctx, "SELECT COUNT(*) FROM user_policy_targets upt JOIN user_policies up ON up.id = upt.user_policy_id WHERE up.user_id = $1", seedMori).Scan(&targets); err != nil {
 		t.Fatal(err)
 	}
-	if targets != 0 {
-		t.Errorf("森の対象のレコード = %d, want 0", targets)
+	if targets != 1 {
+		t.Errorf("森の対象のレコード = %d, want 足した林の 1 つ", targets)
 	}
 }
 

@@ -32,16 +32,17 @@ func (s Staff) Create(_ context.Context, st staff.Staff, grants []staff.Grant) e
 	return nil
 }
 
-// ChangePosition は、職員の役職を替え、権限を grants に置き換える。
-func (s Staff) ChangePosition(_ context.Context, id, positionID string, grants []staff.Grant) error {
+// ChangePosition は、職員の役職を替え、Grants と職員の Policies から権限 dropPolicyIDs のものを外してから、grants を Grants に足す。
+func (s Staff) ChangePosition(_ context.Context, id, positionID string, dropPolicyIDs []string, grants []staff.Grant) error {
 	d, ok := s.Staff[id]
 	if !ok {
 		return apperr.ErrNotFound
 	}
 	d.PositionID = positionID
-	d.Policies = nil
+	d.Policies = slices.DeleteFunc(slices.Clone(d.Policies), func(g staff.PolicyGrant) bool { return slices.Contains(dropPolicyIDs, g.PolicyID) })
 	s.Staff[id] = d
-	s.Grants[id] = grants
+	kept := slices.DeleteFunc(slices.Clone(s.Grants[id]), func(g staff.Grant) bool { return slices.Contains(dropPolicyIDs, g.PolicyID) })
+	s.Grants[id] = append(kept, grants...)
 	return nil
 }
 

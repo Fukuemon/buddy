@@ -46,7 +46,7 @@ func stopFixture() (*inmem.Store, *inmem.Identities) {
 	d.PhoneNumber = ptr("+09000000000")
 	s.Staff[staffID] = d
 	c := s.Staff[companionID]
-	c.Policies = []staff.PolicyGrant{{UserPolicyID: "UP-C", PolicyCode: organization.StaffManage}}
+	c.Policies = []staff.PolicyGrant{{UserPolicyID: "UP-C", PolicyID: "MANAGE", PolicyCode: organization.StaffManage}}
 	s.Staff[companionID] = c
 	return s, ids
 }
@@ -98,7 +98,7 @@ func TestStaffStopRejectsSelfAndLastManager(t *testing.T) {
 			s, ids := stopFixture()
 			clearAssignments(s)
 			d := s.Staff[staffID]
-			d.Policies = []staff.PolicyGrant{{UserPolicyID: "UP-A", PolicyCode: organization.StaffManage}}
+			d.Policies = []staff.PolicyGrant{{UserPolicyID: "UP-A", PolicyID: "MANAGE", PolicyCode: organization.StaffManage}}
 			s.Staff[staffID] = d
 			// リクエストを送った管理者が休職になった後に届いた操作を表す。staffID が最後の有効な管理者になる
 			c := s.Staff[companionID]
@@ -113,7 +113,7 @@ func TestStaffStopRejectsSelfAndLastManager(t *testing.T) {
 			s, ids := stopFixture()
 			clearAssignments(s)
 			d := s.Staff[staffID]
-			d.Policies = []staff.PolicyGrant{{UserPolicyID: "UP-A", PolicyCode: organization.StaffManage}}
+			d.Policies = []staff.PolicyGrant{{UserPolicyID: "UP-A", PolicyID: "MANAGE", PolicyCode: organization.StaffManage}}
 			s.Staff[staffID] = d
 			if err := stop(stopApp(s, ids, allow), staffID); err != nil {
 				t.Errorf("err = %v, want 成功", err)
@@ -147,7 +147,7 @@ func TestStaffKeepsLastManager(t *testing.T) {
 		s.Staff[companionID] = c
 		if withOther {
 			d := s.Staff[staffID]
-			d.Policies = []staff.PolicyGrant{{UserPolicyID: "UP-A", PolicyCode: organization.StaffManage}}
+			d.Policies = []staff.PolicyGrant{{UserPolicyID: "UP-A", PolicyID: "MANAGE", PolicyCode: organization.StaffManage}}
 			s.Staff[staffID] = d
 		}
 		s.Positions[leaderID] = organization.Position{ID: leaderID, FacilityID: facilityID, Policies: []organization.Policy{
@@ -184,6 +184,23 @@ func TestStaffKeepsLastManager(t *testing.T) {
 		}
 		if got := s.Staff[companionID]; got.PositionID != managerPosID || len(got.Policies) != 1 || got.Policies[0].UserPolicyID != "UP-C" {
 			t.Errorf("職員 = %+v, want 役職と権限が変わらない", got)
+		}
+	})
+	t.Run("職員ごとに職員の管理の権限を足した最後の有効な管理者は、その権限を持たない役職に変えられ、権限が残る", func(t *testing.T) {
+		s := fixture(false)
+		c := s.Staff[companionID]
+		c.PositionID = leaderID
+		c.Policies = []staff.PolicyGrant{
+			{UserPolicyID: "UP-SELF", PolicyID: "SELF", PolicyCode: organization.ScheduleSelfEdit},
+			{UserPolicyID: "UP-C", PolicyID: "MANAGE", PolicyCode: organization.StaffManage},
+		}
+		s.Staff[companionID] = c
+		s.Positions["MEMBER"] = organization.Position{ID: "MEMBER", FacilityID: facilityID}
+		if _, err := uc(s).ChangePosition(ctx, companionID, "MEMBER"); err != nil {
+			t.Fatalf("err = %v, want 成功", err)
+		}
+		if got := managers(t, s); len(got) != 1 || got[0] != companionID {
+			t.Errorf("有効な管理者 = %v, want 職員ごとに足した権限が残る", got)
 		}
 	})
 	t.Run("休職の管理者しかほかにいなければ 409", func(t *testing.T) {

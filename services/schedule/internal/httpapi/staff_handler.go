@@ -119,7 +119,7 @@ func (s server) CreateUser(ctx context.Context, req openapi.CreateUserRequestObj
 	return openapi.CreateUser201JSONResponse(toStaffDetail(d)), nil
 }
 
-// ChangeUserPosition は、職員の役職を変え、権限を新しい役職のデフォルトの権限からコピーし直した職員を返す。
+// ChangeUserPosition は、職員の役職を変え、前の役職のデフォルトの権限を新しい役職のデフォルトの権限に置き換えた職員を返す。
 func (s server) ChangeUserPosition(ctx context.Context, req openapi.ChangeUserPositionRequestObject) (openapi.ChangeUserPositionResponseObject, error) {
 	d, err := s.u.Staff.ChangePosition(ctx, req.UserId, req.Body.PositionId)
 	if err != nil {

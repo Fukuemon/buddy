@@ -203,16 +203,25 @@ func TestPermissionAudit(t *testing.T) {
 		requireStates(t, one(t, "REQUEST-GRANT-REMOVE", "grant.remove"), before, get(t, seedHayashi))
 	})
 
-	t.Run("役職を変えると、変更の前後の権限の全量が残る", func(t *testing.T) {
+	t.Run("役職を変えると、職員ごとに足した権限を含む変更の前後の権限の全量が残る", func(t *testing.T) {
+		// 林はメンバーで、職員ごとに森の予定の閲覧を足す
+		prep := audit.WithRequestID(bg, "REQUEST-POSITION-CHANGE-PREP")
+		if _, err := addGrant(rec).Do(prep, seedHayashi, staff.GrantInput{PolicyID: seedUserRead, TargetUserIDs: []string{seedMori}}); err != nil {
+			t.Fatal(err)
+		}
 		before := get(t, seedHayashi)
 		ctx := audit.WithRequestID(bg, "REQUEST-POSITION-CHANGE")
 		if _, err := staff.NewChangePosition(staffRepo, facilities, NewPositionRepository(pool), rec, txr, ids, allow).Do(ctx, seedHayashi, seedLeader); err != nil {
 			t.Fatal(err)
 		}
 		after := get(t, seedHayashi)
-		requireStates(t, one(t, "REQUEST-POSITION-CHANGE", "position.change"), before, after)
+		r := one(t, "REQUEST-POSITION-CHANGE", "position.change")
+		requireStates(t, r, before, after)
 		if after.PositionID != seedLeader {
 			t.Errorf("役職 = %s, want リーダー", after.PositionID)
+		}
+		if !strings.Contains(string(r.After), `"target_user_ids": ["`+seedMori+`"]`) {
+			t.Errorf("after = %s, want 職員ごとに足した森の予定の閲覧が残る", r.After)
 		}
 	})
 
@@ -225,6 +234,14 @@ func TestPermissionAudit(t *testing.T) {
 		}
 		if rows := auditRows(t, pool, "REQUEST-SAME-POSITION"); len(rows) != 0 {
 			t.Errorf("記録 = %+v, want 残らない", rows)
+		}
+		after := get(t, seedAoki)
+		same := len(after.Policies) == len(before.Policies)
+		for i := 0; same && i < len(after.Policies); i++ {
+			same = after.Policies[i].UserPolicyID == before.Policies[i].UserPolicyID
+		}
+		if !same || !toStaffState(after).Equal(toStaffState(before)) {
+			t.Errorf("権限 = %+v, want 行も対象も変わらない %+v", after.Policies, before.Policies)
 		}
 	})
 
