@@ -154,9 +154,18 @@ func (s Positions) Get(_ context.Context, id string) (organization.Position, err
 	return get(s.Positions, id)
 }
 
-// ListByFacility は、常に空を返す。
-func (s Positions) ListByFacility(context.Context, string) ([]organization.Position, error) {
-	return nil, nil
+// ListByFacility は、事業所 facilityID の役職を名前と ID の順に返す。
+func (s Positions) ListByFacility(_ context.Context, facilityID string) ([]organization.Position, error) {
+	var out []organization.Position
+	for _, p := range s.Positions {
+		if p.FacilityID == facilityID {
+			out = append(out, p)
+		}
+	}
+	slices.SortFunc(out, func(a, b organization.Position) int {
+		return cmp.Or(cmp.Compare(a.Name, b.Name), cmp.Compare(a.ID, b.ID))
+	})
+	return out, nil
 }
 
 // Create は、役職を保存する。同じ事業所に名前が完全に一致する役職があれば apperr.ErrConflict を返す。
@@ -179,8 +188,17 @@ func (s Policies) Get(_ context.Context, id string) (organization.Policy, error)
 	return get(s.Policies, id)
 }
 
-// List は、常に空を返す。
-func (s Policies) List(context.Context) ([]organization.Policy, error) { return nil, nil }
+// List は、全ての権限を名前と ID の順に返す。
+func (s Policies) List(context.Context) ([]organization.Policy, error) {
+	out := make([]organization.Policy, 0, len(s.Policies))
+	for _, p := range s.Policies {
+		out = append(out, p)
+	}
+	slices.SortFunc(out, func(a, b organization.Policy) int {
+		return cmp.Or(cmp.Compare(a.Name, b.Name), cmp.Compare(a.ID, b.ID))
+	})
+	return out, nil
+}
 
 // ListByIDs は、organization.PolicyRepository の ListByIDs を実装する。
 func (s Policies) ListByIDs(_ context.Context, ids []string) ([]organization.Policy, error) {

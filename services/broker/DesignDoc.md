@@ -424,7 +424,7 @@ Hydra は、トークンを発行するたびに `oauth2.token_hook` でブロ�
 
 - 内部の API と token_hook は、ログインの画面（`PORT`）と別のポート（`INTERNAL_PORT`、デフォルトは 8081）で待ち受ける。
   - ログインの画面のポートは `/internal/` の下に 404 を返す。
-  - 内部のポートは、ブラウザとリバースプロキシに開かず、予定の API と Hydra だけが届くようにする。
+  - 内部のポートは、ブラウザとリバースプロキシに開かず、予定の API、予定の API の運営用の CLI のジョブ、Hydra だけが届くようにする。
 - 内部の API は、Hydra の client credentials の access token（`aud` は `broker`）だけを受け、Hydra の JWKS で検証する。
   - トークンが無いか検証できなければ 401 を返す。
 - 検証できても、トークンの `sub`（client credentials ではクライアントの ID）が、呼んだ操作を許したクライアントに無いか、トークンが `org_id` を持てば 403 を返す。

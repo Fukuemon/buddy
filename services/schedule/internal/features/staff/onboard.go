@@ -3,6 +3,7 @@ package staff
 import (
 	"context"
 	"errors"
+	"fmt"
 	"slices"
 
 	"github.com/Fukuemon/buddy/services/schedule/internal/apperr"
@@ -25,12 +26,12 @@ type OnboardInput struct {
 }
 
 // OnboardResult は、Onboard が書いたか、DryRun で書くはずだったものである。
-// ManagerCreated が false なら、Manager は既にいた職員で、何も書いていない。DryRun のときの ID は、書かなかった仮の値である。
+// ManagerCreated が false なら、Manager は既にいた職員で、何も書いていない。DryRun のときの Setup の ID は、振ってから戻した値で、
+// Manager の ID と Sub は空である。
 type OnboardResult struct {
 	Setup          organization.FacilitySetup
 	Manager        Detail
 	ManagerCreated bool
-	DryRun         bool
 }
 
 // Onboard は、事業所、標準の役職、最初のマネージャーを 1 つのトランザクションで登録する。運営用の CLI が使う。
@@ -61,7 +62,7 @@ var errDryRun = errors.New("dry run")
 //   - in.DryRun なら、ブローカーを呼ばず、トランザクションを戻して、書くはずだったものを返す。
 func (o Onboard) Do(ctx context.Context, in OnboardInput) (OnboardResult, error) {
 	email := NormalizeEmail(in.Email)
-	res := OnboardResult{DryRun: in.DryRun}
+	var res OnboardResult
 	err := o.tx.WithinTx(ctx, func(ctx context.Context) error {
 		setup, err := o.setup(ctx, in.Facility)
 		if err != nil {
@@ -100,7 +101,7 @@ func (o Onboard) Do(ctx context.Context, in OnboardInput) (OnboardResult, error)
 			PositionID:   setup.ManagerPosition.ID,
 		}
 		if in.DryRun {
-			res.Manager, err = o.plan(cin, setup)
+			res.Manager, err = newPlannedManager(cin, setup)
 			if err != nil {
 				return err
 			}
@@ -108,7 +109,8 @@ func (o Onboard) Do(ctx context.Context, in OnboardInput) (OnboardResult, error)
 			return errDryRun
 		}
 		if res.Manager, err = o.create(ctx, cin); err != nil {
-			return err
+			// create の文は web からの登録の文で、予定の API に書いたと書くことがあるが、ここでは全てを戻す
+			return fmt.Errorf("予定の API の書き込みを全て戻しました。同じ引数で流し直せます: %w", err)
 		}
 		res.ManagerCreated = true
 		return nil
@@ -136,8 +138,8 @@ func (o Onboard) findByEmail(ctx context.Context, facilityID, email string) (Det
 	return d, err == nil, err
 }
 
-// plan は、DryRun のときに、create が書くはずの職員を、入力を確認してから返す。ID と Sub は空にする。
-func (o Onboard) plan(in CreateInput, setup organization.FacilitySetup) (Detail, error) {
+// newPlannedManager は、DryRun のときに、create が書くはずの職員を、入力を確認してから返す。ID と Sub は空にする。
+func newPlannedManager(in CreateInput, setup organization.FacilitySetup) (Detail, error) {
 	st, err := New(NewParams{
 		Username:     in.Username,
 		Email:        in.Email,

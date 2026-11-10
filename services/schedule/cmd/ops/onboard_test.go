@@ -7,6 +7,7 @@ import (
 	"errors"
 	"io"
 	"log/slog"
+	"maps"
 	"strings"
 	"testing"
 
@@ -69,34 +70,73 @@ func record(t *testing.T, buf *bytes.Buffer) map[string]any {
 
 // 登録の記録は、実行者、操作の種類、事業所と職員の ID、相関の ID を持ち、メールと職員の名前を持たない。
 func TestOnboardFacilityRecord(t *testing.T) {
-	a, err := parseOnboardArgs(validArgs(), io.Discard)
-	if err != nil {
-		t.Fatal(err)
+	tests := []struct {
+		name    string
+		dryRun  bool
+		created bool
+		want    map[string]any
+		absent  []string
+	}{
+		{"登録した", false, true, map[string]any{"facility_id": "FAC1", "staff_id": "STAFF1", "manager_created": true, "msg": "事業所と最初のマネージャーを登録した"}, nil},
+		{"登録済み", false, false, map[string]any{"facility_id": "FAC1", "staff_id": "STAFF1", "manager_created": false, "msg": "マネージャーは登録済みで、何も書かなかった"}, nil},
+		{"dry-run", true, true, map[string]any{"facility_name": "新しい事業所", "manager_position_name": "マネージャー", "dry_run": true}, []string{"facility_id", "staff_id"}},
 	}
-	var buf bytes.Buffer
-	do := func(_ context.Context, in staff.OnboardInput) (staff.OnboardResult, error) {
-		res := staff.OnboardResult{ManagerCreated: true}
-		res.Setup.Facility = organization.Facility{ID: "FAC1", OrgID: in.Facility.OrgID, Name: in.Facility.Name}
-		res.Setup.FacilityCreated = true
-		res.Manager.ID, res.Manager.Username, res.Manager.Email = "STAFF1", in.Username, in.Email
-		return res, nil
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			args := validArgs()
+			if tt.dryRun {
+				args = append(args, "--dry-run")
+			}
+			a, err := parseOnboardArgs(args, io.Discard)
+			if err != nil {
+				t.Fatal(err)
+			}
+			var buf bytes.Buffer
+			do := func(_ context.Context, in staff.OnboardInput) (staff.OnboardResult, error) {
+				res := staff.OnboardResult{ManagerCreated: tt.created}
+				res.Setup.Facility = organization.Facility{ID: "FAC1", OrgID: in.Facility.OrgID, Name: in.Facility.Name}
+				res.Setup.FacilityCreated = tt.created
+				res.Setup.ManagerPosition.Name = "マネージャー"
+				res.Manager.ID, res.Manager.Username, res.Manager.Email = "STAFF1", in.Username, in.Email
+				return res, nil
+			}
+			if err := onboardFacility(context.Background(), do, a, slog.New(slog.NewJSONHandler(&buf, nil))); err != nil {
+				t.Fatal(err)
+			}
+			m := record(t, &buf)
+			want := map[string]any{"actor": "ops-01", "operation": "facility.onboard", "org_id": "org-new"}
+			maps.Copy(want, tt.want)
+			for k, v := range want {
+				if m[k] != v {
+					t.Errorf("%s = %v, want %v", k, m[k], v)
+				}
+			}
+			for _, k := range tt.absent {
+				if _, ok := m[k]; ok {
+					t.Errorf("%s を出した: %v", k, m)
+				}
+			}
+			if id, _ := m["correlation_id"].(string); id == "" {
+				t.Errorf("correlation_id が無い: %v", m)
+			}
+			for _, secret := range []string{"Mao.Arai@example.com", "mao.arai@example.com", "新井 真央"} {
+				if strings.Contains(buf.String(), secret) {
+					t.Errorf("記録 %q に %q が入っている", buf.String(), secret)
+				}
+			}
+		})
 	}
-	if err := onboardFacility(context.Background(), do, a, slog.New(slog.NewJSONHandler(&buf, nil))); err != nil {
-		t.Fatal(err)
+}
+
+// -h は使い方を出して 0 で終わり、読めない引数は flag のエラーを 1 回だけ出して 2 で終わる。
+func TestRunFlagErrors(t *testing.T) {
+	var stderr bytes.Buffer
+	if code := run([]string{"onboard-facility", "-h"}, func(string) string { return "" }, io.Discard, &stderr); code != 0 {
+		t.Errorf("-h の終了コード = %d", code)
 	}
-	m := record(t, &buf)
-	for k, want := range map[string]any{"actor": "ops-01", "operation": "facility.onboard", "facility_id": "FAC1", "staff_id": "STAFF1", "manager_created": true} {
-		if m[k] != want {
-			t.Errorf("%s = %v, want %v", k, m[k], want)
-		}
-	}
-	if id, _ := m["correlation_id"].(string); id == "" {
-		t.Errorf("correlation_id が無い: %v", m)
-	}
-	for _, secret := range []string{"Mao.Arai@example.com", "mao.arai@example.com", "新井 真央"} {
-		if strings.Contains(buf.String(), secret) {
-			t.Errorf("記録 %q に %q が入っている", buf.String(), secret)
-		}
+	stderr.Reset()
+	if code := run([]string{"onboard-facility", "--no-such-flag"}, func(string) string { return "" }, io.Discard, &stderr); code != 2 || strings.Count(stderr.String(), "no-such-flag") != 1 {
+		t.Errorf("code = %d, stderr = %q", code, stderr.String())
 	}
 }
 

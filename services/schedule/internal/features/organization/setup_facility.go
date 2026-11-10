@@ -99,10 +99,10 @@ func (o SetupFacility) Do(ctx context.Context, in SetupFacilityInput) (FacilityS
 		return FacilitySetup{}, apperr.Conflict("事業所 %s に、職員の管理の権限をデフォルトに持つ役職がありません", f.ID)
 	}
 	out.ManagerPosition = out.Positions[i]
-	if out.Department, out.DepartmentCreated, err = o.department(ctx, f.ID, in.DepartmentName); err != nil {
+	if out.Department, out.DepartmentCreated, err = o.findOrCreateDepartment(ctx, f.ID, in.DepartmentName); err != nil {
 		return FacilitySetup{}, err
 	}
-	if out.Team, out.TeamCreated, err = o.team(ctx, f.ID, in.TeamName); err != nil {
+	if out.Team, out.TeamCreated, err = o.findOrCreateTeam(ctx, f.ID, in.TeamName); err != nil {
 		return FacilitySetup{}, err
 	}
 	return out, nil
@@ -147,8 +147,8 @@ func (o SetupFacility) createStandardPositions(ctx context.Context, facilityID s
 	return out, nil
 }
 
-// department は、事業所 facilityID の名前が name の部署を返す。無ければ作り、作ったかを返す。
-func (o SetupFacility) department(ctx context.Context, facilityID, name string) (Department, bool, error) {
+// findOrCreateDepartment は、事業所 facilityID の名前が name の部署を返す。無ければ作り、作ったかを返す。
+func (o SetupFacility) findOrCreateDepartment(ctx context.Context, facilityID, name string) (Department, bool, error) {
 	deps, err := o.departments.ListByFacility(ctx, facilityID)
 	if err != nil {
 		return Department{}, false, err
@@ -167,8 +167,8 @@ func (o SetupFacility) department(ctx context.Context, facilityID, name string) 
 	return d, err == nil, err
 }
 
-// team は、事業所 facilityID の名前が name のチームを返す。無ければ NextTeamColor の色で作り、作ったかを返す。
-func (o SetupFacility) team(ctx context.Context, facilityID, name string) (Team, bool, error) {
+// findOrCreateTeam は、事業所 facilityID の名前が name のチームを返す。無ければ NextTeamColor の色で作り、作ったかを返す。
+func (o SetupFacility) findOrCreateTeam(ctx context.Context, facilityID, name string) (Team, bool, error) {
 	teams, err := o.teams.ListByFacility(ctx, facilityID)
 	if err != nil {
 		return Team{}, false, err

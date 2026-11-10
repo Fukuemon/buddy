@@ -68,7 +68,7 @@ verified_commit: 4e53ca5
     - 手順は [職員の管理の Design Doc の事業所と最初のマネージャーの登録](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/internal/features/staff/DesignDoc.md#事業所と最初のマネージャーの登録) にある。
     - ADR-0041: [事業所と最初のマネージャーを予定の API の運営用の CLI で登録し、ブローカーは運営用のクライアントに職員の登録だけを許す](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0041-facility-onboarding-cli.md)
 
-次の図は、2 つのコマンドが、それぞれの組み立てのファイルで機能のパッケージとアダプタを使う構成を示す。  
+次の図は、`cmd/api` と `cmd/calendar-worker` が、それぞれの組み立てのファイルで機能のパッケージとアダプタを使う構成を示す。  
 矢印は、呼ぶ向きか、組み立てる向きである。  
 依存してよい向きの規則は、[コードベースの構造](https://github.com/Fukuemon/buddy/blob/develop/context/codebase.md) にある。
 

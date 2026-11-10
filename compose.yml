@@ -292,7 +292,7 @@ services:
       gcalhold: { condition: service_healthy }
 
   # 予定の API の運営用の CLI。portless compose up では起動せず、事業所を足すときに
-  # portless compose run --rm schedule-ops onboard-facility ... で 1 回流す
+  # 流し方は CONTRIBUTING.md の「事業所と最初のマネージャーを足す」にある
   schedule-ops:
     image: ${COMPOSE_PROJECT_NAME}-schedule
     # イメージは schedule-migrate がビルドする

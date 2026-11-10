@@ -18,6 +18,7 @@ package main
 import (
 	"context"
 	"errors"
+	"flag"
 	"fmt"
 	"io"
 	"log/slog"
@@ -40,7 +41,13 @@ func run(args []string, getenv func(string) string, stdout, stderr io.Writer) in
 		return 2
 	}
 	in, err := parseOnboardArgs(args[1:], stderr)
-	if err != nil {
+	switch {
+	case errors.Is(err, flag.ErrHelp):
+		return 0
+	case errors.Is(err, errFlagParse):
+		// flag が、エラーと使い方を stderr に書いている
+		return 2
+	case err != nil:
 		_, _ = fmt.Fprintln(stderr, err)
 		return 2
 	}
@@ -62,10 +69,6 @@ func run(args []string, getenv func(string) string, stdout, stderr io.Writer) in
 	defer db.Close()
 
 	if err := onboardFacility(ctx, newOnboard(db, cfg.Broker), in, log); err != nil {
-		if errors.Is(err, errOnboardFailed) {
-			return 1
-		}
-		log.Error("ops failed", slog.String("error", err.Error()))
 		return 1
 	}
 	return 0

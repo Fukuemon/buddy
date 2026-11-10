@@ -75,7 +75,7 @@ func TestLoadDefaults(t *testing.T) {
 		t.Errorf("AutoConsentClients = %v, ClientIPHeader = %q", c.AutoConsentClients, c.ClientIPHeader)
 	}
 	if c.InternalPort != "8081" || !slices.Equal(c.InternalAPIClients, []string{"schedule"}) || !slices.Equal(c.InternalAPIOnboardingClients, []string{"schedule-ops"}) {
-		t.Errorf("InternalPort = %q, InternalAPIClients = %v", c.InternalPort, c.InternalAPIClients)
+		t.Errorf("InternalPort = %q, InternalAPIClients = %v, InternalAPIOnboardingClients = %v", c.InternalPort, c.InternalAPIClients, c.InternalAPIOnboardingClients)
 	}
 }
 

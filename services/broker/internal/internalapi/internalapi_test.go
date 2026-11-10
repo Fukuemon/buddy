@@ -551,21 +551,24 @@ func TestOnboardingClientRoutes(t *testing.T) {
 		http.MethodPost + " /internal/staff/" + staffA + "/activate": true,
 		http.MethodDelete + " /internal/staff/" + staffA:             true,
 	}
-	for _, r := range staffRoutes {
-		store := newStore(staff.Member{ID: staffA, OrgID: "org-a", Email: "a@example.com", Status: staff.StatusPending})
-		hy := &fakeHydra{}
-		rec := serve(newHandler(store, hy), r.method, r.path, opsToken, `{"org_id":"org-a","email":"new@example.com"}`)
-		if allowed[r.method+" "+r.path] {
-			if rec.Code == http.StatusUnauthorized || rec.Code == http.StatusForbidden {
-				t.Errorf("%s %s = %d, want 運営用のクライアントに許す", r.method, r.path, rec.Code)
+	// 拒む操作が漏れたときに状態の変化で見つけられるよう、登録の途中、有効、休職の職員で確認する
+	for _, status := range []string{staff.StatusPending, staff.StatusActive, staff.StatusSuspended} {
+		for _, r := range staffRoutes {
+			store := newStore(staff.Member{ID: staffA, OrgID: "org-a", Email: "a@example.com", Status: status})
+			hy := &fakeHydra{}
+			rec := serve(newHandler(store, hy), r.method, r.path, opsToken, `{"org_id":"org-a","email":"new@example.com"}`)
+			if allowed[r.method+" "+r.path] {
+				if rec.Code == http.StatusUnauthorized || rec.Code == http.StatusForbidden {
+					t.Errorf("%s %s（%s）= %d, want 運営用のクライアントに許す", r.method, r.path, status, rec.Code)
+				}
+				continue
 			}
-			continue
-		}
-		if rec.Code != http.StatusForbidden {
-			t.Errorf("%s %s = %d, want 403", r.method, r.path, rec.Code)
-		}
-		if store.staff[staffA].Status != staff.StatusPending || len(hy.login) != 0 {
-			t.Errorf("%s %s が職員を変えた: %+v", r.method, r.path, store.staff)
+			if rec.Code != http.StatusForbidden {
+				t.Errorf("%s %s（%s）= %d, want 403", r.method, r.path, status, rec.Code)
+			}
+			if store.staff[staffA].Status != status || len(hy.login) != 0 {
+				t.Errorf("%s %s（%s）が職員を変えた: %+v", r.method, r.path, status, store.staff)
+			}
 		}
 	}
 }

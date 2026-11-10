@@ -44,6 +44,8 @@ func TestLoadOpsErrors(t *testing.T) {
 	}{
 		{"client secret が無い", func(m map[string]string) { delete(m, "BROKER_CLIENT_SECRET") }, "BROKER_CLIENT_SECRET"},
 		{"ブローカーの URL が URL でない", func(m map[string]string) { m["BROKER_URL"] = "broker" }, "BROKER_URL"},
+		{"トークンの URL が URL でない", func(m map[string]string) { m["BROKER_TOKEN_URL"] = "hydra" }, "BROKER_TOKEN_URL"},
+		{"ログの水準", func(m map[string]string) { m["LOG_LEVEL"] = "verbose" }, "LOG_LEVEL"},
 		{"DB のポートが数でない", func(m map[string]string) { m["DB_PORT"] = "db" }, "ポート"},
 	}
 	for _, tt := range tests {

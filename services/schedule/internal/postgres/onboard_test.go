@@ -133,6 +133,7 @@ func TestOnboardCreatesFacilityAndManager(t *testing.T) {
 }
 
 // ブローカーへの登録か有効化が失敗すると、予定の API に事業所も職員も残らない。上流の IdP の設定に無い組織の ID も、登録の失敗になる。
+// ブローカーが直ってから同じ引数で流し直すと登録できる。
 func TestOnboardRollsBackWhenBrokerFails(t *testing.T) {
 	brokerErr := errors.New("ブローカーが 400 を返した")
 	tests := []struct {
@@ -153,6 +154,18 @@ func TestOnboardRollsBackWhenBrokerFails(t *testing.T) {
 				t.Fatal("err = nil, want ブローカーの失敗")
 			}
 			noRows(t, pool)
+			// ブローカーが直ってから同じ引数で流し直すと、ブローカーの職員を 1 人にまとめて登録できる
+			ids.Err, ids.ActivateErr = nil, nil
+			res, err := onboardWith(pool, ids)(context.Background(), onboardInput())
+			if err != nil {
+				t.Fatal(err)
+			}
+			if !res.ManagerCreated || len(ids.Members) != 1 || ids.Members[*res.Manager.Sub].Pending {
+				t.Errorf("流し直しの結果 = %+v, ブローカーの職員 = %v", res, ids.Members)
+			}
+			if got := onboardRows(t, pool); got["facilities"] != 1 || got["users"] != 1 || got["positions"] != 4 {
+				t.Errorf("行の数 = %v", got)
+			}
 		})
 	}
 }
@@ -167,7 +180,7 @@ func TestOnboardDryRunWritesNothing(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !res.DryRun || !res.Setup.FacilityCreated || !res.ManagerCreated || res.Manager.Username != in.Username || res.Manager.PositionName != "マネージャー" {
+	if !res.Setup.FacilityCreated || !res.ManagerCreated || res.Manager.Username != in.Username || res.Manager.PositionName != "マネージャー" {
 		t.Errorf("書く内容 = %+v", res)
 	}
 	noRows(t, pool)
