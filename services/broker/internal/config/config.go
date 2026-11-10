@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/url"
+	"slices"
 	"strconv"
 	"strings"
 )
@@ -49,6 +50,9 @@ type Config struct {
 	InternalAPIAudience string
 	// InternalAPIClients は、内部の API を呼んでよいクライアントの ID である。
 	InternalAPIClients []string
+	// InternalAPIOnboardingClients は、内部の API のうち、事業所の最初の職員の登録に要る操作（登録、有効化、登録の途中の職員の削除）だけを
+	// 呼んでよいクライアントの ID である。予定の API の運営用の CLI が使う。
+	InternalAPIOnboardingClients []string
 	// TokenHookKey は、Hydra が oauth2.token_hook を呼ぶときにヘッダーに入れる値である。シークレットとして渡す。
 	TokenHookKey string
 }
@@ -73,6 +77,8 @@ type Config struct {
 //   - HYDRA_ISSUER: Hydra のトークンの iss。内部の API が access token を検証する discovery の文書をここから読む
 //   - INTERNAL_API_AUDIENCE: 内部の API が access token の aud に求める値。デフォルトは broker
 //   - INTERNAL_API_CLIENTS: 内部の API を呼んでよいクライアントの ID をカンマで区切った値。デフォルトは schedule
+//   - INTERNAL_API_ONBOARDING_CLIENTS: 内部の API のうち、職員の登録、有効化、登録の途中の職員の削除だけを呼んでよいクライアントの ID を
+//     カンマで区切った値。INTERNAL_API_CLIENTS と重ねない。デフォルトは schedule-ops
 //   - TOKEN_HOOK_KEY: Hydra が oauth2.token_hook を呼ぶときにヘッダーに入れる値。前後の空白を除いて 32 バイト以上にする
 func Load(getenv func(string) string) (Config, error) {
 	return load(getenv, true)
@@ -116,6 +122,7 @@ func load(getenv func(string) string, includesBroker bool) (Config, error) {
 	}
 	c.AutoConsentClients = list(get("AUTO_CONSENT_CLIENTS", "web"))
 	c.InternalAPIClients = list(get("INTERNAL_API_CLIENTS", "schedule"))
+	c.InternalAPIOnboardingClients = list(get("INTERNAL_API_ONBOARDING_CLIENTS", "schedule-ops"))
 	required := []string{"DB_USER", "DB_PASSWORD", "DB_NAME"}
 	if includesBroker {
 		required = append(required, "HYDRA_ADMIN_URL", "HYDRA_ISSUER", "UPSTREAM_IDPS_FILE", "UPSTREAM_IDP_CLIENT_SECRETS_FILE", "PUBLIC_URL", "TOKEN_HOOK_KEY")
@@ -137,6 +144,11 @@ func load(getenv func(string) string, includesBroker bool) (Config, error) {
 	if includesBroker {
 		if c.Port == c.InternalPort {
 			return Config{}, fmt.Errorf("INTERNAL_PORT %q は PORT と違う値にする", c.InternalPort)
+		}
+		for _, id := range c.InternalAPIOnboardingClients {
+			if slices.Contains(c.InternalAPIClients, id) {
+				return Config{}, fmt.Errorf("クライアント %q を INTERNAL_API_CLIENTS と INTERNAL_API_ONBOARDING_CLIENTS の両方に入れない", id)
+			}
 		}
 		// 値はシークレットなので、エラーの文に入れない
 		if len(c.TokenHookKey) < minTokenHookKeyLen {

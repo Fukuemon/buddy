@@ -39,6 +39,27 @@ func (q *Queries) CreateDepartment(ctx context.Context, arg CreateDepartmentPara
 	return err
 }
 
+const createFacility = `-- name: CreateFacility :exec
+INSERT INTO facilities (id, name, org_id, source_mode) VALUES ($1, $2, $3, $4)
+`
+
+type CreateFacilityParams struct {
+	ID         string
+	Name       string
+	OrgID      *string
+	SourceMode string
+}
+
+func (q *Queries) CreateFacility(ctx context.Context, arg CreateFacilityParams) error {
+	_, err := q.db.Exec(ctx, createFacility,
+		arg.ID,
+		arg.Name,
+		arg.OrgID,
+		arg.SourceMode,
+	)
+	return err
+}
+
 const createPosition = `-- name: CreatePosition :exec
 INSERT INTO positions (id, facility_id, name) VALUES ($1, $2, $3)
 `

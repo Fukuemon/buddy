@@ -2,5 +2,6 @@
   { "org_id": "org-sample", "issuer": "http://idp:9000/office-a", "client_id": "buddy-broker" },
   { "org_id": "org-sample-b", "issuer": "http://idp:9000/office-b", "client_id": "buddy-broker" },
   { "org_id": "org-sample-c", "issuer": "http://idp:9000/office-c", "client_id": "buddy-broker" },
-  { "org_id": "org-sample-d", "issuer": "http://idp:9000/office-d", "client_id": "buddy-broker" }
+  { "org_id": "org-sample-d", "issuer": "http://idp:9000/office-d", "client_id": "buddy-broker" },
+  { "org_id": "org-sample-e", "issuer": "http://idp:9000/office-e", "client_id": "buddy-broker" }
 ]

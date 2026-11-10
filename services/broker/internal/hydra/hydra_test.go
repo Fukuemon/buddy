@@ -3,6 +3,7 @@ package hydra_test
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -80,6 +81,28 @@ func TestAcceptLogout(t *testing.T) {
 	}
 	if calls[0] != (call{http.MethodPut, "/admin/oauth2/auth/requests/logout/accept", "logout_challenge=ch", ""}) {
 		t.Errorf("call = %+v", calls[0])
+	}
+}
+
+// TestIsClientError は、admin API の 4xx だけを IsClientError が true にすることを確認する。
+func TestIsClientError(t *testing.T) {
+	for _, tt := range []struct {
+		status int
+		want   bool
+	}{
+		{http.StatusNotFound, true},
+		{http.StatusGone, true},
+		{http.StatusInternalServerError, false},
+		{http.StatusServiceUnavailable, false},
+	} {
+		var calls []call
+		_, err := fakeAdmin(t, tt.status, `{"error":"x"}`, &calls).LoginRequest(context.Background(), "ch")
+		if got := hydra.IsClientError(err); got != tt.want {
+			t.Errorf("status %d: IsClientError = %v, want %v（err = %v）", tt.status, got, tt.want, err)
+		}
+	}
+	if hydra.IsClientError(errors.New("connection refused")) {
+		t.Error("届かないときに IsClientError が true になった")
 	}
 }
 

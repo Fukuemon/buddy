@@ -23,6 +23,8 @@ const (
 	validToken = "valid-token"
 	// otherToken は、許していないクライアントの client credentials のトークンである。
 	otherToken = "other-client-token"
+	// opsToken は、運営用のクライアントの client credentials のトークンである。
+	opsToken = "ops-client-token"
 	// staffToken は、aud に broker を持つ職員のトークンで、組織の ID を持つ。
 	staffToken = "staff-token"
 	hookKey    = "hook-key"
@@ -156,6 +158,8 @@ func (fakeVerifier) Verify(_ context.Context, raw string) (oidc.Identity, error)
 		return oidc.Identity{Subject: "schedule"}, nil
 	case otherToken:
 		return oidc.Identity{Subject: "receipt"}, nil
+	case opsToken:
+		return oidc.Identity{Subject: "schedule-ops"}, nil
 	case staffToken:
 		return oidc.Identity{Subject: staffA, OrgID: "org-a"}, nil
 	}
@@ -166,15 +170,16 @@ var now = time.Date(2026, 10, 23, 12, 0, 0, 0, time.UTC)
 
 func newHandler(store *fakeStore, h *fakeHydra) http.Handler {
 	return internalapi.NewHandler(internalapi.Config{
-		Logger:       slog.New(slog.DiscardHandler),
-		Staff:        store,
-		Hydra:        h,
-		Verifier:     fakeVerifier{},
-		Clients:      []string{"schedule"},
-		KnownOrg:     func(orgID string) bool { return orgID == "org-a" },
-		NewID:        func() string { return newID },
-		TokenHookKey: hookKey,
-		Now:          func() time.Time { return now },
+		Logger:            slog.New(slog.DiscardHandler),
+		Staff:             store,
+		Hydra:             h,
+		Verifier:          fakeVerifier{},
+		Clients:           []string{"schedule"},
+		OnboardingClients: []string{"schedule-ops"},
+		KnownOrg:          func(orgID string) bool { return orgID == "org-a" },
+		NewID:             func() string { return newID },
+		TokenHookKey:      hookKey,
+		Now:               func() time.Time { return now },
 	})
 }
 
@@ -518,6 +523,7 @@ func TestTokenHook(t *testing.T) {
 		{"ログインの時刻が無ければ 403", newStore(active), hookKey, hookBody("web", "refresh_token", staffA, time.Time{}), http.StatusForbidden},
 		{"職員の ID が無ければ 403", newStore(active), hookKey, hookBody("web", "refresh_token", "", now), http.StatusForbidden},
 		{"許したクライアントの client credentials は職員を見ずに 204", newStore(), hookKey, hookBody("schedule", "client_credentials", "", time.Time{}), http.StatusNoContent},
+		{"運営用のクライアントの client credentials は職員を見ずに 204", newStore(), hookKey, hookBody("schedule-ops", "client_credentials", "", time.Time{}), http.StatusNoContent},
 		{"許していないクライアントの client credentials は 403", newStore(), hookKey, hookBody("receipt", "client_credentials", "", time.Time{}), http.StatusForbidden},
 		{"鍵が違えば 401", newStore(active), "wrong", hookBody("web", "refresh_token", staffA, now), http.StatusUnauthorized},
 		{"鍵が無ければ 401", newStore(active), "", hookBody("web", "refresh_token", staffA, now), http.StatusUnauthorized},
@@ -535,5 +541,34 @@ func TestTokenHook(t *testing.T) {
 				t.Errorf("code = %d, want %d", rec.Code, tt.code)
 			}
 		})
+	}
+}
+
+// 運営用のクライアントは、事業所の最初の職員の登録に要る登録、有効化、削除だけを呼べ、休職、復職、退職は 403 になる。
+func TestOnboardingClientRoutes(t *testing.T) {
+	allowed := map[string]bool{
+		http.MethodPost + " /internal/staff":                         true,
+		http.MethodPost + " /internal/staff/" + staffA + "/activate": true,
+		http.MethodDelete + " /internal/staff/" + staffA:             true,
+	}
+	// 拒む操作が漏れたときに状態の変化で見つけられるよう、登録の途中、有効、休職の職員で確認する
+	for _, status := range []string{staff.StatusPending, staff.StatusActive, staff.StatusSuspended} {
+		for _, r := range staffRoutes {
+			store := newStore(staff.Member{ID: staffA, OrgID: "org-a", Email: "a@example.com", Status: status})
+			hy := &fakeHydra{}
+			rec := serve(newHandler(store, hy), r.method, r.path, opsToken, `{"org_id":"org-a","email":"new@example.com"}`)
+			if allowed[r.method+" "+r.path] {
+				if rec.Code == http.StatusUnauthorized || rec.Code == http.StatusForbidden {
+					t.Errorf("%s %s（%s）= %d, want 運営用のクライアントに許す", r.method, r.path, status, rec.Code)
+				}
+				continue
+			}
+			if rec.Code != http.StatusForbidden {
+				t.Errorf("%s %s（%s）= %d, want 403", r.method, r.path, status, rec.Code)
+			}
+			if store.staff[staffA].Status != status || len(hy.login) != 0 {
+				t.Errorf("%s %s（%s）が職員を変えた: %+v", r.method, r.path, status, store.staff)
+			}
+		}
 	}
 }

@@ -15,7 +15,7 @@ import (
 var pageFiles embed.FS
 
 // pages は、画面のテンプレートである。テンプレートは {{css}} で CSS を、ログインの画面は {{.Challenge}} で login_challenge を埋める。
-// ログインの失敗の画面の文言は、web のログインの失敗の画面と同じ apps/broker の定数から生成する。
+// 障害と試行の上限の画面の文言は、web のログインの失敗の画面と同じ apps/broker の定数から生成する。
 var pages = func() *template.Template {
 	css, err := pageFiles.ReadFile("pages/pages.css")
 	if err != nil {

@@ -1,11 +1,13 @@
 package login
 
 import (
+	"errors"
 	"log/slog"
 	"net/http"
 	"slices"
 
 	"github.com/Fukuemon/buddy/services/broker/internal/hydra"
+	"github.com/Fukuemon/buddy/services/broker/internal/staff"
 )
 
 // consent は、GET /consent を受け、同意を自動で accept するクライアントと有効な職員の同意だけを受け入れ、ほかは拒む。
@@ -30,7 +32,7 @@ func (h consent) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	req, err := h.hydra.ConsentRequest(ctx, challenge)
 	if err != nil {
-		fail(h.logger, w, r, http.StatusBadRequest, "同意の要求を読めない", err)
+		fail(h.logger, w, r, challengeReadStatus(err), "同意の要求を読めない", err)
 		return
 	}
 	// 同意の画面を持たないので、画面を出さずに accept してよいと決めたクライアントのほかは拒む
@@ -41,6 +43,12 @@ func (h consent) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	m, err := h.staff.Get(ctx, req.Subject)
+	if err != nil && !errors.Is(err, staff.ErrNotFound) {
+		h.logger.ErrorContext(ctx, "同意を拒む", "reason", "職員を引けない", "staff_id", req.Subject, "error", err)
+		to, err := h.hydra.RejectConsent(ctx, challenge, hydra.ServerError)
+		redirect(h.logger, w, r, to, err)
+		return
+	}
 	if err != nil || !m.CanLogin() {
 		h.logger.WarnContext(ctx, "同意を拒む", "reason", "職員が有効でない", "staff_id", req.Subject, "error", err)
 		to, err := h.hydra.RejectConsent(ctx, challenge, hydra.AccessDenied)

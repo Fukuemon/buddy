@@ -60,7 +60,7 @@ test.describe('予定のカレンダー', () => {
       await page.goto('/schedule')
       await enterEmailAtBroker(page, staff.email)
 
-      await expect(page).toHaveURL(/\/auth\/error\?reason=failed$/)
+      await expect(page).toHaveURL(/\/auth\/error\?reason=denied$/)
       await expect(page.getByTestId('auth-error')).toContainText('ログインできませんでした')
     })
 

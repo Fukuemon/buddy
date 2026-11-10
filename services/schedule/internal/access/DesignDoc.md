@@ -162,6 +162,7 @@ verified_commit: c0514f20
   - 役職の変更が職員ごとに足した権限を残すか（ADR-0041）によらず、記録は DB に残った権限と一致する。
 - ADR-0041 のとおり、今と同じ役職に変えた操作は権限を変えないので、記録も残らない。
 - 運営者の操作（`facility.create`、`staff.create_forced`、運営者の `position.create` と `staff.create`）は、運営用の CLI が書く（#986）。テーブルは、`actor_kind` が `operator` の行を受ける。
+  - CLI は、`audit.WithOperator` で運営者の ID を、`audit.WithRequestID` で実行ごとの相関 ID を ctx に載せてから、web と同じ職員の登録を呼ぶ。`audit.Recorder.Record` は、ctx に運営者がいれば運営者の行を、いなければ職員の行を書く。
 
 `before` と `after` は、`internal/audit` の型を JSON にして持つ。  
 職員を対象にする操作は、役職とチームの ID と、権限の並び（`StaffState`）を持つ。  

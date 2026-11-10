@@ -22,6 +22,9 @@ type CreateInput struct {
 	TeamID       string
 	PositionID   string
 	NonVisiting  bool
+	// forced は、運営用の CLI が、その実行で作らなかった事業所に明示のフラグでマネージャーを足すことを表す。
+	// 監査の記録を staff.create ではなく staff.create_forced で書く（ADR-0042）。HTTP の操作からは設定しない。
+	forced bool
 }
 
 // Create は、職員を作り、役職のデフォルトの権限を与える。
@@ -120,7 +123,11 @@ func (s Create) Do(ctx context.Context, in CreateInput) (Detail, error) {
 		if err != nil {
 			return err
 		}
-		return recordChange(ctx, s.audit, audit.StaffCreate, nil, created)
+		action := audit.StaffCreate
+		if in.forced {
+			action = audit.StaffCreateForced
+		}
+		return recordChange(ctx, s.audit, action, nil, created)
 	})
 	if err != nil && reg.Created {
 		return Detail{}, errors.Join(err, s.unregister(context.WithoutCancel(ctx), reg.ID))

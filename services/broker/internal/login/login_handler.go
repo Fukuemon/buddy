@@ -35,7 +35,7 @@ func (h showLogin) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	req, err := h.hydra.LoginRequest(ctx, challenge)
 	if err != nil {
-		fail(h.logger, w, r, http.StatusBadRequest, "ログインの要求を読めない", err)
+		fail(h.logger, w, r, challengeReadStatus(err), "ログインの要求を読めない", err)
 		return
 	}
 	if !req.Skip {
@@ -44,6 +44,10 @@ func (h showLogin) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	// Hydra がログインのセッションを保っているときも、有効でない職員には出さない
 	m, err := h.staff.Get(ctx, req.Subject)
+	if err != nil && !errors.Is(err, staff.ErrNotFound) {
+		rejectAs(h.logger, h.hydra, w, r, challenge, hydra.ServerError, "Hydra が保つセッションの職員を引けない", err)
+		return
+	}
 	if err != nil || !m.CanLogin() {
 		reject(h.logger, h.hydra, w, r, challenge, "Hydra が保つセッションの職員が有効でない", err)
 		return
@@ -90,7 +94,7 @@ func (h submitEmail) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	// 使い終えたか、Hydra の知らない login_challenge では、職員を引かない
 	if _, err := h.hydra.LoginRequest(ctx, challenge); err != nil {
-		fail(h.logger, w, r, http.StatusBadRequest, "ログインの要求を読めない", err)
+		fail(h.logger, w, r, challengeReadStatus(err), "ログインの要求を読めない", err)
 		return
 	}
 	if !h.emailLimiter.Allow(email) {
@@ -151,58 +155,72 @@ func (h callback) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if e := q.Get("error"); e != "" {
-		reject(h.logger, h.hydra, w, r, p.Challenge, "上流の IdP がログインを拒んだ", fmt.Errorf("upstream error %q", e))
+		rejectAs(h.logger, h.hydra, w, r, p.Challenge, hydra.LoginInterrupted, "上流の IdP がログインを拒んだ", fmt.Errorf("upstream error %q", e))
 		return
 	}
+	// cookie の職員の ID は書き換えられるので、職員がいないときも、ID token を検証できないときと同じ reject にする
 	m, err := h.staff.Get(ctx, p.StaffID)
 	if err != nil {
-		reject(h.logger, h.hydra, w, r, p.Challenge, "職員を引けない", err)
+		rejectAs(h.logger, h.hydra, w, r, p.Challenge, hydra.ServerError, "職員を引けない", err)
 		return
 	}
 	id, err := h.upstream.Exchange(ctx, m.OrgID, q.Get("code"), q.Get("iss"), p.Attempt)
 	if err != nil {
-		reject(h.logger, h.hydra, w, r, p.Challenge, "上流の IdP の ID token を検証できない", err)
+		rejectAs(h.logger, h.hydra, w, r, p.Challenge, hydra.ServerError, "上流の IdP の ID token を検証できない", err)
 		return
 	}
-	if reason := h.match(ctx, m, id); reason != "" {
-		reject(h.logger, h.hydra, w, r, p.Challenge, reason, nil)
+	if body, reason := h.match(ctx, m, id); reason != "" {
+		rejectAs(h.logger, h.hydra, w, r, p.Challenge, body, reason, nil)
 		return
 	}
 	accept(h.logger, h.hydra, w, r, p.Challenge, m.ID)
 }
 
-// match は、上流の IdP の主張 id が職員 m のものかを確認し、違えば理由を返す。
+// match は、上流の IdP の主張 id が職員 m のものかを確認し、違えば reject の本文と理由を返す。
 // 結び付け済みの職員は iss と sub で照合する。まだの職員は、確認済みのメールが登録と同じときだけ結び付ける。
-func (h callback) match(ctx context.Context, m staff.Member, id upstream.Identity) string {
-	if !m.CanLogin() {
-		return "職員が有効でない"
-	}
+//
+// 職員の状態は、id が m のものと確認してから見る。ログインの途中に休職か退職になった職員は、メールを入れたときと同じ
+// hydra.AccessDenied で拒み、職員の状態を伝えない。cookie の職員の ID を書き換えた人には、相手の状態によらず
+// hydra.AccountMismatch を返し、ほかの職員の状態を伝えない。
+func (h callback) match(ctx context.Context, m staff.Member, id upstream.Identity) (hydra.Rejection, string) {
 	got := staff.UpstreamAccount{Issuer: id.Issuer, Subject: id.Subject}
 	if m.Upstream != (staff.UpstreamAccount{}) {
 		if m.Upstream != got {
-			return "結び付けた上流のアカウントと違う"
+			return hydra.AccountMismatch, "結び付けた上流のアカウントと違う"
 		}
-		return ""
+		if !m.CanLogin() {
+			return hydra.AccessDenied, "職員が有効でない"
+		}
+		return hydra.Rejection{}, ""
 	}
 	if !id.EmailVerified {
-		return "上流のメールが確認済みでない"
+		return hydra.AccountMismatch, "上流のメールが確認済みでない"
 	}
 	if staff.NormalizeEmail(id.Email) != m.Email {
-		return "上流のメールが登録のメールと違う"
+		return hydra.AccountMismatch, "上流のメールが登録のメールと違う"
+	}
+	if !m.CanLogin() {
+		return hydra.AccessDenied, "職員が有効でない"
 	}
 	err := h.staff.Link(ctx, m.ID, got)
 	if errors.Is(err, staff.ErrConflict) {
 		// 同じ上流のアカウントで同時に初めてログインすると、先に結び付けたログインのほかは staff.ErrConflict になる。
 		// 読み直して、この職員に同じアカウントが結び付いていれば受け入れる
-		if cur, err := h.staff.Get(ctx, m.ID); err == nil && cur.CanLogin() && cur.Upstream == got {
-			return ""
+		cur, err := h.staff.Get(ctx, m.ID)
+		switch {
+		case err != nil:
+			return hydra.ServerError, "上流のアカウントを結び付けられない"
+		case !cur.CanLogin():
+			return hydra.AccessDenied, "職員が有効でない"
+		case cur.Upstream == got:
+			return hydra.Rejection{}, ""
 		}
-		return "上流のアカウントを結び付けられない"
+		return hydra.AccountMismatch, "ほかの結び付きと重なり、上流のアカウントを結び付けられない"
 	}
 	if err != nil {
 		h.logger.ErrorContext(ctx, "上流のアカウントを結び付けられない", "staff_id", m.ID, "error", err)
-		return "上流のアカウントを結び付けられない"
+		return hydra.ServerError, "上流のアカウントを結び付けられない"
 	}
 	h.logger.InfoContext(ctx, "上流のアカウントを結び付けた", "staff_id", m.ID, "iss", id.Issuer)
-	return ""
+	return hydra.Rejection{}, ""
 }

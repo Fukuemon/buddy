@@ -44,21 +44,22 @@ func TestLoad(t *testing.T) {
 		t.Fatal(err)
 	}
 	want := config.Config{
-		Port:                      "8080",
-		InternalPort:              "9090",
-		LogLevel:                  slog.LevelDebug,
-		DB:                        config.DB{Host: "localhost", Port: "5432", User: "broker", Password: "secret", Name: "broker"},
-		HydraAdminURL:             "http://hydra:4445",
-		UpstreamIdPsFile:          "/config/upstream-idps.json",
-		UpstreamClientSecretsFile: "/secrets/upstream-idp-client-secrets.json",
-		PublicURL:                 "https://login.example.com",
-		UpstreamBrowserOrigin:     "http://localhost:9000",
-		ClientIPHeader:            "X-Forwarded-For",
-		AutoConsentClients:        []string{"web", "admin"},
-		HydraIssuer:               "http://hydra:4444",
-		InternalAPIAudience:       "broker",
-		InternalAPIClients:        []string{"schedule", "receipt"},
-		TokenHookKey:              "hook-key-0123456789abcdef0123456789",
+		Port:                         "8080",
+		InternalPort:                 "9090",
+		LogLevel:                     slog.LevelDebug,
+		DB:                           config.DB{Host: "localhost", Port: "5432", User: "broker", Password: "secret", Name: "broker"},
+		HydraAdminURL:                "http://hydra:4445",
+		UpstreamIdPsFile:             "/config/upstream-idps.json",
+		UpstreamClientSecretsFile:    "/secrets/upstream-idp-client-secrets.json",
+		PublicURL:                    "https://login.example.com",
+		UpstreamBrowserOrigin:        "http://localhost:9000",
+		ClientIPHeader:               "X-Forwarded-For",
+		AutoConsentClients:           []string{"web", "admin"},
+		HydraIssuer:                  "http://hydra:4444",
+		InternalAPIAudience:          "broker",
+		InternalAPIClients:           []string{"schedule", "receipt"},
+		InternalAPIOnboardingClients: []string{"schedule-ops"},
+		TokenHookKey:                 "hook-key-0123456789abcdef0123456789",
 	}
 	if !reflect.DeepEqual(c, want) {
 		t.Errorf("got %+v, want %+v", c, want)
@@ -73,8 +74,8 @@ func TestLoadDefaults(t *testing.T) {
 	if !slices.Equal(c.AutoConsentClients, []string{"web"}) || c.ClientIPHeader != "" {
 		t.Errorf("AutoConsentClients = %v, ClientIPHeader = %q", c.AutoConsentClients, c.ClientIPHeader)
 	}
-	if c.InternalPort != "8081" || !slices.Equal(c.InternalAPIClients, []string{"schedule"}) {
-		t.Errorf("InternalPort = %q, InternalAPIClients = %v", c.InternalPort, c.InternalAPIClients)
+	if c.InternalPort != "8081" || !slices.Equal(c.InternalAPIClients, []string{"schedule"}) || !slices.Equal(c.InternalAPIOnboardingClients, []string{"schedule-ops"}) {
+		t.Errorf("InternalPort = %q, InternalAPIClients = %v, InternalAPIOnboardingClients = %v", c.InternalPort, c.InternalAPIClients, c.InternalAPIOnboardingClients)
 	}
 }
 
@@ -106,6 +107,7 @@ func TestLoadErrors(t *testing.T) {
 		{"UPSTREAM_IDP_BROWSER_ORIGIN が URL でない", map[string]string{"UPSTREAM_IDP_BROWSER_ORIGIN": "localhost:9000"}, "UPSTREAM_IDP_BROWSER_ORIGIN"},
 		{"LOG_LEVEL が不正", map[string]string{"LOG_LEVEL": "verbose"}, "LOG_LEVEL"},
 		{"TOKEN_HOOK_KEY が 31 バイト", map[string]string{"TOKEN_HOOK_KEY": "0123456789012345678901234567890"}, "TOKEN_HOOK_KEY"},
+		{"運営用のクライアントが内部の API の全ての操作を呼べるクライアントと重なる", map[string]string{"INTERNAL_API_ONBOARDING_CLIENTS": "schedule"}, "INTERNAL_API_ONBOARDING_CLIENTS"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

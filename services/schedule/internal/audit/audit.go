@@ -164,6 +164,38 @@ func (r Recorder) ByStaff(ctx context.Context, e Entry) error {
 	})
 }
 
+// Record は、e の操作の記録を、ctx の相関 ID で書く。ctx に運営者がいれば運営者の操作として、いなければ ByStaff と同じく
+// リクエストを送った職員の操作として書く。運営用の CLI は、WithOperator で運営者を ctx に載せてから、職員の登録と同じ処理を呼ぶ。
+func (r Recorder) Record(ctx context.Context, e Entry) error {
+	op, ok := Operator(ctx)
+	if !ok {
+		return r.ByStaff(ctx, e)
+	}
+	rid := RequestID(ctx)
+	if rid == "" {
+		return ErrNoRequestID
+	}
+	return r.w.Create(ctx, Record{
+		ID: r.ids.NewID(), FacilityID: e.FacilityID, Action: e.Action,
+		ActorKind: ActorOperator, ActorOperator: op,
+		TargetUserID: e.TargetUserID, TargetPositionID: e.TargetPositionID,
+		Before: e.Before, After: e.After, RequestID: rid,
+	})
+}
+
+type operatorKey struct{}
+
+// WithOperator は、運営者の ID id を持つ ctx を返す。運営用の CLI だけが使い、予定の API の HTTP の操作からは使わない。
+func WithOperator(ctx context.Context, id string) context.Context {
+	return context.WithValue(ctx, operatorKey{}, id)
+}
+
+// Operator は、ctx の運営者の ID を返す。無ければ false を返す。
+func Operator(ctx context.Context) (string, bool) {
+	id, ok := ctx.Value(operatorKey{}).(string)
+	return id, ok && id != ""
+}
+
 type requestIDKey struct{}
 
 // WithRequestID は、相関 ID id を持つ ctx を返す。
