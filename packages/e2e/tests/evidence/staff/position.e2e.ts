@@ -44,20 +44,18 @@ const registerIn = async (
   token: string,
   o: { label: string; teamId: string; positionId: string },
 ) => {
-  const res = await request.post(
-    `${SCHEDULE_URL}/v1/facilities/${STAFF_FORM.facilityId}/users`,
-    {
-      headers: { Authorization: `Bearer ${token}` },
-      data: {
-        username: STAFF_NAME,
-        email: newStaff(o.label).email,
-        department_id: STAFF_FORM.departmentId,
-        team_id: o.teamId,
-        position_id: o.positionId,
-      },
+  const res = await request.post(`${SCHEDULE_URL}/v1/facilities/${STAFF_FORM.facilityId}/users`, {
+    headers: { Authorization: `Bearer ${token}` },
+    data: {
+      username: STAFF_NAME,
+      email: newStaff(o.label).email,
+      department_id: STAFF_FORM.departmentId,
+      team_id: o.teamId,
+      position_id: o.positionId,
     },
-  )
-  if (res.status() !== 201) throw new Error(`職員を登録できない: ${res.status()} ${await res.text()}`)
+  })
+  if (res.status() !== 201)
+    throw new Error(`職員を登録できない: ${res.status()} ${await res.text()}`)
   return (await res.json()) as { id: string; policies: Grant[] }
 }
 
@@ -230,9 +228,9 @@ test.describe('職員の管理', () => {
                 '役職の名前が「リーダー」になり、「役職「リーダー」で付く権限」に 3 つの権限が出る。改修前は「個別に足した権限」のまとまりが出ない',
               )
             } else {
-              await expect(individual.getByTestId(`staff-policy-row-${USER_READ.code}`)).toContainText(
-                '指定した職員の予定の閲覧',
-              )
+              await expect(
+                individual.getByTestId(`staff-policy-row-${USER_READ.code}`),
+              ).toContainText('指定した職員の予定の閲覧')
               await expect(
                 individual.getByTestId(`staff-policy-targets-${USER_READ.code}`),
               ).toHaveText(LEADER.staff.name)
@@ -452,7 +450,9 @@ test.describe('職員の管理', () => {
             await expect(position.getByTestId(`staff-policy-targets-${TEAM_EDIT.code}`)).toHaveText(
               'B',
             )
-            await check('権限のタブの「チームの予定の閲覧」と「チームの予定の編集」の対象に「B」が出る')
+            await check(
+              '権限のタブの「チームの予定の閲覧」と「チームの予定の編集」の対象に「B」が出る',
+            )
           },
         )
       })
