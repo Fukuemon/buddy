@@ -10,7 +10,8 @@ import {
   retireStaff,
   STAFF_FORM,
 } from '../../fixtures/staff'
-import { enterEmailAtBroker } from '../../screens/login'
+import { enterEmailAtBroker, signInAtUpstreamIdp } from '../../screens/login'
+import { idpLogin } from '../../selectors/idp'
 import { REMAINING_SCHEDULE_DATE } from './dates'
 
 /** 退職を拒む予定の日。退職の操作の日より後にする。 */
@@ -40,6 +41,28 @@ test.describe('予定のカレンダー', () => {
       await page.goto('/schedule')
       await enterEmailAtBroker(page, staff.email)
       await expect(page).toHaveURL(/\/auth\/error\?reason=denied$/)
+    })
+
+    test('上流の IdP にいる間に職員を退職にした場合、休職の職員と同じ、管理者に確認するよう伝える画面が出ること', async ({
+      page,
+      request,
+    }) => {
+      const staff = newStaff('retired-midway')
+      const manager = await issueManagerToken()
+      const registered = await registerStaff(request, manager, staff)
+      expect(registered.status()).toBe(201)
+      const { id } = (await registered.json()) as { id: string }
+      await page.goto('/schedule')
+      await enterEmailAtBroker(page, staff.email)
+      await expect(idpLogin(page).username).toBeVisible()
+
+      expect((await retireStaff(request, manager, id)).status()).toBe(200)
+      await signInAtUpstreamIdp(page, staff.email)
+
+      await expect(page).toHaveURL(/\/auth\/error\?reason=denied$/)
+      await expect(page.getByTestId('auth-error')).toContainText(
+        '入れたメールアドレスでは、ログインできません。事業所の管理者に、登録のメールアドレスを確認してください。',
+      )
     })
 
     test('退職した職員と同じメールで職員を登録した場合、新しい職員として登録できること', async ({

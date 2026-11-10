@@ -18,7 +18,7 @@ export type StaffPositionDialogProps = {
 
 /**
  * 職員の役職を変える入力のダイアログ。今の役職を選んで始め、違う役職を選ぶと変えられる。
- * 役職を変えると権限が新しい役職のものに置き換わり、個別に足した権限が消える。このダイアログが消える権限を示して確定するので、確定のボタンを赤い塗りにする。
+ * 役職を変えると役職で付く権限が新しい役職のものに置き換わり、個別に足した権限は残る。役職で付く権限に職員ごとに直した対象は、役職を戻しても戻らないので、確定のボタンを赤い塗りにする。
  */
 export const StaffPositionDialog = ({
   staff,
@@ -77,8 +77,8 @@ export const StaffPositionDialog = ({
           className="border-l-4 border-warning bg-warning-surface px-3 py-2 text-body"
           data-testid="staff-position-note"
         >
-          {`役職を変えると、${staff.username} の権限は全て、新しい役職に決まっている権限に置き換わります。`}
-          {added.length > 0 && `個別に足した権限（${added.join('、')}）は消えます。`}
+          {`役職を変えると、${staff.username} の役職で付く権限は、新しい役職で付く権限に置き換わります。`}
+          {added.length > 0 && `個別に足した権限（${added.join('、')}）は残ります。`}
         </p>
       )}
     </InputDialog>
