@@ -36,7 +36,7 @@ func NewPosition(id, facilityID, name string, policies []Policy) (Position, erro
 	return Position{ID: id, FacilityID: facilityID, Name: name, Policies: policies}, nil
 }
 
-// StandardPosition は、事業所を足すときに作る標準の役職と、そのデフォルトの権限である（ADR-0007）。
+// StandardPosition は、事業所を足すときに作る標準の役職と、そのデフォルトの権限である（ADR-0041）。
 // 名前は作った後に事業所ごとに変えてよく、判定は役職を使わない。
 type StandardPosition struct {
 	Name     string

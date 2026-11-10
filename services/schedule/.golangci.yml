@@ -466,7 +466,7 @@ linters:
             - "!$test"
           deny:
             - pkg: github.com/Fukuemon/buddy/services/schedule/internal/httpapi
-              desc: cmd/ops は HTTP の層を持たない。公開のポートに事業所と管理者を作る API を足さない（ADR-0041）
+              desc: cmd/ops は HTTP の層を持たない。公開のポートに事業所と管理者を作る API を足さない（ADR-0043）
             - pkg: github.com/Fukuemon/buddy/services/schedule/internal/access
               desc: cmd/ops はリクエストを認可しない。運営者は、ジョブを流せる権限と運営用のクライアントの secret で許される
             - pkg: github.com/Fukuemon/buddy/services/schedule/internal/gcal

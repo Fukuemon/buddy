@@ -234,7 +234,7 @@ hydra janitor -c <hydra serve の設定ファイル> -e --tokens --requests --gr
 運営用のクライアントを止めるときは、Hydra の admin API で `schedule-ops` のクライアントを消す。  
 消すと、Hydra はそのクライアントに access token を発行しない。発行済みの access token は、期限の 5 分までブローカーの内部の API に通る。
 
-- ADR-0041: [事業所と最初のマネージャーを予定の API の運営用の CLI で登録し、ブローカーは運営用のクライアントに職員の登録だけを許す](../docs/adr/0041-facility-onboarding-cli.md)
+- ADR-0043: [事業所と最初のマネージャーを予定の API の運営用の CLI で登録し、ブローカーは運営用のクライアントに職員の登録だけを許す](../docs/adr/0043-facility-onboarding-cli.md)
 
 運営側の GCP のプロジェクトでは、最初の事業所を足す前に 1 回だけ、IAM Service Account Credentials API を有効にする。  
 この API は、権限借用の短い期間の token を作るのに要る。  

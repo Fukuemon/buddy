@@ -73,7 +73,7 @@ verified_commit: 4e53ca5
 - `Create` の失敗は、全てを戻したことを前に付けて返す。`Create` の文は web からの登録の文で、予定の API に書いたと読めることがあるためである。
 - `Create` が予定の API の DB に書けずに失敗すると、PostgreSQL のトランザクションは中断の状態になり、`Create` の戻し（ブローカーの職員の削除の前の確認）も失敗する。
   - ブローカーに登録の途中の職員が残るが、ログインできず、同じ引数で流し直すとその職員で登録する。
-- ADR-0041: [事業所と最初のマネージャーを予定の API の運営用の CLI で登録し、ブローカーは運営用のクライアントに職員の登録だけを許す](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0041-facility-onboarding-cli.md)
+- ADR-0043: [事業所と最初のマネージャーを予定の API の運営用の CLI で登録し、ブローカーは運営用のクライアントに職員の登録だけを許す](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0043-facility-onboarding-cli.md)
 
 ### 職員の管理の画面の読み込みと保存
 
