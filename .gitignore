@@ -15,7 +15,6 @@ apm_modules/
 /.agents/skills/setup-agent-harness/
 /.agents/skills/setup-design-docs/
 /.agents/skills/setup-design-system/
-/.agents/skills/setup-e2e/
 /.agents/skills/write-comments/
 /.agents/skills/write-commit/
 /.agents/skills/write-context/
@@ -36,7 +35,6 @@ apm_modules/
 /.claude/skills/setup-agent-harness/
 /.claude/skills/setup-design-docs/
 /.claude/skills/setup-design-system/
-/.claude/skills/setup-e2e/
 /.claude/skills/write-comments/
 /.claude/skills/write-commit/
 /.claude/skills/write-context/
@@ -91,3 +89,7 @@ packages/e2e/playwright-report/
 /.codex/agents/review-quality.toml
 /.codex/agents/review-security.toml
 /.codex/agents/review-spec.toml
+/.agents/skills/playwright-capture/
+/.agents/skills/setup-e2e-lint/
+/.claude/skills/playwright-capture/
+/.claude/skills/setup-e2e-lint/

@@ -5,8 +5,9 @@ dependencies:
   apm:
     - Fukuemon/agent-harness/packages/core#core-v0.3.3
     - Fukuemon/agent-harness/packages/docs#docs-v0.2.14
-    - Fukuemon/agent-harness/packages/verification#verification-v0.3.3
-    - Fukuemon/agent-harness/packages/e2e#e2e-v0.2.1
+    - Fukuemon/agent-harness/packages/verification#verification-v0.4.0
+    - Fukuemon/agent-harness/packages/e2e#e2e-v0.3.0
+    - Fukuemon/agent-harness/packages/capture#capture-v0.1.0
     - Fukuemon/agent-harness/packages/screens#screens-v0.1.2
     - Fukuemon/agent-harness/packages/design-system#design-system-v0.3.0
     - Fukuemon/agent-harness/packages/docs-site#docs-site-v0.1.3
