@@ -134,11 +134,10 @@ test.describe('予定の詳細', () => {
         const page = await context.newPage()
         await openDay(page, LOGIN_STAFF.id, date)
         const event = page.getByTestId(`schedule-event-${data.deletedId}`)
-        await intro(page, '単発の予定の削除')
-        await check(
+        await expect(event).toBeVisible()
+        await intro(
           page,
-          `前提 ${LOGIN_STAFF.name} の明日（${date}）の 10:00〜11:00 に「${deleted}」があり、11:00〜12:00 の「${cancelled}」をキャンセルしてある`,
-          () => expect(event).toBeVisible(),
+          `単発の予定の削除\n前提 ${LOGIN_STAFF.name} の明日（${date}）の 10:00〜11:00 に「${deleted}」があり、11:00〜12:00 の「${cancelled}」をキャンセルしてある`,
         )
 
         const dateTime = detailDateTimeText(date, '10:00', '11:00')
@@ -221,11 +220,10 @@ test.describe('予定の詳細', () => {
         const page = await context.newPage()
         await openDay(page, HAYASHI.id, second)
         const event = dayEvent(page, HAYASHI.id, title)
-        await intro(page, '繰り返しの予定の回の削除')
-        await check(
+        await expect(event).toBeVisible()
+        await intro(
           page,
-          `前提 ${HAYASHI.name} に、${first} から毎週月曜 10:00〜11:00 の「${title}」があり、2 回目の ${second} の 13:00〜14:00 の「${cancelled}」をキャンセルしてある。2 回目の ${second} の日の表示を開いている`,
-          () => expect(event).toBeVisible(),
+          `繰り返しの予定の回の削除\n前提 ${HAYASHI.name} に、${first} から毎週月曜 10:00〜11:00 の「${title}」があり、2 回目の ${second} の 13:00〜14:00 の「${cancelled}」をキャンセルしてある。2 回目の ${second} の日の表示を開いている`,
         )
 
         await step(page, 'もし 2 回目の回の詳細で「予定を削除」を押す', async () => {
@@ -311,11 +309,10 @@ test.describe('予定の詳細', () => {
         const page = await context.newPage()
         try {
           await openCalendarpit(page, HAYASHI.calendarId, date)
-          await intro(page, 'Google カレンダーに書き出した予定の削除')
-          await check(
+          await expect(calendarpitEvent(page, title)).toBeVisible()
+          await intro(
             page,
-            `前提 ${HAYASHI.name} に Google カレンダーを結び付けてあり、明日（${date}）の 16:00〜17:00 の「${title}」が calendarpit に書き出されている`,
-            () => expect(calendarpitEvent(page, title)).toBeVisible(),
+            `Google カレンダーに書き出した予定の削除\n前提 ${HAYASHI.name} に Google カレンダーを結び付けてあり、明日（${date}）の 16:00〜17:00 の「${title}」が calendarpit に書き出されている`,
           )
 
           await step(
@@ -405,11 +402,10 @@ test.describe('予定の詳細', () => {
         const close = page.getByTestId('schedule-detail-close')
         await openDay(page, HAYASHI.id, yesterday)
         const pastEvent = page.getByTestId(`schedule-event-${data.pastId}`)
-        await intro(page, '削除できない予定')
-        await check(
+        await expect(pastEvent).toBeVisible()
+        await intro(
           page,
-          `前提 ${HAYASHI.name} の昨日（${yesterday}）の 10:00〜11:00 に「${past}」がある。昨日の日の表示を開いている`,
-          () => expect(pastEvent).toBeVisible(),
+          `削除できない予定\n前提 ${HAYASHI.name} の昨日（${yesterday}）の 10:00〜11:00 に「${past}」がある。昨日の日の表示を開いている`,
         )
 
         await step(page, `もし 昨日の自分の「${past}」の詳細を開く`, () =>
@@ -505,11 +501,10 @@ test.describe('予定の詳細', () => {
         try {
           await openDay(page, OKADA.staff.id, date)
           const event = dayEvent(page, OKADA.staff.id, title)
-          await intro(page, 'Google カレンダーで管理する事業所')
-          await check(
+          await expect(event).toBeVisible()
+          await intro(
             page,
-            `前提 ${OKADA.staff.name} の Google カレンダー（calendarpit）の明日（${date}）の 13:00〜14:00 に「${title}」があり、予定のカレンダーに出ている`,
-            () => expect(event).toBeVisible(),
+            `Google カレンダーで管理する事業所\n前提 ${OKADA.staff.name} の Google カレンダー（calendarpit）の明日（${date}）の 13:00〜14:00 に「${title}」があり、予定のカレンダーに出ている`,
           )
 
           await step(page, 'もし 予定の詳細を開く', () => openDetail(page, event))
