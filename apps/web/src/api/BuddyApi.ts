@@ -188,8 +188,9 @@ export interface BuddyApi {
       input: StaffUpdateInput,
     ): Promise<StaffUpdateResult>
     /**
-     * 役職を変え、権限を新しい役職のデフォルトの権限に置き換える。職員の管理の権限を持つ最後の有効な職員を、
-     * その権限を持たない役職に変えようとすると、status が 409 の ApiError を投げる。
+     * 役職を変え、前の役職のデフォルトにある権限を新しい役職のデフォルトの権限に置き換え、個別に足した権限は対象ごと残す。
+     * 今と同じ役職に変えたときは、何も変えずに今の職員を返す。職員の管理の権限を持つ最後の有効な職員を、
+     * 変更の後にその権限が残らない役職に変えようとすると、status が 409 の ApiError を投げる。
      */
     changePosition(
       facilityId: FacilityId,

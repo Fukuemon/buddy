@@ -587,9 +587,11 @@ paths:
       operationId: changeUserPosition
       summary: 職員の役職を変える
       description: |
-        職員の役職を変え、職員の権限を新しい役職のデフォルトの権限からコピーし直す。職員ごとに足した権限と対象は消える。
-        チームを対象にする権限は、職員の所属のチームを対象にする。職員の管理の権限（staff.manage）を持つ職員だけが呼べる。
-        事業所で職員の管理の権限を持つ最後の有効な職員の役職は、その権限を持たない役職に変えられない。
+        職員の役職を変え、前の役職のデフォルトにある権限を対象ごと消して、新しい役職のデフォルトの権限をコピーする。
+        前の役職のデフォルトに無い権限は、職員ごとに足した権限として対象ごと残す。残す権限が新しい役職のデフォルトにもあれば、コピーしない。
+        コピーしたチームを対象にする権限は、職員の所属のチームを対象にする。今と同じ役職に変えたときは、権限を何も変えずに成功を返す。
+        職員の管理の権限（staff.manage）を持つ職員だけが呼べる。
+        事業所で職員の管理の権限を持つ最後の有効な職員の役職は、変更の後にその権限が残らない役職に変えられない。
       parameters:
         - { name: user_id, in: path, required: true, schema: { $ref: "#/components/schemas/ID" } }
       requestBody:
@@ -612,7 +614,7 @@ paths:
         "403": { $ref: "#/components/responses/Forbidden" }
         "404": { $ref: "#/components/responses/NotFound" }
         "409":
-          description: 事業所で職員の管理の権限を持つ最後の有効な職員の役職を、その権限を持たない役職に変えようとした。役職と権限は変わらない
+          description: 事業所で職員の管理の権限を持つ最後の有効な職員の役職を、変更の後にその権限が残らない役職に変えようとした。役職と権限は変わらない
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Error" }
