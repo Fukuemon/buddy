@@ -1,3 +1,5 @@
+// kit 0.2.1 の recordPrEvidence で撮る、移す前のエビデンスの spec のための薄い層。新しい spec は caption.ts と recording.ts で撮る。
+// 移し終えたら、kit の import と recordPrEvidence、EVIDENCE_VARIANTS、EVIDENCE_ROOT を消す（#1008）。
 import path from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 
@@ -12,6 +14,7 @@ import {
 } from '@fukuemon/e2e-kit/recording'
 
 import { BASE_URL, TIMEZONE_ID } from './env'
+import { DESKTOP_VIEWPORT, PHONE_VIEWPORT } from './recording'
 
 const root = fileURLToPath(new URL('../../../..', import.meta.url))
 
@@ -32,11 +35,7 @@ export const EVIDENCE_VARIANTS = variants({
   only: process.env.EVIDENCE_ONLY,
 })
 
-/** パソコンの幅の画面と録画の大きさ。pull request の本文で読める大きさにする */
-export const DESKTOP_VIEWPORT: Viewport = { width: 1280, height: 800 }
-
-/** スマートフォンの幅の画面と録画の大きさ */
-export const PHONE_VIEWPORT: Viewport = { width: 390, height: 844 }
+export { DESKTOP_VIEWPORT, PHONE_VIEWPORT }
 
 /** Storybook の URL。デフォルトは `pnpm --filter @buddy/web storybook` の開発サーバーである */
 export const STORYBOOK_URL = process.env.E2E_STORYBOOK_URL ?? 'http://localhost:6006'

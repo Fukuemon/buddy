@@ -2,7 +2,6 @@ package login
 
 import (
 	"context"
-	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -65,6 +64,7 @@ type submitEmail struct {
 	emailLimiter     *Limiter
 	clientIPHeader   string
 	usesSecureCookie bool
+	signer           cookieSigner
 }
 
 func (h submitEmail) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -112,7 +112,7 @@ func (h submitEmail) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	m := found[0]
-	p := pending{Challenge: challenge, StaffID: m.ID, Attempt: upstream.NewAttempt()}
+	p := pending{Challenge: challenge, StaffID: m.ID, Attempt: upstream.NewAttempt(), IssuedAt: now().Unix()}
 	to, err := h.upstream.AuthURL(ctx, m.OrgID, p.Attempt, m.Email)
 	if err != nil {
 		fail(h.logger, w, r, http.StatusBadGateway, "上流の IdP へリダイレクトできない", err)
@@ -123,7 +123,7 @@ func (h submitEmail) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		fail(h.logger, w, r, http.StatusInternalServerError, "ログインの途中の値を書けない", err)
 		return
 	}
-	setCookie(h.usesSecureCookie, w, base64.RawURLEncoding.EncodeToString(value), cookieMaxAge)
+	setCookie(h.usesSecureCookie, w, h.signer.sign(value), cookieMaxAge)
 	http.Redirect(w, r, to, http.StatusSeeOther)
 }
 
@@ -136,6 +136,7 @@ type callback struct {
 	limiter          *Limiter
 	clientIPHeader   string
 	usesSecureCookie bool
+	signer           cookieSigner
 }
 
 func (h callback) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -144,9 +145,16 @@ func (h callback) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if !admitClient(h.logger, h.limiter, h.clientIPHeader, fail, w, r) {
 		return
 	}
-	p, err := readPending(r)
+	p, err := readPending(h.signer, r)
 	if err != nil {
-		fail(h.logger, w, r, http.StatusBadRequest, "ログインの途中の値がない", err)
+		reason := "ログインの途中の値がない"
+		switch {
+		case errors.Is(err, errBadSignature):
+			reason = "ログインの途中の値の署名が合わない"
+		case errors.Is(err, errPendingExpired):
+			reason = "ログインの途中の値の期限が切れている"
+		}
+		fail(h.logger, w, r, http.StatusBadRequest, reason, err)
 		return
 	}
 	q := r.URL.Query()
@@ -158,10 +166,15 @@ func (h callback) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		rejectAs(h.logger, h.hydra, w, r, p.Challenge, hydra.LoginInterrupted, "上流の IdP がログインを拒んだ", fmt.Errorf("upstream error %q", e))
 		return
 	}
-	// cookie の職員の ID は書き換えられるので、職員がいないときも、ID token を検証できないときと同じ reject にする
 	m, err := h.staff.Get(ctx, p.StaffID)
 	if err != nil {
 		rejectAs(h.logger, h.hydra, w, r, p.Challenge, hydra.ServerError, "職員を引けない", err)
+		return
+	}
+	// cookie の職員の ID は署名で守るので、ID token を検証する前に状態を見る。ログインの途中に休職か退職になった職員にも、
+	// メールを入れたときと同じ reject を返す。退職した職員はメールと上流のアカウントを持たず、ID token と照合できないためである
+	if !m.CanLogin() {
+		reject(h.logger, h.hydra, w, r, p.Challenge, "職員が有効でない", nil)
 		return
 	}
 	id, err := h.upstream.Exchange(ctx, m.OrgID, q.Get("code"), q.Get("iss"), p.Attempt)
@@ -179,17 +192,12 @@ func (h callback) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 // match は、上流の IdP の主張 id が職員 m のものかを確認し、違えば reject の本文と理由を返す。
 // 結び付け済みの職員は iss と sub で照合する。まだの職員は、確認済みのメールが登録と同じときだけ結び付ける。
 //
-// 職員の状態は、id が m のものと確認してから見る。ログインの途中に休職か退職になった職員は、メールを入れたときと同じ
-// hydra.AccessDenied で拒み、職員の状態を伝えない。cookie の職員の ID を書き換えた人には、相手の状態によらず
-// hydra.AccountMismatch を返し、ほかの職員の状態を伝えない。
+// m は有効な職員である（呼ぶ側が確認する）。結び付けの間に有効でなくなった職員は hydra.AccessDenied で拒む。
 func (h callback) match(ctx context.Context, m staff.Member, id upstream.Identity) (hydra.Rejection, string) {
 	got := staff.UpstreamAccount{Issuer: id.Issuer, Subject: id.Subject}
 	if m.Upstream != (staff.UpstreamAccount{}) {
 		if m.Upstream != got {
 			return hydra.AccountMismatch, "結び付けた上流のアカウントと違う"
-		}
-		if !m.CanLogin() {
-			return hydra.AccessDenied, "職員が有効でない"
 		}
 		return hydra.Rejection{}, ""
 	}
@@ -198,9 +206,6 @@ func (h callback) match(ctx context.Context, m staff.Member, id upstream.Identit
 	}
 	if staff.NormalizeEmail(id.Email) != m.Email {
 		return hydra.AccountMismatch, "上流のメールが登録のメールと違う"
-	}
-	if !m.CanLogin() {
-		return hydra.AccessDenied, "職員が有効でない"
 	}
 	err := h.staff.Link(ctx, m.ID, got)
 	if errors.Is(err, staff.ErrConflict) {
