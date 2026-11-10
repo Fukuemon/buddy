@@ -186,6 +186,10 @@ hydra janitor -c <hydra serve の設定ファイル> -e --tokens --requests --gr
 
 - シークレットは、`OIDC_CLIENT_SECRET`、`SESSION_SECRET`、`DB_PASSWORD`、Google の Workload Identity Federation の外部アカウントの設定である。
   - ブローカーでは、上流の IdP の client secret のファイル（`UPSTREAM_IDP_CLIENT_SECRETS_FILE`）と、token_hook のヘッダーの値（`TOKEN_HOOK_KEY`）もシークレットである。
+  - ブローカーの、ログインの途中の cookie に署名する鍵（`LOGIN_COOKIE_KEYS`）もシークレットである。
+    - `LOGIN_COOKIE_KEYS` は、カンマで区切った 32 バイト以上の鍵である。ブローカーは先頭の鍵で署名し、全ての鍵で検証する。
+    - 鍵を替えるときは、新しい鍵を一覧の先頭に足し、古い鍵を 10 分より長く残してから外す。上流の IdP でログインしている間の職員のログインが切れないようにするためである。
+    - 初めて鍵を入れるデプロイでは、その時に上流の IdP にいた職員のログインが 1 度失敗する。前の cookie に署名が無いためである。
   - 予定の API と運営用の CLI では、ブローカーを呼ぶ Hydra のクライアントの secret（`BROKER_CLIENT_SECRET`）もシークレットである。
     - 運営用の CLI の値は、運営用のクライアント（`schedule-ops`）の secret で、予定の API の値と分ける。CLI を流すジョブにだけ渡す。
     - 予定の API と運営用の CLI は、secret を Basic 認証のヘッダーで送る。Hydra のクライアントは、`token_endpoint_auth_method` を `client_secret_basic`（Hydra のデフォルト）で登録する。

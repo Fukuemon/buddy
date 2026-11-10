@@ -59,6 +59,10 @@ Ory Hydra の login and consent app として動くサービス。
 - `TOKEN_HOOK_KEY`: Hydra が `oauth2.token_hook` を呼ぶときに、ヘッダー `Token-Hook-Key` に入れる値。前後の空白を除いて 32 バイト以上にする。
   - 必須。
   - シークレットとして渡し、Hydra の `oauth2.token_hook.auth` と同じ値にする。
+- `LOGIN_COOKIE_KEYS`: ログインの途中の cookie（`broker_login`）に HMAC-SHA256 で署名する鍵を、カンマで区切った値。鍵は前後の空白を除いて 32 バイト以上にする。
+  - 必須。
+  - シークレットとして渡す。
+  - 先頭の鍵で署名し、全ての鍵で検証する。鍵を替えるときは、新しい鍵を先頭に足し、古い鍵を 10 分以上残してから外す。
 
 ブローカーは、上流の IdP の設定を、待ち受けを始める前に読む。  
 次のいずれかに当たると、ブローカーは起動せず、終了コード 1 で終わる。
@@ -89,7 +93,7 @@ Hydra がブローカーの画面を `http://localhost:8100` へリダイレク�
 docker compose up -d --wait hydra idp broker-seed
 docker compose stop broker
 
-# パスワードと token_hook の鍵は、compose のブローカーと同じ値を compose の設定から読む
+# パスワード、token_hook の鍵、cookie の鍵は、compose のブローカーと同じ値を compose の設定から読む
 compose_env() { docker compose config --format json | jq -r ".services.broker.environment.$1"; }
 export DB_PORT=15432 DB_USER=buddy DB_PASSWORD="$(compose_env DB_PASSWORD)" DB_NAME=broker
 go run ./cmd/migrate up
@@ -98,7 +102,8 @@ go run ./cmd/migrate seed
 export PORT=8100 INTERNAL_PORT=8101 HYDRA_ADMIN_URL=http://127.0.0.1:4445 PUBLIC_URL=http://localhost:8100 \
   UPSTREAM_IDPS_FILE=upstream-idps.example.json \
   UPSTREAM_IDP_CLIENT_SECRETS_FILE=upstream-idp-client-secrets.example.json \
-  HYDRA_ISSUER=http://hydra:4444 TOKEN_HOOK_KEY="$(compose_env TOKEN_HOOK_KEY)"
+  HYDRA_ISSUER=http://hydra:4444 TOKEN_HOOK_KEY="$(compose_env TOKEN_HOOK_KEY)" \
+  LOGIN_COOKIE_KEYS="$(compose_env LOGIN_COOKIE_KEYS)"
 go run ./cmd/broker
 ```
 
