@@ -34,6 +34,8 @@ type fakeStaff struct {
 	gets int
 	// beforeLink が nil でなければ、Link の前に呼ぶ。同時のログインが先に結び付けた場面を作る
 	beforeLink func(f *fakeStaff, staffID string, a staff.UpstreamAccount)
+	// getErr が nil でなければ、Get はこのエラーを返す。DB の失敗の場面を作る
+	getErr error
 }
 
 func (f *fakeStaff) FindByEmail(_ context.Context, email string) ([]staff.Member, error) {
@@ -49,6 +51,9 @@ func (f *fakeStaff) FindByEmail(_ context.Context, email string) ([]staff.Member
 
 func (f *fakeStaff) Get(_ context.Context, id string) (staff.Member, error) {
 	f.gets++
+	if f.getErr != nil {
+		return staff.Member{}, f.getErr
+	}
 	m, ok := f.members[id]
 	if !ok {
 		return staff.Member{}, staff.ErrNotFound
@@ -94,8 +99,12 @@ type fakeHydra struct {
 	rejects     int
 	rejection   hydra.Rejection
 	rejectedCon bool
-	logoutErr   error
-	loggedOut   string
+	// consentRejection は、RejectConsent に渡した本文である。
+	consentRejection hydra.Rejection
+	// rejectErr が nil でなければ、RejectLogin はこのエラーを返す。
+	rejectErr error
+	logoutErr error
+	loggedOut string
 }
 
 func (f *fakeHydra) LoginRequest(context.Context, string) (hydra.LoginRequest, error) {
@@ -112,6 +121,9 @@ func (f *fakeHydra) RejectLogin(_ context.Context, _ string, b hydra.Rejection) 
 	f.rejected = true
 	f.rejects++
 	f.rejection = b
+	if f.rejectErr != nil {
+		return "", f.rejectErr
+	}
 	return "http://hydra/login-rejected", nil
 }
 
@@ -125,8 +137,9 @@ func (f *fakeHydra) AcceptConsent(_ context.Context, _ string, b hydra.AcceptCon
 	return "http://hydra/consent-accepted", nil
 }
 
-func (f *fakeHydra) RejectConsent(context.Context, string, hydra.Rejection) (string, error) {
+func (f *fakeHydra) RejectConsent(_ context.Context, _ string, b hydra.Rejection) (string, error) {
 	f.rejectedCon = true
+	f.consentRejection = b
 	return "http://hydra/consent-rejected", nil
 }
 
@@ -730,7 +743,77 @@ func TestCallbackConcurrentFirstLogin(t *testing.T) {
 			if got := location(t, e.callback(t, e.submit("aoki@example.com"), "code-1")); got != tt.wantLoc {
 				t.Errorf("Location = %q, want %q", got, tt.wantLoc)
 			}
+			if tt.wantLoc == "http://hydra/login-rejected" && e.hydra.rejection != hydra.AccountMismatch {
+				t.Errorf("rejection = %+v, want 登録と違うアカウントの reject", e.hydra.rejection)
+			}
 		})
+	}
+}
+
+// TestCallbackConflictReread は、結び付けが ErrConflict になった後に職員を読み直せないか、職員が有効でなくなったときの reject を確認する。
+func TestCallbackConflictReread(t *testing.T) {
+	for _, tt := range []struct {
+		name  string
+		after func(f *fakeStaff, staffID string)
+		want  hydra.Rejection
+	}{
+		{"読み直せない", func(f *fakeStaff, _ string) { f.getErr = errors.New("db down") }, hydra.ServerError},
+		{"退職した", func(f *fakeStaff, staffID string) {
+			m := f.members[staffID]
+			m.Status = staff.StatusRetired
+			f.members[staffID] = m
+		}, hydra.AccessDenied},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			e := newEnv(10)
+			e.staff.beforeLink = func(f *fakeStaff, staffID string, _ staff.UpstreamAccount) {
+				m := f.members[staffID]
+				m.Upstream = staff.UpstreamAccount{Issuer: issuerA, Subject: "u-other"}
+				f.members[staffID] = m
+				tt.after(f, staffID)
+			}
+			if got := location(t, e.callback(t, e.submit("aoki@example.com"), "code-1")); got != "http://hydra/login-rejected" || e.hydra.rejection != tt.want {
+				t.Errorf("Location = %q, rejection = %+v, want %+v", got, e.hydra.rejection, tt.want)
+			}
+		})
+	}
+}
+
+// TestStaffUnreadable は、Hydra が保つセッション、コールバック、同意で職員を DB から引けないとき、server_error で拒むことを確認する。
+func TestStaffUnreadable(t *testing.T) {
+	t.Run("Hydra が保つセッション", func(t *testing.T) {
+		e := newEnv(10)
+		e.staff.getErr = errors.New("db down")
+		e.hydra.login = hydra.LoginRequest{Skip: true, Subject: aokiID}
+		if got := location(t, e.do(httptest.NewRequest(http.MethodGet, "/login?login_challenge=ch", nil))); got != "http://hydra/login-rejected" || e.hydra.rejection != hydra.ServerError {
+			t.Errorf("Location = %q, rejection = %+v, want server_error", got, e.hydra.rejection)
+		}
+	})
+	t.Run("コールバック", func(t *testing.T) {
+		e := newEnv(10)
+		submitted := e.submit("aoki@example.com")
+		e.staff.getErr = errors.New("db down")
+		if got := location(t, e.callback(t, submitted, "code-1")); got != "http://hydra/login-rejected" || e.hydra.rejection != hydra.ServerError {
+			t.Errorf("Location = %q, rejection = %+v, want server_error", got, e.hydra.rejection)
+		}
+	})
+	t.Run("同意", func(t *testing.T) {
+		e := newEnv(10)
+		e.staff.getErr = errors.New("db down")
+		e.hydra.consent = hydra.ConsentRequest{Subject: uenoID, Client: hydra.OAuth2Client{ClientID: "web"}}
+		if got := location(t, e.do(httptest.NewRequest(http.MethodGet, "/consent?consent_challenge=ch", nil))); got != "http://hydra/consent-rejected" || e.hydra.consentRejection != hydra.ServerError {
+			t.Errorf("Location = %q, rejection = %+v, want server_error", got, e.hydra.consentRejection)
+		}
+	})
+}
+
+// TestRejectFailsShowsOutagePage は、Hydra へ reject を返せないとき、時間をおいて試すよう伝える画面を 502 で出すことを確認する。
+func TestRejectFailsShowsOutagePage(t *testing.T) {
+	e := newEnv(10)
+	e.hydra.rejectErr = errors.New("hydra down")
+	rec := e.submit("nobody@example.com")
+	if rec.Code != http.StatusBadGateway || !strings.Contains(rec.Body.String(), "時間をおいて、もう一度ログインしてください。") {
+		t.Errorf("code = %d, body = %s", rec.Code, rec.Body)
 	}
 }
 
@@ -766,7 +849,8 @@ func TestCallbackInactiveStaff(t *testing.T) {
 	}
 }
 
-// TestCallbackForgedStaffID は、cookie の職員の ID をほかの職員に書き換えても、相手がいるか、相手の状態が reject で分からないことを確認する。
+// TestCallbackForgedStaffID は、cookie の職員の ID をほかの職員に書き換えても、相手の状態が reject で分からないことを確認する。
+// いない職員の ID には、ID token を検証できないときと同じ server_error を返す。
 func TestCallbackForgedStaffID(t *testing.T) {
 	const otherID = "01JCCCCCCCCCCCCCCCCCCCCCCC"
 	tests := []struct {
@@ -843,7 +927,7 @@ func TestConsent(t *testing.T) {
 	m := e.staff.members[uenoID]
 	m.Status = staff.StatusSuspended
 	e.staff.members[uenoID] = m
-	if got := location(t, e.do(httptest.NewRequest(http.MethodGet, "/consent?consent_challenge=ch", nil))); got != "http://hydra/consent-rejected" {
+	if got := location(t, e.do(httptest.NewRequest(http.MethodGet, "/consent?consent_challenge=ch", nil))); got != "http://hydra/consent-rejected" || e.hydra.consentRejection != hydra.AccessDenied {
 		t.Errorf("止めた職員の Location = %q, want reject", got)
 	}
 }
