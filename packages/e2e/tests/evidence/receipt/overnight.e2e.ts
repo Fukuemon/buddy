@@ -4,7 +4,7 @@ import { expect, test, type Page } from '@playwright/test'
 
 import { check, intro, step } from '../../fixtures/caption'
 import { LEADER, LOGIN_STAFF, LOGIN_STATE } from '../../fixtures/env'
-import { createGoogleEvent } from '../../fixtures/googleCalendar'
+import { createGoogleEvent, deleteGoogleEvent } from '../../fixtures/googleCalendar'
 import { prepareOutsideRecording } from '../../fixtures/recording'
 import { showAllReceiptRows } from '../../screens/receipt'
 import { receiptCategoryRowCells } from '../../selectors/receipt'
@@ -166,64 +166,70 @@ test.describe('照合の結果', () => {
     }, testInfo) => {
       const visits = testInfo.outputPath('visits.csv')
       await writeFile(visits, CALENDAR_VISITS)
-      await prepareOutsideRecording(browser, { storageState: LOGIN_STATE }, (prep) =>
+      const event = await prepareOutsideRecording(browser, { storageState: LOGIN_STATE }, (prep) =>
         createGoogleEvent(prep.request, LEADER.email, CALENDAR_EVENT),
       )
-
-      const page = await context.newPage()
-      await openReceipt(page)
-      await intro(
-        page,
-        `Google カレンダーの 11/20 23:00〜翌 0:30 の予定は、照合に使わなかった予定に出ず、同じ訪問の実績と整合の行で対になる\n前提 ${LEADER.staff.name}の Google カレンダーに、11/20 の 23:00 に始まり 11/21 の 0:30 に終わる「【医】見本 一郎」の予定がある`,
-      )
-
-      await step(
-        page,
-        '予定の取り方に「Google カレンダー」を選び、対象の月に 2026-11 を入れる',
-        async () => {
-          await page.getByTestId('receipt-source-calendar').check()
-          await page.getByTestId('receipt-month').fill(CALENDAR_MONTH)
-        },
-      )
-      await step(page, '同じ訪問の実績のダミーの CSV を選び、「照合する」を押す', async () => {
-        await page.getByTestId('receipt-visits-file').setInputFiles(visits)
-        await page.getByTestId('receipt-check-submit').click()
-        await expect(page).toHaveURL(/\/receipt\/result$/)
-        await expect(page.getByTestId('receipt-result')).toContainText(
-          '2026 年 11 月の Google カレンダー',
+      try {
+        const page = await context.newPage()
+        await openReceipt(page)
+        await intro(
+          page,
+          `Google カレンダーの 11/20 23:00〜翌 0:30 の予定は、照合に使わなかった予定に出ず、同じ訪問の実績と整合の行で対になる\n前提 ${LEADER.staff.name}の Google カレンダーに、11/20 の 23:00 に始まり 11/21 の 0:30 に終わる「【医】見本 一郎」の予定がある`,
         )
-        await expect(page.getByTestId('receipt-warnings')).toHaveCount(0)
-      })
-      await step(page, '表示する行を「全ての行」に切り替える', () => showAllReceiptRows(page))
-      const cells = receiptCategoryRowCells(page, 'match', '2026年11月20日（金）', '見本一郎')
-      const expected = [
-        '2026年11月20日（金）',
-        '見本一郎',
-        LEADER.staff.name,
-        '',
-        '医',
-        '23:00',
-        '00:30',
-        '90',
-        '医',
-        '23:00',
-        '00:30',
-        '90',
-        '深夜',
-      ]
-      await check(
-        page,
-        '照合に使わなかった予定は出ず、見本一郎の 2026-11-20 の行が整合データに入り、予定の側は 23:00〜00:30 である',
-        () => expect(cells).toHaveText(expected),
-      )
 
-      // 送る操作は止めが入らず、step の字幕が読めないので、次の判定の字幕に書く
-      await scrollToVisitColumns(page)
-      await check(
-        page,
-        '（撮影のため、結果の表を右端まで送り、実績の側の列を見せる）\n実績の側も 23:00〜00:30、90 分、加算は深夜で、予定と対になっている',
-        () => expect(cells).toHaveText(expected),
-      )
+        await step(
+          page,
+          '予定の取り方に「Google カレンダー」を選び、対象の月に 2026-11 を入れる',
+          async () => {
+            await page.getByTestId('receipt-source-calendar').check()
+            await page.getByTestId('receipt-month').fill(CALENDAR_MONTH)
+          },
+        )
+        await step(page, '同じ訪問の実績のダミーの CSV を選び、「照合する」を押す', async () => {
+          await page.getByTestId('receipt-visits-file').setInputFiles(visits)
+          await page.getByTestId('receipt-check-submit').click()
+          await expect(page).toHaveURL(/\/receipt\/result$/)
+          await expect(page.getByTestId('receipt-result')).toContainText(
+            '2026 年 11 月の Google カレンダー',
+          )
+          await expect(page.getByTestId('receipt-warnings')).toHaveCount(0)
+        })
+        await step(page, '表示する行を「全ての行」に切り替える', () => showAllReceiptRows(page))
+        const cells = receiptCategoryRowCells(page, 'match', '2026年11月20日（金）', '見本一郎')
+        const expected = [
+          '2026年11月20日（金）',
+          '見本一郎',
+          LEADER.staff.name,
+          '',
+          '医',
+          '23:00',
+          '00:30',
+          '90',
+          '医',
+          '23:00',
+          '00:30',
+          '90',
+          '深夜',
+        ]
+        await check(
+          page,
+          '照合に使わなかった予定は出ず、見本一郎の 2026-11-20 の行が整合データに入り、予定の側は 23:00〜00:30 である',
+          () => expect(cells).toHaveText(expected),
+        )
+
+        // 送る操作は止めが入らず、step の字幕が読めないので、次の判定の字幕に書く
+        await scrollToVisitColumns(page)
+        await check(
+          page,
+          '（撮影のため、結果の表を右端まで送り、実績の側の列を見せる）\n実績の側も 23:00〜00:30、90 分、加算は深夜で、予定と対になっている',
+          () => expect(cells).toHaveText(expected),
+        )
+      } finally {
+        // 撮り直しても行が 1 つになるよう、足した予定を録画の外で消す
+        await prepareOutsideRecording(browser, { storageState: LOGIN_STATE }, (prep) =>
+          deleteGoogleEvent(prep.request, LEADER.email, event.id),
+        )
+      }
     })
   })
 })

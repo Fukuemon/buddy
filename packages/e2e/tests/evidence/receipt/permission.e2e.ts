@@ -10,7 +10,13 @@ import {
   TEAM_MEMBER,
 } from '../../fixtures/env'
 import { prepareOutsideRecording } from '../../fixtures/recording'
-import { addPolicy, issueManagerToken, newStaff, registerStaff } from '../../fixtures/staff'
+import {
+  addPolicy,
+  issueManagerToken,
+  newStaff,
+  registerStaff,
+  removePolicy,
+} from '../../fixtures/staff'
 import { openApiClient } from '../../screens/apiReference'
 import { signInAtBroker } from '../../screens/login'
 import { fillApiToken } from '../../widgets/apiClient/actions/apiClient'
@@ -170,26 +176,46 @@ test.describe('照合の権限', () => {
       browser,
       context,
     }) => {
-      await prepareOutsideRecording(browser, { carryLoginTo: context }, async (page) => {
-        const res = await asManager((api, token) =>
-          addPolicy(api, token, TEAM_MEMBER.id, RECEIPT_CHECK_POLICY),
+      // 足した権限の ID。409（足してあった）のときは、このテストが足したものではないので外さない。
+      let userPolicyId: string | undefined
+      try {
+        await prepareOutsideRecording(browser, { carryLoginTo: context }, async (page) => {
+          userPolicyId = await asManager(async (api, token) => {
+            const res = await addPolicy(api, token, TEAM_MEMBER.id, RECEIPT_CHECK_POLICY)
+            expect([201, 409]).toContain(res.status())
+            if (res.status() !== 201) return undefined
+            const detail = (await res.json()) as {
+              policies: { policy_id: string; user_policy_id: string | null }[]
+            }
+            const granted = detail.policies.find((p) => p.policy_id === RECEIPT_CHECK_POLICY)
+            if (!granted?.user_policy_id) throw new Error('足した照合の権限の ID が無い')
+            return granted.user_policy_id
+          })
+          await page.goto('/schedule')
+          await signInAtBroker(page, TEAM_MEMBER.email)
+        })
+
+        const page = await context.newPage()
+        const nav = await openSchedule(page)
+        await intro(
+          page,
+          `${LOGIN_STAFF.name}（マネージャー）が ${TEAM_MEMBER.name}（メンバー）に照合の権限を足すと、${TEAM_MEMBER.name} が照合できる\n前提 ${LOGIN_STAFF.name} が照合の権限を足した後に、${TEAM_MEMBER.name} でログインし、予定のカレンダーを開いている`,
         )
-        expect([201, 409]).toContain(res.status())
-        await page.goto('/schedule')
-        await signInAtBroker(page, TEAM_MEMBER.email)
-      })
 
-      const page = await context.newPage()
-      const nav = await openSchedule(page)
-      await intro(
-        page,
-        `${LOGIN_STAFF.name}（マネージャー）が ${TEAM_MEMBER.name}（メンバー）に照合の権限を足すと、${TEAM_MEMBER.name} が照合できる\n前提 ${LOGIN_STAFF.name} が照合の権限を足した後に、${TEAM_MEMBER.name} でログインし、予定のカレンダーを開いている`,
-      )
-
-      await check(page, 'ナビゲーションに「照合」が出る', () =>
-        expect(nav.getByTestId('site-nav-receipt')).toBeVisible(),
-      )
-      await checkWithCsvFromNav(page, nav)
+        await check(page, 'ナビゲーションに「照合」が出る', () =>
+          expect(nav.getByTestId('site-nav-receipt')).toBeVisible(),
+        )
+        await checkWithCsvFromNav(page, nav)
+      } finally {
+        // シードのままの権限を前提にする spec があるので、足した権限を録画の外で外す
+        const id = userPolicyId
+        if (id !== undefined) {
+          const removed = await asManager(async (api, token) =>
+            (await removePolicy(api, token, TEAM_MEMBER.id, id)).ok(),
+          )
+          expect(removed).toBe(true)
+        }
+      }
     })
   })
 })
