@@ -36,7 +36,7 @@ const TEAM_READ = { id: '01M5E1S42TTS7QZK05YGS0GYRB', code: 'schedule.team.read'
 const TEAM_EDIT = { id: '01M5E1S42TTS7QZK05YGS0GYRC', code: 'schedule.team.edit' }
 const SELF_EDIT_CODE = 'schedule.self.edit'
 /** 事業所の全ての予定の閲覧（schedule.all.read）。対象を指定しない権限で、メンバーとリーダーのデフォルトに無い。 */
-const ALL_READ = { id: '01M5E1S42TTS7QZK05YGS0GYRD', code: 'schedule.all.read' }
+const ALL_READ_ID = '01M5E1S42TTS7QZK05YGS0GYRD'
 
 const ACTOR = `${LOGIN_STAFF.name}（マネージャー、職員の管理の権限あり）`
 
@@ -561,7 +561,7 @@ test.describe('職員の管理', () => {
     }
   })
 
-  // 改修前は、個別に足した権限が消えると示していた注意の文（#994 の前）を指す
+  // 改修前の版は、注意の文が個別に足した権限は「消えます」という前の文言なので、isBefore で期待の文を分ける
   test.describe('役職を変えるときの注意', () => {
     for (const variant of EVIDENCE_VARIANTS) {
       const prefix = variant.label ? `${variant.label}: ` : ''
@@ -585,7 +585,7 @@ test.describe('職員の管理', () => {
               teamId: TEAM_A,
               positionId: MEMBER_POSITION,
             })
-            await addTargetedPolicy(page.request, token, staff.id, { policy_id: ALL_READ.id })
+            await addTargetedPolicy(page.request, token, staff.id, { policy_id: ALL_READ_ID })
             await signInAtDetail(page, staff.id)
             return staff.id
           },

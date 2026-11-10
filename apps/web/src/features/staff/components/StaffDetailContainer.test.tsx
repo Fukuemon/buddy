@@ -220,6 +220,8 @@ describe('StaffDetailContainer', () => {
     expect(
       within(individual).getByTestId('staff-policy-targets-schedule.user.read'),
     ).toHaveTextContent('上田 三奈')
+    expect(within(individual).getAllByRole('listitem')).toHaveLength(1)
+    expect(screen.queryByTestId('staff-policy-row-schedule.team.read')).toBeNull()
   })
 
   it('「…」の休職にするで残る予定を示し、休職にすると在籍を休職にする', async () => {
