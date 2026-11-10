@@ -70,6 +70,12 @@ const prepare = (browser: Browser, open: boolean) =>
     return { scheduleId, date, title }
   })
 
+/** 撮った後に、録画の外で切り替えをやめる。切り替え中のままだと、石田の事業所の予定を変えるほかの撮影が失敗する。 */
+const restoreCutover = (browser: Browser) =>
+  prepareOutsideRecording(browser, { storageState: ISHIDA_STATE }, (page) =>
+    setCutover(page, false),
+  )
+
 /** 録画の最初の画面として、date の日の表示を開く。直に開く URL は、この後の step で開く。 */
 const openDay = async (page: Page, date: string) => {
   await page.goto(`/schedule?view=day&date=${date}`)
@@ -109,36 +115,45 @@ test.describe('予定の正本を切り替えている間に、予定を変え�
       const { scheduleId, date, title } = await prepare(browser, false)
 
       const page = await context.newPage()
-      await openDay(page, date)
-      await intro(
-        page,
-        `繰り返しの変更を開いた後に切り替えが始まり、保存を押すと、保存の失敗の状態にし、切り替え中の文を出す\n前提 予定の正本の切り替えを始めていない。${date} の日の表示に、毎週の予定「${title}」の回がある`,
-      )
+      try {
+        await openDay(page, date)
+        await intro(
+          page,
+          `繰り返しの変更を開いた後に切り替えが始まり、保存を押すと、保存の失敗の状態にし、切り替え中の文を出す\n前提 予定の正本の切り替えを始めていない。${date} の日の表示に、毎週の予定「${title}」の回がある`,
+        )
 
-      await step(page, `「${title}」の ${date} の回の繰り返しの変更を開く`, async () => {
-        await page.goto(`/schedule/${scheduleId}/recurrence?view=day&date=${date}`)
-      })
-      const preset = page.getByTestId('recurring-rule-preset')
-      await step(page, '繰り返しを「毎月」の日にちの選択肢に変える', async () => {
-        await preset.selectOption('monthly-day')
-      })
-      // 別のタブは録画しないコンテキストに開く。録画するコンテキストに開くと、collect.mjs がそのタブの動画を拾う
-      await step(page, '撮影のため、同じ職員が開いた別のタブで、予定の正本の切り替えを始める', () =>
-        prepareOutsideRecording(browser, { storageState: ISHIDA_STATE }, (other) =>
-          setCutover(other, true),
-        ),
-      )
-      await step(page, 'この画面で「保存」を押す', () =>
-        page.getByTestId('schedule-recurrence-submit').click(),
-      )
-      await check(
-        page,
-        `入力を残したまま、規則の欄の下に「${CUTOVER_MESSAGE}」が出る`,
-        async () => {
-          await expect(page.getByTestId('schedule-recurrence-modal')).toContainText(CUTOVER_MESSAGE)
-          await expect(preset).toHaveValue('monthly-day')
-        },
-      )
+        await step(page, `「${title}」の ${date} の回の繰り返しの変更を開く`, async () => {
+          await page.goto(`/schedule/${scheduleId}/recurrence?view=day&date=${date}`)
+        })
+        const preset = page.getByTestId('recurring-rule-preset')
+        await step(page, '繰り返しを「毎月」の日にちの選択肢に変える', async () => {
+          await preset.selectOption('monthly-day')
+        })
+        // 別のタブは録画しないコンテキストに開く。録画するコンテキストに開くと、collect.mjs がそのタブの動画を拾う
+        await step(
+          page,
+          '撮影のため、同じ職員が開いた別のタブで、予定の正本の切り替えを始める',
+          () =>
+            prepareOutsideRecording(browser, { storageState: ISHIDA_STATE }, (other) =>
+              setCutover(other, true),
+            ),
+        )
+        await step(page, 'この画面で「保存」を押す', () =>
+          page.getByTestId('schedule-recurrence-submit').click(),
+        )
+        await check(
+          page,
+          `入力を残したまま、規則の欄の下に「${CUTOVER_MESSAGE}」が出る`,
+          async () => {
+            await expect(page.getByTestId('schedule-recurrence-modal')).toContainText(
+              CUTOVER_MESSAGE,
+            )
+            await expect(preset).toHaveValue('monthly-day')
+          },
+        )
+      } finally {
+        await restoreCutover(browser)
+      }
     })
 
     // 改修前は規則の欄が出て、保存の後に文が出る別の流れになるので、改修前と比べない
@@ -148,28 +163,36 @@ test.describe('予定の正本を切り替えている間に、予定を変え�
     }) => {
       const { scheduleId, date, title } = await prepare(browser, true)
 
-      const page = await context.newPage()
-      await openDay(page, date)
-      await intro(
-        page,
-        `切り替えている間に繰り返しの変更の URL を直に開くと、規則の欄と保存のボタンを出さず、切り替え中の文と閉じるボタンを出す\n前提 予定の正本の切り替えを始めている。${date} の日の表示に、毎週の予定「${title}」の回がある`,
-      )
+      try {
+        const page = await context.newPage()
+        await openDay(page, date)
+        await intro(
+          page,
+          `切り替えている間に繰り返しの変更の URL を直に開くと、規則の欄と保存のボタンを出さず、切り替え中の文と閉じるボタンを出す\n前提 予定の正本の切り替えを始めている。${date} の日の表示に、毎週の予定「${title}」の回がある`,
+        )
 
-      await step(page, `「${title}」の ${date} の回の繰り返しの変更の URL を直に開く`, async () => {
-        await page.goto(`/schedule/${scheduleId}/recurrence?view=day&date=${date}`)
-      })
-      await check(
-        page,
-        `規則の欄と保存のボタンが出ず、「${CUTOVER_MESSAGE}」と右上の閉じるボタンが出る`,
-        async () => {
-          await expect(page.getByTestId('schedule-recurrence-cutover')).toContainText(
-            CUTOVER_MESSAGE,
-          )
-          await expect(page.getByTestId('recurring-rule-preset')).toHaveCount(0)
-          await expect(page.getByTestId('schedule-recurrence-submit')).toHaveCount(0)
-          await expect(page.getByTestId('modal-close')).toBeVisible()
-        },
-      )
+        await step(
+          page,
+          `「${title}」の ${date} の回の繰り返しの変更の URL を直に開く`,
+          async () => {
+            await page.goto(`/schedule/${scheduleId}/recurrence?view=day&date=${date}`)
+          },
+        )
+        await check(
+          page,
+          `規則の欄と保存のボタンが出ず、「${CUTOVER_MESSAGE}」と右上の閉じるボタンが出る`,
+          async () => {
+            await expect(page.getByTestId('schedule-recurrence-cutover')).toContainText(
+              CUTOVER_MESSAGE,
+            )
+            await expect(page.getByTestId('recurring-rule-preset')).toHaveCount(0)
+            await expect(page.getByTestId('schedule-recurrence-submit')).toHaveCount(0)
+            await expect(page.getByTestId('modal-close')).toBeVisible()
+          },
+        )
+      } finally {
+        await restoreCutover(browser)
+      }
     })
 
     // 改修前はフォームが出て、ここで流れが分かれるので、改修前と比べない
@@ -179,26 +202,30 @@ test.describe('予定の正本を切り替えている間に、予定を変え�
     }) => {
       const { scheduleId, date, title } = await prepare(browser, true)
 
-      const page = await context.newPage()
-      await openDay(page, date)
-      await intro(
-        page,
-        `切り替えている間に予定の編集の URL を直に開くと、フォームと保存のボタンを出さず、切り替え中の文と閉じるボタンを出す\n前提 予定の正本の切り替えを始めている。${date} の日の表示に、毎週の予定「${title}」の回がある`,
-      )
+      try {
+        const page = await context.newPage()
+        await openDay(page, date)
+        await intro(
+          page,
+          `切り替えている間に予定の編集の URL を直に開くと、フォームと保存のボタンを出さず、切り替え中の文と閉じるボタンを出す\n前提 予定の正本の切り替えを始めている。${date} の日の表示に、毎週の予定「${title}」の回がある`,
+        )
 
-      await step(page, `「${title}」の ${date} の回の予定の編集の URL を直に開く`, async () => {
-        await page.goto(`/schedule/${scheduleId}/edit?view=day&date=${date}`)
-      })
-      await check(
-        page,
-        `フォームと保存のボタンが出ず、「${CUTOVER_MESSAGE}」と右上の閉じるボタンが出る`,
-        async () => {
-          await expect(page.getByTestId('schedule-edit-cutover')).toContainText(CUTOVER_MESSAGE)
-          await expect(page.getByTestId('schedule-form')).toHaveCount(0)
-          await expect(page.getByTestId('schedule-edit-submit')).toHaveCount(0)
-          await expect(page.getByTestId('modal-close')).toBeVisible()
-        },
-      )
+        await step(page, `「${title}」の ${date} の回の予定の編集の URL を直に開く`, async () => {
+          await page.goto(`/schedule/${scheduleId}/edit?view=day&date=${date}`)
+        })
+        await check(
+          page,
+          `フォームと保存のボタンが出ず、「${CUTOVER_MESSAGE}」と右上の閉じるボタンが出る`,
+          async () => {
+            await expect(page.getByTestId('schedule-edit-cutover')).toContainText(CUTOVER_MESSAGE)
+            await expect(page.getByTestId('schedule-form')).toHaveCount(0)
+            await expect(page.getByTestId('schedule-edit-submit')).toHaveCount(0)
+            await expect(page.getByTestId('modal-close')).toBeVisible()
+          },
+        )
+      } finally {
+        await restoreCutover(browser)
+      }
     })
   })
 })
