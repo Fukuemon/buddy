@@ -35,7 +35,7 @@ func (h showLogin) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	req, err := h.hydra.LoginRequest(ctx, challenge)
 	if err != nil {
-		fail(h.logger, w, r, http.StatusBadRequest, "ログインの要求を読めない", err)
+		fail(h.logger, w, r, challengeReadStatus(err), "ログインの要求を読めない", err)
 		return
 	}
 	if !req.Skip {
@@ -94,7 +94,7 @@ func (h submitEmail) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	// 使い終えたか、Hydra の知らない login_challenge では、職員を引かない
 	if _, err := h.hydra.LoginRequest(ctx, challenge); err != nil {
-		fail(h.logger, w, r, http.StatusBadRequest, "ログインの要求を読めない", err)
+		fail(h.logger, w, r, challengeReadStatus(err), "ログインの要求を読めない", err)
 		return
 	}
 	if !h.emailLimiter.Allow(email) {

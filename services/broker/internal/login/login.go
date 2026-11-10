@@ -169,6 +169,15 @@ func fail(logger *slog.Logger, w http.ResponseWriter, r *http.Request, code int,
 	failPage(logger, w, r, code, page, "ログインの失敗の画面を出す", reason, err)
 }
 
+// challengeReadStatus は、Hydra の admin API で login_challenge か consent_challenge を読めなかったときのステータスである。
+// Hydra が 4xx を返したら、使い終えたか期限の切れた challenge として 400 にする。届かないか 5xx なら、Hydra の障害として 502 にする。
+func challengeReadStatus(err error) int {
+	if hydra.IsClientError(err) {
+		return http.StatusBadRequest
+	}
+	return http.StatusBadGateway
+}
+
 // failLogout は、Hydra へ返せないログアウトの失敗で、ログアウトの失敗の画面を出す。
 func failLogout(logger *slog.Logger, w http.ResponseWriter, r *http.Request, code int, reason string, err error) {
 	failPage(logger, w, r, code, "logout-failure", "ログアウトの失敗の画面を出す", reason, err)

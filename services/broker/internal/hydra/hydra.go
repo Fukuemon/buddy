@@ -6,6 +6,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -194,7 +195,7 @@ func (c *Client) do(ctx context.Context, method, path string, query url.Values, 
 	if resp.StatusCode/100 != 2 {
 		// 本文は Hydra のエラーの JSON で、秘密の値を含まない
 		msg, _ := io.ReadAll(io.LimitReader(resp.Body, 1024))
-		return fmt.Errorf("hydra %s: %d %s", path, resp.StatusCode, bytes.TrimSpace(msg))
+		return &StatusError{Path: path, Code: resp.StatusCode, Body: string(bytes.TrimSpace(msg))}
 	}
 	if out == nil {
 		return nil
@@ -203,4 +204,22 @@ func (c *Client) do(ctx context.Context, method, path string, query url.Values, 
 		return fmt.Errorf("hydra %s: %w", path, err)
 	}
 	return nil
+}
+
+// StatusError は、admin API が 2xx でないステータスを返したことを示す。
+type StatusError struct {
+	Path string
+	Code int
+	Body string
+}
+
+func (e *StatusError) Error() string {
+	return fmt.Sprintf("hydra %s: %d %s", e.Path, e.Code, e.Body)
+}
+
+// IsClientError は、err が admin API の 4xx かを返す。使い終えたか期限の切れた challenge では、Hydra は 4xx を返す。
+// 届かないときと 5xx のときは false を返し、呼ぶ側は Hydra の障害として扱う。
+func IsClientError(err error) bool {
+	se, ok := errors.AsType[*StatusError](err)
+	return ok && se.Code/100 == 4
 }

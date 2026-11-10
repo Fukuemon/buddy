@@ -32,7 +32,7 @@ func (h consent) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	req, err := h.hydra.ConsentRequest(ctx, challenge)
 	if err != nil {
-		fail(h.logger, w, r, http.StatusBadRequest, "同意の要求を読めない", err)
+		fail(h.logger, w, r, challengeReadStatus(err), "同意の要求を読めない", err)
 		return
 	}
 	// 同意の画面を持たないので、画面を出さずに accept してよいと決めたクライアントのほかは拒む
