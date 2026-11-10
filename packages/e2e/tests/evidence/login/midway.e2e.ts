@@ -76,7 +76,7 @@ test.describe('予定のカレンダー', () => {
             await forgeStaffId(page, LOGIN_STAFF.id)
             await step(`上流の IdP で、本人のメール ${TEAM_MEMBER.email} を確認済みにして入る`)
             await signInAtUpstreamIdp(page, TEAM_MEMBER.email)
-            await expect(brokerPage(page).heading.or(page.getByTestId('auth-error'))).toBeVisible()
+            await expect(brokerPage(page).heading.or(page.getByTestId('auth-error')).first()).toBeVisible()
             await check(
               'コールバックの後に出た画面（期待: ブローカーの「ログインを続けられませんでした」）',
             )
