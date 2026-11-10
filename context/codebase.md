@@ -137,7 +137,7 @@ status: stable
 - 次の規則は lint で確認せず、レビューで確認する。
   - 機能のパッケージが、ほかの機能のリポジトリのインターフェースを import しないこと
   - ほかの機能の集約を書くインターフェースが、1 つのトランザクションの中で使うメソッドだけを並べていること
-- E2E の層の向きは、kit の ESLint の規則（`@fukuemon/e2e-kit/eslint`）が止める。
+- E2E の層の向きは、`packages/e2e/eslint/e2e-authoring-rule.mjs` の ESLint の規則が止める。
 
 ## State Ownership
 
