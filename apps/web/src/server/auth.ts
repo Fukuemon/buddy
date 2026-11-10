@@ -1,7 +1,7 @@
 import { randomBytes } from 'node:crypto'
 
 import type { MeResult } from '#/api/http/meApi'
-import type { Viewer } from '#/api/types'
+import type { AuthErrorReason, Viewer } from '#/api/types'
 
 import { codeChallengeOf, randomCodeVerifier, randomNonce, randomState, type Tokens } from './oidc'
 import {
@@ -104,16 +104,37 @@ export const startLogin = async (request: Request, deps: AuthDeps): Promise<Resp
 }
 
 /**
+ * ブローカーが Hydra へ返した reject の error を、ログインの失敗の画面の理由に読み替える。
+ * error の値は、ID ブローカーの internal/hydra の Rejection と同じにする。知らない値は failed にする。
+ */
+export const reasonOfBrokerError = (error: string): AuthErrorReason => {
+  switch (error) {
+    case 'access_denied':
+      return 'denied'
+    case 'account_mismatch':
+      return 'account_mismatch'
+    case 'login_interrupted':
+      return 'interrupted'
+    case 'temporarily_unavailable':
+      return 'too_many_attempts'
+    default:
+      return 'failed'
+  }
+}
+
+/**
  * GET /auth/callback。認可コードをトークンと交換し、職員を引いてセッションを作り、戻る先へリダイレクトする。
  *
- * state が cookie と合わない、ログインの途中の値が無い、トークンを取れない、のいずれかで /auth/error?reason=failed へ、
- * ブローカーが試行の回数の上限で拒んだ（error が temporarily_unavailable）ら /auth/error?reason=too_many_attempts へ、
- * 職員が事業所に登録されていなければ /auth/error?reason=forbidden へリダイレクトする。
+ * 失敗すると、理由を付けて /auth/error?reason=<理由> へリダイレクトする。
+ * - state が cookie と合わないか、ログインの途中の値が無い: interrupted
+ * - ブローカーがログインを拒んだ: callback の error を reasonOfBrokerError で読み替える
+ * - トークンを取れないか、予定の API で職員を引けない: failed
+ * - 職員が事業所に登録されていない: forbidden
  */
 export const finishLogin = async (request: Request, deps: AuthDeps): Promise<Response> => {
   const url = browserUrlOf(request, deps)
   const clearLogin = cookie(deps, LOGIN_COOKIE, '', 0)
-  const fail = (reason: 'failed' | 'forbidden' | 'too_many_attempts', cause: string) => {
+  const fail = (reason: AuthErrorReason, cause: string) => {
     console.warn(JSON.stringify({ msg: 'login failed', reason, cause }))
     return redirect(`/auth/error?reason=${reason}`, [clearLogin])
   }
@@ -122,12 +143,11 @@ export const finishLogin = async (request: Request, deps: AuthDeps): Promise<Res
     readCookie(request.headers.get('Cookie'), LOGIN_COOKIE),
     deps.secret,
   )
-  if (state === null || state !== cookieState) return fail('failed', 'state mismatch')
+  if (state === null || state !== cookieState) return fail('interrupted', 'state mismatch')
   const tx = await deps.store.take<LoginTransaction>(loginKey(state))
-  if (tx === undefined) return fail('failed', 'login transaction not found')
-  // ブローカーの TooManyAttempts の reject。ほかの reject は、トークンと交換できずに failed になる
-  if (url.searchParams.get('error') === 'temporarily_unavailable')
-    return fail('too_many_attempts', 'broker: too many attempts')
+  if (tx === undefined) return fail('interrupted', 'login transaction not found')
+  const error = url.searchParams.get('error')
+  if (error !== null) return fail(reasonOfBrokerError(error), `authorization error: ${error}`)
   let tokens: Tokens
   try {
     tokens = await deps.oidc.exchangeCode(url, {

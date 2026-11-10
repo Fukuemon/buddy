@@ -1,10 +1,11 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { z } from 'zod'
 
+import { AUTH_ERROR_REASONS } from '#/api/types'
 import { AuthErrorMessage } from '#/components/page/AuthErrorMessage'
 
 const searchSchema = z.object({
-  reason: z.enum(['failed', 'forbidden', 'too_many_attempts']).catch('failed'),
+  reason: z.enum(AUTH_ERROR_REASONS).catch('failed'),
 })
 
 export const Route = createFileRoute('/auth/error')({

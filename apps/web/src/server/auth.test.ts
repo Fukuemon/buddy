@@ -182,7 +182,7 @@ describe('ログイン', () => {
     expect([...store.values.keys()].filter((k) => k.startsWith('session:'))).toHaveLength(1)
   })
 
-  it('state が cookie と違えば、トークンを取らずに失敗へリダイレクトする', async () => {
+  it('state が cookie と違えば、トークンを取らずに interrupted へリダイレクトする', async () => {
     const exchangeCode = vi.fn<OidcClient['exchangeCode']>()
     const { deps } = setup({ oidc: fakeOidc({ exchangeCode }) })
     const start = await startLogin(new Request('http://web.test/auth/login'), deps)
@@ -192,7 +192,7 @@ describe('ログイン', () => {
       }),
       deps,
     )
-    expect(res.headers.get('Location')).toBe('/auth/error?reason=failed')
+    expect(res.headers.get('Location')).toBe('/auth/error?reason=interrupted')
     expect(exchangeCode).not.toHaveBeenCalled()
   })
 
@@ -203,22 +203,32 @@ describe('ログイン', () => {
     expect([...store.values.keys()].some((k) => k.startsWith('session:'))).toBe(false)
   })
 
-  it('ブローカーが試行の回数の上限で拒んだら、トークンを取らずに too_many_attempts へリダイレクトする', async () => {
-    const exchangeCode = vi.fn<OidcClient['exchangeCode']>()
-    const { store, deps } = setup({ oidc: fakeOidc({ exchangeCode }) })
-    vi.spyOn(console, 'warn').mockImplementation(() => {})
-    const start = await startLogin(new Request('http://web.test/auth/login'), deps)
-    const state = new URL(start.headers.get('Location') ?? '').searchParams.get('state')
-    const res = await finishLogin(
-      new Request(`http://web.test/auth/callback?error=temporarily_unavailable&state=${state}`, {
-        headers: { Cookie: cookiesOf(start) },
-      }),
-      deps,
-    )
-    expect(res.headers.get('Location')).toBe('/auth/error?reason=too_many_attempts')
-    expect(exchangeCode).not.toHaveBeenCalled()
-    expect([...store.values.keys()].some((k) => k.startsWith('login:'))).toBe(false)
-  })
+  it.each([
+    ['access_denied', 'denied'],
+    ['account_mismatch', 'account_mismatch'],
+    ['login_interrupted', 'interrupted'],
+    ['temporarily_unavailable', 'too_many_attempts'],
+    ['server_error', 'failed'],
+    ['login_required', 'failed'],
+  ])(
+    'ブローカーが error=%s で拒んだら、トークンを取らずに %s へリダイレクトする',
+    async (error, reason) => {
+      const exchangeCode = vi.fn<OidcClient['exchangeCode']>()
+      const { store, deps } = setup({ oidc: fakeOidc({ exchangeCode }) })
+      vi.spyOn(console, 'warn').mockImplementation(() => {})
+      const start = await startLogin(new Request('http://web.test/auth/login'), deps)
+      const state = new URL(start.headers.get('Location') ?? '').searchParams.get('state')
+      const res = await finishLogin(
+        new Request(`http://web.test/auth/callback?error=${error}&state=${state}`, {
+          headers: { Cookie: cookiesOf(start) },
+        }),
+        deps,
+      )
+      expect(res.headers.get('Location')).toBe(`/auth/error?reason=${reason}`)
+      expect(exchangeCode).not.toHaveBeenCalled()
+      expect([...store.values.keys()].some((k) => k.startsWith('login:'))).toBe(false)
+    },
+  )
 
   it('トークンを取れなければ failed へリダイレクトする', async () => {
     const { deps } = setup({

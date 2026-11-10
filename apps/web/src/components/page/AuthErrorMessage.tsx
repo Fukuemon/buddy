@@ -1,29 +1,42 @@
-import { AuthCard, loginFailedMessage, type AuthMessage } from '@buddy/broker'
+import {
+  AuthCard,
+  loginFailedMessage,
+  tooManyAttemptsMessage,
+  type AuthMessage,
+} from '@buddy/broker'
 import { clsx } from 'clsx'
 import { buttonClassName } from '@buddy/ui'
 
-/**
- * ログインできなかった理由。failed はログインの途中の失敗、forbidden は事業所に登録されていない職員、
- * too_many_attempts はログインの試行の回数の上限を超えたときである。
- */
-export type AuthErrorReason = 'failed' | 'forbidden' | 'too_many_attempts'
+import type { AuthErrorReason } from '#/api/types'
 
 export type AuthErrorMessageProps = {
   reason: AuthErrorReason
   loginHref: string
 }
 
-/** failed の文言は、ID ブローカーのログインの失敗の画面と同じ定数を使う（ADR-0003）。 */
+/**
+ * 理由ごとの文言。failed と too_many_attempts は、ID ブローカーのログインの失敗の画面と同じ定数を使う（ADR-0003）。
+ * denied は、登録されていないメールと有効でない職員を分けず、登録の有無と職員の状態を明かさない。
+ */
 const messages: Record<AuthErrorReason, AuthMessage> = {
   failed: loginFailedMessage,
+  denied: {
+    title: 'ログインできませんでした',
+    body: '入れたメールアドレスでは、ログインできません。事業所の管理者に、登録のメールアドレスを確認してください。',
+  },
+  account_mismatch: {
+    title: '登録と違うアカウントでログインしました',
+    body: '事業所に登録したメールアドレスのアカウントで、もう一度ログインしてください。分からないときは、事業所の管理者に登録のメールアドレスを確認してください。',
+  },
+  interrupted: {
+    title: 'ログインを続けられませんでした',
+    body: 'もう一度ログインしてください。',
+  },
   forbidden: {
     title: 'この事業所に登録されていません',
     body: '事業所の管理者に、メールアドレスの登録を頼んでください。',
   },
-  too_many_attempts: {
-    title: 'しばらくログインできません',
-    body: '続けて何度もログインを試したため、受け付けを止めています。30 秒ほどおいてから、もう一度ログインしてください。',
-  },
+  too_many_attempts: tooManyAttemptsMessage,
 }
 
 /**
