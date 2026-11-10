@@ -119,7 +119,14 @@ test.describe('画面仕様書のテンプレートのモック', () => {
       await check(page, '続きの説明が閉じる', () => expect(t.moreText).toBeHidden())
 
       await step(page, '見出しの右の ? を押す', () => t.help.click())
-      await check(page, '見出しの下に、ヘルプの説明が出る', () => expect(t.helpText).toBeVisible())
+      await check(
+        page,
+        '見出しの下に、ヘルプの説明が出る',
+        () => expect(t.helpText).toBeVisible(),
+        {
+          position: 'bottom',
+        },
+      )
 
       await step(page, 'Escape キーを押す', () => page.keyboard.press('Escape'))
       await check(page, 'ヘルプの説明が閉じる', () => expect(t.helpText).toBeHidden())

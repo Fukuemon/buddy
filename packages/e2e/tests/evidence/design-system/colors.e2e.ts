@@ -44,6 +44,7 @@ test.describe('予定のカレンダー', () => {
               oneOf(EXPECTED.canvas, BEFORE.canvas),
             )
           },
+          { position: 'bottom' },
         )
       },
     )
@@ -75,6 +76,7 @@ test.describe('予定のカレンダー', () => {
           await expect(create).toBeFocused()
           await expect(create).toHaveCSS('outline-color', 'rgb(0, 0, 0)')
         },
+        { position: 'bottom' },
       )
     })
   })

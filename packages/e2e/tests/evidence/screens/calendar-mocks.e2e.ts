@@ -208,6 +208,7 @@ test.describe('確認が必要な予定とカレンダーの連携の画面仕�
           )
           await expect(mockMain(page)).not.toContainText('サービスアカウント')
         },
+        { position: 'bottom' },
       )
     })
 

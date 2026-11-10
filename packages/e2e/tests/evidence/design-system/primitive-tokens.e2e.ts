@@ -109,6 +109,7 @@ test.describe('デザインシステムのトークン', () => {
               await expect(pageBody(page)).toHaveCSS('background-color', 'rgb(253, 252, 251)')
               await expect(pageBody(page)).toHaveCSS('font-family', /Noto Sans JP/)
             },
+            { position: 'bottom' },
           )
         })
       })

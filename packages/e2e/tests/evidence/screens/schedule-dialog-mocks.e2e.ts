@@ -40,6 +40,7 @@ test.describe('予定のダイアログの画面仕様書のモック', () => {
         page,
         'タイトル「予定の作成」が左にあり、右上に × が無く、フッターの右に「キャンセル」と「作成」が並ぶ',
         async () => {
+          await expect(scheduleModalTitle(modal, '予定の作成')).toBeVisible()
           await expect(page.getByTestId('modal-close')).toHaveCount(0)
           await expect(page.getByTestId('schedule-new-cancel')).toHaveText('キャンセル')
           await expect(page.getByTestId('schedule-create-submit')).toHaveText('作成')
@@ -73,6 +74,7 @@ test.describe('予定のダイアログの画面仕様書のモック', () => {
         page,
         'タイトル「予定の編集」が左にあり、右上に × が無く、フッターの右に「キャンセル」と「保存」が並ぶ',
         async () => {
+          await expect(scheduleModalTitle(modal, '予定の編集')).toBeVisible()
           await expect(page.getByTestId('modal-close')).toHaveCount(0)
           await expect(page.getByTestId('schedule-edit-cancel')).toHaveText('キャンセル')
           await expect(page.getByTestId('schedule-edit-submit')).toHaveText('保存')
@@ -106,6 +108,7 @@ test.describe('予定のダイアログの画面仕様書のモック', () => {
         page,
         'タイトル「予定の詳細」が左にあり、右上に × が無く、フッターの右に「閉じる」と「編集」が並ぶ',
         async () => {
+          await expect(scheduleModalTitle(modal, '予定の詳細')).toBeVisible()
           await expect(page.getByTestId('modal-close')).toHaveCount(0)
           await expect(page.getByTestId('schedule-detail-close')).toHaveText('閉じる')
           await expect(page.getByTestId('schedule-detail-edit')).toHaveText('編集')
