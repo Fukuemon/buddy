@@ -55,10 +55,12 @@ type Config struct {
 	InternalAPIOnboardingClients []string
 	// TokenHookKey は、Hydra が oauth2.token_hook を呼ぶときにヘッダーに入れる値である。シークレットとして渡す。
 	TokenHookKey string
+	// LoginCookieKeys は、ログインの途中の cookie に署名する鍵である。先頭の鍵で署名し、全ての鍵で検証する。シークレットとして渡す。
+	LoginCookieKeys []string
 }
 
 // Load は、getenv（本番では os.Getenv）から設定を読む。DB_USER、DB_PASSWORD、DB_NAME、HYDRA_ADMIN_URL、HYDRA_ISSUER、
-// UPSTREAM_IDPS_FILE、UPSTREAM_IDP_CLIENT_SECRETS_FILE、PUBLIC_URL、TOKEN_HOOK_KEY は必須で、欠けているときは欠けた名前を並べたエラーを返す。
+// UPSTREAM_IDPS_FILE、UPSTREAM_IDP_CLIENT_SECRETS_FILE、PUBLIC_URL、TOKEN_HOOK_KEY、LOGIN_COOKIE_KEYS は必須で、欠けているときは欠けた名前を並べたエラーを返す。
 //
 // 読む環境変数とデフォルト値:
 //   - PORT: ログインと同意の画面とヘルスチェックの待ち受けのポート。デフォルトは 8080
@@ -80,6 +82,8 @@ type Config struct {
 //   - INTERNAL_API_ONBOARDING_CLIENTS: 内部の API のうち、職員の登録、有効化、登録の途中の職員の削除だけを呼んでよいクライアントの ID を
 //     カンマで区切った値。INTERNAL_API_CLIENTS と重ねない。デフォルトは schedule-ops
 //   - TOKEN_HOOK_KEY: Hydra が oauth2.token_hook を呼ぶときにヘッダーに入れる値。前後の空白を除いて 32 バイト以上にする
+//   - LOGIN_COOKIE_KEYS: ログインの途中の cookie に署名する鍵をカンマで区切った値。先頭の鍵で署名し、全ての鍵で検証する。
+//     鍵は、前後の空白を除いて 32 バイト以上にする
 func Load(getenv func(string) string) (Config, error) {
 	return load(getenv, true)
 }
@@ -92,6 +96,9 @@ func LoadDB(getenv func(string) string) (DB, error) {
 
 // minTokenHookKeyLen は、TOKEN_HOOK_KEY の最小のバイト数である。推測されない長さの乱数を求める。
 const minTokenHookKeyLen = 32
+
+// minLoginCookieKeyLen は、LOGIN_COOKIE_KEYS の鍵ごとの最小のバイト数である。HMAC-SHA256 の出力と同じ長さの乱数を求める。
+const minLoginCookieKeyLen = 32
 
 func load(getenv func(string) string, includesBroker bool) (Config, error) {
 	get := func(key, def string) string {
@@ -123,9 +130,10 @@ func load(getenv func(string) string, includesBroker bool) (Config, error) {
 	c.AutoConsentClients = list(get("AUTO_CONSENT_CLIENTS", "web"))
 	c.InternalAPIClients = list(get("INTERNAL_API_CLIENTS", "schedule"))
 	c.InternalAPIOnboardingClients = list(get("INTERNAL_API_ONBOARDING_CLIENTS", "schedule-ops"))
+	c.LoginCookieKeys = list(get("LOGIN_COOKIE_KEYS", ""))
 	required := []string{"DB_USER", "DB_PASSWORD", "DB_NAME"}
 	if includesBroker {
-		required = append(required, "HYDRA_ADMIN_URL", "HYDRA_ISSUER", "UPSTREAM_IDPS_FILE", "UPSTREAM_IDP_CLIENT_SECRETS_FILE", "PUBLIC_URL", "TOKEN_HOOK_KEY")
+		required = append(required, "HYDRA_ADMIN_URL", "HYDRA_ISSUER", "UPSTREAM_IDPS_FILE", "UPSTREAM_IDP_CLIENT_SECRETS_FILE", "PUBLIC_URL", "TOKEN_HOOK_KEY", "LOGIN_COOKIE_KEYS")
 	}
 	var missingNames []string
 	for _, key := range required {
@@ -153,6 +161,14 @@ func load(getenv func(string) string, includesBroker bool) (Config, error) {
 		// 値はシークレットなので、エラーの文に入れない
 		if len(c.TokenHookKey) < minTokenHookKeyLen {
 			return Config{}, fmt.Errorf("TOKEN_HOOK_KEY は %d バイト以上にする", minTokenHookKeyLen)
+		}
+		if len(c.LoginCookieKeys) == 0 {
+			return Config{}, errors.New("環境変数 LOGIN_COOKIE_KEYS が必要である")
+		}
+		for i, key := range c.LoginCookieKeys {
+			if len(key) < minLoginCookieKeyLen {
+				return Config{}, fmt.Errorf("LOGIN_COOKIE_KEYS の %d 番目の鍵は %d バイト以上にする", i+1, minLoginCookieKeyLen)
+			}
 		}
 		for _, v := range []struct{ key, value string }{
 			{"HYDRA_ADMIN_URL", c.HydraAdminURL},

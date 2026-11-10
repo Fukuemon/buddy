@@ -102,6 +102,7 @@ func run(getenv func(string) string) error {
 		PublicURL:          cfg.PublicURL,
 		AutoConsentClients: cfg.AutoConsentClients,
 		UsesSecureCookie:   strings.HasPrefix(cfg.PublicURL, "https:"),
+		CookieKeys:         cookieKeys(cfg.LoginCookieKeys),
 	})
 	if err != nil {
 		return err
@@ -163,4 +164,13 @@ func run(getenv func(string) string) error {
 		}
 	}
 	return errors.Join(errs...)
+}
+
+// cookieKeys は、設定の鍵の文字列を、ログインの画面が署名に使うバイト列にする。
+func cookieKeys(keys []string) [][]byte {
+	out := make([][]byte, len(keys))
+	for i, k := range keys {
+		out[i] = []byte(k)
+	}
+	return out
 }
