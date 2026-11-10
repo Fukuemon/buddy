@@ -84,7 +84,7 @@ test.describe('利用者の詳細', () => {
         },
       )
 
-      await step(page, '(撮影のため、利用を終了せずに「キャンセル」で閉じる)', async () => {
+      await step(page, '（撮影のため、利用を終了せずに「キャンセル」で閉じる）', async () => {
         await dialog.getByTestId('patient-end-cancel').click()
         await expect(dialog).toHaveCount(0)
       })

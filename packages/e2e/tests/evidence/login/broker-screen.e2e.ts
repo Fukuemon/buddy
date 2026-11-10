@@ -55,16 +55,8 @@ test.describe('ログイン', () => {
       await check(page, 'ブローカーのメールアドレスの入力の画面が出る', () =>
         expect(broker.email).toBeVisible(),
       )
-      let button = 0
-      let label = 0
-      await step(
-        page,
-        '(撮影のため、文字と背景のコントラスト比を、画面の色から計算する)',
-        async () => {
-          button = contrastRatio(await colorsOf(broker.next))
-          label = contrastRatio(await colorsOf(brokerPage(page).emailLabel))
-        },
-      )
+      const button = contrastRatio(await colorsOf(broker.next))
+      const label = contrastRatio(await colorsOf(brokerPage(page).emailLabel))
       await check(
         page,
         `「次へ」の文字とボタンは ${button}:1、ラベルとカードは ${label}:1 で、どちらも 4.5:1 以上`,

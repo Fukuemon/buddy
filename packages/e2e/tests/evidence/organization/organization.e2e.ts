@@ -4,7 +4,7 @@ import { check, intro, step } from '../../fixtures/caption'
 import { LEADER, LEADER_STATE, LOGIN_STAFF, LOGIN_STATE } from '../../fixtures/env'
 import { createTeam, moveStaffToTeam, newUnitName } from '../../fixtures/organization'
 import { prepareOutsideRecording } from '../../fixtures/recording'
-import { issueManagerToken, newStaff, registerStaff } from '../../fixtures/staff'
+import { issueManagerToken, newStaff, registerStaffId } from '../../fixtures/staff'
 
 /** 録画の外で、マネージャーのトークンで青のチームと、そのチームの職員を 1 人作る。 */
 const prepareBlueTeamWithStaff = (browser: Browser) =>
@@ -13,8 +13,7 @@ const prepareBlueTeamWithStaff = (browser: Browser) =>
     const teamName = newUnitName('色')
     const teamId = await createTeam(page.request, token, { name: teamName, color: 'blue' })
     const staff = newStaff('team-color')
-    const registered = await registerStaff(page.request, token, staff)
-    const { id } = (await registered.json()) as { id: string }
+    const id = await registerStaffId(page.request, token, staff)
     await moveStaffToTeam(page.request, token, { id, name: staff.name }, teamId)
     return { teamId, teamName, staffId: id, staffName: staff.name }
   })

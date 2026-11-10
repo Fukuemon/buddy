@@ -144,13 +144,11 @@ test.describe('予定のカレンダー', () => {
       await expect(brokerLogin(page).email).toBeVisible()
       await intro(
         page,
-        '同じメールで試行の回数の上限を超えてログインを試すと、ログインの失敗の画面に待つ長さを伝える文が出る',
+        `同じメールで試行の回数の上限を超えてログインを試すと、ログインの失敗の画面に待つ長さを伝える文が出る\n前提 録画の前に、登録していないメール ${LIMITED_EMAIL} で 10 回続けて試した`,
       )
 
-      await step(
-        page,
-        `録画の前に、登録していないメール ${LIMITED_EMAIL} で 10 回続けて試した。11 回目を入れて「次へ」を押す`,
-        () => enterEmailAtBroker(page, LIMITED_EMAIL),
+      await step(page, `${LIMITED_EMAIL} で 11 回目を入れて「次へ」を押す`, () =>
+        enterEmailAtBroker(page, LIMITED_EMAIL),
       )
       await check(
         page,
