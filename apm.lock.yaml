@@ -643,9 +643,9 @@ dependencies:
   materialization_repo_url: Fukuemon/agent-harness
   name: screens
   host: github.com
-  resolved_commit: 3eb26d7f7792b15de0880093832823d86bcddc1c
-  resolved_ref: screens-v0.1.2
-  version: 0.1.2
+  resolved_commit: e801b613afa4bfcaed68104e25ae551d6b14d1b9
+  resolved_ref: screens-v0.1.3
+  version: 0.1.3
   virtual_path: packages/screens
   is_virtual: true
   package_type: marketplace_plugin
@@ -700,15 +700,15 @@ dependencies:
     .agents/skills/write-screen-spec/references/screens/_common/mock.js: sha256:1b1021b1553b0903373f4e52aab678f07f7bca23764b11c91b676dd7d2eb0180
     .agents/skills/write-screen-spec/references/screens/_common/wireframe.css: sha256:eee858291f16ef69fd0fd9acf68d3e88545ac4610a77af283f46a401e5bc12f6
     .agents/skills/write-screen-spec/references/screens/_template/api.md: sha256:fed999b1f8507cdb8e6e62b3cbcae0b45e053c39cb50c548337932e73edfbcfd
-    .agents/skills/write-screen-spec/references/screens/_template/index.md: sha256:fd23587a388ae8fc61a3b566ddc945e87640b45c505698e002c7bd60d2e1b532
+    .agents/skills/write-screen-spec/references/screens/_template/index.md: sha256:e2b98d8e34b90ec33bb1a242c4ad2e5f84f90795fddafe1f44e0a4f54f959088
     .agents/skills/write-screen-spec/references/screens/_template/mocks/01-initial.html: sha256:ca95bb4070c14260886d3224dffb32ee8e3c7a21c0e8f5b31427699d4719bc12
     .agents/skills/write-screen-spec/references/screens/_template/mocks/02-form.html: sha256:fd6d381bc220547ac24243a88e659afc7599119e00aa8dc9408347efa5cd8193
     .agents/skills/write-screen-spec/references/screens/_template/mocks/03-confirm.html: sha256:9c8b5184045fd27fe0771f9867ec85e7c60aee1569ad8ba43f5b52bc41652721
     .agents/skills/write-screen-spec/references/screens/_template/mocks/screen-id.css: sha256:0827bd7961e358a41363905a697ab10766b8331e170936c9fc93ccceaad49890
     .agents/skills/write-screen-spec/references/screens/index.md: sha256:39114d03d7cd1177dd4cde856efe8655d3f46f62780d1383cdad68c166913fa6
-    .agents/skills/write-screen-spec/references/screens/rules.md: sha256:02ed2cf7575490c5b98efdf5a7f7b8e7008b4e848a842a76854b553566cbf3ac
-    .agents/skills/write-screen-spec/scripts/check-screens.mjs: sha256:3f755286510ac1168a3e73c41a0ac086a644ab261d51f62d2f88de437fbaaa1c
-    .agents/skills/write-screen-spec/scripts/check-screens.test.mjs: sha256:166bbe00c6cee67d9c0bf6d39eb38c1fc913f9b404e327bdb07de9bd2bf7effa
+    .agents/skills/write-screen-spec/references/screens/rules.md: sha256:7c79e6023a3ce19a313daae6daf82124b304a2b838870302e8cf4ebaed2977d4
+    .agents/skills/write-screen-spec/scripts/check-screens.mjs: sha256:df3bd03e7374fdbf9dfacb032254118c61ee2779117c5a88c298497ceced6e14
+    .agents/skills/write-screen-spec/scripts/check-screens.test.mjs: sha256:0406829043c5377efdd93bc886955af1c53cb301be5544b9cad87c47a44a172d
     .agents/skills/write-screen-spec/scripts/copy-screen-templates.mjs: sha256:952eb052b525aded66ab92c31c3bab3bb7ad3b1c35f732118a6e25991b92e3f3
     .agents/skills/write-screen-spec/scripts/copy-screen-templates.test.mjs: sha256:5a3fb2f64db534d7dea459805ced13d72e031b7c05002247b616f948aa31b2b9
     .agents/skills/write-screen-spec/scripts/read-screens-config.mjs: sha256:bb764150681f9e0e2ccec32e6357dbb96a4aa219f1b25bfc4a068352167c0e68
@@ -720,20 +720,20 @@ dependencies:
     .claude/skills/write-screen-spec/references/screens/_common/mock.js: sha256:1b1021b1553b0903373f4e52aab678f07f7bca23764b11c91b676dd7d2eb0180
     .claude/skills/write-screen-spec/references/screens/_common/wireframe.css: sha256:eee858291f16ef69fd0fd9acf68d3e88545ac4610a77af283f46a401e5bc12f6
     .claude/skills/write-screen-spec/references/screens/_template/api.md: sha256:fed999b1f8507cdb8e6e62b3cbcae0b45e053c39cb50c548337932e73edfbcfd
-    .claude/skills/write-screen-spec/references/screens/_template/index.md: sha256:fd23587a388ae8fc61a3b566ddc945e87640b45c505698e002c7bd60d2e1b532
+    .claude/skills/write-screen-spec/references/screens/_template/index.md: sha256:e2b98d8e34b90ec33bb1a242c4ad2e5f84f90795fddafe1f44e0a4f54f959088
     .claude/skills/write-screen-spec/references/screens/_template/mocks/01-initial.html: sha256:ca95bb4070c14260886d3224dffb32ee8e3c7a21c0e8f5b31427699d4719bc12
     .claude/skills/write-screen-spec/references/screens/_template/mocks/02-form.html: sha256:fd6d381bc220547ac24243a88e659afc7599119e00aa8dc9408347efa5cd8193
     .claude/skills/write-screen-spec/references/screens/_template/mocks/03-confirm.html: sha256:9c8b5184045fd27fe0771f9867ec85e7c60aee1569ad8ba43f5b52bc41652721
     .claude/skills/write-screen-spec/references/screens/_template/mocks/screen-id.css: sha256:0827bd7961e358a41363905a697ab10766b8331e170936c9fc93ccceaad49890
     .claude/skills/write-screen-spec/references/screens/index.md: sha256:39114d03d7cd1177dd4cde856efe8655d3f46f62780d1383cdad68c166913fa6
-    .claude/skills/write-screen-spec/references/screens/rules.md: sha256:02ed2cf7575490c5b98efdf5a7f7b8e7008b4e848a842a76854b553566cbf3ac
-    .claude/skills/write-screen-spec/scripts/check-screens.mjs: sha256:3f755286510ac1168a3e73c41a0ac086a644ab261d51f62d2f88de437fbaaa1c
-    .claude/skills/write-screen-spec/scripts/check-screens.test.mjs: sha256:166bbe00c6cee67d9c0bf6d39eb38c1fc913f9b404e327bdb07de9bd2bf7effa
+    .claude/skills/write-screen-spec/references/screens/rules.md: sha256:7c79e6023a3ce19a313daae6daf82124b304a2b838870302e8cf4ebaed2977d4
+    .claude/skills/write-screen-spec/scripts/check-screens.mjs: sha256:df3bd03e7374fdbf9dfacb032254118c61ee2779117c5a88c298497ceced6e14
+    .claude/skills/write-screen-spec/scripts/check-screens.test.mjs: sha256:0406829043c5377efdd93bc886955af1c53cb301be5544b9cad87c47a44a172d
     .claude/skills/write-screen-spec/scripts/copy-screen-templates.mjs: sha256:952eb052b525aded66ab92c31c3bab3bb7ad3b1c35f732118a6e25991b92e3f3
     .claude/skills/write-screen-spec/scripts/copy-screen-templates.test.mjs: sha256:5a3fb2f64db534d7dea459805ced13d72e031b7c05002247b616f948aa31b2b9
     .claude/skills/write-screen-spec/scripts/read-screens-config.mjs: sha256:bb764150681f9e0e2ccec32e6357dbb96a4aa219f1b25bfc4a068352167c0e68
     .claude/skills/write-screen-spec/scripts/read-screens-config.test.mjs: sha256:1902e8cc538431d6d7a84850effc40096b39ef1e164d3e998b150d696719eeb7
-  content_hash: sha256:c0f75427bd627ecffe9e4f2c4f133fa13f62313d26e2fcbff95f99f54fc6aeb3
+  content_hash: sha256:9e4b97d139d0646c1621baecd70a5483ef14bc04c165a7088a882a34ee39d824
   declared_license: MIT
 - repo_url: fukuemon/agent-harness
   materialization_repo_url: Fukuemon/agent-harness
@@ -2773,7 +2773,7 @@ deployments:
   owners:
   - fukuemon/agent-harness/packages/screens
   active_owner: fukuemon/agent-harness/packages/screens
-  content_hash: sha256:fd23587a388ae8fc61a3b566ddc945e87640b45c505698e002c7bd60d2e1b532
+  content_hash: sha256:e2b98d8e34b90ec33bb1a242c4ad2e5f84f90795fddafe1f44e0a4f54f959088
 - kind: project-relative
   target: claude
   value: .claude/skills/write-screen-spec/references/screens/_template/mocks/01-initial.html
@@ -2827,7 +2827,7 @@ deployments:
   owners:
   - fukuemon/agent-harness/packages/screens
   active_owner: fukuemon/agent-harness/packages/screens
-  content_hash: sha256:02ed2cf7575490c5b98efdf5a7f7b8e7008b4e848a842a76854b553566cbf3ac
+  content_hash: sha256:7c79e6023a3ce19a313daae6daf82124b304a2b838870302e8cf4ebaed2977d4
 - kind: project-relative
   target: claude
   value: .claude/skills/write-screen-spec/scripts/check-screens.mjs
@@ -2836,7 +2836,7 @@ deployments:
   owners:
   - fukuemon/agent-harness/packages/screens
   active_owner: fukuemon/agent-harness/packages/screens
-  content_hash: sha256:3f755286510ac1168a3e73c41a0ac086a644ab261d51f62d2f88de437fbaaa1c
+  content_hash: sha256:df3bd03e7374fdbf9dfacb032254118c61ee2779117c5a88c298497ceced6e14
 - kind: project-relative
   target: claude
   value: .claude/skills/write-screen-spec/scripts/check-screens.test.mjs
@@ -2845,7 +2845,7 @@ deployments:
   owners:
   - fukuemon/agent-harness/packages/screens
   active_owner: fukuemon/agent-harness/packages/screens
-  content_hash: sha256:166bbe00c6cee67d9c0bf6d39eb38c1fc913f9b404e327bdb07de9bd2bf7effa
+  content_hash: sha256:0406829043c5377efdd93bc886955af1c53cb301be5544b9cad87c47a44a172d
 - kind: project-relative
   target: claude
   value: .claude/skills/write-screen-spec/scripts/copy-screen-templates.mjs
@@ -4573,7 +4573,7 @@ deployments:
   owners:
   - fukuemon/agent-harness/packages/screens
   active_owner: fukuemon/agent-harness/packages/screens
-  content_hash: sha256:fd23587a388ae8fc61a3b566ddc945e87640b45c505698e002c7bd60d2e1b532
+  content_hash: sha256:e2b98d8e34b90ec33bb1a242c4ad2e5f84f90795fddafe1f44e0a4f54f959088
 - kind: project-relative
   target: codex
   value: .agents/skills/write-screen-spec/references/screens/_template/mocks/01-initial.html
@@ -4627,7 +4627,7 @@ deployments:
   owners:
   - fukuemon/agent-harness/packages/screens
   active_owner: fukuemon/agent-harness/packages/screens
-  content_hash: sha256:02ed2cf7575490c5b98efdf5a7f7b8e7008b4e848a842a76854b553566cbf3ac
+  content_hash: sha256:7c79e6023a3ce19a313daae6daf82124b304a2b838870302e8cf4ebaed2977d4
 - kind: project-relative
   target: codex
   value: .agents/skills/write-screen-spec/scripts/check-screens.mjs
@@ -4636,7 +4636,7 @@ deployments:
   owners:
   - fukuemon/agent-harness/packages/screens
   active_owner: fukuemon/agent-harness/packages/screens
-  content_hash: sha256:3f755286510ac1168a3e73c41a0ac086a644ab261d51f62d2f88de437fbaaa1c
+  content_hash: sha256:df3bd03e7374fdbf9dfacb032254118c61ee2779117c5a88c298497ceced6e14
 - kind: project-relative
   target: codex
   value: .agents/skills/write-screen-spec/scripts/check-screens.test.mjs
@@ -4645,7 +4645,7 @@ deployments:
   owners:
   - fukuemon/agent-harness/packages/screens
   active_owner: fukuemon/agent-harness/packages/screens
-  content_hash: sha256:166bbe00c6cee67d9c0bf6d39eb38c1fc913f9b404e327bdb07de9bd2bf7effa
+  content_hash: sha256:0406829043c5377efdd93bc886955af1c53cb301be5544b9cad87c47a44a172d
 - kind: project-relative
   target: codex
   value: .agents/skills/write-screen-spec/scripts/copy-screen-templates.mjs
