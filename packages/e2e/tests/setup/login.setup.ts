@@ -1,8 +1,8 @@
-import { type Page, test as setup } from '@playwright/test'
+import { expect, test as setup } from '@playwright/test'
 
-import { ensureSavedLogin } from '@fukuemon/e2e-kit/auth'
 import {
-  BASE_URL,
+  HAYASHI,
+  HAYASHI_STATE,
   ISHIDA,
   ISHIDA_STATE,
   LEADER,
@@ -13,20 +13,7 @@ import {
   OKADA,
   OKADA_STATE,
 } from '../fixtures/env'
-import { TIMEOUT_MS } from '../fixtures/timeouts'
 import { signInAtBroker } from '../screens/login'
-
-/** /schedule を開き、ヘッダーに staffName が出れば、その職員でログインしているとみなす。 */
-const isLoggedInAs = (staffName: string) => async (page: Page) => {
-  await page.goto('/schedule')
-  if (new URL(page.url()).pathname !== '/schedule') return false
-  return page
-    .getByTestId('viewer-menu')
-    .filter({ hasText: staffName })
-    .waitFor({ timeout: TIMEOUT_MS.expect })
-    .then(() => true)
-    .catch(() => false)
-}
 
 const ACCOUNTS = [
   {
@@ -55,18 +42,20 @@ const ACCOUNTS = [
     email: ISHIDA.email,
     staffName: ISHIDA.staff.name,
   },
+  {
+    title: 'compose のブローカーにメンバーでログインした状態を保存する',
+    path: HAYASHI_STATE,
+    email: HAYASHI.email,
+    staffName: HAYASHI.name,
+  },
 ]
 
+// 流すたびにログインし直して保存する。保存した状態を使い回すかの判定を持たない
 for (const { title, path, email, staffName } of ACCOUNTS) {
-  setup(title, async ({ browser }) => {
-    await ensureSavedLogin(browser, {
-      path,
-      baseUrl: BASE_URL,
-      isLoggedIn: isLoggedInAs(staffName),
-      login: async (page) => {
-        await page.goto('/schedule')
-        await signInAtBroker(page, email)
-      },
-    })
+  setup(title, async ({ page }) => {
+    await page.goto('/schedule')
+    await signInAtBroker(page, email)
+    await expect(page.getByTestId('viewer-menu')).toContainText(staffName)
+    await page.context().storageState({ path })
   })
 }

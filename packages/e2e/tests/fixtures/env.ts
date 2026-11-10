@@ -2,8 +2,6 @@ import { existsSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-import { savedLoginPath } from '@fukuemon/e2e-kit/auth'
-
 const root = fileURLToPath(new URL('../../../..', import.meta.url))
 
 // worktrunk で作った worktree では、.config/wt.toml がリポジトリのルートの .env に E2E の URL を書く（ADR-0036）。
@@ -157,14 +155,24 @@ export const RECEIPT_TESTDATA = {
 /** ブラウザの時間帯。画面は日時をデバイスの時間帯で出すので、spec と録画をこの時間帯で動かす。 */
 export const TIMEZONE_ID = 'Asia/Tokyo'
 
+/**
+ * ログインした状態を保存するファイルのパス。`.auth/<ホスト>/<key>.json` を返す。
+ * 改修前と改修後の環境で同じ職員の状態が混ざらないよう、BASE_URL のホストごとに分ける。
+ */
+const loginStatePath = (key: string): string =>
+  path.join(AUTH_DIR, new URL(BASE_URL).host.replaceAll(':', '_'), `${key}.json`)
+
 /** ログインした状態のファイル。setup が書き、spec の project の storageState に渡す。 */
-export const LOGIN_STATE = savedLoginPath(AUTH_DIR, BASE_URL, 'aoki')
+export const LOGIN_STATE = loginStatePath('aoki')
 
 /** Google カレンダーを正本にする事業所の岡田でログインした状態のファイル。setup が書き、その事業所の spec が storageState に渡す。 */
-export const OKADA_STATE = savedLoginPath(AUTH_DIR, BASE_URL, 'okada')
+export const OKADA_STATE = loginStatePath('okada')
 
 /** 予定の正本の切り替えを確認する事業所の石田でログインした状態のファイル。setup が書き、切り替えの spec が storageState に渡す。 */
-export const ISHIDA_STATE = savedLoginPath(AUTH_DIR, BASE_URL, 'ishida')
+export const ISHIDA_STATE = loginStatePath('ishida')
 
 /** リーダーでログインした状態のファイル。setup が書き、リーダーの spec が storageState に渡す。 */
-export const LEADER_STATE = savedLoginPath(AUTH_DIR, BASE_URL, 'mori')
+export const LEADER_STATE = loginStatePath('mori')
+
+/** メンバーの林でログインした状態のファイル。setup が書き、林で撮るエビデンスの spec が storageState に渡す。 */
+export const HAYASHI_STATE = loginStatePath('hayashi')

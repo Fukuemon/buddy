@@ -17,21 +17,21 @@ verified_commit: unverified
 
 E2E を足すたびに書き方が人によって変わると、失敗したときにどこを読めばよいかが分からなくなる。  
 待ちの書き忘れは spec ごとに同じ形で起き、要素の指し方は画面の作りを変えるたびに使えなくなる。  
-そこで、処理を置く層と待ち方を決め、機械で判定できるものは ESLint の規則（kit の `@fukuemon/e2e-kit/eslint`）で止める。
+そこで、処理を置く層と待ち方を決め、機械で判定できるものは ESLint の規則（スキル setup-e2e-lint から写した `eslint/e2e-authoring-rule.mjs`）で止める。
 
 層、配置先、名前、待ち方、確認の方法の規則は、agent-harness のパッケージ e2e のスキル `write-e2e-test` が持つ。  
 この文書は、buddy での構成と、規則の理由を示す。
 
 - 出典: [スキル write-e2e-test](https://github.com/Fukuemon/agent-harness/blob/5560ae1e031686f5821ecac0d7c12d8fb6ea3499/packages/e2e/skills/write-e2e-test/SKILL.md)
 
-エビデンスの録画の流れは [agent-harness の e2e の Design Doc](https://github.com/Fukuemon/agent-harness/blob/5560ae1e031686f5821ecac0d7c12d8fb6ea3499/packages/e2e/DesignDoc.md) にある。
+エビデンスの撮影の仕組みは [agent-harness の capture の Design Doc](https://github.com/Fukuemon/agent-harness/blob/88837579581c259011789bdf423483bccefe919f/packages/capture/DesignDoc.md) にある。
 
 ## Scope
 
 持つもの。
 
 - 層の依存の向きと、処理をどの層に置くかの判断の流れ
-- エビデンスの spec が層と kit を呼ぶ順
+- エビデンスの spec が、録画の外の前準備、層、字幕の関数を呼ぶ順
 - 禁止する書き方と、ESLint の規則が止める範囲
 - タイムアウトで落ちたときの読み方
 
@@ -58,8 +58,8 @@ flowchart TB
     screens["screens/<br/>画面を開く、モードを変える"]
     widgets["widgets/<br/>完了が DOM に出ない UI"]
     selectors["selectors/<br/>testid の無い要素の指し方"]
+    capture["fixtures/caption.ts と recording.ts<br/>字幕、録画の外の前準備"]
   end
-  kit["@fukuemon/e2e-kit<br/>録画、ログイン、エビデンスの配置先"]
 
   specs --> screens
   setup --> screens
@@ -68,7 +68,7 @@ flowchart TB
   specs -->|"押す要素"| selectors
   screens --> selectors
   widgets --> selectors
-  product -->|"どの層からも呼ぶ"| kit
+  specs -->|"エビデンスの spec だけが呼ぶ"| capture
 ```
 
 - `specs/<dir>/` に置く spec 以外のファイルは、値だけを持つ。要求ごとの値をどの要求にも使う `fixtures/` に置くと、要求に関わるものが複数の配置先に分かれるためである。
@@ -90,11 +90,8 @@ flowchart TB
   testid --> done{"操作の完了は<br/>要素か文字に出るか"}
   toSelectors --> done
   done -->|はい| expectWait["待ちを書かず、<br/>expect の自動の待ちに任せる"]
-  done -->|いいえ| kitHas{"kit にあるか"}
-  kitHas -->|はい| useKit["kit を呼ぶ"]
-  kitHas -->|いいえ| toWidgets["widgets/ に操作と待ちを足す"]
+  done -->|いいえ| toWidgets["widgets/ に操作と待ちを足す"]
   expectWait --> open{"同じ「開く、モードを変える」を<br/>3 本目の spec が要るか"}
-  useKit --> open
   toWidgets --> open
   open -->|はい| toScreens["screens/ に移し、3 本から呼ぶ"]
   open -->|いいえ| toSpec["spec に書く"]
@@ -110,42 +107,43 @@ flowchart TB
 
 ### エビデンスの spec の流れ
 
-次の図は、エビデンスの spec が、層と kit をどの順で呼ぶかを示す。  
+次の図は、エビデンスの spec が、録画の外の前準備、層、字幕の関数をどの順で呼ぶかを示す。  
 spec が持つのは、操作の順、押す要素、字幕の文だけである。  
-配置先とアプリの値(`recordEvidence` に渡す `RecordingTarget`)は、kit を呼ぶ薄い層(`tests/fixtures/evidence.ts`)が持つ。  
-録画は、ログインを録画の外で済ませてから始まる。  
+録画は、撮影の config（`playwright.capture.config.ts`）で流したときだけ、Playwright が fixture の `context` の page を録画する。  
+ログインは `setup` の project が保存した状態を `storageState` で読むので、録画にログインの場面は映らない。  
 灰色の帯は録画に映らず、黄色の帯が録画に映る。  
-`prepare` に渡るページは、`recordEvidence` が新しく作るコンテキストのページで、`setup` が保存したログインの状態を持たない。  
-そのため、`prepare` の中でログインする。
+前準備は、`fixtures/recording.ts` の `prepareOutsideRecording` が作る別のコンテキストで行う。別のコンテキストは録画されない。  
+録画する page は、前準備の後に開く。先に開くと、前準備の間が録画に空白の画面として残る。
 
 ```mermaid
 sequenceDiagram
   participant spec as specs/
-  participant rec as kit の recording
+  participant prep as fixtures/recording.ts
+  participant cap as fixtures/caption.ts
   participant scr as screens/
   participant sel as selectors/
 
-  spec->>rec: recordEvidence(配置先とアプリの値、シナリオ、prepare、本体)
   rect rgb(240, 240, 240)
     Note over spec,sel: 録画の外
-    rec->>spec: prepare を呼び返す
-    spec->>scr: ログインの画面を操作して入る
-    spec->>scr: 前提のデータを確認する
+    spec->>prep: prepareOutsideRecording(ログインの状態、前準備)
+    prep->>spec: 別のコンテキストの page で前準備を呼び返す
+    spec->>scr: 前提のデータを作り、確認する
   end
   rect rgb(255, 245, 225)
     Note over spec,sel: 録画中
-    rec->>spec: 本体を呼び返す(page、step、check)
-    spec->>rec: step「前提 …」(字幕を出す)
+    spec->>spec: context.newPage() で録画する page を開く
     spec->>scr: 画面を開く(中で画面の到達とデータの到着を待つ)
-    spec->>rec: step「もし …」
+    spec->>cap: intro(何を確認する録画か)
+    spec->>cap: step「もし …」(字幕を出して操作する)
     spec->>sel: testid の無い要素を指す
     spec->>spec: testid で押す、入力する
-    spec->>rec: check「ならば …」(字幕を出し、スクリーンショットを撮る)
+    spec->>cap: check「ならば …」(字幕を出し、確認して、スクリーンショットを添付する)
   end
-  rec->>rec: mp4、スクリーンショット、README を書き出す
 ```
 
-エビデンスを撮らない E2E では、`recordEvidence` を通さず、spec が直接 `screens/` と kit を呼び、`expect` で確認する。
+撮った後に、playwright-capture の `scripts/collect.mjs` が、録画と判定のスクリーンショットをテストの名前のフォルダにまとめる。  
+字幕の関数は、撮影の config を付けずに流すと字幕を出さず、`test.step` として動く。  
+エビデンスを撮らない E2E では、字幕の関数を呼ばず、spec が直接 `screens/` を呼び、`expect` で確認する。
 
 ### 新しいタブをまたぐテスト
 
@@ -168,7 +166,7 @@ flowchart LR
 ### 禁止する書き方
 
 失敗の原因になりやすい書き方を禁じる。  
-機械で判定できるものは、ESLint の規則(kit の `@fukuemon/e2e-kit/eslint`)が止める。  
+機械で判定できるものは、ESLint の規則(`eslint/e2e-authoring-rule.mjs`)が止める。  
 「レビュー」のものは、書かれていないことや順番の判定で、コードの形からは決められない。
 
 | 禁じること | 代わりに | なぜ | 止め方 |

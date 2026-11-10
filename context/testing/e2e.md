@@ -13,8 +13,9 @@ E2E のテストのディレクトリは、`context/project.yml` の `e2e.dir`�
 ## Test Tool
 
 - テストのツールは Playwright（`@playwright/test`）である。
-- kit は、npm の `@fukuemon/e2e-kit` を `packages/e2e` の開発の依存に固定のバージョンで入れ、サブパスの `recording`、`evidence`、`auth`、`eslint` から読む。
-  - バージョンは、agent-harness のパッケージ e2e のスキル setup-e2e の `kit-version.json` とそろえる。`apm.yml` の e2e を上げたら、kit も同じバージョンに上げる。
+- エビデンスの録画と字幕は、Playwright の録画と、スキル playwright-capture から写した撮影の config と `caption.ts` で撮る（[エビデンス](evidence.md)）。
+- npm の `@fukuemon/e2e-kit` 0.2.1 は、移す前のエビデンスの spec と薄い層 `tests/fixtures/evidence.ts` のためだけに、`packages/e2e` の開発の依存に残してある。
+  - 新しいコードから kit を import しない。エビデンスの spec を移し終えたら、kit を消す（#1008）。
 - スキル write-e2e-test の一般の語は、Playwright の次の API に当たる。
 
 | スキルの語 | Playwright の API |
@@ -49,11 +50,13 @@ E2E のテストのディレクトリは、`context/project.yml` の `e2e.dir`�
 
 ## Lint Rule Options
 
-- テストの書き方の規則は、kit の `@fukuemon/e2e-kit/eslint` の `plugin` にある。
+- テストの書き方の規則は、スキル setup-e2e-lint から `packages/e2e/eslint/e2e-authoring-rule.mjs` に写したものである。
+  - 写したまま手を入れない。新しいバージョンと差分を比べるため、整形の対象からも外してある（ルートの `vite.config.ts` の `fmt.ignorePatterns`）。
+  - `apm.yml` の e2e を上げたら、setup-e2e-lint の「新しいバージョンの規則を取り込む」の手順で差分を見て置き換える。
 - options は `packages/e2e/eslint.config.mjs` で渡す。
   - テストのディレクトリは、デフォルトの `tests/` のままにする。
     - 規則は ESLint の cwd から見た `tests/` だけを対象にする。ルートやエディタから流すと、違反があってもエラーを出さずに通るので、`packages/e2e` で流す。
-  - 固定の待ちを許すファイルは無い。
+  - 固定の待ちを許すファイルは、字幕の関数の `tests/fixtures/caption.ts` だけである。撮るときだけ、字幕を読ませるために止まる。
   - 待つ時間の名前を定めるファイルは、`tests/fixtures/timeouts.ts` である。
   - `screenIdPattern` は、`docs/screens/index.md` の画面の ID の規則のドメインと種類の組を止める。ドメインか種類を足したら、`screenIdPattern` にも足す。
     - `schedule-calendar` や `receipt-result-table` のように、画面 ID で始まる testid は `widgets/` に直に書けない。`widgets/` を作るときは、testid の接頭辞を引数で受ける。
@@ -66,9 +69,9 @@ E2E のテストのディレクトリは、`context/project.yml` の `e2e.dir`�
   - API、Hydra、ブローカーは置き換えず、compose の本物を使う。事業所の上流の IdP は、compose のフェイクを使う。
 - 整形、lint、E2E の書き方の規則、型のチェックは、`pnpm --filter @buddy/e2e check` で流す。
 - project は 3 つある。
-  - `setup` は、compose のブローカーにログインした状態を `packages/e2e/.auth/` に保存する。
+  - `setup` は、流すたびに compose のブローカーにログインし、ログインした状態を `packages/e2e/.auth/<ホスト>/` に保存する。録画しない。
   - `e2e` は、その状態で `tests/specs/` の spec を流す。`pnpm e2e` と CI は、`--project=e2e` でこの project だけを流す。
-  - `evidence` は、`tests/evidence/` のエビデンスの spec を流す。`pnpm --filter @buddy/e2e evidence` で流す（[エビデンス](evidence.md)）。
+  - `evidence` は、`tests/evidence/` のエビデンスの spec を流す。ログインの状態は、spec が describe ごとに選ぶ。`pnpm --filter @buddy/e2e evidence` で、撮影の config を付けて流す（[エビデンス](evidence.md)）。
 - worker は 1 つにする（`packages/e2e/playwright.config.ts`）。
   - spec は職員ごとのログインの状態のファイルを共有するためである。
   - ローカルの dev サーバに向けて流すときも、`--workers` で増やさない。
@@ -83,7 +86,10 @@ E2E のテストのディレクトリは、`context/project.yml` の `e2e.dir`�
 
 - テストのデータは予定の API に作り、消さない。
   - spec は、タイトルに時刻を入れて自分の作ったデータを見分ける。
-- `setup` は、青木 陽菜（マネージャー）、森 健太（チームリーダー）、岡田 葵（Google カレンダーを正本にする 3 つ目の事業所のマネージャー）の 3 人のログインの状態を保存する。
+- `setup` は、次の 5 人のログインの状態を保存する（`packages/e2e/tests/setup/login.setup.ts`）。保存した状態を使い回さず、流すたびにログインし直す。
+  - 青木 陽菜（マネージャー）、森 健太（チームリーダー）、林 さくら（メンバー）
+  - 岡田 葵（Google カレンダーを正本にする 3 つ目の事業所のマネージャー）、石田 蓮（予定の正本の切り替えを確認する 4 つ目の事業所の職員）
+  - spec が別の職員で入るときは、`ACCOUNTS` と `env.ts` の状態のファイルに足す。
   - リーダーで確認する spec は、`test.use({ storageState: LEADER_STATE })` で切り替える。
   - Google カレンダーを正本にする事業所で確認する spec は、`test.use({ storageState: OKADA_STATE })` で切り替える。
   - ログインのメールは、`packages/e2e/tests/fixtures/env.ts` の `LOGIN_EMAIL` と `LEADER.email` である。

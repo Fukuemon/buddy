@@ -73,6 +73,8 @@ export default defineConfig({
       'pnpm-lock.yaml',
       'apm.lock.yaml',
       '**/*.md',
+      // agent-harness のスキル setup-e2e-lint から写した規則。新しいバージョンと差分を比べられるよう、写したままにする
+      'packages/e2e/eslint/e2e-authoring-rule.mjs',
     ],
   },
   lint: {

@@ -2,6 +2,7 @@ import { defineConfig, devices } from '@playwright/test'
 
 import { resolveLocalhostToLoopback } from './localhostResolver'
 import { BASE_URL, LOGIN_STATE, TIMEZONE_ID } from './tests/fixtures/env'
+import { DESKTOP_VIEWPORT } from './tests/fixtures/recording'
 import { TIMEOUT_MS } from './tests/fixtures/timeouts'
 
 // 設定は、test の runner と worker のそれぞれで読まれるので、両方のプロセスで差し替わる
@@ -9,8 +10,9 @@ resolveLocalhostToLoopback()
 
 /**
  * ルートの compose で立てた全体に向けて流す。先に `portless compose up -d --build --wait` で起動しておく。
- * spec は職員ごとのログインの状態のファイルを共有するので、worker は 1 つにする（kit の ensureSavedLogin のドキュメントコメント）。
- * evidence の project はエビデンスの動画を撮る spec を流す。`pnpm e2e` と CI は e2e の project だけを流し、evidence は `pnpm --filter @buddy/e2e evidence` で流す。
+ * spec は職員ごとのログインの状態のファイルを共有するので、worker は 1 つにする。
+ * evidence の project はエビデンスの動画を撮る spec を流す。`pnpm e2e` と CI は e2e の project だけを流し、evidence は
+ * `pnpm --filter @buddy/e2e evidence` で、撮影の config（playwright.capture.config.ts）を付けて流す。
  */
 export default defineConfig({
   testDir: 'tests',
@@ -36,14 +38,23 @@ export default defineConfig({
     ignoreHTTPSErrors: BASE_URL.startsWith('https://'),
   },
   projects: [
-    { name: 'setup', testMatch: /setup\/.*\.setup\.ts/ },
+    // 撮影の config で流しても、ログインの場面を録画しない
+    { name: 'setup', testMatch: /setup\/.*\.setup\.ts/, use: { video: 'off' } },
     {
       name: 'e2e',
       testMatch: /tests\/specs\/.*\.e2e\.ts/,
       dependencies: ['setup'],
       use: { storageState: LOGIN_STATE },
     },
-    // 録画は recordEvidence が新しいコンテキストで撮り、prepare の中でログインするので、setup に依らない
-    { name: 'evidence', testMatch: /tests\/evidence\/.*\.e2e\.ts/, timeout: TIMEOUT_MS.evidence },
+    // 画面の大きさは、撮影の config の録画の大きさと同じにする。
+    // storageState は project に置かない。テストの中の browser.newContext() も project の use を継ぐので、
+    // kit の spec の前準備と、別の職員でトークンを取る処理が、ログイン済みの状態で始まってしまう。spec が describe ごとに test.use で選ぶ
+    {
+      name: 'evidence',
+      testMatch: /tests\/evidence\/.*\.e2e\.ts/,
+      timeout: TIMEOUT_MS.evidence,
+      dependencies: ['setup'],
+      use: { viewport: DESKTOP_VIEWPORT },
+    },
   ],
 })
