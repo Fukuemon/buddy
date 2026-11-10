@@ -1,89 +1,58 @@
-// エビデンスを撮る spec のテンプレート。context/testing/evidence.md にある spec の配置先にコピーし、<…> を埋める。
-// シナリオアウトラインでないシナリオは、CASES を消し、body の c を外してシナリオの文と操作を直に書き、recordEvidence に example を渡さない。
-// context に kit を呼ぶ薄い層があれば、TARGET と VARIANTS をその層から import して置き換える。
-import { test, type Page } from '@playwright/test'
-import { recordEvidence, type Recording, type RecordingTarget } from '@fukuemon/e2e-kit/recording'
-import { evidenceDate, evidenceDir, variants, type Scenario } from '@fukuemon/e2e-kit/evidence'
+// 検証のシナリオのエビデンスを撮る spec のテンプレート。context/testing/evidence.md にある spec の配置先にコピーし、<…> を埋める。
+// 元は agent-harness のスキル write-verification-spec の references/spec-template.e2e.ts で、buddy の名前と前準備に合わせた。
+// シナリオアウトラインでないシナリオは、EXAMPLES と for を消し、テストを 1 本にする。
+// <シナリオの識別子>
+import { expect, test } from '@playwright/test'
 
-// <何を撮るか>。判定は、人が動画を見て行う。字幕の文はシナリオの文をコピーする
-const SCENARIO: Scenario = {
-  issue: '<要求の issue 番号>',
-  id: '<@scenario-id>',
-  actor: '<アクター>',
-  // 配置先のフォルダの名前（<issue>/<アクター>/S<n>_<シナリオ名>/）になる。検証シナリオの pull request のエビデンスの名前と同じにする
-  no: 0,
-  title: '<シナリオ名>',
-  // どのスクリーンショットにも映りうる、改修前と違ってよい差。<root>/<issue>/differences.ts から import する。比べないときは消す
-  // differences: [],
-}
+import { check, intro, step } from '../../fixtures/caption'
+import { LOGIN_STATE } from '../../fixtures/env'
+import { prepareOutsideRecording } from '../../fixtures/recording'
 
-// 撮る URL、改修前の URL、撮る版、実施日、環境の名前は、context/testing/evidence.md にある環境変数から読む
-const VARIANTS = variants({
-  baseUrl: process.env['<撮る URL の環境変数>'] ?? '<デフォルトの URL>',
-  beforeBaseUrl: process.env['<改修前の URL の環境変数>'],
-  only: process.env['<撮る版の環境変数>'],
-})
+/** シナリオアウトラインの例の表の行。value は実施の結果を記録する場所の「<列>=<値>」の値を写す */
+const EXAMPLES: { value: string; expected: string }[] = [
+  { value: '<例の値>', expected: '<例の表の、結果の列の文>' },
+]
 
-const TARGET: RecordingTarget = {
-  dir: evidenceDir({
-    root: '<context にある、要求ごとのフォルダを並べる場所>',
-    envName: process.env['<環境の名前の環境変数>'] ?? '<デフォルトの環境の名前>',
-    date: evidenceDate(process.env['<実施日の環境変数>']),
-    scenario: SCENARIO,
-  }),
-  appName: '<README に出すアプリの名前>',
-  envLabel: '<字幕と README に出す環境の呼び名>',
-  // ログインした後の画面から、デプロイされたバージョンを読む。読めなければ空にする
-  readVersion: async (page) => {
-    void page
-    return ''
-  },
-}
+test.describe('<機能>', () => {
+  test.describe('<アクター>', () => {
+    // ログインは setup の project が保存した状態を読む。setup に無い職員は setup の ACCOUNTS に足す
+    test.use({ storageState: LOGIN_STATE })
 
-/** シナリオの例の表の行。value は pull request のチェックの「<列>=<値>」の値をコピーする */
-const CASES: { no: number; value: string; expected: string; act: (page: Page) => Promise<void> }[] =
-  [
-    {
-      no: 1,
-      value: '<例の値>',
-      expected: '<例の表の、結果の列の文>',
-      act: async (page) => {
-        // <例の行の操作>
-        void page
-      },
-    },
-  ]
-
-const body = async ({ page, step, check }: Recording, c: (typeof CASES)[number]): Promise<void> => {
-  // 字幕は開いた画面の sessionStorage に置くので、前提の画面を開いてから最初の字幕を出す
-  // <前提の画面を開く>
-  await step('前提 <前提の文>')
-
-  // 操作の間に見る判定の文は、操作の前に 2 行目以降で出す。字幕は次に変えるまで残る
-  await step(`もし <操作の文>\nならば ${c.expected}`)
-  await c.act(page)
-  // その時点の画面で判定できる文は check で出し、スクリーンショットを撮る
-  await check(`ならば ${c.expected}`)
-
-  // シナリオに無い操作は、前に「(撮影のため、…)」を出してから行う
-}
-
-for (const variant of VARIANTS) {
-  for (const c of CASES) {
-    test(`${variant.label ? `${variant.label}: ` : ''}<アクター>が<画面>で「${c.value}」を行う`, async ({
-      browser,
-    }) => {
-      await recordEvidence(
+    for (const [i, c] of EXAMPLES.entries()) {
+      // テストの名前は「<name> <今のテストの名前>」。name は s<番号>-<話題> の英小文字で、要求ごとの README の表と同じにする
+      // 改修前と比べる要求では、名前の次に { tag: '@compare' } を渡し、改修前のアプリでも撮る
+      test(`s<番号>-<話題> <条件>の場合、<期待>であること ${i + 1}_${c.value}`, async ({
         browser,
-        TARGET,
-        { scenario: SCENARIO, variant, example: { no: c.no, column: '<例の列>', value: c.value } },
-        // 録画の外で、ログインとデータの確認を行う。このページは保存したログインの状態を持たないので、ここでログインする。戻り値は本体に渡る
-        async (page) => {
-          // <ログインし、前提のデータがあるかを確認する>
-          void page
-        },
-        (r) => body(r, c),
-      )
-    })
-  }
-}
+        context,
+      }) => {
+        // 前提のデータは録画の外で作る。録画する page は、前準備の後に開く
+        const prepared = await prepareOutsideRecording(
+          browser,
+          { storageState: LOGIN_STATE },
+          async (page) => {
+            // <前提のデータを作り、要る値を返す>
+            void page
+          },
+        )
+        void prepared
+
+        const page = await context.newPage()
+        // URL は baseURL からの相対パスにする
+        await page.goto('<前提の画面のパス>')
+        await intro(page, '<この録画で確認すること>')
+        // 前提でも、画面の状態を確認して静止画を残すときは check を使う
+        await check(page, '前提 <前提の文>', () =>
+          expect(page.getByTestId('<前提の画面の要素>')).toBeVisible(),
+        )
+        await step(page, 'もし <操作の文>', async () => {
+          // <例の行の操作>
+        })
+        // 判定する要素が上端にあり字幕に隠れるときは、{ position: 'bottom' } を渡す
+        await check(page, `ならば ${c.expected}`, () =>
+          expect(page.getByTestId('<結果の要素>')).toBeVisible(),
+        )
+        // シナリオに無い操作は、「(撮影のため、…)」の step の中で行う
+      })
+    }
+  })
+})
