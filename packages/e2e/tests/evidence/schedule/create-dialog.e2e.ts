@@ -1,13 +1,13 @@
 import { expect, test } from '@playwright/test'
 
 import { check, intro, step } from '../../fixtures/caption'
-import { LOGIN_STAFF } from '../../fixtures/env'
+import { LOGIN_STAFF, LOGIN_STATE } from '../../fixtures/env'
 import { recordBrowserDialogs } from '../../widgets/browserDialog/actions/browserDialog'
 
-// 青木 陽菜（マネージャー）で撮る。ログインの状態は、evidence の project の storageState が setup から読む
-
 test.describe('予定のカレンダー', () => {
-  test.describe('予定の作成', () => {
+  test.describe(`予定の作成（${LOGIN_STAFF.name}、マネージャー）`, () => {
+    test.use({ storageState: LOGIN_STATE })
+
     test('schedule-create-dialog 日の表示で「予定を作成」を押した場合、予定の作成のダイアログが開くこと', async ({
       page,
     }) => {

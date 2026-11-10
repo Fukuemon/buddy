@@ -71,7 +71,7 @@ E2E のテストのディレクトリは、`context/project.yml` の `e2e.dir`�
 - project は 3 つある。
   - `setup` は、流すたびに compose のブローカーにログインし、ログインした状態を `packages/e2e/.auth/<ホスト>/` に保存する。録画しない。
   - `e2e` は、その状態で `tests/specs/` の spec を流す。`pnpm e2e` と CI は、`--project=e2e` でこの project だけを流す。
-  - `evidence` は、その状態で `tests/evidence/` のエビデンスの spec を流す。`pnpm --filter @buddy/e2e evidence` で、撮影の config を付けて流す（[エビデンス](evidence.md)）。
+  - `evidence` は、`tests/evidence/` のエビデンスの spec を流す。ログインの状態は、spec が describe ごとに選ぶ。`pnpm --filter @buddy/e2e evidence` で、撮影の config を付けて流す（[エビデンス](evidence.md)）。
 - worker は 1 つにする（`packages/e2e/playwright.config.ts`）。
   - spec は職員ごとのログインの状態のファイルを共有するためである。
   - ローカルの dev サーバに向けて流すときも、`--workers` で増やさない。

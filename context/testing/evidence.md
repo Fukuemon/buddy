@@ -116,10 +116,11 @@ E2E の設定が worktree の `.env` から URL を読むので、URL の環境�
 
 ```sh
 portless compose up -d --build --wait
-pnpm --filter @buddy/e2e evidence -g '<name>'
+pnpm --filter @buddy/e2e evidence -g '<name> '
 node .claude/skills/playwright-capture/scripts/collect.mjs packages/e2e/evidence/.playwright/改修後.json .ai-out/evidence/<入れる先>/videos
 ```
 
+- `-g` の `<name>` の後に空白を入れる。入れないと、`<name>` で始まる別の観点も流れる。例は、`schedule-create-dialog` に対する `schedule-create-dialog-close` である。
 - テストが失敗しても `collect.mjs` を流す。どこで止まったかを録画で見るためである。
 - HTML report は `pnpm --filter @buddy/e2e exec playwright show-report evidence/report/改修後` で開く。step の一覧、判定のスクリーンショット、動画が並ぶ。
 - 撮影で作ったデータは、その worktree の DB に残る。
@@ -179,8 +180,8 @@ node .claude/skills/playwright-capture/scripts/collect.mjs packages/e2e/evidence
 
 ## Login and Test Data
 
-- ログインは、setup の project が保存した状態を、evidence の project の `storageState` で読む。録画にログインの場面を映さない。
-  - デフォルトは青木 陽菜（マネージャー）である。ほかの職員は、describe の `test.use({ storageState: LEADER_STATE })` のように切り替える。
+- ログインは、setup の project が保存した状態を、spec が describe の `test.use({ storageState })` で読む。録画にログインの場面を映さない。
+  - evidence の project は `storageState` を持たない。撮る職員は、describe の `test.use({ storageState: LOGIN_STATE })` のように選ぶ。テストの中の `browser.newContext()` も project の `use` を継ぐので、project に置くと前準備のコンテキストまでログイン済みになるためである。
   - setup が保存する職員と足し方は、[E2E のテスト](e2e.md) の Test Data and Login にある。
   - setup に置けない職員（spec の中で登録した職員など）で撮るときは、`prepareOutsideRecording` の中でログインし、`carryLoginTo` に fixture の `context` を渡して cookie を移す。
 - テストデータは、シードの職員と利用者を使い、足りないものは録画の外の前準備で作る。

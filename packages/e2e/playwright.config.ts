@@ -46,13 +46,15 @@ export default defineConfig({
       dependencies: ['setup'],
       use: { storageState: LOGIN_STATE },
     },
-    // 画面の大きさは、撮影の config の録画の大きさと同じにする
+    // 画面の大きさは、撮影の config の録画の大きさと同じにする。
+    // storageState は project に置かない。テストの中の browser.newContext() も project の use を継ぐので、
+    // kit の spec の前準備と、別の職員でトークンを取る処理が、ログイン済みの状態で始まってしまう。spec が describe ごとに test.use で選ぶ
     {
       name: 'evidence',
       testMatch: /tests\/evidence\/.*\.e2e\.ts/,
       timeout: TIMEOUT_MS.evidence,
       dependencies: ['setup'],
-      use: { storageState: LOGIN_STATE, viewport: DESKTOP_VIEWPORT },
+      use: { viewport: DESKTOP_VIEWPORT },
     },
   ],
 })
