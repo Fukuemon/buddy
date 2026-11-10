@@ -37,7 +37,7 @@ func LoadOps(getenv func(string) string) (Ops, error) {
 	}
 	for _, v := range []struct{ key, value string }{{"BROKER_URL", c.Broker.URL}, {"BROKER_TOKEN_URL", c.Broker.TokenURL}} {
 		if u, err := url.Parse(v.value); err != nil || (u.Scheme != "https" && u.Scheme != "http") || u.Host == "" {
-			return Ops{}, fmt.Errorf("%s %q は http か https の URL です", v.key, v.value)
+			return Ops{}, fmt.Errorf("%s は http か https の URL です", v.key)
 		}
 	}
 	var err error

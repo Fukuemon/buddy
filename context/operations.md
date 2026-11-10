@@ -186,6 +186,8 @@ hydra janitor -c <hydra serve の設定ファイル> -e --tokens --requests --gr
 
 - シークレットは、`OIDC_CLIENT_SECRET`、`SESSION_SECRET`、`DB_PASSWORD`、Google の Workload Identity Federation の外部アカウントの設定である。
   - ブローカーでは、上流の IdP の client secret のファイル（`UPSTREAM_IDP_CLIENT_SECRETS_FILE`）と、token_hook のヘッダーの値（`TOKEN_HOOK_KEY`）もシークレットである。
+  - 予定の API と運営用の CLI では、ブローカーを呼ぶ Hydra のクライアントの secret（`BROKER_CLIENT_SECRET`）もシークレットである。
+    - 運営用の CLI の値は、運営用のクライアント（`schedule-ops`）の secret で、予定の API の値と分ける。CLI を流すジョブにだけ渡す。
   - Hydra では、設定の `secrets.system` もシークレットである。
     - Hydra は、この値で、DB に置く署名の鍵を暗号化し、refresh token と認可コードの署名を作る。
     - 値を変えるときは、新しい値を一覧の先頭に足し、古い値を一覧に残す。古い値を外すと、古い値で暗号化した署名の鍵と、古い値で署名した refresh token が使えなくなる。
@@ -227,6 +229,9 @@ hydra janitor -c <hydra serve の設定ファイル> -e --tokens --requests --gr
 
 職員の管理の権限を持つ有効な職員がいる事業所には、CLI はマネージャーを足さない。  
 全てのマネージャーが退職した事業所を戻すときだけ、`--allow-additional-manager` を付けて流す。
+
+運営用のクライアントを止めるときは、Hydra の admin API で `schedule-ops` のクライアントを消す。  
+消すと、Hydra はそのクライアントに access token を発行しない。発行済みの access token は、期限の 5 分までブローカーの内部の API に通る。
 
 - ADR-0041: [事業所と最初のマネージャーを予定の API の運営用の CLI で登録し、ブローカーは運営用のクライアントに職員の登録だけを許す](../docs/adr/0041-facility-onboarding-cli.md)
 

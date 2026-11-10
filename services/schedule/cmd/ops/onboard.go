@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
+	"regexp"
 	"strings"
 
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -21,6 +22,9 @@ import (
 
 // operationOnboardFacility は、登録の記録の操作の種類である。
 const operationOnboardFacility = "facility.onboard"
+
+// operatorID は、運営者の ID の形である。メールと名前を登録の記録に入れないよう、英数字と . _ - だけを受ける。
+var operatorID = regexp.MustCompile(`^[A-Za-z0-9._-]{1,64}$`)
 
 // errOnboardFailed は、onboardFacility が失敗をログに書いた後に返す。呼び出し側はログを重ねて書かない。
 var errOnboardFailed = errors.New("onboard failed")
@@ -49,7 +53,8 @@ func parseOnboardArgs(args []string, stderr io.Writer) (onboardArgs, error) {
 		return onboardArgs{}, err
 	}
 	if fs.NArg() > 0 {
-		return onboardArgs{}, fmt.Errorf("知らない引数 %q があります", fs.Arg(0))
+		// 値は職員の名前の一部のことがあるので、出さない
+		return onboardArgs{}, fmt.Errorf("知らない引数が %d 個あります。値に空白を含むときは引用符で囲みます", fs.NArg())
 	}
 	var missing []string
 	for _, v := range []struct{ name, value string }{
@@ -63,8 +68,8 @@ func parseOnboardArgs(args []string, stderr io.Writer) (onboardArgs, error) {
 	if len(missing) > 0 {
 		return onboardArgs{}, fmt.Errorf("引数 %s が必要です", strings.Join(missing, "、"))
 	}
-	if strings.Contains(a.Operator, "@") {
-		return onboardArgs{}, errors.New("--operator には、メールでなく運営者の ID を渡します")
+	if !operatorID.MatchString(a.Operator) {
+		return onboardArgs{}, errors.New("--operator には、英数字と . _ - の 64 文字までの運営者の ID を渡します。メールと名前を使いません")
 	}
 	return a, nil
 }

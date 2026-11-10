@@ -40,7 +40,7 @@ func TestParseOnboardArgsErrors(t *testing.T) {
 	}{
 		{"実行者が無い", validArgs()[:len(validArgs())-2], "--operator"},
 		{"実行者がメール", append(validArgs()[:len(validArgs())-1], "ops@example.com"), "--operator"},
-		{"知らない引数", append(validArgs(), "extra"), "extra"},
+		{"空白で切れた名前の残り", append(validArgs(), "真央"), "1 個"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
