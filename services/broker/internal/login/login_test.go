@@ -3,6 +3,7 @@ package login_test
 import (
 	"context"
 	"encoding/base64"
+	"encoding/json"
 	"errors"
 	"log/slog"
 	"net/http"
@@ -760,6 +761,51 @@ func TestCallbackInactiveStaff(t *testing.T) {
 			e.staff.members[aokiID] = m
 			if got := location(t, e.callback(t, submitted, "code-1")); got != "http://hydra/login-rejected" || e.hydra.rejection != hydra.AccessDenied {
 				t.Errorf("Location = %q, rejection = %+v, want メールを入れたときと同じ reject", got, e.hydra.rejection)
+			}
+		})
+	}
+}
+
+// TestCallbackForgedStaffID は、cookie の職員の ID をほかの職員に書き換えても、相手がいるか、相手の状態が reject で分からないことを確認する。
+func TestCallbackForgedStaffID(t *testing.T) {
+	const otherID = "01JCCCCCCCCCCCCCCCCCCCCCCC"
+	tests := []struct {
+		name   string
+		member *staff.Member
+		want   hydra.Rejection
+	}{
+		{"有効な職員", &staff.Member{ID: otherID, OrgID: "org-a", Email: "sato@example.com", Status: staff.StatusActive}, hydra.AccountMismatch},
+		{"退職した職員", &staff.Member{ID: otherID, OrgID: "org-a", Email: "sato@example.com", Status: staff.StatusRetired}, hydra.AccountMismatch},
+		{"結び付け済みの休職の職員", &staff.Member{ID: otherID, OrgID: "org-a", Email: "sato@example.com", Status: staff.StatusSuspended,
+			Upstream: staff.UpstreamAccount{Issuer: issuerA, Subject: "u-sato"}}, hydra.AccountMismatch},
+		{"いない職員", nil, hydra.ServerError},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			e := newEnv(10)
+			if tt.member != nil {
+				e.staff.members[otherID] = *tt.member
+			}
+			e.upstream.identity = upstream.Identity{Issuer: issuerA, Subject: "u-aoki", Email: "aoki@example.com", EmailVerified: true}
+			submitted := e.submit("aoki@example.com")
+			to, _ := url.Parse(submitted.Header().Get("Location"))
+			req := httptest.NewRequest(http.MethodGet, "/login/callback?"+url.Values{"state": {to.Query().Get("state")}, "code": {"code-1"}}.Encode(), nil)
+			for _, c := range submitted.Result().Cookies() {
+				raw, err := base64.RawURLEncoding.DecodeString(c.Value)
+				if err != nil {
+					t.Fatal(err)
+				}
+				var p map[string]any
+				if err := json.Unmarshal(raw, &p); err != nil {
+					t.Fatal(err)
+				}
+				p["staff_id"] = otherID
+				forged, _ := json.Marshal(p)
+				c.Value = base64.RawURLEncoding.EncodeToString(forged)
+				req.AddCookie(c)
+			}
+			if got := location(t, e.do(req)); got != "http://hydra/login-rejected" || e.hydra.rejection != tt.want {
+				t.Errorf("Location = %q, rejection = %+v, want %+v", got, e.hydra.rejection, tt.want)
 			}
 		})
 	}

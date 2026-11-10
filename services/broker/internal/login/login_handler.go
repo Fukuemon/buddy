@@ -158,11 +158,8 @@ func (h callback) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		rejectAs(h.logger, h.hydra, w, r, p.Challenge, hydra.LoginInterrupted, "上流の IdP がログインを拒んだ", fmt.Errorf("upstream error %q", e))
 		return
 	}
+	// cookie の職員の ID は書き換えられるので、職員がいないときも、ID token を検証できないときと同じ reject にする
 	m, err := h.staff.Get(ctx, p.StaffID)
-	if errors.Is(err, staff.ErrNotFound) {
-		reject(h.logger, h.hydra, w, r, p.Challenge, "職員がいない", err)
-		return
-	}
 	if err != nil {
 		rejectAs(h.logger, h.hydra, w, r, p.Challenge, hydra.ServerError, "職員を引けない", err)
 		return
@@ -182,15 +179,17 @@ func (h callback) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 // match は、上流の IdP の主張 id が職員 m のものかを確認し、違えば reject の本文と理由を返す。
 // 結び付け済みの職員は iss と sub で照合する。まだの職員は、確認済みのメールが登録と同じときだけ結び付ける。
 //
-// ログインの途中に休職か退職になった職員は、メールを入れたときと同じ hydra.AccessDenied で拒み、職員の状態を伝えない。
+// 職員の状態は、id が m のものと確認してから見る。ログインの途中に休職か退職になった職員は、メールを入れたときと同じ
+// hydra.AccessDenied で拒み、職員の状態を伝えない。cookie の職員の ID を書き換えた人には、相手の状態によらず
+// hydra.AccountMismatch を返し、ほかの職員の状態を伝えない。
 func (h callback) match(ctx context.Context, m staff.Member, id upstream.Identity) (hydra.Rejection, string) {
-	if !m.CanLogin() {
-		return hydra.AccessDenied, "職員が有効でない"
-	}
 	got := staff.UpstreamAccount{Issuer: id.Issuer, Subject: id.Subject}
 	if m.Upstream != (staff.UpstreamAccount{}) {
 		if m.Upstream != got {
 			return hydra.AccountMismatch, "結び付けた上流のアカウントと違う"
+		}
+		if !m.CanLogin() {
+			return hydra.AccessDenied, "職員が有効でない"
 		}
 		return hydra.Rejection{}, ""
 	}
@@ -199,6 +198,9 @@ func (h callback) match(ctx context.Context, m staff.Member, id upstream.Identit
 	}
 	if staff.NormalizeEmail(id.Email) != m.Email {
 		return hydra.AccountMismatch, "上流のメールが登録のメールと違う"
+	}
+	if !m.CanLogin() {
+		return hydra.AccessDenied, "職員が有効でない"
 	}
 	err := h.staff.Link(ctx, m.ID, got)
 	if errors.Is(err, staff.ErrConflict) {
