@@ -48,11 +48,12 @@ test.describe('職員の管理', () => {
               .getByTestId(/^staff-list-row-/)
               .filter({ hasText: ONBOARDED_MANAGER.name })
             await expect(row).toBeVisible()
-            await expect(row).toContainText('有効')
+            // 一覧は、開いた直後に状態が有効の職員だけを出し、行に状態を書かない
+            await expect(page.getByTestId('staff-list-filter-status')).toHaveValue('active')
             await expect(row).toContainText('マネージャー')
             await expect(page.getByTestId('staff-list-new')).toBeVisible()
             await check(
-              `職員の一覧に ${ONBOARDED_MANAGER.name} が「有効」と「マネージャー」で出て、「職員を登録」のボタンが出る`,
+              `職員の一覧に ${ONBOARDED_MANAGER.name} が、状態が「有効」の一覧に「マネージャー」で出て、「職員を登録」のボタンが出る`,
             )
           },
         )
