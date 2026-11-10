@@ -75,7 +75,7 @@ services:
       postgres: { condition: service_healthy }
 
   # 事業所の上流の IdP のフェイク（mock-oauth2-server）。パスの最初の部分が issuer になるので、
-  # 1 つのコンテナで 4 つの事業所の IdP（/office-a、/office-b、/office-c、/office-d）を立てる。
+  # 1 つのコンテナで 5 つの事業所の IdP（/office-a から /office-e）を立てる。/office-e の組織 org-sample-e はシードに無く、運営用の CLI で事業所を足すのに使う。
   # ログインの画面で入れた名前が sub に、クレームの欄に書いた JSON（email と email_verified）が ID token のクレームになる
   idp:
     image: ghcr.io/navikt/mock-oauth2-server:6.0.4
@@ -290,6 +290,26 @@ services:
       broker: { condition: service_healthy }
       calendarpit-authorize: { condition: service_completed_successfully }
       gcalhold: { condition: service_healthy }
+
+  # 予定の API の運営用の CLI。portless compose up では起動せず、事業所を足すときに
+  # portless compose run --rm schedule-ops onboard-facility ... で 1 回流す
+  schedule-ops:
+    image: ${COMPOSE_PROJECT_NAME}-schedule
+    # イメージは schedule-migrate がビルドする
+    pull_policy: never
+    profiles: [ops]
+    entrypoint: ['/usr/local/bin/ops']
+    environment:
+      <<: *db-env
+      # compose/hydra/clients.sh が登録した運営用の schedule-ops のクライアントで、ブローカーの内部の API を呼ぶ
+      BROKER_URL: http://broker:8081
+      BROKER_TOKEN_URL: http://hydra:4444/oauth2/token
+      BROKER_CLIENT_ID: schedule-ops
+      BROKER_CLIENT_SECRET: schedule-ops-dev
+    depends_on:
+      schedule-seed: { condition: service_completed_successfully }
+      hydra-clients: { condition: service_completed_successfully }
+      broker: { condition: service_healthy }
 
   # 予定の API と同じイメージの calendar-worker が、書き出しと同期を役割ごとのプロセスで常駐して動かす（ADR-0032）
   schedule-calendar-export:

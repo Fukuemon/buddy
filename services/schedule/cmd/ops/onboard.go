@@ -125,7 +125,11 @@ func onboardFacility(ctx context.Context, do onboardFunc, a onboardArgs, log *sl
 		)...)
 		return nil
 	}
-	log.Info("事業所と最初のマネージャーを登録した", append(attrs,
+	msg := "事業所と最初のマネージャーを登録した"
+	if !res.ManagerCreated {
+		msg = "マネージャーは登録済みで、何も書かなかった"
+	}
+	log.Info(msg, append(attrs,
 		slog.String("facility_id", res.Setup.Facility.ID),
 		slog.String("staff_id", res.Manager.ID),
 	)...)
