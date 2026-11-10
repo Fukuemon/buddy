@@ -34,6 +34,8 @@ const TEAM_READ = { id: '01M5E1S42TTS7QZK05YGS0GYRB', code: 'schedule.team.read'
 /** 指定したチームの職員の予定の編集（schedule.team.edit）。 */
 const TEAM_EDIT = { id: '01M5E1S42TTS7QZK05YGS0GYRC', code: 'schedule.team.edit' }
 const SELF_EDIT_CODE = 'schedule.self.edit'
+/** 事業所の全ての予定の閲覧（schedule.all.read）。対象を指定しない権限で、メンバーとリーダーのデフォルトに無い。 */
+const ALL_READ_ID = '01M5E1S42TTS7QZK05YGS0GYRD'
 
 /** 撮影の前に登録する職員の名前。仮の名前にする。 */
 const STAFF_NAME = '見本 職員'
@@ -104,6 +106,14 @@ const submitPosition = async (page: Page, positionId: string) => {
   await dialog.getByTestId(`staff-position-option-${positionId}`).check()
   await dialog.getByTestId('staff-position-submit').click()
   return dialog
+}
+
+/** プロフィールの「役職を変える」を開いて positionId の役職を選び、役職を変えるときの注意を返す。保存は押さない。 */
+const choosePosition = async (page: Page, positionId: string) => {
+  await page.getByTestId('staff-detail-position-change').click()
+  const dialog = page.getByTestId('staff-position-dialog')
+  await dialog.getByTestId(`staff-position-option-${positionId}`).check()
+  return dialog.getByTestId('staff-position-note')
 }
 
 /** 「役職を変える」から positionName の役職を選んで保存し、ダイアログが閉じて役職の名前が変わるまで待つ。 */
@@ -442,6 +452,80 @@ test.describe('職員の管理', () => {
           },
         )
       })
+    })
+  })
+
+  // 注意の文は、改修前は個別に足した権限が「消えます」、改修後は「残ります」なので、改修前と改修後の判定のスクリーンショットを並べて比べる。確認する関数は両方の版で通る部分だけを見る
+  test.describe('役職を変えるときの注意', () => {
+    test.describe(`${LOGIN_STAFF.name}（マネージャー、職員の管理の権限あり）`, () => {
+      test.use({ storageState: LOGIN_STATE })
+
+      test(
+        'position-note-keep-individual 事業所の全ての予定の閲覧を個別に足したメンバーの役職を変えるダイアログでリーダーを選んだ場合、個別に足した権限が残ることを示す注意が出ること',
+        { tag: '@compare' },
+        async ({ context, request }) => {
+          const token = await issueManagerToken()
+          const staff = await registerIn(request, token, {
+            label: 'position-note-keep-individual',
+            teamId: TEAM_A,
+            positionId: MEMBER_POSITION,
+          })
+          await addTargetedPolicy(request, token, staff.id, { policy_id: ALL_READ_ID })
+
+          const page = await context.newPage()
+          await openDetail(page, staff.id, STAFF_NAME)
+          await intro(
+            page,
+            `個別に足した権限を持つ職員で、残ることを示す注意が出る\n前提 「事業所の全ての予定の閲覧」を個別に足したメンバーの「${STAFF_NAME}」の職員の詳細を開いている（撮影の前に API で登録した）`,
+          )
+
+          let note = page.getByTestId('staff-position-note')
+          await step(page, '「役職を変える」を押し、「リーダー」を選ぶ', async () => {
+            note = await choosePosition(page, LEADER_POSITION)
+          })
+          await check(
+            page,
+            `注意の文が「役職を変えると、${STAFF_NAME} の役職で付く権限は、新しい役職で付く権限に置き換わります。個別に足した権限（事業所の全ての予定の閲覧）は残ります。」になる。確定の「役職を変える」は赤い塗りのまま`,
+            async () => {
+              await expect(note).toContainText(`役職を変えると、${STAFF_NAME} の`)
+              await expect(note).toContainText('個別に足した権限（事業所の全ての予定の閲覧）')
+            },
+          )
+        },
+      )
+
+      test(
+        'position-note-no-individual 個別に足した権限を持たないメンバーの役職を変えるダイアログでリーダーを選んだ場合、個別に足した権限の文を出さないこと',
+        { tag: '@compare' },
+        async ({ context, request }) => {
+          const token = await issueManagerToken()
+          const staff = await registerIn(request, token, {
+            label: 'position-note-no-individual',
+            teamId: TEAM_A,
+            positionId: MEMBER_POSITION,
+          })
+
+          const page = await context.newPage()
+          await openDetail(page, staff.id, STAFF_NAME)
+          await intro(
+            page,
+            `個別に足した権限を持たない職員で、残る権限の文を出さない\n前提 役職のデフォルトの権限だけを持つメンバーの「${STAFF_NAME}」の職員の詳細を開いている（撮影の前に API で登録した）`,
+          )
+
+          let note = page.getByTestId('staff-position-note')
+          await step(page, '「役職を変える」を押し、「リーダー」を選ぶ', async () => {
+            note = await choosePosition(page, LEADER_POSITION)
+          })
+          await check(
+            page,
+            `注意の文が「役職を変えると、${STAFF_NAME} の役職で付く権限は、新しい役職で付く権限に置き換わります。」だけになり、「個別に足した権限」の文が無い`,
+            async () => {
+              await expect(note).toContainText(`役職を変えると、${STAFF_NAME} の`)
+              await expect(note).not.toContainText('個別に足した権限')
+            },
+          )
+        },
+      )
     })
   })
 })

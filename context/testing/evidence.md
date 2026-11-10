@@ -58,6 +58,11 @@ buddy は、spec の配置先、テストの名前、本文の表の形がスキ
     - 字幕の見た目を直すときは、写したファイルを直す。
   - 撮影の config は、E2E の config に、録画、操作の前の止め、カーソルと押す要素の枠を足す。録画の大きさは、evidence の project の画面と同じ 1280x800 である。
   - spec は、`intro`、`step`、`check` で字幕を出す。字幕の書き方は playwright-capture の「字幕を書く」にある。
+  - 画面を開いただけの状態は、`step` にも `check` にもせず、`intro` に書く。
+    - 操作を持たない `step` は、字幕が 1 秒未満で消えて読めない。
+    - `check` は判定の文に使う。前提を `check` にすると、判定のスクリーンショットに前提が混じり、改修前と比べる番号もずれる。
+    - 前提の情報（撮る職員、予定、画面の状態）は、`intro` の 2 行目に「前提 …」で書く。1 行目は、この録画で確認することである。
+    - 前提の画面の要素が出たことは、`intro` の前に `expect` で待つ。
   - 録画は H.264 の mp4 にまとめるので、変換しない。
   - agent-browser では、エビデンスを撮らない。spec を書く前に、画面の操作の位置を確認するのには使ってよい。
 - 配置先は `packages/e2e/tests/evidence/<機能>/<振る舞い>.e2e.ts` にする。
@@ -138,12 +143,34 @@ node .claude/skills/playwright-capture/scripts/collect.mjs packages/e2e/evidence
 
 - コマンドの前で渡した環境変数は、`.env` の値より優先される。
 
+### compose の外で撮るとき
+
+- Storybook、ドキュメントサイト、fake、開発サーバーで撮る spec は、`--no-deps` を付けて流す。
+  - evidence の project は setup に依存する。`E2E_BASE_URL` を compose の外に向けると、setup のログインが失敗して spec が流れない。
+  - `--no-deps` で流すと setup が流れないので、テストのフォルダの名前の末尾に `_evidence` が付かない。compose で撮ったフォルダには付く。
+  - 改修前と改修後は、同じ流し方で撮る。流し方が違うとフォルダの名前が変わり、`compare.sh` で組にできない。
+
+  ```sh
+  pnpm --filter @buddy/e2e evidence --no-deps -g '<name> '
+  ```
+
+- Storybook の番号は、兄弟の worktree の Storybook とぶつかることがある。撮る前に、`E2E_STORYBOOK_URL` の番号で待ち受けているプロセスが、撮る worktree のものかを確認する。
+  - `lsof -iTCP:<番号> -sTCP:LISTEN` でプロセスの番号を出し、`lsof -a -p <プロセスの番号> -d cwd` でそのディレクトリを見る。
+  - 別の worktree のものなら、空いた番号で起動し直し、`E2E_STORYBOOK_URL` に渡す。確認しないと、別のバージョンの Storybook を撮ってしまう。
+- worktree で `pnpm --filter @buddy/web dev:msw` を撮るときは、`apps/web/.env.msw` の IdP と Valkey を、環境変数で worktree の compose に向ける。
+  - `.env.msw` の値は、main の checkout の compose のポート（9000、6379）を指す。
+  - 起動するときに、次の 2 つを渡す。
+    - `OIDC_ISSUER=http://localhost:<worktree の IdP のポート>/buddy`
+    - `SESSION_STORE_URL=redis://localhost:<worktree の Valkey のポート>`
+  - 開発サーバーは、起動すると `apps/web/src/routeTree.gen.ts` を書き換える。撮った後に戻す。
+
 ### 改修前と比べるとき
 
 - `apps/web` だけの改修では、改修前のブランチの worktree を作り、その環境を `portless compose up -d --build --wait` で起動する。
   - spec は、両方とも改修後の worktree から流す。
     - 改修後を、URL を渡さずに撮ってまとめる。
     - 改修前は、`E2E_BASE_URL` を改修前の環境の web（改修前の worktree の `.env` の `WEB_ORIGIN`）に向け、`VARIANT=改修前` でタグ `@compare` のテストだけを撮る。
+    - 前準備で API を呼ぶ spec は、`E2E_SCHEDULE_URL`、`E2E_HYDRA_URL` のように spec が使う URL も、改修前の環境に向ける。向けないと、改修後の環境の API を呼ぶ。改修後の compose を止めていれば、前準備が失敗する。URL の環境変数の一覧は `packages/e2e/tests/fixtures/env.ts` にある。
     - setup の project は、`E2E_BASE_URL` の環境にログインし、ホストごとのファイルに状態を保存する。改修前の環境でもログインの場面は録画されない。
     - まとめた後に、`compare.sh` で改修前と改修後の判定のスクリーンショットを並べる。
 
@@ -187,11 +214,15 @@ node .claude/skills/playwright-capture/scripts/collect.mjs packages/e2e/evidence
 - テストデータは、シードの職員と利用者を使い、足りないものは録画の外の前準備で作る。
   - 前準備は、`packages/e2e/tests/fixtures/recording.ts` の `prepareOutsideRecording` で、別のブラウザのコンテキストで行う。別のコンテキストは録画されない。
   - 前準備が要るテストは、fixture の `page` を受け取らず、前準備の後に `context.newPage()` で録画する page を開く。fixture の `page` を開いてから前準備をすると、その間が録画に空白の画面として残る。
+  - 録画するコンテキストに、2 つ目の page を開かない。`collect.mjs` はテストの最初の動画の添付を mp4 にするので、2 つ目の page の動画が選ばれることがある。
+    - 別のタブで操作する前提（別のタブで設定を変える）は、`prepareOutsideRecording` の別のコンテキストで開く。
   - 作り方は E2E の spec と同じく、画面の操作か、予定の API か、calendarpit の管理の API にする。
   - 録画の中では、観点の操作だけを行う。
     - 観点の前提が録画の途中の出来事（開いた後に権限を外される）のときだけ、字幕で撮影のためと断って、録画の中で API を呼んでよい。
   - 撮った後にデータを消さない。撮り終えたら `down -v` で compose ごと消す。
-  - ほかの撮影の前提を変える操作（カレンダーの結び付け）は、撮った後に `try/finally` で戻す。
+  - ほかの撮影の前提を変える操作は、撮った後に `try/finally` で戻す。
+    - 当たる操作は、カレンダーの結び付けと、職員の名前、チーム、権限の変更である。シードのままの DB を前提にする spec があり、戻さないと、全部を 1 回で流したときにその spec が失敗する。
+    - 戻せない変更（予定の正本の切り替えの完了のように、戻す API が無いもの）を持つ spec は、spec の先頭のコメントに「DB を作り直してから単独で流す」と書く。その spec は、`portless compose down -v` の後に起動し直してから、ファイルを指定して流す。
 - 認証コードを求められる環境（検証環境）のログインの手順は、検証環境ができてから決める。
 
 ## Attachment
@@ -310,6 +341,7 @@ gh api repos/Fukuemon/buddy/pulls/<番号> --jq .body | grep -c '](\./\.ai-out/'
   - テストの名前は、スキル write-verification-spec の `S<番号> <シナリオ名>` ではなく、pull request のエビデンスと同じ「`<name>` {条件}の場合、{期待}であること」にする。`<name>` は `s<番号>-<話題>` にする。
   - シナリオの識別子（`@scenario-id`）は、spec の先頭のコメントに書く。
   - 字幕は、シナリオの「前提」「もし」「かつ」「ならば」の文を、頭の語を消さずに写す。頭の語の後には空白を置き、コロンを付けない。字幕の色が頭の語で決まる。
+    - 操作を持たない「前提」の文は、Capture Tools のとおり `intro` の 2 行目に写す。
   - 例の列と値は、シナリオアウトラインの例の表と、検証シナリオの pull request のチェックの「<列>=<値>」から、文言を変えずに写す。テストの名前の末尾に `<例の番号>_<例の値>` を足す。
   - 改修前と違ってよい差（シナリオの備考）は spec に書かず、撮った後にスキル run-verification-scenarios で備考と照合する。
 - エビデンスの一覧は、要求ごとの README にし、`docs/verification/<要求の番号>-<主題>/README.md` に置く。

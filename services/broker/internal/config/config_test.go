@@ -24,6 +24,7 @@ func baseEnv() map[string]string {
 		"PUBLIC_URL":                       "https://login.example.com",
 		"HYDRA_ISSUER":                     "http://hydra:4444",
 		"TOKEN_HOOK_KEY":                   "hook-key-0123456789abcdef0123456789",
+		"LOGIN_COOKIE_KEYS":                "cookie-key-0123456789abcdef012345678",
 	}
 }
 
@@ -39,6 +40,7 @@ func TestLoad(t *testing.T) {
 	m["INTERNAL_API_CLIENTS"] = "schedule, receipt"
 	// シークレットのファイルの末尾の改行は除く
 	m["TOKEN_HOOK_KEY"] = "hook-key-0123456789abcdef0123456789\n"
+	m["LOGIN_COOKIE_KEYS"] = "cookie-key-new-0123456789abcdef01234, cookie-key-old-0123456789abcdef01234\n"
 	c, err := config.Load(env(m))
 	if err != nil {
 		t.Fatal(err)
@@ -60,6 +62,7 @@ func TestLoad(t *testing.T) {
 		InternalAPIClients:           []string{"schedule", "receipt"},
 		InternalAPIOnboardingClients: []string{"schedule-ops"},
 		TokenHookKey:                 "hook-key-0123456789abcdef0123456789",
+		LoginCookieKeys:              []string{"cookie-key-new-0123456789abcdef01234", "cookie-key-old-0123456789abcdef01234"},
 	}
 	if !reflect.DeepEqual(c, want) {
 		t.Errorf("got %+v, want %+v", c, want)
@@ -95,8 +98,8 @@ func TestLoadErrors(t *testing.T) {
 		set  map[string]string
 		want string
 	}{
-		{"必須の値が無い", map[string]string{"DB_PASSWORD": "", "HYDRA_ADMIN_URL": " ", "HYDRA_ISSUER": "", "UPSTREAM_IDPS_FILE": "", "UPSTREAM_IDP_CLIENT_SECRETS_FILE": "", "PUBLIC_URL": "", "TOKEN_HOOK_KEY": ""},
-			"DB_PASSWORD、HYDRA_ADMIN_URL、HYDRA_ISSUER、UPSTREAM_IDPS_FILE、UPSTREAM_IDP_CLIENT_SECRETS_FILE、PUBLIC_URL、TOKEN_HOOK_KEY"},
+		{"必須の値が無い", map[string]string{"DB_PASSWORD": "", "HYDRA_ADMIN_URL": " ", "HYDRA_ISSUER": "", "UPSTREAM_IDPS_FILE": "", "UPSTREAM_IDP_CLIENT_SECRETS_FILE": "", "PUBLIC_URL": "", "TOKEN_HOOK_KEY": "", "LOGIN_COOKIE_KEYS": ""},
+			"DB_PASSWORD、HYDRA_ADMIN_URL、HYDRA_ISSUER、UPSTREAM_IDPS_FILE、UPSTREAM_IDP_CLIENT_SECRETS_FILE、PUBLIC_URL、TOKEN_HOOK_KEY、LOGIN_COOKIE_KEYS"},
 		{"ポートが数でない", map[string]string{"PORT": "http"}, "ポート"},
 		{"内部のポートが数でない", map[string]string{"INTERNAL_PORT": "x"}, "ポート"},
 		{"内部のポートが画面のポートと同じ", map[string]string{"PORT": "8081"}, "INTERNAL_PORT"},
@@ -107,6 +110,8 @@ func TestLoadErrors(t *testing.T) {
 		{"UPSTREAM_IDP_BROWSER_ORIGIN が URL でない", map[string]string{"UPSTREAM_IDP_BROWSER_ORIGIN": "localhost:9000"}, "UPSTREAM_IDP_BROWSER_ORIGIN"},
 		{"LOG_LEVEL が不正", map[string]string{"LOG_LEVEL": "verbose"}, "LOG_LEVEL"},
 		{"TOKEN_HOOK_KEY が 31 バイト", map[string]string{"TOKEN_HOOK_KEY": "0123456789012345678901234567890"}, "TOKEN_HOOK_KEY"},
+		{"LOGIN_COOKIE_KEYS が空の鍵だけ", map[string]string{"LOGIN_COOKIE_KEYS": " , "}, "LOGIN_COOKIE_KEYS"},
+		{"LOGIN_COOKIE_KEYS の 2 番目の鍵が 31 バイト", map[string]string{"LOGIN_COOKIE_KEYS": "cookie-key-0123456789abcdef012345678,0123456789012345678901234567890"}, "LOGIN_COOKIE_KEYS の 2 番目"},
 		{"運営用のクライアントが内部の API の全ての操作を呼べるクライアントと重なる", map[string]string{"INTERNAL_API_ONBOARDING_CLIENTS": "schedule"}, "INTERNAL_API_ONBOARDING_CLIENTS"},
 	}
 	for _, tt := range tests {
