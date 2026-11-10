@@ -54,12 +54,12 @@ verified_commit: c0514f20
 | `staff.manage` | 職員の管理 | false |
 | `receipt.check` | 照合 | false |
 
-役職のデフォルトの権限をコピーする規則、役職を変えたときにコピーし直す規則、`staff.manage` の扱いは [権限](https://github.com/Fukuemon/buddy/blob/develop/context/domain/permission.md) にある。  
+役職のデフォルトの権限をコピーする規則、役職を変えたときの規則、`staff.manage` の扱いは [権限](https://github.com/Fukuemon/buddy/blob/develop/context/domain/permission.md) にある。  
 職員の権限（`schedule.user.*`）は、コピーするときに対象を決められないので、役職のデフォルトの権限にできない。  
 `receipt.check` は、予定の API の判定には使わない。  
 照合の API が照合の権限を確認する仕方は、[照合の API の権限の確認](#照合の-api-の権限の確認) にある。
 
-- ADR-0007: [権限を役職のデフォルトと職員ごとの上書きで持ち、職員の管理と照合も権限で許す](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0007-pbac.md)
+- ADR-0041: [権限を役職のデフォルトと職員ごとの上書きで持ち、役職を変えても職員ごとに足した権限を残し、職員の管理と照合も権限で許す](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0041-pbac-grants.md)
 
 照合の権限を足したマイグレーション（`000009_receipt_check_policy`）は、役職のデフォルトの権限と、職員の管理の権限を持つ今いる職員の権限を変える。
 
@@ -96,11 +96,12 @@ verified_commit: c0514f20
 役職を変える操作と権限を外す操作は、休職と退職と同じく、`staff` の操作が事業所の行をロックしたトランザクションの中で、職員を読み直してから行う。  
 同時に 2 人から外しても、後の操作は最後の有効な管理者を見つけて 409 になる。
 
-- ADR-0007: [権限を役職のデフォルトと職員ごとの上書きで持ち、職員の管理と照合も権限で許す](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0007-pbac.md)
+- ADR-0041: [権限を役職のデフォルトと職員ごとの上書きで持ち、役職を変えても職員ごとに足した権限を残し、職員の管理と照合も権限で許す](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0041-pbac-grants.md)
 
 ### 予定の認可
 
 予定の操作は、`schedule` の操作の型が、ミドルウェアが context に入れた職員（`principal.Principal`）の `user_policies` で判定する。  
+ミドルウェアはリクエストごとに職員と `user_policies` を DB から読み、権限をキャッシュしないので、権限の変更は次のリクエストから判定に使われる。  
 編集の権限は、同じ範囲の閲覧を含む。  
 自分の予定は、権限によらず見てよい。
 
@@ -135,7 +136,7 @@ verified_commit: c0514f20
 
 - 照合の権限（`receipt.check`）を持つ職員だけに許す。
   - 本文を読む前に、受けた access token をそのまま付けて予定の API の `GET /v1/me` を呼び、返った権限で確認する。
-  - ADR-0007: [権限を役職のデフォルトと職員ごとの上書きで持ち、職員の管理と照合も権限で許す](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0007-pbac.md)
+  - ADR-0041: [権限を役職のデフォルトと職員ごとの上書きで持ち、役職を変えても職員ごとに足した権限を残し、職員の管理と照合も権限で許す](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0041-pbac-grants.md)
   - 照合の API は権限を保存しない。権限を外すと、その職員の次の照合から拒む。
 - 照合の権限が無いか、予定の API が 401 か 403 を返した: 403 の `forbidden`。
   - 予定の API は、休職と退職の職員を 403 で拒む

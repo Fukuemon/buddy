@@ -262,9 +262,9 @@ flowchart TB
 | 照合 | あり | なし | なし | あり |
 
 事務の職員は、照合の食い違いを予定表で直すので、事業所の全ての予定を見て直せる。  
-照合の権限と事務の役職は ADR-0007 に、訪問しない職員の扱いは ADR-0006 にある。
+照合の権限と事務の役職は ADR-0041 に、訪問しない職員の扱いは ADR-0006 にある。
 
-- ADR-0007: [権限を役職のデフォルトと職員ごとの上書きで持ち、職員の管理と照合も権限で許す](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0007-pbac.md)
+- ADR-0041: [権限を役職のデフォルトと職員ごとの上書きで持ち、役職を変えても職員ごとに足した権限を残し、職員の管理と照合も権限で許す](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0041-pbac-grants.md)
 - ADR-0006: [訪問するかを職員に持ち、訪問しない職員を予定と担当から外す](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0006-non-visiting-staff.md)
 
 登録と役職の変更で付く、指定したチームの権限は、職員の所属のチームを指す。  
