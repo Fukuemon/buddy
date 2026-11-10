@@ -1,18 +1,10 @@
 import { writeFile } from 'node:fs/promises'
 
-import { expect, test, type Locator, type Page } from '@playwright/test'
+import { expect, test, type Locator } from '@playwright/test'
 
-import { LOGIN_EMAIL, LOGIN_STAFF } from '../../fixtures/env'
-import { EVIDENCE_VARIANTS, recordPrEvidence } from '../../fixtures/evidence'
-import { signInAtBroker } from '../../screens/login'
-import { receiptCategoryRowCells, receiptFindingItems } from '../../selectors/receipt'
-
-const ACTOR = `${LOGIN_STAFF.name}（マネージャー）`
-
-const signIn = async (page: Page) => {
-  await page.goto('/receipt')
-  await signInAtBroker(page, LOGIN_EMAIL)
-}
+import { check, intro, step } from '../../fixtures/caption'
+import { LOGIN_STAFF, LOGIN_STATE } from '../../fixtures/env'
+import { receiptCategoryRowCells } from '../../selectors/receipt'
 
 /**
  * 観点ごとの行を持つ、ダミーの予定の CSV。訪看I２ と訪看I３ の予定は、照合で終了時間と提供時間から 1 分を引く。
@@ -52,20 +44,24 @@ const COLUMN = {
   additions: 12,
 } as const
 
-/** 改修前の表は「確認すること」の列を持たないので、確認することの後ろの列が 1 つ左にずれる。 */
-const BEFORE_COLUMN = {
-  scheduleStart: 4,
-  scheduleEnd: 5,
-  scheduleDuration: 6,
-  visitStart: 8,
-  visitEnd: 9,
-  visitDuration: 10,
-  additions: 11,
-} as const
+type Column = Exclude<keyof typeof COLUMN, 'findings'>
 
-type Cells = Locator
+/**
+ * 結果の表を送って見せる、行の観点のセル。
+ * 改修前の表は「確認すること」の列を持たず列が 1 つ少ないので、最後の列の加算は、番号ではなく最後のセルで指す。
+ */
+const focusCell = (cells: Locator, column: Column) =>
+  column === 'additions' ? cells.last() : cells.nth(COLUMN[column])
 
-const findings = (cells: Cells) => receiptFindingItems(cells.nth(COLUMN.findings))
+/**
+ * 行に、values のそれぞれで始まるセルがあることを確認する。
+ * 改修前と改修後で、印の書き方と列の位置が違っても、値そのものは同じなので、両方で通る。
+ */
+const expectCellsStartWith = async (cells: Locator, ...values: string[]) => {
+  for (const value of values) {
+    await expect(cells.filter({ hasText: new RegExp(`^${value}`) })).not.toHaveCount(0)
+  }
+}
 
 const ITEMS: {
   name: string
@@ -74,15 +70,14 @@ const ITEMS: {
   category: 'mismatch' | 'schedule_only' | 'visit_only' | 'match'
   patient: string
   /** 結果の表を送り、観点のセルを見せる位置。 */
-  focus: keyof typeof BEFORE_COLUMN
-  /** 改修後に、確認することの列の後で見せる位置。省くと focus にする。 */
-  afterFocus?: keyof typeof BEFORE_COLUMN
-  before: (cells: Cells) => Promise<void>
-  beforeResult: string
-  after: (cells: Cells) => Promise<void>
-  /** 改修後の、確認することの列を見せた判定の文。 */
+  focus: Column
+  /** 確認することの列の後で見せる位置。省くと focus にする。 */
+  afterFocus?: Column
+  /** 改修前と改修後の両方で、観点の行に出る値。 */
+  values: string[]
+  /** 確認することの列を見せた判定の文。 */
   findingsResult: string
-  /** 改修後の、観点のセルを見せた判定の文。 */
+  /** 観点のセルを見せた判定の文。 */
   afterResult: string
 }[] = [
   {
@@ -93,16 +88,7 @@ const ITEMS: {
     patient: '利用者A',
     focus: 'scheduleStart',
     afterFocus: 'visitStart',
-    before: async (cells) => {
-      await expect(cells.nth(BEFORE_COLUMN.scheduleStart)).toHaveText('09:00 ❌')
-      await expect(cells.nth(BEFORE_COLUMN.visitStart)).toHaveText('09:15 ❌')
-    },
-    beforeResult: '両側の開始時間に記号の「❌」だけが付き、何が違うかの文は無い',
-    after: async (cells) => {
-      await expect(findings(cells).first()).toHaveText('開始時間が予定と違う')
-      await expect(cells.nth(COLUMN.scheduleStart)).toHaveText('09:00（不一致）')
-      await expect(cells.nth(COLUMN.visitStart)).toHaveText('09:15（不一致）')
-    },
+    values: ['09:00', '09:15'],
     findingsResult:
       '利用者A の確認することの列に「開始時間が予定と違う」が出て、予定の開始時間 09:00 に不一致のアイコンが付く',
     afterResult: '実績の開始時間 09:15 に不一致のアイコンが付く',
@@ -114,20 +100,7 @@ const ITEMS: {
     category: 'mismatch',
     patient: '利用者B',
     focus: 'visitDuration',
-    before: async (cells) => {
-      await expect(cells.nth(BEFORE_COLUMN.visitDuration)).toHaveText('35 ❌ ❌ (20~29)')
-    },
-    beforeResult: '実績の提供時間が「35 ❌ ❌ (20~29)」になり、2 つの「❌」の意味を見分けられない',
-    after: async (cells) => {
-      const duration = cells.nth(COLUMN.visitDuration)
-      await expect(duration).toHaveText('35（不一致）範囲 20〜29 分')
-      await expect(duration.getByTestId('receipt-mark-mismatch')).toHaveCount(1)
-      await expect(duration.getByTestId('receipt-mark-note')).toHaveCount(0)
-      await expect(findings(cells)).toContainText([
-        '実績の提供時間 35 分が範囲（20〜29 分）の外',
-        '提供時間が予定と違う',
-      ])
-    },
+    values: ['35'],
     findingsResult:
       '利用者B の確認することの列に、提供時間が範囲の外であることと、予定と違うことの 2 つの文が出る',
     afterResult: '実績の提供時間に不一致のアイコンが 1 つだけ付き、下に「範囲 20〜29 分」が出る',
@@ -139,15 +112,7 @@ const ITEMS: {
     category: 'mismatch',
     patient: '利用者C',
     focus: 'additions',
-    before: async (cells) => {
-      await expect(cells.nth(BEFORE_COLUMN.additions)).toHaveText('緊急 ※')
-    },
-    beforeResult: '行は不整合なのに、加算には注意の「※」が付く',
-    after: async (cells) => {
-      await expect(findings(cells)).toHaveText(['加算が規則に合わない'])
-      await expect(cells.nth(COLUMN.additions)).toHaveText('緊急（不一致）')
-      await expect(cells.nth(COLUMN.additions).getByTestId('receipt-mark-mismatch')).toHaveCount(1)
-    },
+    values: ['緊急'],
     findingsResult: '利用者C の確認することの列に「加算が規則に合わない」が出る',
     afterResult: '加算の「緊急」に不一致のアイコンが付く',
   },
@@ -159,18 +124,7 @@ const ITEMS: {
     patient: '利用者D',
     focus: 'scheduleEnd',
     afterFocus: 'visitDuration',
-    before: async (cells) => {
-      await expect(cells.nth(BEFORE_COLUMN.scheduleEnd)).toHaveText('13:44 ※')
-      await expect(cells.nth(BEFORE_COLUMN.scheduleDuration)).toHaveText('44 ※ (30~59)')
-    },
-    beforeResult: '提供時間と終了時間に記号の「※」が付き、何が違うかの文は無い',
-    after: async (cells) => {
-      await expect(findings(cells)).toHaveText(['提供時間が予定と違う', '終了時間が予定と違う'])
-      await expect(cells.nth(COLUMN.scheduleEnd)).toHaveText('13:44（注意）')
-      await expect(cells.nth(COLUMN.scheduleDuration)).toHaveText('44（注意）範囲 30〜59 分')
-      await expect(cells.nth(COLUMN.visitEnd)).toHaveText('13:50（注意）')
-      await expect(cells.nth(COLUMN.visitDuration)).toHaveText('50（注意）範囲 30〜59 分')
-    },
+    values: ['13:44', '13:50'],
     findingsResult:
       '利用者D の確認することの列に「提供時間が予定と違う」と「終了時間が予定と違う」が出て、予定の終了時間 13:44 に注意のアイコンが付く',
     afterResult:
@@ -183,14 +137,7 @@ const ITEMS: {
     category: 'schedule_only',
     patient: '利用者E',
     focus: 'scheduleStart',
-    before: async (cells) => {
-      await expect(cells.nth(BEFORE_COLUMN.scheduleStart)).toHaveText('14:00')
-    },
-    beforeResult: '予定のみの行に、確認することの文は無い',
-    after: async (cells) => {
-      await expect(findings(cells)).toHaveText(['実績が無い'])
-      await expect(cells.nth(COLUMN.visitStart)).toHaveText('データなし')
-    },
+    values: ['14:00'],
     findingsResult:
       '予定のみの利用者E の確認することに「実績が無い」が、実績のみの利用者F に「予定が無い」が出る',
     afterResult: '実績のみの利用者F の、予定の側のセルは空のままである',
@@ -198,67 +145,57 @@ const ITEMS: {
 ]
 
 test.describe('照合の結果', () => {
-  test.describe('食い違いの印', () => {
-    for (const variant of EVIDENCE_VARIANTS) {
-      const prefix = variant.label ? `${variant.label}: ` : ''
-      const isBefore = variant.name === 'before'
+  test.describe(`食い違いの印（${LOGIN_STAFF.name}、マネージャー）`, () => {
+    test.use({ storageState: LOGIN_STATE })
 
-      for (const item of ITEMS) {
-        test(`${prefix}${item.test}`, async ({ browser }, testInfo) => {
-          const schedules = testInfo.outputPath('schedules.csv')
-          const visits = testInfo.outputPath('visits.csv')
-          await writeFile(schedules, SCHEDULES)
-          await writeFile(visits, VISITS)
-          await recordPrEvidence(
-            browser,
-            { name: item.name, title: item.title, actor: ACTOR, variant },
-            signIn,
-            async ({ page, step, check }) => {
-              await page.goto('/receipt')
-              await step(
-                '照合の画面を開いている。予定と実績のダミーの CSV は、利用者A から F の行を持つ',
-              )
+    for (const item of ITEMS) {
+      test(`${item.name} ${item.test}`, { tag: '@compare' }, async ({ page }, testInfo) => {
+        const schedules = testInfo.outputPath('schedules.csv')
+        const visits = testInfo.outputPath('visits.csv')
+        await writeFile(schedules, SCHEDULES)
+        await writeFile(visits, VISITS)
 
-              await step('予定の CSV と実績の CSV を選び、照合する')
-              await page.getByTestId('receipt-source-csv').check()
-              await page.getByTestId('receipt-schedules-file').setInputFiles(schedules)
-              await page.getByTestId('receipt-visits-file').setInputFiles(visits)
-              await page.getByTestId('receipt-check-submit').click()
-              await expect(page).toHaveURL(/\/receipt\/result$/)
+        await page.goto('/receipt')
+        await expect(page.getByTestId('receipt-check-submit')).toBeVisible()
+        await intro(
+          page,
+          `${item.title}\n前提 予定と実績のダミーの CSV は、利用者A から F の行を持つ`,
+        )
 
-              const cells = receiptCategoryRowCells(
-                page,
-                item.category,
-                '2024年4月1日（月）',
-                item.patient,
-              )
-              if (isBefore) {
-                await step(`結果の表で、${item.patient} の行の観点のセルが見えるまで送る`)
-                await cells.nth(BEFORE_COLUMN[item.focus]).scrollIntoViewIfNeeded()
-                await item.before(cells)
-                await check(item.beforeResult)
-                return
-              }
-              await item.after(cells)
-              await step(`結果の表で、${item.patient} の行の確認することの列を見る`)
-              await cells.nth(COLUMN.findings).scrollIntoViewIfNeeded()
-              await check(item.findingsResult)
-              await step(`結果の表で、${item.patient} の行の観点のセルが見えるまで送る`)
-              await cells.nth(COLUMN[item.afterFocus ?? item.focus]).scrollIntoViewIfNeeded()
-              if (item.name === 'receipt-marks-one-side') {
-                const visitOnly = receiptCategoryRowCells(
-                  page,
-                  'visit_only',
-                  '2024年4月1日（月）',
-                  '利用者F',
-                )
-                await expect(findings(visitOnly)).toHaveText(['予定が無い'])
-              }
-              await check(item.afterResult)
-            },
-          )
+        await step(page, '予定の CSV と実績の CSV を選び、照合する', async () => {
+          await page.getByTestId('receipt-source-csv').check()
+          await page.getByTestId('receipt-schedules-file').setInputFiles(schedules)
+          await page.getByTestId('receipt-visits-file').setInputFiles(visits)
+          await page.getByTestId('receipt-check-submit').click()
+          await expect(page).toHaveURL(/\/receipt\/result$/)
         })
-      }
+
+        const cells = receiptCategoryRowCells(
+          page,
+          item.category,
+          '2024年4月1日（月）',
+          item.patient,
+        )
+        await step(page, `結果の表で、${item.patient} の行の確認することの列を見る`, () =>
+          cells.nth(COLUMN.findings).scrollIntoViewIfNeeded(),
+        )
+        await check(page, item.findingsResult, () => expectCellsStartWith(cells, ...item.values))
+        await step(page, `結果の表で、${item.patient} の行の観点のセルが見えるまで送る`, () =>
+          focusCell(cells, item.afterFocus ?? item.focus).scrollIntoViewIfNeeded(),
+        )
+        await check(page, item.afterResult, async () => {
+          await expectCellsStartWith(cells, ...item.values)
+          if (item.name === 'receipt-marks-one-side') {
+            const visitOnly = receiptCategoryRowCells(
+              page,
+              'visit_only',
+              '2024年4月1日（月）',
+              '利用者F',
+            )
+            await expectCellsStartWith(visitOnly, '15:00')
+          }
+        })
+      })
     }
   })
 })

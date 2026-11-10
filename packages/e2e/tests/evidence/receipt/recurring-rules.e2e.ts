@@ -3,12 +3,13 @@ import { writeFile } from 'node:fs/promises'
 import { expect, test, type APIRequestContext, type Locator, type Page } from '@playwright/test'
 
 import { issueAccessToken } from '../../fixtures/apiReference'
-import { CALENDARPIT_URL, LEADER, LOGIN_EMAIL, LOGIN_STAFF } from '../../fixtures/env'
-import { EVIDENCE_VARIANTS, recordPrEvidence } from '../../fixtures/evidence'
+import { check, intro, step } from '../../fixtures/caption'
+import { CALENDARPIT_URL, LEADER, LOGIN_EMAIL, LOGIN_STAFF, LOGIN_STATE } from '../../fixtures/env'
 import { registerPatient } from '../../fixtures/patient'
+import { dayLabel } from '../../fixtures/date'
+import { prepareOutsideRecording } from '../../fixtures/recording'
 import { STAFF_FORM } from '../../fixtures/staff'
 import { linkStaffCalendar, unlinkStaffCalendar } from '../../setup/calendar'
-import { signInAtBroker } from '../../screens/login'
 import { showAllReceiptRows } from '../../screens/receipt'
 import { calendarpitEvent } from '../../selectors/calendarpit'
 import { receiptCategoryRowCells, receiptResultRow } from '../../selectors/receipt'
@@ -17,7 +18,6 @@ import { calendarTimeLabel } from '../../selectors/scheduleCalendar'
 // 照合の API は、compose/receipt-calendars.json の森のカレンダーを calendarpit から読む。
 // buddy を正本にする 1 つ目の事業所で森に Google カレンダーを結び付けると、予定の API が森の繰り返しの予定を RRULE で書き出す。
 // 書き出しの RRULE は、Google カレンダーを正本にする事業所の書き込みと同じ処理で作る（ADR-0039）。
-const ACTOR = `${LOGIN_STAFF.name}（マネージャー）`
 const MORI = LEADER.staff
 const MORI_CALENDAR = 'kenta.mori@example.com'
 const END_DATE = '2027-01-31'
@@ -130,10 +130,8 @@ const patientNames = () => {
 /** 照合の結果の表の利用者名。照合は利用者名の空白を全て除く。 */
 const receiptName = (name: string) => name.replaceAll(' ', '')
 
-/** ログインし、規則ごとの利用者を登録し、森に Google カレンダーを結び付ける。利用者の ID を規則の key で返す。 */
+/** 規則ごとの利用者を登録し、森に Google カレンダーを結び付ける。利用者の ID を規則の key で返す。 */
 const prepare = async (page: Page, names: Record<Rule['key'], string>) => {
-  await page.goto('/schedule')
-  await signInAtBroker(page, LOGIN_EMAIL)
   const token = await issueAccessToken(page.request, LOGIN_EMAIL)
   const ids = {} as Record<Rule['key'], string>
   for (const rule of RULES) {
@@ -263,166 +261,179 @@ const waitForExport = async (request: APIRequestContext, names: Record<Rule['key
 }
 
 test.describe('照合の結果', () => {
-  test.describe('複数の曜日と隔週の繰り返しの予定', () => {
-    for (const variant of EVIDENCE_VARIANTS) {
-      const prefix = variant.label ? `${variant.label}: ` : ''
+  test.describe(`複数の曜日と隔週の繰り返しの予定（${LOGIN_STAFF.name}、マネージャー）`, () => {
+    test.use({ storageState: LOGIN_STATE })
 
-      test(`${prefix}複数の曜日と隔週の繰り返しの訪問の予定を画面から作った場合、calendarpit の回が予定のカレンダーの回と同じ日に出ること`, async ({
-        browser,
-        request,
-      }) => {
-        const names = patientNames()
-        await recordPrEvidence(
-          browser,
-          {
-            name: 'receipt-recurring-rule-occurrences',
-            title:
-              '森 健太に毎週の月曜と木曜、隔週の火曜、隔週の月曜と木曜、隔週の日曜と水曜の訪問の予定を画面から作ると、calendarpit の回が、予定のカレンダーの回と、2026 年 12 月と 2027 年 1 月の全ての日で一致する',
-            actor: ACTOR,
-            variant,
-          },
-          (page) => prepare(page, names),
-          async ({ page, step, check }, ids) => {
-            try {
-              await page.goto(`/schedule?view=week&date=${RULES[0].start}`)
-              await expect(calendarTimeLabel(page, '06:00:00')).toBeVisible()
-              await step(
-                `${MORI.name} の Google カレンダーを結び付け、規則ごとの利用者を登録してある。予定のカレンダーを週の表示で開いている`,
-              )
-              for (const rule of RULES) {
-                await step(
-                  [
-                    `「予定を作成」で、訪問の予定（訪看I3）を ${names[rule.key]} と ${MORI.name} で作る`,
-                    `日付 ${rule.start}、${rule.time} から 45 分、「カスタム…」で${rule.label}（間隔 ${rule.interval}）、終了日 ${END_DATE}`,
-                  ].join('\n'),
-                )
-                await createVisitRule(page, rule, ids[rule.key])
-              }
+    test('receipt-recurring-rule-occurrences 複数の曜日と隔週の繰り返しの訪問の予定を画面から作った場合、calendarpit の回が予定のカレンダーの回と同じ日に出ること', async ({
+      browser,
+      context,
+      request,
+    }) => {
+      const names = patientNames()
+      const ids = await prepareOutsideRecording(browser, { storageState: LOGIN_STATE }, (prep) =>
+        prepare(prep, names),
+      )
 
-              await step(
-                '予定のカレンダーの週の表示を、2026-11-29 の週から 2027-01-31 の週まで開き、規則ごとの回の日を読む',
-              )
-              await expectBuddyOccurrences(page, names)
-              await waitForExport(request, names)
-              await step('（撮影のため、4 つの規則の回が並ぶ 2026-12-06 の週を開き直す）')
-              await page.goto(`/schedule?view=week&date=${RULES[3].start}`)
-              await expect(calendarTimeLabel(page, '06:00:00')).toBeVisible()
-              const lines: string[] = []
-              for (const rule of RULES) {
-                const name = names[rule.key]
-                const google = await googleDates(request, visitSummary(name))
-                expect(google).toEqual(rule.dates)
-                lines.push(`${rule.label}（${rule.dates.length} 回）: ${datesText(rule.dates)}`)
-              }
-              await check(
-                [
-                  '（撮影のため、週の表示と Calendar API で読んだ回の日を出す）予定のカレンダーと calendarpit の回の日が、規則ごとに全て同じ',
-                  ...lines,
-                ].join('\n'),
-              )
-
-              const sunday = RULES[3]
-              await step(
-                `Google カレンダーの代わりの calendarpit の管理の画面で、${MORI_CALENDAR} の ${sunday.start}（日曜、${sunday.label}の最初の回）を開く`,
-              )
-              await page.goto(
-                `${CALENDARPIT_URL}/?calendar=${encodeURIComponent(MORI_CALENDAR)}&date=${sunday.start}`,
-              )
-              await expect(calendarpitEvent(page, visitSummary(names[sunday.key]))).toBeVisible()
-              await check(
-                `calendarpit の ${sunday.start}（日曜）に「${visitSummary(names[sunday.key])}」が出る`,
-              )
-            } finally {
-              await step('（撮影のため、ほかの撮影の前提に戻すよう、結び付けを外す）')
-              await unlinkStaffCalendar(page, MORI.id)
-            }
-          },
+      const page = await context.newPage()
+      try {
+        await page.goto(`/schedule?view=week&date=${RULES[0].start}`)
+        await expect(calendarTimeLabel(page, '06:00:00')).toBeVisible()
+        await intro(
+          page,
+          `森 健太に毎週の月曜と木曜、隔週の火曜、隔週の月曜と木曜、隔週の日曜と水曜の訪問の予定を画面から作ると、calendarpit の回が、予定のカレンダーの回と、2026 年 12 月と 2027 年 1 月の全ての日で一致する\n前提 ${MORI.name} の Google カレンダーを結び付け、規則ごとの利用者を登録してある`,
         )
-      })
+        for (const rule of RULES) {
+          await step(
+            page,
+            [
+              `「予定を作成」で、訪問の予定（訪看I3）を ${names[rule.key]} と ${MORI.name} で作る`,
+              `日付 ${rule.start}、${rule.time} から 45 分、「カスタム…」で${rule.label}（間隔 ${rule.interval}）、終了日 ${END_DATE}`,
+            ].join('\n'),
+            () => createVisitRule(page, rule, ids[rule.key]),
+          )
+        }
 
-      test(`${prefix}複数の曜日と隔週の繰り返しの予定の回に合う実績で照合した場合、全ての回が整合の行に出て、ほかの区分に出ないこと`, async ({
-        browser,
-        request,
-      }) => {
-        const names = patientNames()
-        await recordPrEvidence(
-          browser,
-          {
-            name: 'receipt-recurring-rule-check',
-            title:
-              '毎週の月曜と木曜、隔週の火曜、隔週の月曜と木曜、隔週の日曜と水曜の訪問の予定の回に合う実績で、2026 年 12 月と 2027 年 1 月を照合すると、全ての回が整合の行に出て、ほかの区分に出ない',
-            actor: ACTOR,
-            variant,
-          },
-          async (page) => {
-            const ids = await prepare(page, names)
-            for (const rule of RULES) await createVisitRule(page, rule, ids[rule.key])
+        await step(
+          page,
+          '予定のカレンダーの週の表示を、2026-11-29 の週から 2027-01-31 の週まで開き、規則ごとの回の日を読む',
+          async () => {
+            await expectBuddyOccurrences(page, names)
             await waitForExport(request, names)
-            const files = { '2026-12': '', '2027-01': '' } as Record<
-              (typeof MONTHS)[number],
-              string
-            >
-            for (const month of MONTHS) files[month] = await writeVisits(month, names)
-            await page.goto('/receipt')
-            return files
           },
-          async ({ page, step, check }, files) => {
-            try {
-              await page.goto('/receipt')
-              await expect(page.getByTestId('receipt-check-submit')).toBeVisible()
-              await step(
-                [
-                  `${MORI.name} に、4 つの規則の訪問の予定（訪看I3、45 分、${END_DATE} まで）を画面から作り、calendarpit の森のカレンダーに書き出されてある`,
-                  '照合の画面を開いている',
-                ].join('\n'),
-              )
-              for (const month of MONTHS) {
-                const expected = RULES.flatMap((rule) =>
-                  rule.dates
-                    .filter((date) => date.startsWith(month))
-                    .map((date) => ({ rule, date })),
-                )
-                await page.goto('/receipt')
-                await step(
-                  [
-                    `予定の取り方に「Google カレンダー」を選び、対象の月に ${month} を入れる`,
-                    `実績の CSV に、${month} の全ての回（${expected.length} 件）の実績を選び、「照合する」を押す`,
-                  ].join('\n'),
-                )
-                await page.getByTestId('receipt-source-calendar').check()
-                await page.getByTestId('receipt-month').fill(month)
-                await page.getByTestId('receipt-visits-file').setInputFiles(files[month])
-                await page.getByTestId('receipt-check-submit').click()
-                await expect(page).toHaveURL(/\/receipt\/result$/)
-                await showAllReceiptRows(page)
-
-                for (const { rule, date } of expected) {
-                  await expect(
-                    receiptCategoryRowCells(page, 'match', date, receiptName(names[rule.key])),
-                  ).not.toHaveCount(0)
-                }
-                const lines: string[] = []
-                for (const rule of RULES) {
-                  const name = receiptName(names[rule.key])
-                  const count = expected.filter((item) => item.rule === rule).length
-                  await expect(receiptResultRow(page, name)).toHaveCount(count)
-                  lines.push(`${rule.label}: ${count} 件`)
-                }
-                await page.getByTestId('receipt-category-match').scrollIntoViewIfNeeded()
-                await check(
-                  [
-                    `${month} の 4 つの規則の回が全て「整合データ」に出て、不整合、予定のみ、実績のみに 4 つの規則の利用者の行が無い（ほかの行は、calendarpit の森のカレンダーに元からある予定）`,
-                    ...lines,
-                  ].join('\n'),
-                )
-              }
-            } finally {
-              await step('（撮影のため、ほかの撮影の前提に戻すよう、結び付けを外す）')
-              await unlinkStaffCalendar(page, MORI.id)
+        )
+        await step(
+          page,
+          '（撮影のため、4 つの規則の回が並ぶ 2026-12-06 の週を開き直す）',
+          async () => {
+            await page.goto(`/schedule?view=week&date=${RULES[3].start}`)
+            await expect(calendarTimeLabel(page, '06:00:00')).toBeVisible()
+          },
+        )
+        const lines = RULES.map(
+          (rule) => `${rule.label}（${rule.dates.length} 回）: ${datesText(rule.dates)}`,
+        )
+        await check(
+          page,
+          [
+            '（撮影のため、週の表示と Calendar API で読んだ回の日を出す）予定のカレンダーと calendarpit の回の日が、規則ごとに全て同じ',
+            ...lines,
+          ].join('\n'),
+          async () => {
+            for (const rule of RULES) {
+              const google = await googleDates(request, visitSummary(names[rule.key]))
+              expect(google).toEqual(rule.dates)
             }
           },
         )
-      })
-    }
+
+        const sunday = RULES[3]
+        await step(
+          page,
+          `Google カレンダーの代わりの calendarpit の管理の画面で、${MORI_CALENDAR} の ${sunday.start}（日曜、${sunday.label}の最初の回）を開く`,
+          async () => {
+            await page.goto(
+              `${CALENDARPIT_URL}/?calendar=${encodeURIComponent(MORI_CALENDAR)}&date=${sunday.start}`,
+            )
+          },
+        )
+        await check(
+          page,
+          `calendarpit の ${sunday.start}（日曜）に「${visitSummary(names[sunday.key])}」が出る`,
+          () => expect(calendarpitEvent(page, visitSummary(names[sunday.key]))).toBeVisible(),
+        )
+      } finally {
+        await step(page, '（撮影のため、ほかの撮影の前提に戻すよう、結び付けを外す）', () =>
+          unlinkStaffCalendar(page, MORI.id),
+        )
+      }
+    })
+
+    test('receipt-recurring-rule-check 複数の曜日と隔週の繰り返しの予定の回に合う実績で照合した場合、全ての回が整合の行に出て、ほかの区分に出ないこと', async ({
+      browser,
+      context,
+      request,
+    }) => {
+      const names = patientNames()
+      const files = await prepareOutsideRecording(
+        browser,
+        { storageState: LOGIN_STATE },
+        async (prep) => {
+          const ids = await prepare(prep, names)
+          for (const rule of RULES) await createVisitRule(prep, rule, ids[rule.key])
+          await waitForExport(request, names)
+          const written = { '2026-12': '', '2027-01': '' } as Record<
+            (typeof MONTHS)[number],
+            string
+          >
+          for (const month of MONTHS) written[month] = await writeVisits(month, names)
+          return written
+        },
+      )
+
+      const page = await context.newPage()
+      try {
+        await page.goto('/receipt')
+        await expect(page.getByTestId('receipt-check-submit')).toBeVisible()
+        await intro(
+          page,
+          `毎週の月曜と木曜、隔週の火曜、隔週の月曜と木曜、隔週の日曜と水曜の訪問の予定の回に合う実績で、2026 年 12 月と 2027 年 1 月を照合すると、全ての回が整合の行に出て、ほかの区分に出ない\n前提 ${MORI.name} に、4 つの規則の訪問の予定（訪看I3、45 分、${END_DATE} まで）を画面から作り、calendarpit の森のカレンダーに書き出されてある`,
+        )
+        for (const month of MONTHS) {
+          const expected = RULES.flatMap((rule) =>
+            rule.dates.filter((date) => date.startsWith(month)).map((date) => ({ rule, date })),
+          )
+          await step(
+            page,
+            [
+              `予定の取り方に「Google カレンダー」を選び、対象の月に ${month} を入れる`,
+              `実績の CSV に、${month} の全ての回（${expected.length} 件）の実績を選び、「照合する」を押す`,
+            ].join('\n'),
+            async () => {
+              await page.goto('/receipt')
+              await page.getByTestId('receipt-source-calendar').check()
+              await page.getByTestId('receipt-month').fill(month)
+              await page.getByTestId('receipt-visits-file').setInputFiles(files[month])
+              await page.getByTestId('receipt-check-submit').click()
+              await expect(page).toHaveURL(/\/receipt\/result$/)
+              await showAllReceiptRows(page)
+            },
+          )
+
+          const lines = RULES.map(
+            (rule) => `${rule.label}: ${expected.filter((item) => item.rule === rule).length} 件`,
+          )
+          await check(
+            page,
+            [
+              `${month} の 4 つの規則の回が全て「整合データ」に出て、不整合、予定のみ、実績のみに 4 つの規則の利用者の行が無い（ほかの行は、calendarpit の森のカレンダーに元からある予定）`,
+              ...lines,
+            ].join('\n'),
+            async () => {
+              for (const { rule, date } of expected) {
+                await expect(
+                  receiptCategoryRowCells(
+                    page,
+                    'match',
+                    `${date.slice(0, 4)}年${dayLabel(date)}`,
+                    receiptName(names[rule.key]),
+                  ),
+                ).not.toHaveCount(0)
+              }
+              for (const rule of RULES) {
+                const count = expected.filter((item) => item.rule === rule).length
+                await expect(receiptResultRow(page, receiptName(names[rule.key]))).toHaveCount(
+                  count,
+                )
+              }
+              await page.getByTestId('receipt-category-match').scrollIntoViewIfNeeded()
+            },
+          )
+        }
+      } finally {
+        await step(page, '（撮影のため、ほかの撮影の前提に戻すよう、結び付けを外す）', () =>
+          unlinkStaffCalendar(page, MORI.id),
+        )
+      }
+    })
   })
 })

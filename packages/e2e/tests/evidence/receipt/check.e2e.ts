@@ -1,8 +1,7 @@
 import { expect, test, type Page } from '@playwright/test'
 
-import { LEADER, LOGIN_EMAIL, LOGIN_STAFF, RECEIPT_TESTDATA } from '../../fixtures/env'
-import { EVIDENCE_VARIANTS, recordPrEvidence } from '../../fixtures/evidence'
-import { signInAtBroker } from '../../screens/login'
+import { check, intro, step } from '../../fixtures/caption'
+import { LEADER, LOGIN_STAFF, LOGIN_STATE, RECEIPT_TESTDATA } from '../../fixtures/env'
 import { showAllReceiptRows } from '../../screens/receipt'
 import { receiptCategoryRowCells, receiptResultRow } from '../../selectors/receipt'
 import { scrollToRightEnd } from '../../widgets/scroll/actions/scroll'
@@ -22,7 +21,7 @@ const CALENDAR_VISIT_CASES = [
     title:
       '2026-11 の Google カレンダーの予定と実績で照合すると、11/02 の見本 一郎の予定（10:00〜10:30 の訪看I2）と合う実績が整合の行に出る',
     category: 'match',
-    date: '2026-11-02',
+    date: '2026年11月2日（月）',
     patient: '見本一郎',
     cells: ['', '訪看I２', '10:00', '10:29', '29', '訪看I２', '10:00', '10:29', '29', '通常'],
     scheduleResult:
@@ -35,7 +34,7 @@ const CALENDAR_VISIT_CASES = [
     title:
       '2026-11 の Google カレンダーの予定と実績で照合すると、11/04 の見本 二葉の予定（09:00 開始）と開始時間が違う実績（09:15 開始）が不整合の行に出る',
     category: 'mismatch',
-    date: '2026-11-04',
+    date: '2026年11月4日（水）',
     patient: '見本二葉',
     cells: [
       '開始時間が予定と違う終了時間が予定と違う',
@@ -60,7 +59,7 @@ const CALENDAR_VISIT_CASES = [
     title:
       '2026-11 の Google カレンダーの予定と実績で照合すると、11/18 の見本 二葉の予定（訪看I3）とサービス内容が違う実績（予防訪看I３）が不整合の行に出る',
     category: 'mismatch',
-    date: '2026-11-18',
+    date: '2026年11月18日（水）',
     patient: '見本二葉',
     cells: [
       'サービス内容が予定と違う',
@@ -81,121 +80,102 @@ const CALENDAR_VISIT_CASES = [
   },
 ] as const
 
-const signIn = async (page: Page) => {
+/** 照合の画面を開き、「照合する」が出るまで待つ。 */
+const openReceipt = async (page: Page) => {
   await page.goto('/receipt')
-  await signInAtBroker(page, LOGIN_EMAIL)
+  await expect(page.getByTestId('receipt-check-submit')).toBeVisible()
 }
 
+/** 予定の取り方に「Google カレンダー」を選び、対象の月に 2026-11 を入れる。 */
+const chooseCalendarMonth = (page: Page) =>
+  step(page, '予定の取り方に「Google カレンダー」を選び、対象の月に 2026-11 を入れる', async () => {
+    await page.getByTestId('receipt-source-calendar').check()
+    await page.getByTestId('receipt-month').fill(CALENDAR_MONTH)
+  })
+
 test.describe('照合の結果', () => {
-  test.describe('Google カレンダーの予定での照合', () => {
-    for (const variant of EVIDENCE_VARIANTS) {
-      test(`${variant.label ? `${variant.label}: ` : ''}対象の月を選んで照合した場合、calendarpit の森の予定が予定のみの行に出ること`, async ({
-        browser,
-      }) => {
-        await recordPrEvidence(
-          browser,
-          {
-            name: 'receipt-calendar-month-check',
-            title:
-              'ローカル環境の compose で、予定の取り方に「Google カレンダー」を選んで 2026-11 で照合すると、calendarpit の森 健太の予定が予定のみの行に出る',
-            actor: `${LOGIN_STAFF.name}（マネージャー）`,
-            variant,
-          },
-          signIn,
-          async ({ page, step, check }) => {
-            await page.goto('/receipt')
-            await expect(page.getByTestId('receipt-check-submit')).toBeVisible()
-            await step('照合の画面を開いている')
+  test.describe(`Google カレンダーの予定での照合（${LOGIN_STAFF.name}、マネージャー）`, () => {
+    test.use({ storageState: LOGIN_STATE })
 
-            await step('予定の取り方に「Google カレンダー」を選び、対象の月に 2026-11 を入れる')
-            await page.getByTestId('receipt-source-calendar').check()
-            await page.getByTestId('receipt-month').fill(CALENDAR_MONTH)
+    test('receipt-calendar-month-check 対象の月を選んで照合した場合、calendarpit の森の予定が予定のみの行に出ること', async ({
+      page,
+    }) => {
+      await openReceipt(page)
+      await intro(
+        page,
+        'ローカル環境の compose で、予定の取り方に「Google カレンダー」を選んで 2026-11 で照合すると、calendarpit の森 健太の予定が予定のみの行に出る',
+      )
 
-            await step('実績の CSV に visits_cp932.csv を選び、「照合する」を押す')
-            await page.getByTestId('receipt-visits-file').setInputFiles(RECEIPT_TESTDATA.visits)
+      await chooseCalendarMonth(page)
+      await step(page, '実績の CSV に visits_cp932.csv を選び、「照合する」を押す', async () => {
+        await page.getByTestId('receipt-visits-file').setInputFiles(RECEIPT_TESTDATA.visits)
+        await page.getByTestId('receipt-check-submit').click()
+      })
+      await check(
+        page,
+        '503 にならず、2026 年 11 月の Google カレンダーとの照合の結果の画面が開く',
+        async () => {
+          await expect(page).toHaveURL(/\/receipt\/result$/)
+          await expect(page.getByTestId('receipt-result')).toContainText(
+            '2026 年 11 月の Google カレンダー',
+          )
+        },
+      )
+
+      await check(
+        page,
+        '「予定のみ」に、主訪問者が森 健太の、見本一郎と見本二葉の予定の行が出る',
+        async () => {
+          await page.getByTestId('receipt-category-schedule_only').scrollIntoViewIfNeeded()
+          const futaba = receiptResultRow(page, '見本二葉')
+          await expect(futaba).toHaveCount(3)
+          await expect(futaba.first()).toContainText(LEADER.staff.name)
+          await expect(receiptResultRow(page, '見本一郎')).toContainText([
+            '2026年11月2日（月）',
+            '2026年11月16日（月）',
+          ])
+        },
+      )
+    })
+
+    for (const item of CALENDAR_VISIT_CASES) {
+      test(`${item.name} 対象の月の、${item.test}`, async ({ page }) => {
+        await openReceipt(page)
+        await intro(page, item.title)
+
+        await chooseCalendarMonth(page)
+        await step(
+          page,
+          '実績の CSV に visits_2026-11_utf8.csv を選び、「照合する」を押す',
+          async () => {
+            await page
+              .getByTestId('receipt-visits-file')
+              .setInputFiles(RECEIPT_TESTDATA.calendarVisits)
             await page.getByTestId('receipt-check-submit').click()
             await expect(page).toHaveURL(/\/receipt\/result$/)
             await expect(page.getByTestId('receipt-result')).toContainText(
               '2026 年 11 月の Google カレンダー',
             )
-            await check('503 にならず、2026 年 11 月の Google カレンダーとの照合の結果の画面が開く')
-
-            const category = page.getByTestId('receipt-category-schedule_only')
-            await category.scrollIntoViewIfNeeded()
-            const futaba = receiptResultRow(page, '見本二葉')
-            await expect(futaba).toHaveCount(3)
-            await expect(futaba.first()).toContainText(LEADER.staff.name)
-            await expect(receiptResultRow(page, '見本一郎')).toContainText([
-              '2026年11月2日（月）',
-              '2026年11月16日（月）',
-            ])
-            await check('「予定のみ」に、主訪問者が森 健太の、見本一郎と見本二葉の予定の行が出る')
           },
         )
+
+        if (item.category === 'match') {
+          await step(page, '表示する行を「全ての行」に切り替える', () => showAllReceiptRows(page))
+        }
+
+        const row = receiptCategoryRowCells(page, item.category, item.date, item.patient)
+        const cells = [item.date, item.patient, LEADER.staff.name, ...item.cells]
+        await check(page, item.scheduleResult, () => expect(row).toHaveText(cells))
+
+        await step(
+          page,
+          '（撮影のため、結果の表を右端まで送り、実績の側の列を見せる）',
+          async () => {
+            await scrollToRightEnd(page.getByTestId('receipt-result-table'))
+          },
+        )
+        await check(page, item.visitResult, () => expect(row).toHaveText(cells))
       })
-    }
-
-    for (const item of CALENDAR_VISIT_CASES) {
-      for (const variant of EVIDENCE_VARIANTS) {
-        test(`${variant.label ? `${variant.label}: ` : ''}対象の月の、${item.test}`, async ({
-          browser,
-        }) => {
-          await recordPrEvidence(
-            browser,
-            {
-              name: item.name,
-              title: item.title,
-              actor: `${LOGIN_STAFF.name}（マネージャー）`,
-              variant,
-            },
-            signIn,
-            async ({ page, step, check }) => {
-              await page.goto('/receipt')
-              await expect(page.getByTestId('receipt-check-submit')).toBeVisible()
-              await step('照合の画面を開いている')
-
-              await step('予定の取り方に「Google カレンダー」を選び、対象の月に 2026-11 を入れる')
-              await page.getByTestId('receipt-source-calendar').check()
-              await page.getByTestId('receipt-month').fill(CALENDAR_MONTH)
-
-              await step('実績の CSV に visits_2026-11_utf8.csv を選び、「照合する」を押す')
-              await page
-                .getByTestId('receipt-visits-file')
-                .setInputFiles(RECEIPT_TESTDATA.calendarVisits)
-              await page.getByTestId('receipt-check-submit').click()
-              await expect(page).toHaveURL(/\/receipt\/result$/)
-              await expect(page.getByTestId('receipt-result')).toContainText(
-                '2026 年 11 月の Google カレンダー',
-              )
-
-              if (item.category === 'match') {
-                await step('表示する行を「全ての行」に切り替える')
-
-                await showAllReceiptRows(page)
-              }
-
-              const row = receiptCategoryRowCells(page, item.category, item.date, item.patient)
-              await expect(row).toHaveText([
-                item.date,
-                item.patient,
-                LEADER.staff.name,
-                ...item.cells,
-              ])
-              await check(item.scheduleResult)
-
-              await step('（撮影のため、結果の表を右端まで送り、実績の側の列を見せる）')
-              await scrollToRightEnd(page.getByTestId('receipt-result-table'))
-              await expect(row).toHaveText([
-                item.date,
-                item.patient,
-                LEADER.staff.name,
-                ...item.cells,
-              ])
-              await check(item.visitResult)
-            },
-          )
-        })
-      }
     }
   })
 })
