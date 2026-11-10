@@ -1,4 +1,4 @@
-import { type Page, expect, test } from '@playwright/test'
+import { type Locator, type Page, expect, test } from '@playwright/test'
 
 import { check, intro, step } from '../../fixtures/caption'
 import { mockUrl } from '../../fixtures/evidence'
@@ -10,9 +10,9 @@ const NEW = 'patient-new_利用者の登録/mocks'
 const DETAIL = 'patient-detail_利用者の詳細/mocks'
 
 /** モック file を開き、testid が ready の要素が出るまで待つ。ready は file を開いたことを示す要素にする */
-const openMock = async (page: Page, file: string, ready: string) => {
+const openMock = async (page: Page, file: string, ready: Locator) => {
   await page.goto(mockUrl(file))
-  await expect(page.getByTestId(ready).first()).toBeVisible()
+  await expect(ready.first()).toBeVisible()
 }
 
 test.describe('利用者の管理の画面仕様書のモック', () => {
@@ -20,7 +20,7 @@ test.describe('利用者の管理の画面仕様書のモック', () => {
     test('patient-list 利用者の一覧のモックを開いた場合、利用中の利用者だけが状態のカラム無しで並び、ヘルプが開き、行を押すと詳細へ移ること', async ({
       page,
     }) => {
-      await openMock(page, `${LIST}/01-list.html`, 'patient-list-table')
+      await openMock(page, `${LIST}/01-list.html`, page.getByTestId('patient-list-table'))
       await intro(
         page,
         '利用者の一覧は、利用中の利用者だけを、名前、担当の職員、サービス、希望のカラムで並べ、? で説明が開く\n前提 利用者の一覧のモック（01-list.html）を開いている',
@@ -51,7 +51,7 @@ test.describe('利用者の管理の画面仕様書のモック', () => {
     test('patient-list-ended 利用者の一覧のモックで状態の絞り込みを押した場合、利用の終了の利用者と利用の終了にした日が出ること', async ({
       page,
     }) => {
-      await openMock(page, `${LIST}/01-list.html`, 'patient-list-filter-status')
+      await openMock(page, `${LIST}/01-list.html`, page.getByTestId('patient-list-filter-status'))
       await intro(
         page,
         '「状態: 利用の終了」では、利用の終了の利用者だけを、利用の終了にした日のカラムを足して出す\n前提 利用者の一覧のモック（01-list.html）を開いている',
@@ -76,7 +76,7 @@ test.describe('利用者の管理の画面仕様書のモック', () => {
     test('patient-list-empty 利用者の一覧で絞り込みに合う利用者がいない場合、利用者が無いことの文が出て、絞り込みを外すで一覧へ戻ること', async ({
       page,
     }) => {
-      await openMock(page, `${LIST}/03-empty.html`, 'patient-list-empty')
+      await openMock(page, `${LIST}/03-empty.html`, page.getByTestId('patient-list-empty'))
       await intro(
         page,
         '絞り込みに合う利用者がいないと 利用者が無いことの文が出て、絞り込みを外すで一覧へ戻る\n前提 絞り込みに合う利用者がいないときのモック（03-empty.html）を開いている',
@@ -100,7 +100,7 @@ test.describe('利用者の管理の画面仕様書のモック', () => {
     test('patient-list-loading 利用者の一覧を読んでいる場合、読み込み中の表示が出ること', async ({
       page,
     }) => {
-      await openMock(page, `${LIST}/04-loading.html`, 'patient-list-loading')
+      await openMock(page, `${LIST}/04-loading.html`, page.getByTestId('patient-list-loading'))
       await intro(
         page,
         '利用者を読んでいる間は、一覧の位置に読み込み中の表示が出る\n前提 読み込み中のモック（04-loading.html）を開いている',
@@ -114,7 +114,7 @@ test.describe('利用者の管理の画面仕様書のモック', () => {
     test('patient-list-error 利用者の一覧を読めなかった場合、失敗の文が出て、読み直すで一覧へ移ること', async ({
       page,
     }) => {
-      await openMock(page, `${LIST}/05-error.html`, 'patient-list-error')
+      await openMock(page, `${LIST}/05-error.html`, page.getByTestId('patient-list-error'))
       await intro(
         page,
         '利用者を読めないと失敗の文が出て、読み直すで一覧へ移る\n前提 読み込みの失敗のモック（05-error.html）を開いている',
@@ -133,7 +133,7 @@ test.describe('利用者の管理の画面仕様書のモック', () => {
     test('patient-list-forbidden 職員の管理の権限を持たない職員が利用者の一覧を開いた場合、権限が無い表示が出て、ナビゲーションに職員と利用者が無いこと', async ({
       page,
     }) => {
-      await openMock(page, `${LIST}/06-forbidden.html`, 'page-forbidden')
+      await openMock(page, `${LIST}/06-forbidden.html`, page.getByTestId('page-forbidden'))
       await intro(
         page,
         '職員の管理の権限が無いと、権限が無い表示が出て、ナビゲーションに職員と利用者が出ない\n前提 権限が無いときのモック（06-forbidden.html）を開いている',
@@ -155,7 +155,7 @@ test.describe('利用者の管理の画面仕様書のモック', () => {
     test('patient-new 利用者の一覧で利用者を登録を押した場合、選ぶ欄が未選択で × の無い登録のダイアログが開き、Escape で一覧へ戻ること', async ({
       page,
     }) => {
-      await openMock(page, `${LIST}/01-list.html`, 'patient-list-new')
+      await openMock(page, `${LIST}/01-list.html`, page.getByTestId('patient-list-new'))
       await intro(
         page,
         '利用者を登録を押すと、選ぶ欄が未選択で × の無い入力のダイアログが開き、Escape で一覧へ戻る\n前提 利用者の一覧のモック（01-list.html）を開いている',
@@ -182,7 +182,7 @@ test.describe('利用者の管理の画面仕様書のモック', () => {
     test('patient-new-invalid 登録のダイアログで何も入れずに登録を押した場合、欄ごとの誤りの文が出ること', async ({
       page,
     }) => {
-      await openMock(page, `${NEW}/01-initial.html`, 'patient-new-submit')
+      await openMock(page, `${NEW}/01-initial.html`, page.getByTestId('patient-new-submit'))
       await intro(
         page,
         '名前、サービス、希望の時間帯が無いまま登録を押すと、欄ごとに誤りの文が出る\n前提 登録のダイアログのモック（01-initial.html）を開いている',
@@ -206,7 +206,11 @@ test.describe('利用者の管理の画面仕様書のモック', () => {
     test('patient-new-submit-error 登録を予定の API が拒んだ場合、理由の文が出ること', async ({
       page,
     }) => {
-      await openMock(page, `${NEW}/03-submit-error.html`, 'patient-new-submit-error')
+      await openMock(
+        page,
+        `${NEW}/03-submit-error.html`,
+        page.getByTestId('patient-new-submit-error'),
+      )
       await intro(
         page,
         '選んだ担当の職員が休職か退職になって登録を拒まれると、理由の文が出る\n前提 登録の失敗のモック（03-submit-error.html）を開いている',
@@ -222,7 +226,7 @@ test.describe('利用者の管理の画面仕様書のモック', () => {
     test('patient-detail 利用中の利用者の詳細のモックを開いた場合、状態の印と利用の行が無いこと', async ({
       page,
     }) => {
-      await openMock(page, `${DETAIL}/01-detail.html`, 'patient-detail-name')
+      await openMock(page, `${DETAIL}/01-detail.html`, page.getByTestId('patient-detail-name'))
       await intro(
         page,
         '利用中の利用者の詳細は、見出しと編集と「…」、プロフィールを出し、状態の印と利用の行を出さない\n前提 利用中の利用者の詳細のモック（01-detail.html）を開いている',
@@ -243,7 +247,7 @@ test.describe('利用者の管理の画面仕様書のモック', () => {
     test('patient-detail-menu 利用者の詳細のモックで「…」を押した場合、利用を終了するのメニューが開き、Escape で閉じること', async ({
       page,
     }) => {
-      await openMock(page, `${DETAIL}/01-detail.html`, 'patient-detail-menu')
+      await openMock(page, `${DETAIL}/01-detail.html`, page.getByTestId('patient-detail-menu'))
       await intro(
         page,
         '「…」を押すと利用を終了するのメニューが開き、Escape で閉じる\n前提 利用中の利用者の詳細のモック（01-detail.html）を開いている',
@@ -264,7 +268,7 @@ test.describe('利用者の管理の画面仕様書のモック', () => {
     test('patient-detail-edit 利用者の詳細のモックで編集を押した場合、利用者の編集のダイアログが開き、キャンセルで戻ること', async ({
       page,
     }) => {
-      await openMock(page, `${DETAIL}/01-detail.html`, 'patient-detail-edit')
+      await openMock(page, `${DETAIL}/01-detail.html`, page.getByTestId('patient-detail-edit'))
       await intro(
         page,
         '編集を押すと利用者の編集のダイアログが開き、フッターのキャンセルで詳細へ戻る\n前提 利用中の利用者の詳細のモック（01-detail.html）を開いている',
@@ -293,7 +297,7 @@ test.describe('利用者の管理の画面仕様書のモック', () => {
     test('patient-detail-end 残る予定が無い利用者の利用を終了した場合、利用の終了の利用者になること', async ({
       page,
     }) => {
-      await openMock(page, `${DETAIL}/04-end.html`, 'patient-end-schedules')
+      await openMock(page, `${DETAIL}/04-end.html`, page.getByTestId('patient-end-schedules'))
       await intro(
         page,
         '残る予定が無ければ、確認のダイアログで利用を終了でき、利用の終了の利用者になる\n前提 利用の終了の確認のモック（04-end.html）を開いている',
@@ -319,7 +323,7 @@ test.describe('利用者の管理の画面仕様書のモック', () => {
     test('patient-detail-end-refused 予定が残る利用者の利用を終了しようとした場合、残る予定が出て、利用を終了するが押せないこと', async ({
       page,
     }) => {
-      await openMock(page, `${DETAIL}/02-menu.html`, 'patient-detail-end')
+      await openMock(page, `${DETAIL}/02-menu.html`, page.getByTestId('patient-detail-end'))
       await intro(
         page,
         '予定が残る利用者では、残る予定と繰り返しの予定が出て、利用を終了するが押せない\n前提 利用者の詳細の「…」のメニューのモック（02-menu.html）を開いている',
@@ -348,7 +352,7 @@ test.describe('利用者の管理の画面仕様書のモック', () => {
     test('patient-detail-ended 利用の終了の利用者の詳細のモックを開いた場合、印と予定の利用者に選べないことが出ること', async ({
       page,
     }) => {
-      await openMock(page, `${DETAIL}/06-ended.html`, 'patient-detail-status')
+      await openMock(page, `${DETAIL}/06-ended.html`, page.getByTestId('patient-detail-status'))
       await intro(
         page,
         '利用の終了の利用者の詳細は、利用の終了の印と、予定の利用者に選べないことを出す\n前提 利用の終了の利用者の詳細のモック（06-ended.html）を開いている',
@@ -371,7 +375,7 @@ test.describe('利用者の管理の画面仕様書のモック', () => {
     test('patient-detail-ended-menu 利用の終了の利用者の詳細で「…」を押した場合、利用を再開するのメニューが開くこと', async ({
       page,
     }) => {
-      await openMock(page, `${DETAIL}/06-ended.html`, 'patient-detail-menu')
+      await openMock(page, `${DETAIL}/06-ended.html`, page.getByTestId('patient-detail-menu'))
       await intro(
         page,
         '利用の終了の利用者の「…」には、利用を再開するが出る\n前提 利用の終了の利用者の詳細のモック（06-ended.html）を開いている',
@@ -391,7 +395,11 @@ test.describe('利用者の管理の画面仕様書のモック', () => {
     test('patient-detail-resume 担当の職員が退職した利用者の利用を再開した場合、担当を選び直して詳細へ戻ること', async ({
       page,
     }) => {
-      await openMock(page, `${DETAIL}/07-ended-menu.html`, 'patient-detail-resume')
+      await openMock(
+        page,
+        `${DETAIL}/07-ended-menu.html`,
+        page.getByTestId('patient-detail-resume'),
+      )
       await intro(
         page,
         '利用の再開では、今の担当の職員が退職していることが出て、選び直した担当で利用中に戻る\n前提 利用の終了の利用者の「…」のメニューのモック（07-ended-menu.html）を開いている',
@@ -441,7 +449,7 @@ test.describe('利用者の管理の画面仕様書のモック', () => {
     test('patient-detail-loading 利用者の詳細を読んでいる場合、読み込み中の表示が出ること', async ({
       page,
     }) => {
-      await openMock(page, `${DETAIL}/09-loading.html`, 'patient-detail-loading')
+      await openMock(page, `${DETAIL}/09-loading.html`, page.getByTestId('patient-detail-loading'))
       await intro(
         page,
         '利用者を読んでいる間は、読み込み中の表示が出る\n前提 読み込み中のモック（09-loading.html）を開いている',
@@ -455,7 +463,7 @@ test.describe('利用者の管理の画面仕様書のモック', () => {
     test('patient-detail-error 利用者の詳細を読めなかった場合、失敗の文が出て、読み直すで詳細へ移ること', async ({
       page,
     }) => {
-      await openMock(page, `${DETAIL}/10-error.html`, 'patient-detail-error')
+      await openMock(page, `${DETAIL}/10-error.html`, page.getByTestId('patient-detail-error'))
       await intro(
         page,
         '利用者を読めないと失敗の文が出て、読み直すで詳細へ移る\n前提 読み込みの失敗のモック（10-error.html）を開いている',
@@ -480,7 +488,11 @@ test.describe('利用者の管理の画面仕様書のモック', () => {
     test('patient-list-phone スマートフォンの幅で利用者の一覧のモックを開いた場合、2 行のリストになり、横にスクロールしないこと', async ({
       page,
     }) => {
-      await openMock(page, `${LIST}/01-list.html`, 'patient-list-row-{利用者の id}')
+      await openMock(
+        page,
+        `${LIST}/01-list.html`,
+        page.getByTestId('patient-list-row-{利用者の id}'),
+      )
       await intro(
         page,
         'スマートフォンの幅の利用者の一覧は、1 行目に名前、2 行目に担当の職員、サービス、希望を置く\n前提 スマートフォンの幅（390x844）で、利用者の一覧のモック（01-list.html）を開いている',

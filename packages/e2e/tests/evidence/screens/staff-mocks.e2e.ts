@@ -1,4 +1,4 @@
-import { type Page, expect, test } from '@playwright/test'
+import { type Locator, type Page, expect, test } from '@playwright/test'
 
 import { check, intro, step } from '../../fixtures/caption'
 import { mockUrl } from '../../fixtures/evidence'
@@ -10,9 +10,9 @@ const NEW = 'staff-new_職員の登録/mocks'
 const DETAIL = 'staff-detail_職員の詳細/mocks'
 
 /** モック file を開き、testid が ready の要素が出るまで待つ。ready は file を開いたことを示す要素にする */
-const openMock = async (page: Page, file: string, ready: string) => {
+const openMock = async (page: Page, file: string, ready: Locator) => {
   await page.goto(mockUrl(file))
-  await expect(page.getByTestId(ready).first()).toBeVisible()
+  await expect(ready.first()).toBeVisible()
 }
 
 test.describe('職員の管理の画面仕様書のモック', () => {
@@ -20,7 +20,7 @@ test.describe('職員の管理の画面仕様書のモック', () => {
     test('staff-list-desktop パソコンの幅で職員の一覧のモックを開いた場合、有効の職員だけがチームの順に並び、状態のカラムが無く、行を押すと職員の詳細へ移ること', async ({
       page,
     }) => {
-      await openMock(page, `${LIST}/01-list.html`, 'staff-list-table')
+      await openMock(page, `${LIST}/01-list.html`, page.getByTestId('staff-list-table'))
       await intro(
         page,
         '職員の一覧は、有効の職員だけを、名前、チーム、役職、部署のカラムでチームの順に並べ、チームの名前の前に色の点を置く\n前提 職員の一覧のモック（01-list.html）を開いている',
@@ -108,7 +108,7 @@ test.describe('職員の管理の画面仕様書のモック', () => {
     test('staff-list-empty 職員の一覧で絞り込みに合う職員がいない場合、職員が無いことの文が出て、絞り込みを外すで一覧へ戻ること', async ({
       page,
     }) => {
-      await openMock(page, `${LIST}/04-empty.html`, 'staff-list-empty')
+      await openMock(page, `${LIST}/04-empty.html`, page.getByTestId('staff-list-empty'))
       await intro(
         page,
         '絞り込みで 0 件のときは知らせを出し、「絞り込みを外す」で一覧に戻る\n前提 絞り込みで 0 件のモック（04-empty.html）を開いている',
@@ -137,7 +137,7 @@ test.describe('職員の管理の画面仕様書のモック', () => {
     test('staff-list-help 職員の一覧のモックでヘルプを押した場合、休職と退職の職員の説明が出ること', async ({
       page,
     }) => {
-      await openMock(page, `${LIST}/01-list.html`, 'staff-list-help')
+      await openMock(page, `${LIST}/01-list.html`, page.getByTestId('staff-list-help'))
       await expect(page.getByTestId('staff-list-help-text')).toBeHidden()
       await intro(
         page,
@@ -157,7 +157,7 @@ test.describe('職員の管理の画面仕様書のモック', () => {
     test('staff-new-dialog 職員の登録のモックを開いた場合、入力のダイアログの形で出て、Escape で説明を閉じてから一覧へ戻ること', async ({
       page,
     }) => {
-      await openMock(page, `${NEW}/01-initial.html`, 'staff-new-dialog')
+      await openMock(page, `${NEW}/01-initial.html`, page.getByTestId('staff-new-dialog'))
       await intro(
         page,
         '職員の登録は、× を置かず、? をタイトルの右に、キャンセルと登録をフッターの右に置く\n前提 職員の登録のモック（01-initial.html）を開いている',
@@ -197,7 +197,11 @@ test.describe('職員の管理の画面仕様書のモック', () => {
     test('staff-detail-profile 有効な職員の詳細のモックを開いた場合、状態の印と在籍の行が出ないこと', async ({
       page,
     }) => {
-      await openMock(page, `${DETAIL}/01-detail.html`, 'staff-detail-position-name')
+      await openMock(
+        page,
+        `${DETAIL}/01-detail.html`,
+        page.getByTestId('staff-detail-position-name'),
+      )
       await intro(
         page,
         '有効な職員のプロフィールには、状態の印と在籍の行を出さない\n前提 有効な職員の詳細のモック（01-detail.html）を開いている',
@@ -213,7 +217,11 @@ test.describe('職員の管理の画面仕様書のモック', () => {
     test('staff-detail-policies 職員の詳細のモックで権限のタブを押した場合、付いている権限だけが付いた理由のまとまりで並ぶこと', async ({
       page,
     }) => {
-      await openMock(page, `${DETAIL}/01-detail.html`, 'staff-detail-tab-policies')
+      await openMock(
+        page,
+        `${DETAIL}/01-detail.html`,
+        page.getByTestId('staff-detail-tab-policies'),
+      )
       await intro(
         page,
         '権限のタブは、付いている権限だけを、役職で付く権限と個別に足した権限のまとまりに分けて並べる\n前提 有効な職員の詳細のモック（01-detail.html）を開いている',
@@ -244,7 +252,7 @@ test.describe('職員の管理の画面仕様書のモック', () => {
     test('staff-detail-menu 職員の詳細のモックで「…」を押した場合、休職にすると赤の退職にするのメニューが開き、Escape で閉じること', async ({
       page,
     }) => {
-      await openMock(page, `${DETAIL}/01-detail.html`, 'staff-detail-menu')
+      await openMock(page, `${DETAIL}/01-detail.html`, page.getByTestId('staff-detail-menu'))
       await intro(
         page,
         '「…」を押すと、休職にすると退職にするのメニューが開き、Escape で閉じる\n前提 有効な職員の詳細のモック（01-detail.html）を開いている',
@@ -270,7 +278,7 @@ test.describe('職員の管理の画面仕様書のモック', () => {
     test('staff-detail-edit 職員の詳細のモックで編集を押した場合、プロフィールの編集のダイアログが開き、キャンセルで戻ること', async ({
       page,
     }) => {
-      await openMock(page, `${DETAIL}/01-detail.html`, 'staff-detail-edit')
+      await openMock(page, `${DETAIL}/01-detail.html`, page.getByTestId('staff-detail-edit'))
       await intro(
         page,
         '編集を押すとプロフィールの編集のダイアログが開き、フッターのキャンセルで閉じる\n前提 有効な職員の詳細のモック（01-detail.html）を開いている',
@@ -297,7 +305,11 @@ test.describe('職員の管理の画面仕様書のモック', () => {
     test('staff-detail-position 職員の詳細のモックで役職を変えるを押した場合、個別に足した権限が残る注意と赤のボタンが出ること', async ({
       page,
     }) => {
-      await openMock(page, `${DETAIL}/01-detail.html`, 'staff-detail-position-change')
+      await openMock(
+        page,
+        `${DETAIL}/01-detail.html`,
+        page.getByTestId('staff-detail-position-change'),
+      )
       await intro(
         page,
         '役職を変えるダイアログに、個別に足した権限が残る注意と赤の「役職を変える」が出て、今の役職のままでは押せず、別の役職を選ぶと押せる\n前提 有効な職員の詳細のモック（01-detail.html）を開いている',
@@ -345,7 +357,11 @@ test.describe('職員の管理の画面仕様書のモック', () => {
     test('staff-detail-policies-dialog 職員の詳細のモックで権限を変えるを押した場合、まとまりごとのチェックボックスと選んだ対象のチップが出ること', async ({
       page,
     }) => {
-      await openMock(page, `${DETAIL}/02-policies.html`, 'staff-detail-policies-change')
+      await openMock(
+        page,
+        `${DETAIL}/02-policies.html`,
+        page.getByTestId('staff-detail-policies-change'),
+      )
       await intro(
         page,
         '権限を変えるダイアログは、役職で付く権限とほかの権限のまとまりにチェックボックスを並べ、対象は選んだものだけをチップで出す\n前提 職員の詳細の権限のタブのモック（02-policies.html）を開いている',
@@ -383,7 +399,11 @@ test.describe('職員の管理の画面仕様書のモック', () => {
     test('staff-detail-policies-target 権限を変えるダイアログで対象を足すを押した場合、選んでいない職員の候補が開き、Escape で閉じること', async ({
       page,
     }) => {
-      await openMock(page, `${DETAIL}/06-policies.html`, 'staff-policies-target-add')
+      await openMock(
+        page,
+        `${DETAIL}/06-policies.html`,
+        page.getByTestId('staff-policies-target-add'),
+      )
       await intro(
         page,
         '「＋ 職員を選ぶ」を押すと、選んでいない職員の候補が開き、Escape で候補だけを閉じる\n前提 権限を変えるダイアログのモック（06-policies.html）を開いている',
@@ -419,7 +439,11 @@ test.describe('職員の管理の画面仕様書のモック', () => {
     test('staff-detail-policies-error 権限の保存の一部が拒まれた場合、外せなかった権限にチェックが残り、理由が出ること', async ({
       page,
     }) => {
-      await openMock(page, `${DETAIL}/07-policies-error.html`, 'staff-policies-error')
+      await openMock(
+        page,
+        `${DETAIL}/07-policies-error.html`,
+        page.getByTestId('staff-policies-error'),
+      )
       await intro(
         page,
         '権限の保存の一部が拒まれると、ダイアログを閉じずに、読み直した権限で選択を出し、変えられなかった権限と理由を出す\n前提 権限の保存の一部の失敗のモック（07-policies-error.html）を開いている',
@@ -444,7 +468,7 @@ test.describe('職員の管理の画面仕様書のモック', () => {
     test('staff-detail-leave 休職の確認で休職にした場合、休職の職員になり、「…」に復職にするが出ること', async ({
       page,
     }) => {
-      await openMock(page, `${DETAIL}/03-menu.html`, 'staff-detail-leave')
+      await openMock(page, `${DETAIL}/03-menu.html`, page.getByTestId('staff-detail-leave'))
       await intro(
         page,
         '休職の確認から休職にすると休職の職員になり、「…」のメニューに復職にするが出る\n前提 職員の詳細の「…」のメニューのモック（03-menu.html）を開いている',
@@ -505,7 +529,7 @@ test.describe('職員の管理の画面仕様書のモック', () => {
     test('staff-detail-on-leave 休職の職員の詳細のモックを開いた場合、在籍の行に状態の印に書けないことだけが出ること', async ({
       page,
     }) => {
-      await openMock(page, `${DETAIL}/09-on-leave.html`, 'staff-detail-status')
+      await openMock(page, `${DETAIL}/09-on-leave.html`, page.getByTestId('staff-detail-status'))
       await intro(
         page,
         '休職の職員の在籍の行は、休職の開始日と、戻る予定の日に自動では戻らないことだけを書く\n前提 休職の職員の詳細のモック（09-on-leave.html）を開いている',
@@ -528,7 +552,11 @@ test.describe('職員の管理の画面仕様書のモック', () => {
     test('staff-detail-retired 退職した職員の詳細のモックを開いた場合、メールアドレスと電話番号の行が出ず、消したことを在籍の 1 文に書くこと', async ({
       page,
     }) => {
-      await openMock(page, `${DETAIL}/13-retired.html`, 'staff-detail-status-text')
+      await openMock(
+        page,
+        `${DETAIL}/13-retired.html`,
+        page.getByTestId('staff-detail-status-text'),
+      )
       await intro(
         page,
         '退職した職員は、メールアドレスと電話番号を空で出さず、消したことを在籍に 1 回だけ書く\n前提 退職した職員の詳細のモック（13-retired.html）を開いている',
@@ -550,7 +578,7 @@ test.describe('職員の管理の画面仕様書のモック', () => {
     test('staff-detail-retire 退職の確認で退職にした場合、退職した職員になり、編集と「…」が出ないこと', async ({
       page,
     }) => {
-      await openMock(page, `${DETAIL}/03-menu.html`, 'staff-detail-retire')
+      await openMock(page, `${DETAIL}/03-menu.html`, page.getByTestId('staff-detail-retire'))
       await intro(
         page,
         '退職の確認の赤の「退職にする」を押すと、退職した職員になり、編集と「…」が無くなる\n前提 職員の詳細の「…」のメニューのモック（03-menu.html）を開いている',
@@ -584,7 +612,11 @@ test.describe('職員の管理の画面仕様書のモック', () => {
     test('staff-detail-retire-refused 予定が残る職員を退職にしようとした場合、退職にするが押せないこと', async ({
       page,
     }) => {
-      await openMock(page, `${DETAIL}/12-retire-refused.html`, 'staff-retire-assignments')
+      await openMock(
+        page,
+        `${DETAIL}/12-retire-refused.html`,
+        page.getByTestId('staff-retire-assignments'),
+      )
       await intro(
         page,
         '予定か担当の利用者が残る職員の退職のダイアログでは、退職にするが押せない\n前提 退職を拒むモック（12-retire-refused.html）を開いている',
@@ -610,7 +642,7 @@ test.describe('職員の管理の画面仕様書のモック', () => {
     test('staff-mocks-list-phone スマートフォンの幅で職員の一覧のモックを開いた場合、2 行のリストになり、横にスクロールしないこと', async ({
       page,
     }) => {
-      await openMock(page, `${LIST}/01-list.html`, 'staff-list-row-{職員の id}')
+      await openMock(page, `${LIST}/01-list.html`, page.getByTestId('staff-list-row-{職員の id}'))
       await intro(
         page,
         'スマートフォンの幅の職員の一覧は、1 行目に名前、2 行目にチームの色の点とチーム、役職、部署を置く\n前提 スマートフォンの幅（390x844）で、職員の一覧のモック（01-list.html）を開いている',
@@ -632,7 +664,11 @@ test.describe('職員の管理の画面仕様書のモック', () => {
     test('staff-detail-policies-phone スマートフォンの幅で職員の詳細の権限のタブを開いた場合、パソコンの幅と同じ形で横にスクロールしないこと', async ({
       page,
     }) => {
-      await openMock(page, `${DETAIL}/02-policies.html`, 'staff-policy-row-{権限の code}')
+      await openMock(
+        page,
+        `${DETAIL}/02-policies.html`,
+        page.getByTestId('staff-policy-row-{権限の code}'),
+      )
       await intro(
         page,
         'スマートフォンの幅の権限の一覧は、パソコンの幅と同じまとまりと 2 行の形で出す\n前提 スマートフォンの幅（390x844）で、職員の詳細の権限のタブのモック（02-policies.html）を開いている',
