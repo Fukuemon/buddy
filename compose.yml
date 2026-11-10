@@ -180,6 +180,8 @@ services:
       HYDRA_ISSUER: http://hydra:4444
       # Hydra が token_hook を呼ぶときのヘッダーの値。compose/hydra/hydra.yml の oauth2.token_hook と同じにする
       TOKEN_HOOK_KEY: buddy-dev-token-hook-key-for-compose-only
+      # ログインの途中の cookie に署名する鍵。先頭で署名し、全てで検証する
+      LOGIN_COOKIE_KEYS: buddy-dev-login-cookie-key-for-compose-only
     volumes:
       - ./compose/broker/upstream-idps.json:/config/upstream-idps.json:ro
       - ./compose/broker/upstream-idp-client-secrets.json:/config/upstream-idp-client-secrets.json:ro

@@ -7,6 +7,8 @@ import type { Page } from '@playwright/test'
  */
 export const brokerPage = (page: Page) => ({
   heading: page.locator('h1'),
+  // 失敗の画面の本文。カードの上端のロゴの p は aria-hidden なので除く
+  message: page.locator('section > p:not([aria-hidden])'),
   emailLabel: page.locator('label', { hasText: 'メールアドレス' }),
   // FormField は、補足の文の id を、欄の id の後ろに -hint を付けた値にする
   emailHint: page.locator('form [id$="-hint"]'),
