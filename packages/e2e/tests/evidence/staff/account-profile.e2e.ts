@@ -13,9 +13,12 @@ test.describe('自分の情報', () => {
     }) => {
       await page.goto('/schedule')
       await expect(page.getByTestId('viewer-menu-open')).toBeVisible()
-      await intro(page, '管理の権限を持たない職員が、アカウントのメニューから自分の情報を開く')
+      await intro(
+        page,
+        '管理の権限を持たない職員が、アカウントのメニューから自分の情報を開く\n前提 幅 390px で予定のカレンダーを開いている',
+      )
 
-      await step(page, '幅 390px で予定のカレンダーを開いている。アカウントのメニューを開く', () =>
+      await step(page, 'アカウントのメニューを開く', () =>
         page.getByTestId('viewer-menu-open').click(),
       )
       // スマートフォンの幅では、上の字幕がメニューを覆う

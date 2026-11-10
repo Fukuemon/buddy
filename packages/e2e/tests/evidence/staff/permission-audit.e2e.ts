@@ -305,11 +305,12 @@ test.describe('職員の詳細', () => {
       })
 
       test('audit-team-change 職員の管理の権限を持つ職員がチームを対象にする権限を持つ職員のチームを A に変えて保存した場合、詳細のチームと権限の対象が A になること', async ({
-        page,
+        context,
         request,
       }) => {
         const restore = await keepProfile(request, LEADER.staff.id)
         try {
+          const page = await context.newPage()
           await openDetail(page, LEADER.staff.id, LEADER.staff.name)
           await page.getByTestId('staff-detail-tab-policies').click()
           await expect(page.getByTestId('staff-policy-targets-schedule.team.read')).toHaveText('B')
@@ -351,11 +352,12 @@ test.describe('職員の詳細', () => {
       })
 
       test('audit-name-only 職員の管理の権限を持つ職員がチームを対象にする権限を持つ職員の名前だけを変えて保存した場合、詳細の名前が変えた名前になること', async ({
-        page,
+        context,
         request,
       }) => {
         const restore = await keepProfile(request, LEADER.staff.id)
         try {
+          const page = await context.newPage()
           const renamed = `${LEADER.staff.name} 改`
           await page.goto(`/staff/${LEADER.staff.id}`)
           await expect(page.getByTestId('staff-detail-name')).toBeVisible()

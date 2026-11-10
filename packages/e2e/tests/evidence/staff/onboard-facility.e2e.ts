@@ -19,15 +19,14 @@ test.describe('職員の管理', () => {
       }) => {
         // 録画の始めは、ログインせずに web の origin を開いておく
         await page.goto('/auth/error')
-        await intro(page, 'CLI で登録したマネージャーでログインすると、職員の画面を開ける')
-
-        await step(
+        await intro(
           page,
-          'CLI で事業所と最初のマネージャーを登録した後、職員の一覧を開く',
-          async () => {
-            await page.goto('/staff')
-          },
+          'CLI で登録したマネージャーでログインすると、職員の画面を開ける\n前提 運営用の CLI で、5 つ目の事業所と最初のマネージャーを登録した',
         )
+
+        await step(page, '職員の一覧を開く', async () => {
+          await page.goto('/staff')
+        })
         await step(
           page,
           `ブローカーで、メールに ${ONBOARDED_MANAGER.email} を入れて「次へ」を押す`,

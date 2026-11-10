@@ -32,31 +32,38 @@ test.describe('職員の詳細', () => {
         )?.user_policy_id
         if (!userPolicyId) throw new Error('足した職員の管理の権限の ID が無い')
 
-        const page = await context.newPage()
-        await page.goto(`/staff/${TEAM_MEMBER.id}`)
-        await expect(page.getByTestId('staff-detail-name')).toBeVisible()
-        await intro(
-          page,
-          '職員の詳細を開いた後に職員の管理の権限を外されると、保存で権限が無いことの文が出る',
-        )
+        // 外す step の前で落ちても、ほかの撮影の前提に戻すため、足した権限を外す
+        let removed = false
+        try {
+          const page = await context.newPage()
+          await page.goto(`/staff/${TEAM_MEMBER.id}`)
+          await expect(page.getByTestId('staff-detail-name')).toBeVisible()
+          await intro(
+            page,
+            `職員の詳細を開いた後に職員の管理の権限を外されると、保存で権限が無いことの文が出る\n前提 撮影のため職員の管理の権限を足した ${LEADER.staff.name} でログインし、職員の詳細を開いている`,
+          )
 
-        const dialog = page.getByTestId('staff-detail-edit-dialog')
-        await step(page, '職員の詳細を開き、「編集」を押す', async () => {
-          await page.getByTestId('staff-detail-edit').click()
-          await expect(dialog).toBeVisible()
-        })
-        await step(
-          page,
-          '（撮影のため）マネージャーが API で、この職員の職員の管理の権限を外す',
-          async () => {
-            const removed = await removePolicy(request, token, LEADER.staff.id, userPolicyId)
-            expect(removed.ok()).toBe(true)
-          },
-        )
-        await step(page, '「保存」を押す', () => dialog.getByTestId('staff-detail-save').click())
-        await check(page, '「この操作をする権限がありません。」が出る', () =>
-          expect(dialog).toContainText('この操作をする権限がありません。'),
-        )
+          const dialog = page.getByTestId('staff-detail-edit-dialog')
+          await step(page, '「編集」を押す', async () => {
+            await page.getByTestId('staff-detail-edit').click()
+            await expect(dialog).toBeVisible()
+          })
+          await step(
+            page,
+            '（撮影のため）マネージャーが API で、この職員の職員の管理の権限を外す',
+            async () => {
+              const res = await removePolicy(request, token, LEADER.staff.id, userPolicyId)
+              expect(res.ok()).toBe(true)
+              removed = true
+            },
+          )
+          await step(page, '「保存」を押す', () => dialog.getByTestId('staff-detail-save').click())
+          await check(page, '「この操作をする権限がありません。」が出る', () =>
+            expect(dialog).toContainText('この操作をする権限がありません。'),
+          )
+        } finally {
+          if (!removed) await removePolicy(request, token, LEADER.staff.id, userPolicyId)
+        }
       })
     })
   })
