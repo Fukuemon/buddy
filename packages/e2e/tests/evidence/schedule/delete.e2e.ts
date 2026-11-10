@@ -19,7 +19,7 @@ import {
   replaceOccurrence,
 } from '../../fixtures/schedule'
 import { STAFF_FORM } from '../../fixtures/staff'
-import { openApiClient, openApiReference } from '../../screens/apiReference'
+import { openApiClient } from '../../screens/apiReference'
 import { apiClient } from '../../selectors/apiReference'
 import { linkStaffCalendar, unlinkStaffCalendar } from '../../setup/calendar'
 import {
@@ -57,13 +57,6 @@ const okadaToken = (browser: Browser) =>
 const id = async (res: Awaited<ReturnType<APIRequestContext['post']>>) => {
   expect(res.status()).toBe(201)
   return ((await res.json()) as { id: string }).id
-}
-
-/** 録画の最初の画面として、API の参照のページの予定の API を開く。 */
-const openReference = async (page: Page) => {
-  await routeApiReference(page)
-  await openApiReference(page, 'schedule')
-  await page.waitForLoadState('load')
 }
 
 /** 前の送信のクライアントを、ページを開き直して閉じる。開いたままだと、次の操作のボタンを押せない。 */
@@ -290,7 +283,8 @@ test.describe('予定の API の予定の削除', () => {
       const okada = await okadaToken(browser)
 
       const page = await context.newPage()
-      await openReference(page)
+      await routeApiReference(page)
+      await openCancelledDay(page, yesterday)
       await intro(
         page,
         `単発の予定の削除を拒む\n前提 API で ${yesterday} の「${past}」と、${tomorrow} の「${cancelled}」を作り、後者をキャンセルした`,
@@ -358,7 +352,8 @@ test.describe('予定の API の予定の削除', () => {
       const okada = await okadaToken(browser)
 
       const page = await context.newPage()
-      await openReference(page)
+      await routeApiReference(page)
+      await openCancelledDay(page, daysFromToday(-1))
       await intro(
         page,
         `回の削除を拒む\n前提 API で ${daysFromToday(-1)} から毎週の「${title}」を作り、${daysFromToday(6)} の回を削除し、${daysFromToday(13)} の回をキャンセルした`,
@@ -395,7 +390,8 @@ test.describe('予定の API の予定の削除', () => {
       const titles = () => listGoogleEvents(request, HAYASHI.calendarId)
       const exported = async () =>
         (await titles()).filter((e) => [single, weekly, moved].includes(e.summary ?? '')).length
-      const page = await context.newPage()
+      // 録画する page は前準備の後に開く。前準備で失敗したときは、結び付けを外すためだけに開く
+      let recorded: Page | undefined
       try {
         const { token, data } = await prepare(browser, async (page, token) => {
           await linkStaffCalendar(page, HAYASHI.id)
@@ -425,7 +421,10 @@ test.describe('予定の API の予定の削除', () => {
           return { singleId, recurringId, movedId }
         })
 
-        await openReference(page)
+        const page = await context.newPage()
+        recorded = page
+        await routeApiReference(page)
+        await openCancelledDay(page, daysFromToday(1))
         await intro(
           page,
           `Google カレンダーへの削除の書き出し\n前提 ${HAYASHI.name} に Google カレンダーを結び付け、「${single}」、毎週月曜の「${weekly}」、${fromNextMonday(14)} の回を置き換えた「${moved}」を作り、書き出しを待った`,
@@ -477,8 +476,9 @@ test.describe('予定の API の予定の削除', () => {
           },
         )
       } finally {
-        await step(page, '（撮影のため、ほかの撮影の前提に戻すよう、結び付けを外す）', () =>
-          unlinkStaffCalendar(page, HAYASHI.id),
+        const opened = recorded ?? (await context.newPage())
+        await step(opened, '（撮影のため、ほかの撮影の前提に戻すよう、結び付けを外す）', () =>
+          unlinkStaffCalendar(opened, HAYASHI.id),
         )
       }
     })
@@ -498,7 +498,8 @@ test.describe('予定の API の予定の削除', () => {
       const okada = await okadaToken(browser)
 
       const page = await context.newPage()
-      await openReference(page)
+      await routeApiReference(page)
+      await openCancelledDay(page, target)
       await intro(page, `回のキャンセル\n前提 API で毎週月曜の「${title}」を作った`)
 
       const cancel = async (who: string, id: string, status: string) => {
