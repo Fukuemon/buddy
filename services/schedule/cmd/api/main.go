@@ -20,6 +20,7 @@ import (
 	"github.com/Fukuemon/buddy/packages/go/healthcheck"
 	"github.com/Fukuemon/buddy/packages/go/oidc"
 
+	"github.com/Fukuemon/buddy/services/schedule/internal/audit"
 	"github.com/Fukuemon/buddy/services/schedule/internal/config"
 	"github.com/Fukuemon/buddy/services/schedule/internal/postgres"
 )
@@ -44,7 +45,8 @@ func run() error {
 	if err != nil {
 		return err
 	}
-	log := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: cfg.LogLevel})).With(slog.String("component", "api"))
+	// 監査の記録とログを同じ相関 ID でつなぐため、リクエストのログの行に request_id を足す（ADR-0042）
+	log := slog.New(audit.LogHandler(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: cfg.LogLevel}))).With(slog.String("component", "api"))
 
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()

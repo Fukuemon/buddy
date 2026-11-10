@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/Fukuemon/buddy/services/schedule/internal/apperr"
+	"github.com/Fukuemon/buddy/services/schedule/internal/audit"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/organization"
 	"github.com/Fukuemon/buddy/services/schedule/internal/kernel"
 	"github.com/Fukuemon/buddy/services/schedule/internal/tx"
@@ -21,14 +22,15 @@ type AddGrant struct {
 	staff    Repository
 	policies kernel.Finder[organization.Policy]
 	teams    kernel.Finder[organization.Team]
+	audit    audit.Recorder
 	tx       tx.Transactor
 	ids      kernel.IDGenerator
 	guard    kernel.Guard
 }
 
 // NewAddGrant は AddGrant を作る。
-func NewAddGrant(staff Repository, policies kernel.Finder[organization.Policy], teams kernel.Finder[organization.Team], tx tx.Transactor, ids kernel.IDGenerator, guard kernel.Guard) AddGrant {
-	return AddGrant{staff: staff, policies: policies, teams: teams, tx: tx, ids: ids, guard: guard}
+func NewAddGrant(staff Repository, policies kernel.Finder[organization.Policy], teams kernel.Finder[organization.Team], rec audit.Recorder, tx tx.Transactor, ids kernel.IDGenerator, guard kernel.Guard) AddGrant {
+	return AddGrant{staff: staff, policies: policies, teams: teams, audit: rec, tx: tx, ids: ids, guard: guard}
 }
 
 // Do は、職員に権限を 1 つ足す。対象を指定する権限には、職員を対象にする権限なら職員を、
@@ -36,6 +38,7 @@ func NewAddGrant(staff Repository, policies kernel.Finder[organization.Policy], 
 // 職員が見つからないときは apperr.ErrNotFound を、権限、対象が合わないか別の事業所のものであるときは入力のエラーを、
 // 同じ権限が既にあるときは apperr.ErrConflict を返す。
 // 職員の管理の権限が無いときは apperr.ErrForbidden を返す。
+// 同じトランザクションで、変更の前後の権限を監査の記録に書き、書けなければ権限も足さない（ADR-0042）。
 func (s AddGrant) Do(ctx context.Context, id string, in GrantInput) (Detail, error) {
 	if err := s.guard(ctx); err != nil {
 		return Detail{}, err
@@ -46,6 +49,7 @@ func (s AddGrant) Do(ctx context.Context, id string, in GrantInput) (Detail, err
 		if err != nil {
 			return err
 		}
+		before := auditState(cur)
 		p, err := s.policies.Get(ctx, in.PolicyID)
 		if err != nil {
 			return apperr.Reference("権限", in.PolicyID, err)
@@ -59,7 +63,10 @@ func (s AddGrant) Do(ctx context.Context, id string, in GrantInput) (Detail, err
 			return apperr.AsConflict(err, "職員はすでに権限 %s を持っています", p.Name)
 		}
 		changed, err = s.staff.Get(ctx, cur.ID)
-		return err
+		if err != nil {
+			return err
+		}
+		return recordChange(ctx, s.audit, audit.GrantAdd, &before, changed)
 	})
 	return changed, err
 }
