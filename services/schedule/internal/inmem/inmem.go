@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/Fukuemon/buddy/services/schedule/internal/apperr"
+	"github.com/Fukuemon/buddy/services/schedule/internal/audit"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendar"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendarimport"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/calendarsync"
@@ -73,6 +74,8 @@ type Store struct {
 	Records map[string]calendar.EventRecord
 	// Deletions は、予定を削除した監査の記録である。
 	Deletions []schedule.Deletion
+	// PermissionAudits は、権限の変更の監査の記録である。
+	PermissionAudits []audit.Record
 }
 
 // NewStore は、空の Store を作る。

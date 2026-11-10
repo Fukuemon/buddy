@@ -5,6 +5,7 @@ import (
 	"slices"
 
 	"github.com/Fukuemon/buddy/services/schedule/internal/apperr"
+	"github.com/Fukuemon/buddy/services/schedule/internal/audit"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/organization"
 	"github.com/Fukuemon/buddy/services/schedule/internal/kernel"
 	"github.com/Fukuemon/buddy/services/schedule/internal/tx"
@@ -15,14 +16,15 @@ type ChangePosition struct {
 	staff     Repository
 	locks     FacilityLock
 	positions kernel.Finder[organization.Position]
+	audit     audit.Recorder
 	tx        tx.Transactor
 	ids       kernel.IDGenerator
 	guard     kernel.Guard
 }
 
 // NewChangePosition は ChangePosition を作る。
-func NewChangePosition(staff Repository, locks FacilityLock, positions kernel.Finder[organization.Position], tx tx.Transactor, ids kernel.IDGenerator, guard kernel.Guard) ChangePosition {
-	return ChangePosition{staff: staff, locks: locks, positions: positions, tx: tx, ids: ids, guard: guard}
+func NewChangePosition(staff Repository, locks FacilityLock, positions kernel.Finder[organization.Position], audit audit.Recorder, tx tx.Transactor, ids kernel.IDGenerator, guard kernel.Guard) ChangePosition {
+	return ChangePosition{staff: staff, locks: locks, positions: positions, audit: audit, tx: tx, ids: ids, guard: guard}
 }
 
 // Do は、職員の役職を positionID にし、職員の権限を新しい役職のデフォルトの権限からコピーし直す。
@@ -31,6 +33,8 @@ func NewChangePosition(staff Repository, locks FacilityLock, positions kernel.Fi
 // その権限を持たない役職に変えようとしたときは apperr.ErrConflict を返し、何も書かない。
 // 休職と退職と同じく事業所をロックするので、同時に役職を変えても、権限を持つ有効な職員は残る。
 // 職員の管理の権限が無いときは apperr.ErrForbidden を返す。
+// 同じトランザクションで、変更の前と、変更の後に読み直した権限を監査の記録に書き、書けなければ役職も変えない（ADR-0042）。
+// 役職と権限が変更の前と同じなら、記録を書かない。今と同じ役職に変えて権限が変わらなかったときである。
 func (s ChangePosition) Do(ctx context.Context, id, positionID string) (Detail, error) {
 	if err := s.guard(ctx); err != nil {
 		return Detail{}, err
@@ -41,6 +45,7 @@ func (s ChangePosition) Do(ctx context.Context, id, positionID string) (Detail, 
 		if err != nil {
 			return err
 		}
+		before := toStaffState(cur)
 		pos, err := s.positions.Get(ctx, positionID)
 		if err != nil {
 			return apperr.Reference("役職", positionID, err)
@@ -57,7 +62,10 @@ func (s ChangePosition) Do(ctx context.Context, id, positionID string) (Detail, 
 			return err
 		}
 		changed, err = s.staff.Get(ctx, cur.ID)
-		return err
+		if err != nil || before.Equal(toStaffState(changed)) {
+			return err
+		}
+		return recordChange(ctx, s.audit, audit.PositionChange, &before, changed)
 	})
 	return changed, err
 }

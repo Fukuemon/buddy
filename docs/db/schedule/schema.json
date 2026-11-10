@@ -7662,6 +7662,336 @@
           ]
         }
       ]
+    },
+    {
+      "name": "public.permission_audits",
+      "type": "BASE TABLE",
+      "comment": "権限の変更と運営者の登録の監査の記録（ADR-0042）。画面と API に出さず、運営者が DB で読む。消さず、書き換えない",
+      "columns": [
+        {
+          "name": "id",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "facility_id",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "action",
+          "type": "text",
+          "nullable": false,
+          "comment": "操作。facility.create、position.create、staff.create、staff.create_forced、grant.add、grant.remove、position.change、team.change、grant.migrate"
+        },
+        {
+          "name": "actor_kind",
+          "type": "text",
+          "nullable": false,
+          "comment": "操作した人の種類。staff か operator。マイグレーションは operator"
+        },
+        {
+          "name": "actor_user_id",
+          "type": "text",
+          "nullable": true,
+          "comment": "操作した職員。actor_kind が staff のときだけ持つ"
+        },
+        {
+          "name": "actor_operator",
+          "type": "text",
+          "nullable": true,
+          "comment": "操作した運営者。運営用の CLI の引数 --operator で渡した運営者の ID か、マイグレーションの migration:\u003c番号\u003e。actor_kind が operator のときだけ持つ"
+        },
+        {
+          "name": "target_user_id",
+          "type": "text",
+          "nullable": true,
+          "comment": "対象の職員。staff.*、grant.*、position.change、team.change で持つ"
+        },
+        {
+          "name": "target_position_id",
+          "type": "text",
+          "nullable": true,
+          "comment": "対象の役職。position.create で持つ"
+        },
+        {
+          "name": "before",
+          "type": "jsonb",
+          "nullable": true,
+          "comment": "変更の前の全量。職員は役職とチームの ID と権限の code と対象の ID の並び。登録と役職の作成と、始まりの行では持たない"
+        },
+        {
+          "name": "after",
+          "type": "jsonb",
+          "nullable": true,
+          "comment": "変更の後の全量。職員は役職とチームの ID と権限の code と対象の ID の並び、役職の作成は名前とデフォルトの権限の code の並び"
+        },
+        {
+          "name": "request_id",
+          "type": "text",
+          "nullable": false,
+          "comment": "相関 ID。API はリクエストごと、CLI は実行ごと、マイグレーションは 1 つのマイグレーションごとに振り、ログにも同じ値を書く"
+        },
+        {
+          "name": "occurred_at",
+          "type": "timestamp with time zone",
+          "nullable": false,
+          "default": "now()",
+          "comment": "操作の時刻"
+        }
+      ],
+      "indexes": [
+        {
+          "name": "permission_audits_pkey",
+          "def": "CREATE UNIQUE INDEX permission_audits_pkey ON public.permission_audits USING btree (id)",
+          "table": "public.permission_audits",
+          "columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "permission_audits_actor_user_idx",
+          "def": "CREATE INDEX permission_audits_actor_user_idx ON public.permission_audits USING btree (facility_id, actor_user_id) WHERE (actor_user_id IS NOT NULL)",
+          "table": "public.permission_audits",
+          "columns": [
+            "facility_id",
+            "actor_user_id"
+          ]
+        },
+        {
+          "name": "permission_audits_target_user_idx",
+          "def": "CREATE INDEX permission_audits_target_user_idx ON public.permission_audits USING btree (facility_id, target_user_id) WHERE (target_user_id IS NOT NULL)",
+          "table": "public.permission_audits",
+          "columns": [
+            "facility_id",
+            "target_user_id"
+          ]
+        },
+        {
+          "name": "permission_audits_target_position_idx",
+          "def": "CREATE INDEX permission_audits_target_position_idx ON public.permission_audits USING btree (facility_id, target_position_id) WHERE (target_position_id IS NOT NULL)",
+          "table": "public.permission_audits",
+          "columns": [
+            "facility_id",
+            "target_position_id"
+          ]
+        },
+        {
+          "name": "permission_audits_request_idx",
+          "def": "CREATE INDEX permission_audits_request_idx ON public.permission_audits USING btree (request_id)",
+          "table": "public.permission_audits",
+          "columns": [
+            "request_id"
+          ]
+        }
+      ],
+      "constraints": [
+        {
+          "name": "permission_audits_action_actor_check",
+          "type": "CHECK",
+          "def": "CHECK ((((action \u003c\u003e ALL (ARRAY['facility.create'::text, 'staff.create_forced'::text, 'grant.migrate'::text])) OR (actor_kind = 'operator'::text)) AND ((action \u003c\u003e ALL (ARRAY['grant.add'::text, 'grant.remove'::text, 'position.change'::text, 'team.change'::text])) OR (actor_kind = 'staff'::text))))",
+          "table": "public.permission_audits",
+          "referenced_table": "",
+          "columns": [
+            "action",
+            "actor_kind"
+          ]
+        },
+        {
+          "name": "permission_audits_action_check",
+          "type": "CHECK",
+          "def": "CHECK ((action = ANY (ARRAY['facility.create'::text, 'position.create'::text, 'staff.create'::text, 'staff.create_forced'::text, 'grant.add'::text, 'grant.remove'::text, 'position.change'::text, 'team.change'::text, 'grant.migrate'::text])))",
+          "table": "public.permission_audits",
+          "referenced_table": "",
+          "columns": [
+            "action"
+          ]
+        },
+        {
+          "name": "permission_audits_action_not_null",
+          "type": "n",
+          "def": "NOT NULL action",
+          "table": "public.permission_audits",
+          "referenced_table": "",
+          "columns": [
+            "action"
+          ]
+        },
+        {
+          "name": "permission_audits_actor_check",
+          "type": "CHECK",
+          "def": "CHECK ((((actor_kind = 'staff'::text) AND (actor_user_id IS NOT NULL) AND (actor_operator IS NULL)) OR ((actor_kind = 'operator'::text) AND (actor_user_id IS NULL) AND (actor_operator IS NOT NULL))))",
+          "table": "public.permission_audits",
+          "referenced_table": "",
+          "columns": [
+            "actor_kind",
+            "actor_user_id",
+            "actor_operator"
+          ]
+        },
+        {
+          "name": "permission_audits_actor_kind_not_null",
+          "type": "n",
+          "def": "NOT NULL actor_kind",
+          "table": "public.permission_audits",
+          "referenced_table": "",
+          "columns": [
+            "actor_kind"
+          ]
+        },
+        {
+          "name": "permission_audits_actor_operator_check",
+          "type": "CHECK",
+          "def": "CHECK (((char_length(actor_operator) \u003e= 1) AND (char_length(actor_operator) \u003c= 255)))",
+          "table": "public.permission_audits",
+          "referenced_table": "",
+          "columns": [
+            "actor_operator"
+          ]
+        },
+        {
+          "name": "permission_audits_facility_id_not_null",
+          "type": "n",
+          "def": "NOT NULL facility_id",
+          "table": "public.permission_audits",
+          "referenced_table": "",
+          "columns": [
+            "facility_id"
+          ]
+        },
+        {
+          "name": "permission_audits_id_check",
+          "type": "CHECK",
+          "def": "CHECK ((id ~ '^[0-7][0-9A-HJKMNP-TV-Z]{25}$'::text))",
+          "table": "public.permission_audits",
+          "referenced_table": "",
+          "columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "permission_audits_id_not_null",
+          "type": "n",
+          "def": "NOT NULL id",
+          "table": "public.permission_audits",
+          "referenced_table": "",
+          "columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "permission_audits_occurred_at_not_null",
+          "type": "n",
+          "def": "NOT NULL occurred_at",
+          "table": "public.permission_audits",
+          "referenced_table": "",
+          "columns": [
+            "occurred_at"
+          ]
+        },
+        {
+          "name": "permission_audits_request_id_check",
+          "type": "CHECK",
+          "def": "CHECK (((char_length(request_id) \u003e= 1) AND (char_length(request_id) \u003c= 255)))",
+          "table": "public.permission_audits",
+          "referenced_table": "",
+          "columns": [
+            "request_id"
+          ]
+        },
+        {
+          "name": "permission_audits_request_id_not_null",
+          "type": "n",
+          "def": "NOT NULL request_id",
+          "table": "public.permission_audits",
+          "referenced_table": "",
+          "columns": [
+            "request_id"
+          ]
+        },
+        {
+          "name": "permission_audits_target_check",
+          "type": "CHECK",
+          "def": "CHECK (\nCASE\n    WHEN (action = 'facility.create'::text) THEN (num_nonnulls(target_user_id, target_position_id, before, after) = 0)\n    WHEN (action = 'position.create'::text) THEN ((target_user_id IS NULL) AND (target_position_id IS NOT NULL) AND (before IS NULL) AND (after IS NOT NULL))\n    WHEN (action = ANY (ARRAY['staff.create'::text, 'staff.create_forced'::text])) THEN ((target_user_id IS NOT NULL) AND (target_position_id IS NULL) AND (before IS NULL) AND (after IS NOT NULL))\n    WHEN (action = 'grant.migrate'::text) THEN ((target_user_id IS NOT NULL) AND (target_position_id IS NULL) AND (after IS NOT NULL))\n    ELSE ((target_user_id IS NOT NULL) AND (target_position_id IS NULL) AND (before IS NOT NULL) AND (after IS NOT NULL))\nEND)",
+          "table": "public.permission_audits",
+          "referenced_table": "",
+          "columns": [
+            "action",
+            "target_user_id",
+            "target_position_id",
+            "before",
+            "after"
+          ]
+        },
+        {
+          "name": "permission_audits_facility_fkey",
+          "type": "FOREIGN KEY",
+          "def": "FOREIGN KEY (facility_id) REFERENCES facilities(id)",
+          "table": "public.permission_audits",
+          "referenced_table": "public.facilities",
+          "columns": [
+            "facility_id"
+          ],
+          "referenced_columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "permission_audits_target_position_fkey",
+          "type": "FOREIGN KEY",
+          "def": "FOREIGN KEY (facility_id, target_position_id) REFERENCES positions(facility_id, id)",
+          "table": "public.permission_audits",
+          "referenced_table": "public.positions",
+          "columns": [
+            "facility_id",
+            "target_position_id"
+          ],
+          "referenced_columns": [
+            "facility_id",
+            "id"
+          ]
+        },
+        {
+          "name": "permission_audits_actor_user_fkey",
+          "type": "FOREIGN KEY",
+          "def": "FOREIGN KEY (facility_id, actor_user_id) REFERENCES users(facility_id, id)",
+          "table": "public.permission_audits",
+          "referenced_table": "public.users",
+          "columns": [
+            "facility_id",
+            "actor_user_id"
+          ],
+          "referenced_columns": [
+            "facility_id",
+            "id"
+          ]
+        },
+        {
+          "name": "permission_audits_target_user_fkey",
+          "type": "FOREIGN KEY",
+          "def": "FOREIGN KEY (facility_id, target_user_id) REFERENCES users(facility_id, id)",
+          "table": "public.permission_audits",
+          "referenced_table": "public.users",
+          "columns": [
+            "facility_id",
+            "target_user_id"
+          ],
+          "referenced_columns": [
+            "facility_id",
+            "id"
+          ]
+        },
+        {
+          "name": "permission_audits_pkey",
+          "type": "PRIMARY KEY",
+          "def": "PRIMARY KEY (id)",
+          "table": "public.permission_audits",
+          "referenced_table": "",
+          "columns": [
+            "id"
+          ]
+        }
+      ]
     }
   ],
   "relations": [
@@ -8580,6 +8910,64 @@
       ],
       "parent_cardinality": "exactly_one",
       "def": "FOREIGN KEY (facility_id, recurring_schedule_id) REFERENCES recurring_schedules(facility_id, id)"
+    },
+    {
+      "table": "public.permission_audits",
+      "columns": [
+        "facility_id"
+      ],
+      "cardinality": "zero_or_more",
+      "parent_table": "public.facilities",
+      "parent_columns": [
+        "id"
+      ],
+      "parent_cardinality": "exactly_one",
+      "def": "FOREIGN KEY (facility_id) REFERENCES facilities(id)"
+    },
+    {
+      "table": "public.permission_audits",
+      "columns": [
+        "facility_id",
+        "target_position_id"
+      ],
+      "cardinality": "zero_or_more",
+      "parent_table": "public.positions",
+      "parent_columns": [
+        "facility_id",
+        "id"
+      ],
+      "parent_cardinality": "exactly_one",
+      "def": "FOREIGN KEY (facility_id, target_position_id) REFERENCES positions(facility_id, id)"
+    },
+    {
+      "table": "public.permission_audits",
+      "columns": [
+        "facility_id",
+        "actor_user_id"
+      ],
+      "cardinality": "zero_or_more",
+      "parent_table": "public.users",
+      "parent_columns": [
+        "facility_id",
+        "id"
+      ],
+      "parent_cardinality": "exactly_one",
+      "def": "FOREIGN KEY (facility_id, actor_user_id) REFERENCES users(facility_id, id)"
+    },
+    {
+      "table": "public.permission_audits",
+      "columns": [
+        "facility_id",
+        "target_user_id"
+      ],
+      "cardinality": "zero_or_more",
+      "parent_table": "public.users",
+      "parent_columns": [
+        "facility_id",
+        "id"
+      ],
+      "parent_cardinality": "exactly_one",
+      "def": "FOREIGN KEY (facility_id, target_user_id) REFERENCES users(facility_id, id)"
     }
   ],
   "functions": [
@@ -8650,7 +9038,7 @@
     {
       "id": "policies",
       "name": "職員と権限",
-      "desc": "職員が持つ権限と、その対象。職員を登録するとき、役職のデフォルトの権限をコピーする",
+      "desc": "職員が持つ権限と、その対象。職員を登録するとき、役職のデフォルトの権限をコピーする。権限の変更は監査の記録に残す（ADR-0042）",
       "tables": [
         "public.users",
         "public.positions",
@@ -8658,7 +9046,8 @@
         "public.policies",
         "public.position_policies",
         "public.user_policies",
-        "public.user_policy_targets"
+        "public.user_policy_targets",
+        "public.permission_audits"
       ]
     },
     {

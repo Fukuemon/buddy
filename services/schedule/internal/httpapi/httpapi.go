@@ -13,6 +13,7 @@ import (
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 
+	"github.com/Fukuemon/buddy/services/schedule/internal/audit"
 	"github.com/Fukuemon/buddy/services/schedule/internal/httpapi/openapi"
 	"github.com/Fukuemon/buddy/services/schedule/internal/ulid"
 )
@@ -56,7 +57,7 @@ func NewRouter(u Apps, cfg RouterConfig) *gin.Engine {
 	r := gin.New()
 	// 生成した strict handler は *gin.Context を context として操作に渡すので、リクエストの取り消しと値をリクエストの context から引かせる
 	r.ContextWithFallback = true
-	r.Use(requestLog(cfg.Logger), gin.CustomRecovery(func(c *gin.Context, recovered any) {
+	r.Use(assignRequestID, requestLog(cfg.Logger), gin.CustomRecovery(func(c *gin.Context, recovered any) {
 		cfg.Logger.ErrorContext(c.Request.Context(), "panic", slog.Any("recovered", recovered), slog.String("path", c.FullPath()))
 		c.AbortWithStatusJSON(http.StatusInternalServerError, errorResponse{Code: "internal", Message: "サーバーでエラーが発生しました"})
 	}))
@@ -105,6 +106,13 @@ func v1Only(h gin.HandlerFunc) gin.HandlerFunc {
 		}
 		h(c)
 	}
+}
+
+// assignRequestID は、リクエストごとに新しい相関 ID を振り、リクエストの context に入れる。監査の記録とログが同じ値を読む（ADR-0042）。
+// BFF やクライアントが送った値は使わない。外から送った値で、ほかのリクエストの記録とつながった記録を作らせないためである。
+func assignRequestID(c *gin.Context) {
+	c.Request = c.Request.WithContext(audit.WithRequestID(c.Request.Context(), ulid.Generator{}.NewID()))
+	c.Next()
 }
 
 func requestLog(log *slog.Logger) gin.HandlerFunc {

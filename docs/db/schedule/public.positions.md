@@ -6,20 +6,20 @@
 
 ## Columns
 
-| Name        | Type                     | Default | Nullable | Children                                                                                | Parents                                   | Comment          |
-| ----------- | ------------------------ | ------- | -------- | --------------------------------------------------------------------------------------- | ----------------------------------------- | ---------------- |
-| id          | text                     |         | false    | [public.position_policies](public.position_policies.md) [public.users](public.users.md) |                                           |                  |
-| facility_id | text                     |         | false    | [public.users](public.users.md)                                                         | [public.facilities](public.facilities.md) |                  |
-| name        | varchar(255)             |         | false    |                                                                                         |                                           | 事業所の中で一意 |
-| created_at  | timestamp with time zone | now()   | false    |                                                                                         |                                           |                  |
-| updated_at  | timestamp with time zone | now()   | false    |                                                                                         |                                           |                  |
+| Name        | Type                     | Default | Nullable | Children                                                                                                                                        | Parents                                   | Comment          |
+| ----------- | ------------------------ | ------- | -------- | ----------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------- | ---------------- |
+| id          | text                     |         | false    | [public.position_policies](public.position_policies.md) [public.users](public.users.md) [public.permission_audits](public.permission_audits.md) |                                           |                  |
+| facility_id | text                     |         | false    | [public.users](public.users.md) [public.permission_audits](public.permission_audits.md)                                                         | [public.facilities](public.facilities.md) |                  |
+| name        | varchar(255)             |         | false    |                                                                                                                                                 |                                           | 事業所の中で一意 |
+| created_at  | timestamp with time zone | now()   | false    |                                                                                                                                                 |                                           |                  |
+| updated_at  | timestamp with time zone | now()   | false    |                                                                                                                                                 |                                           |                  |
 
 ## Viewpoints
 
-| Name                                      | Definition                                                                         |
-| ----------------------------------------- | ---------------------------------------------------------------------------------- |
-| [事業所と組織](viewpoint-organization.md) | 事業所と、その中の部署、チーム、役職、職員。事業所は予定の正本のモードを持つ       |
-| [職員と権限](viewpoint-policies.md)       | 職員が持つ権限と、その対象。職員を登録するとき、役職のデフォルトの権限をコピーする |
+| Name                                      | Definition                                                                                                                   |
+| ----------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| [事業所と組織](viewpoint-organization.md) | 事業所と、その中の部署、チーム、役職、職員。事業所は予定の正本のモードを持つ                                                 |
+| [職員と権限](viewpoint-policies.md)       | 職員が持つ権限と、その対象。職員を登録するとき、役職のデフォルトの権限をコピーする。権限の変更は監査の記録に残す（ADR-0042） |
 
 ## Constraints
 
@@ -57,6 +57,7 @@ erDiagram
 
 "public.position_policies" }o--|| "public.positions" : "FOREIGN KEY (position_id) REFERENCES positions(id) ON DELETE CASCADE"
 "public.users" }o--|| "public.positions" : "FOREIGN KEY (facility_id, position_id) REFERENCES positions(facility_id, id)"
+"public.permission_audits" }o--|| "public.positions" : "FOREIGN KEY (facility_id, target_position_id) REFERENCES positions(facility_id, id)"
 "public.positions" }o--|| "public.facilities" : "FOREIGN KEY (facility_id) REFERENCES facilities(id)"
 
 "public.positions" {
@@ -86,6 +87,20 @@ erDiagram
   date leave_return_date
   timestamp_with_time_zone retired_at
   boolean visits
+}
+"public.permission_audits" {
+  text id
+  text facility_id FK
+  text action
+  text actor_kind
+  text actor_user_id FK
+  text actor_operator
+  text target_user_id FK
+  text target_position_id FK
+  jsonb before
+  jsonb after
+  text request_id
+  timestamp_with_time_zone occurred_at
 }
 "public.facilities" {
   text id

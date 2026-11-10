@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/Fukuemon/buddy/services/schedule/internal/apperr"
+	"github.com/Fukuemon/buddy/services/schedule/internal/audit"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/organization"
 	"github.com/Fukuemon/buddy/services/schedule/internal/kernel"
 	"github.com/Fukuemon/buddy/services/schedule/internal/tx"
@@ -18,16 +19,17 @@ type UpdateProfile struct {
 	teams       kernel.Finder[organization.Team]
 	assignments AssignmentReader
 	now         func() time.Time
+	audit       audit.Recorder
 	tx          tx.Transactor
 	guard       kernel.Guard
 }
 
 // NewUpdateProfile は UpdateProfile を作る。now は、残る予定を数え始める日を決める時刻である。nil なら time.Now を使う。
-func NewUpdateProfile(staff Repository, locks FacilityLock, departments kernel.Finder[organization.Department], teams kernel.Finder[organization.Team], assignments AssignmentReader, now func() time.Time, tx tx.Transactor, guard kernel.Guard) UpdateProfile {
+func NewUpdateProfile(staff Repository, locks FacilityLock, departments kernel.Finder[organization.Department], teams kernel.Finder[organization.Team], assignments AssignmentReader, now func() time.Time, audit audit.Recorder, tx tx.Transactor, guard kernel.Guard) UpdateProfile {
 	if now == nil {
 		now = time.Now
 	}
-	return UpdateProfile{staff: staff, locks: locks, departments: departments, teams: teams, assignments: assignments, now: now, tx: tx, guard: guard}
+	return UpdateProfile{staff: staff, locks: locks, departments: departments, teams: teams, assignments: assignments, now: now, audit: audit, tx: tx, guard: guard}
 }
 
 // Do は、職員の名前、電話番号、部署、チーム、訪問しない職員かを p にし、変えた職員を返す。メールは変えない（ADR-0001）。
@@ -39,6 +41,8 @@ func NewUpdateProfile(staff Repository, locks FacilityLock, departments kernel.F
 // 退職した職員を変えようとしたときは apperr.ErrConflict を、部署かチームが見つからないか別の事業所のものであるときは入力のエラーを返す。
 // 役職を変える操作と同じく事業所をロックし、読んだ古いチームが、書くまでにほかの操作で変わらないようにする。
 // ロックは予定と担当の新しい割り振りも待たせるので、残る予定を数えてから書くまでに、訪問しない職員への割り振りが入らない。
+// 権限の対象を移したときは、同じトランザクションで変更の前後の権限を監査の記録に書き、書けなければ職員も変えない（ADR-0042）。
+// チームを変えても権限の対象が変わらなかったときと、チームを変えないときは、記録を書かない。
 func (s UpdateProfile) Do(ctx context.Context, id string, p Profile) (Detail, error) {
 	if err := s.guard(ctx); err != nil {
 		return Detail{}, err
@@ -49,6 +53,7 @@ func (s UpdateProfile) Do(ctx context.Context, id string, p Profile) (Detail, er
 		if err != nil {
 			return err
 		}
+		before := toStaffState(cur)
 		if err := cur.RequireProfileEditable(); err != nil {
 			return err
 		}
@@ -83,7 +88,10 @@ func (s UpdateProfile) Do(ctx context.Context, id string, p Profile) (Detail, er
 			return apperr.AsConflict(err, "退職した職員は変えられません")
 		}
 		changed, err = s.staff.Get(ctx, cur.ID)
-		return err
+		if err != nil || before.GrantsEqual(toStaffState(changed)) {
+			return err
+		}
+		return recordChange(ctx, s.audit, audit.TeamChange, &before, changed)
 	})
 	return changed, err
 }

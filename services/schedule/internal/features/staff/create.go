@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/Fukuemon/buddy/services/schedule/internal/apperr"
+	"github.com/Fukuemon/buddy/services/schedule/internal/audit"
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/organization"
 	"github.com/Fukuemon/buddy/services/schedule/internal/kernel"
 	"github.com/Fukuemon/buddy/services/schedule/internal/tx"
@@ -31,14 +32,15 @@ type Create struct {
 	positions   kernel.Finder[organization.Position]
 	identities  Identities
 	staff       Repository
+	audit       audit.Recorder
 	tx          tx.Transactor
 	ids         kernel.IDGenerator
 	guard       kernel.Guard
 }
 
 // NewCreate は Create を作る。
-func NewCreate(facilities kernel.Finder[organization.Facility], departments kernel.Finder[organization.Department], teams kernel.Finder[organization.Team], positions kernel.Finder[organization.Position], identities Identities, staff Repository, tx tx.Transactor, ids kernel.IDGenerator, guard kernel.Guard) Create {
-	return Create{facilities: facilities, departments: departments, teams: teams, positions: positions, identities: identities, staff: staff, tx: tx, ids: ids, guard: guard}
+func NewCreate(facilities kernel.Finder[organization.Facility], departments kernel.Finder[organization.Department], teams kernel.Finder[organization.Team], positions kernel.Finder[organization.Position], identities Identities, staff Repository, audit audit.Recorder, tx tx.Transactor, ids kernel.IDGenerator, guard kernel.Guard) Create {
+	return Create{facilities: facilities, departments: departments, teams: teams, positions: positions, identities: identities, staff: staff, audit: audit, tx: tx, ids: ids, guard: guard}
 }
 
 // Do は、職員を作り、役職のデフォルトの権限を与える。チームを対象にする権限は、職員の所属のチームを対象にする。事業所が見つからないときは apperr.ErrNotFound を、
@@ -51,6 +53,7 @@ func NewCreate(facilities kernel.Finder[organization.Facility], departments kern
 // ブローカーの登録は同じメールで送り直しても 1 人にまとまるので、失敗した登録は送り直してよい。ここで書けず、ブローカーの職員を
 // この呼び出しで作っていて、その ID の職員がまだいなければ、ブローカーの職員を消して戻す。
 // 前の登録が書いた後に有効にできなかったときは、送り直すと、書いた職員を有効にしてから返す。
+// 職員を書くトランザクションで、デフォルトからコピーした権限を監査の記録に書き、書けなければ職員も書かない（ADR-0042）。
 func (s Create) Do(ctx context.Context, in CreateInput) (Detail, error) {
 	if err := s.guard(ctx); err != nil {
 		return Detail{}, err
@@ -114,7 +117,10 @@ func (s Create) Do(ctx context.Context, in CreateInput) (Detail, error) {
 			return apperr.AsConflict(err, "メール %s の職員はこの事業所にすでにいます", st.Email)
 		}
 		created, err = s.staff.Get(ctx, st.ID)
-		return err
+		if err != nil {
+			return err
+		}
+		return recordChange(ctx, s.audit, audit.StaffCreate, nil, created)
 	})
 	if err != nil && reg.Created {
 		return Detail{}, errors.Join(err, s.unregister(context.WithoutCancel(ctx), reg.ID))
