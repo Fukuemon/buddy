@@ -1,7 +1,7 @@
 ---
 type: context
 title: 基盤と運用
-description: 環境の種類、デプロイと切り戻しの条件、監視、Google カレンダーの Worker の動かし方、シークレットの配置先の方針、事業所を足すときの Google のサービスアカウントの手順、CI のランナーの切り替え
+description: 環境の種類、デプロイと切り戻しの条件、監視、Google カレンダーの Worker の動かし方、DB の分け方と権限、Hydra の DB と期限の切れた行の扱い、シークレットの配置先の方針、事業所を足すときの Google のサービスアカウントの手順、CI のランナーの切り替え
 status: stable
 ---
 
@@ -104,6 +104,77 @@ Worker は、待ちかカレンダーを取って処理する 1 回（バッチ�
 日時を読めずに参照のモデル（Projection）に写さなかった予定は、`calendar projection skipped` の行に、事業所、カレンダー、Google の予定の ID（`event_id`）を付けて書く。  
 保留の版を読み戻せなかった記録は、`calendar pending readback failed` の行に、事業所、カレンダー、Google の予定の ID を付けて書く。
 
+## Databases
+
+Hydra、ブローカー、予定の API は、それぞれ自分のデータベースを持つ。  
+検証環境と本番環境では、3 つのデータベースを同じ PostgreSQL のインスタンスに置き、アプリごとに DB のロールを分ける。  
+calendar-worker は、予定の API と同じデータベースとロールを使う。
+
+- アプリのロールが CONNECT できるのは、自分のデータベースだけにする。
+  - 1 つのアプリの資格が漏れたときに、ほかのアプリのデータベースを読めないようにするためである。
+  - PostgreSQL は、新しいデータベースの CONNECT を `PUBLIC` に許す。データベースを作ったら、`PUBLIC` の CONNECT を外し、そのアプリのロールにだけ許す。
+- アプリのロールに、`SUPERUSER` と、ロールを作る権限（`CREATEROLE`）を与えない。
+  - マイグレーションがテーブルを作るので、自分のデータベースでテーブルを作る権限は与える。
+- アプリは、`sslmode=require` 以上で DB につなぐ。
+  - Hydra は、`DSN` の `sslmode` で指定する。
+  - 予定の API、calendar-worker、ブローカーには、`sslmode` を渡す環境変数が無い。DB のドライバー（pgx）が読む `PGSSLMODE` で指定する。
+- 同じインスタンスでは、PostgreSQL の管理者の権限とインスタンスのバックアップが、全てのアプリのデータに届く。管理者の権限とバックアップに触れられる人を絞る。
+- 次のときは、インスタンスを分ける。
+  - 規制や監査で、物理的な分離を求められたとき
+  - DB の管理者をアプリごとに分けるとき
+  - Hydra が求める PostgreSQL のバージョンが、業務の DB と合わないとき
+- ローカル環境の compose は、1 つの DB のロールで全てのデータベースにつなぐ。開発用の構成なので、この要件の対象外である。
+
+### Hydra の DB を失ったとき
+
+Hydra の DB を失うと、次のものが無くなり、全ての職員のログインが切れる。
+
+- ログインのセッション
+- access token と refresh token
+- 署名の鍵（ID token と access token の JWT を署名する鍵）
+- OAuth のクライアントの登録（web と予定の API のクライアント）
+
+職員と上流の IdP のアカウントの結び付けはブローカーの DB に、業務のデータは予定の API の DB にあるので、Hydra の DB を失っても残る。  
+Hydra は、署名の鍵が無ければ新しく作る。  
+OAuth のクライアントを前と同じ ID とシークレットで登録し直せば、職員はログインし直して使える。
+
+OAuth のクライアントの登録を、インフラの側で毎回作り直す形にするかは、インフラのリポジトリが決める。  
+作り直す形にすれば、Hydra の DB のバックアップは、業務の DB のバックアップより重要度が低くなる。
+
+## Hydra Janitor
+
+Hydra は、期限の切れたトークンと、終わらなかったログインの要求を自分では消さない。  
+インフラのリポジトリは、`hydra janitor` を 1 日 1 回流すジョブを作る。  
+access token の期限が 5 分なので、ログインしている職員 1 人につき 5 分ごとに refresh token が回転し、回転する前の refresh token の行が残るためである。  
+100 人が 1 日 8 時間使うと、refresh token だけで 1 日に約 1 万行になる。
+
+```sh
+hydra janitor -c <hydra serve の設定ファイル> -e --tokens --requests --grants --limit 100000
+```
+
+- イメージは、`hydra serve` と同じバージョンの `oryd/hydra` を使う。
+- DB は、Hydra と同じ DB のロールで、環境変数 `DSN` で渡す（`-e`）。
+- `-c` に、`hydra serve` と同じ設定ファイルを渡す。
+  - janitor は、設定の `ttl` を残す期間に使う。設定を渡さないと、Hydra のデフォルトの期間を使う。
+  - `--access-lifespan`、`--refresh-lifespan`、`--consent-request-lifespan` は渡さない。設定より短い値を渡すと、まだ使えるトークンを消す。
+- `--limit` は、1 回に消す行の数の上限で、対象ごとに数える。
+  - デフォルトの 10000 では、1 日に増える refresh token の行を消しきれないことがあるので、100000 にする。
+
+消す対象と残す期間は、次のとおり。  
+残す期間は、行を作った時刻から数える。
+
+| フラグ | 消すもの | 残す期間 |
+| --- | --- | --- |
+| `--tokens` | access token と refresh token の行。回転する前の refresh token も含む | access token は `ttl.access_token`（buddy は 5 分）、refresh token は `ttl.refresh_token`（buddy は設定せず、デフォルトの 720 時間） |
+| `--requests` | 終わらなかったか、拒んだログインと同意の要求 | `ttl.login_consent_request`（buddy は設定せず、デフォルトの 30 分） |
+| `--grants` | JWT Bearer の信頼の関係のうち、期限の切れたもの。buddy は使わない | 期限まで |
+
+- janitor は、ログインのセッション、認可コード、トークンを発行し終えたログインの要求の行を消さない。
+  - これらはログインの回数だけ増えるので、refresh token の行より少ない。
+- v26.2.0 のローカル環境では、終わらなかったログインの要求と、ブローカーが拒んだログインの要求は、DB に行を作らなかった。`--requests` が消すのは、行が作られた要求だけである。
+- janitor は、Hydra を動かしたまま流せる。行を少しずつ消すので、テーブルを長く占有しない。
+- 出典: [hydra janitor](https://www.ory.sh/docs/hydra/cli/hydra-janitor)
+
 ## Rollback
 
 - 切り戻しは、前のタグのイメージを起動し直す。
@@ -115,6 +186,10 @@ Worker は、待ちかカレンダーを取って処理する 1 回（バッチ�
 
 - シークレットは、`OIDC_CLIENT_SECRET`、`SESSION_SECRET`、`DB_PASSWORD`、Google の Workload Identity Federation の外部アカウントの設定である。
   - ブローカーでは、上流の IdP の client secret のファイル（`UPSTREAM_IDP_CLIENT_SECRETS_FILE`）と、token_hook のヘッダーの値（`TOKEN_HOOK_KEY`）もシークレットである。
+  - Hydra では、設定の `secrets.system` もシークレットである。
+    - Hydra は、この値で、DB に置く署名の鍵を暗号化し、refresh token と認可コードの署名を作る。
+    - 値を変えるときは、新しい値を一覧の先頭に足し、古い値を一覧に残す。古い値を外すと、古い値で暗号化した署名の鍵と、古い値で署名した refresh token が使えなくなる。
+    - 出典: [Secrets and key rotation](https://www.ory.sh/docs/hydra/self-hosted/secrets-key-rotation)
 - Google のサービスアカウントのキーは作らず、どこにも置かない。
   - API は、Application Default Credentials で認証し、事業所のサービスアカウントの権限を借用する。
   - ADR-0030: [職員のカレンダーを、事業所ごとのサービスアカウントへの共有で読み書きする](../docs/adr/0030-google-calendar-service-accounts.md)
