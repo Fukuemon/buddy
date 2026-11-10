@@ -187,9 +187,9 @@ test.describe('ログイン', () => {
           openWeb,
           async ({ page, step, check }) => {
             await page.goto(`${BROKER_URL}/login`)
-            await expect(brokerPage(page).heading).toHaveText('ログインできませんでした')
+            await expect(brokerPage(page).heading).toHaveText('ログインを続けられませんでした')
             await step('login_challenge を付けずに、ブローカーのログインの画面を開いた')
-            await check('「ログインできませんでした」の画面が出る')
+            await check('「ログインを続けられませんでした」の画面が出る')
           },
         )
       })
