@@ -289,13 +289,13 @@ test.describe('職員の管理の画面仕様書のモック', () => {
       )
     })
 
-    test('staff-detail-position 職員の詳細のモックで役職を変えるを押した場合、個別に足した権限が消える注意と赤のボタンが出ること', async ({
+    test('staff-detail-position 職員の詳細のモックで役職を変えるを押した場合、個別に足した権限が残る注意と赤のボタンが出ること', async ({
       page,
     }) => {
       await openMock(page, `${DETAIL}/01-detail.html`, 'staff-detail-position-change')
       await intro(
         page,
-        '役職を変えるダイアログに、個別に足した権限が消える注意と赤の「役職を変える」が出る\n前提 有効な職員の詳細のモック（01-detail.html）を開いている',
+        '役職を変えるダイアログに、個別に足した権限が残る注意と赤の「役職を変える」が出る\n前提 有効な職員の詳細のモック（01-detail.html）を開いている',
       )
 
       await step(page, '「役職を変える」を押す', () =>
@@ -303,11 +303,11 @@ test.describe('職員の管理の画面仕様書のモック', () => {
       )
       await check(
         page,
-        '役職を変えるダイアログ（19-position-open.html）に、消える権限の注意と、今の役職を選んだままでは押せない赤の「役職を変える」が出る',
+        '役職を変えるダイアログ（19-position-open.html）に、残る権限の注意と、今の役職を選んだままでは押せない赤の「役職を変える」が出る',
         async () => {
           await expect(page).toHaveURL(/19-position-open\.html/)
           await expect(page.getByTestId('staff-position-note')).toContainText(
-            '個別に足した権限（指定した職員の予定の閲覧）は消えます。',
+            '個別に足した権限（指定した職員の予定の閲覧）は残ります。',
           )
           await expect(page.getByTestId('staff-position-submit')).toHaveClass(/wf-btn--danger/)
           await expect(page.getByTestId('staff-position-submit')).toHaveAttribute(
