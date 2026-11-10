@@ -47,6 +47,7 @@ API の操作を呼ぶ関数とリポジトリのメソッドは、operationId �
 | 操作 | 動詞 | 例 | 書き込みか読み取りか |
 | --- | --- | --- | --- |
 | 保存された状態を変える | operationId の動詞（`create`、`update`、`cancel`、`delete`、`change`、`add`、`remove`、`start`、`end`、`resume`、`retire`、`reinstate`） | `CreateTeam`、`Retire` | 書き込み |
+| 運営用の CLI で、無ければ作り、あれば使う | `setup`（事業所の組織）、`onboard`（事業所と最初の職員） | `SetupFacility`、`Onboard` | 書き込み |
 | ID で 1 件を取る | `get` | `GetFacility`、`getSchedule` | 読み取り |
 | 一覧を取る | `list` | `ListDepartments`、`listRecords` | 読み取り |
 | ID 以外の値で探し、見つからないことがある | `find` | `FindByEmail`、`findCalendar` | 読み取り |

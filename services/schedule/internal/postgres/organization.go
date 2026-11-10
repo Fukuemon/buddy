@@ -9,7 +9,7 @@ import (
 	"github.com/Fukuemon/buddy/services/schedule/internal/postgres/sqlcgen"
 )
 
-// FacilityRepository は、organization.FacilityRepository と、事業所の行をロックする機能のパッケージの FacilityLock を実装する。
+// FacilityRepository は、organization.FacilityRepository と organization.FacilityCreator と、事業所の行をロックする機能のパッケージの FacilityLock を実装する。
 type FacilityRepository struct{ conn }
 
 // NewFacilityRepository は FacilityRepository を作る。
@@ -33,6 +33,11 @@ func (r *FacilityRepository) GetByOrgID(ctx context.Context, orgID string) (orga
 		return organization.Facility{}, translate("get facility by org", err)
 	}
 	return toFacility(f), nil
+}
+
+// Create は、事業所 f を書く。同じ組織の ID の事業所があるときは apperr.ErrConflict を返す。
+func (r *FacilityRepository) Create(ctx context.Context, f organization.Facility) error {
+	return translate("create facility", r.q(ctx).CreateFacility(ctx, sqlcgen.CreateFacilityParams{ID: f.ID, Name: f.Name, OrgID: ptr(f.OrgID), SourceMode: string(f.SourceMode)}))
 }
 
 // Lock は、事業所 facilityID の行に排他のロックを取る。呼び出し側がトランザクションの中で呼ぶ。

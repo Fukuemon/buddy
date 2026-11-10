@@ -16,11 +16,11 @@ func toStaffState(d Detail) audit.StaffState {
 }
 
 // recordChange は、職員の権限を変える操作 action の記録を、変更の前の全量 before と、変更の後に読み直した職員 after で書く。
-// before は、書く前に toStaffState で取る。職員の登録のように変更の前が無い操作では、nil にする。
+// ctx に運営者がいれば運営者の操作として書く（audit.Recorder.Record）。before は、書く前に toStaffState で取る。職員の登録のように変更の前が無い操作では、nil にする。
 func recordChange(ctx context.Context, rec audit.Recorder, action audit.Action, before *audit.StaffState, after Detail) error {
 	e := audit.Entry{FacilityID: after.FacilityID, Action: action, TargetUserID: after.ID, After: toStaffState(after)}
 	if before != nil {
 		e.Before = *before
 	}
-	return rec.ByStaff(ctx, e)
+	return rec.Record(ctx, e)
 }

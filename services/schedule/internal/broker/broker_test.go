@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/Fukuemon/buddy/services/schedule/internal/apperr"
@@ -156,5 +157,28 @@ func TestStaffCalls(t *testing.T) {
 		if calls[i] != w {
 			t.Errorf("calls[%d] = %+v, want %+v", i, calls[i], w)
 		}
+	}
+}
+
+// トークンの発行が失敗したときは、本文に secret を入れて取り直さず、最初の失敗の理由を返す。
+func TestTokenFailureIsNotRetriedWithPostedSecret(t *testing.T) {
+	var tokenCalls int
+	hydra := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		tokenCalls++
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusInternalServerError)
+		_, _ = io.WriteString(w, `{"error":"server_error","error_description":"token hook failed"}`)
+	}))
+	t.Cleanup(hydra.Close)
+	c := broker.New(broker.Config{
+		URL: "http://broker.invalid", TokenURL: hydra.URL + "/oauth2/token",
+		ClientID: "schedule", ClientSecret: "schedule-secret", Audience: "broker",
+	}, nil)
+	_, err := c.Register(context.Background(), "org-a", "a@example.com")
+	if err == nil || !strings.Contains(err.Error(), "token hook failed") {
+		t.Errorf("err = %v, want トークンの発行の最初の失敗の理由", err)
+	}
+	if tokenCalls != 1 {
+		t.Errorf("トークンの要求の数 = %d, want 1", tokenCalls)
 	}
 }

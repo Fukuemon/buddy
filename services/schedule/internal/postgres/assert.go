@@ -15,6 +15,7 @@ import (
 var (
 	_ tx.Transactor                     = (*Transactor)(nil)
 	_ organization.FacilityRepository   = (*FacilityRepository)(nil)
+	_ organization.FacilityCreator      = (*FacilityRepository)(nil)
 	_ organization.DepartmentRepository = (*DepartmentRepository)(nil)
 	_ organization.TeamRepository       = (*TeamRepository)(nil)
 	_ organization.PositionRepository   = (*PositionRepository)(nil)

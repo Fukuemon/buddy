@@ -35,6 +35,10 @@ type Config struct {
 	// Clients は、内部の API を呼んでよいクライアントの ID である。client credentials のトークンの sub と、
 	// token_hook が素通しする client credentials の要求の client_id を、ここに挙げた ID と照合する。
 	Clients []string
+	// OnboardingClients は、内部の API のうち、事業所の最初の職員の登録に要る操作（登録、有効化、登録の途中の職員の削除）だけを
+	// 呼んでよいクライアントの ID である。予定の API の運営用の CLI が使う。休職、復職、退職は呼べない。token_hook は、
+	// Clients と同じく、このクライアントの client credentials の要求を素通しする。
+	OnboardingClients []string
 	// KnownOrg は、組織の ID が上流の IdP の設定にあるかを返す。設定に無い事業所には職員を登録しない。
 	KnownOrg func(orgID string) bool
 	// NewID は、職員の ID（ULID）を発行する。
@@ -54,31 +58,37 @@ type Config struct {
 //   - POST /internal/staff/{id}/retire: 職員を退職にしてメールと上流のアカウントを消し、Hydra のログインのセッションと同意を取り消す
 //   - POST /internal/token-hook: Hydra の oauth2.token_hook。有効でない職員と、上流のログインから staff.SessionMaxAge を過ぎたトークンを拒む
 //
-// /internal/staff の下は、cfg.Verifier が検証した access token が無ければ 401 を、cfg.Clients に無いクライアントか
-// 組織の ID を持つトークン（職員のトークン）なら 403 を返す。
+// /internal/staff の下は、cfg.Verifier が検証した access token が無ければ 401 を、許していないクライアントか
+// 組織の ID を持つトークン（職員のトークン）なら 403 を返す。登録、有効化、削除は cfg.Clients と cfg.OnboardingClients に許し、
+// 休職、復職、退職は cfg.Clients にだけ許す。
 // /internal/token-hook は、TokenHookKeyHeader が cfg.TokenHookKey と違えば 401 を返す。
 func NewHandler(cfg Config) http.Handler {
 	if cfg.Now == nil {
 		cfg.Now = time.Now
 	}
+	all := slices.Concat(cfg.Clients, cfg.OnboardingClients)
+	// onboarding は、運営用のクライアントにも許す操作である。client は、Clients だけに許す
+	onboarding := func(next http.Handler) http.Handler {
+		return requireClient(cfg.Logger, cfg.Verifier, all, next)
+	}
 	client := func(next http.Handler) http.Handler {
 		return requireClient(cfg.Logger, cfg.Verifier, cfg.Clients, next)
 	}
 	mux := http.NewServeMux()
-	mux.Handle("POST /internal/staff", client(register{logger: cfg.Logger, staff: cfg.Staff, knownOrg: cfg.KnownOrg, newID: cfg.NewID}))
-	mux.Handle("POST /internal/staff/{id}/activate", client(activate{logger: cfg.Logger, staff: cfg.Staff}))
-	mux.Handle("DELETE /internal/staff/{id}", client(deleteStaff{logger: cfg.Logger, staff: cfg.Staff}))
+	mux.Handle("POST /internal/staff", onboarding(register{logger: cfg.Logger, staff: cfg.Staff, knownOrg: cfg.KnownOrg, newID: cfg.NewID}))
+	mux.Handle("POST /internal/staff/{id}/activate", onboarding(activate{logger: cfg.Logger, staff: cfg.Staff}))
+	mux.Handle("DELETE /internal/staff/{id}", onboarding(deleteStaff{logger: cfg.Logger, staff: cfg.Staff}))
 	mux.Handle("POST /internal/staff/{id}/suspend", client(suspend{logger: cfg.Logger, staff: cfg.Staff, hydra: cfg.Hydra}))
 	mux.Handle("POST /internal/staff/{id}/resume", client(resume{logger: cfg.Logger, staff: cfg.Staff}))
 	mux.Handle("POST /internal/staff/{id}/retire", client(retire{logger: cfg.Logger, staff: cfg.Staff, hydra: cfg.Hydra}))
 	mux.Handle("POST /internal/token-hook", tokenHook{
-		logger: cfg.Logger, staff: cfg.Staff, clients: cfg.Clients, tokenHookKey: cfg.TokenHookKey, now: cfg.Now,
+		logger: cfg.Logger, staff: cfg.Staff, clients: all, tokenHookKey: cfg.TokenHookKey, now: cfg.Now,
 	})
 	return mux
 }
 
 // requireClient は、Bearer の access token を検証してから next を呼ぶ。トークンが無いか検証できなければ 401 を返す。
-// トークンの sub が cfg.Clients に無いか、トークンが組織の ID を持てば 403 を返す。client credentials のトークンの sub は
+// トークンの sub が clients に無いか、トークンが組織の ID を持てば 403 を返す。client credentials のトークンの sub は
 // クライアントの ID で、組織の ID は同意で職員のトークンにだけ入る。
 func requireClient(logger *slog.Logger, verifier TokenVerifier, clients []string, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

@@ -1,5 +1,5 @@
 #!/bin/sh
-# Hydra に、web と予定の API のクライアントを登録する。登録済みなら設定を書き直す。
+# Hydra に、web、予定の API、予定の API の運営用の CLI のクライアントを登録する。登録済みなら設定を書き直す。
 # 値は全て開発用のダミーの値で、ほかの環境で使わない。
 set -eu
 
@@ -23,5 +23,11 @@ upsert web --name web --secret web-dev \
 
 # 予定の API が、ブローカーの内部の API（職員の登録、休職、復職、退職）を呼ぶときに使う
 upsert schedule --name schedule --secret schedule-dev \
+  --grant-type client_credentials --audience broker \
+  --token-endpoint-auth-method client_secret_basic
+
+# 予定の API の運営用の CLI が、事業所と最初のマネージャーを登録するときに使う。
+# ブローカーは、このクライアントに、職員の登録、有効化、登録の途中の職員の削除だけを許す
+upsert schedule-ops --name schedule-ops --secret schedule-ops-dev \
   --grant-type client_credentials --audience broker \
   --token-endpoint-auth-method client_secret_basic

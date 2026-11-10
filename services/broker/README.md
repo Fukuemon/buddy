@@ -52,6 +52,10 @@ Ory Hydra の login and consent app として動くサービス。
 - `INTERNAL_API_CLIENTS`: 内部の API を呼んでよいクライアントの ID を、カンマで区切った値。
   - デフォルトは `schedule`。
   - ブローカーは、access token の `sub` と、token_hook が通す client credentials の要求の `client_id` を、この値と照合する。
+- `INTERNAL_API_ONBOARDING_CLIENTS`: 内部の API のうち、職員の登録、有効化、登録の途中の職員の削除だけを呼んでよいクライアントの ID を、カンマで区切った値。
+  - デフォルトは `schedule-ops`。予定の API の運営用の CLI が、事業所の最初のマネージャーを登録するのに使う。
+  - 休職、復職、退職は、403 で拒む。
+  - `INTERNAL_API_CLIENTS` と同じ ID を入れると、ブローカーは起動しない。
 - `TOKEN_HOOK_KEY`: Hydra が `oauth2.token_hook` を呼ぶときに、ヘッダー `Token-Hook-Key` に入れる値。前後の空白を除いて 32 バイト以上にする。
   - 必須。
   - シークレットとして渡し、Hydra の `oauth2.token_hook.auth` と同じ値にする。
@@ -66,8 +70,8 @@ Ory Hydra の login and consent app として動くサービス。
 - 上流の IdP の client secret が無いか、上流の IdP の設定に無い組織の client secret がある。
 
 2 つの例のファイルの値は、開発用のダミーである。  
-例のファイルの issuer は、compose の上流の IdP のフェイク（mock-oauth2-server）の 3 つの事業所を、ローカルから届く `localhost:9000` で指す。  
-事業所のパスは `/office-a`、`/office-b`、`/office-c` である。  
+例のファイルの issuer は、compose の上流の IdP のフェイク（mock-oauth2-server）の 5 つの事業所を、ローカルから届く `localhost:9000` で指す。  
+事業所のパスは `/office-a` から `/office-e` である。  
 compose のブローカーは、コンテナの間の名前 `idp` で指す `compose/broker/` のファイルを読む。
 
 ## Running

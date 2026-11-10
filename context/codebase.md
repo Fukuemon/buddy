@@ -101,7 +101,7 @@ status: stable
     - `httpapi` は、パスの ID の形の確認に `ulid` を使う。
   - `inmem` を import するのは、テストのファイルだけにする。
   - 依存の組み立ては、各 `cmd` の `main` のパッケージに手で書き、DI のツールを使わない。
-    - `cmd/api` は `handler.go` で、`cmd/calendar-worker` は `worker.go` で組み立てる。各 `cmd` は、自分が使う機能のパッケージとアダプタだけを import する。
+    - `cmd/api` は `handler.go` で、`cmd/calendar-worker` は `worker.go` で、`cmd/ops` は `onboard.go` で組み立てる。各 `cmd` は、自分が使う機能のパッケージとアダプタだけを import する。
     - `cmd/calendar-worker` は、`httpapi`、`broker`、`access`、`packages/go/oidc` を import しない。Worker は HTTP の層を持たず、リクエストの認可と ID ブローカーの呼び出しをしないためである。
     - プロセスの寿命（設定の読み込み、シグナル、DB とサーバーの開始と停止）は `main.go` が持つ。組み立てのファイルは、依存のグラフを作る部分だけを持つ。
     - 組み立てのファイルには、ID ブローカーの `server.go` と同じく、役割の名前を付ける。`wire.go` は google/wire が使う名前なので使わない。
@@ -120,6 +120,7 @@ status: stable
   - 予定の API の `access` から機能のパッケージへの import
   - 予定の API の `httpapi` と `config` から `postgres` への import、`httpapi` から `packages/go/oidc` への import、テストのファイル以外から `inmem` への import
   - 予定の API の `cmd/calendar-worker` から `httpapi`、`broker`、`access`、`packages/go/oidc` への import と、`config` から `packages/go/oidc` への import
+  - 予定の API の `cmd/ops` から `httpapi`、`access`、`gcal`、`packages/go/oidc` への import
   - 照合の API の段の順
   - ID ブローカーの `staff`、`postgres`、`login`、`internalapi` の向き
 - depguard は、テストのファイルを対象の外にする。
