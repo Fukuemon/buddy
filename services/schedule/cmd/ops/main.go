@@ -24,9 +24,12 @@ import (
 	"log/slog"
 	"os"
 	"os/signal"
+	"regexp"
+	"strings"
 	"syscall"
 
 	"github.com/Fukuemon/buddy/services/schedule/internal/config"
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/staff"
 	"github.com/Fukuemon/buddy/services/schedule/internal/postgres"
 )
 
@@ -72,4 +75,58 @@ func run(args []string, getenv func(string) string, stdout, stderr io.Writer) in
 		return 1
 	}
 	return 0
+}
+
+// operatorIDPattern は、運営者の ID の形である。メールと名前を登録の記録に入れないよう、英数字と . _ - だけを受ける。
+var operatorIDPattern = regexp.MustCompile(`^[A-Za-z0-9._-]{1,64}$`)
+
+// errFlagParse は、flag が引数を読めず、エラーと使い方を stderr に書いた後に、parseOnboardArgs が返す。
+var errFlagParse = errors.New("flag parse")
+
+// onboardArgs は、onboard-facility の引数である。Operator は、流した運営者の ID で、登録の記録の実行者になる。
+type onboardArgs struct {
+	staff.OnboardInput
+	Operator string
+}
+
+// parseOnboardArgs は、onboard-facility の引数を読む。必須の引数が無いか、--operator がメールの形なら、エラーを返す。
+func parseOnboardArgs(args []string, stderr io.Writer) (onboardArgs, error) {
+	var a onboardArgs
+	fs := flag.NewFlagSet("onboard-facility", flag.ContinueOnError)
+	fs.SetOutput(stderr)
+	fs.StringVar(&a.Facility.OrgID, "org-id", "", "ブローカーの上流の IdP の設定にある組織の ID")
+	fs.StringVar(&a.Facility.Name, "facility-name", "", "事業所の名前")
+	fs.StringVar(&a.Facility.DepartmentName, "department", "", "最初のマネージャーを所属させる部署の名前。無ければ作る")
+	fs.StringVar(&a.Facility.TeamName, "team", "", "最初のマネージャーを所属させるチームの名前。無ければ作る")
+	fs.StringVar(&a.Username, "manager-name", "", "最初のマネージャーの名前")
+	fs.StringVar(&a.Email, "manager-email", "", "最初のマネージャーのメール。上流の IdP が確認したメールと同じにする")
+	fs.StringVar(&a.Operator, "operator", "", "流した運営者の ID。メールと名前を使わない")
+	fs.BoolVar(&a.AllowAdditionalManager, "allow-additional-manager", false, "職員の管理の権限を持つ有効な職員がいる事業所に、マネージャーを足す。全てのマネージャーが退職したときの復旧に使う")
+	fs.BoolVar(&a.DryRun, "dry-run", false, "DB とブローカーに書かずに、書く内容を出す")
+	if err := fs.Parse(args); err != nil {
+		if errors.Is(err, flag.ErrHelp) {
+			return onboardArgs{}, err
+		}
+		return onboardArgs{}, fmt.Errorf("%w: %w", errFlagParse, err)
+	}
+	if fs.NArg() > 0 {
+		// 値は職員の名前の一部のことがあるので、出さない
+		return onboardArgs{}, fmt.Errorf("知らない引数が %d 個あります。値に空白を含むときは引用符で囲みます", fs.NArg())
+	}
+	var missing []string
+	for _, v := range []struct{ name, value string }{
+		{"--org-id", a.Facility.OrgID}, {"--facility-name", a.Facility.Name}, {"--department", a.Facility.DepartmentName},
+		{"--team", a.Facility.TeamName}, {"--manager-name", a.Username}, {"--manager-email", a.Email}, {"--operator", a.Operator},
+	} {
+		if strings.TrimSpace(v.value) == "" {
+			missing = append(missing, v.name)
+		}
+	}
+	if len(missing) > 0 {
+		return onboardArgs{}, fmt.Errorf("引数 %s が必要です", strings.Join(missing, "、"))
+	}
+	if !operatorIDPattern.MatchString(a.Operator) {
+		return onboardArgs{}, errors.New("--operator には、英数字と . _ - の 64 文字までの運営者の ID を渡します。メールと名前を使いません")
+	}
+	return a, nil
 }

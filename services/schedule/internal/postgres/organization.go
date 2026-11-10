@@ -9,7 +9,7 @@ import (
 	"github.com/Fukuemon/buddy/services/schedule/internal/postgres/sqlcgen"
 )
 
-// FacilityRepository は、organization.FacilityRepository と、事業所の行をロックする機能のパッケージの FacilityLock を実装する。
+// FacilityRepository は、organization.FacilityRepository と organization.FacilityCreator と、事業所の行をロックする機能のパッケージの FacilityLock を実装する。
 type FacilityRepository struct{ conn }
 
 // NewFacilityRepository は FacilityRepository を作る。

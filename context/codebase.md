@@ -120,6 +120,7 @@ status: stable
   - 予定の API の `access` から機能のパッケージへの import
   - 予定の API の `httpapi` と `config` から `postgres` への import、`httpapi` から `packages/go/oidc` への import、テストのファイル以外から `inmem` への import
   - 予定の API の `cmd/calendar-worker` から `httpapi`、`broker`、`access`、`packages/go/oidc` への import と、`config` から `packages/go/oidc` への import
+  - 予定の API の `cmd/ops` から `httpapi`、`access`、`gcal`、`packages/go/oidc` への import
   - 照合の API の段の順
   - ID ブローカーの `staff`、`postgres`、`login`、`internalapi` の向き
 - depguard は、テストのファイルを対象の外にする。

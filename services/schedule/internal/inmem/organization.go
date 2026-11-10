@@ -9,7 +9,7 @@ import (
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/organization"
 )
 
-// Facilities は、organization.FacilityRepository と、機能のパッケージの FacilityLock のメモリ上の実装である。
+// Facilities は、organization.FacilityRepository と organization.FacilityCreator と、機能のパッケージの FacilityLock のメモリ上の実装である。
 type Facilities struct{ *Store }
 
 // Get は、organization.FacilityRepository の Get を実装する。

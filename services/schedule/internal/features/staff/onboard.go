@@ -36,7 +36,7 @@ type OnboardResult struct {
 
 // Onboard は、事業所、標準の役職、最初のマネージャーを 1 つのトランザクションで登録する。運営用の CLI が使う。
 type Onboard struct {
-	setup  func(ctx context.Context, in organization.SetupFacilityInput) (organization.FacilitySetup, error)
+	setup  SetupFacilityFunc
 	create func(ctx context.Context, in CreateInput) (Detail, error)
 	staff  Repository
 	locks  FacilityLock
@@ -44,7 +44,7 @@ type Onboard struct {
 }
 
 // NewOnboard は Onboard を作る。setup は organization.SetupFacility の Do で、create は Create の Do である。
-func NewOnboard(setup func(ctx context.Context, in organization.SetupFacilityInput) (organization.FacilitySetup, error), create func(ctx context.Context, in CreateInput) (Detail, error), staff Repository, locks FacilityLock, tx tx.Transactor) Onboard {
+func NewOnboard(setup SetupFacilityFunc, create func(ctx context.Context, in CreateInput) (Detail, error), staff Repository, locks FacilityLock, tx tx.Transactor) Onboard {
 	return Onboard{setup: setup, create: create, staff: staff, locks: locks, tx: tx}
 }
 

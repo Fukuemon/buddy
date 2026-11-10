@@ -165,13 +165,7 @@ func load(getenv func(string) string, includesAPI bool) (API, error) {
 			Audience: getenv("OIDC_AUDIENCE"),
 			OrgClaim: get("OIDC_ORG_CLAIM", "org_id"),
 		},
-		Broker: Broker{
-			URL:          strings.TrimSpace(getenv("BROKER_URL")),
-			TokenURL:     strings.TrimSpace(getenv("BROKER_TOKEN_URL")),
-			ClientID:     get("BROKER_CLIENT_ID", "schedule"),
-			ClientSecret: getenv("BROKER_CLIENT_SECRET"),
-			Audience:     get("BROKER_AUDIENCE", "broker"),
-		},
+		Broker: brokerOf(getenv, "schedule"),
 	}
 	required := dbRequired
 	if includesAPI {
@@ -190,14 +184,11 @@ func load(getenv func(string) string, includesAPI bool) (API, error) {
 		return API{}, err
 	}
 	if includesAPI {
-		for _, v := range []struct{ key, value string }{
-			{"OIDC_ISSUER", c.OIDC.Issuer},
-			{"BROKER_URL", c.Broker.URL},
-			{"BROKER_TOKEN_URL", c.Broker.TokenURL},
-		} {
-			if u, err := url.Parse(v.value); err != nil || (u.Scheme != "https" && u.Scheme != "http") || u.Host == "" {
-				return API{}, fmt.Errorf("%s %q は http か https の URL です", v.key, v.value)
-			}
+		if u, err := url.Parse(c.OIDC.Issuer); err != nil || (u.Scheme != "https" && u.Scheme != "http") || u.Host == "" {
+			return API{}, fmt.Errorf("OIDC_ISSUER %q は http か https の URL です", c.OIDC.Issuer)
+		}
+		if err := validateBroker(c.Broker); err != nil {
+			return API{}, err
 		}
 	}
 	for _, o := range strings.Split(getenv("CORS_ALLOW_ORIGINS"), ",") {
@@ -212,6 +203,28 @@ func load(getenv func(string) string, includesAPI bool) (API, error) {
 		return API{}, err
 	}
 	return c, nil
+}
+
+// brokerOf は、BROKER_ で始まる変数からブローカーを呼ぶ設定を読む。BROKER_CLIENT_ID のデフォルトは defaultClientID である。
+func brokerOf(getenv func(string) string, defaultClientID string) Broker {
+	return Broker{
+		URL:          strings.TrimSpace(getenv("BROKER_URL")),
+		TokenURL:     strings.TrimSpace(getenv("BROKER_TOKEN_URL")),
+		ClientID:     getOr(getenv, "BROKER_CLIENT_ID", defaultClientID),
+		ClientSecret: getenv("BROKER_CLIENT_SECRET"),
+		Audience:     getOr(getenv, "BROKER_AUDIENCE", "broker"),
+	}
+}
+
+// validateBroker は、ブローカーと Hydra のトークンのエンドポイントが http か https の URL であることを確認する。
+// URL は userinfo を含むことがあるので、エラーの文に値を入れない。
+func validateBroker(b Broker) error {
+	for _, v := range []struct{ key, value string }{{"BROKER_URL", b.URL}, {"BROKER_TOKEN_URL", b.TokenURL}} {
+		if u, err := url.Parse(v.value); err != nil || (u.Scheme != "https" && u.Scheme != "http") || u.Host == "" {
+			return fmt.Errorf("%s は http か https の URL です", v.key)
+		}
+	}
+	return nil
 }
 
 func dbOf(getenv func(string) string) DB {

@@ -9,11 +9,6 @@ import (
 	"github.com/Fukuemon/buddy/services/schedule/internal/kernel"
 )
 
-// FacilityCreator は、事業所を書く。同じ組織の ID の事業所があるときは apperr.ErrConflict を返す。
-type FacilityCreator interface {
-	Create(ctx context.Context, f Facility) error
-}
-
 // SetupFacilityInput は、事業所を足す入力である。OrgID は、ブローカーの上流の IdP の設定の組織の ID である。
 // DepartmentName と TeamName は、最初の職員を所属させる部署とチームの名前である。
 type SetupFacilityInput struct {

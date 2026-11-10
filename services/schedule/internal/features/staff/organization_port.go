@@ -1,6 +1,13 @@
 package staff
 
-import "context"
+import (
+	"context"
+
+	"github.com/Fukuemon/buddy/services/schedule/internal/features/organization"
+)
+
+// SetupFacilityFunc は、organization.SetupFacility の Do である。呼び出し側のトランザクションの中で、事業所、役職、部署、チームを無ければ書く。
+type SetupFacilityFunc func(ctx context.Context, in organization.SetupFacilityInput) (organization.FacilitySetup, error)
 
 // FacilityLock は、事業所の行をロックし、事業所の職員の状態を変える操作を 1 つずつにする。実装は postgres.FacilityRepository である。
 type FacilityLock interface {
