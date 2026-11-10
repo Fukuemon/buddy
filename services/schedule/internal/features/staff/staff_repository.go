@@ -17,7 +17,8 @@ import (
 //
 // ActiveManagers は、事業所で職員の管理の権限を持つ有効な職員の ID を返す。
 //
-// ChangePosition は、職員の役職を positionID にし、職員の権限と対象を全て消してから grants を書く。
+// ChangePosition は、職員の役職を positionID にし、職員の権限のうち権限 dropPolicyIDs のものを対象ごと消してから grants を書く。
+// dropPolicyIDs に無い権限と対象は残す。
 //
 // UpdateProfile は、職員の名前、電話番号、部署、チームを p にし、職員の権限のうちチーム oldTeamID を指す対象を p.TeamID に移す。
 // 同じ権限が p.TeamID を既に対象にしていれば、oldTeamID の対象を消す。職員が無いときは apperr.ErrNotFound を、
@@ -27,7 +28,7 @@ import (
 // RemoveGrant は、職員の権限 userPolicyID と対象を消す。職員のその権限が無いときは apperr.ErrNotFound を返す。
 type Repository interface {
 	Create(ctx context.Context, s Staff, grants []Grant) error
-	ChangePosition(ctx context.Context, id, positionID string, grants []Grant) error
+	ChangePosition(ctx context.Context, id, positionID string, dropPolicyIDs []string, grants []Grant) error
 	UpdateProfile(ctx context.Context, id string, p Profile, oldTeamID string) error
 	AddGrant(ctx context.Context, id string, g Grant) error
 	RemoveGrant(ctx context.Context, id, userPolicyID string) error

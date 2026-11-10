@@ -228,14 +228,25 @@ export const createFakeStaffApi = ({
         assertFacility(facilityId)
         const staff = find(staffId)
         assertNotRetired(staff)
+        if (staff.position.id === positionId) return current(staff)
         const position = findPosition(positionId)
-        if (isLastManager(staff) && !position.policies.some((p) => p.code === STAFF_MANAGE))
-          throw conflict('職員の管理の権限を持つ最後の有効な職員の役職は変えられません')
-        return save({
-          ...staff,
-          position: { id: position.id, name: position.name },
-          policies: defaultPolicies(position, staff.team.id),
-        })
+        const from = findPosition(staff.position.id)
+        const kept = staff.policies.filter((p) => !from.policies.some((d) => d.id === p.policy_id))
+        const policies = [
+          ...kept,
+          ...defaultPolicies(
+            {
+              ...position,
+              policies: position.policies.filter((d) => !kept.some((p) => p.policy_id === d.id)),
+            },
+            staff.team.id,
+          ),
+        ]
+        if (isLastManager(staff) && !policies.some((p) => p.code === STAFF_MANAGE))
+          throw conflict(
+            '職員の管理の権限を持つ最後の有効な職員の役職は、その権限を持たない役職に変えられません',
+          )
+        return save({ ...staff, position: { id: position.id, name: position.name }, policies })
       },
       addPolicy: async (facilityId, staffId, input) => {
         assertFacility(facilityId)

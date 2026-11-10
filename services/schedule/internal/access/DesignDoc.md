@@ -78,6 +78,10 @@ verified_commit: c0514f20
   - 事務の役職は残す。同じ名前の役職が前からあった事業所と、名前を変えた役職があり、このマイグレーションが足した役職を見分けられないためである。
 
 職員の役職は `PUT /v1/users/{user_id}/position` で変える。  
+役職を変えると、同じトランザクションで、職員の権限のうち前の役職のデフォルトにある権限の行を `policy_id` で消す。  
+対象は外部キーの `ON DELETE CASCADE` で消える。  
+残す権限の行と対象は書き換えず、新しい役職のデフォルトのうち、残す権限に無いものだけをコピーする。  
+今と同じ役職に変えたときは、何も書かない。  
 職員の名前、電話番号、部署、チームは `PUT /v1/users/{user_id}` で変える。  
 チームを変えると、同じトランザクションで、職員の権限のうち古いチームを指す対象を新しいチームに移す。  
 ほかのチームの対象は残し、同じ権限が新しいチームを既に対象にしていれば、古いチームの対象を消す。
@@ -93,7 +97,8 @@ verified_commit: c0514f20
 外す（`DELETE /v1/users/{user_id}/policies/{user_policy_id}`）と、対象も消える。
 
 事業所で `staff.manage` を持つ最後の有効な職員からその権限を外そうとしたときは、何も書かずに 409 を返す。  
-権限を外す操作と、`staff.manage` を持たない役職に変える操作の両方が当たる。  
+権限を外す操作と、変更の後に `staff.manage` が残らない役職の変更の両方が当たる。  
+職員ごとに足した `staff.manage` が残るなら、`staff.manage` を持たない役職にも変えられる。  
 役職を変える操作と権限を足し外す操作は、休職と退職と同じく、`staff` の操作が事業所の行をロックしたトランザクションの中で、職員を読み直してから行う。  
 同時に 2 人から外しても、後の操作は最後の有効な管理者を見つけて 409 になる。
 
@@ -146,7 +151,7 @@ verified_commit: c0514f20
 | 職員の登録 | `staff.Create` | `staff.create` | なし |
 | 権限を足す | `staff.AddGrant` | `grant.add` | なし |
 | 権限を外す | `staff.RemoveGrant` | `grant.remove` | なし |
-| 役職を変える | `staff.ChangePosition` | `position.change` | 役職、チーム、権限と対象が、変更の前と同じとき |
+| 役職を変える | `staff.ChangePosition` | `position.change` | 今と同じ役職に変えたとき |
 | チームを変える | `staff.UpdateProfile` | `team.change` | 権限と対象が、変更の前と同じとき。チームを変えないときを含む |
 | 役職を作る | `organization.CreatePosition` | `position.create` | なし |
 
@@ -155,8 +160,7 @@ verified_commit: c0514f20
 - 変更の後の全量は、変更を書いた後に職員を読み直して作る。
   - 変更の前の全量は、事業所をロックした後に読んだ職員から作る。同じ職員に同時に権限を足しても、後の記録の変更の前は先の記録の変更の後と一致する。
   - 役職の変更が職員ごとに足した権限を残すか（ADR-0041）によらず、記録は DB に残った権限と一致する。
-- 役職の変更は、変更の前後の全量を比べ、同じなら書かない。
-  - ADR-0041 のとおり、今と同じ役職に変えた操作は権限を変えないので、記録も残らない。
+- ADR-0041 のとおり、今と同じ役職に変えた操作は権限を変えないので、記録も残らない。
 - 運営者の操作（`facility.create`、`staff.create_forced`、運営者の `position.create` と `staff.create`）は、運営用の CLI が書く（#986）。テーブルは、`actor_kind` が `operator` の行を受ける。
   - CLI は、`audit.WithOperator` で運営者の ID を、`audit.WithRequestID` で実行ごとの相関 ID を ctx に載せてから、web と同じ職員の登録を呼ぶ。`audit.Recorder.Record` は、ctx に運営者がいれば運営者の行を、いなければ職員の行を書く。
 
