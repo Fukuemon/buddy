@@ -20,13 +20,11 @@ test.describe('職員の詳細', () => {
       { tag: '@compare' },
       async ({ page }) => {
         await openStory(page, NO_ASSIGNMENTS_URL)
-        await intro(page, '職員の退職の確認のダイアログで、確定のボタンの見た目を見る')
-
-        await check(
+        await intro(
           page,
-          '前提 残る予定と担当の無い職員の詳細（Storybook の StaffDetailContainer の NoAssignments）を開いている',
-          () => expect(page.getByTestId('staff-detail-name')).toBeVisible(),
+          '職員の退職の確認のダイアログで、確定のボタンの見た目を見る\n前提 残る予定と担当の無い職員の詳細（Storybook の StaffDetailContainer の NoAssignments）を開いている',
         )
+
         await step(page, '「ほかの操作」のメニューから「退職にする」を選ぶ', async () => {
           await page.getByTestId('staff-detail-menu').click()
           await page.getByTestId('staff-detail-retire').click()
@@ -44,13 +42,11 @@ test.describe('職員の詳細', () => {
       { tag: '@compare' },
       async ({ page }) => {
         await openStory(page, DEFAULT_URL)
-        await intro(page, '職員の役職を変えるダイアログで、確定のボタンの見た目を見る')
-
-        await check(
+        await intro(
           page,
-          '前提 職員の詳細（Storybook の StaffDetailContainer の Default）を開いている',
-          () => expect(page.getByTestId('staff-detail-name')).toBeVisible(),
+          '職員の役職を変えるダイアログで、確定のボタンの見た目を見る\n前提 職員の詳細（Storybook の StaffDetailContainer の Default）を開いている',
         )
+
         await step(page, '役職の右の「役職を変える」を押し、今と違う役職を選ぶ', async () => {
           await page.getByTestId('staff-detail-position-change').click()
           await otherPositionOption(page.getByTestId('staff-position-dialog')).check()

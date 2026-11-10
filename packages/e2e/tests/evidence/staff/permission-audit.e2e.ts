@@ -83,13 +83,12 @@ test.describe('職員の詳細', () => {
 
         const page = await context.newPage()
         await openDetail(page, staff.id, staff.name)
-        await intro(page, '権限を足すと記録が残る')
-
-        await check(
+        await expect(page.getByTestId('staff-detail-name')).toHaveText(staff.name)
+        await intro(
           page,
-          `前提 ${LOGIN_STAFF.name} でログインし、撮影の前に登録したメンバーの「${staff.name}」の職員の詳細を開いている`,
-          () => expect(page.getByTestId('staff-detail-name')).toHaveText(staff.name),
+          `権限を足すと記録が残る\n前提 ${LOGIN_STAFF.name} でログインし、撮影の前に登録したメンバーの「${staff.name}」の職員の詳細を開いている`,
         )
+
         const dialog = page.getByTestId('staff-policies-dialog')
         await step(page, '権限のタブで「権限を変える」を押す', async () => {
           await page.getByTestId('staff-detail-tab-policies').click()
@@ -132,13 +131,11 @@ test.describe('職員の詳細', () => {
           .getByTestId('staff-policy-group-individual')
           .getByTestId(`staff-policy-row-${ALL_READ.code}`)
         await expect(individual).toBeVisible()
-        await intro(page, '権限を外すと記録が残る')
-
-        await check(
+        await intro(
           page,
-          `前提 ${LOGIN_STAFF.name} でログインし、「${staff.name}」の権限のタブを開いている。撮影の前に「事業所の全ての予定の閲覧」を足してある`,
-          () => expect(individual).toBeVisible(),
+          `権限を外すと記録が残る\n前提 ${LOGIN_STAFF.name} でログインし、「${staff.name}」の権限のタブを開いている。撮影の前に「事業所の全ての予定の閲覧」を足してある`,
         )
+
         const dialog = page.getByTestId('staff-policies-dialog')
         await step(
           page,
@@ -167,13 +164,11 @@ test.describe('職員の詳細', () => {
         await openDetail(page, LOGIN_STAFF.id, LOGIN_STAFF.name)
         await page.getByTestId('staff-detail-tab-policies').click()
         await expect(page.getByTestId('staff-policy-row-staff.manage')).toBeVisible()
-        await intro(page, '最後の管理者の権限を外す 409 では記録が残らない')
-
-        await check(
+        await intro(
           page,
-          `前提 ${LOGIN_STAFF.name} でログインし、自分の権限のタブを開いている。事業所で職員の管理の権限を持つ有効な職員は ${LOGIN_STAFF.name} だけである`,
-          () => expect(page.getByTestId('staff-policy-row-staff.manage')).toBeVisible(),
+          `最後の管理者の権限を外す 409 では記録が残らない\n前提 ${LOGIN_STAFF.name} でログインし、自分の権限のタブを開いている。事業所で職員の管理の権限を持つ有効な職員は ${LOGIN_STAFF.name} だけである`,
         )
+
         const dialog = page.getByTestId('staff-policies-dialog')
         await step(
           page,
@@ -211,13 +206,11 @@ test.describe('職員の詳細', () => {
         const page = await context.newPage()
         await openDetail(page, staff.id, staff.name)
         await expect(page.getByTestId('staff-detail-position-name')).toHaveText('メンバー')
-        await intro(page, '役職を変えると前後の全量が残る')
-
-        await check(
+        await intro(
           page,
-          `前提 ${LOGIN_STAFF.name} でログインし、撮影の前に登録したメンバーの「${staff.name}」の職員の詳細を開いている`,
-          () => expect(page.getByTestId('staff-detail-position-name')).toHaveText('メンバー'),
+          `役職を変えると前後の全量が残る\n前提 ${LOGIN_STAFF.name} でログインし、撮影の前に登録したメンバーの「${staff.name}」の職員の詳細を開いている`,
         )
+
         const dialog = page.getByTestId('staff-position-dialog')
         await step(
           page,
@@ -253,13 +246,12 @@ test.describe('職員の詳細', () => {
           method: 'put',
           path: '/v1/users/{user_id}/position',
         })
-        await intro(page, '今と同じ役職に変えて権限が変わらなければ記録が残らない')
-
-        await check(
+        await expect(apiClient(page).dialog).toBeVisible()
+        await intro(
           page,
-          `前提 API の参照のページで「職員の役職を変える」のリクエストを開いている。リーダーの役職のデフォルトの権限だけを持つ「${staff.name}」を、撮影の前に登録してある`,
-          () => expect(apiClient(page).dialog).toBeVisible(),
+          `今と同じ役職に変えて権限が変わらなければ記録が残らない\n前提 API の参照のページで「職員の役職を変える」のリクエストを開いている。リーダーの役職のデフォルトの権限だけを持つ「${staff.name}」を、撮影の前に登録してある`,
         )
+
         await step(page, `認証の欄に ${LOGIN_STAFF.name} のトークンを入れる（伏せ字で出る）`, () =>
           fillApiToken(page, staff.token),
         )
@@ -286,13 +278,11 @@ test.describe('職員の詳細', () => {
         await openDetail(page, LEADER.staff.id, LEADER.staff.name)
         await page.getByTestId('staff-detail-tab-policies').click()
         await expect(page.getByTestId('staff-policy-targets-schedule.team.read')).toHaveText('B')
-        await intro(page, 'チームを変えて対象を移すと記録が残る')
-
-        await check(
+        await intro(
           page,
-          `前提 ${LOGIN_STAFF.name} でログインし、${LEADER.staff.name} の権限のタブを開いている。チームの予定の閲覧と編集の対象はチーム B である`,
-          () => expect(page.getByTestId('staff-policy-targets-schedule.team.read')).toHaveText('B'),
+          `チームを変えて対象を移すと記録が残る\n前提 ${LOGIN_STAFF.name} でログインし、${LEADER.staff.name} の権限のタブを開いている。チームの予定の閲覧と編集の対象はチーム B である`,
         )
+
         const dialog = page.getByTestId('staff-detail-edit-dialog')
         await step(
           page,
@@ -328,13 +318,11 @@ test.describe('職員の詳細', () => {
         const renamed = `${LEADER.staff.name} 改`
         await page.goto(`/staff/${LEADER.staff.id}`)
         await expect(page.getByTestId('staff-detail-name')).toBeVisible()
-        await intro(page, '名前だけを変えると記録が残らない')
-
-        await check(
+        await intro(
           page,
-          `前提 ${LOGIN_STAFF.name} でログインし、チームを対象にする権限を持つ ${LEADER.staff.name} の職員の詳細を開いている`,
-          () => expect(page.getByTestId('staff-detail-name')).toBeVisible(),
+          `名前だけを変えると記録が残らない\n前提 ${LOGIN_STAFF.name} でログインし、チームを対象にする権限を持つ ${LEADER.staff.name} の職員の詳細を開いている`,
         )
+
         const dialog = page.getByTestId('staff-detail-edit-dialog')
         await step(
           page,
@@ -357,11 +345,11 @@ test.describe('職員の詳細', () => {
         const staff = { ...newStaff('audit-staff-create'), name: '見本 職員の登録' }
         await page.goto('/staff')
         await expect(page.getByTestId('staff-list-table')).toBeVisible()
-        await intro(page, '職員を登録するとデフォルトの権限が after に残る')
-
-        await check(page, `前提 ${LOGIN_STAFF.name} でログインし、職員の一覧を開いている`, () =>
-          expect(page.getByTestId('staff-list-table')).toBeVisible(),
+        await intro(
+          page,
+          `職員を登録するとデフォルトの権限が after に残る\n前提 ${LOGIN_STAFF.name} でログインし、職員の一覧を開いている`,
         )
+
         await step(
           page,
           `「職員を登録」を押し、名前「${staff.name}」とメールを入れ、役職を「リーダー」にして登録する`,
@@ -405,11 +393,12 @@ test.describe('職員の詳細', () => {
           method: 'post',
           path: '/v1/facilities/{facility_id}/positions',
         })
-        await intro(page, '役職を作ると名前とデフォルトの権限が残る')
-
-        await check(page, '前提 API の参照のページで「役職を作る」のリクエストを開いている', () =>
-          expect(apiClient(page).dialog).toBeVisible(),
+        await expect(apiClient(page).dialog).toBeVisible()
+        await intro(
+          page,
+          '役職を作ると名前とデフォルトの権限が残る\n前提 API の参照のページで「役職を作る」のリクエストを開いている',
         )
+
         await step(page, `認証の欄に ${LOGIN_STAFF.name} のトークンを入れる（伏せ字で出る）`, () =>
           fillApiToken(page, token),
         )

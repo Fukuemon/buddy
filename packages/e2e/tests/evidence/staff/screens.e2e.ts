@@ -69,12 +69,9 @@ test.describe('職員の管理', () => {
       await expect(page.getByTestId('staff-list-table')).toBeVisible()
       await intro(
         page,
-        'メールアドレスと役職で職員を登録すると、詳細へ移り、役職に決まっている権限が付く',
+        'メールアドレスと役職で職員を登録すると、詳細へ移り、役職に決まっている権限が付く\n前提 職員の一覧を開いている',
       )
 
-      await check(page, '前提 職員の一覧を開いている', () =>
-        expect(page.getByTestId('staff-list-table')).toBeVisible(),
-      )
       await step(
         page,
         '「職員を登録」を押し、名前、メールアドレス、役職「メンバー」を入れて登録する',
@@ -153,11 +150,11 @@ test.describe('職員の管理', () => {
       const page = await context.newPage()
       await page.goto(`/staff/${id}`)
       await expect(page.getByTestId('staff-detail-name')).toHaveText(name)
-      await intro(page, '名前、電話番号、部署、チームを変えると、詳細と一覧に変えた値が出る')
-
-      await check(page, '前提 撮影の前に登録した職員の詳細を開いている', () =>
-        expect(page.getByTestId('staff-detail-name')).toHaveText(name),
+      await intro(
+        page,
+        '名前、電話番号、部署、チームを変えると、詳細と一覧に変えた値が出る\n前提 撮影の前に登録した職員の詳細を開いている',
       )
+
       await step(page, '「編集」を押し、名前、電話番号、部署、チームを変えて保存する', async () => {
         await page.getByTestId('staff-detail-edit').click()
         const dialog = page.getByTestId('staff-detail-edit-dialog')
@@ -194,11 +191,11 @@ test.describe('職員の管理', () => {
       const page = await context.newPage()
       await page.goto(`/staff/${id}`)
       await expect(page.getByTestId('staff-detail-position-name')).toBeVisible()
-      await intro(page, '役職を変えると、「役職「…」で付く権限」が新しい役職のものになる')
-
-      await check(page, '前提 撮影の前に登録した、役職がメンバーの職員の詳細を開いている', () =>
-        expect(page.getByTestId('staff-detail-position-name')).toBeVisible(),
+      await intro(
+        page,
+        '役職を変えると、「役職「…」で付く権限」が新しい役職のものになる\n前提 撮影の前に登録した、役職がメンバーの職員の詳細を開いている',
       )
+
       await step(page, `「役職を変える」を押し、「${other?.name}」に変える`, async () => {
         await page.getByTestId('staff-detail-position-change').click()
         const dialog = page.getByTestId('staff-position-dialog')
@@ -232,11 +229,11 @@ test.describe('職員の管理', () => {
       await page.goto(`/staff/${id}`)
       await page.getByTestId('staff-detail-tab-policies').click()
       await expect(page.getByTestId('staff-policy-list')).toBeVisible()
-      await intro(page, '権限を変えるでほかの権限を足すと、「個別に足した権限」に入る')
-
-      await check(page, '前提 撮影の前に登録した職員の詳細の、権限のタブを開いている', () =>
-        expect(page.getByTestId('staff-policy-list')).toBeVisible(),
+      await intro(
+        page,
+        '権限を変えるでほかの権限を足すと、「個別に足した権限」に入る\n前提 撮影の前に登録した職員の詳細の、権限のタブを開いている',
       )
+
       await step(
         page,
         '「権限を変える」を押し、ほかの権限の「事業所の全ての予定の閲覧」に入れて保存する',
@@ -265,14 +262,12 @@ test.describe('職員の管理', () => {
 
       const page = await context.newPage()
       const dialog = await openUserReadTargets(page, id)
+      await expect(dialog.getByTestId('staff-policies-option-schedule.user.read')).toBeChecked()
       await intro(
         page,
-        '権限を変えるで職員の候補に Tab で移ると、候補に focus-ring のフォーカスの表示が出る',
+        '権限を変えるで職員の候補に Tab で移ると、候補に focus-ring のフォーカスの表示が出る\n前提 「権限を変える」で、「指定した職員の予定の閲覧」に入れている',
       )
 
-      await check(page, '前提 「権限を変える」で、「指定した職員の予定の閲覧」に入れている', () =>
-        expect(dialog.getByTestId('staff-policies-option-schedule.user.read')).toBeChecked(),
-      )
       await step(page, '「＋ 職員を選ぶ」を押して候補を開き、Tab で最初の候補に移る', async () => {
         await dialog.getByTestId('staff-policies-target-add').click()
         await expect(dialog.getByTestId('staff-policies-target-options')).toBeVisible()
@@ -295,12 +290,9 @@ test.describe('職員の管理', () => {
       await expect(add).toBeVisible()
       await intro(
         page,
-        '権限を変えるで、職員の名前で絞った候補を ↓ と Enter で足し、× で外し、Escape で候補だけを閉じる',
+        '権限を変えるで、職員の名前で絞った候補を ↓ と Enter で足し、× で外し、Escape で候補だけを閉じる\n前提 「権限を変える」で、「指定した職員の予定の閲覧」に入れている',
       )
 
-      await check(page, '前提 「権限を変える」で、「指定した職員の予定の閲覧」に入れている', () =>
-        expect(add).toBeVisible(),
-      )
       await step(
         page,
         `「＋ 職員を選ぶ」に「${LEADER.staff.name}」と入れ、↓ で候補に移る`,
@@ -353,13 +345,11 @@ test.describe('職員の管理', () => {
       const page = await context.newPage()
       await page.goto(`/staff/${id}`)
       await expect(page.getByTestId('staff-detail-menu')).toBeVisible()
-      await intro(page, '休職にすると、今日以降の予定が一覧で出て、確定すると状態が休職になる')
-
-      await check(
+      await intro(
         page,
-        '前提 撮影の前に登録し、2030年1月9日（水）の予定を作った職員の詳細を開いている',
-        () => expect(page.getByTestId('staff-detail-menu')).toBeVisible(),
+        '休職にすると、今日以降の予定が一覧で出て、確定すると状態が休職になる\n前提 撮影の前に登録し、2030年1月9日（水）の予定を作った職員の詳細を開いている',
       )
+
       const dialog = page.getByTestId('staff-leave-dialog')
       await step(page, '「…」から「休職にする」を押す', async () => {
         await page.getByTestId('staff-detail-menu').click()
@@ -389,11 +379,11 @@ test.describe('職員の管理', () => {
       const page = await context.newPage()
       await page.goto(`/staff/${id}`)
       await expect(page.getByTestId('staff-detail-status')).toHaveText('休職')
-      await intro(page, '休職の職員を復職にすると、休職の印が消えて有効に戻る')
-
-      await check(page, '前提 撮影の前に休職にした職員の詳細を開いている', () =>
-        expect(page.getByTestId('staff-detail-status')).toHaveText('休職'),
+      await intro(
+        page,
+        '休職の職員を復職にすると、休職の印が消えて有効に戻る\n前提 撮影の前に休職にした職員の詳細を開いている',
       )
+
       await step(page, '「…」から「復職にする」を押す', async () => {
         await page.getByTestId('staff-detail-menu').click()
         await page.getByTestId('staff-detail-reinstate').click()
@@ -415,14 +405,9 @@ test.describe('職員の管理', () => {
       await expect(page.getByTestId('staff-detail-menu')).toBeVisible()
       await intro(
         page,
-        '予定が残る職員を退職にしようとすると、残る予定が出て、退職にするを押せない',
+        '予定が残る職員を退職にしようとすると、残る予定が出て、退職にするを押せない\n前提 撮影の前に登録し、2030年1月9日（水）の予定を作った職員の詳細を開いている',
       )
 
-      await check(
-        page,
-        '前提 撮影の前に登録し、2030年1月9日（水）の予定を作った職員の詳細を開いている',
-        () => expect(page.getByTestId('staff-detail-menu')).toBeVisible(),
-      )
       const dialog = page.getByTestId('staff-retire-dialog')
       await step(page, '「…」から「退職にする」を押す', async () => {
         await page.getByTestId('staff-detail-menu').click()
@@ -455,12 +440,9 @@ test.describe('職員の管理', () => {
       await expect(page.getByTestId('staff-list-table')).toBeVisible()
       await intro(
         page,
-        'スマートフォンの幅では、一覧が名前と、チーム・役職・部署の 2 行のリストになる',
+        'スマートフォンの幅では、一覧が名前と、チーム・役職・部署の 2 行のリストになる\n前提 幅 390px で職員の一覧を開いている',
       )
 
-      await check(page, '前提 幅 390px で職員の一覧を開いている', () =>
-        expect(page.getByTestId('staff-list-table')).toBeVisible(),
-      )
       await check(
         page,
         '行は 1 行目に名前、2 行目にチーム・役職・部署で、横にスクロールしない',

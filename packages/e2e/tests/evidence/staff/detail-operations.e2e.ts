@@ -11,10 +11,6 @@ const openStory = async (page: Page, name: string) => {
   await expect(page.getByTestId('staff-detail-name')).toBeVisible()
 }
 
-/** 録画の最初の、開いた story を述べる前提の字幕。 */
-const opened = (page: Page, text: string) =>
-  check(page, `前提 ${text}`, () => expect(page.getByTestId('staff-detail-name')).toBeVisible())
-
 /** 復職を拒まれ、タブの上に理由の文が出るまで進める。 */
 const refuseReinstate = (page: Page) =>
   step(page, '「…」の「復職にする」を押し、拒まれて、タブの上に理由の文が出る', async () => {
@@ -33,12 +29,12 @@ test.describe('職員の詳細', () => {
     }) => {
       await openStory(page, 'slow-target-options')
       // story は開いてから 8 秒で選択肢を読み終えるので、読んでいる間に判定するよう intro を短くする
-      await intro(page, '対象の職員の選択肢を読み終えるまで、対象を足すを押せない', 1_000)
-
-      await opened(
+      await intro(
         page,
-        '石川 二葉の職員の詳細（Storybook の SlowTargetOptions）を開いている。対象の職員とチームの選択肢は、読み終えるまで 8 秒かかる（架空のデータ）',
+        '対象の職員の選択肢を読み終えるまで、対象を足すを押せない\n前提 石川 二葉の職員の詳細（Storybook の SlowTargetOptions）を開いている。対象の職員とチームの選択肢は、読み終えるまで 8 秒かかる（架空のデータ）',
+        1_000,
       )
+
       const dialog = page.getByTestId('staff-policies-dialog')
       await step(
         page,
@@ -76,12 +72,11 @@ test.describe('職員の詳細', () => {
     }) => {
       await openStory(page, 'slow-reinstate')
       await expect(page.getByTestId('staff-detail-status')).toContainText('休職')
-      await intro(page, '復職にするを送っている間は、メニューに「復職にしています」を出す')
-
-      await opened(
+      await intro(
         page,
-        '休職の江藤 四郎の職員の詳細（Storybook の SlowReinstate）を開いている。復職は、送ってから 4 秒かかる（架空のデータ）',
+        '復職にするを送っている間は、メニューに「復職にしています」を出す\n前提 休職の江藤 四郎の職員の詳細（Storybook の SlowReinstate）を開いている。復職は、送ってから 4 秒かかる（架空のデータ）',
       )
+
       await step(page, '「…」のメニューを開き、「復職にする」を押す', async () => {
         await page.getByTestId('staff-detail-menu').click()
         await page.getByTestId('staff-detail-reinstate').click()
@@ -99,12 +94,11 @@ test.describe('職員の詳細', () => {
       page,
     }) => {
       await openStory(page, 'reinstate-refused')
-      await intro(page, '復職にできなかったら、メニューを閉じてタブの上に理由を出す')
-
-      await opened(
+      await intro(
         page,
-        '休職の江藤 四郎の職員の詳細（Storybook の ReinstateRefused）を開いている。ほかの職員の操作で退職にしていたので、復職は 1 秒後に拒まれる（架空のデータ）',
+        '復職にできなかったら、メニューを閉じてタブの上に理由を出す\n前提 休職の江藤 四郎の職員の詳細（Storybook の ReinstateRefused）を開いている。ほかの職員の操作で退職にしていたので、復職は 1 秒後に拒まれる（架空のデータ）',
       )
+
       await step(page, '「…」のメニューを開き、「復職にする」を押す', async () => {
         await page.getByTestId('staff-detail-menu').click()
         await page.getByTestId('staff-detail-reinstate').click()
@@ -125,12 +119,11 @@ test.describe('職員の詳細', () => {
       page,
     }) => {
       await openStory(page, 'reinstate-refused')
-      await intro(page, 'タブを替えても、復職の失敗の文を出したままにする')
-
-      await opened(
+      await intro(
         page,
-        '休職の江藤 四郎の職員の詳細（Storybook の ReinstateRefused）を開いている。復職は 1 秒後に拒まれる（架空のデータ）',
+        'タブを替えても、復職の失敗の文を出したままにする\n前提 休職の江藤 四郎の職員の詳細（Storybook の ReinstateRefused）を開いている。復職は 1 秒後に拒まれる（架空のデータ）',
       )
+
       await refuseReinstate(page)
       await step(page, 'タブの「権限」を押す', async () => {
         await page.getByTestId('staff-detail-tab-policies').click()
@@ -147,12 +140,11 @@ test.describe('職員の詳細', () => {
       page,
     }) => {
       await openStory(page, 'reinstate-refused')
-      await intro(page, 'ほかの操作のダイアログを開くと、復職の失敗の文を消す')
-
-      await opened(
+      await intro(
         page,
-        '休職の江藤 四郎の職員の詳細（Storybook の ReinstateRefused）を開いている。復職は 1 秒後に拒まれる（架空のデータ）',
+        'ほかの操作のダイアログを開くと、復職の失敗の文を消す\n前提 休職の江藤 四郎の職員の詳細（Storybook の ReinstateRefused）を開いている。復職は 1 秒後に拒まれる（架空のデータ）',
       )
+
       await refuseReinstate(page)
       await step(page, '見出しの「編集」を押し、プロフィールの編集を開く', async () => {
         await page.getByTestId('staff-detail-edit').click()
@@ -173,12 +165,11 @@ test.describe('職員の詳細', () => {
       page,
     }) => {
       await openStory(page, 'slow-reinstate-refused')
-      await intro(page, 'もう一度復職にするを押すと、送っている間は前の失敗の文を消す')
-
-      await opened(
+      await intro(
         page,
-        '休職の江藤 四郎の職員の詳細（Storybook の SlowReinstateRefused）を開いている。復職は 4 秒後に拒まれる（架空のデータ）',
+        'もう一度復職にするを押すと、送っている間は前の失敗の文を消す\n前提 休職の江藤 四郎の職員の詳細（Storybook の SlowReinstateRefused）を開いている。復職は 4 秒後に拒まれる（架空のデータ）',
       )
+
       await refuseReinstate(page)
       await step(page, 'もう一度「…」の「復職にする」を押す', async () => {
         await page.getByTestId('staff-detail-menu').click()
@@ -206,13 +197,9 @@ test.describe('職員の詳細', () => {
       await openStory(page, 'default')
       await intro(
         page,
-        '権限を変えるダイアログは、予定の 7 つの権限の後に、職員の管理と照合を並べる',
+        '権限を変えるダイアログは、予定の 7 つの権限の後に、職員の管理と照合を並べる\n前提 石川 二葉の職員の詳細（Storybook の Default）を開いている（架空のデータ）',
       )
 
-      await opened(
-        page,
-        '石川 二葉の職員の詳細（Storybook の Default）を開いている（架空のデータ）',
-      )
       await step(page, '権限のタブで「権限を変える」を押す', async () => {
         await page.getByTestId('staff-detail-tab-policies').click()
         await page.getByTestId('staff-detail-policies-change').click()
@@ -238,12 +225,11 @@ test.describe('職員の詳細', () => {
       page,
     }) => {
       await openStory(page, 'self')
-      await intro(page, '送った権限の変更が全て拒まれたら、ほかの変更を保存したとは示さない')
-
-      await opened(
+      await intro(
         page,
-        '自分（職員の管理の権限を持つ最後の有効な職員）の詳細（Storybook の Self）を開いている（架空のデータ）',
+        '送った権限の変更が全て拒まれたら、ほかの変更を保存したとは示さない\n前提 自分（職員の管理の権限を持つ最後の有効な職員）の詳細（Storybook の Self）を開いている（架空のデータ）',
       )
+
       const dialog = page.getByTestId('staff-policies-dialog')
       await step(page, '権限を変えるで、「職員の管理」のチェックだけを外して保存する', async () => {
         await page.getByTestId('staff-detail-tab-policies').click()
@@ -265,12 +251,11 @@ test.describe('職員の詳細', () => {
       page,
     }) => {
       await openStory(page, 'slow-departments')
-      await intro(page, '部署の選択肢を読んでいる間は、プロフィールの編集を保存できない')
-
-      await opened(
+      await intro(
         page,
-        '石川 二葉の職員の詳細（Storybook の SlowDepartments）を開いている。部署の選択肢は、読み終えるまで 8 秒かかる（架空のデータ）',
+        '部署の選択肢を読んでいる間は、プロフィールの編集を保存できない\n前提 石川 二葉の職員の詳細（Storybook の SlowDepartments）を開いている。部署の選択肢は、読み終えるまで 8 秒かかる（架空のデータ）',
       )
+
       const dialog = page.getByTestId('staff-detail-edit-dialog')
       await step(page, '編集を開き、名前を「石川 双葉」に変える', async () => {
         await page.getByTestId('staff-detail-edit').click()
@@ -299,12 +284,11 @@ test.describe('職員の詳細', () => {
       page,
     }) => {
       await openStory(page, 'departments-load-error')
-      await intro(page, '部署を読めなかったら、プロフィールの編集に失敗の文を出し、保存を押せない')
-
-      await opened(
+      await intro(
         page,
-        '石川 二葉の職員の詳細（Storybook の DepartmentsLoadError）を開いている。部署を読めない（架空のデータ）',
+        '部署を読めなかったら、プロフィールの編集に失敗の文を出し、保存を押せない\n前提 石川 二葉の職員の詳細（Storybook の DepartmentsLoadError）を開いている。部署を読めない（架空のデータ）',
       )
+
       const dialog = page.getByTestId('staff-detail-edit-dialog')
       await step(page, '編集を押す', () => page.getByTestId('staff-detail-edit').click())
       await check(
@@ -326,12 +310,11 @@ test.describe('職員の詳細', () => {
       page,
     }) => {
       await openStory(page, 'policies-load-error')
-      await intro(page, '全ての権限を読めなかったら、権限のタブに失敗の文と読み直すを出す')
-
-      await opened(
+      await intro(
         page,
-        '石川 二葉の職員の詳細（Storybook の PoliciesLoadError）を開いている。全ての権限は、1 回目は読めず、2 回目からは読める（架空のデータ）',
+        '全ての権限を読めなかったら、権限のタブに失敗の文と読み直すを出す\n前提 石川 二葉の職員の詳細（Storybook の PoliciesLoadError）を開いている。全ての権限は、1 回目は読めず、2 回目からは読める（架空のデータ）',
       )
+
       await step(page, 'タブの「権限」を押す', () =>
         page.getByTestId('staff-detail-tab-policies').click(),
       )
@@ -360,12 +343,11 @@ test.describe('職員の詳細', () => {
       page,
     }) => {
       await openStory(page, 'positions-load-error')
-      await intro(page, '役職を読めなかったら、権限のタブと役職を変えるに失敗の文を出す')
-
-      await opened(
+      await intro(
         page,
-        '石川 二葉の職員の詳細（Storybook の PositionsLoadError）を開いている。役職を読めない（架空のデータ）',
+        '役職を読めなかったら、権限のタブと役職を変えるに失敗の文を出す\n前提 石川 二葉の職員の詳細（Storybook の PositionsLoadError）を開いている。役職を読めない（架空のデータ）',
       )
+
       await step(page, 'タブの「権限」を押す', () =>
         page.getByTestId('staff-detail-tab-policies').click(),
       )
@@ -396,12 +378,11 @@ test.describe('職員の詳細', () => {
       page,
     }) => {
       await openStory(page, 'slow-positions')
-      await intro(page, '役職を読み終えるまで、役職を変えるときの注意を出さない')
-
-      await opened(
+      await intro(
         page,
-        '石川 二葉の職員の詳細（Storybook の SlowPositions）を開いている。役職は、読み終えるまで 8 秒かかる（架空のデータ）',
+        '役職を読み終えるまで、役職を変えるときの注意を出さない\n前提 石川 二葉の職員の詳細（Storybook の SlowPositions）を開いている。役職は、読み終えるまで 8 秒かかる（架空のデータ）',
       )
+
       const dialog = page.getByTestId('staff-position-dialog')
       await step(page, 'プロフィールの「役職を変える」を押す', () =>
         page.getByTestId('staff-detail-position-change').click(),

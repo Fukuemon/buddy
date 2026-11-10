@@ -150,16 +150,12 @@ test.describe('職員の管理', () => {
 
         const page = await context.newPage()
         await openPositionRequest(page)
+        await expect(apiClient(page).dialog).toBeVisible()
         await intro(
           page,
-          'メンバーの役職をリーダーに変えると、役職と権限がリーダーのデフォルトになる',
+          'メンバーの役職をリーダーに変えると、役職と権限がリーダーのデフォルトになる\n前提 API の参照のページで「職員の役職を変える」のリクエストを開いている。チーム B のメンバーの「見本 職員」を、撮影の前に作ってある',
         )
 
-        await check(
-          page,
-          '前提 API の参照のページで「職員の役職を変える」のリクエストを開いている。チーム B のメンバーの「見本 職員」を、撮影の前に作ってある',
-          () => expect(apiClient(page).dialog).toBeVisible(),
-        )
         await step(page, `認証の欄に ${LOGIN_STAFF.name} のトークンを入れる（伏せ字で出る）`, () =>
           fillApiToken(page, token),
         )
@@ -197,13 +193,12 @@ test.describe('職員の管理', () => {
 
           const page = await context.newPage()
           await openDetail(page, staff.id, STAFF_NAME)
-          await intro(page, '個別に足した権限が役職を変えても残る')
-
-          await check(
+          await expect(page.getByTestId('staff-detail-name')).toHaveText(STAFF_NAME)
+          await intro(
             page,
-            `前提 「指定した職員の予定の閲覧」（${LEADER.staff.name}）を個別に足したメンバーの「${STAFF_NAME}」の職員の詳細を開いている（撮影の前に API で登録した）`,
-            () => expect(page.getByTestId('staff-detail-name')).toHaveText(STAFF_NAME),
+            `個別に足した権限が役職を変えても残る\n前提 「指定した職員の予定の閲覧」（${LEADER.staff.name}）を個別に足したメンバーの「${STAFF_NAME}」の職員の詳細を開いている（撮影の前に API で登録した）`,
           )
+
           await changePosition(page, LEADER_POSITION, 'リーダー')
           await openPoliciesTab(page)
           const position = page.getByTestId('staff-policy-group-position')
@@ -236,13 +231,12 @@ test.describe('職員の管理', () => {
 
           const page = await context.newPage()
           await openDetail(page, staff.id, STAFF_NAME)
-          await intro(page, '新しい役職のデフォルトにもある個別の権限は対象が残る')
-
-          await check(
+          await expect(page.getByTestId('staff-detail-name')).toHaveText(STAFF_NAME)
+          await intro(
             page,
-            `前提 チーム B を対象にする「チームの予定の編集」を個別に足した、チーム A のメンバーの「${STAFF_NAME}」の職員の詳細を開いている（撮影の前に API で登録した）`,
-            () => expect(page.getByTestId('staff-detail-name')).toHaveText(STAFF_NAME),
+            `新しい役職のデフォルトにもある個別の権限は対象が残る\n前提 チーム B を対象にする「チームの予定の編集」を個別に足した、チーム A のメンバーの「${STAFF_NAME}」の職員の詳細を開いている（撮影の前に API で登録した）`,
           )
+
           await changePosition(page, LEADER_POSITION, 'リーダー')
           await openPoliciesTab(page)
           const position = page.getByTestId('staff-policy-group-position')
@@ -274,13 +268,12 @@ test.describe('職員の管理', () => {
 
           const page = await context.newPage()
           await openPositionRequest(page)
-          await intro(page, '同じ役職に変えると職員ごとに直した対象が残る')
-
-          await check(
+          await expect(apiClient(page).dialog).toBeVisible()
+          await intro(
             page,
-            `前提 API の参照のページで「職員の役職を変える」のリクエストを開いている。チーム A のリーダーの「${STAFF_NAME}」を撮影の前に登録し、「チームの予定の閲覧」の対象を A と B に直してある`,
-            () => expect(apiClient(page).dialog).toBeVisible(),
+            `同じ役職に変えると職員ごとに直した対象が残る\n前提 API の参照のページで「職員の役職を変える」のリクエストを開いている。チーム A のリーダーの「${STAFF_NAME}」を撮影の前に登録し、「チームの予定の閲覧」の対象を A と B に直してある`,
           )
+
           await step(
             page,
             `認証の欄に ${LOGIN_STAFF.name} のトークンを入れる（伏せ字で出る）`,
@@ -319,13 +312,12 @@ test.describe('職員の管理', () => {
 
         const page = await context.newPage()
         await openDetail(page, staff.id, STAFF_NAME)
-        await intro(page, '前の役職のデフォルトの権限は対象を直していても消える')
-
-        await check(
+        await expect(page.getByTestId('staff-detail-name')).toHaveText(STAFF_NAME)
+        await intro(
           page,
-          `前提 「チームの予定の閲覧」の対象を A と B に直した、チーム A のリーダーの「${STAFF_NAME}」の職員の詳細を開いている（撮影の前に API で登録した）`,
-          () => expect(page.getByTestId('staff-detail-name')).toHaveText(STAFF_NAME),
+          `前の役職のデフォルトの権限は対象を直していても消える\n前提 「チームの予定の閲覧」の対象を A と B に直した、チーム A のリーダーの「${STAFF_NAME}」の職員の詳細を開いている（撮影の前に API で登録した）`,
         )
+
         await changePosition(page, MEMBER_POSITION, 'メンバー')
         await openPoliciesTab(page)
         const list = page.getByTestId('staff-policy-list')
@@ -354,13 +346,12 @@ test.describe('職員の管理', () => {
 
         const page = await context.newPage()
         await openDetail(page, staff.id, STAFF_NAME)
-        await intro(page, '新しい役職のチームの権限が所属のチームを対象にする')
-
-        await check(
+        await expect(page.getByTestId('staff-detail-name')).toHaveText(STAFF_NAME)
+        await intro(
           page,
-          `前提 チーム B のメンバーの「${STAFF_NAME}」の職員の詳細を開いている（撮影の前に API で登録した）`,
-          () => expect(page.getByTestId('staff-detail-name')).toHaveText(STAFF_NAME),
+          `新しい役職のチームの権限が所属のチームを対象にする\n前提 チーム B のメンバーの「${STAFF_NAME}」の職員の詳細を開いている（撮影の前に API で登録した）`,
         )
+
         await changePosition(page, LEADER_POSITION, 'リーダー')
         await openPoliciesTab(page)
         const position = page.getByTestId('staff-policy-group-position')
@@ -383,13 +374,12 @@ test.describe('職員の管理', () => {
         page,
       }) => {
         await openDetail(page, LOGIN_STAFF.id, LOGIN_STAFF.name)
-        await intro(page, '最後の有効な管理者を職員の管理の権限の無い役職に変えると拒まれる')
-
-        await check(
+        await expect(page.getByTestId('staff-detail-name')).toHaveText(LOGIN_STAFF.name)
+        await intro(
           page,
-          `前提 職員の管理の権限を役職のデフォルトだけで持つ、事業所で唯一の有効な管理者の「${LOGIN_STAFF.name}」の職員の詳細を開いている（シードのまま）`,
-          () => expect(page.getByTestId('staff-detail-name')).toHaveText(LOGIN_STAFF.name),
+          `最後の有効な管理者を職員の管理の権限の無い役職に変えると拒まれる\n前提 職員の管理の権限を役職のデフォルトだけで持つ、事業所で唯一の有効な管理者の「${LOGIN_STAFF.name}」の職員の詳細を開いている（シードのまま）`,
         )
+
         const dialog = page.getByTestId('staff-position-dialog')
         await step(page, '「役職を変える」から「リーダー」を選んで保存する', async () => {
           await submitPosition(page, LEADER_POSITION)
@@ -435,13 +425,11 @@ test.describe('職員の管理', () => {
         const page = await context.newPage()
         await openDetail(page, staff.id, STAFF_NAME)
         await expect(page.getByTestId('staff-detail-position-name')).toHaveText('管理者')
-        await intro(page, 'ほかに有効な管理者がいれば職員の管理の権限の無い役職に変えられる')
-
-        await check(
+        await intro(
           page,
-          `前提 撮影の前に API で登録した管理者の「${STAFF_NAME}」の職員の詳細を開いている。${LOGIN_STAFF.name} もほかの有効な管理者である`,
-          () => expect(page.getByTestId('staff-detail-position-name')).toHaveText('管理者'),
+          `ほかに有効な管理者がいれば職員の管理の権限の無い役職に変えられる\n前提 撮影の前に API で登録した管理者の「${STAFF_NAME}」の職員の詳細を開いている。${LOGIN_STAFF.name} もほかの有効な管理者である`,
         )
+
         await changePosition(page, LEADER_POSITION, 'リーダー')
         await openPoliciesTab(page)
         const list = page.getByTestId('staff-policy-list')

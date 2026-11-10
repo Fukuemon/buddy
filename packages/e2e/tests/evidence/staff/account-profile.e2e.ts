@@ -18,8 +18,12 @@ test.describe('自分の情報', () => {
       await step(page, '幅 390px で予定のカレンダーを開いている。アカウントのメニューを開く', () =>
         page.getByTestId('viewer-menu-open').click(),
       )
-      await check(page, 'メニューの名前とログアウトの間に「自分の情報」が出る', () =>
-        expect(page.getByTestId('viewer-profile')).toBeVisible(),
+      // スマートフォンの幅では、上の字幕がメニューを覆う
+      await check(
+        page,
+        'メニューの名前とログアウトの間に「自分の情報」が出る',
+        () => expect(page.getByTestId('viewer-profile')).toBeVisible(),
+        { position: 'bottom' },
       )
 
       await step(page, '「自分の情報」を押す', () => page.getByTestId('viewer-profile').click())
@@ -55,12 +59,10 @@ test.describe('自分の情報', () => {
     }) => {
       await page.goto('/me')
       await expect(page.getByTestId('account-profile-name')).toBeVisible()
-      await intro(page, '管理の権限を持つ職員が、自分の情報から自分の職員の詳細へ移る')
-
-      await check(
+      await expect(page.getByTestId('account-profile-staff-detail')).toBeVisible()
+      await intro(
         page,
-        '前提 自分の情報を開いている。ページのタイトルの右に「職員の詳細を開く」が出る',
-        () => expect(page.getByTestId('account-profile-staff-detail')).toBeVisible(),
+        '管理の権限を持つ職員が、自分の情報から自分の職員の詳細へ移る\n前提 自分の情報を開いている。ページのタイトルの右に「職員の詳細を開く」が出る',
       )
 
       await step(page, '「職員の詳細を開く」を押す', () =>

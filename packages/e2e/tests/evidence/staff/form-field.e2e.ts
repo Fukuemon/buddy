@@ -20,12 +20,9 @@ test.describe('職員の入力の欄', () => {
       await expect(page.getByTestId('staff-list-new')).toBeVisible()
       await intro(
         page,
-        '職員の登録で名前を空のまま登録を押すと、名前の欄の下に誤りの文が出て、欄の枠が強まる',
+        '職員の登録で名前を空のまま登録を押すと、名前の欄の下に誤りの文が出て、欄の枠が強まる\n前提 職員の一覧を開いている',
       )
 
-      await check(page, '前提 職員の一覧を開いている', () =>
-        expect(page.getByTestId('staff-list-new')).toBeVisible(),
-      )
       const dialog = page.getByTestId('staff-new-dialog')
       await step(page, '「職員を登録」を押し、名前を空のまま「登録」を押す', async () => {
         await page.getByTestId('staff-list-new').click()
@@ -48,12 +45,9 @@ test.describe('職員の入力の欄', () => {
       await expect(page.getByTestId('staff-detail-edit')).toBeVisible()
       await intro(
         page,
-        '職員のプロフィールの編集で電話番号の見出しを押すと、電話番号の欄にフォーカスが移る',
+        '職員のプロフィールの編集で電話番号の見出しを押すと、電話番号の欄にフォーカスが移る\n前提 撮影の前に登録した職員の詳細を開いている',
       )
 
-      await check(page, '前提 撮影の前に登録した職員の詳細を開いている', () =>
-        expect(page.getByTestId('staff-detail-edit')).toBeVisible(),
-      )
       const dialog = page.getByTestId('staff-detail-edit-dialog')
       await step(page, '「編集」を押し、「電話番号（任意）」の見出しを押す', async () => {
         await page.getByTestId('staff-detail-edit').click()
@@ -74,11 +68,11 @@ test.describe('職員の入力の欄', () => {
       const page = await context.newPage()
       await page.goto(`/staff/${id}`)
       await expect(page.getByTestId('staff-detail-menu')).toBeVisible()
-      await intro(page, '職員の休職のダイアログを開くと、戻る予定の日の欄の下に補足の文が出る')
-
-      await check(page, '前提 撮影の前に登録した職員の詳細を開いている', () =>
-        expect(page.getByTestId('staff-detail-menu')).toBeVisible(),
+      await intro(
+        page,
+        '職員の休職のダイアログを開くと、戻る予定の日の欄の下に補足の文が出る\n前提 撮影の前に登録した職員の詳細を開いている',
       )
+
       const dialog = page.getByTestId('staff-leave-dialog')
       const date = dialog.getByTestId('staff-leave-return-date')
       await step(page, '「…」から「休職にする」を押す', async () => {

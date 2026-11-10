@@ -96,14 +96,9 @@ test.describe('職員の詳細', () => {
           await openStaffList(page)
           await intro(
             page,
-            '翌日に終わる予定が残る職員の休職のダイアログで、終了の時刻に「翌」が付く',
+            `翌日に終わる予定が残る職員の休職のダイアログで、終了の時刻に「翌」が付く\n前提 撮影の前に ${staff.name} を登録し、22:00 から翌日の 01:00 の単発の予定と毎週の予定を割り振った`,
           )
 
-          await check(
-            page,
-            `前提 撮影の前に ${staff.name} を登録し、22:00 から翌日の 01:00 の単発の予定と毎週の予定を割り振った`,
-            () => expect(page.getByTestId('staff-list-table')).toBeVisible(),
-          )
           await step(page, '職員の詳細を開き、「…」から「休職にする」を押す', () =>
             openLeaveDialog(page, staff.id),
           )
@@ -133,14 +128,9 @@ test.describe('職員の詳細', () => {
           await openStaffList(page)
           await intro(
             page,
-            '同じ日に終わる予定が残る職員の休職のダイアログで、終了の時刻に「翌」が付かない',
+            `同じ日に終わる予定が残る職員の休職のダイアログで、終了の時刻に「翌」が付かない\n前提 撮影の前に ${staff.name} を登録し、10:00 から 11:00 の単発の予定を割り振った`,
           )
 
-          await check(
-            page,
-            `前提 撮影の前に ${staff.name} を登録し、10:00 から 11:00 の単発の予定を割り振った`,
-            () => expect(page.getByTestId('staff-list-table')).toBeVisible(),
-          )
           await step(page, '職員の詳細を開き、「…」から「休職にする」を押す', () =>
             openLeaveDialog(page, staff.id),
           )

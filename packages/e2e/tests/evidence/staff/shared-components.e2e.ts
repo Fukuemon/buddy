@@ -30,12 +30,9 @@ test.describe('職員の画面の packages/ui のコンポーネント', () => {
       await expect(firstRow).toBeVisible()
       await intro(
         page,
-        'スマートフォンの幅の職員の一覧は、2 行のリストの右端に › を出し、横にスクロールしない',
+        'スマートフォンの幅の職員の一覧は、2 行のリストの右端に › を出し、横にスクロールしない\n前提 幅 390px で職員の一覧を開いている',
       )
 
-      await check(page, '前提 幅 390px で職員の一覧を開いている', () =>
-        expect(firstRow).toBeVisible(),
-      )
       await check(page, '行は 2 行のリストで、右端に › が出て、横にスクロールしない', async () => {
         await expect(firstRowGo).toBeVisible()
         await expect
@@ -56,11 +53,11 @@ test.describe('職員の画面の packages/ui のコンポーネント', () => {
 
       const page = await context.newPage()
       await openDetail(page, id)
-      await intro(page, '休職の確認のダイアログは、本文とフッターの間に区切りの線を引く')
-
-      await check(page, '前提 撮影の前に登録した職員の詳細を開いている', () =>
-        expect(page.getByTestId('staff-detail-menu')).toBeVisible(),
+      await intro(
+        page,
+        '休職の確認のダイアログは、本文とフッターの間に区切りの線を引く\n前提 撮影の前に登録した職員の詳細を開いている',
       )
+
       await step(page, '「…」から「休職にする」を押す', async () => {
         await page.getByTestId('staff-detail-menu').click()
         await page.getByTestId('staff-detail-leave').click()
@@ -82,12 +79,9 @@ test.describe('職員の画面の packages/ui のコンポーネント', () => {
       await openDetail(page, id)
       await intro(
         page,
-        '「…」から開いた休職の確認のダイアログをキャンセルすると、フォーカスが「…」のボタンに戻る',
+        '「…」から開いた休職の確認のダイアログをキャンセルすると、フォーカスが「…」のボタンに戻る\n前提 撮影の前に登録した職員の詳細を開いている',
       )
 
-      await check(page, '前提 撮影の前に登録した職員の詳細を開いている', () =>
-        expect(page.getByTestId('staff-detail-menu')).toBeVisible(),
-      )
       await step(
         page,
         'キーボードで「…」を開いて「休職にする」を選び、「キャンセル」で閉じる',
@@ -115,11 +109,11 @@ test.describe('職員の画面の packages/ui のコンポーネント', () => {
 
       const page = await context.newPage()
       await openDetail(page, id)
-      await intro(page, '退職の確認のダイアログは、本文とフッターの間に区切りの線を引く')
-
-      await check(page, '前提 撮影の前に登録した、予定の無い職員の詳細を開いている', () =>
-        expect(page.getByTestId('staff-detail-menu')).toBeVisible(),
+      await intro(
+        page,
+        '退職の確認のダイアログは、本文とフッターの間に区切りの線を引く\n前提 撮影の前に登録した、予定の無い職員の詳細を開いている',
       )
+
       await step(page, '「…」から「退職にする」を押す', async () => {
         await page.getByTestId('staff-detail-menu').click()
         await page.getByTestId('staff-detail-retire').click()

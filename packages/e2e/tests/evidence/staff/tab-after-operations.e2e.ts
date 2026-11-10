@@ -24,13 +24,11 @@ test.describe('職員の詳細の操作の後のタブ', () => {
       { tag: '@compare' },
       async ({ page }) => {
         await openStory(page, story('no-assignments'))
-        await intro(page, '権限のタブから休職にした後に、休職の職員のプロフィールのタブを出す')
-
-        await check(
+        await intro(
           page,
-          '前提 有効な石川 二葉の職員の詳細（Storybook の NoAssignments）を開いている（架空のデータ）',
-          () => expect(page.getByTestId('staff-detail-name')).toBeVisible(),
+          '権限のタブから休職にした後に、休職の職員のプロフィールのタブを出す\n前提 有効な石川 二葉の職員の詳細（Storybook の NoAssignments）を開いている（架空のデータ）',
         )
+
         await step(page, 'タブの「権限」を押し、「…」から「休職にする」を選ぶ', async () => {
           await openPoliciesTab(page)
           await page.getByTestId('staff-detail-menu').click()
@@ -56,13 +54,11 @@ test.describe('職員の詳細の操作の後のタブ', () => {
       async ({ page }) => {
         await openStory(page, story('on-leave'))
         await expect(page.getByTestId('staff-detail-status')).toContainText('休職')
-        await intro(page, '権限のタブから復職にした後に、有効な職員のプロフィールのタブを出す')
-
-        await check(
+        await intro(
           page,
-          '前提 休職の江藤 四郎の職員の詳細（Storybook の OnLeave）を開いている（架空のデータ）',
-          () => expect(page.getByTestId('staff-detail-name')).toBeVisible(),
+          '権限のタブから復職にした後に、有効な職員のプロフィールのタブを出す\n前提 休職の江藤 四郎の職員の詳細（Storybook の OnLeave）を開いている（架空のデータ）',
         )
+
         await step(page, 'タブの「権限」を押し、「…」から「復職にする」を選ぶ', async () => {
           await openPoliciesTab(page)
           await page.getByTestId('staff-detail-menu').click()
@@ -79,13 +75,11 @@ test.describe('職員の詳細の操作の後のタブ', () => {
       { tag: '@compare' },
       async ({ page }) => {
         await openStory(page, story('no-assignments'))
-        await intro(page, '権限のタブから退職にした後に、退職した職員のプロフィールのタブを出す')
-
-        await check(
+        await intro(
           page,
-          '前提 有効な石川 二葉の職員の詳細（Storybook の NoAssignments）を開いている（架空のデータ）',
-          () => expect(page.getByTestId('staff-detail-name')).toBeVisible(),
+          '権限のタブから退職にした後に、退職した職員のプロフィールのタブを出す\n前提 有効な石川 二葉の職員の詳細（Storybook の NoAssignments）を開いている（架空のデータ）',
         )
+
         const dialog = page.getByTestId('staff-retire-dialog')
         await step(page, 'タブの「権限」を押し、「…」から「退職にする」を選ぶ', async () => {
           await openPoliciesTab(page)
@@ -107,13 +101,11 @@ test.describe('職員の詳細の操作の後のタブ', () => {
       { tag: '@compare' },
       async ({ page }) => {
         await openStory(page, story('default'))
-        await intro(page, '権限のタブからプロフィールを保存した後に、プロフィールのタブを出す')
-
-        await check(
+        await intro(
           page,
-          '前提 有効な石川 二葉の職員の詳細（Storybook の Default）を開いている（架空のデータ）',
-          () => expect(page.getByTestId('staff-detail-name')).toBeVisible(),
+          '権限のタブからプロフィールを保存した後に、プロフィールのタブを出す\n前提 有効な石川 二葉の職員の詳細（Storybook の Default）を開いている（架空のデータ）',
         )
+
         const dialog = page.getByTestId('staff-detail-edit-dialog')
         await step(page, 'タブの「権限」を押し、見出しの「編集」を押す', async () => {
           await openPoliciesTab(page)

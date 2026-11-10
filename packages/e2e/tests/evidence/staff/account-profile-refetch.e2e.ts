@@ -24,13 +24,11 @@ test.describe('自分の情報の読み直し', () => {
       page,
     }) => {
       await openLoaded(page)
-      await intro(page, '読み直して読めなかったときは、表示を残して失敗の文と読み直すを出す')
-
-      await check(
+      await intro(
         page,
-        '前提 自分の情報（Storybook の RefetchError）を読み終えている。次に読み直すと、自分の情報を読めない（架空のデータ）',
-        () => expect(page.getByTestId('account-profile-name')).toBeVisible(),
+        '読み直して読めなかったときは、表示を残して失敗の文と読み直すを出す\n前提 自分の情報（Storybook の RefetchError）を読み終えている。次に読み直すと、自分の情報を読めない（架空のデータ）',
       )
+
       await step(page, 'ほかのウィンドウからこの画面に戻り、画面が自分の情報を読み直す', () =>
         returnToWindow(page),
       )
@@ -51,13 +49,11 @@ test.describe('自分の情報の読み直し', () => {
       page,
     }) => {
       await openLoaded(page)
-      await intro(page, '読み直すを押して読めたら、失敗の文と読み直すを消す')
-
-      await check(
+      await intro(
         page,
-        '前提 自分の情報（Storybook の RefetchError）を読み終えている。次の読み直しは失敗し、その次は読める（架空のデータ）',
-        () => expect(page.getByTestId('account-profile-name')).toBeVisible(),
+        '読み直すを押して読めたら、失敗の文と読み直すを消す\n前提 自分の情報（Storybook の RefetchError）を読み終えている。次の読み直しは失敗し、その次は読める（架空のデータ）',
       )
+
       await step(page, 'ウィンドウに戻って読み直し、読めずに失敗の文と読み直すが出る', async () => {
         await returnToWindow(page)
         await expect(page.getByTestId('refetch-error')).toBeVisible()
@@ -74,13 +70,11 @@ test.describe('自分の情報の読み直し', () => {
     }) => {
       await page.goto(story('load-error'))
       await expect(page.getByTestId('account-profile-error')).toBeVisible()
-      await intro(page, '一度も読めなかったときは、画面の全体を読み込みの失敗にする')
-
-      await check(
+      await intro(
         page,
-        '前提 自分の情報（Storybook の LoadError）を開いた。自分の情報を読めない（架空のデータ）',
-        () => expect(page.getByTestId('account-profile-error')).toBeVisible(),
+        '一度も読めなかったときは、画面の全体を読み込みの失敗にする\n前提 自分の情報（Storybook の LoadError）を開いた。自分の情報を読めない（架空のデータ）',
       )
+
       await check(
         page,
         '「自分の情報を読み込めませんでした。時間をおいて、読み直してください。」と読み直すが出て、最新の情報の文は出ない',

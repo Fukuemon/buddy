@@ -28,11 +28,11 @@ test.describe('職員の管理', () => {
         page,
       }) => {
         await openSchedule(page)
-        await intro(page, '予定のカレンダーに、シードの訪問しない事務の職員の列が出ない')
-
-        await check(page, '前提 シードで作り直した環境に、マネージャーでログインしている', () =>
-          expect(page.getByTestId('site-nav')).toBeVisible(),
+        await intro(
+          page,
+          '予定のカレンダーに、シードの訪問しない事務の職員の列が出ない\n前提 シードで作り直した環境に、マネージャーでログインしている',
         )
+
         await step(page, '予定のカレンダーを日の表示で開く', () => openDayCalendar(page))
         await check(page, `${LOGIN_STAFF.name}の列は出て、${OFFICE_CLERK.name}の列は出ない`, () =>
           expect(page.getByTestId(`day-grid-staff-${OFFICE_CLERK.id}`)).toHaveCount(0),
@@ -43,11 +43,11 @@ test.describe('職員の管理', () => {
         page,
       }) => {
         await openDayCalendar(page)
-        await intro(page, '職員の絞り込みに、シードの訪問しない事務の職員の項目が出ない')
-
-        await check(page, '前提 予定のカレンダーを日の表示で開いている', () =>
-          expect(page.getByTestId(`day-grid-staff-${LOGIN_STAFF.id}`)).toBeVisible(),
+        await intro(
+          page,
+          '職員の絞り込みに、シードの訪問しない事務の職員の項目が出ない\n前提 予定のカレンダーを日の表示で開いている',
         )
+
         const sidebar = page.getByTestId('staff-filter-sidebar')
         await step(page, '左の職員の絞り込みの項目を見る', () =>
           sidebar.getByTestId(`staff-filter-staff-${LOGIN_STAFF.id}`).scrollIntoViewIfNeeded(),
@@ -68,11 +68,11 @@ test.describe('職員の管理', () => {
         page,
       }) => {
         await openSchedule(page)
-        await intro(page, '職員の一覧に、シードの訪問しない事務の職員が出る')
-
-        await check(page, '前提 マネージャーでログインしている', () =>
-          expect(page.getByTestId('site-nav')).toBeVisible(),
+        await intro(
+          page,
+          '職員の一覧に、シードの訪問しない事務の職員が出る\n前提 マネージャーでログインしている',
         )
+
         await step(page, 'ナビゲーションの「職員」を押す', () =>
           page.getByTestId('site-nav').getByTestId('site-nav-staff').click(),
         )
@@ -87,9 +87,11 @@ test.describe('職員の管理', () => {
         await page.goto('/staff')
         const row = page.getByTestId(`staff-list-row-${OFFICE_CLERK.id}`)
         await expect(row).toBeVisible()
-        await intro(page, 'シードの事務の職員の詳細で、訪問の行が「訪問しない」である')
+        await intro(
+          page,
+          'シードの事務の職員の詳細で、訪問の行が「訪問しない」である\n前提 職員の一覧を開いている',
+        )
 
-        await check(page, '前提 職員の一覧を開いている', () => expect(row).toBeVisible())
         await step(page, `${OFFICE_CLERK.name}の行を押す`, () => row.click())
         await check(
           page,
@@ -107,12 +109,9 @@ test.describe('職員の管理', () => {
         await openDayCalendar(page)
         await intro(
           page,
-          '訪問の予定を作るとき、主訪問者の候補にシードの訪問しない事務の職員が出ない',
+          '訪問の予定を作るとき、主訪問者の候補にシードの訪問しない事務の職員が出ない\n前提 予定のカレンダーを日の表示で開いている',
         )
 
-        await check(page, '前提 予定のカレンダーを日の表示で開いている', () =>
-          expect(page.getByTestId(`day-grid-staff-${LOGIN_STAFF.id}`)).toBeVisible(),
-        )
         await step(
           page,
           '「予定を作成」を押し、訪問の予定を選んで、項目の一覧の「主訪問者」を押す',
@@ -139,12 +138,9 @@ test.describe('職員の管理', () => {
         await expect(page.getByTestId('patient-list-new')).toBeVisible()
         await intro(
           page,
-          '利用者を登録するとき、担当の職員の候補にシードの訪問しない事務の職員が出ない',
+          '利用者を登録するとき、担当の職員の候補にシードの訪問しない事務の職員が出ない\n前提 利用者の一覧を開いている',
         )
 
-        await check(page, '前提 利用者の一覧を開いている', () =>
-          expect(page.getByTestId('patient-list-new')).toBeVisible(),
-        )
         await step(page, '「利用者を登録」を押し、担当の職員の選択肢を見る', () =>
           page.getByTestId('patient-list-new').click(),
         )
@@ -167,12 +163,13 @@ test.describe('職員の管理', () => {
         page,
       }) => {
         await openSchedule(page)
-        await intro(page, 'シードの訪問しない事務の職員でログインすると、照合の画面が開く')
-
         const nav = page.getByTestId('site-nav')
-        await check(page, `前提 ${OFFICE_CLERK.name}でログインしている`, () =>
-          expect(nav).toBeVisible(),
+        await expect(nav).toBeVisible()
+        await intro(
+          page,
+          `シードの訪問しない事務の職員でログインすると、照合の画面が開く\n前提 ${OFFICE_CLERK.name}でログインしている`,
         )
+
         await step(page, 'ナビゲーションの「照合」を押す', () =>
           nav.getByTestId('site-nav-receipt').click(),
         )

@@ -95,14 +95,9 @@ test.describe('職員の管理', () => {
         await expect(visits).toContainText('訪問しない')
         await intro(
           page,
-          '訪問しない職員がいる事業所で予定のカレンダーを開くと、その職員の列と絞り込みの項目が出ない',
+          `訪問しない職員がいる事業所で予定のカレンダーを開くと、その職員の列と絞り込みの項目が出ない\n前提 撮影の前に登録して訪問しない職員にした ${name} の詳細を開いている`,
         )
 
-        await check(
-          page,
-          `前提 撮影の前に登録して訪問しない職員にした ${name} の詳細を開いている`,
-          () => expect(visits).toContainText('訪問しない'),
-        )
         await step(page, '予定のカレンダーを日の表示で開く', () => openDayCalendar(page))
         await check(page, `${LOGIN_STAFF.name}の列は出て、訪問しない ${name} の列は出ない`, () =>
           expect(page.getByTestId(`day-grid-staff-${id}`)).toHaveCount(0),
@@ -126,13 +121,11 @@ test.describe('職員の管理', () => {
 
         const page = await context.newPage()
         await openDayCalendar(page)
-        await intro(page, '訪問の予定を作るとき、主訪問者の候補に訪問しない職員が出ない')
-
-        await check(
+        await intro(
           page,
-          `前提 予定のカレンダーを日の表示で開いている（撮影の前に、訪問しない ${name} を登録した）`,
-          () => expect(page.getByTestId(`day-grid-staff-${LOGIN_STAFF.id}`)).toBeVisible(),
+          `訪問の予定を作るとき、主訪問者の候補に訪問しない職員が出ない\n前提 予定のカレンダーを日の表示で開いている（撮影の前に、訪問しない ${name} を登録した）`,
         )
+
         await step(
           page,
           '「予定を作成」を押し、訪問の予定を選んで、項目の一覧の「主訪問者」を押す',
@@ -172,16 +165,12 @@ test.describe('職員の管理', () => {
         const page = await context.newPage()
         await routeApiReference(page)
         await openApiClient(page, 'schedule', CREATE_SCHEDULE)
+        await expect(apiClient(page).send).toBeVisible()
         await intro(
           page,
-          '訪問しない職員を同行者に指して訪問の予定を作ると、予定の API が 400 で拒む',
+          '訪問しない職員を同行者に指して訪問の予定を作ると、予定の API が 400 で拒む\n前提 API の参照のページで「単発の予定を作る」のリクエストを開いている',
         )
 
-        await check(
-          page,
-          '前提 API の参照のページで「単発の予定を作る」のリクエストを開いている',
-          () => expect(apiClient(page).send).toBeVisible(),
-        )
         await step(page, `認証の欄に ${LOGIN_STAFF.name} のトークンを入れる（伏せ字で出る）`, () =>
           fillApiToken(page, token),
         )
@@ -223,11 +212,11 @@ test.describe('職員の管理', () => {
         const staff = newStaff('register')
         await page.goto('/staff')
         await expect(page.getByTestId('staff-list-table')).toBeVisible()
-        await intro(page, '職員を訪問しない職員として登録すると、職員の一覧に出る')
-
-        await check(page, '前提 職員の一覧を開いている', () =>
-          expect(page.getByTestId('staff-list-table')).toBeVisible(),
+        await intro(
+          page,
+          '職員を訪問しない職員として登録すると、職員の一覧に出る\n前提 職員の一覧を開いている',
         )
+
         const dialog = page.getByTestId('staff-new-dialog')
         await step(
           page,
@@ -288,13 +277,11 @@ test.describe('職員の管理', () => {
         await page.goto('/staff')
         await page.getByTestId('staff-list-search').fill(staff.name)
         await expect(page.getByTestId(`staff-list-row-${id}`)).toBeVisible()
-        await intro(page, '訪問しない職員として登録した職員は、予定のカレンダーの列に出ない')
-
-        await check(
+        await intro(
           page,
-          `前提 職員の一覧で、撮影の前に訪問しない職員として登録した ${staff.name} を探して出している`,
-          () => expect(page.getByTestId(`staff-list-row-${id}`)).toBeVisible(),
+          `訪問しない職員として登録した職員は、予定のカレンダーの列に出ない\n前提 職員の一覧で、撮影の前に訪問しない職員として登録した ${staff.name} を探して出している`,
         )
+
         await step(page, '予定のカレンダーを日の表示で開く', () => openDayCalendar(page))
         await check(page, `職員の一覧に出る ${staff.name} の列は、予定のカレンダーに出ない`, () =>
           expect(page.getByTestId(`day-grid-staff-${id}`)).toHaveCount(0),
@@ -314,14 +301,9 @@ test.describe('職員の管理', () => {
         await expect(visits).toHaveText('訪問する')
         await intro(
           page,
-          '予定の残らない職員をプロフィールの編集で訪問しないにすると、詳細の訪問の行が変わる',
+          `予定の残らない職員をプロフィールの編集で訪問しないにすると、詳細の訪問の行が変わる\n前提 撮影の前に登録した、予定の無い ${staff.name} の詳細を開いている。訪問は「訪問する」`,
         )
 
-        await check(
-          page,
-          `前提 撮影の前に登録した、予定の無い ${staff.name} の詳細を開いている。訪問は「訪問する」`,
-          () => expect(visits).toHaveText('訪問する'),
-        )
         await step(page, '「編集」を押し、訪問を「訪問しない」にして保存する', () =>
           saveAsNonVisiting(page),
         )
@@ -351,14 +333,9 @@ test.describe('職員の管理', () => {
         await expect(visits).toHaveText('訪問する')
         await intro(
           page,
-          '今日以降の予定が残る職員を訪問しないにしようとすると、ダイアログを閉じずに残る予定の一覧が出て、保存されない',
+          `今日以降の予定が残る職員を訪問しないにしようとすると、ダイアログを閉じずに残る予定の一覧が出て、保存されない\n前提 撮影の前に登録し、${FUTURE_DATE} の予定を作った ${staff.name} の詳細を開いている。訪問は「訪問する」`,
         )
 
-        await check(
-          page,
-          `前提 撮影の前に登録し、${FUTURE_DATE} の予定を作った ${staff.name} の詳細を開いている。訪問は「訪問する」`,
-          () => expect(visits).toHaveText('訪問する'),
-        )
         await step(page, '「編集」を押し、訪問を「訪問しない」にして保存する', () =>
           saveAsNonVisiting(page),
         )

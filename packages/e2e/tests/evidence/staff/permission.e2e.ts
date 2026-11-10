@@ -40,16 +40,12 @@ test.describe('職員の管理', () => {
         const page = await context.newPage()
         await routeApiReference(page)
         await openApiClient(page, 'schedule', ADD_POLICY)
+        await expect(apiClient(page).send).toBeVisible()
         await intro(
           page,
-          '職員の管理の権限を持つ職員が、職員に権限を足すと職員の権限に出て、外すと消える',
+          '職員の管理の権限を持つ職員が、職員に権限を足すと職員の権限に出て、外すと消える\n前提 API の参照のページで「職員に権限を足す」のリクエストを開いている',
         )
 
-        await check(
-          page,
-          '前提 API の参照のページで「職員に権限を足す」のリクエストを開いている',
-          () => expect(apiClient(page).send).toBeVisible(),
-        )
         await step(page, `認証の欄に ${LOGIN_STAFF.name} のトークンを入れる（伏せ字で出る）`, () =>
           fillApiToken(page, token),
         )
@@ -113,13 +109,12 @@ test.describe('職員の管理', () => {
         const page = await context.newPage()
         await routeApiReference(page)
         await openApiClient(page, 'schedule', ADD_POLICY)
-        await intro(page, '職員の管理の権限を持たない職員が、職員に権限を足そうとすると 403 が返る')
-
-        await check(
+        await expect(apiClient(page).send).toBeVisible()
+        await intro(
           page,
-          '前提 API の参照のページで「職員に権限を足す」のリクエストを開いている',
-          () => expect(apiClient(page).send).toBeVisible(),
+          '職員の管理の権限を持たない職員が、職員に権限を足そうとすると 403 が返る\n前提 API の参照のページで「職員に権限を足す」のリクエストを開いている',
         )
+
         await step(page, `認証の欄に ${LEADER.staff.name} のトークンを入れる（伏せ字で出る）`, () =>
           fillApiToken(page, token),
         )

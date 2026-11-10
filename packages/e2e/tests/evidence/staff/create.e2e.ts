@@ -47,11 +47,12 @@ test.describe('職員の管理', () => {
           const page = await context.newPage()
           await routeApiReference(page)
           await openApiClient(page, 'schedule', CREATE_USER)
-          await intro(page, c.title)
-
-          await check(page, '前提 API の参照のページで「職員を作る」のリクエストを開いている', () =>
-            expect(apiClient(page).send).toBeVisible(),
+          await expect(apiClient(page).send).toBeVisible()
+          await intro(
+            page,
+            `${c.title}\n前提 API の参照のページで「職員を作る」のリクエストを開いている`,
           )
+
           await step(
             page,
             `認証の欄に ${LOGIN_STAFF.name} のトークンを入れる（伏せ字で出る）`,
