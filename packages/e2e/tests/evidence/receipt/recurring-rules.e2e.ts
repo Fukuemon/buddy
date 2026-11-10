@@ -1,6 +1,14 @@
+// DB を作り直してから単独で流す。作った利用者と 2026-12〜2027-01 の繰り返しの予定は、撮った後に戻さない。
 import { writeFile } from 'node:fs/promises'
 
-import { expect, test, type APIRequestContext, type Locator, type Page } from '@playwright/test'
+import {
+  expect,
+  test,
+  type APIRequestContext,
+  type Browser,
+  type Locator,
+  type Page,
+} from '@playwright/test'
 
 import { issueAccessToken } from '../../fixtures/apiReference'
 import { check, intro, step } from '../../fixtures/caption'
@@ -14,8 +22,6 @@ import { showAllReceiptRows } from '../../screens/receipt'
 import { calendarpitEvent } from '../../selectors/calendarpit'
 import { receiptCategoryRowCells, receiptResultRow } from '../../selectors/receipt'
 import { calendarTimeLabel } from '../../selectors/scheduleCalendar'
-
-// DB を作り直してから単独で流す。作った利用者と 2026-12〜2027-01 の繰り返しの予定を撮った後に戻さないので、同じ DB で流し直すと回が重なる。
 
 // 照合の API は、compose/receipt-calendars.json の森のカレンダーを calendarpit から読む。
 // buddy を正本にする 1 つ目の事業所で森に Google カレンダーを結び付けると、予定の API が森の繰り返しの予定を RRULE で書き出す。
@@ -262,6 +268,12 @@ const waitForExport = async (request: APIRequestContext, names: Record<Rule['key
   }
 }
 
+/** ほかの撮影の前提に戻すよう、森の Google カレンダーの結び付けを録画の外で外す。 */
+const unlinkOutsideRecording = (browser: Browser) =>
+  prepareOutsideRecording(browser, { storageState: LOGIN_STATE }, (prep) =>
+    unlinkStaffCalendar(prep, MORI.id),
+  )
+
 test.describe('照合の結果', () => {
   test.describe(`複数の曜日と隔週の繰り返しの予定（${LOGIN_STAFF.name}、マネージャー）`, () => {
     test.use({ storageState: LOGIN_STATE })
@@ -272,12 +284,12 @@ test.describe('照合の結果', () => {
       request,
     }) => {
       const names = patientNames()
-      const ids = await prepareOutsideRecording(browser, { storageState: LOGIN_STATE }, (prep) =>
-        prepare(prep, names),
-      )
-
-      const page = await context.newPage()
       try {
+        const ids = await prepareOutsideRecording(browser, { storageState: LOGIN_STATE }, (prep) =>
+          prepare(prep, names),
+        )
+
+        const page = await context.newPage()
         await page.goto(`/schedule?view=week&date=${RULES[0].start}`)
         await expect(calendarTimeLabel(page, '06:00:00')).toBeVisible()
         await intro(
@@ -303,21 +315,16 @@ test.describe('照合の結果', () => {
             await waitForExport(request, names)
           },
         )
-        await step(
-          page,
-          '（撮影のため、4 つの規則の回が並ぶ 2026-12-06 の週を開き直す）',
-          async () => {
-            await page.goto(`/schedule?view=week&date=${RULES[3].start}`)
-            await expect(calendarTimeLabel(page, '06:00:00')).toBeVisible()
-          },
-        )
+        // goto には止めが入らず、step の字幕が読めないので、次の判定の字幕に書く
+        await page.goto(`/schedule?view=week&date=${RULES[3].start}`)
+        await expect(calendarTimeLabel(page, '06:00:00')).toBeVisible()
         const lines = RULES.map(
           (rule) => `${rule.label}（${rule.dates.length} 回）: ${datesText(rule.dates)}`,
         )
         await check(
           page,
           [
-            '（撮影のため、週の表示と Calendar API で読んだ回の日を出す）予定のカレンダーと calendarpit の回の日が、規則ごとに全て同じ',
+            '（撮影のため、4 つの規則の回が並ぶ 2026-12-06 の週を開き直し、週の表示と Calendar API で読んだ回の日を出す）予定のカレンダーと calendarpit の回の日が、規則ごとに全て同じ',
             ...lines,
           ].join('\n'),
           async () => {
@@ -329,24 +336,16 @@ test.describe('照合の結果', () => {
         )
 
         const sunday = RULES[3]
-        await step(
-          page,
-          `Google カレンダーの代わりの calendarpit の管理の画面で、${MORI_CALENDAR} の ${sunday.start}（日曜、${sunday.label}の最初の回）を開く`,
-          async () => {
-            await page.goto(
-              `${CALENDARPIT_URL}/?calendar=${encodeURIComponent(MORI_CALENDAR)}&date=${sunday.start}`,
-            )
-          },
+        await page.goto(
+          `${CALENDARPIT_URL}/?calendar=${encodeURIComponent(MORI_CALENDAR)}&date=${sunday.start}`,
         )
         await check(
           page,
-          `calendarpit の ${sunday.start}（日曜）に「${visitSummary(names[sunday.key])}」が出る`,
+          `（Google カレンダーの代わりの calendarpit の管理の画面で、${MORI_CALENDAR} の ${sunday.start}（日曜、${sunday.label}の最初の回）を開く）\ncalendarpit の ${sunday.start}（日曜）に「${visitSummary(names[sunday.key])}」が出る`,
           () => expect(calendarpitEvent(page, visitSummary(names[sunday.key]))).toBeVisible(),
         )
       } finally {
-        await step(page, '（撮影のため、ほかの撮影の前提に戻すよう、結び付けを外す）', () =>
-          unlinkStaffCalendar(page, MORI.id),
-        )
+        await unlinkOutsideRecording(browser)
       }
     })
 
@@ -356,24 +355,24 @@ test.describe('照合の結果', () => {
       request,
     }) => {
       const names = patientNames()
-      const files = await prepareOutsideRecording(
-        browser,
-        { storageState: LOGIN_STATE },
-        async (prep) => {
-          const ids = await prepare(prep, names)
-          for (const rule of RULES) await createVisitRule(prep, rule, ids[rule.key])
-          await waitForExport(request, names)
-          const written = { '2026-12': '', '2027-01': '' } as Record<
-            (typeof MONTHS)[number],
-            string
-          >
-          for (const month of MONTHS) written[month] = await writeVisits(month, names)
-          return written
-        },
-      )
-
-      const page = await context.newPage()
       try {
+        const files = await prepareOutsideRecording(
+          browser,
+          { storageState: LOGIN_STATE },
+          async (prep) => {
+            const ids = await prepare(prep, names)
+            for (const rule of RULES) await createVisitRule(prep, rule, ids[rule.key])
+            await waitForExport(request, names)
+            const written = { '2026-12': '', '2027-01': '' } as Record<
+              (typeof MONTHS)[number],
+              string
+            >
+            for (const month of MONTHS) written[month] = await writeVisits(month, names)
+            return written
+          },
+        )
+
+        const page = await context.newPage()
         await page.goto('/receipt')
         await expect(page.getByTestId('receipt-check-submit')).toBeVisible()
         await intro(
@@ -432,9 +431,7 @@ test.describe('照合の結果', () => {
           )
         }
       } finally {
-        await step(page, '（撮影のため、ほかの撮影の前提に戻すよう、結び付けを外す）', () =>
-          unlinkStaffCalendar(page, MORI.id),
-        )
+        await unlinkOutsideRecording(browser)
       }
     })
   })

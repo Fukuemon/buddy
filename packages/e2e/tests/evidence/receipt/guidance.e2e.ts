@@ -188,8 +188,9 @@ test.describe('照合', () => {
           },
         )
       } finally {
-        await step(page, '（撮影のため、撮り直しても 1 件になるよう、足した予定を消す）', () =>
-          deleteGoogleEvent(page.request, MORI_CALENDAR, event.id),
+        // 撮り直しても 1 件になるよう、足した予定を録画の外で消す
+        await prepareOutsideRecording(browser, { storageState: LOGIN_STATE }, (prep) =>
+          deleteGoogleEvent(prep.request, MORI_CALENDAR, event.id),
         )
       }
     })
