@@ -1,6 +1,7 @@
 import { expect, test, type Locator } from '@playwright/test'
 
-import { EVIDENCE_VARIANTS, mockUrl, recordPrEvidence } from '../../fixtures/evidence'
+import { check, intro, step } from '../../fixtures/caption'
+import { mockUrl } from '../../fixtures/evidence'
 import { scheduleModalTitle } from '../../selectors/scheduleModalMock'
 
 const NEW = 'schedule-new_予定の作成/mocks/01-visit.html'
@@ -23,28 +24,22 @@ const expectRightOf = async (left: Locator, right: Locator) => {
 }
 
 test.describe('予定のダイアログの画面仕様書のモック', () => {
-  for (const variant of EVIDENCE_VARIANTS) {
-    const prefix = variant.label ? `${variant.label}: ` : ''
-
-    test(`${prefix}予定の作成のモックを開いた場合、× が無く、Escape で予定のカレンダーへ戻ること`, async ({
-      browser,
+  test.describe('ヘッダーとフッター（ログインなし、画面仕様書のモック）', () => {
+    test('schedule-new-mock-header-footer 予定の作成のモックを開いた場合、× が無く、Escape で予定のカレンダーへ戻ること', async ({
+      page,
     }) => {
-      await recordPrEvidence(
-        browser,
-        {
-          name: 'schedule-new-mock-header-footer',
-          title:
-            '予定の作成は、タイトルを左に置き、× を置かず、フッターの右に「キャンセル」と「作成」を置く',
-          actor: 'ログインなし',
-          variant,
-        },
-        async (page) => {
-          await page.goto(mockUrl(NEW))
-        },
-        async ({ page, step, check }) => {
-          await page.goto(mockUrl(NEW))
-          const modal = page.getByTestId('schedule-form-modal')
-          await expect(scheduleModalTitle(modal, '予定の作成')).toBeVisible()
+      await page.goto(mockUrl(NEW))
+      const modal = page.getByTestId('schedule-form-modal')
+      await expect(scheduleModalTitle(modal, '予定の作成')).toBeVisible()
+      await intro(
+        page,
+        '予定の作成は、タイトルを左に置き、× を置かず、フッターの右に「キャンセル」と「作成」を置く\n前提 予定の作成の訪問の予定のモック（01-visit.html）を開いている',
+      )
+
+      await check(
+        page,
+        'タイトル「予定の作成」が左にあり、右上に × が無く、フッターの右に「キャンセル」と「作成」が並ぶ',
+        async () => {
           await expect(page.getByTestId('modal-close')).toHaveCount(0)
           await expect(page.getByTestId('schedule-new-cancel')).toHaveText('キャンセル')
           await expect(page.getByTestId('schedule-create-submit')).toHaveText('作成')
@@ -52,39 +47,32 @@ test.describe('予定のダイアログの画面仕様書のモック', () => {
             page.getByTestId('schedule-new-cancel'),
             page.getByTestId('schedule-create-submit'),
           )
-          await check(
-            'タイトル「予定の作成」が左にあり、右上に × が無く、フッターの右に「キャンセル」と「作成」が並ぶ',
-          )
-
-          await step('Escape キーを押す')
-          await page.keyboard.press('Escape')
-          await expect(page).toHaveURL(/schedule-calendar_.+\/01-month\.html/)
-          await check(
-            'キャンセルと同じく、何も作らずに予定のカレンダーのモック（01-month.html）へ戻る',
-          )
         },
+      )
+
+      await step(page, 'Escape キーを押す', () => page.keyboard.press('Escape'))
+      await check(
+        page,
+        'キャンセルと同じく、何も作らずに予定のカレンダーのモック（01-month.html）へ戻る',
+        () => expect(page).toHaveURL(/schedule-calendar_.+\/01-month\.html/),
       )
     })
 
-    test(`${prefix}予定の編集のモックを開いた場合、× が無く、フッターのキャンセルで予定の詳細へ戻ること`, async ({
-      browser,
+    test('schedule-edit-mock-header-footer 予定の編集のモックを開いた場合、× が無く、フッターのキャンセルで予定の詳細へ戻ること', async ({
+      page,
     }) => {
-      await recordPrEvidence(
-        browser,
-        {
-          name: 'schedule-edit-mock-header-footer',
-          title:
-            '予定の編集は、タイトルを左に置き、× を置かず、フッターの右に「キャンセル」と「保存」を置く',
-          actor: 'ログインなし',
-          variant,
-        },
-        async (page) => {
-          await page.goto(mockUrl(EDIT))
-        },
-        async ({ page, step, check }) => {
-          await page.goto(mockUrl(EDIT))
-          const modal = page.getByTestId('schedule-form-modal')
-          await expect(scheduleModalTitle(modal, '予定の編集')).toBeVisible()
+      await page.goto(mockUrl(EDIT))
+      const modal = page.getByTestId('schedule-form-modal')
+      await expect(scheduleModalTitle(modal, '予定の編集')).toBeVisible()
+      await intro(
+        page,
+        '予定の編集は、タイトルを左に置き、× を置かず、フッターの右に「キャンセル」と「保存」を置く\n前提 予定の編集の初めの状態のモック（03-initial.html）を開いている',
+      )
+
+      await check(
+        page,
+        'タイトル「予定の編集」が左にあり、右上に × が無く、フッターの右に「キャンセル」と「保存」が並ぶ',
+        async () => {
           await expect(page.getByTestId('modal-close')).toHaveCount(0)
           await expect(page.getByTestId('schedule-edit-cancel')).toHaveText('キャンセル')
           await expect(page.getByTestId('schedule-edit-submit')).toHaveText('保存')
@@ -92,37 +80,32 @@ test.describe('予定のダイアログの画面仕様書のモック', () => {
             page.getByTestId('schedule-edit-cancel'),
             page.getByTestId('schedule-edit-submit'),
           )
-          await check(
-            'タイトル「予定の編集」が左にあり、右上に × が無く、フッターの右に「キャンセル」と「保存」が並ぶ',
-          )
-
-          await step('「キャンセル」を押す')
-          await page.getByTestId('schedule-edit-cancel').click()
-          await expect(page).toHaveURL(/schedule-detail_.+\/01-visit\.html/)
-          await check('何も変えずに、予定の詳細のモック（01-visit.html）へ戻る')
         },
+      )
+
+      await step(page, '「キャンセル」を押す', () =>
+        page.getByTestId('schedule-edit-cancel').click(),
+      )
+      await check(page, '何も変えずに、予定の詳細のモック（01-visit.html）へ戻る', () =>
+        expect(page).toHaveURL(/schedule-detail_.+\/01-visit\.html/),
       )
     })
 
-    test(`${prefix}予定の詳細のモックを開いた場合、× が無く、Escape で予定のカレンダーへ戻ること`, async ({
-      browser,
+    test('schedule-detail-mock-header-footer 予定の詳細のモックを開いた場合、× が無く、Escape で予定のカレンダーへ戻ること', async ({
+      page,
     }) => {
-      await recordPrEvidence(
-        browser,
-        {
-          name: 'schedule-detail-mock-header-footer',
-          title:
-            '予定の詳細は、タイトルを左に置き、× を置かず、フッターの右に「閉じる」と「編集」を置く',
-          actor: 'ログインなし',
-          variant,
-        },
-        async (page) => {
-          await page.goto(mockUrl(DETAIL))
-        },
-        async ({ page, step, check }) => {
-          await page.goto(mockUrl(DETAIL))
-          const modal = page.getByTestId('schedule-detail-modal')
-          await expect(scheduleModalTitle(modal, '予定の詳細')).toBeVisible()
+      await page.goto(mockUrl(DETAIL))
+      const modal = page.getByTestId('schedule-detail-modal')
+      await expect(scheduleModalTitle(modal, '予定の詳細')).toBeVisible()
+      await intro(
+        page,
+        '予定の詳細は、タイトルを左に置き、× を置かず、フッターの右に「閉じる」と「編集」を置く\n前提 予定の詳細の訪問の予定のモック（01-visit.html）を開いている',
+      )
+
+      await check(
+        page,
+        'タイトル「予定の詳細」が左にあり、右上に × が無く、フッターの右に「閉じる」と「編集」が並ぶ',
+        async () => {
           await expect(page.getByTestId('modal-close')).toHaveCount(0)
           await expect(page.getByTestId('schedule-detail-close')).toHaveText('閉じる')
           await expect(page.getByTestId('schedule-detail-edit')).toHaveText('編集')
@@ -130,18 +113,15 @@ test.describe('予定のダイアログの画面仕様書のモック', () => {
             page.getByTestId('schedule-detail-close'),
             page.getByTestId('schedule-detail-edit'),
           )
-          await check(
-            'タイトル「予定の詳細」が左にあり、右上に × が無く、フッターの右に「閉じる」と「編集」が並ぶ',
-          )
-
-          await step('Escape キーを押す')
-          await page.keyboard.press('Escape')
-          await expect(page).toHaveURL(/schedule-calendar_.+\/01-month\.html/)
-          await check(
-            'フッターの「閉じる」と同じく、予定のカレンダーのモック（01-month.html）へ戻る',
-          )
         },
       )
+
+      await step(page, 'Escape キーを押す', () => page.keyboard.press('Escape'))
+      await check(
+        page,
+        'フッターの「閉じる」と同じく、予定のカレンダーのモック（01-month.html）へ戻る',
+        () => expect(page).toHaveURL(/schedule-calendar_.+\/01-month\.html/),
+      )
     })
-  }
+  })
 })
