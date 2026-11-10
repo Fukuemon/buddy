@@ -4,6 +4,9 @@ SELECT * FROM facilities WHERE id = $1;
 -- name: GetFacilityByOrgID :one
 SELECT * FROM facilities WHERE org_id = $1;
 
+-- name: CreateFacility :exec
+INSERT INTO facilities (id, name, org_id, source_mode) VALUES ($1, $2, $3, $4);
+
 -- name: LockFacility :one
 -- 事業所の職員の休職、退職、役職とチームを変える操作、権限を外す操作を 1 つずつにする。職員の管理の権限を持つ有効な職員を数えてから書くまでの間に、ほかの操作が割り込まない。
 -- 予定と担当の新しい割り振り（ShareFacility）とも 1 つずつにし、退職の残る予定の確認と予定の作成が行き違わない。

@@ -22,6 +22,16 @@ func (s Facilities) GetByOrgID(_ context.Context, orgID string) (organization.Fa
 	return get(s.Facilities, s.FacilityByOrg[orgID])
 }
 
+// Create は、organization.FacilityCreator を実装する。同じ組織の ID の事業所があるときは apperr.ErrConflict を返す。
+func (s Facilities) Create(_ context.Context, f organization.Facility) error {
+	if _, ok := s.FacilityByOrg[f.OrgID]; ok {
+		return apperr.ErrConflict
+	}
+	s.Facilities[f.ID] = f
+	s.FacilityByOrg[f.OrgID] = f.ID
+	return nil
+}
+
 // Lock は、事業所があるかだけを確認する。メモリ上の実装はロックを取らない。
 func (s Facilities) Lock(_ context.Context, facilityID string) error {
 	_, err := get(s.Facilities, facilityID)

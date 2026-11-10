@@ -35,6 +35,11 @@ func (r *FacilityRepository) GetByOrgID(ctx context.Context, orgID string) (orga
 	return toFacility(f), nil
 }
 
+// Create は、事業所 f を書く。同じ組織の ID の事業所があるときは apperr.ErrConflict を返す。
+func (r *FacilityRepository) Create(ctx context.Context, f organization.Facility) error {
+	return translate("create facility", r.q(ctx).CreateFacility(ctx, sqlcgen.CreateFacilityParams{ID: f.ID, Name: f.Name, OrgID: ptr(f.OrgID), SourceMode: string(f.SourceMode)}))
+}
+
 // Lock は、事業所 facilityID の行に排他のロックを取る。呼び出し側がトランザクションの中で呼ぶ。
 // 職員の休職、退職、役職とチームを変える操作、権限を外す操作、利用者の利用の終了と再開が取る。
 // 事業所が無いときは apperr.ErrNotFound を返す。
