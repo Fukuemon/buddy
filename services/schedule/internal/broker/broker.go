@@ -57,6 +57,8 @@ func New(cfg Config, base *http.Client) *Client {
 		ClientSecret:   cfg.ClientSecret,
 		TokenURL:       cfg.TokenURL,
 		EndpointParams: url.Values{"audience": {cfg.Audience}},
+		// 自動判定にすると、Basic での失敗の後に本文の secret で取り直し、最初の失敗の理由が invalid_client の文に置き換わる
+		AuthStyle: oauth2.AuthStyleInHeader,
 	}
 	ctx := context.WithValue(context.Background(), oauth2.HTTPClient, base)
 	c := cc.Client(ctx)

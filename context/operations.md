@@ -188,6 +188,7 @@ hydra janitor -c <hydra serve の設定ファイル> -e --tokens --requests --gr
   - ブローカーでは、上流の IdP の client secret のファイル（`UPSTREAM_IDP_CLIENT_SECRETS_FILE`）と、token_hook のヘッダーの値（`TOKEN_HOOK_KEY`）もシークレットである。
   - 予定の API と運営用の CLI では、ブローカーを呼ぶ Hydra のクライアントの secret（`BROKER_CLIENT_SECRET`）もシークレットである。
     - 運営用の CLI の値は、運営用のクライアント（`schedule-ops`）の secret で、予定の API の値と分ける。CLI を流すジョブにだけ渡す。
+    - 予定の API と運営用の CLI は、secret を Basic 認証のヘッダーで送る。Hydra のクライアントは、`token_endpoint_auth_method` を `client_secret_basic`（Hydra のデフォルト）で登録する。
   - Hydra では、設定の `secrets.system` もシークレットである。
     - Hydra は、この値で、DB に置く署名の鍵を暗号化し、refresh token と認可コードの署名を作る。
     - 値を変えるときは、新しい値を一覧の先頭に足し、古い値を一覧に残す。古い値を外すと、古い値で暗号化した署名の鍵と、古い値で署名した refresh token が使えなくなる。
