@@ -1,8 +1,15 @@
 import { expect, test, type APIRequestContext, type Page } from '@playwright/test'
 
 import { issueAccessToken, routeApiReference } from '../../fixtures/apiReference'
-import { LOGIN_EMAIL, LOGIN_STAFF, SCHEDULE_URL, SEED_PATIENT } from '../../fixtures/env'
-import { EVIDENCE_VARIANTS, recordPrEvidence } from '../../fixtures/evidence'
+import { check, intro, step } from '../../fixtures/caption'
+import {
+  LOGIN_EMAIL,
+  LOGIN_STAFF,
+  LOGIN_STATE,
+  SCHEDULE_URL,
+  SEED_PATIENT,
+} from '../../fixtures/env'
+import { prepareOutsideRecording } from '../../fixtures/recording'
 import { createNormalSchedule } from '../../fixtures/schedule'
 import {
   issueManagerToken,
@@ -11,8 +18,7 @@ import {
   setNonVisiting,
   STAFF_FORM,
 } from '../../fixtures/staff'
-import { signInAtBroker } from '../../screens/login'
-import { openApiClient, openApiReference } from '../../screens/apiReference'
+import { openApiClient } from '../../screens/apiReference'
 import {
   fillApiBody,
   fillApiToken,
@@ -26,18 +32,10 @@ const FUTURE_DATE = '2030-01-09'
 /** 訪問の予定を作る日。 */
 const VISIT_DATE = '2026-10-20'
 
-const MANAGER = `${LOGIN_STAFF.name}（マネージャー、職員の管理の権限あり）`
-
 const CREATE_SCHEDULE = {
   tag: 'schedule',
   method: 'post',
   path: '/v1/facilities/{facility_id}/schedules',
-}
-
-/** マネージャーでログインする。 */
-const signInManager = async (page: Page) => {
-  await page.goto('/schedule')
-  await signInAtBroker(page, LOGIN_EMAIL)
 }
 
 /** マネージャーのトークンで、職員を 1 人登録して訪問しない職員にし、ID と名前を返す。 */
@@ -48,12 +46,6 @@ const registerNonVisiting = async (request: APIRequestContext, label: string) =>
   const res = await setNonVisiting(request, token, id)
   if (res.status() !== 200) throw new Error(`訪問しない職員にできない: ${res.status()}`)
   return { id, name: staff.name }
-}
-
-/** マネージャーでログインし、撮影の前に訪問しない職員を 1 人登録して、その ID と名前を返す。 */
-const prepareNonVisiting = (label: string) => async (page: Page) => {
-  await signInManager(page)
-  return registerNonVisiting(page.request, label)
 }
 
 /**
@@ -71,110 +63,132 @@ const masterId = async (request: APIRequestContext, token: string, path: string,
   return found.id
 }
 
+/** 予定のカレンダーを日の表示で開き、マネージャーの列が出るまで待つ。 */
+const openDayCalendar = async (page: Page) => {
+  await page.goto('/schedule?view=day')
+  await expect(page.getByTestId(`day-grid-staff-${LOGIN_STAFF.id}`)).toBeVisible()
+}
+
+/** プロフィールの編集で、訪問を「訪問しない」にして保存を押す。保存の結果は待たない。 */
+const saveAsNonVisiting = async (page: Page) => {
+  await page.getByTestId('staff-detail-edit').click()
+  const dialog = page.getByTestId('staff-detail-edit-dialog')
+  await expect(dialog.getByTestId('staff-detail-department-input')).toBeEnabled()
+  await dialog.getByTestId('staff-detail-visits-input-non-visiting').check()
+  await dialog.getByTestId('staff-detail-save').click()
+}
+
 test.describe('職員の管理', () => {
   test.describe('訪問しない職員', () => {
-    for (const variant of EVIDENCE_VARIANTS) {
-      const prefix = variant.label ? `${variant.label}: ` : ''
+    test.describe(`${LOGIN_STAFF.name}（マネージャー、職員の管理の権限あり）`, () => {
+      test.use({ storageState: LOGIN_STATE })
 
-      test(`${prefix}訪問しない職員がいる事業所で予定のカレンダーを開いた場合、その職員の列と絞り込みの項目が出ないこと`, async ({
-        browser,
+      test('non-visiting-calendar-column 訪問しない職員がいる事業所で予定のカレンダーを開いた場合、その職員の列と絞り込みの項目が出ないこと', async ({
+        context,
+        request,
       }) => {
-        await recordPrEvidence(
-          browser,
-          {
-            name: 'non-visiting-calendar-column',
-            title:
-              '訪問しない職員がいる事業所で予定のカレンダーを開くと、その職員の列と絞り込みの項目が出ない',
-            actor: MANAGER,
-            variant,
-          },
-          prepareNonVisiting('calendar'),
-          async ({ page, step, check }, { id, name }) => {
-            await page.goto(`/staff/${id}`)
-            await expect(page.getByTestId('staff-detail-visits')).toContainText('訪問しない')
-            await step(`撮影の前に登録して訪問しない職員にした ${name} の詳細を開いている`)
+        const { id, name } = await registerNonVisiting(request, 'calendar')
 
-            await step('予定のカレンダーを日の表示で開く')
-            await page.goto('/schedule?view=day')
-            await expect(page.getByTestId(`day-grid-staff-${LOGIN_STAFF.id}`)).toBeVisible()
-            await expect(page.getByTestId(`day-grid-staff-${id}`)).toHaveCount(0)
-            await check(`${LOGIN_STAFF.name}の列は出て、訪問しない ${name} の列は出ない`)
-
-            const sidebar = page.getByTestId('staff-filter-sidebar')
-            await step('左の職員の絞り込みの項目を見る')
-            await expect(sidebar.getByTestId(`staff-filter-staff-${LOGIN_STAFF.id}`)).toBeVisible()
-            await expect(sidebar.getByTestId(`staff-filter-staff-${id}`)).toHaveCount(0)
-            await check(`職員の絞り込みの項目にも、訪問しない ${name} は出ない`)
-          },
+        const page = await context.newPage()
+        await page.goto(`/staff/${id}`)
+        const visits = page.getByTestId('staff-detail-visits')
+        await expect(visits).toContainText('訪問しない')
+        await intro(
+          page,
+          '訪問しない職員がいる事業所で予定のカレンダーを開くと、その職員の列と絞り込みの項目が出ない',
         )
+
+        await check(
+          page,
+          `前提 撮影の前に登録して訪問しない職員にした ${name} の詳細を開いている`,
+          () => expect(visits).toContainText('訪問しない'),
+        )
+        await step(page, '予定のカレンダーを日の表示で開く', () => openDayCalendar(page))
+        await check(page, `${LOGIN_STAFF.name}の列は出て、訪問しない ${name} の列は出ない`, () =>
+          expect(page.getByTestId(`day-grid-staff-${id}`)).toHaveCount(0),
+        )
+
+        const sidebar = page.getByTestId('staff-filter-sidebar')
+        await step(page, '左の職員の絞り込みの項目を見る', () =>
+          sidebar.getByTestId(`staff-filter-staff-${LOGIN_STAFF.id}`).scrollIntoViewIfNeeded(),
+        )
+        await check(page, `職員の絞り込みの項目にも、訪問しない ${name} は出ない`, async () => {
+          await expect(sidebar.getByTestId(`staff-filter-staff-${LOGIN_STAFF.id}`)).toBeVisible()
+          await expect(sidebar.getByTestId(`staff-filter-staff-${id}`)).toHaveCount(0)
+        })
       })
 
-      test(`${prefix}訪問の予定を作る場合、主訪問者の候補に訪問しない職員が出ないこと`, async ({
-        browser,
+      test('non-visiting-visit-assignee 訪問の予定を作る場合、主訪問者の候補に訪問しない職員が出ないこと', async ({
+        context,
+        request,
       }) => {
-        await recordPrEvidence(
-          browser,
-          {
-            name: 'non-visiting-visit-assignee',
-            title: '訪問の予定を作るとき、主訪問者の候補に訪問しない職員が出ない',
-            actor: MANAGER,
-            variant,
-          },
-          prepareNonVisiting('assignee'),
-          async ({ page, step, check }, { id, name }) => {
-            await page.goto('/schedule?view=day')
-            await expect(page.getByTestId(`day-grid-staff-${LOGIN_STAFF.id}`)).toBeVisible()
-            await step(
-              `予定のカレンダーを日の表示で開いている（撮影の前に、訪問しない ${name} を登録した）`,
-            )
+        const { id, name } = await registerNonVisiting(request, 'assignee')
 
-            await step('「予定を作成」を押し、訪問の予定を選んで、項目の一覧の「主訪問者」を押す')
+        const page = await context.newPage()
+        await openDayCalendar(page)
+        await intro(page, '訪問の予定を作るとき、主訪問者の候補に訪問しない職員が出ない')
+
+        await check(
+          page,
+          `前提 予定のカレンダーを日の表示で開いている（撮影の前に、訪問しない ${name} を登録した）`,
+          () => expect(page.getByTestId(`day-grid-staff-${LOGIN_STAFF.id}`)).toBeVisible(),
+        )
+        await step(
+          page,
+          '「予定を作成」を押し、訪問の予定を選んで、項目の一覧の「主訪問者」を押す',
+          async () => {
             await page.getByTestId('schedule-create-open').click()
             await page.getByTestId('schedule-kind-tab-visit').check()
             await page.getByTestId('schedule-field-staff').click()
+          },
+        )
+        await check(
+          page,
+          `主訪問者の候補に${LOGIN_STAFF.name}は出て、訪問しない ${name} は出ない`,
+          async () => {
             await expect(page.getByTestId(`staff-select-option-${LOGIN_STAFF.id}`)).toBeVisible()
             await expect(page.getByTestId(`staff-select-option-${id}`)).toHaveCount(0)
-            await check(`主訪問者の候補に${LOGIN_STAFF.name}は出て、訪問しない ${name} は出ない`)
           },
         )
       })
 
-      test(`${prefix}訪問しない職員を同行者に指して訪問の予定を作った場合、400 で拒まれること`, async ({
+      test('non-visiting-companion-api 訪問しない職員を同行者に指して訪問の予定を作った場合、400 で拒まれること', async ({
         browser,
+        context,
+        request,
       }) => {
-        await recordPrEvidence(
-          browser,
-          {
-            name: 'non-visiting-companion-api',
-            title: '訪問しない職員を同行者に指して訪問の予定を作ると、予定の API が 400 で拒む',
-            actor: MANAGER,
-            variant,
-          },
-          async (page) => {
-            await routeApiReference(page)
-            await openApiReference(page, 'schedule')
-            const token = await issueAccessToken(page.request, LOGIN_EMAIL)
-            const companion = await registerNonVisiting(page.request, 'companion')
-            const visitType = await masterId(page.request, token, '/v1/schedule_types', '訪問')
-            const serviceCode = await masterId(
-              page.request,
-              token,
-              '/v1/visit_infos/service_codes',
-              '訪看I3',
-            )
-            return { token, companion, visitType, serviceCode }
-          },
-          async ({ page, step, check }, { token, companion, visitType, serviceCode }) => {
-            await routeApiReference(page)
-            await openApiClient(page, 'schedule', CREATE_SCHEDULE)
-            await step('API の参照のページで「単発の予定を作る」のリクエストを開いている')
+        const token = await prepareOutsideRecording(browser, {}, (page) =>
+          issueAccessToken(page.request, LOGIN_EMAIL),
+        )
+        const companion = await registerNonVisiting(request, 'companion')
+        const visitType = await masterId(request, token, '/v1/schedule_types', '訪問')
+        const serviceCode = await masterId(
+          request,
+          token,
+          '/v1/visit_infos/service_codes',
+          '訪看I3',
+        )
 
-            await step(`認証の欄に ${LOGIN_STAFF.name} のトークンを入れる（伏せ字で出る）`)
-            await fillApiToken(page, token)
+        const page = await context.newPage()
+        await routeApiReference(page)
+        await openApiClient(page, 'schedule', CREATE_SCHEDULE)
+        await intro(
+          page,
+          '訪問しない職員を同行者に指して訪問の予定を作ると、予定の API が 400 で拒む',
+        )
 
-            await step(
-              `主訪問者を${LOGIN_STAFF.name}、同行者を訪問しない ${companion.name} にした訪問の予定を送る`,
-            )
+        await check(
+          page,
+          '前提 API の参照のページで「単発の予定を作る」のリクエストを開いている',
+          () => expect(apiClient(page).send).toBeVisible(),
+        )
+        await step(page, `認証の欄に ${LOGIN_STAFF.name} のトークンを入れる（伏せ字で出る）`, () =>
+          fillApiToken(page, token),
+        )
+        await step(
+          page,
+          `主訪問者を${LOGIN_STAFF.name}、同行者を訪問しない ${companion.name} にした訪問の予定を送る`,
+          async () => {
             await fillApiVariable(page, 'facility_id', STAFF_FORM.facilityId)
             await fillApiBody(page, {
               schedule_type_id: visitType,
@@ -190,203 +204,182 @@ test.describe('職員の管理', () => {
               },
             })
             await apiClient(page).send.click()
+          },
+        )
+        const message = `訪問しない職員 ${companion.id} には、予定と担当を割り振れません`
+        await check(
+          page,
+          `400 が返り、code は invalid_input、message は「${message}」`,
+          async () => {
             await expect(apiClient(page).dialog).toContainText('400 Bad Request')
-            const message = `訪問しない職員 ${companion.id} には、予定と担当を割り振れません`
             await expect(apiClient(page).dialog).toContainText(`"message": "${message}"`)
-            await check(`400 が返り、code は invalid_input、message は「${message}」`)
           },
         )
       })
 
-      test(`${prefix}職員を訪問しない職員として登録した場合、職員の一覧に出ること`, async ({
-        browser,
+      test('non-visiting-register-list 職員を訪問しない職員として登録した場合、職員の一覧に出ること', async ({
+        page,
       }) => {
         const staff = newStaff('register')
-        await recordPrEvidence(
-          browser,
-          {
-            name: 'non-visiting-register-list',
-            title: '職員を訪問しない職員として登録すると、職員の一覧に出る',
-            actor: MANAGER,
-            variant,
-          },
-          signInManager,
-          async ({ page, step, check }) => {
-            await page.goto('/staff')
-            await expect(page.getByTestId('staff-list-table')).toBeVisible()
-            await step('職員の一覧を開いている')
+        await page.goto('/staff')
+        await expect(page.getByTestId('staff-list-table')).toBeVisible()
+        await intro(page, '職員を訪問しない職員として登録すると、職員の一覧に出る')
 
-            await step(
-              '「職員を登録」を押し、名前とメールアドレスを入れ、訪問を「訪問しない」にする',
-            )
+        await check(page, '前提 職員の一覧を開いている', () =>
+          expect(page.getByTestId('staff-list-table')).toBeVisible(),
+        )
+        const dialog = page.getByTestId('staff-new-dialog')
+        await step(
+          page,
+          '「職員を登録」を押し、名前とメールアドレスを入れ、訪問を「訪問しない」にする',
+          async () => {
             await page.getByTestId('staff-list-new').click()
-            const dialog = page.getByTestId('staff-new-dialog')
             await dialog.getByTestId('staff-new-name').fill(staff.name)
             await dialog.getByTestId('staff-new-email').fill(staff.email)
             await expect(dialog.getByTestId('staff-new-visits-visits')).toBeChecked()
             await dialog.getByTestId('staff-new-visits-non-visiting').check()
-            await check('訪問は「訪問する」で始まり、「訪問しない」に選び直した')
-
-            await step('「登録」を押す')
-            await dialog.getByTestId('staff-new-submit').click()
-            await expect(page.getByTestId('staff-detail-name')).toHaveText(staff.name)
-            await expect(page.getByTestId('staff-detail-visits')).toContainText('訪問しない')
-            await check('登録した職員の詳細へ移り、訪問の行が「訪問しない」になる')
-
-            await step('職員の一覧に戻り、名前で探す')
-            await page.goto('/staff')
-            await page.getByTestId('staff-list-search').fill(staff.name)
-            await expect(
-              page.getByTestId(/^staff-list-row-/).filter({ hasText: staff.name }),
-            ).toBeVisible()
-            await check(`職員の一覧に、訪問しない ${staff.name} が出る`)
           },
+        )
+        await check(page, '訪問は「訪問する」で始まり、「訪問しない」に選び直した', () =>
+          expect(dialog.getByTestId('staff-new-visits-non-visiting')).toBeChecked(),
+        )
+
+        await step(page, '「登録」を押す', () => dialog.getByTestId('staff-new-submit').click())
+        await check(page, '登録した職員の詳細へ移り、訪問の行が「訪問しない」になる', async () => {
+          await expect(page.getByTestId('staff-detail-name')).toHaveText(staff.name)
+          await expect(page.getByTestId('staff-detail-visits')).toContainText('訪問しない')
+        })
+
+        await step(page, '職員の一覧に戻り、名前で探す', async () => {
+          await page.goto('/staff')
+          await page.getByTestId('staff-list-search').fill(staff.name)
+        })
+        await check(page, `職員の一覧に、訪問しない ${staff.name} が出る`, () =>
+          expect(
+            page.getByTestId(/^staff-list-row-/).filter({ hasText: staff.name }),
+          ).toBeVisible(),
         )
       })
 
-      test(`${prefix}訪問しない職員として登録した職員の場合、予定のカレンダーの列に出ないこと`, async ({
-        browser,
+      test('non-visiting-register-calendar 訪問しない職員として登録した職員の場合、予定のカレンダーの列に出ないこと', async ({
+        context,
+        request,
       }) => {
-        await recordPrEvidence(
-          browser,
+        const token = await issueManagerToken()
+        const staff = newStaff('register-calendar')
+        const res = await request.post(
+          `${SCHEDULE_URL}/v1/facilities/${STAFF_FORM.facilityId}/users`,
           {
-            name: 'non-visiting-register-calendar',
-            title: '訪問しない職員として登録した職員は、予定のカレンダーの列に出ない',
-            actor: MANAGER,
-            variant,
+            headers: { Authorization: `Bearer ${token}` },
+            data: {
+              username: staff.name,
+              email: staff.email,
+              department_id: STAFF_FORM.departmentId,
+              team_id: STAFF_FORM.teamId,
+              position_id: STAFF_FORM.positionId,
+              visits: false,
+            },
           },
-          async (page) => {
-            await signInManager(page)
-            const token = await issueManagerToken()
-            const staff = newStaff('register-calendar')
-            const res = await page.request.post(
-              `${SCHEDULE_URL}/v1/facilities/${STAFF_FORM.facilityId}/users`,
-              {
-                headers: { Authorization: `Bearer ${token}` },
-                data: {
-                  username: staff.name,
-                  email: staff.email,
-                  department_id: STAFF_FORM.departmentId,
-                  team_id: STAFF_FORM.teamId,
-                  position_id: STAFF_FORM.positionId,
-                  visits: false,
-                },
-              },
-            )
-            if (res.status() !== 201) throw new Error(`職員を登録できない: ${res.status()}`)
-            return { id: ((await res.json()) as { id: string }).id, name: staff.name }
-          },
-          async ({ page, step, check }, { id, name }) => {
-            await page.goto('/staff')
-            await page.getByTestId('staff-list-search').fill(name)
-            await expect(page.getByTestId(`staff-list-row-${id}`)).toBeVisible()
-            await step(
-              `職員の一覧で、撮影の前に訪問しない職員として登録した ${name} を探して出している`,
-            )
+        )
+        if (res.status() !== 201) throw new Error(`職員を登録できない: ${res.status()}`)
+        const id = ((await res.json()) as { id: string }).id
 
-            await step('予定のカレンダーを日の表示で開く')
-            await page.goto('/schedule?view=day')
-            await expect(page.getByTestId(`day-grid-staff-${LOGIN_STAFF.id}`)).toBeVisible()
-            await expect(page.getByTestId(`day-grid-staff-${id}`)).toHaveCount(0)
-            await check(`職員の一覧に出る ${name} の列は、予定のカレンダーに出ない`)
-          },
+        const page = await context.newPage()
+        await page.goto('/staff')
+        await page.getByTestId('staff-list-search').fill(staff.name)
+        await expect(page.getByTestId(`staff-list-row-${id}`)).toBeVisible()
+        await intro(page, '訪問しない職員として登録した職員は、予定のカレンダーの列に出ない')
+
+        await check(
+          page,
+          `前提 職員の一覧で、撮影の前に訪問しない職員として登録した ${staff.name} を探して出している`,
+          () => expect(page.getByTestId(`staff-list-row-${id}`)).toBeVisible(),
+        )
+        await step(page, '予定のカレンダーを日の表示で開く', () => openDayCalendar(page))
+        await check(page, `職員の一覧に出る ${staff.name} の列は、予定のカレンダーに出ない`, () =>
+          expect(page.getByTestId(`day-grid-staff-${id}`)).toHaveCount(0),
         )
       })
 
-      test(`${prefix}予定の残らない職員をプロフィールの編集で訪問しない職員にした場合、詳細の訪問の行が「訪問しない」になること`, async ({
-        browser,
+      test('non-visiting-edit 予定の残らない職員をプロフィールの編集で訪問しない職員にした場合、詳細の訪問の行が「訪問しない」になること', async ({
+        context,
+        request,
       }) => {
-        await recordPrEvidence(
-          browser,
-          {
-            name: 'non-visiting-edit',
-            title:
-              '予定の残らない職員をプロフィールの編集で訪問しないにすると、詳細の訪問の行が変わる',
-            actor: MANAGER,
-            variant,
-          },
-          async (page) => {
-            await signInManager(page)
-            const staff = newStaff('edit')
-            const id = await registerStaffId(page.request, await issueManagerToken(), staff)
-            return { id, name: staff.name }
-          },
-          async ({ page, step, check }, { id, name }) => {
-            await page.goto(`/staff/${id}`)
-            await expect(page.getByTestId('staff-detail-visits')).toHaveText('訪問する')
-            await step(
-              `撮影の前に登録した、予定の無い ${name} の詳細を開いている。訪問は「訪問する」`,
-            )
+        const staff = newStaff('edit')
+        const id = await registerStaffId(request, await issueManagerToken(), staff)
 
-            await step('「編集」を押し、訪問を「訪問しない」にして保存する')
-            await page.getByTestId('staff-detail-edit').click()
-            const dialog = page.getByTestId('staff-detail-edit-dialog')
-            await expect(dialog.getByTestId('staff-detail-department-input')).toBeEnabled()
-            await dialog.getByTestId('staff-detail-visits-input-non-visiting').check()
-            await dialog.getByTestId('staff-detail-save').click()
-
-            await expect(dialog).toBeHidden()
-            await expect(page.getByTestId('staff-detail-visits')).toContainText('訪問しない')
-            await check('ダイアログが閉じ、詳細の訪問の行が「訪問しない」になる')
-          },
+        const page = await context.newPage()
+        await page.goto(`/staff/${id}`)
+        const visits = page.getByTestId('staff-detail-visits')
+        await expect(visits).toHaveText('訪問する')
+        await intro(
+          page,
+          '予定の残らない職員をプロフィールの編集で訪問しないにすると、詳細の訪問の行が変わる',
         )
+
+        await check(
+          page,
+          `前提 撮影の前に登録した、予定の無い ${staff.name} の詳細を開いている。訪問は「訪問する」`,
+          () => expect(visits).toHaveText('訪問する'),
+        )
+        await step(page, '「編集」を押し、訪問を「訪問しない」にして保存する', () =>
+          saveAsNonVisiting(page),
+        )
+        await check(page, 'ダイアログが閉じ、詳細の訪問の行が「訪問しない」になる', async () => {
+          await expect(page.getByTestId('staff-detail-edit-dialog')).toBeHidden()
+          await expect(visits).toContainText('訪問しない')
+        })
       })
 
-      test(`${prefix}今日以降の予定が残る職員を訪問しない職員にしようとした場合、残る予定の一覧が出て保存されないこと`, async ({
-        browser,
+      test('non-visiting-refused 今日以降の予定が残る職員を訪問しない職員にしようとした場合、残る予定の一覧が出て保存されないこと', async ({
+        context,
+        request,
       }) => {
-        await recordPrEvidence(
-          browser,
-          {
-            name: 'non-visiting-refused',
-            title:
-              '今日以降の予定が残る職員を訪問しないにしようとすると、ダイアログを閉じずに残る予定の一覧が出て、保存されない',
-            actor: MANAGER,
-            variant,
-          },
-          async (page) => {
-            await signInManager(page)
-            const token = await issueManagerToken()
-            const staff = newStaff('refused')
-            const id = await registerStaffId(page.request, token, staff)
-            const res = await createNormalSchedule(page.request, token, STAFF_FORM.facilityId, {
-              staffId: id,
-              title: `見本の会議 ${Date.now()}`,
-              date: FUTURE_DATE,
-            })
-            if (res.status() !== 201) throw new Error(`予定を作れない: ${res.status()}`)
-            return { id, name: staff.name }
-          },
-          async ({ page, step, check }, { id, name }) => {
-            await page.goto(`/staff/${id}`)
-            await expect(page.getByTestId('staff-detail-visits')).toHaveText('訪問する')
-            await step(
-              `撮影の前に登録し、${FUTURE_DATE} の予定を作った ${name} の詳細を開いている。訪問は「訪問する」`,
-            )
+        const token = await issueManagerToken()
+        const staff = newStaff('refused')
+        const id = await registerStaffId(request, token, staff)
+        const res = await createNormalSchedule(request, token, STAFF_FORM.facilityId, {
+          staffId: id,
+          title: `見本の会議 ${Date.now()}`,
+          date: FUTURE_DATE,
+        })
+        if (res.status() !== 201) throw new Error(`予定を作れない: ${res.status()}`)
 
-            await step('「編集」を押し、訪問を「訪問しない」にして保存する')
-            await page.getByTestId('staff-detail-edit').click()
-            const dialog = page.getByTestId('staff-detail-edit-dialog')
-            await expect(dialog.getByTestId('staff-detail-department-input')).toBeEnabled()
-            await dialog.getByTestId('staff-detail-visits-input-non-visiting').check()
-            await dialog.getByTestId('staff-detail-save').click()
+        const page = await context.newPage()
+        await page.goto(`/staff/${id}`)
+        const visits = page.getByTestId('staff-detail-visits')
+        await expect(visits).toHaveText('訪問する')
+        await intro(
+          page,
+          '今日以降の予定が残る職員を訪問しないにしようとすると、ダイアログを閉じずに残る予定の一覧が出て、保存されない',
+        )
 
-            const list = dialog.getByTestId('staff-non-visiting-assignments')
-            await expect(list).toContainText(
+        await check(
+          page,
+          `前提 撮影の前に登録し、${FUTURE_DATE} の予定を作った ${staff.name} の詳細を開いている。訪問は「訪問する」`,
+          () => expect(visits).toHaveText('訪問する'),
+        )
+        await step(page, '「編集」を押し、訪問を「訪問しない」にして保存する', () =>
+          saveAsNonVisiting(page),
+        )
+        const dialog = page.getByTestId('staff-detail-edit-dialog')
+        await check(
+          page,
+          'ダイアログは閉じず、今日以降に残る予定の一覧と、割り振り直すよう伝える文が出る',
+          () =>
+            expect(dialog.getByTestId('staff-non-visiting-assignments')).toContainText(
               '別の職員に割り振り直してから、訪問しない職員にしてください。',
-            )
-            await check(
-              'ダイアログは閉じず、今日以降に残る予定の一覧と、割り振り直すよう伝える文が出る',
-            )
+            ),
+        )
 
-            await step('ダイアログを閉じて、詳細を読み直す')
-            await dialog.getByTestId('staff-detail-edit-cancel').click()
-            await page.reload()
-            await expect(page.getByTestId('staff-detail-visits')).toHaveText('訪問する')
-            await check('訪問の行は「訪問する」のままで、保存されていない')
-          },
+        await step(page, 'ダイアログを閉じて、詳細を読み直す', async () => {
+          await dialog.getByTestId('staff-detail-edit-cancel').click()
+          await page.reload()
+        })
+        await check(page, '訪問の行は「訪問する」のままで、保存されていない', () =>
+          expect(visits).toHaveText('訪問する'),
         )
       })
-    }
+    })
   })
 })
