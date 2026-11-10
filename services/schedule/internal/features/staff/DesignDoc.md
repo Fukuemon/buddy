@@ -100,5 +100,5 @@ verified_commit: 4e53ca5
 - エラーの JSON の形と、ほかのエラーのコードは [予定の管理の Design Doc の Interface](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/DesignDoc.md#interface) にある。
 - 職員の管理は、次の 409 を返す。
   - 409 の `conflict`（職員）: 同じメールの職員がブローカーで休職しているかほかの事業所にいる、自分か最後の有効な管理者を休職か退職にする、退職した職員を休職か復職にするか、名前、電話番号、部署、チームを変える
-    - 最後の有効な管理者から `staff.manage` を外すか、`staff.manage` を持たない役職に変えたときも返す
+    - 最後の有効な管理者から `staff.manage` を外すか、変更の後に `staff.manage` が残らない役職に変えたときも返す
   - 409 の `staff_has_assignments`: 退職にする職員か、訪問しない職員に変える職員に、その日以降の予定、繰り返しの予定、担当の利用者が残る。本文の `assignments` に残る一覧を持つ
