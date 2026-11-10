@@ -161,7 +161,7 @@ func TestStaffAudit(t *testing.T) {
 	t.Run("記録を書けなければ操作も失敗する", func(t *testing.T) {
 		s := setup()
 		failing := build(deps{
-			Staff: inmem.Staff{Store: s}, Policies: inmem.Policies{Store: s}, Teams: inmem.Teams{Store: s},
+			Facilities: inmem.Facilities{Store: s}, Staff: inmem.Staff{Store: s}, Policies: inmem.Policies{Store: s}, Teams: inmem.Teams{Store: s},
 			Audits: inmem.PermissionAudits{Store: s, Err: errors.New("書けない")},
 		}, &inmem.Tx{}, &inmem.SeqIDs{}, allow)
 		if _, err := failing.AddGrant(ctx, staffID, staff.GrantInput{PolicyID: "SELF"}); err == nil {
@@ -170,7 +170,7 @@ func TestStaffAudit(t *testing.T) {
 	})
 	t.Run("リクエストを送った職員がいなければ書かずに失敗する", func(t *testing.T) {
 		s := setup()
-		addGrant := staff.NewAddGrant(inmem.Staff{Store: s}, inmem.Policies{Store: s}, inmem.Teams{Store: s},
+		addGrant := staff.NewAddGrant(inmem.Staff{Store: s}, inmem.Facilities{Store: s}, inmem.Policies{Store: s}, inmem.Teams{Store: s},
 			audit.NewRecorder(inmem.PermissionAudits{Store: s}, &inmem.SeqIDs{}, func(context.Context) (string, bool) { return "", false }),
 			&inmem.Tx{}, &inmem.SeqIDs{}, allow)
 		if _, err := addGrant.Do(withRequestID(ctx), staffID, staff.GrantInput{PolicyID: "SELF"}); !errors.Is(err, audit.ErrNoActor) || len(s.PermissionAudits) != 0 {
@@ -179,7 +179,7 @@ func TestStaffAudit(t *testing.T) {
 	})
 	t.Run("相関 ID が無ければ書かずに失敗する", func(t *testing.T) {
 		s := setup()
-		addGrant := staff.NewAddGrant(inmem.Staff{Store: s}, inmem.Policies{Store: s}, inmem.Teams{Store: s},
+		addGrant := staff.NewAddGrant(inmem.Staff{Store: s}, inmem.Facilities{Store: s}, inmem.Policies{Store: s}, inmem.Teams{Store: s},
 			audit.NewRecorder(inmem.PermissionAudits{Store: s}, &inmem.SeqIDs{}, func(context.Context) (string, bool) { return companionID, true }),
 			&inmem.Tx{}, &inmem.SeqIDs{}, allow)
 		if _, err := addGrant.Do(ctx, staffID, staff.GrantInput{PolicyID: "SELF"}); !errors.Is(err, audit.ErrNoRequestID) || len(s.PermissionAudits) != 0 {

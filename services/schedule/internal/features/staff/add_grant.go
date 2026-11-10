@@ -20,6 +20,7 @@ type GrantInput struct {
 // AddGrant は、職員に権限を 1 つ足す。
 type AddGrant struct {
 	staff    Repository
+	locks    FacilityLock
 	policies kernel.Finder[organization.Policy]
 	teams    kernel.Finder[organization.Team]
 	audit    audit.Recorder
@@ -29,8 +30,8 @@ type AddGrant struct {
 }
 
 // NewAddGrant は AddGrant を作る。
-func NewAddGrant(staff Repository, policies kernel.Finder[organization.Policy], teams kernel.Finder[organization.Team], audit audit.Recorder, tx tx.Transactor, ids kernel.IDGenerator, guard kernel.Guard) AddGrant {
-	return AddGrant{staff: staff, policies: policies, teams: teams, audit: audit, tx: tx, ids: ids, guard: guard}
+func NewAddGrant(staff Repository, locks FacilityLock, policies kernel.Finder[organization.Policy], teams kernel.Finder[organization.Team], audit audit.Recorder, tx tx.Transactor, ids kernel.IDGenerator, guard kernel.Guard) AddGrant {
+	return AddGrant{staff: staff, locks: locks, policies: policies, teams: teams, audit: audit, tx: tx, ids: ids, guard: guard}
 }
 
 // Do は、職員に権限を 1 つ足す。対象を指定する権限には、職員を対象にする権限なら職員を、
@@ -39,13 +40,14 @@ func NewAddGrant(staff Repository, policies kernel.Finder[organization.Policy], 
 // 同じ権限が既にあるときは apperr.ErrConflict を返す。
 // 職員の管理の権限が無いときは apperr.ErrForbidden を返す。
 // 同じトランザクションで、変更の前後の権限を監査の記録に書き、書けなければ権限も足さない（ADR-0042）。
+// 権限を外す操作と同じく事業所をロックし、同じ職員に同時に権限を足しても、記録の変更の前が直前の変更の後と一致するようにする。
 func (s AddGrant) Do(ctx context.Context, id string, in GrantInput) (Detail, error) {
 	if err := s.guard(ctx); err != nil {
 		return Detail{}, err
 	}
 	var changed Detail
 	err := s.tx.WithinTx(ctx, func(ctx context.Context) error {
-		cur, err := s.staff.Get(ctx, id)
+		cur, err := locked(ctx, s.staff, s.locks, id)
 		if err != nil {
 			return err
 		}

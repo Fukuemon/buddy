@@ -24,13 +24,14 @@ import (
 func TestRequestIDLinksAuditAndLog(t *testing.T) {
 	const policyID = "01M5E1S42TTS7QZK05YGS0GYR8"
 	s := inmem.NewStore()
+	s.Facilities[facilityID] = organization.Facility{ID: facilityID}
 	s.Staff[staffID] = staff.Detail{Summary: staff.Summary{Staff: staff.Staff{ID: staffID, FacilityID: facilityID}}}
 	s.Policies[policyID] = organization.Policy{ID: policyID, Code: organization.ScheduleSelfEdit}
 	rec := audit.NewRecorder(inmem.PermissionAudits{Store: s}, &inmem.SeqIDs{}, func(ctx context.Context) (string, bool) {
 		p, ok := principal.From(ctx)
 		return p.Staff.ID, ok
 	})
-	addGrant := staff.NewAddGrant(inmem.Staff{Store: s}, inmem.Policies{Store: s}, inmem.Teams{Store: s}, rec, &inmem.Tx{}, &inmem.SeqIDs{},
+	addGrant := staff.NewAddGrant(inmem.Staff{Store: s}, inmem.Facilities{Store: s}, inmem.Policies{Store: s}, inmem.Teams{Store: s}, rec, &inmem.Tx{}, &inmem.SeqIDs{},
 		func(context.Context) error { return nil })
 	var logs bytes.Buffer
 	h := httpapi.NewRouter(httpapi.Apps{Auth: fakeAuth{}, Staff: httpapi.StaffApp{AddGrant: addGrant.Do}}, httpapi.RouterConfig{

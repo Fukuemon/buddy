@@ -4,8 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
@@ -17,6 +19,34 @@ import (
 	"github.com/Fukuemon/buddy/services/schedule/internal/inmem"
 	"github.com/Fukuemon/buddy/services/schedule/internal/ulid"
 )
+
+// seedSato は、シードの佐藤（チーム B のメンバー）である。同時の権限の追加の対象にする。
+const seedSato = "01M5EF5AAYN3P4PYNAT0RJQYCR"
+
+// teamsFor は、権限 policy がチームを対象にする権限なら、シードのチーム B を対象にして返す。
+func teamsFor(policy string) []string {
+	if policy == seedTeamRead {
+		return []string{seedTeamB}
+	}
+	return nil
+}
+
+// slowPolicies は、権限を読んでから 100 ミリ秒待つ PolicyRepository である。権限の追加が変更の前を読んでから書くまでの間を広げる。
+type slowPolicies struct{ *PolicyRepository }
+
+func (r slowPolicies) Get(ctx context.Context, id string) (organization.Policy, error) {
+	p, err := r.PolicyRepository.Get(ctx, id)
+	time.Sleep(100 * time.Millisecond)
+	return p, err
+}
+
+// lastAfter は、2 つの記録のうち後に書いた方の変更の後を返す。secondIsLater は、second の変更の前が first の変更の後のときに true である。
+func lastAfter(first, second auditRow, secondIsLater bool) []byte {
+	if secondIsLater {
+		return second.After
+	}
+	return first.After
+}
 
 // auditRow は、permission_audits の 1 行のうち、テストが比べる列である。
 type auditRow struct {
@@ -112,7 +142,7 @@ func TestPermissionAudit(t *testing.T) {
 	rec := audit.NewRecorder(NewPermissionAuditRepository(pool), ulid.Generator{}, self)
 	staffRepo, facilities, txr, ids := NewStaffRepository(pool), NewFacilityRepository(pool), NewTransactor(pool), ulid.Generator{}
 	addGrant := func(rec audit.Recorder) staff.AddGrant {
-		return staff.NewAddGrant(staffRepo, NewPolicyRepository(pool), NewTeamRepository(pool), rec, txr, ids, allow)
+		return staff.NewAddGrant(staffRepo, facilities, NewPolicyRepository(pool), NewTeamRepository(pool), rec, txr, ids, allow)
 	}
 	get := func(t *testing.T, id string) staff.Detail {
 		t.Helper()
@@ -284,6 +314,44 @@ func TestPermissionAudit(t *testing.T) {
 		if _, ok := identities.Members["broker-2"]; n != 0 || ok {
 			t.Errorf("職員 = %d 人、ブローカーの職員 = %+v, want 両方に残らない", n, identities.Members)
 		}
+	})
+
+	t.Run("同じ職員に同時に権限を足しても、後の記録の変更の前が先の記録の変更の後になる", func(t *testing.T) {
+		// 権限を読んでから 100 ミリ秒待ち、ロックが無ければ、2 つの操作が同じ変更の前を読んでから書くようにする
+		slowAddGrant := staff.NewAddGrant(staffRepo, facilities, slowPolicies{NewPolicyRepository(pool)}, NewTeamRepository(pool), rec, txr, ids, allow)
+		start := make(chan struct{})
+		errs := make(chan error, 2)
+		for i, policy := range []string{seedEditPolicy, seedTeamRead} {
+			ctx := audit.WithRequestID(bg, fmt.Sprintf("REQUEST-CONCURRENT-%d", i))
+			go func() {
+				<-start
+				_, err := slowAddGrant.Do(ctx, seedSato, staff.GrantInput{PolicyID: policy, TargetTeamIDs: teamsFor(policy)})
+				errs <- err
+			}()
+		}
+		close(start)
+		for range 2 {
+			if err := <-errs; err != nil {
+				t.Fatal(err)
+			}
+		}
+		var rows []auditRow
+		for i := range 2 {
+			rows = append(rows, one(t, fmt.Sprintf("REQUEST-CONCURRENT-%d", i), "grant.add"))
+		}
+		first, second := rows[0], rows[1]
+		var sameAsFirst bool
+		if err := pool.QueryRow(bg, `SELECT $1::jsonb = $2::jsonb`, string(second.Before), string(first.After)).Scan(&sameAsFirst); err != nil {
+			t.Fatal(err)
+		}
+		var sameAsSecond bool
+		if err := pool.QueryRow(bg, `SELECT $1::jsonb = $2::jsonb`, string(first.Before), string(second.After)).Scan(&sameAsSecond); err != nil {
+			t.Fatal(err)
+		}
+		if !sameAsFirst && !sameAsSecond {
+			t.Errorf("記録 1 = %s → %s、記録 2 = %s → %s, want 片方の変更の後がもう片方の変更の前", first.Before, first.After, second.Before, second.After)
+		}
+		requireJSON(t, pool, lastAfter(first, second, sameAsFirst), toStaffState(get(t, seedSato)))
 	})
 
 	t.Run("記録を書けないときは、権限の変更も戻る", func(t *testing.T) {

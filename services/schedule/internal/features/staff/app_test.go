@@ -298,7 +298,7 @@ func build(d deps, tx tx.Transactor, ids kernel.IDGenerator, guard kernel.Guard)
 	create := staff.NewCreate(d.Facilities, d.Departments, d.Teams, d.Positions, d.Identities, d.Staff, rec, tx, ids, guard)
 	changePosition := staff.NewChangePosition(d.Staff, d.Facilities, d.Positions, rec, tx, ids, guard)
 	updateProfile := staff.NewUpdateProfile(d.Staff, d.Facilities, d.Departments, d.Teams, d.Assignments, d.Now, rec, tx, guard)
-	addGrant := staff.NewAddGrant(d.Staff, d.Policies, d.Teams, rec, tx, ids, guard)
+	addGrant := staff.NewAddGrant(d.Staff, d.Facilities, d.Policies, d.Teams, rec, tx, ids, guard)
 	removeGrant := staff.NewRemoveGrant(d.Staff, d.Facilities, rec, tx, guard)
 	return app{
 		Create: func(ctx context.Context, in staff.CreateInput) (staff.Detail, error) {

@@ -284,7 +284,7 @@ func staffApp(
 		List:                 staff.NewList(facilities, staffRepo).Do,
 		ChangePosition:       staff.NewChangePosition(staffRepo, locks, positions, rec, tx, ids, guard).Do,
 		UpdateProfile:        staff.NewUpdateProfile(staffRepo, locks, departments, teams, assignments, nil, rec, tx, guard).Do,
-		AddGrant:             staff.NewAddGrant(staffRepo, policies, teams, rec, tx, ids, guard).Do,
+		AddGrant:             staff.NewAddGrant(staffRepo, locks, policies, teams, rec, tx, ids, guard).Do,
 		RemoveGrant:          staff.NewRemoveGrant(staffRepo, locks, rec, tx, guard).Do,
 		Leave:                staff.NewLeave(self, staffRepo, locks, assignments, nil, identities, tx, guard).Do,
 		Reinstate:            staff.NewReinstate(staffRepo, locks, identities, tx, guard).Do,
