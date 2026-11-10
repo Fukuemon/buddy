@@ -29,15 +29,19 @@
 web のサーバーは、ログインの後の戻り（`/auth/callback`）で失敗すると、`reason` を付けてこの画面へリダイレクトする。  
 ブローカーがログインを reject で返したときは、Hydra が reject の `error` を `/auth/callback` に渡し、web のサーバーが `reason` に読み替える。
 
-| 状態 | `reason` | 要因 |
+| 状態 | 出す文 | 要因 |
 | --- | --- | --- |
-| 登録を確認できない | `denied` | `error` が `access_denied`。登録していないメール、休職と退職の職員、登録の途中の職員、メールに当たる有効な職員が 2 人以上いるとき、ログインの途中に休職か退職になった職員 |
-| 登録と違うアカウント | `account_mismatch` | `error` が `account_mismatch`。上流のメールが確認済みでないか登録のメールと違う、結び付けた上流のアカウントと違う、上流のアカウントが別の職員に結び付いている |
-| 事業所に登録されていない | `forbidden` | `getMe` が 403 |
-| 試行の回数の上限を超えた | `too_many_attempts` | `error` が `temporarily_unavailable`。入れたメールアドレスごとの試行の回数の上限を超えた |
-| ログインを続けられない | `interrupted` | `state` が cookie と合わないか、ログインの途中の値が無い。`error` が `login_interrupted`（上流の IdP がログインを終えずに戻した） |
-| 障害でログインできない | `failed` | `error` が `server_error` か、ほかの値。Hydra で認可コードをトークンと交換できない。`getMe` が 403 以外の失敗のステータスを返す |
+| 登録を確認できない | 「入れたメールアドレスでは、ログインできません。事業所の管理者に、登録のメールアドレスを確認してください。」 | `reason` が `denied`。`error` が `access_denied` |
+| 登録と違うアカウント | 「登録したメールアドレスのアカウントで、もう一度ログインしてください。分からないときは、事業所の管理者に確認してください。」 | `reason` が `account_mismatch`。`error` が `account_mismatch` |
+| 事業所に登録されていない | 「事業所の管理者に、メールアドレスの登録を頼んでください。」 | `reason` が `forbidden`。`getMe` が 403 |
+| 試行の回数の上限を超えた | 「続けて何度もログインを試したため、受け付けを止めています。30 秒ほどおいてから、もう一度ログインしてください。」 | `reason` が `too_many_attempts`。`error` が `temporarily_unavailable` |
+| ログインを続けられない | 「もう一度ログインしてください。」 | `reason` が `interrupted`。`state` が cookie と合わないか、ログインの途中の値が無いか、`error` が `login_interrupted` |
+| 障害でログインできない | 「時間をおいて、もう一度ログインしてください。」 | `reason` が `failed`。`error` が `server_error` かほかの値か、トークンと交換できないか、`getMe` が 403 以外の失敗を返す |
 
-- 登録を確認できない 5 つの要因は、同じ reject を返し、同じ状態コードで、同じ先へリダイレクトする。
+- ブローカーが `error` を選ぶ条件は、[ID ブローカーの Design Doc のログインを拒む条件](../../design/services/broker.md#ログインを拒む条件) にある。
+  - `access_denied` は、登録していないメール、休職と退職の職員、登録の途中の職員、メールに当たる有効な職員が 2 人以上いるとき、ログインの途中に休職か退職になった職員である。
+  - 本人の確認の前の 5 つの要因は、同じ reject を返し、同じ状態コードで、同じ先へリダイレクトする。
+  - `account_mismatch` は、上流のメールが確認済みでないか登録のメールと違うとき、結び付けた上流のアカウントと違うとき、上流のアカウントが別の職員に結び付いているときである。
+  - `login_interrupted` は、上流の IdP がログインを終えずに戻したときである。
 - `reason` は、`apps/web/src/server/auth.ts` の `finishLogin` が付ける。`error` から `reason` への読み替えは、同じファイルの `reasonOfBrokerError` にある。
 - `AuthErrorReason` の型は `apps/web/src/api/types.ts` に、理由ごとの文は `apps/web/src/components/page/AuthErrorMessage.tsx` にある。
