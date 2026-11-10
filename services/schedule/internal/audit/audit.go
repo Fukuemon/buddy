@@ -15,8 +15,8 @@ import (
 // Action は、記録する操作である。値は ADR-0042 の残す操作の表の action である。
 type Action string
 
-// 記録する操作。運営者の操作（FacilityCreate、StaffCreateForced）とマイグレーション（GrantMigrate）は、
-// 予定の API の HTTP の操作からは書かない。
+// 記録する操作。値はテーブルの action の CHECK 制約と一対一にする。運営者の操作（FacilityCreate、StaffCreateForced）は
+// 運営用の CLI（#986）が、GrantMigrate はマイグレーションが書き、予定の API の HTTP の操作からは書かない。
 const (
 	FacilityCreate    Action = "facility.create"
 	PositionCreate    Action = "position.create"
@@ -54,9 +54,9 @@ type Record struct {
 	RequestID        string
 }
 
-// Writer は、監査の記録を書く。呼び出し側は、権限を変える操作と同じトランザクションの中で呼ぶ。
+// Writer は、監査の記録を作る。呼び出し側は、権限を変える操作と同じトランザクションの中で呼ぶ。
 type Writer interface {
-	Write(ctx context.Context, r Record) error
+	Create(ctx context.Context, r Record) error
 }
 
 // Grant は、記録に持つ職員の権限 1 つである。対象は、権限の code に合わせて職員かチームの ID を持つ。
@@ -156,7 +156,7 @@ func (r Recorder) ByStaff(ctx context.Context, e Entry) error {
 	if rid == "" {
 		return ErrNoRequestID
 	}
-	return r.w.Write(ctx, Record{
+	return r.w.Create(ctx, Record{
 		ID: r.ids.NewID(), FacilityID: e.FacilityID, Action: e.Action,
 		ActorKind: ActorStaff, ActorUserID: actor,
 		TargetUserID: e.TargetUserID, TargetPositionID: e.TargetPositionID,

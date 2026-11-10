@@ -100,6 +100,15 @@ func TestStaffAudit(t *testing.T) {
 		}
 		one(t, s, audit.PositionChange, staffID)
 	})
+	t.Run("最後の有効な管理者の役職を職員の管理の権限の無い役職に変える 409 では書かない", func(t *testing.T) {
+		s := setup()
+		if _, err := uc(s).ChangePosition(ctx, companionID, posID); !errors.Is(err, apperr.ErrConflict) {
+			t.Fatalf("err = %v, want ErrConflict", err)
+		}
+		if len(s.PermissionAudits) != 0 {
+			t.Errorf("記録 = %+v, want 書かない", s.PermissionAudits)
+		}
+	})
 	t.Run("チームを変えて対象を移すと team.change を書く", func(t *testing.T) {
 		s := setup()
 		if _, err := uc(s).UpdateProfile(ctx, staffID, staff.Profile{Username: "青木 ひな", DepartmentID: depID, TeamID: newTeamID}); err != nil {
@@ -157,6 +166,15 @@ func TestStaffAudit(t *testing.T) {
 		}, &inmem.Tx{}, &inmem.SeqIDs{}, allow)
 		if _, err := failing.AddGrant(ctx, staffID, staff.GrantInput{PolicyID: "SELF"}); err == nil {
 			t.Error("記録を書けないのに成功した")
+		}
+	})
+	t.Run("リクエストを送った職員がいなければ書かずに失敗する", func(t *testing.T) {
+		s := setup()
+		addGrant := staff.NewAddGrant(inmem.Staff{Store: s}, inmem.Policies{Store: s}, inmem.Teams{Store: s},
+			audit.NewRecorder(inmem.PermissionAudits{Store: s}, &inmem.SeqIDs{}, func(context.Context) (string, bool) { return "", false }),
+			&inmem.Tx{}, &inmem.SeqIDs{}, allow)
+		if _, err := addGrant.Do(withRequestID(ctx), staffID, staff.GrantInput{PolicyID: "SELF"}); !errors.Is(err, audit.ErrNoActor) || len(s.PermissionAudits) != 0 {
+			t.Errorf("err = %v, 記録 = %+v, want ErrNoActor で書かない", err, s.PermissionAudits)
 		}
 	})
 	t.Run("相関 ID が無ければ書かずに失敗する", func(t *testing.T) {

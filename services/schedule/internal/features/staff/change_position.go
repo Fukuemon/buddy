@@ -23,8 +23,8 @@ type ChangePosition struct {
 }
 
 // NewChangePosition は ChangePosition を作る。
-func NewChangePosition(staff Repository, locks FacilityLock, positions kernel.Finder[organization.Position], rec audit.Recorder, tx tx.Transactor, ids kernel.IDGenerator, guard kernel.Guard) ChangePosition {
-	return ChangePosition{staff: staff, locks: locks, positions: positions, audit: rec, tx: tx, ids: ids, guard: guard}
+func NewChangePosition(staff Repository, locks FacilityLock, positions kernel.Finder[organization.Position], audit audit.Recorder, tx tx.Transactor, ids kernel.IDGenerator, guard kernel.Guard) ChangePosition {
+	return ChangePosition{staff: staff, locks: locks, positions: positions, audit: audit, tx: tx, ids: ids, guard: guard}
 }
 
 // Do は、職員の役職を positionID にし、職員の権限を新しい役職のデフォルトの権限からコピーし直す。
@@ -45,7 +45,7 @@ func (s ChangePosition) Do(ctx context.Context, id, positionID string) (Detail, 
 		if err != nil {
 			return err
 		}
-		before := auditState(cur)
+		before := toStaffState(cur)
 		pos, err := s.positions.Get(ctx, positionID)
 		if err != nil {
 			return apperr.Reference("役職", positionID, err)
@@ -62,7 +62,7 @@ func (s ChangePosition) Do(ctx context.Context, id, positionID string) (Detail, 
 			return err
 		}
 		changed, err = s.staff.Get(ctx, cur.ID)
-		if err != nil || before.Equal(auditState(changed)) {
+		if err != nil || before.Equal(toStaffState(changed)) {
 			return err
 		}
 		return recordChange(ctx, s.audit, audit.PositionChange, &before, changed)

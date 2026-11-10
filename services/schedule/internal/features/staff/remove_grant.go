@@ -20,8 +20,8 @@ type RemoveGrant struct {
 }
 
 // NewRemoveGrant は RemoveGrant を作る。
-func NewRemoveGrant(staff Repository, locks FacilityLock, rec audit.Recorder, tx tx.Transactor, guard kernel.Guard) RemoveGrant {
-	return RemoveGrant{staff: staff, locks: locks, audit: rec, tx: tx, guard: guard}
+func NewRemoveGrant(staff Repository, locks FacilityLock, audit audit.Recorder, tx tx.Transactor, guard kernel.Guard) RemoveGrant {
+	return RemoveGrant{staff: staff, locks: locks, audit: audit, tx: tx, guard: guard}
 }
 
 // Do は、職員の権限 userPolicyID と、その対象を外す。
@@ -40,7 +40,7 @@ func (s RemoveGrant) Do(ctx context.Context, id, userPolicyID string) (Detail, e
 		if err != nil {
 			return err
 		}
-		before := auditState(cur)
+		before := toStaffState(cur)
 		if slices.ContainsFunc(cur.Policies, func(g PolicyGrant) bool {
 			return g.UserPolicyID == userPolicyID && g.PolicyCode == organization.StaffManage
 		}) {

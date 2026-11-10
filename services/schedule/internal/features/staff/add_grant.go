@@ -29,8 +29,8 @@ type AddGrant struct {
 }
 
 // NewAddGrant は AddGrant を作る。
-func NewAddGrant(staff Repository, policies kernel.Finder[organization.Policy], teams kernel.Finder[organization.Team], rec audit.Recorder, tx tx.Transactor, ids kernel.IDGenerator, guard kernel.Guard) AddGrant {
-	return AddGrant{staff: staff, policies: policies, teams: teams, audit: rec, tx: tx, ids: ids, guard: guard}
+func NewAddGrant(staff Repository, policies kernel.Finder[organization.Policy], teams kernel.Finder[organization.Team], audit audit.Recorder, tx tx.Transactor, ids kernel.IDGenerator, guard kernel.Guard) AddGrant {
+	return AddGrant{staff: staff, policies: policies, teams: teams, audit: audit, tx: tx, ids: ids, guard: guard}
 }
 
 // Do は、職員に権限を 1 つ足す。対象を指定する権限には、職員を対象にする権限なら職員を、
@@ -49,7 +49,7 @@ func (s AddGrant) Do(ctx context.Context, id string, in GrantInput) (Detail, err
 		if err != nil {
 			return err
 		}
-		before := auditState(cur)
+		before := toStaffState(cur)
 		p, err := s.policies.Get(ctx, in.PolicyID)
 		if err != nil {
 			return apperr.Reference("権限", in.PolicyID, err)

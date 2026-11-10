@@ -39,8 +39,8 @@ type Create struct {
 }
 
 // NewCreate は Create を作る。
-func NewCreate(facilities kernel.Finder[organization.Facility], departments kernel.Finder[organization.Department], teams kernel.Finder[organization.Team], positions kernel.Finder[organization.Position], identities Identities, staff Repository, rec audit.Recorder, tx tx.Transactor, ids kernel.IDGenerator, guard kernel.Guard) Create {
-	return Create{facilities: facilities, departments: departments, teams: teams, positions: positions, identities: identities, staff: staff, audit: rec, tx: tx, ids: ids, guard: guard}
+func NewCreate(facilities kernel.Finder[organization.Facility], departments kernel.Finder[organization.Department], teams kernel.Finder[organization.Team], positions kernel.Finder[organization.Position], identities Identities, staff Repository, audit audit.Recorder, tx tx.Transactor, ids kernel.IDGenerator, guard kernel.Guard) Create {
+	return Create{facilities: facilities, departments: departments, teams: teams, positions: positions, identities: identities, staff: staff, audit: audit, tx: tx, ids: ids, guard: guard}
 }
 
 // Do は、職員を作り、役職のデフォルトの権限を与える。チームを対象にする権限は、職員の所属のチームを対象にする。事業所が見つからないときは apperr.ErrNotFound を、

@@ -19,13 +19,13 @@ func NewPermissionAuditRepository(pool *pgxpool.Pool) *PermissionAuditRepository
 	return &PermissionAuditRepository{conn{pool}}
 }
 
-// Write は、監査の記録 a を 1 行書く。制約の違反は記録を組み立てた側の誤りなので、入力のエラーにせず、そのまま返す。権限を変える操作と同じトランザクションに加わるよう、呼び出し側がトランザクションの中で呼ぶ。
-func (r *PermissionAuditRepository) Write(ctx context.Context, a audit.Record) error {
-	before, err := jsonOf(a.Before)
+// Create は、監査の記録 a を 1 行書く。制約の違反は記録を組み立てた側の誤りなので、入力のエラーにせず、そのまま返す。権限を変える操作と同じトランザクションに加わるよう、呼び出し側がトランザクションの中で呼ぶ。
+func (r *PermissionAuditRepository) Create(ctx context.Context, a audit.Record) error {
+	before, err := toJSON(a.Before)
 	if err != nil {
 		return err
 	}
-	after, err := jsonOf(a.After)
+	after, err := toJSON(a.After)
 	if err != nil {
 		return err
 	}
@@ -41,8 +41,8 @@ func (r *PermissionAuditRepository) Write(ctx context.Context, a audit.Record) e
 	return nil
 }
 
-// jsonOf は、v を JSON にする。nil なら NULL として書く nil を返す。
-func jsonOf(v any) ([]byte, error) {
+// toJSON は、v を JSON にする。nil なら NULL として書く nil を返す。
+func toJSON(v any) ([]byte, error) {
 	if v == nil {
 		return nil, nil
 	}

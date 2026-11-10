@@ -12,8 +12,8 @@ type PermissionAudits struct {
 	Err error
 }
 
-// Write は、記録を Store.PermissionAudits に足す。
-func (r PermissionAudits) Write(_ context.Context, a audit.Record) error {
+// Create は、記録を Store.PermissionAudits に足す。
+func (r PermissionAudits) Create(_ context.Context, a audit.Record) error {
 	if r.Err != nil {
 		return r.Err
 	}

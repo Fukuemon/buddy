@@ -21,8 +21,8 @@ type CreatePosition struct {
 }
 
 // NewCreatePosition は CreatePosition を作る。
-func NewCreatePosition(facilities FacilityRepository, policies PolicyRepository, positions PositionRepository, rec audit.Recorder, tx tx.Transactor, ids kernel.IDGenerator, guard kernel.Guard) CreatePosition {
-	return CreatePosition{facilities: facilities, policies: policies, positions: positions, audit: rec, tx: tx, ids: ids, guard: guard}
+func NewCreatePosition(facilities FacilityRepository, policies PolicyRepository, positions PositionRepository, audit audit.Recorder, tx tx.Transactor, ids kernel.IDGenerator, guard kernel.Guard) CreatePosition {
+	return CreatePosition{facilities: facilities, policies: policies, positions: positions, audit: audit, tx: tx, ids: ids, guard: guard}
 }
 
 // Do は、事業所に役職を作り、保存した役職を返す。policyIDs に見つからない権限があると入力のエラーを、職員の管理の権限が無いときは apperr.ErrForbidden を、

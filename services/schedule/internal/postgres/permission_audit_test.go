@@ -18,9 +18,6 @@ import (
 	"github.com/Fukuemon/buddy/services/schedule/internal/ulid"
 )
 
-// seedAokiStaffManage は、シードの青木の職員の管理の権限である。青木は、シードの事業所で職員の管理の権限を持つ唯一の職員である。
-const seedAokiStaffManage = "01M5E5GP6Q8BQYNWN66QHJF60K"
-
 // auditRow は、permission_audits の 1 行のうち、テストが比べる列である。
 type auditRow struct {
 	Action, ActorKind          string
@@ -54,8 +51,8 @@ func auditRows(t *testing.T, pool *pgxpool.Pool, requestID string) []auditRow {
 	return out
 }
 
-// staffStateOf は、職員 d の、記録に持つ全量を返す。staff の書く記録と同じ形である。
-func staffStateOf(d staff.Detail) audit.StaffState {
+// toStaffState は、職員 d の、記録に持つ全量を返す。staff の書く記録と同じ形である。
+func toStaffState(d staff.Detail) audit.StaffState {
 	grants := make([]audit.Grant, 0, len(d.Policies))
 	for _, g := range d.Policies {
 		grants = append(grants, audit.Grant{Code: string(g.PolicyCode), TargetUserIDs: g.TargetUserIDs, TargetTeamIDs: g.TargetTeamIDs})
@@ -63,14 +60,31 @@ func staffStateOf(d staff.Detail) audit.StaffState {
 	return audit.NewStaffState(d.PositionID, d.TeamID, grants)
 }
 
-// decodeState は、記録の JSON の全量を読む。JSON のキーが StaffState と違えば、読んだ値は空になり、比べると違う。
-func decodeState(t *testing.T, b []byte) audit.StaffState {
+// parseState は、記録の JSON の全量を読む。形の違いは requireJSON で確認する。
+func parseState(t *testing.T, b []byte) audit.StaffState {
 	t.Helper()
 	var s audit.StaffState
 	if err := json.Unmarshal(b, &s); err != nil {
 		t.Fatalf("記録の JSON %s: %v", b, err)
 	}
 	return audit.NewStaffState(s.PositionID, s.TeamID, s.Grants)
+}
+
+// requireJSON は、記録の JSON got が、want を JSON にした値と jsonb で等しいかを確認する。jsonb の等価は配列の順と、
+// 空の配列とキーの省略の違いを区別するので、マイグレーションの SQL と Go の型の形の違いも見つかる。
+func requireJSON(t *testing.T, pool *pgxpool.Pool, got []byte, want any) {
+	t.Helper()
+	b, err := json.Marshal(want)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var same bool
+	if err := pool.QueryRow(context.Background(), `SELECT $1::jsonb = $2::jsonb`, string(got), string(b)).Scan(&same); err != nil {
+		t.Fatal(err)
+	}
+	if !same {
+		t.Errorf("JSON = %s, want %s", got, b)
+	}
 }
 
 // TestPermissionAudit は、職員の権限を変える 6 つの操作が、操作と同じトランザクションで記録を 1 行書くことと、
@@ -91,6 +105,8 @@ func TestPermissionAudit(t *testing.T) {
 	}
 	defer pool.Close()
 
+	// 職員の登録の 2 つのテストで、ブローカーの職員の ID が重ならないよう、1 つのブローカーを使う
+	identities := inmem.NewIdentities()
 	allow := func(context.Context) error { return nil }
 	self := func(context.Context) (string, bool) { return seedAoki, true }
 	rec := audit.NewRecorder(NewPermissionAuditRepository(pool), ulid.Generator{}, self)
@@ -122,12 +138,8 @@ func TestPermissionAudit(t *testing.T) {
 	// requireStates は、記録の変更の前後が、操作の前の職員 before と後の職員 after の全量と同じかを確認する。
 	requireStates := func(t *testing.T, r auditRow, before staff.Detail, after staff.Detail) {
 		t.Helper()
-		if got, want := decodeState(t, r.Before), staffStateOf(before); !got.Equal(want) {
-			t.Errorf("before = %s, want %+v", r.Before, want)
-		}
-		if got, want := decodeState(t, r.After), staffStateOf(after); !got.Equal(want) {
-			t.Errorf("after = %s, want %+v", r.After, want)
-		}
+		requireJSON(t, pool, r.Before, toStaffState(before))
+		requireJSON(t, pool, r.After, toStaffState(after))
 	}
 
 	t.Run("ほかの職員に権限を足すと、操作した職員、対象の職員、変更の前後の権限が残る", func(t *testing.T) {
@@ -174,6 +186,18 @@ func TestPermissionAudit(t *testing.T) {
 		}
 	})
 
+	t.Run("今と同じ役職に変えて権限が変わらなければ、記録が残らない", func(t *testing.T) {
+		// 青木の権限は、管理者の役職のデフォルトと同じである
+		before := get(t, seedAoki)
+		ctx := audit.WithRequestID(bg, "REQUEST-SAME-POSITION")
+		if _, err := staff.NewChangePosition(staffRepo, facilities, NewPositionRepository(pool), rec, txr, ids, allow).Do(ctx, seedAoki, before.PositionID); err != nil {
+			t.Fatal(err)
+		}
+		if rows := auditRows(t, pool, "REQUEST-SAME-POSITION"); len(rows) != 0 {
+			t.Errorf("記録 = %+v, want 残らない", rows)
+		}
+	})
+
 	t.Run("チームを変えて対象を移すと team.change が残る", func(t *testing.T) {
 		before := get(t, seedMori)
 		ctx := audit.WithRequestID(bg, "REQUEST-TEAM-CHANGE")
@@ -183,14 +207,14 @@ func TestPermissionAudit(t *testing.T) {
 		}
 		after := get(t, seedMori)
 		requireStates(t, one(t, "REQUEST-TEAM-CHANGE", "team.change"), before, after)
-		if staffStateOf(after).GrantsEqual(staffStateOf(before)) {
+		if toStaffState(after).GrantsEqual(toStaffState(before)) {
 			t.Error("権限の対象が移っていない")
 		}
 	})
 
 	t.Run("職員を登録すると、デフォルトからコピーした権限が after に残る", func(t *testing.T) {
 		ctx := audit.WithRequestID(bg, "REQUEST-STAFF-CREATE")
-		create := staff.NewCreate(facilities, NewDepartmentRepository(pool), NewTeamRepository(pool), NewPositionRepository(pool), inmem.NewIdentities(), staffRepo, rec, txr, ids, allow)
+		create := staff.NewCreate(facilities, NewDepartmentRepository(pool), NewTeamRepository(pool), NewPositionRepository(pool), identities, staffRepo, rec, txr, ids, allow)
 		created, err := create.Do(ctx, staff.CreateInput{
 			FacilityID: seedFacility, Username: "監査 太郎", Email: "taro.audit@example.com",
 			DepartmentID: seedDepartment, TeamID: seedTeam, PositionID: seedLeader,
@@ -202,8 +226,8 @@ func TestPermissionAudit(t *testing.T) {
 		if r.Before != nil || r.TargetUserID == nil || *r.TargetUserID != created.ID {
 			t.Errorf("before = %s, 対象 = %v, want 変更の前を持たず、登録した職員が対象", r.Before, r.TargetUserID)
 		}
-		after := decodeState(t, r.After)
-		if !after.Equal(staffStateOf(get(t, created.ID))) || len(after.Grants) != 3 {
+		after := parseState(t, r.After)
+		if !after.Equal(toStaffState(get(t, created.ID))) || len(after.Grants) != 3 {
 			t.Errorf("after = %s, want リーダーのデフォルトの 3 つの権限", r.After)
 		}
 	})
@@ -225,8 +249,15 @@ func TestPermissionAudit(t *testing.T) {
 	})
 
 	t.Run("最後の有効な管理者から職員の管理の権限を外す 409 では、記録が残らず権限も変わらない", func(t *testing.T) {
+		// 同じ役職への変更が権限をコピーし直すことがあるので、職員の管理の権限の ID は読み直す
+		var manage string
+		for _, g := range get(t, seedAoki).Policies {
+			if g.PolicyCode == organization.StaffManage {
+				manage = g.UserPolicyID
+			}
+		}
 		ctx := audit.WithRequestID(bg, "REQUEST-LAST-MANAGER")
-		if _, err := staff.NewRemoveGrant(staffRepo, facilities, rec, txr, allow).Do(ctx, seedAoki, seedAokiStaffManage); !errors.Is(err, apperr.ErrConflict) {
+		if _, err := staff.NewRemoveGrant(staffRepo, facilities, rec, txr, allow).Do(ctx, seedAoki, manage); !errors.Is(err, apperr.ErrConflict) {
 			t.Fatalf("err = %v, want ErrConflict", err)
 		}
 		if rows := auditRows(t, pool, "REQUEST-LAST-MANAGER"); len(rows) != 0 {
@@ -234,6 +265,24 @@ func TestPermissionAudit(t *testing.T) {
 		}
 		if managers, err := staffRepo.ActiveManagers(bg, seedFacility); err != nil || len(managers) != 1 || managers[0] != seedAoki {
 			t.Errorf("有効な管理者 = %v, err = %v, want 青木の権限が残る", managers, err)
+		}
+	})
+
+	t.Run("職員の登録で記録を書けなければ、職員を書かず、ブローカーに登録した職員も消して戻す", func(t *testing.T) {
+		missing := audit.NewRecorder(NewPermissionAuditRepository(pool), ulid.Generator{}, func(context.Context) (string, bool) { return "01M3TD0000000000000000NONE", true })
+		create := staff.NewCreate(facilities, NewDepartmentRepository(pool), NewTeamRepository(pool), NewPositionRepository(pool), identities, staffRepo, missing, txr, ids, allow)
+		if _, err := create.Do(audit.WithRequestID(bg, "REQUEST-CREATE-FAILS"), staff.CreateInput{
+			FacilityID: seedFacility, Username: "監査 次郎", Email: "jiro.audit@example.com",
+			DepartmentID: seedDepartment, TeamID: seedTeam, PositionID: seedLeader,
+		}); err == nil {
+			t.Fatal("記録を書けないのに成功した")
+		}
+		var n int
+		if err := pool.QueryRow(bg, `SELECT count(*) FROM users WHERE email = 'jiro.audit@example.com'`).Scan(&n); err != nil {
+			t.Fatal(err)
+		}
+		if _, ok := identities.Members["broker-2"]; n != 0 || ok {
+			t.Errorf("職員 = %d 人、ブローカーの職員 = %+v, want 両方に残らない", n, identities.Members)
 		}
 	})
 
@@ -245,7 +294,7 @@ func TestPermissionAudit(t *testing.T) {
 		if _, err := addGrant(missing).Do(ctx, seedMori, staff.GrantInput{PolicyID: seedViewPolicy}); err == nil {
 			t.Fatal("記録を書けないのに成功した")
 		}
-		if got := get(t, seedMori); !staffStateOf(got).Equal(staffStateOf(before)) {
+		if got := get(t, seedMori); !toStaffState(got).Equal(toStaffState(before)) {
 			t.Errorf("権限 = %+v, want 変わらない %+v", got.Policies, before.Policies)
 		}
 		if rows := auditRows(t, pool, "REQUEST-AUDIT-FAILS"); len(rows) != 0 {
@@ -264,14 +313,14 @@ func TestPermissionAuditConstraints(t *testing.T) {
 		ID: ulid.Generator{}.NewID(), FacilityID: seedFacility, Action: audit.GrantAdd, ActorKind: audit.ActorStaff, ActorUserID: seedAoki,
 		TargetUserID: seedMori, Before: after, After: after, RequestID: "REQUEST-CONSTRAINTS",
 	}
-	if err := w.Write(ctx, valid); err != nil {
+	if err := w.Create(ctx, valid); err != nil {
 		t.Fatalf("合う行: %v", err)
 	}
 	migrated := audit.Record{
 		ID: ulid.Generator{}.NewID(), FacilityID: seedFacility, Action: audit.GrantMigrate, ActorKind: audit.ActorOperator, ActorOperator: "migration:000099",
 		TargetUserID: seedMori, After: after, RequestID: "REQUEST-CONSTRAINTS",
 	}
-	if err := w.Write(ctx, migrated); err != nil {
+	if err := w.Create(ctx, migrated); err != nil {
 		t.Fatalf("マイグレーションの行: %v", err)
 	}
 	tests := []struct {
@@ -302,7 +351,7 @@ func TestPermissionAuditConstraints(t *testing.T) {
 			r := valid
 			r.ID = ulid.Generator{}.NewID()
 			tt.edit(&r)
-			err := w.Write(ctx, r)
+			err := w.Create(ctx, r)
 			if err == nil || !strings.Contains(err.Error(), tt.constraint) {
 				t.Errorf("err = %v, want %s の違反", err, tt.constraint)
 			}
@@ -358,9 +407,7 @@ func TestMigratePermissionAudits(t *testing.T) {
 			t.Fatal(err)
 		}
 		// 予定の API が書く記録と同じ形で読めれば、マイグレーションの後の記録と比べられる
-		if got, want := decodeState(t, r.After), staffStateOf(d); !got.Equal(want) {
-			t.Errorf("%s の after = %s, want %+v", *r.TargetUserID, r.After, want)
-		}
+		requireJSON(t, pool, r.After, toStaffState(d))
 	}
 	if len(seen) != users {
 		t.Errorf("記録のある職員 = %d 人, want %d 人", len(seen), users)

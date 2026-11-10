@@ -25,11 +25,11 @@ type UpdateProfile struct {
 }
 
 // NewUpdateProfile は UpdateProfile を作る。now は、残る予定を数え始める日を決める時刻である。nil なら time.Now を使う。
-func NewUpdateProfile(staff Repository, locks FacilityLock, departments kernel.Finder[organization.Department], teams kernel.Finder[organization.Team], assignments AssignmentReader, now func() time.Time, rec audit.Recorder, tx tx.Transactor, guard kernel.Guard) UpdateProfile {
+func NewUpdateProfile(staff Repository, locks FacilityLock, departments kernel.Finder[organization.Department], teams kernel.Finder[organization.Team], assignments AssignmentReader, now func() time.Time, audit audit.Recorder, tx tx.Transactor, guard kernel.Guard) UpdateProfile {
 	if now == nil {
 		now = time.Now
 	}
-	return UpdateProfile{staff: staff, locks: locks, departments: departments, teams: teams, assignments: assignments, now: now, audit: rec, tx: tx, guard: guard}
+	return UpdateProfile{staff: staff, locks: locks, departments: departments, teams: teams, assignments: assignments, now: now, audit: audit, tx: tx, guard: guard}
 }
 
 // Do は、職員の名前、電話番号、部署、チーム、訪問しない職員かを p にし、変えた職員を返す。メールは変えない（ADR-0001）。
@@ -53,7 +53,7 @@ func (s UpdateProfile) Do(ctx context.Context, id string, p Profile) (Detail, er
 		if err != nil {
 			return err
 		}
-		before := auditState(cur)
+		before := toStaffState(cur)
 		if err := cur.RequireProfileEditable(); err != nil {
 			return err
 		}
@@ -88,7 +88,7 @@ func (s UpdateProfile) Do(ctx context.Context, id string, p Profile) (Detail, er
 			return apperr.AsConflict(err, "退職した職員は変えられません")
 		}
 		changed, err = s.staff.Get(ctx, cur.ID)
-		if err != nil || before.GrantsEqual(auditState(changed)) {
+		if err != nil || before.GrantsEqual(toStaffState(changed)) {
 			return err
 		}
 		return recordChange(ctx, s.audit, audit.TeamChange, &before, changed)
