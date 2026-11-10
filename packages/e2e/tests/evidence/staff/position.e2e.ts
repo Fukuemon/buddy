@@ -3,7 +3,13 @@ import { expect, test, type APIRequestContext, type Page } from '@playwright/tes
 import { issueAccessToken, routeApiReference } from '../../fixtures/apiReference'
 import { LEADER, LOGIN_EMAIL, LOGIN_STAFF, SCHEDULE_URL } from '../../fixtures/env'
 import { EVIDENCE_VARIANTS, recordPrEvidence } from '../../fixtures/evidence'
-import { STAFF_FORM, issueManagerToken, newStaff, removePolicy } from '../../fixtures/staff'
+import {
+  STAFF_FORM,
+  STAFF_MANAGE_CODE,
+  issueManagerToken,
+  newStaff,
+  removePolicy,
+} from '../../fixtures/staff'
 import { openApiClient, openApiReference } from '../../screens/apiReference'
 import { signInAtBroker } from '../../screens/login'
 import {
@@ -29,7 +35,6 @@ const TEAM_READ = { id: '01M5E1S42TTS7QZK05YGS0GYRB', code: 'schedule.team.read'
 /** 指定したチームの職員の予定の編集（schedule.team.edit）。 */
 const TEAM_EDIT = { id: '01M5E1S42TTS7QZK05YGS0GYRC', code: 'schedule.team.edit' }
 const SELF_EDIT_CODE = 'schedule.self.edit'
-const STAFF_MANAGE_CODE = 'staff.manage'
 
 const ACTOR = `${LOGIN_STAFF.name}（マネージャー、職員の管理の権限あり）`
 
