@@ -59,7 +59,7 @@ func run(args []string, getenv func(string) string, stdout, stderr io.Writer) in
 		_, _ = fmt.Fprintln(stderr, err)
 		return 1
 	}
-	log := slog.New(slog.NewJSONHandler(stdout, &slog.HandlerOptions{Level: cfg.LogLevel})).With(slog.String("component", "ops"))
+	log := newLogger(stdout, cfg.LogLevel)
 
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
@@ -75,6 +75,13 @@ func run(args []string, getenv func(string) string, stdout, stderr io.Writer) in
 		return 1
 	}
 	return 0
+}
+
+// newLogger は、stdout に JSON で書くロガーを返す。登録の記録と dry-run の内容は INFO で書くので、level が warn 以上でも
+// INFO を落とさない。
+func newLogger(stdout io.Writer, level slog.Level) *slog.Logger {
+	h := slog.NewJSONHandler(stdout, &slog.HandlerOptions{Level: min(level, slog.LevelInfo)})
+	return slog.New(h).With(slog.String("component", "ops"))
 }
 
 // operatorIDPattern は、運営者の ID の形である。メールと名前を登録の記録に入れないよう、英数字と . _ - だけを受ける。

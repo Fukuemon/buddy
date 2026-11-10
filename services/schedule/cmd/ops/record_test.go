@@ -127,3 +127,24 @@ func TestOnboardFacilityFailureRedactsEmail(t *testing.T) {
 		t.Errorf("記録 = %q", buf.String())
 	}
 }
+
+// LOG_LEVEL を warn にしても、登録の記録は出る。
+func TestOnboardFacilityRecordIgnoresWarnLevel(t *testing.T) {
+	a, err := parseOnboardArgs(validArgs(), io.Discard)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var buf bytes.Buffer
+	do := func(_ context.Context, in staff.OnboardInput) (staff.OnboardResult, error) {
+		res := staff.OnboardResult{ManagerCreated: true}
+		res.Setup.Facility = organization.Facility{ID: "FAC1", OrgID: in.Facility.OrgID}
+		res.Manager.ID = "STAFF1"
+		return res, nil
+	}
+	if err := onboardFacility(context.Background(), do, a, newLogger(&buf, slog.LevelWarn)); err != nil {
+		t.Fatal(err)
+	}
+	if got := records(t, &buf); len(got) != 1 || got[0]["action"] != "staff.create_forced" {
+		t.Errorf("記録 = %v, want staff.create_forced の 1 行", got)
+	}
+}

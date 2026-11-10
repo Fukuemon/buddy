@@ -43,7 +43,7 @@ API、Google カレンダーの Worker、マイグレーションは、次の環
 `cmd/migrate` は OIDC とブローカーの変数を求めず、必須として確認するのは `DB_USER`、`DB_PASSWORD`、`DB_NAME` だけである。  
 ほかの変数も API と同じ規則で読むので、`PORT`、`LOG_LEVEL`、`GOOGLE_CALENDAR_` で始まる変数の値が正しくないときは、マイグレーションも失敗する。  
 `cmd/calendar-worker` は、`DB_` と `GOOGLE_CALENDAR_` で始まる変数と `LOG_LEVEL` だけを読み、OIDC、ブローカー、`PORT`、`CORS_ALLOW_ORIGINS` を読まない。  
-`cmd/ops` は、`DB_` と `BROKER_` で始まる変数と `LOG_LEVEL` だけを読む。`BROKER_CLIENT_ID` のデフォルトは、運営用のクライアントの `schedule-ops` である。  
+`cmd/ops` は、`DB_` と `BROKER_` で始まる変数と `LOG_LEVEL` だけを読む。`BROKER_CLIENT_ID` のデフォルトは、運営用のクライアントの `schedule-ops` である。`LOG_LEVEL` を `warn` か `error` にしても、登録の記録と `--dry-run` の内容は出す。  
 ログの項目 `component` は、書いたプロセスを示し、API が `api`、Worker が `calendar-export` か `calendar-sync`、運営用の CLI が `ops` である。
 
 ## Running
