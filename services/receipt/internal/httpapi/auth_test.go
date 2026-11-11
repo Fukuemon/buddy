@@ -100,9 +100,20 @@ func (notReadyVerifier) Verify(context.Context, string) (oidc.Identity, error) {
 	return oidc.Identity{}, oidc.ErrNotReady
 }
 
+// countingPermission は、呼ばれた回数を数える PermissionChecker である。
+type countingPermission struct{ calls *int }
+
+func (p countingPermission) RequireReceiptCheck(context.Context, string) error {
+	*p.calls++
+	return nil
+}
+
+// TestChecksVerifierNotReady は、discovery をまだ読めていない間、トークン付きのリクエストは権限を確認せずに 503 の auth_unavailable に、
+// トークンの無いリクエストは今のとおり 401 に、/readyz は 503 に、/healthz は 200 になることを確認する。
 func TestChecksVerifierNotReady(t *testing.T) {
+	var calls int
 	h := NewHandler(slog.New(slog.NewTextHandler(io.Discard, nil)), Config{
-		MaxUploadBytes: 1 << 20, Verifier: notReadyVerifier{}, Permission: fakePermission{},
+		MaxUploadBytes: 1 << 20, Verifier: notReadyVerifier{}, Permission: countingPermission{&calls},
 		Ready: func(context.Context) error { return oidc.ErrNotReady },
 	})
 	body, ct := multipartBody(t, validFiles(t))
@@ -117,6 +128,21 @@ func TestChecksVerifierNotReady(t *testing.T) {
 	var e openapi.Error
 	if err := json.Unmarshal(rec.Body.Bytes(), &e); err != nil || e.Code != openapi.AuthUnavailable {
 		t.Errorf("body = %s, %v", rec.Body, err)
+	}
+	if got := rec.Header().Get("WWW-Authenticate"); got != "" {
+		t.Errorf("WWW-Authenticate = %q", got)
+	}
+	if calls != 0 {
+		t.Errorf("権限の確認が %d 回呼ばれた", calls)
+	}
+
+	body, ct = multipartBody(t, validFiles(t))
+	req = httptest.NewRequest(http.MethodPost, "/v1/checks", body)
+	req.Header.Set("Content-Type", ct)
+	rec = httptest.NewRecorder()
+	h.ServeHTTP(rec, req)
+	if rec.Code != http.StatusUnauthorized {
+		t.Errorf("トークンが無いときの status %d body %s", rec.Code, rec.Body)
 	}
 
 	rec = httptest.NewRecorder()
