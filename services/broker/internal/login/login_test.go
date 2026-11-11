@@ -865,6 +865,7 @@ func TestRejectFailsShowsOutagePage(t *testing.T) {
 func TestCallbackHostedDomainLog(t *testing.T) {
 	var buf bytes.Buffer
 	e := newEnvWith(10, func(c *login.Config) { c.Logger = slog.New(slog.NewJSONHandler(&buf, nil)) })
+	e.upstream.identity = upstream.Identity{Issuer: issuerA, Subject: "u-aoki", Email: "aoki-upstream@example.com", EmailVerified: true}
 	e.upstream.err = fmt.Errorf("%w: hd %q", upstream.ErrHostedDomain, "other.example")
 	location(t, e.callback(t, e.submit("aoki@example.com"), "code-1"))
 	var got map[string]any
@@ -880,7 +881,7 @@ func TestCallbackHostedDomainLog(t *testing.T) {
 	if got["level"] != "WARN" || got["org_id"] != "org-a" || got["staff_id"] != aokiID || !strings.Contains(fmt.Sprint(got["error"]), `hd "other.example"`) {
 		t.Errorf("ログ = %v, want Warn で org_id、staff_id、hd を書く", got)
 	}
-	if strings.Contains(buf.String(), "aoki@example.com") {
+	if strings.Contains(buf.String(), "aoki@example.com") || strings.Contains(buf.String(), "aoki-upstream@example.com") {
 		t.Errorf("ログにメールを書いた: %s", buf.String())
 	}
 }

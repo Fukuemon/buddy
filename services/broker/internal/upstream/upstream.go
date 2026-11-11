@@ -40,8 +40,8 @@ type entry struct {
 	OrgID    string `json:"org_id"`
 	Issuer   string `json:"issuer"`
 	ClientID string `json:"client_id"`
-	// AllowedHostedDomains は、省けば nil で、空の配列 [] と分けて読む。
-	AllowedHostedDomains []string `json:"allowed_hosted_domains"`
+	// AllowedHostedDomains は、キーを省いたときと、null や空の配列を書いたときを分けるため、読まずに受ける。
+	AllowedHostedDomains json.RawMessage `json:"allowed_hosted_domains"`
 }
 
 // Load は、上流の IdP の設定のファイル idpsPath と、client secret のファイル secretsPath を読む。
@@ -54,7 +54,7 @@ type entry struct {
 //   - issuer が http か https の URL でない
 //   - org_id が重なっている
 //   - 上流の IdP の client secret が無いか空である、または上流の IdP の設定に無い組織の client secret がある
-//   - allowed_hosted_domains が空の配列であるか、空の値、重なる値、ドメインの形でない値がある
+//   - allowed_hosted_domains が null か空の配列であるか、文字列の配列でないか、空の値、重なる値、ドメインの形でない値がある
 //
 // allowed_hosted_domains は省いてよい。省いた事業所では、ID token の hd を確認しない。
 //
@@ -125,14 +125,19 @@ func decode(path string, v any) error {
 }
 
 // domainLabels は、ドットで区切ったラベルが 2 つ以上あるドメインの名前の形である。ラベルは英小文字、数字、ハイフンで、
-// ハイフンで始まらず終わらない。
-var domainLabels = regexp.MustCompile(`^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$`)
+// ハイフンで始まらず終わらない。最後のラベルは英字で始まり、IP アドレスを通さない。
+var domainLabels = regexp.MustCompile(`^([a-z0-9]([a-z0-9-]*[a-z0-9])?\.)+[a-z]([a-z0-9-]*[a-z0-9])?$`)
 
-// hostedDomains は、allowed_hosted_domains の値を、前後の空白を除いて小文字にそろえる。省いた（nil の）ときは nil を返す。
-// 空の配列は、確認を外すつもりの書き間違いと区別できないので、エラーにする。
-func hostedDomains(raw []string) ([]string, error) {
-	if raw == nil {
+// hostedDomains は、allowed_hosted_domains の値を、前後の空白を除いて小文字にそろえる。キーを省いたときは nil を返す。
+// null と空の配列は、確認を外すつもりの書き間違いと区別できないので、エラーにする。
+func hostedDomains(msg json.RawMessage) ([]string, error) {
+	if msg == nil {
 		return nil, nil
+	}
+	var raw []string
+	// null は、エラーにならずに nil を読む
+	if err := json.Unmarshal(msg, &raw); err != nil || raw == nil {
+		return nil, errors.New("は文字列の配列にする")
 	}
 	if len(raw) == 0 {
 		return nil, errors.New("が空である。確認しないなら、キーを省く")
