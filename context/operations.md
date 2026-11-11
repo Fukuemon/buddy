@@ -77,7 +77,11 @@ buddy のコードと設定は、特定のデプロイ先を前提にしない�
 | refresh の失敗の数 | web のログ | 5 分で 1% を超える |
 | ブローカーと Hydra の `/readyz` と `/health/ready` | ヘルスチェック | 1 分続けて 503 か応答が無い |
 
-- ブローカーは、今は hook の拒否だけをログに出し、成功と所要の時間を出していない。足すのは #1018 である。
+- ブローカーは、hook の呼び出しごとに、メッセージ `token_hook の結果` のログを 1 行出す。
+  - `result` は、204 で `allowed`、403 で `denied`、それ以外で `failed` である。`status` は返した状態コード、`duration_ms` は所要の時間（ミリ秒）である。
+  - レベルは、`allowed` が INFO、`denied` が WARN、`failed` の 5xx が ERROR、`failed` の 4xx（鍵の誤りと本文の誤り）が WARN である。
+  - hook の 5xx の率は `status` が 500 以上の行を、hook の 403 の数は `result` が `denied` の行を数える。
+  - 職員を DB から読むのは 2 秒で打ち切り、500 を返す。DB が答えないときは、`duration_ms` が 2000 前後の `failed` が、1 回のトークンの要求で 3 行出る。
 - web は、今は refresh の失敗をログに出していない。足すのは #1017 である。
 
 ### 復旧の手順
