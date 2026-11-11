@@ -21,6 +21,7 @@ import { issueManagerToken, leaveStaff, newStaff, registerStaffId } from '../../
 import {
   BROKER_RESTORE_WAIT,
   REFRESH_FAILURE_WAIT,
+  REFRESH_RETRY_WAIT,
   SESSION_FAULT_TEST,
 } from '../../fixtures/timeouts'
 import { signInAtBroker } from '../../screens/login'
@@ -141,9 +142,12 @@ test.describe('ログインの期限の延長', () => {
           '予定のカレンダーが出るまで「読み直す」を押す（一時的に失敗した後の 10 秒は、web が試し直さない）',
           () =>
             expect(async () => {
-              await pageFailure(page).reload.click()
+              // 前の周の読み直しでカレンダーが出ていれば、押さずに終える
+              if ((await calendarColumnHeaders(page).count()) === 0) {
+                await pageFailure(page).reload.click()
+              }
               await expect(calendarColumnHeaders(page).first()).toBeVisible()
-            }).toPass(REFRESH_FAILURE_WAIT),
+            }).toPass(REFRESH_RETRY_WAIT),
         )
         await check(page, 'ログインの画面を通らずに、予定のカレンダーが出る', async () => {
           await expect(calendarColumnHeaders(page).first()).toBeVisible()

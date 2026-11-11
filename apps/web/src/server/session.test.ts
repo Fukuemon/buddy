@@ -224,6 +224,7 @@ describe('readSession', () => {
     await expect(readSession(req, deps)).rejects.toBeInstanceOf(SessionUnavailableError)
     expect(refresh).toHaveBeenCalledTimes(1)
     expect(await deps.store.get('session:id-1')).toMatchObject({ accessToken: 'old' })
+    expect(await deps.store.exists('refresh-failed:id-1')).toBe(true)
     // トークンとセッションの ID はログに出さない
     expect(warn).toHaveBeenCalledWith(
       JSON.stringify({ msg: 'session refresh failed', reason: 'other' }),
@@ -326,10 +327,16 @@ describe('readSession', () => {
       { ...VIEWER, accessToken: 'old', refreshToken: 'r', expiresAt: 1_000_000 + 30_000 },
       deps,
     )
+    const set = vi.spyOn(deps.store, 'set')
     expect((await readSession(req, deps))?.accessToken).toBe('old')
     expect((await readSession(req, deps))?.accessToken).toBe('old')
     expect(refresh).toHaveBeenCalledTimes(1)
-    expect(await deps.store.exists('refresh-failed:id-1')).toBe(true)
+    // 印は ADR-0044 の 10 秒で置く
+    expect(set).toHaveBeenCalledWith('refresh-failed:id-1', true, 10)
+    // 印の期限が切れたら、また試す
+    await deps.store.delete('refresh-failed:id-1')
+    await readSession(req, deps)
+    expect(refresh).toHaveBeenCalledTimes(2)
   })
 
   it('refresh が一時的に失敗した後に access token が切れたら、試し直さずに SessionUnavailableError を投げる', async () => {

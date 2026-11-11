@@ -14,6 +14,11 @@ export const TIMEOUT_MS = {
    * ブローカーが答えないときに約 27 秒かかった（docs/verification/877-token-hook-failures/README.md）
    */
   refreshFailure: 45_000,
+  /**
+   * ブローカーを戻した後、予定のカレンダーが出るまで読み直す長さ。web は refresh が一時的に失敗した後の 10 秒は試し直さない（ADR-0044）。
+   * 10 秒に、読み直し 1 回の読み込み（navigation）を足す
+   */
+  refreshRetry: 25_000,
   /** 止めたブローカーを戻してから、ヘルスチェックが通るまで。compose のヘルスチェックの間隔と回数に合わせる */
   brokerRestore: 60_000,
   /** エビデンスの spec の 1 本。字幕ごとに止め、撮った後に mp4 へ変換するので、E2E の 1 本より長い */
@@ -37,6 +42,9 @@ export const SUSPENSION_TEST = { timeout: TIMEOUT_MS.suspension + TIMEOUT_MS.tes
 
 /** ログインの仕組みの故障の中で開いた画面が、refresh の失敗の表示になるのを待つ expect に渡す。 */
 export const REFRESH_FAILURE_WAIT = { timeout: TIMEOUT_MS.refreshFailure }
+
+/** 一時的に失敗した後の 10 秒が過ぎ、予定のカレンダーが出るまで読み直す toPass に渡す。 */
+export const REFRESH_RETRY_WAIT = { timeout: TIMEOUT_MS.refreshRetry }
 
 /** 戻したブローカーのヘルスチェックが通るのを待つ toPass に渡す。 */
 export const BROKER_RESTORE_WAIT = { timeout: TIMEOUT_MS.brokerRestore }
