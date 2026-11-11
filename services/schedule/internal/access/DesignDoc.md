@@ -138,10 +138,10 @@ verified_commit: c0514f20
 ### 権限の変更の監査の記録
 
 職員の権限を変える操作は、操作と同じトランザクションで、監査の記録（`permission_audits`）に 1 行を書く。  
-残す操作、列、操作した人の表し方は ADR-0042 で決めた。  
+残す操作、列、操作した人の表し方は ADR-0051 で決めた。  
 列と CHECK 制約は [テーブル定義書](https://github.com/Fukuemon/buddy/blob/develop/docs/db/schedule/public.permission_audits.md) にある。
 
-- ADR-0042: [権限の変更を、操作した職員か運営者と変更の前後の権限の全量で、予定の API の DB の監査の記録に残す](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0042-permission-audit.md)
+- ADR-0051: [権限の変更と結び付けを外す操作を、操作した職員か運営者と変更の前後で、予定の API の DB の監査の記録に残す](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0051-permission-audit-unlink.md)
 
 予定の API の操作が書く記録は次のとおり。  
 操作した人は、リクエストを送った職員（`actor_kind` が `staff`）である。
