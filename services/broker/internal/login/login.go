@@ -142,13 +142,13 @@ func reject(logger *slog.Logger, admin Hydra, w http.ResponseWriter, r *http.Req
 }
 
 // rejectAs は、ログインを body で拒んで web へ返す。body の Error が web に渡り、web が出す文を分ける。
-// body が hydra.ServerError なら Error、ほかは Warn でログに書く。
-func rejectAs(logger *slog.Logger, admin Hydra, w http.ResponseWriter, r *http.Request, challenge string, body hydra.Rejection, reason string, cause error) {
+// body が hydra.ServerError なら Error、ほかは Warn でログに書く。attrs は、ログに足す項目である。
+func rejectAs(logger *slog.Logger, admin Hydra, w http.ResponseWriter, r *http.Request, challenge string, body hydra.Rejection, reason string, cause error, attrs ...any) {
 	level := slog.LevelWarn
 	if body == hydra.ServerError {
 		level = slog.LevelError
 	}
-	logger.Log(r.Context(), level, "ログインを拒む", "reason", reason, "error", cause)
+	logger.Log(r.Context(), level, "ログインを拒む", append([]any{"reason", reason, "error", cause}, attrs...)...)
 	to, err := admin.RejectLogin(r.Context(), challenge, body)
 	redirect(logger, w, r, to, err)
 }

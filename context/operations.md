@@ -297,6 +297,8 @@ hydra janitor -c <hydra serve の設定ファイル> -e --tokens --requests --gr
 
 1. 事業所の上流の IdP の設定をブローカーに足し、ブローカーをデプロイし直す。
    - 組織の ID、issuer、client ID は `UPSTREAM_IDPS_FILE` のファイルに、client secret は `UPSTREAM_IDP_CLIENT_SECRETS_FILE` のファイルに足す。
+   - 事業所が Google Workspace を使うなら、組織のプライマリドメインを `allowed_hosted_domains` に足す。ID token の `hd` が合わないログインは拒まれる。形と比べ方は [ID ブローカーの Design Doc の Google の hd の確認](../services/broker/DesignDoc.md#google-の-hd-の確認) にある。
+   - 既にある事業所に `allowed_hosted_domains` を足すと、個人のアカウントで結び付けた職員はログインできなくなる。結び付けを外す手段は退職のほかに無く、その職員をどう戻すかは未決で、#1065 で扱う。足す前に、事業所の管理者と確認する。
 2. 予定の API のイメージの `ops` を entrypoint にしたジョブを、内部のネットワークで、書き込まずに内容を表示するモード（`--dry-run`）で流す。
    - ジョブに渡す環境変数は、DB の接続の値と、運営用のクライアントの値（`BROKER_URL`、`BROKER_TOKEN_URL`、`BROKER_CLIENT_ID`、`BROKER_CLIENT_SECRET`）である。
    - 運営用のクライアントの secret は、予定の API の secret と分け、ジョブにだけ渡す。

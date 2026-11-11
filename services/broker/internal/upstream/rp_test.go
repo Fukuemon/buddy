@@ -75,7 +75,13 @@ func (f *fakeIdP) serve(w http.ResponseWriter, r *http.Request) {
 
 func newRP(t *testing.T, f *fakeIdP, browserOrigin string) *upstream.RP {
 	t.Helper()
-	idps := upstream.IdPs{"org-a": {OrgID: "org-a", Issuer: f.srv.URL, ClientID: "broker", ClientSecret: "secret"}}
+	return newRPWith(t, f, browserOrigin, nil)
+}
+
+// newRPWith は、事業所 org-a の許すドメインを domains にした RP を作る。domains が nil なら hd を確認しない。
+func newRPWith(t *testing.T, f *fakeIdP, browserOrigin string, domains []string) *upstream.RP {
+	t.Helper()
+	idps := upstream.IdPs{"org-a": {OrgID: "org-a", Issuer: f.srv.URL, ClientID: "broker", ClientSecret: "secret", AllowedHostedDomains: domains}}
 	rp, err := upstream.NewRP(idps, "https://login.example.com/login/callback", browserOrigin, f.srv.Client())
 	if err != nil {
 		t.Fatal(err)
@@ -215,6 +221,57 @@ func TestExchangeIssuerParam(t *testing.T) {
 	}
 	if _, err := rp.Exchange(context.Background(), "org-a", "code-1", f.srv.URL, a); err != nil {
 		t.Errorf("設定と同じ iss で err = %v", err)
+	}
+}
+
+// TestExchangeHostedDomain は、許すドメインを設定した事業所では、ID token の hd が許すドメインと合わないログインを
+// ErrHostedDomain で拒み、設定の無い事業所では hd を見ないことを確認する。
+func TestExchangeHostedDomain(t *testing.T) {
+	a := upstream.NewAttempt()
+	tests := []struct {
+		name    string
+		domains []string
+		// hd は ID token の hd である。空なら hd を入れない（個人の Google のアカウント）。
+		hd     string
+		reject bool
+	}{
+		{name: "hd が許すドメインと同じ", domains: []string{"example.com"}, hd: "example.com"},
+		{name: "hd が 2 つ目の許すドメインと同じ", domains: []string{"example.com", "example.org"}, hd: "example.org"},
+		{name: "hd の大文字と小文字は区別しない", domains: []string{"example.com"}, hd: "Example.COM"},
+		{name: "hd が許すドメインと違う", domains: []string{"example.com"}, hd: "other.example", reject: true},
+		{name: "hd が許すドメインのサブドメイン", domains: []string{"example.com"}, hd: "sub.example.com", reject: true},
+		{name: "hd が無い", domains: []string{"example.com"}, reject: true},
+		{name: "許すドメインの設定が無ければ、hd が無くても受ける"},
+		{name: "許すドメインの設定が無ければ、hd を見ない", hd: "other.example"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			f := startIdP(t)
+			f.claims = func(string) jwt.MapClaims {
+				c := f.Claims("broker", "u-1")
+				c["nonce"], c["email"], c["email_verified"] = a.Nonce, "aoki@example.com", true
+				if tt.hd != "" {
+					c["hd"] = tt.hd
+				}
+				return c
+			}
+			got, err := newRPWith(t, f, "", tt.domains).Exchange(context.Background(), "org-a", "code-1", "", a)
+			if tt.reject {
+				if !errors.Is(err, upstream.ErrHostedDomain) || errors.Is(err, upstream.ErrInvalidToken) {
+					t.Errorf("err = %v, want ErrHostedDomain だけ", err)
+				}
+				if got != (upstream.Identity{}) {
+					t.Errorf("拒むときに主張を返した: %+v", got)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatal(err)
+			}
+			if got.Subject != "u-1" {
+				t.Errorf("got %+v, want sub u-1", got)
+			}
+		})
 	}
 }
 
