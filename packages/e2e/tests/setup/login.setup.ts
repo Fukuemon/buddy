@@ -12,6 +12,8 @@ import {
   LOGIN_STATE,
   OFFICE_B,
   OFFICE_B_STATE,
+  OFFICE_CLERK,
+  OFFICE_CLERK_STATE,
   OKADA,
   OKADA_STATE,
 } from '../fixtures/env'
@@ -55,6 +57,12 @@ const ACCOUNTS = [
     path: OFFICE_B_STATE,
     email: OFFICE_B.email,
     staffName: OFFICE_B.staff.name,
+  },
+  {
+    title: 'compose のブローカーに訪問しない事務の職員でログインした状態を保存する',
+    path: OFFICE_CLERK_STATE,
+    email: OFFICE_CLERK.email,
+    staffName: OFFICE_CLERK.name,
   },
 ]
 

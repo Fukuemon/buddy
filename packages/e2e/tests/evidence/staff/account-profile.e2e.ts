@@ -1,85 +1,80 @@
 import { expect, test } from '@playwright/test'
 
-import { LEADER, LOGIN_EMAIL, LOGIN_STAFF } from '../../fixtures/env'
-import { EVIDENCE_VARIANTS, PHONE_VIEWPORT, recordPrEvidence } from '../../fixtures/evidence'
-import { signInAtBroker } from '../../screens/login'
+import { check, intro, step } from '../../fixtures/caption'
+import { LEADER, LEADER_STATE, LOGIN_STAFF, LOGIN_STATE } from '../../fixtures/env'
+import { PHONE_VIEWPORT } from '../../fixtures/recording'
 
 test.describe('自分の情報', () => {
-  for (const variant of EVIDENCE_VARIANTS) {
-    const prefix = variant.label ? `${variant.label}: ` : ''
+  test.describe(`${LEADER.staff.name}（チームリーダー、職員の管理の権限なし、幅 390px）`, () => {
+    test.use({ storageState: LEADER_STATE, viewport: PHONE_VIEWPORT })
 
-    test(`${prefix}職員の管理の権限を持たない職員がアカウントのメニューから自分の情報を開いた場合、自分の情報と持っている権限とカレンダーの連携が出て、職員の詳細へ移る操作が出ないこと`, async ({
-      browser,
+    test('account-profile-member 職員の管理の権限を持たない職員がアカウントのメニューから自分の情報を開いた場合、自分の情報と持っている権限とカレンダーの連携が出て、職員の詳細へ移る操作が出ないこと', async ({
+      page,
     }) => {
-      await recordPrEvidence(
-        browser,
-        {
-          name: 'account-profile-member',
-          title: '管理の権限を持たない職員が、アカウントのメニューから自分の情報を開く',
-          actor: `${LEADER.staff.name}（チームリーダー、職員の管理の権限なし）`,
-          variant,
-          viewport: PHONE_VIEWPORT,
-        },
-        async (page) => {
-          await page.goto('/schedule')
-          await signInAtBroker(page, LEADER.email)
-        },
-        async ({ page, step, check }) => {
-          await page.goto('/schedule')
-          await step('幅 390px で予定のカレンダーを開いている。アカウントのメニューを開く')
-          await page.getByTestId('viewer-menu-open').click()
-          await expect(page.getByTestId('viewer-profile')).toBeVisible()
-          await check('メニューの名前とログアウトの間に「自分の情報」が出る')
+      await page.goto('/schedule')
+      await expect(page.getByTestId('viewer-menu-open')).toBeVisible()
+      await intro(
+        page,
+        '管理の権限を持たない職員が、アカウントのメニューから自分の情報を開く\n前提 幅 390px で予定のカレンダーを開いている',
+      )
 
-          await step('「自分の情報」を押す')
-          await page.getByTestId('viewer-profile').click()
+      await step(page, 'アカウントのメニューを開く', () =>
+        page.getByTestId('viewer-menu-open').click(),
+      )
+      // スマートフォンの幅では、上の字幕がメニューを覆う
+      await check(
+        page,
+        'メニューの名前とログアウトの間に「自分の情報」が出る',
+        () => expect(page.getByTestId('viewer-profile')).toBeVisible(),
+        { position: 'bottom' },
+      )
+
+      await step(page, '「自分の情報」を押す', () => page.getByTestId('viewer-profile').click())
+      await check(
+        page,
+        '名前、メール、部署、チーム、役職、持っている権限の名前が出て、「職員の詳細を開く」は出ない',
+        async () => {
           await expect(page.getByTestId('account-profile-name')).toHaveText(LEADER.staff.name)
           await expect(page.getByTestId('account-profile-policy-list')).toBeVisible()
           await expect(page.getByTestId('account-profile-staff-detail')).toHaveCount(0)
-          await check(
-            '名前、メール、部署、チーム、役職、持っている権限の名前が出て、「職員の詳細を開く」は出ない',
-          )
+        },
+      )
 
-          await step('(撮影のため、カレンダーの連携まで送る)')
-          await page.getByTestId('account-profile-calendar').scrollIntoViewIfNeeded()
-          await expect(page.getByTestId('account-profile-calendar-not-linked')).toHaveText(
+      await step(page, '（撮影のため、カレンダーの連携まで送る）', () =>
+        page.getByTestId('account-profile-calendar').scrollIntoViewIfNeeded(),
+      )
+      await check(
+        page,
+        'カレンダーを連携していないことと、「連携は、事業所の管理者に頼んでください。」が出る',
+        () =>
+          expect(page.getByTestId('account-profile-calendar-not-linked')).toHaveText(
             '連携していません。連携は、事業所の管理者に頼んでください。',
-          )
-          await check(
-            'カレンダーを連携していないことと、「連携は、事業所の管理者に頼んでください。」が出る',
-          )
-        },
+          ),
       )
     })
+  })
 
-    test(`${prefix}職員の管理の権限を持つ職員が自分の情報で職員の詳細を開くを押した場合、自分の職員の詳細の画面へ移ること`, async ({
-      browser,
+  test.describe(`${LOGIN_STAFF.name}（マネージャー、職員の管理の権限あり）`, () => {
+    test.use({ storageState: LOGIN_STATE })
+
+    test('account-profile-manager 職員の管理の権限を持つ職員が自分の情報で職員の詳細を開くを押した場合、自分の職員の詳細の画面へ移ること', async ({
+      page,
     }) => {
-      await recordPrEvidence(
-        browser,
-        {
-          name: 'account-profile-manager',
-          title: '管理の権限を持つ職員が、自分の情報から自分の職員の詳細へ移る',
-          actor: `${LOGIN_STAFF.name}（マネージャー、職員の管理の権限あり）`,
-          variant,
-        },
-        async (page) => {
-          await page.goto('/me')
-          await signInAtBroker(page, LOGIN_EMAIL)
-        },
-        async ({ page, step, check }) => {
-          await step('自分の情報を開く')
-          await page.goto('/me')
-          await expect(page.getByTestId('account-profile-staff-detail')).toBeVisible()
-          await check('ページのタイトルの右に「職員の詳細を開く」が出る')
-
-          await step('「職員の詳細を開く」を押す')
-          await page.getByTestId('account-profile-staff-detail').click()
-          await expect(page).toHaveURL(new RegExp(`/staff/${LOGIN_STAFF.id}$`))
-          await expect(page.getByTestId('staff-detail-name')).toHaveText(LOGIN_STAFF.name)
-          await check(`自分（${LOGIN_STAFF.name}）の職員の詳細の画面に移る`)
-        },
+      await page.goto('/me')
+      await expect(page.getByTestId('account-profile-name')).toBeVisible()
+      await expect(page.getByTestId('account-profile-staff-detail')).toBeVisible()
+      await intro(
+        page,
+        '管理の権限を持つ職員が、自分の情報から自分の職員の詳細へ移る\n前提 自分の情報を開いている。ページのタイトルの右に「職員の詳細を開く」が出る',
       )
+
+      await step(page, '「職員の詳細を開く」を押す', () =>
+        page.getByTestId('account-profile-staff-detail').click(),
+      )
+      await check(page, `自分（${LOGIN_STAFF.name}）の職員の詳細の画面に移る`, async () => {
+        await expect(page).toHaveURL(new RegExp(`/staff/${LOGIN_STAFF.id}$`))
+        await expect(page.getByTestId('staff-detail-name')).toHaveText(LOGIN_STAFF.name)
+      })
     })
-  }
+  })
 })

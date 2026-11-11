@@ -1,8 +1,8 @@
 import { expect, test, type APIRequestContext, type Page } from '@playwright/test'
 
-import { issueAccessToken, routeApiReference } from '../../fixtures/apiReference'
-import { LEADER, LOGIN_EMAIL, LOGIN_STAFF, SCHEDULE_URL } from '../../fixtures/env'
-import { EVIDENCE_VARIANTS, recordPrEvidence } from '../../fixtures/evidence'
+import { routeApiReference } from '../../fixtures/apiReference'
+import { check, intro, step } from '../../fixtures/caption'
+import { LEADER, LOGIN_STAFF, LOGIN_STATE, SCHEDULE_URL } from '../../fixtures/env'
 import {
   STAFF_FORM,
   STAFF_MANAGE_CODE,
@@ -10,8 +10,7 @@ import {
   newStaff,
   removePolicy,
 } from '../../fixtures/staff'
-import { openApiClient, openApiReference } from '../../screens/apiReference'
-import { signInAtBroker } from '../../screens/login'
+import { openApiClient } from '../../screens/apiReference'
 import {
   fillApiBody,
   fillApiToken,
@@ -37,8 +36,6 @@ const TEAM_EDIT = { id: '01M5E1S42TTS7QZK05YGS0GYRC', code: 'schedule.team.edit'
 const SELF_EDIT_CODE = 'schedule.self.edit'
 /** 事業所の全ての予定の閲覧（schedule.all.read）。対象を指定しない権限で、メンバーとリーダーのデフォルトに無い。 */
 const ALL_READ_ID = '01M5E1S42TTS7QZK05YGS0GYRD'
-
-const ACTOR = `${LOGIN_STAFF.name}（マネージャー、職員の管理の権限あり）`
 
 /** 撮影の前に登録する職員の名前。仮の名前にする。 */
 const STAFF_NAME = '見本 職員'
@@ -96,12 +93,6 @@ const retargetTeamReadToAB = async (
   })
 }
 
-/** 撮る職員の詳細を開き、ブローカーで青木としてログインして、その画面に戻る。 */
-const signInAtDetail = async (page: Page, id: string) => {
-  await page.goto(`/staff/${id}`)
-  await signInAtBroker(page, LOGIN_EMAIL)
-}
-
 /** 職員の詳細を開き、名前が出るまで待つ。 */
 const openDetail = async (page: Page, id: string, name: string) => {
   await page.goto(`/staff/${id}`)
@@ -117,541 +108,426 @@ const submitPosition = async (page: Page, positionId: string) => {
   return dialog
 }
 
-/** プロフィールの「役職を変える」を開いて positionId の役職を選び、役職を変えるときの注意を返す。保存は押さない。 */
+/** プロフィールの「役職を変える」を開いて positionId の役職を選ぶ。保存は押さない。 */
 const choosePosition = async (page: Page, positionId: string) => {
   await page.getByTestId('staff-detail-position-change').click()
-  const dialog = page.getByTestId('staff-position-dialog')
-  await dialog.getByTestId(`staff-position-option-${positionId}`).check()
-  return dialog.getByTestId('staff-position-note')
+  await page
+    .getByTestId('staff-position-dialog')
+    .getByTestId(`staff-position-option-${positionId}`)
+    .check()
 }
+
+/** 「役職を変える」から positionName の役職を選んで保存し、ダイアログが閉じて役職の名前が変わるまで待つ。 */
+const changePosition = (page: Page, positionId: string, positionName: string) =>
+  step(page, `「役職を変える」から「${positionName}」を選んで保存する`, async () => {
+    const dialog = await submitPosition(page, positionId)
+    await expect(dialog).toHaveCount(0)
+    await expect(page.getByTestId('staff-detail-position-name')).toHaveText(positionName)
+  })
 
 /** 権限のタブを開き、権限の一覧が出るまで待つ。 */
-const openPoliciesTab = async (page: Page) => {
-  await page.getByTestId('staff-detail-tab-policies').click()
-  await expect(page.getByTestId('staff-policy-list')).toBeVisible()
-}
-
-/** API の参照のページを開き、青木のトークンを返す。 */
-const openApiReferenceWithToken = async (page: Page) => {
-  await routeApiReference(page)
-  await openApiReference(page, 'schedule')
-  return issueAccessToken(page.request, LOGIN_EMAIL)
-}
-
-/** API の参照のページを開き、トークンを取って、役職を変える相手のメンバーの職員を作る。シードの職員の権限を変えないため。 */
-const prepareMember = async (page: Page) => {
-  const token = await openApiReferenceWithToken(page)
-  const staff = await registerIn(page.request, token, {
-    label: 'position-api',
-    teamId: TEAM_B,
-    positionId: MEMBER_POSITION,
+const openPoliciesTab = (page: Page) =>
+  step(page, '権限のタブを開く', async () => {
+    await page.getByTestId('staff-detail-tab-policies').click()
+    await expect(page.getByTestId('staff-policy-list')).toBeVisible()
   })
-  return { token, userId: staff.id }
+
+/** 録画する page で、API の参照のページの「職員の役職を変える」のリクエストを開く。 */
+const openPositionRequest = async (page: Page) => {
+  await routeApiReference(page)
+  await openApiClient(page, 'schedule', {
+    tag: 'staff',
+    method: 'put',
+    path: '/v1/users/{user_id}/position',
+  })
 }
 
 test.describe('職員の管理', () => {
   test.describe('職員の役職', () => {
-    for (const variant of EVIDENCE_VARIANTS) {
-      const prefix = variant.label ? `${variant.label}: ` : ''
-      const isBefore = variant.name === 'before'
+    test.describe(`${LOGIN_STAFF.name}（マネージャー、職員の管理の権限あり）`, () => {
+      test.use({ storageState: LOGIN_STATE })
 
-      test(`${prefix}メンバーの役職をリーダーに変えた場合、役職と権限がリーダーのデフォルトになること`, async ({
-        browser,
+      test('staff-position-change メンバーの役職をリーダーに変えた場合、役職と権限がリーダーのデフォルトになること', async ({
+        context,
+        request,
       }) => {
-        await recordPrEvidence(
-          browser,
-          {
-            name: 'staff-position-change',
-            title: 'メンバーの役職をリーダーに変えると、役職と権限がリーダーのデフォルトになる',
-            actor: ACTOR,
-            variant,
-          },
-          prepareMember,
-          async ({ page, step, check }, { token, userId }) => {
-            await routeApiReference(page)
-            await openApiClient(page, 'schedule', {
-              tag: 'staff',
-              method: 'put',
-              path: '/v1/users/{user_id}/position',
-            })
-            await step(
-              'API の参照のページで「職員の役職を変える」のリクエストを開いている。チーム B のメンバーの「見本 職員」を、撮影の前に作ってある',
-            )
+        // 録画の外で、役職を変える相手のメンバーの職員を作る。シードの職員の権限を変えないため
+        const token = await issueManagerToken()
+        const { id: userId } = await registerIn(request, token, {
+          label: 'position-api',
+          teamId: TEAM_B,
+          positionId: MEMBER_POSITION,
+        })
 
-            await step(`認証の欄に ${LOGIN_STAFF.name} のトークンを入れる（伏せ字で出る）`)
-            await fillApiToken(page, token)
+        const page = await context.newPage()
+        await openPositionRequest(page)
+        await expect(apiClient(page).dialog).toBeVisible()
+        await intro(
+          page,
+          'メンバーの役職をリーダーに変えると、役職と権限がリーダーのデフォルトになる\n前提 API の参照のページで「職員の役職を変える」のリクエストを開いている。チーム B のメンバーの「見本 職員」を、撮影の前に作ってある',
+        )
 
-            await step('「見本 職員」の役職をリーダーに変えるリクエストを送る')
-            await fillApiVariable(page, 'user_id', userId)
-            await fillApiBody(page, { position_id: LEADER_POSITION })
-            await apiClient(page).send.click()
+        await step(page, `認証の欄に ${LOGIN_STAFF.name} のトークンを入れる（伏せ字で出る）`, () =>
+          fillApiToken(page, token),
+        )
+        await step(page, '「見本 職員」の役職をリーダーに変えるリクエストを送る', async () => {
+          await fillApiVariable(page, 'user_id', userId)
+          await fillApiBody(page, { position_id: LEADER_POSITION })
+          await apiClient(page).send.click()
+        })
+        await check(
+          page,
+          '200 が返り、役職がリーダーになり、権限がリーダーのデフォルト（自分の予定の編集、チームの予定の閲覧と編集）になる',
+          async () => {
             await expect(apiClient(page).dialog).toContainText('200 OK')
             await expect(apiClient(page).dialog).toContainText('"name": "リーダー"')
             await expect(apiClient(page).dialog).toContainText('"code": "schedule.team.edit"')
-            await check(
-              '200 が返り、役職がリーダーになり、権限がリーダーのデフォルト（自分の予定の編集、チームの予定の閲覧と編集）になる',
-            )
           },
         )
       })
 
-      test(`${prefix}指定した職員の予定の閲覧を個別に足したメンバーの役職をリーダーに変えた場合、個別に足した権限が残ること`, async ({
-        browser,
-      }) => {
-        await recordPrEvidence(
-          browser,
-          {
-            name: 'position-keep-individual',
-            title: '個別に足した権限が役職を変えても残る',
-            actor: ACTOR,
-            variant,
-          },
-          async (page) => {
-            const token = await issueManagerToken()
-            const staff = await registerIn(page.request, token, {
-              label: 'position-keep-individual',
-              teamId: TEAM_A,
-              positionId: MEMBER_POSITION,
-            })
-            await addTargetedPolicy(page.request, token, staff.id, {
-              policy_id: USER_READ.id,
-              target_user_ids: [LEADER.staff.id],
-            })
-            await signInAtDetail(page, staff.id)
-            return staff.id
-          },
-          async ({ page, step, check }, id) => {
-            await openDetail(page, id, STAFF_NAME)
-            await step(
-              `「指定した職員の予定の閲覧」（${LEADER.staff.name}）を個別に足したメンバーの「${STAFF_NAME}」の職員の詳細を開いている（撮影の前に API で登録した）`,
-            )
+      // 個別に足した権限のまとまりは、改修前と改修後の判定のスクリーンショットを並べて比べる。確認する関数は両方の版で通る役職のデフォルトだけを見る
+      test(
+        'position-keep-individual 指定した職員の予定の閲覧を個別に足したメンバーの役職をリーダーに変えた場合、個別に足した権限が残ること',
+        { tag: '@compare' },
+        async ({ context, request }) => {
+          const token = await issueManagerToken()
+          const staff = await registerIn(request, token, {
+            label: 'position-keep-individual',
+            teamId: TEAM_A,
+            positionId: MEMBER_POSITION,
+          })
+          await addTargetedPolicy(request, token, staff.id, {
+            policy_id: USER_READ.id,
+            target_user_ids: [LEADER.staff.id],
+          })
 
-            await step('「役職を変える」から「リーダー」を選んで保存する')
-            const dialog = await submitPosition(page, LEADER_POSITION)
-            await expect(dialog).toHaveCount(0)
-            await expect(page.getByTestId('staff-detail-position-name')).toHaveText('リーダー')
+          const page = await context.newPage()
+          await openDetail(page, staff.id, STAFF_NAME)
+          await expect(page.getByTestId('staff-detail-name')).toHaveText(STAFF_NAME)
+          await intro(
+            page,
+            `個別に足した権限が役職を変えても残る\n前提 「指定した職員の予定の閲覧」（${LEADER.staff.name}）を個別に足したメンバーの「${STAFF_NAME}」の職員の詳細を開いている（撮影の前に API で登録した）`,
+          )
 
-            await step('権限のタブを開く')
-            await openPoliciesTab(page)
-            const position = page.getByTestId('staff-policy-group-position')
-            await expect(position).toContainText('役職「リーダー」で付く権限')
-            await expect(position.getByTestId(/^staff-policy-row-/)).toHaveCount(3)
-            const individual = page.getByTestId('staff-policy-group-individual')
-            if (isBefore) {
-              await expect(individual).toHaveCount(0)
-              await check(
-                '役職の名前が「リーダー」になり、「役職「リーダー」で付く権限」に 3 つの権限が出る。改修前は「個別に足した権限」のまとまりが出ない',
-              )
-            } else {
+          await changePosition(page, LEADER_POSITION, 'リーダー')
+          await openPoliciesTab(page)
+          const position = page.getByTestId('staff-policy-group-position')
+          await check(
+            page,
+            `役職の名前が「リーダー」になり、権限のタブの「役職「リーダー」で付く権限」に 3 つの権限が、「個別に足した権限」に「指定した職員の予定の閲覧」と対象の「${LEADER.staff.name}」が出る`,
+            async () => {
+              await expect(position).toContainText('役職「リーダー」で付く権限')
+              await expect(position.getByTestId(/^staff-policy-row-/)).toHaveCount(3)
+            },
+          )
+        },
+      )
+
+      // チームの予定の編集の対象は、改修前と改修後の判定のスクリーンショットを並べて比べる。確認する関数は両方の版で通るチームの予定の閲覧の対象だけを見る
+      test(
+        'position-overlap-keeps-target チーム B を対象にするチームの予定の編集を個別に足したチーム A のメンバーの役職をリーダーに変えた場合、チームの予定の編集の対象が B のまま残ること',
+        { tag: '@compare' },
+        async ({ context, request }) => {
+          const token = await issueManagerToken()
+          const staff = await registerIn(request, token, {
+            label: 'position-overlap-keeps-target',
+            teamId: TEAM_A,
+            positionId: MEMBER_POSITION,
+          })
+          await addTargetedPolicy(request, token, staff.id, {
+            policy_id: TEAM_EDIT.id,
+            target_team_ids: [TEAM_B],
+          })
+
+          const page = await context.newPage()
+          await openDetail(page, staff.id, STAFF_NAME)
+          await expect(page.getByTestId('staff-detail-name')).toHaveText(STAFF_NAME)
+          await intro(
+            page,
+            `新しい役職のデフォルトにもある個別の権限は対象が残る\n前提 チーム B を対象にする「チームの予定の編集」を個別に足した、チーム A のメンバーの「${STAFF_NAME}」の職員の詳細を開いている（撮影の前に API で登録した）`,
+          )
+
+          await changePosition(page, LEADER_POSITION, 'リーダー')
+          await openPoliciesTab(page)
+          const position = page.getByTestId('staff-policy-group-position')
+          await check(
+            page,
+            '権限のタブの「役職「リーダー」で付く権限」の「チームの予定の編集」の対象に「B」だけが出て、「A」は出ない。「チームの予定の閲覧」の対象には「A」が出る',
+            async () => {
+              await expect(position).toContainText('役職「リーダー」で付く権限')
               await expect(
-                individual.getByTestId(`staff-policy-row-${USER_READ.code}`),
-              ).toContainText('指定した職員の予定の閲覧')
-              await expect(
-                individual.getByTestId(`staff-policy-targets-${USER_READ.code}`),
-              ).toHaveText(LEADER.staff.name)
-              await check(
-                `役職の名前が「リーダー」になり、権限のタブの「役職「リーダー」で付く権限」に 3 つの権限が、「個別に足した権限」に「指定した職員の予定の閲覧」と対象の「${LEADER.staff.name}」が出る`,
-              )
-            }
-          },
-        )
-      })
+                position.getByTestId(`staff-policy-targets-${TEAM_READ.code}`),
+              ).toHaveText('A')
+            },
+          )
+        },
+      )
 
-      test(`${prefix}チーム B を対象にするチームの予定の編集を個別に足したチーム A のメンバーの役職をリーダーに変えた場合、チームの予定の編集の対象が B のまま残ること`, async ({
-        browser,
+      // レスポンスの target_team_ids は、改修前と改修後の判定のスクリーンショットを並べて比べる。確認する関数は両方の版で通る 200 だけを見る
+      test(
+        'position-same-keeps-targets チームの予定の閲覧の対象を A と B に直したチーム A のリーダーを API で同じリーダーに変えた場合、200 が返り、対象が A と B のまま残ること',
+        { tag: '@compare' },
+        async ({ context, request }) => {
+          const token = await issueManagerToken()
+          const staff = await registerIn(request, token, {
+            label: 'position-same-keeps-targets',
+            teamId: TEAM_A,
+            positionId: LEADER_POSITION,
+          })
+          await retargetTeamReadToAB(request, token, staff)
+
+          const page = await context.newPage()
+          await openPositionRequest(page)
+          await expect(apiClient(page).dialog).toBeVisible()
+          await intro(
+            page,
+            `同じ役職に変えると職員ごとに直した対象が残る\n前提 API の参照のページで「職員の役職を変える」のリクエストを開いている。チーム A のリーダーの「${STAFF_NAME}」を撮影の前に登録し、「チームの予定の閲覧」の対象を A と B に直してある`,
+          )
+
+          await step(
+            page,
+            `認証の欄に ${LOGIN_STAFF.name} のトークンを入れる（伏せ字で出る）`,
+            () => fillApiToken(page, token),
+          )
+          await step(
+            page,
+            `「${STAFF_NAME}」を今と同じ「リーダー」に変えるリクエストを送る`,
+            async () => {
+              await fillApiVariable(page, 'user_id', staff.id)
+              await fillApiBody(page, { position_id: LEADER_POSITION })
+              await apiClient(page).send.click()
+              await expect(apiClient(page).dialog).toContainText('200 OK')
+              await scrollApiResponseTo(page, `"code": "${TEAM_READ.code}"`)
+            },
+          )
+          await check(
+            page,
+            '200 が返り、レスポンスの「チームの予定の閲覧」の target_team_ids に A と B の 2 つの ID が出る',
+            () => expect(apiClient(page).dialog).toContainText('200 OK'),
+          )
+        },
+      )
+
+      test('position-default-replaced チームの予定の閲覧の対象を A と B に直したチーム A のリーダーの役職をメンバーに変えた場合、前の役職のデフォルトの権限が消えること', async ({
+        context,
+        request,
       }) => {
-        await recordPrEvidence(
-          browser,
-          {
-            name: 'position-overlap-keeps-target',
-            title: '新しい役職のデフォルトにもある個別の権限は対象が残る',
-            actor: ACTOR,
-            variant,
-          },
-          async (page) => {
-            const token = await issueManagerToken()
-            const staff = await registerIn(page.request, token, {
-              label: 'position-overlap-keeps-target',
-              teamId: TEAM_A,
-              positionId: MEMBER_POSITION,
-            })
-            await addTargetedPolicy(page.request, token, staff.id, {
-              policy_id: TEAM_EDIT.id,
-              target_team_ids: [TEAM_B],
-            })
-            await signInAtDetail(page, staff.id)
-            return staff.id
-          },
-          async ({ page, step, check }, id) => {
-            await openDetail(page, id, STAFF_NAME)
-            await step(
-              `チーム B を対象にする「チームの予定の編集」を個別に足した、チーム A のメンバーの「${STAFF_NAME}」の職員の詳細を開いている（撮影の前に API で登録した）`,
-            )
+        const token = await issueManagerToken()
+        const staff = await registerIn(request, token, {
+          label: 'position-default-replaced',
+          teamId: TEAM_A,
+          positionId: LEADER_POSITION,
+        })
+        await retargetTeamReadToAB(request, token, staff)
 
-            await step('「役職を変える」から「リーダー」を選んで保存する')
-            const dialog = await submitPosition(page, LEADER_POSITION)
-            await expect(dialog).toHaveCount(0)
-            await expect(page.getByTestId('staff-detail-position-name')).toHaveText('リーダー')
-
-            await step('権限のタブを開く')
-            await openPoliciesTab(page)
-            const position = page.getByTestId('staff-policy-group-position')
-            await expect(position).toContainText('役職「リーダー」で付く権限')
-            await expect(position.getByTestId(`staff-policy-targets-${TEAM_READ.code}`)).toHaveText(
-              'A',
-            )
-            await expect(position.getByTestId(`staff-policy-targets-${TEAM_EDIT.code}`)).toHaveText(
-              isBefore ? 'A' : 'B',
-            )
-            await check(
-              isBefore
-                ? '改修前は、「役職「リーダー」で付く権限」の「チームの予定の編集」の対象が「A」になる。「チームの予定の閲覧」の対象には「A」が出る'
-                : '権限のタブの「役職「リーダー」で付く権限」の「チームの予定の編集」の対象に「B」だけが出て、「A」は出ない。「チームの予定の閲覧」の対象には「A」が出る',
-            )
-          },
+        const page = await context.newPage()
+        await openDetail(page, staff.id, STAFF_NAME)
+        await expect(page.getByTestId('staff-detail-name')).toHaveText(STAFF_NAME)
+        await intro(
+          page,
+          `前の役職のデフォルトの権限は対象を直していても消える\n前提 「チームの予定の閲覧」の対象を A と B に直した、チーム A のリーダーの「${STAFF_NAME}」の職員の詳細を開いている（撮影の前に API で登録した）`,
         )
-      })
 
-      test(`${prefix}チームの予定の閲覧の対象を A と B に直したチーム A のリーダーを API で同じリーダーに変えた場合、200 が返り、対象が A と B のまま残ること`, async ({
-        browser,
-      }) => {
-        await recordPrEvidence(
-          browser,
-          {
-            name: 'position-same-keeps-targets',
-            title: '同じ役職に変えると職員ごとに直した対象が残る',
-            actor: ACTOR,
-            variant,
-          },
-          async (page) => {
-            const token = await openApiReferenceWithToken(page)
-            const staff = await registerIn(page.request, token, {
-              label: 'position-same-keeps-targets',
-              teamId: TEAM_A,
-              positionId: LEADER_POSITION,
-            })
-            await retargetTeamReadToAB(page.request, token, staff)
-            return { token, userId: staff.id }
-          },
-          async ({ page, step, check }, { token, userId }) => {
-            await routeApiReference(page)
-            await openApiClient(page, 'schedule', {
-              tag: 'staff',
-              method: 'put',
-              path: '/v1/users/{user_id}/position',
-            })
-            await step(
-              `API の参照のページで「職員の役職を変える」のリクエストを開いている。チーム A のリーダーの「${STAFF_NAME}」を撮影の前に登録し、「チームの予定の閲覧」の対象を A と B に直してある`,
-            )
-
-            await step(`認証の欄に ${LOGIN_STAFF.name} のトークンを入れる（伏せ字で出る）`)
-            await fillApiToken(page, token)
-
-            await step(`「${STAFF_NAME}」を今と同じ「リーダー」に変えるリクエストを送る`)
-            await fillApiVariable(page, 'user_id', userId)
-            await fillApiBody(page, { position_id: LEADER_POSITION })
-            await apiClient(page).send.click()
-            await expect(apiClient(page).dialog).toContainText('200 OK')
-            await scrollApiResponseTo(page, `"code": "${TEAM_READ.code}"`)
-            if (isBefore) {
-              await check(
-                '200 が返る。改修前は、「チームの予定の閲覧」の target_team_ids が A だけに戻る',
-              )
-            } else {
-              await expect(apiClient(page).response).toContainText(
-                new RegExp(
-                  `"code": "${TEAM_READ.code}"[^}]*"target_team_ids": \\[\\s*"(${TEAM_A}|${TEAM_B})",\\s*"(${TEAM_A}|${TEAM_B})"\\s*\\]`,
-                ),
-              )
-              await expect(apiClient(page).responseLine(TEAM_B)).toBeVisible()
-              await check(
-                '200 が返り、レスポンスの「チームの予定の閲覧」の target_team_ids に A と B の 2 つの ID が出る',
-              )
-            }
-          },
-        )
-      })
-    }
-
-    // 改修前と同じ結果になるか、改修前には無い対照の観点なので、改修後だけを撮る
-    for (const variant of EVIDENCE_VARIANTS.filter(({ name }) => name !== 'before')) {
-      const prefix = variant.label ? `${variant.label}: ` : ''
-
-      test(`${prefix}チームの予定の閲覧の対象を A と B に直したチーム A のリーダーの役職をメンバーに変えた場合、前の役職のデフォルトの権限が消えること`, async ({
-        browser,
-      }) => {
-        await recordPrEvidence(
-          browser,
-          {
-            name: 'position-default-replaced',
-            title: '前の役職のデフォルトの権限は対象を直していても消える',
-            actor: ACTOR,
-            variant,
-          },
-          async (page) => {
-            const token = await issueManagerToken()
-            const staff = await registerIn(page.request, token, {
-              label: 'position-default-replaced',
-              teamId: TEAM_A,
-              positionId: LEADER_POSITION,
-            })
-            await retargetTeamReadToAB(page.request, token, staff)
-            await signInAtDetail(page, staff.id)
-            return staff.id
-          },
-          async ({ page, step, check }, id) => {
-            await openDetail(page, id, STAFF_NAME)
-            await step(
-              `「チームの予定の閲覧」の対象を A と B に直した、チーム A のリーダーの「${STAFF_NAME}」の職員の詳細を開いている（撮影の前に API で登録した）`,
-            )
-
-            await step('「役職を変える」から「メンバー」を選んで保存する')
-            const dialog = await submitPosition(page, MEMBER_POSITION)
-            await expect(dialog).toHaveCount(0)
-            await expect(page.getByTestId('staff-detail-position-name')).toHaveText('メンバー')
-
-            await step('権限のタブを開く')
-            await openPoliciesTab(page)
-            const list = page.getByTestId('staff-policy-list')
+        await changePosition(page, MEMBER_POSITION, 'メンバー')
+        await openPoliciesTab(page)
+        const list = page.getByTestId('staff-policy-list')
+        await check(
+          page,
+          '役職の名前が「メンバー」になり、権限のタブに「自分の予定の編集」だけが出て、「チームの予定の閲覧」と「チームの予定の編集」は出ない',
+          async () => {
             await expect(list.getByTestId(`staff-policy-row-${SELF_EDIT_CODE}`)).toBeVisible()
             await expect(list.getByTestId(/^staff-policy-row-/)).toHaveCount(1)
             await expect(list.getByTestId(`staff-policy-row-${TEAM_READ.code}`)).toHaveCount(0)
             await expect(list.getByTestId(`staff-policy-row-${TEAM_EDIT.code}`)).toHaveCount(0)
-            await check(
-              '役職の名前が「メンバー」になり、権限のタブに「自分の予定の編集」だけが出て、「チームの予定の閲覧」と「チームの予定の編集」は出ない',
-            )
           },
         )
       })
 
-      test(`${prefix}チーム B のメンバーの役職をリーダーに変えた場合、チームの権限の対象が所属のチーム B になること`, async ({
-        browser,
+      test('position-team-target チーム B のメンバーの役職をリーダーに変えた場合、チームの権限の対象が所属のチーム B になること', async ({
+        context,
+        request,
       }) => {
-        await recordPrEvidence(
-          browser,
-          {
-            name: 'position-team-target',
-            title: '新しい役職のチームの権限が所属のチームを対象にする',
-            actor: ACTOR,
-            variant,
-          },
-          async (page) => {
-            const token = await issueManagerToken()
-            const staff = await registerIn(page.request, token, {
-              label: 'position-team-target',
-              teamId: TEAM_B,
-              positionId: MEMBER_POSITION,
-            })
-            await signInAtDetail(page, staff.id)
-            return staff.id
-          },
-          async ({ page, step, check }, id) => {
-            await openDetail(page, id, STAFF_NAME)
-            await step(
-              `チーム B のメンバーの「${STAFF_NAME}」の職員の詳細を開いている（撮影の前に API で登録した）`,
-            )
+        const token = await issueManagerToken()
+        const staff = await registerIn(request, token, {
+          label: 'position-team-target',
+          teamId: TEAM_B,
+          positionId: MEMBER_POSITION,
+        })
 
-            await step('「役職を変える」から「リーダー」を選んで保存する')
-            const dialog = await submitPosition(page, LEADER_POSITION)
-            await expect(dialog).toHaveCount(0)
-            await expect(page.getByTestId('staff-detail-position-name')).toHaveText('リーダー')
+        const page = await context.newPage()
+        await openDetail(page, staff.id, STAFF_NAME)
+        await expect(page.getByTestId('staff-detail-name')).toHaveText(STAFF_NAME)
+        await intro(
+          page,
+          `新しい役職のチームの権限が所属のチームを対象にする\n前提 チーム B のメンバーの「${STAFF_NAME}」の職員の詳細を開いている（撮影の前に API で登録した）`,
+        )
 
-            await step('権限のタブを開く')
-            await openPoliciesTab(page)
-            const position = page.getByTestId('staff-policy-group-position')
+        await changePosition(page, LEADER_POSITION, 'リーダー')
+        await openPoliciesTab(page)
+        const position = page.getByTestId('staff-policy-group-position')
+        await check(
+          page,
+          '権限のタブの「チームの予定の閲覧」と「チームの予定の編集」の対象に「B」が出る',
+          async () => {
             await expect(position.getByTestId(`staff-policy-targets-${TEAM_READ.code}`)).toHaveText(
               'B',
             )
             await expect(position.getByTestId(`staff-policy-targets-${TEAM_EDIT.code}`)).toHaveText(
               'B',
-            )
-            await check(
-              '権限のタブの「チームの予定の閲覧」と「チームの予定の編集」の対象に「B」が出る',
             )
           },
         )
       })
 
       // 青木が最後の有効な管理者である前提で撮るので、管理者を登録する position-manager-change-ok より前に置く
-      test(`${prefix}事業所で唯一の有効な管理者の役職を職員の管理の権限の無いリーダーに変えた場合、拒まれて役職と権限が変わらないこと`, async ({
-        browser,
+      test('position-last-manager-conflict 事業所で唯一の有効な管理者の役職を職員の管理の権限の無いリーダーに変えた場合、拒まれて役職と権限が変わらないこと', async ({
+        page,
       }) => {
-        await recordPrEvidence(
-          browser,
-          {
-            name: 'position-last-manager-conflict',
-            title: '最後の有効な管理者を職員の管理の権限の無い役職に変えると拒まれる',
-            actor: ACTOR,
-            variant,
-          },
-          async (page) => {
-            await signInAtDetail(page, LOGIN_STAFF.id)
-          },
-          async ({ page, step, check }) => {
-            await openDetail(page, LOGIN_STAFF.id, LOGIN_STAFF.name)
-            await step(
-              `職員の管理の権限を役職のデフォルトだけで持つ、事業所で唯一の有効な管理者の「${LOGIN_STAFF.name}」の職員の詳細を開いている（シードのまま）`,
-            )
+        await openDetail(page, LOGIN_STAFF.id, LOGIN_STAFF.name)
+        await expect(page.getByTestId('staff-detail-name')).toHaveText(LOGIN_STAFF.name)
+        await intro(
+          page,
+          `最後の有効な管理者を職員の管理の権限の無い役職に変えると拒まれる\n前提 職員の管理の権限を役職のデフォルトだけで持つ、事業所で唯一の有効な管理者の「${LOGIN_STAFF.name}」の職員の詳細を開いている（シードのまま）`,
+        )
 
-            await step('「役職を変える」から「リーダー」を選んで保存する')
-            const dialog = await submitPosition(page, LEADER_POSITION)
+        const dialog = page.getByTestId('staff-position-dialog')
+        await step(page, '「役職を変える」から「リーダー」を選んで保存する', async () => {
+          await submitPosition(page, LEADER_POSITION)
+        })
+        await check(
+          page,
+          'ダイアログが閉じず、フッターに「職員の管理の権限を持つ最後の有効な職員は、その権限を持たない役職に変えられません。」が出る',
+          async () => {
             await expect(dialog.getByTestId('staff-position-error')).toHaveText(
               '職員の管理の権限を持つ最後の有効な職員は、その権限を持たない役職に変えられません。',
             )
             await expect(dialog).toBeVisible()
-            await check(
-              'ダイアログが閉じず、フッターに「職員の管理の権限を持つ最後の有効な職員は、その権限を持たない役職に変えられません。」が出る',
-            )
+          },
+        )
 
-            await step('ダイアログを閉じ、権限のタブを開く')
-            await dialog.getByTestId('staff-position-cancel').click()
-            await expect(dialog).toHaveCount(0)
-            await expect(page.getByTestId('staff-detail-position-name')).toHaveText('管理者')
-            await openPoliciesTab(page)
+        await step(page, 'ダイアログを閉じ、権限のタブを開く', async () => {
+          await dialog.getByTestId('staff-position-cancel').click()
+          await expect(dialog).toHaveCount(0)
+          await expect(page.getByTestId('staff-detail-position-name')).toHaveText('管理者')
+          await page.getByTestId('staff-detail-tab-policies').click()
+          await expect(page.getByTestId('staff-policy-list')).toBeVisible()
+        })
+        await check(
+          page,
+          '役職の名前は「管理者」で、権限のタブに「職員の管理」が出る',
+          async () => {
             await expect(page.getByTestId(`staff-policy-row-${STAFF_MANAGE_CODE}`)).toBeVisible()
-            await check('役職の名前は「管理者」で、権限のタブに「職員の管理」が出る')
           },
         )
       })
 
-      test(`${prefix}ほかに有効な管理者がいる管理者の役職を職員の管理の権限の無いリーダーに変えた場合、役職がリーダーになり職員の管理の権限が消えること`, async ({
-        browser,
+      test('position-manager-change-ok ほかに有効な管理者がいる管理者の役職を職員の管理の権限の無いリーダーに変えた場合、役職がリーダーになり職員の管理の権限が消えること', async ({
+        context,
+        request,
       }) => {
-        await recordPrEvidence(
-          browser,
-          {
-            name: 'position-manager-change-ok',
-            title: 'ほかに有効な管理者がいれば職員の管理の権限の無い役職に変えられる',
-            actor: ACTOR,
-            variant,
-          },
-          async (page) => {
-            const token = await issueManagerToken()
-            const staff = await registerIn(page.request, token, {
-              label: 'position-manager-change-ok',
-              teamId: TEAM_A,
-              positionId: MANAGER_POSITION,
-            })
-            await signInAtDetail(page, staff.id)
-            return staff.id
-          },
-          async ({ page, step, check }, id) => {
-            await openDetail(page, id, STAFF_NAME)
-            await expect(page.getByTestId('staff-detail-position-name')).toHaveText('管理者')
-            await step(
-              `撮影の前に API で登録した管理者の「${STAFF_NAME}」の職員の詳細を開いている。${LOGIN_STAFF.name} もほかの有効な管理者である`,
-            )
+        const token = await issueManagerToken()
+        const staff = await registerIn(request, token, {
+          label: 'position-manager-change-ok',
+          teamId: TEAM_A,
+          positionId: MANAGER_POSITION,
+        })
 
-            await step('「役職を変える」から「リーダー」を選んで保存する')
-            const dialog = await submitPosition(page, LEADER_POSITION)
-            await expect(dialog).toHaveCount(0)
-            await expect(page.getByTestId('staff-detail-position-name')).toHaveText('リーダー')
+        const page = await context.newPage()
+        await openDetail(page, staff.id, STAFF_NAME)
+        await expect(page.getByTestId('staff-detail-position-name')).toHaveText('管理者')
+        await intro(
+          page,
+          `ほかに有効な管理者がいれば職員の管理の権限の無い役職に変えられる\n前提 撮影の前に API で登録した管理者の「${STAFF_NAME}」の職員の詳細を開いている。${LOGIN_STAFF.name} もほかの有効な管理者である`,
+        )
 
-            await step('権限のタブを開く')
-            await openPoliciesTab(page)
-            const list = page.getByTestId('staff-policy-list')
+        await changePosition(page, LEADER_POSITION, 'リーダー')
+        await openPoliciesTab(page)
+        const list = page.getByTestId('staff-policy-list')
+        await check(
+          page,
+          'ダイアログが閉じ、役職の名前が「リーダー」になり、権限のタブに「職員の管理」が出ない',
+          async () => {
             await expect(list.getByTestId(`staff-policy-row-${SELF_EDIT_CODE}`)).toBeVisible()
             await expect(list.getByTestId(`staff-policy-row-${STAFF_MANAGE_CODE}`)).toHaveCount(0)
-            await check(
-              'ダイアログが閉じ、役職の名前が「リーダー」になり、権限のタブに「職員の管理」が出ない',
-            )
           },
         )
       })
-    }
+    })
   })
 
-  // 改修前の版は、注意の文が個別に足した権限は「消えます」という前の文言なので、isBefore で期待の文を分ける
+  // 注意の文は、改修前は個別に足した権限が「消えます」、改修後は「残ります」なので、改修前と改修後の判定のスクリーンショットを並べて比べる。確認する関数は両方の版で通る部分だけを見る
   test.describe('役職を変えるときの注意', () => {
-    for (const variant of EVIDENCE_VARIANTS) {
-      const prefix = variant.label ? `${variant.label}: ` : ''
-      const isBefore = variant.name === 'before'
+    test.describe(`${LOGIN_STAFF.name}（マネージャー、職員の管理の権限あり）`, () => {
+      test.use({ storageState: LOGIN_STATE })
 
-      test(`${prefix}事業所の全ての予定の閲覧を個別に足したメンバーの役職を変えるダイアログでリーダーを選んだ場合、個別に足した権限が残ることを示す注意が出ること`, async ({
-        browser,
-      }) => {
-        await recordPrEvidence(
-          browser,
-          {
-            name: 'position-note-keep-individual',
-            title: '個別に足した権限を持つ職員で、残ることを示す注意が出る',
-            actor: ACTOR,
-            variant,
-          },
-          async (page) => {
-            const token = await issueManagerToken()
-            const staff = await registerIn(page.request, token, {
-              label: 'position-note-keep-individual',
-              teamId: TEAM_A,
-              positionId: MEMBER_POSITION,
-            })
-            await addTargetedPolicy(page.request, token, staff.id, { policy_id: ALL_READ_ID })
-            await signInAtDetail(page, staff.id)
-            return staff.id
-          },
-          async ({ page, step, check }, id) => {
-            await openDetail(page, id, STAFF_NAME)
-            await step(
-              `「事業所の全ての予定の閲覧」を個別に足したメンバーの「${STAFF_NAME}」の職員の詳細を開いている（撮影の前に API で登録した）`,
-            )
+      test(
+        'position-note-keep-individual 事業所の全ての予定の閲覧を個別に足したメンバーの役職を変えるダイアログでリーダーを選んだ場合、個別に足した権限が残ることを示す注意が出ること',
+        { tag: '@compare' },
+        async ({ context, request }) => {
+          const token = await issueManagerToken()
+          const staff = await registerIn(request, token, {
+            label: 'position-note-keep-individual',
+            teamId: TEAM_A,
+            positionId: MEMBER_POSITION,
+          })
+          await addTargetedPolicy(request, token, staff.id, { policy_id: ALL_READ_ID })
 
-            await step('「役職を変える」を押し、「リーダー」を選ぶ')
-            const note = await choosePosition(page, LEADER_POSITION)
-            const expected = isBefore
-              ? `役職を変えると、${STAFF_NAME} の権限は全て、新しい役職に決まっている権限に置き換わります。個別に足した権限（事業所の全ての予定の閲覧）は消えます。`
-              : `役職を変えると、${STAFF_NAME} の役職で付く権限は、新しい役職で付く権限に置き換わります。個別に足した権限（事業所の全ての予定の閲覧）は残ります。`
-            await expect(note).toHaveText(expected)
-            await expect(page.getByTestId('staff-position-submit')).toHaveClass(/bg-danger/)
-            await check(
-              isBefore
-                ? `改修前は、注意の文が「${expected}」になる`
-                : `注意の文が「${expected}」になる。確定の「役職を変える」は赤い塗りのまま`,
-            )
-          },
-        )
-      })
+          const page = await context.newPage()
+          await openDetail(page, staff.id, STAFF_NAME)
+          await intro(
+            page,
+            `個別に足した権限を持つ職員で、残ることを示す注意が出る\n前提 「事業所の全ての予定の閲覧」を個別に足したメンバーの「${STAFF_NAME}」の職員の詳細を開いている（撮影の前に API で登録した）`,
+          )
 
-      test(`${prefix}個別に足した権限を持たないメンバーの役職を変えるダイアログでリーダーを選んだ場合、個別に足した権限の文を出さないこと`, async ({
-        browser,
-      }) => {
-        await recordPrEvidence(
-          browser,
-          {
-            name: 'position-note-no-individual',
-            title: '個別に足した権限を持たない職員で、残る権限の文を出さない',
-            actor: ACTOR,
-            variant,
-          },
-          async (page) => {
-            const token = await issueManagerToken()
-            const staff = await registerIn(page.request, token, {
-              label: 'position-note-no-individual',
-              teamId: TEAM_A,
-              positionId: MEMBER_POSITION,
-            })
-            await signInAtDetail(page, staff.id)
-            return staff.id
-          },
-          async ({ page, step, check }, id) => {
-            await openDetail(page, id, STAFF_NAME)
-            await step(
-              `役職のデフォルトの権限だけを持つメンバーの「${STAFF_NAME}」の職員の詳細を開いている（撮影の前に API で登録した）`,
-            )
+          const note = page.getByTestId('staff-position-dialog').getByTestId('staff-position-note')
+          await step(page, '「役職を変える」を押し、「リーダー」を選ぶ', () =>
+            choosePosition(page, LEADER_POSITION),
+          )
+          await check(
+            page,
+            `注意の文が「役職を変えると、${STAFF_NAME} の役職で付く権限は、新しい役職で付く権限に置き換わります。個別に足した権限（事業所の全ての予定の閲覧）は残ります。」になる。確定の「役職を変える」は赤い塗りのまま`,
+            async () => {
+              await expect(note).toContainText(`役職を変えると、${STAFF_NAME} の`)
+              await expect(note).toContainText('個別に足した権限（事業所の全ての予定の閲覧）')
+              await expect(page.getByTestId('staff-position-submit')).toHaveClass(/bg-danger/)
+            },
+          )
+        },
+      )
 
-            await step('「役職を変える」を押し、「リーダー」を選ぶ')
-            const note = await choosePosition(page, LEADER_POSITION)
-            const expected = isBefore
-              ? `役職を変えると、${STAFF_NAME} の権限は全て、新しい役職に決まっている権限に置き換わります。`
-              : `役職を変えると、${STAFF_NAME} の役職で付く権限は、新しい役職で付く権限に置き換わります。`
-            await expect(note).toHaveText(expected)
-            await check(
-              isBefore
-                ? `改修前は、注意の文が「${expected}」だけになる`
-                : `注意の文が「${expected}」だけになり、「個別に足した権限」の文が無い`,
-            )
-          },
-        )
-      })
-    }
+      test(
+        'position-note-no-individual 個別に足した権限を持たないメンバーの役職を変えるダイアログでリーダーを選んだ場合、個別に足した権限の文を出さないこと',
+        { tag: '@compare' },
+        async ({ context, request }) => {
+          const token = await issueManagerToken()
+          const staff = await registerIn(request, token, {
+            label: 'position-note-no-individual',
+            teamId: TEAM_A,
+            positionId: MEMBER_POSITION,
+          })
+
+          const page = await context.newPage()
+          await openDetail(page, staff.id, STAFF_NAME)
+          await intro(
+            page,
+            `個別に足した権限を持たない職員で、残る権限の文を出さない\n前提 役職のデフォルトの権限だけを持つメンバーの「${STAFF_NAME}」の職員の詳細を開いている（撮影の前に API で登録した）`,
+          )
+
+          const note = page.getByTestId('staff-position-dialog').getByTestId('staff-position-note')
+          await step(page, '「役職を変える」を押し、「リーダー」を選ぶ', () =>
+            choosePosition(page, LEADER_POSITION),
+          )
+          await check(
+            page,
+            `注意の文が「役職を変えると、${STAFF_NAME} の役職で付く権限は、新しい役職で付く権限に置き換わります。」だけになり、「個別に足した権限」の文が無い`,
+            async () => {
+              await expect(note).toContainText(`役職を変えると、${STAFF_NAME} の`)
+              await expect(note).not.toContainText('個別に足した権限')
+            },
+          )
+        },
+      )
+    })
   })
 })
