@@ -3,7 +3,7 @@ version: 0.1.0
 targets: [claude, codex]
 dependencies:
   apm:
-    - Fukuemon/agent-harness/packages/core#core-v0.3.3
+    - Fukuemon/agent-harness/packages/core#core-v0.3.4
     - Fukuemon/agent-harness/packages/docs#docs-v0.2.14
     - Fukuemon/agent-harness/packages/verification#verification-v0.4.0
     - Fukuemon/agent-harness/packages/e2e#e2e-v0.3.0

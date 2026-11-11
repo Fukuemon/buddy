@@ -1,5 +1,5 @@
 lockfile_version: '1'
-apm_version: 0.35.0
+apm_version: 0.32.0
 dependencies:
 - repo_url: fukuemon/agent-harness
   materialization_repo_url: Fukuemon/agent-harness
@@ -133,9 +133,9 @@ dependencies:
   materialization_repo_url: Fukuemon/agent-harness
   name: core
   host: github.com
-  resolved_commit: a081f8834b58f4ecc7e77adc0a36ac19ea57b31e
-  resolved_ref: core-v0.3.3
-  version: 0.3.3
+  resolved_commit: 233ea50cb24750790688c5d730d32e3d0cce22bd
+  resolved_ref: core-v0.3.4
+  version: 0.3.4
   virtual_path: packages/core
   is_virtual: true
   package_type: marketplace_plugin
@@ -253,7 +253,7 @@ dependencies:
     .agents/skills/write-commit/SKILL.md: sha256:9fe6d1b19ffacfae5a86b08ca04fae0eb331131a9fa12f30661369c79c80d404
     .agents/skills/write-commit/assets/commitlint.config.mjs: sha256:cd461a4287ce68a1474c912821bf02c48ed7317464b3b54afb9e9944fcd1df8a
     .agents/skills/write-context/SKILL.md: sha256:3742a63c2f51a9fbf0a6dcf68b23cb418b1a7063ca9852deef4a5cfb3272a678
-    .agents/skills/write-issue-pr/SKILL.md: sha256:984fe3402224cb9477f1d6290139344cedb9ee006ddda4c3260a4e95ff9f0c4a
+    .agents/skills/write-issue-pr/SKILL.md: sha256:dc4c2454ca61e8effa9a8efb28dd34d28b336f921062804b38bd2aecf8843385
     .agents/skills/write-issue-pr/assets/.github/ISSUE_TEMPLATE/bug.yml: sha256:e5842676423d34aa1bc3ac10f6120c6e60e1186c614b14473887f4010eff0650
     .agents/skills/write-issue-pr/assets/.github/ISSUE_TEMPLATE/config.yml: sha256:1f103c6a9dd07cd13a9a6f17ace6b813f47747eb9cb7e00488cb2073caaf91bb
     .agents/skills/write-issue-pr/assets/.github/ISSUE_TEMPLATE/design.yml: sha256:cfd03c2a86e92109cc06ecab26e8516f9e901374e4e7f826204ddc7ef772c3fa
@@ -271,7 +271,7 @@ dependencies:
     .agents/skills/write-issue-pr/assets/.gitlab/merge_request_templates/Default.md: sha256:1704deaf6c2ffb0a2d6cc90d2e4c3e36f0d91fca1bf9f812c0bfa8846a90ead6
     .agents/skills/write-issue-pr/references/check-issue-tree.md: sha256:979c09f682566f4b085406dfe0c0c32e8d044a104821c8b4abd04301347109ad
     .agents/skills/write-issue-pr/references/issue.md: sha256:ef07d17150f2867567b28ba10269e786d47980c1d4d70d68a6b9790578439c24
-    .agents/skills/write-issue-pr/references/pull-request.md: sha256:dd394dfe5f3b33260a03c8a19b87f5aa437e1b40e1835278ac2904fe0cd68838
+    .agents/skills/write-issue-pr/references/pull-request.md: sha256:55592cec6fc9c8ad82983130c88fae6ad3dda995394894735e55608809c63bde
     .agents/skills/write-issue-pr/scripts/check-issue-tree.mjs: sha256:0cf4a3d5f2c6c29876d55e33d70e417f03f78c3c4354c0d105fa198c37251c51
     .agents/skills/write-issue-pr/scripts/check-issue-tree.test.mjs: sha256:c03acc501b49aef23724ba7b7590682a1f096d1664c8d629741d877e97ffa816
     .agents/skills/write-skill/SKILL.md: sha256:0f9fe1efa93f1ed77319925964f81dc35e50a7577abcff328b2f735b25212b94
@@ -295,7 +295,7 @@ dependencies:
     .claude/skills/write-commit/SKILL.md: sha256:9fe6d1b19ffacfae5a86b08ca04fae0eb331131a9fa12f30661369c79c80d404
     .claude/skills/write-commit/assets/commitlint.config.mjs: sha256:cd461a4287ce68a1474c912821bf02c48ed7317464b3b54afb9e9944fcd1df8a
     .claude/skills/write-context/SKILL.md: sha256:3742a63c2f51a9fbf0a6dcf68b23cb418b1a7063ca9852deef4a5cfb3272a678
-    .claude/skills/write-issue-pr/SKILL.md: sha256:984fe3402224cb9477f1d6290139344cedb9ee006ddda4c3260a4e95ff9f0c4a
+    .claude/skills/write-issue-pr/SKILL.md: sha256:dc4c2454ca61e8effa9a8efb28dd34d28b336f921062804b38bd2aecf8843385
     .claude/skills/write-issue-pr/assets/.github/ISSUE_TEMPLATE/bug.yml: sha256:e5842676423d34aa1bc3ac10f6120c6e60e1186c614b14473887f4010eff0650
     .claude/skills/write-issue-pr/assets/.github/ISSUE_TEMPLATE/config.yml: sha256:1f103c6a9dd07cd13a9a6f17ace6b813f47747eb9cb7e00488cb2073caaf91bb
     .claude/skills/write-issue-pr/assets/.github/ISSUE_TEMPLATE/design.yml: sha256:cfd03c2a86e92109cc06ecab26e8516f9e901374e4e7f826204ddc7ef772c3fa
@@ -313,7 +313,7 @@ dependencies:
     .claude/skills/write-issue-pr/assets/.gitlab/merge_request_templates/Default.md: sha256:1704deaf6c2ffb0a2d6cc90d2e4c3e36f0d91fca1bf9f812c0bfa8846a90ead6
     .claude/skills/write-issue-pr/references/check-issue-tree.md: sha256:979c09f682566f4b085406dfe0c0c32e8d044a104821c8b4abd04301347109ad
     .claude/skills/write-issue-pr/references/issue.md: sha256:ef07d17150f2867567b28ba10269e786d47980c1d4d70d68a6b9790578439c24
-    .claude/skills/write-issue-pr/references/pull-request.md: sha256:dd394dfe5f3b33260a03c8a19b87f5aa437e1b40e1835278ac2904fe0cd68838
+    .claude/skills/write-issue-pr/references/pull-request.md: sha256:55592cec6fc9c8ad82983130c88fae6ad3dda995394894735e55608809c63bde
     .claude/skills/write-issue-pr/scripts/check-issue-tree.mjs: sha256:0cf4a3d5f2c6c29876d55e33d70e417f03f78c3c4354c0d105fa198c37251c51
     .claude/skills/write-issue-pr/scripts/check-issue-tree.test.mjs: sha256:c03acc501b49aef23724ba7b7590682a1f096d1664c8d629741d877e97ffa816
     .claude/skills/write-skill/SKILL.md: sha256:0f9fe1efa93f1ed77319925964f81dc35e50a7577abcff328b2f735b25212b94
@@ -321,7 +321,7 @@ dependencies:
     .codex/hooks/core/hooks/check-comments.test.mjs: sha256:07b974a856101c02ce68f4b32c393b2762e9e1881a2382388107570064e28660
     .codex/hooks/core/hooks/hooks.test.mjs: sha256:1a8011fbb041f06eccc9d28d8979a839406769b57ede8dba45935259ad14127a
     .codex/hooks/core/hooks/package.json: sha256:8005a3491db7d92f36ac66369861589f9c47123d3a7c71e643fc2c06168cd45a
-  content_hash: sha256:bb89b8a013f1ede0034c4467424cbafe2cc9299ca3014e84b56c2ee84c10f55f
+  content_hash: sha256:d1e87b1b8f98351826266086fbb59ca81e00f48334524b859601439ef00034ae
   declared_license: MIT
 - repo_url: fukuemon/agent-harness
   materialization_repo_url: Fukuemon/agent-harness
@@ -2476,7 +2476,7 @@ deployments:
   owners:
   - fukuemon/agent-harness/packages/core
   active_owner: fukuemon/agent-harness/packages/core
-  content_hash: sha256:984fe3402224cb9477f1d6290139344cedb9ee006ddda4c3260a4e95ff9f0c4a
+  content_hash: sha256:dc4c2454ca61e8effa9a8efb28dd34d28b336f921062804b38bd2aecf8843385
 - kind: project-relative
   target: claude
   value: .claude/skills/write-issue-pr/assets/.github/ISSUE_TEMPLATE/bug.yml
@@ -2638,7 +2638,7 @@ deployments:
   owners:
   - fukuemon/agent-harness/packages/core
   active_owner: fukuemon/agent-harness/packages/core
-  content_hash: sha256:dd394dfe5f3b33260a03c8a19b87f5aa437e1b40e1835278ac2904fe0cd68838
+  content_hash: sha256:55592cec6fc9c8ad82983130c88fae6ad3dda995394894735e55608809c63bde
 - kind: project-relative
   target: claude
   value: .claude/skills/write-issue-pr/scripts/check-issue-tree.mjs
@@ -4276,7 +4276,7 @@ deployments:
   owners:
   - fukuemon/agent-harness/packages/core
   active_owner: fukuemon/agent-harness/packages/core
-  content_hash: sha256:984fe3402224cb9477f1d6290139344cedb9ee006ddda4c3260a4e95ff9f0c4a
+  content_hash: sha256:dc4c2454ca61e8effa9a8efb28dd34d28b336f921062804b38bd2aecf8843385
 - kind: project-relative
   target: codex
   value: .agents/skills/write-issue-pr/assets/.github/ISSUE_TEMPLATE/bug.yml
@@ -4438,7 +4438,7 @@ deployments:
   owners:
   - fukuemon/agent-harness/packages/core
   active_owner: fukuemon/agent-harness/packages/core
-  content_hash: sha256:dd394dfe5f3b33260a03c8a19b87f5aa437e1b40e1835278ac2904fe0cd68838
+  content_hash: sha256:55592cec6fc9c8ad82983130c88fae6ad3dda995394894735e55608809c63bde
 - kind: project-relative
   target: codex
   value: .agents/skills/write-issue-pr/scripts/check-issue-tree.mjs
