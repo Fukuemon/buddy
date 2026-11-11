@@ -74,7 +74,7 @@ const addVisitInfo = async (page: Page, patientId: string) => {
 
 // 改修前は編集に予定の種類が無く、訪問の情報を足す操作が無いので、@compare を付けずに改修後の流れを撮る
 test.describe('予定の編集', () => {
-  test.describe(`Google カレンダーで作った確認が必要な予定への訪問の情報の追加（${OKADA.staff.name}、Google カレンダーを正本にする事業所のマネージャー）`, () => {
+  test.describe(`Google カレンダーで作った確認が必要な予定への訪問の情報の追加（${OKADA.staff.name}、予定を Google カレンダーで管理している事業所のマネージャー）`, () => {
     test.use({ storageState: OKADA_STATE })
 
     test('google-primary-visit-info 確認が必要な予定を編集し、訪問の情報を入れて保存した場合、確認が必要な予定から外れ、訪問の予定として出ること', async ({

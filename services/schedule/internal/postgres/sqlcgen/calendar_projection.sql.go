@@ -50,7 +50,7 @@ const deleteCalendarEventProjectionsByFacility = `-- name: DeleteCalendarEventPr
 DELETE FROM calendar_event_projections WHERE facility_id = $1
 `
 
-// 事業所の全ての行を消す。切り替えを完了して、事業所を buddy_primary にするときに使う。
+// 事業所の全ての行を消す。移行を完了して、事業所を buddy_primary にするときに使う。
 func (q *Queries) DeleteCalendarEventProjectionsByFacility(ctx context.Context, facilityID string) error {
 	_, err := q.db.Exec(ctx, deleteCalendarEventProjectionsByFacility, facilityID)
 	return err
@@ -102,7 +102,7 @@ type FindOpenCalendarCutoverWithStarterRow struct {
 	StartedByName string
 }
 
-// 予定の表示の読み出し（scheduleview）が、事業所の open の切り替えを、始めた職員の名前を付けて読む（ADR-0031）。
+// 予定の表示の読み出し（scheduleview）が、事業所の open の移行を、始めた職員の名前を付けて読む（ADR-0031）。
 // 職員の状態（休職、退職）によらず名前を返す。退職しても名前は残るためである。
 func (q *Queries) FindOpenCalendarCutoverWithStarter(ctx context.Context, facilityID string) (FindOpenCalendarCutoverWithStarterRow, error) {
 	row := q.db.QueryRow(ctx, findOpenCalendarCutoverWithStarter, facilityID)

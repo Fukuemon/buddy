@@ -1,4 +1,4 @@
-# Google カレンダーを正本にする事業所の、取り込めない予定の扱いの検証の設計
+# 予定を Google カレンダーで管理している事業所の、取り込めない予定の扱いの検証の設計
 
 [#594](https://github.com/Fukuemon/buddy/issues/594) の受け入れの条件の 5 つ目を、画面から確認する検証の設計。  
 検証の issue は [#933](https://github.com/Fukuemon/buddy/issues/933) である。  
@@ -19,7 +19,7 @@
 
 | 観点 | 理由 |
 | --- | --- |
-| `buddy_primary` の事業所の表示 | 受け入れの条件は Google カレンダーを正本にする事業所の扱いである。通知の欄と「終日」の行が出ないことは、[#968](https://github.com/Fukuemon/buddy/pull/968) の `buddy-primary` で確認した |
+| `buddy_primary` の事業所の表示 | 受け入れの条件は予定を Google カレンダーで管理している事業所の扱いである。通知の欄と「終日」の行が出ないことは、[#968](https://github.com/Fukuemon/buddy/pull/968) の `buddy-primary` で確認した |
 | 月の表示、日の表示、幅 390px の週の一覧 | 同じ一覧の API の応答を出し分けるだけである。終日の予定の出し方は #968 の `all-day-span` で確認した |
 | 例外の回の元の開始を読めない予定と、取り消した回の元の日付を読めない予定 | 同期が Projection に写さずに消す（下の「未決事項」）。calendarpit は元の開始の無い例外の回を作れず、画面では確認できない |
 | 長さが 0 以下の予定 | calendarpit が 400 で拒み、作れない。`TestProjectionRulesReadCalendarOnly` が件数に入れる読み替えを確認している |

@@ -6,10 +6,10 @@ import { createGoogleEvent, failGoogleReads } from '../../fixtures/googleCalenda
 import { detailDateTimeText } from '../../fixtures/schedule'
 import { openDay } from '../../screens/scheduleCalendar'
 
-// シードの 3 つ目の事業所は Google カレンダーを予定の正本にする（google_primary）。同期の Worker が岡田のカレンダーの予定を
+// シードの 3 つ目の事業所は予定を Google カレンダーで管理する（google_primary）。同期の Worker が岡田のカレンダーの予定を
 // Projection に写し、予定のカレンダーは Projection を読む（ADR-0029）。
 test.describe('予定のカレンダー', () => {
-  test.describe('Google カレンダーを正本にする事業所', () => {
+  test.describe('予定を Google カレンダーで管理している事業所', () => {
     test.use({ storageState: OKADA_STATE })
 
     test('Google カレンダーに予定を作った場合、手動の取り込みをせずに予定のカレンダーに出て、詳細に編集とキャンセルの操作が出ること', async ({

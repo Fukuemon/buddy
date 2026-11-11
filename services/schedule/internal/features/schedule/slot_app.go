@@ -221,7 +221,7 @@ func prepareSlot(ctx context.Context, types kernel.Finder[Type], staff kernel.Fi
 }
 
 // lockWritable は、事業所 facilityID の行を共有のロックで読み、予定を書けるモードかを確認する（RequireWritable）。
-// ロックはトランザクションが終わるまで、職員の休職、復職、退職と、モードの切り替えを待たせる。
+// ロックはトランザクションが終わるまで、職員の休職、復職、退職と、モードの変更を待たせる。
 // 予定を書く操作が、職員の状態を読む前に、トランザクションの中で呼ぶ。事業所が無いときは apperr.ErrNotFound を返す。
 func lockWritable(ctx context.Context, locks FacilityLock, facilityID string) error {
 	f, err := locks.GetForShare(ctx, facilityID)

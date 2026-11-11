@@ -7,8 +7,8 @@ import { createGoogleEvent, shiftGoogleEvent } from '../../fixtures/googleCalend
 const CUTOVER_URL = '/schedule/link/cutover'
 
 /**
- * 切り替えの画面を開く。前の実行が切り替えを残していれば、やめてから戻る。
- * 切り替えの前の状態（始めるのボタン）が出るまで待つ。
+ * 移行の画面を開く。前の実行が移行を残していれば、やめてから戻る。
+ * 移行の前の状態（始めるのボタン）が出るまで待つ。
  */
 const openNotStarted = async (page: Page) => {
   await page.goto(CUTOVER_URL)
@@ -19,22 +19,22 @@ const openNotStarted = async (page: Page) => {
   await start.waitFor()
 }
 
-/** 切り替えの画面で切り替えを始め、切り替え中の表示が出るまで待つ。 */
+/** 移行の画面で移行を始め、移行中の表示が出るまで待つ。 */
 const startCutover = async (page: Page) => {
   await page.getByTestId('calendar-cutover-start').click()
   await page.getByTestId('calendar-cutover-open').waitFor()
 }
 
-/** 切り替えをやめる。確認のダイアログの文言を見てから、やめるを押し、始めるのボタンが出るまで待つ。 */
+/** 移行をやめる。確認のダイアログの文言を見てから、やめるを押し、始めるのボタンが出るまで待つ。 */
 const cancelCutover = async (page: Page) => {
   await page.getByTestId('calendar-cutover-cancel').click()
   const dialog = page.getByTestId('calendar-cutover-cancel-confirm-dialog')
-  await expect(dialog).toContainText('この切り替えで取り込んだ予定を、buddy から消します')
+  await expect(dialog).toContainText('この移行で取り込んだ予定を、buddy から消します')
   await dialog.getByTestId('calendar-cutover-cancel-confirm-submit').click()
   await page.getByTestId('calendar-cutover-start').waitFor()
 }
 
-/** 切り替えの画面から石田の取り込みの画面を開き、プレビューの結果が出るまで待つ。 */
+/** 移行の画面から石田の取り込みの画面を開き、プレビューの結果が出るまで待つ。 */
 const previewIshida = async (page: Page) => {
   await page.getByTestId(`calendar-cutover-open-import-${ISHIDA.staff.id}`).click()
   await expect(page.getByTestId('calendar-import-cutover-range')).toBeVisible()
@@ -42,24 +42,24 @@ const previewIshida = async (page: Page) => {
   return page.getByTestId('calendar-import-result-preview')
 }
 
-/** プレビューの結果を確定し、切り替えの状況に戻る。 */
+/** プレビューの結果を確定し、移行の状況に戻る。 */
 const submitAndBack = async (page: Page) => {
   await page.getByTestId('calendar-import-submit').click()
   await page.getByTestId('calendar-import-back-to-cutover').click()
   await page.getByTestId('calendar-cutover-open').waitFor()
 }
 
-// シードの 4 つ目の事業所は Google カレンダーを予定の正本にし（google_primary）、石田のカレンダーを結び付けてある。
-// 切り替えを完了すると事業所は buddy を正本にして戻せないので、やめる確認を先に、完了を最後に、順に流す（ADR-0031）。
-test.describe('予定の正本の切り替え', () => {
+// シードの 4 つ目の事業所は予定を Google カレンダーで管理し（google_primary）、石田のカレンダーを結び付けてある。
+// 移行を完了すると事業所は予定を buddy で管理して戻せないので、やめる確認を先に、完了を最後に、順に流す（ADR-0031）。
+test.describe('予定の管理を buddy に移す', () => {
   test.use({ storageState: ISHIDA_STATE })
   test.describe.configure({ mode: 'serial' })
 
-  test('切り替えをやめた場合、取り込んだ予定が消え、事業所は Google カレンダーを正本にしたままであること', async ({
+  test('移行をやめた場合、取り込んだ予定が消え、事業所は予定を Google カレンダーで管理したままであること', async ({
     page,
     request,
   }) => {
-    // 切り替えの取り込みの期間は今月の初日から先の全てなので、今日に予定を作る
+    // 移行の取り込みの期間は今月の初日から先の全てなので、今日に予定を作る
     await createGoogleEvent(request, ISHIDA.calendarId, {
       summary: `E2E のやめる予定 ${Date.now()}`,
       date: todayInTokyo(),
@@ -79,7 +79,7 @@ test.describe('予定の正本の切り替え', () => {
     await expect(page.getByTestId('schedule-calendar-google-primary')).toBeVisible()
     await expect(page.getByTestId('schedule-calendar-cutover')).toHaveCount(0)
 
-    // 始め直すと、前の切り替えで取り込んだ予定は残っていないので、取り込み済みに数えずに、全てを取り込む予定に数える
+    // 始め直すと、前の移行で取り込んだ予定は残っていないので、取り込み済みに数えずに、全てを取り込む予定に数える
     await openNotStarted(page)
     await startCutover(page)
     const preview = await previewIshida(page)
@@ -93,7 +93,7 @@ test.describe('予定の正本の切り替え', () => {
     page,
     request,
   }) => {
-    const title = `E2E の切り替えの予定 ${Date.now()}`
+    const title = `E2E の移行の予定 ${Date.now()}`
     const event = await createGoogleEvent(request, ISHIDA.calendarId, {
       summary: title,
       date: todayInTokyo(),
@@ -105,7 +105,7 @@ test.describe('予定の正本の切り替え', () => {
     await expect(page.getByTestId('calendar-cutover-no-edit')).toBeVisible()
     await page.goto('/schedule')
     const notice = page.getByTestId('schedule-calendar-cutover')
-    await expect(notice).toContainText('予定の正本を buddy に切り替えています')
+    await expect(notice).toContainText('予定の管理を buddy に移しています')
     await expect(notice).toContainText('buddy でも予定を作成、変更できません')
     await expect(notice.getByTestId('schedule-calendar-cutover-started')).toContainText(
       `開始: ${ISHIDA.staff.name}、`,
@@ -135,12 +135,12 @@ test.describe('予定の正本の切り替え', () => {
     }).toPass()
   })
 
-  test('全てのカレンダーを取り込んで完了した場合、事業所が buddy を正本にし、予定のカレンダーで予定を作れること', async ({
+  test('全てのカレンダーを取り込んで完了した場合、事業所が予定を buddy で管理し、予定のカレンダーで予定を作れること', async ({
     page,
   }) => {
     await page.goto(CUTOVER_URL)
     await expect(page.getByTestId('calendar-cutover-buddy-primary')).toContainText(
-      'この事業所の予定の正本は buddy です',
+      'この事業所は、予定を buddy で管理しています',
     )
     await page.goto(`/schedule?view=day&date=${todayInTokyo()}`)
     await expect(page.getByTestId('schedule-create-open')).toBeVisible()
@@ -150,7 +150,7 @@ test.describe('予定の正本の切り替え', () => {
       page
         .getByTestId(`day-grid-staff-${ISHIDA.staff.id}`)
         .getByTestId(/^schedule-event-/)
-        .filter({ hasText: 'E2E の切り替えの予定' })
+        .filter({ hasText: 'E2E の移行の予定' })
         .first(),
     ).toBeVisible()
   })

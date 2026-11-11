@@ -50,7 +50,7 @@ func NewCancel(locks FacilityLock, cutovers Cutovers, staffRefs kernel.Finder[st
 // Google の予定に保留の版は置かない。消す書き込みは、Google が受けたかが分からなくても、残す訪問の情報を持たないためである。
 //
 // 理由の入力のエラーと apperr.ErrForbidden は schedule.Cancel と同じである。予定が無いときは apperr.ErrNotFound を返す。
-// 次のときは apperr.ErrConflict を返す: 事業所が google_primary でない、open の切り替えがある（CodeCutoverOpen）、予定に保留の版が
+// 次のときは apperr.ErrConflict を返す: 事業所が google_primary でない、open の移行がある（CodeCutoverOpen）、予定に保留の版が
 // ある（CodeWritePending）、読んだ後に Google で予定が変わった（CodeEventChanged）、Google で予定が消されたか見つからない
 // （CodeEventNotFound）、カレンダーに書けない（CodeCalendarUnwritable）、繰り返しの予定の親である、例外の回か展開した回の親の記録に保留の版がある（CodeWritePending）。
 // CodeEventChanged と、Google で消されていたときは、Google の今の予定を Projection に写す。
@@ -61,7 +61,7 @@ func (c Cancel) Do(ctx context.Context, facilityID, id, etag, reason string) (sc
 		return schedule.Cancellation{}, err
 	}
 	if etag == "" {
-		return schedule.Cancellation{}, apperr.Invalid("Google カレンダーを予定の正本にする事業所では、読んだ予定の etag が必須です")
+		return schedule.Cancellation{}, apperr.Invalid("予定を Google カレンダーで管理している事業所では、読んだ予定の etag が必須です")
 	}
 	if c.accounts == nil {
 		return schedule.Cancellation{}, calendar.ErrNotConfigured

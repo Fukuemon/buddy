@@ -47,7 +47,7 @@ describe('ScheduleCalendarContainer', () => {
     expect(screen.getByTestId('schedule-event-gcal-review-1-needs-review')).toBeInTheDocument()
   })
 
-  it('予定の正本を buddy に切り替えている間は、予定を作る操作を出さない', async () => {
+  it('予定の管理を buddy に移している間は、予定を作る操作を出さない', async () => {
     render(<GooglePrimaryCutoverDay />)
     expect(await screen.findByTestId('day-grid-staff-staff-1')).toBeInTheDocument()
     expect(screen.queryByTestId('day-grid-slot-staff-1-09:00')).not.toBeInTheDocument()

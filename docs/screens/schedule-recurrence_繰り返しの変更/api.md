@@ -24,7 +24,7 @@
 | 終了日 | 繰り返しの最後の日 | フォームの値の `recurrence.endDate`。開いたときは `RecurringRule.endDate` | `recurring_rule.end_date` |
 | 権限が無いことの説明 | 予定の職員の予定を編集できないか | `Viewer.schedulePolicies`、`Schedule.staffId`、予定の職員の `Staff.teamId` | `getMe` の `policies`、`getSchedule` の `staff_id` |
 | 繰り返しを変えられないことの文 | キャンセルした予定か、繰り返しの予定のまだ変えていない回か | `Schedule.cancel`、`Schedule.recurrence` | `getSchedule` の `cancel`、`recurring_schedule_id` と `recurring_rule` |
-| 切り替えていることの文 | 事業所が予定の正本を buddy に切り替えている途中か | `Facility.sourceMode` が `google_primary` で、`ScheduleList.cutover` が `null` でない | `getFacility` の `source_mode`、`listSchedules` の `cutover` |
+| 移していることの文 | 事業所が予定の管理を buddy に移している途中か | `Facility.sourceMode` が `google_primary` で、`ScheduleList.cutover` が `null` でない | `getFacility` の `source_mode`、`listSchedules` の `cutover` |
 | （画面に出さない） | 繰り返しの予定の ID | `Schedule.recurrence.recurringScheduleId` | `getSchedule` の `recurring_schedule_id`。送るのは `changeRecurringRule` のパスの `recurring_schedule_id` |
 | （画面に出さない） | 保存で送る予定の etag | `Schedule.etag` | `getSchedule` の `etag`。送るのは `changeRecurringRule` の本文の `etag` |
 | （画面に出さない） | 新しい繰り返しの予定の ID | 画面を開いたときに作った ID | `changeRecurringRule` の本文の `id` |
@@ -34,11 +34,11 @@
   - `google_primary` の繰り返しの回は、予定の API が `getSchedule` に親の ID と規則を返す。
   - web のサーバーは、`recurring_schedule_id` と `recurring_rule` の両方がある予定だけに `Schedule.recurrence` を付ける。処理は `apps/web/src/api/http/scheduleMapper.ts` の `fromApiSchedule` にある。
   - 1 回だけ変えた回は、単発の予定として返るので `Schedule.recurrence` を持たない。
-- 予定の正本を切り替えているかは、予定の詳細と同じく、`getFacility`（`GET /v1/facilities/{facility_id}`）の `source_mode` と、`listSchedules` の `cutover` で読む。
+- 移行中かは、予定の詳細と同じく、`getFacility`（`GET /v1/facilities/{facility_id}`）の `source_mode` と、`listSchedules` の `cutover` で読む。
   - `google_primary` の事業所では、カレンダーの search params の `view` と `date` から `getCalendarRange` で決めた期間で `listSchedules` を読み、`staffIds` は渡さない。`includeCancelled` には search params の `cancelled` を渡す。予定の詳細と同じ一覧の取得の結果を使う。
-  - `buddy_primary` の事業所では `listSchedules` を読まず、切り替えていないとして扱う。
+  - `buddy_primary` の事業所では `listSchedules` を読まず、移行中でないとして扱う。
   - `getCalendarCutoverStatus` は職員の管理の権限を求めるので使わない。
-  - 最初に読み終えた値を保ち、開いた後に一覧を読み直して `cutover` が変わっても、状態を変えない。開いた後の切り替えは、保存が 409 `cutover_open` で拒まれて知らせ、入力を消さないためである。
+  - 最初に読み終えた値を保ち、開いた後に一覧を読み直して `cutover` が変わっても、状態を変えない。開いた後の移行は、保存が 409 `cutover_open` で拒まれて知らせ、入力を消さないためである。
   - 処理は `apps/web/src/features/schedule/queries.ts` の `useCutoverAtOpen` にある。
 - 繰り返しの選択肢は、`apps/web/src/features/schedule/components/RecurringRuleFields.tsx` の `presetsOf` が開いた回の日から作る。
   - 欄の初期値は、`recurring_rule` の空の項目を開いた回の日から埋めて作る。処理は `apps/web/src/features/schedule/schema/recurringRuleForm.ts` の `toRecurringRuleFormValues` にある。
@@ -60,7 +60,7 @@
 | 職員が、日で「日にち」を選んでいる | フォームの値の `recurrence.monthlyBy` が `day` |
 | 職員が、日で「曜日」を選んでいる | フォームの値の `recurrence.monthlyBy` が `weekday` |
 | 職員が、終了日で「あり」を選んでいる | フォームの値の `recurrence.hasEndDate` が `true` |
-| 事業所が、予定の正本を buddy に切り替えている途中である | `useCutoverAtOpen` が `true`。`google_primary` の事業所で、画面を開いたときの `ScheduleList.cutover` が `null` でない（`listSchedules` の `cutover`）。`buddy_primary` の事業所では読まず、`false` にする |
+| 事業所が、予定の管理を buddy に移している途中である | `useCutoverAtOpen` が `true`。`google_primary` の事業所で、画面を開いたときの `ScheduleList.cutover` が `null` でない（`listSchedules` の `cutover`）。`buddy_primary` の事業所では読まず、`false` にする |
 | 職員が、保存を送っている途中である | react-hook-form の `formState.isSubmitting` が `true`（保存のボタンの `isLoading` に渡す）。`changeRecurringRule` を呼んでから予定のカレンダーへ移るまでと、409 `google_event_changed` の後に `getSchedule` で読み直し終えるまでを含む |
 
 - 押せなくする判定は、`apps/web/src/features/schedule/components/RecurringRuleFields.tsx` の `disabled` にある。
@@ -68,7 +68,7 @@
 - 状態の出し分けは、`apps/web/src/features/schedule/components/ScheduleRecurrenceModalContainer.tsx` が次の順に判定する。
   - 権限が無い: `apps/web/src/features/schedule/lib/schedulePermission.ts` の `canEditScheduleOf` が `false`
   - 繰り返しを変えられない予定: `Schedule.cancel` がある。または `Schedule.recurrence` が無い
-  - 予定の正本を切り替えている: `apps/web/src/features/schedule/queries.ts` の `useCutoverAtOpen` が `true`
+  - 予定の管理を buddy に移している: `apps/web/src/features/schedule/queries.ts` の `useCutoverAtOpen` が `true`
   - 今日より前の回から開いた: `Schedule.startsAt` の Asia/Tokyo の日付が、画面を開いたときの Asia/Tokyo の今日より前
   - カスタム: フォームの値の `recurrence` が、開いた回の日から作る 3 つの選択肢のどれとも同じでない。または「カスタム…」を選んだ
 
@@ -114,8 +114,8 @@
   - 欄を出す状態のモーダルの `schedule-recurrence-modal`
   - 「権限が無い」の状態のモーダルの `schedule-recurrence-forbidden`
   - 「繰り返しを変えられない予定」の状態のモーダルの `schedule-recurrence-blocked`
-  - 「予定の正本を切り替えている」の状態のモーダルの `schedule-recurrence-cutover`
-- 読み込み中の表示、読み込みの失敗の文、権限が無いことの説明、繰り返しを変えられないことの文、切り替えていることの文、入力の誤りの文、保存の失敗の文は、testid を持たない。
+  - 「予定の管理を buddy に移している」の状態のモーダルの `schedule-recurrence-cutover`
+- 読み込み中の表示、読み込みの失敗の文、権限が無いことの説明、繰り返しを変えられないことの文、移していることの文、入力の誤りの文、保存の失敗の文は、testid を持たない。
 
 ## 状態と失敗の要因
 
@@ -127,7 +127,7 @@
 | 権限が無い | 「この予定を編集する権限がありません。」 | API の失敗ではない。`getMe` の `policies` で、予定の職員の予定を編集できない |
 | 繰り返しを変えられない予定 | 「キャンセルした予定からは、繰り返しを変えられません。」 | API の失敗ではない。`getSchedule` の `cancel` がある |
 | 繰り返しを変えられない予定 | 「この予定は繰り返しの予定の回ではないため、繰り返しを変えられません。」 | API の失敗ではない。`getSchedule` の `recurring_schedule_id` か `recurring_rule` が無い |
-| 予定の正本を切り替えている | 「予定の正本を buddy に切り替えています。切り替えが終わるまで、予定を作成、変更、キャンセルできません。」 | API の失敗ではない。`google_primary` の事業所で、画面を開いたときの `listSchedules` の `cutover` が `null` でない |
+| 予定の管理を buddy に移している | 「予定の管理を buddy に移しています。終わるまで、予定を作成、変更、キャンセルできません。」 | API の失敗ではない。`google_primary` の事業所で、画面を開いたときの `listSchedules` の `cutover` が `null` でない |
 | 保存の失敗 | 「この操作をする権限がありません。」 | `changeRecurringRule` が 403 |
 | 保存の失敗 | 「入力の内容では予定を更新できません。内容を直してください。」 | `changeRecurringRule` が 400 |
 | 保存の失敗 | 「この事業所の予定は Google カレンダーで管理しています。予定は Google カレンダーで作成、変更してください。」 | `changeRecurringRule` が 409 `google_primary` |
@@ -141,7 +141,7 @@
 | 保存の失敗 | 「Google カレンダーが予定を受け付けませんでした。入力を確認してください。」 | `changeRecurringRule` が 409 `google_event_rejected` |
 | 保存の失敗 | 「予定の職員が Google カレンダーを結び付けていません。カレンダーの結び付けを、事業所の管理者に頼んでください。」 | `changeRecurringRule` が 409 `calendar_not_linked` |
 | 保存の失敗 | 「この事業所には、Google カレンダーと連携する設定がありません。事業所の管理者に確認してください。」 | `changeRecurringRule` が 503 `calendar_not_configured` |
-| 保存の失敗 | 「予定の正本を buddy に切り替えています。切り替えが終わるまで、予定を作成、変更、キャンセルできません。」 | `changeRecurringRule` が 409 `cutover_open` |
+| 保存の失敗 | 「予定の管理を buddy に移しています。終わるまで、予定を作成、変更、キャンセルできません。」 | `changeRecurringRule` が 409 `cutover_open` |
 | 保存の失敗 | 「予定を更新できませんでした。」 | `changeRecurringRule` が、ここまでのほかの失敗（404、409 `conflict`、500 など）。API に届かない |
 | 読み込み中 | なし（ログインの画面へ移るまで続く） | 読み込みのどれかが 401 |
 

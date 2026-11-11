@@ -15,7 +15,7 @@ import (
 	"github.com/Fukuemon/buddy/services/schedule/internal/tx"
 )
 
-// StartCutover は、事業所の予定の正本を Google カレンダーから buddy に切り替える作業（切り替え）を始める（ADR-0031）。
+// StartCutover は、事業所の予定の管理を Google カレンダーから buddy に移す作業（移行）を始める（ADR-0031）。
 type StartCutover struct {
 	facilities FacilityModes
 	syncs      scheduleview.CalendarSyncs
@@ -34,10 +34,10 @@ func NewStartCutover(facilities FacilityModes, syncs scheduleview.CalendarSyncs,
 	return StartCutover{facilities: facilities, syncs: syncs, cutovers: cutovers, tx: tx, ids: ids, now: now, guard: guard}
 }
 
-// Do は、事業所 facilityID の open の切り替えを作って返す。取り込みの期間は、今の Asia/Tokyo の月の初日から先の全てにする。
-// 事業所の行を排他のロックで取り、事業所が Google カレンダーを予定の正本にしていて、外していない全てのカレンダーの最後の同期が
-// 成功していることを確認する。事業所が buddy を予定の正本にしているとき（code は CodeCutoverNotGooglePrimary）、
-// open の切り替えがあるとき（CodeCutoverOpen）、予定の API の保留の版がある記録があるとき（CodeWritePending）、
+// Do は、事業所 facilityID の open の移行を作って返す。取り込みの期間は、今の Asia/Tokyo の月の初日から先の全てにする。
+// 事業所の行を排他のロックで取り、事業所が予定を Google カレンダーで管理していて、外していない全てのカレンダーの最後の同期が
+// 成功していることを確認する。事業所が予定を buddy で管理しているとき（code は CodeCutoverNotGooglePrimary）、
+// open の移行があるとき（CodeCutoverOpen）、予定の API の保留の版がある記録があるとき（CodeWritePending）、
 // 最後の同期が成功していないカレンダーがあるとき（CodeCutoverSyncNotReady）は apperr.ErrConflict を返す。事業所が無いときは apperr.ErrNotFound を返す。
 func (u StartCutover) Do(ctx context.Context, facilityID string) (Cutover, error) {
 	if err := u.guard(ctx); err != nil {
@@ -57,7 +57,7 @@ func (u StartCutover) Do(ctx context.Context, facilityID string) (Cutover, error
 			return err
 		}
 		if f.SourceMode != organization.SourceGooglePrimary {
-			return apperr.ConflictCode(CodeCutoverNotGooglePrimary, "この事業所の予定の正本は、すでに buddy です")
+			return apperr.ConflictCode(CodeCutoverNotGooglePrimary, "この事業所は、すでに予定を buddy で管理しています")
 		}
 		if _, err := u.cutovers.FindOpen(ctx, facilityID); err == nil {
 			return errCutoverAlreadyOpen
@@ -82,7 +82,7 @@ func (u StartCutover) Do(ctx context.Context, facilityID string) (Cutover, error
 	return out, err
 }
 
-var errCutoverAlreadyOpen = apperr.ConflictCode(CodeCutoverOpen, "この事業所では、切り替えをすでに始めています")
+var errCutoverAlreadyOpen = apperr.ConflictCode(CodeCutoverOpen, "この事業所では、移行をすでに始めています")
 
 // requireSynced は、事業所の外していない全てのカレンダーの最後の同期が成功していることを確認する。
 // 成功していないカレンダーがあれば、職員の名前を並べた、code が CodeCutoverSyncNotReady の apperr.ErrConflict を返す。

@@ -119,7 +119,7 @@ test.describe('予定の編集', () => {
   test.describe(`繰り返しの予定の規則の変更（${LOGIN_STAFF.name}、マネージャー）`, () => {
     test.use({ storageState: LOGIN_STATE })
 
-    test('recurring-rule-edit-buddy-primary buddy で管理する事業所で、毎週月曜の繰り返しの予定の回から「繰り返しを変更」で毎週火曜にした場合、その日以降が火曜に出て、前の回は変わらないこと', async ({
+    test('recurring-rule-edit-buddy-primary buddy で管理している事業所で、毎週月曜の繰り返しの予定の回から「繰り返しを変更」で毎週火曜にした場合、その日以降が火曜に出て、前の回は変わらないこと', async ({
       browser,
       context,
     }) => {
@@ -134,7 +134,7 @@ test.describe('予定の編集', () => {
       await expect(dayEvent(page, LOGIN_STAFF.id, title)).toBeVisible()
       await intro(
         page,
-        `buddy で管理する事業所で、毎週月曜の繰り返しの予定の回の「編集」のメニューから「繰り返しを変更」を選び、毎週火曜にすると、その日以降の回が火曜に出て、その日より前の回は月曜のまま\n前提 ${start} から毎週月曜 10:00〜11:00 の「${title}」を作ってある。${effective}（月曜）の日の表示を開いている`,
+        `buddy で管理している事業所で、毎週月曜の繰り返しの予定の回の「編集」のメニューから「繰り返しを変更」を選び、毎週火曜にすると、その日以降の回が火曜に出て、その日より前の回は月曜のまま\n前提 ${start} から毎週月曜 10:00〜11:00 の「${title}」を作ってある。${effective}（月曜）の日の表示を開いている`,
       )
 
       await step(page, '予定を押して詳細を開き、「編集」を押す', () =>
@@ -377,10 +377,10 @@ test.describe('予定の編集', () => {
     })
   })
 
-  test.describe(`繰り返しの予定の規則の変更（${OKADA.staff.name}、Google カレンダーを正本にする事業所のマネージャー）`, () => {
+  test.describe(`繰り返しの予定の規則の変更（${OKADA.staff.name}、予定を Google カレンダーで管理している事業所のマネージャー）`, () => {
     test.use({ storageState: OKADA_STATE })
 
-    test('recurring-rule-edit-google-primary Google カレンダーを正本にする事業所で、毎週月曜の繰り返しの予定の回から「繰り返しを変更」で毎週火曜にした場合、Google カレンダーにも新しい規則が書かれ、画面に新しい回が出ること', async ({
+    test('recurring-rule-edit-google-primary 予定を Google カレンダーで管理している事業所で、毎週月曜の繰り返しの予定の回から「繰り返しを変更」で毎週火曜にした場合、Google カレンダーにも新しい規則が書かれ、画面に新しい回が出ること', async ({
       browser,
       context,
       request,
@@ -406,7 +406,7 @@ test.describe('予定の編集', () => {
         await expect(dayEvent(page, OKADA.staff.id, title)).toBeVisible()
         await intro(
           page,
-          `Google カレンダーを正本にする事業所で、毎週月曜の繰り返しの予定の回の「編集」のメニューから「繰り返しを変更」で毎週火曜にすると、calendarpit に火曜の繰り返しの予定ができ、予定のカレンダーが火曜の回を出す\n前提 ${start} から毎週月曜の「${title}」を ${OKADA.staff.name} の Google カレンダーに作ってある。${effective}（月曜）の日の表示を開いている`,
+          `予定を Google カレンダーで管理している事業所で、毎週月曜の繰り返しの予定の回の「編集」のメニューから「繰り返しを変更」で毎週火曜にすると、calendarpit に火曜の繰り返しの予定ができ、予定のカレンダーが火曜の回を出す\n前提 ${start} から毎週月曜の「${title}」を ${OKADA.staff.name} の Google カレンダーに作ってある。${effective}（月曜）の日の表示を開いている`,
         )
 
         await step(

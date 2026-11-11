@@ -35,7 +35,7 @@ export const scheduleListQueryOptions = (
       query.state.data?.sourceMode === 'google_primary' ? CALENDAR_SYNC_REFRESH_MS : false,
   })
 
-/** 事業所を読む query。予定の正本（sourceMode）で、予定を作る操作と編集の操作を出すかを決める。 */
+/** 事業所を読む query。予定の管理先（sourceMode）で、予定を作る操作と編集の操作を出すかを決める。 */
 export const facilityQueryOptions = (api: BuddyApi, facilityId: FacilityId) =>
   queryOptions({
     queryKey: queryKeys.facilityDetail(facilityId),
@@ -208,13 +208,13 @@ export const useDeleteSchedule = (scheduleId: Schedule['id'], onDeleted: () => P
 }
 
 /**
- * 画面を開いた時点で、事業所が予定の正本を buddy に切り替えている途中かを返す。切り替えている途中なら true である。
+ * 画面を開いた時点で、事業所が予定の管理を buddy に移している途中かを返す。移している途中なら true である。
  * 予定の詳細と同じく、事業所の sourceMode と、カレンダーの search params の期間の予定の一覧の cutover で読む。
  * calendar_cutover_status は職員の管理の権限を求めるので使わない。buddy_primary の事業所では一覧を読まずに false にする。
- * 一覧は、cache に値があっても、画面を開いてから読み直し終えるまで待つ。切り替えをやめた後に cache の古い cutover で決めると、
- * 変えられる予定に切り替え中の文を出し続けるためである。
- * 最初に読み終えた値を保ち、開いた後に切り替えが始まっても変えない。google_primary の一覧は同期の状況のために読み直すが、
- * 開いた後の切り替えは、保存が 409 の cutover_open で拒まれて知らせ、入力を消さないためである。
+ * 一覧は、cache に値があっても、画面を開いてから読み直し終えるまで待つ。移行をやめた後に cache の古い cutover で決めると、
+ * 変えられる予定に移行中の文を出し続けるためである。
+ * 最初に読み終えた値を保ち、開いた後に移行が始まっても変えない。google_primary の一覧は同期の状況のために読み直すが、
+ * 開いた後の移行は、保存が 409 の cutover_open で拒まれて知らせ、入力を消さないためである。
  * 読み終えるまでは undefined を、事業所か一覧を読めなければ 'error' を返す。
  */
 export const useCutoverAtOpen = (search: Pick<ScheduleSearch, 'view' | 'date' | 'cancelled'>) => {

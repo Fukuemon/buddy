@@ -18,7 +18,7 @@ SELECT id FROM facilities WHERE id = $1 FOR UPDATE;
 SELECT id FROM facilities WHERE id = $1 FOR SHARE;
 
 -- name: GetFacilityForShare :one
--- ShareFacility と同じ共有のロックを取り、事業所の行を返す。予定を書く操作が、ロックの中で正本のモードを読む。
+-- ShareFacility と同じ共有のロックを取り、事業所の行を返す。予定を書く操作が、ロックの中で予定の管理先を読む。
 SELECT * FROM facilities WHERE id = $1 FOR SHARE;
 
 -- name: GetDepartment :one
@@ -86,7 +86,7 @@ SELECT facility_id FROM teams WHERE id = $1;
 SELECT facility_id FROM positions WHERE id = $1;
 
 -- name: GetFacilityForUpdate :one
--- LockFacility と同じ排他のロックを取り、事業所の行を返す。正本のモードを変える操作（切り替えの完了）が、ロックの中でモードを読む。
+-- LockFacility と同じ排他のロックを取り、事業所の行を返す。予定の管理先を変える操作（移行の完了）が、ロックの中でモードを読む。
 -- 予定を書く操作は GetFacilityForShare で同じ行を読むので、モードを変えるまでの間に、前のモードで予定を書けない。
 SELECT * FROM facilities WHERE id = $1 FOR UPDATE;
 

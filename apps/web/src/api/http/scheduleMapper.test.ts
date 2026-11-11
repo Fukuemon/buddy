@@ -144,7 +144,7 @@ describe('fromApiSchedule', () => {
 })
 
 describe('fromApiFacility', () => {
-  it('事業所の ID、名前、予定の正本を画面の値にする', () => {
+  it('事業所の ID、名前、予定の管理先を画面の値にする', () => {
     expect(
       fromApiFacility({
         id: 'facility-1',

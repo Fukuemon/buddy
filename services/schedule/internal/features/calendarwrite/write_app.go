@@ -19,8 +19,8 @@ import (
 	"github.com/Fukuemon/buddy/services/schedule/internal/tx"
 )
 
-// requireGooglePrimary は、手順 1 の始めに、事業所 facilityID の行を共有のロックで読み、google_primary で open の切り替えが無いことを確認する。
-// ロックはトランザクションが終わるまで、職員の状態とモードの切り替えを待たせる。トランザクションの中で呼ぶ。
+// requireGooglePrimary は、手順 1 の始めに、事業所 facilityID の行を共有のロックで読み、google_primary で open の移行が無いことを確認する。
+// ロックはトランザクションが終わるまで、職員の状態とモードの変更を待たせる。トランザクションの中で呼ぶ。
 func requireGooglePrimary(ctx context.Context, locks FacilityLock, cutovers Cutovers, facilityID string) error {
 	f, err := locks.GetForShare(ctx, facilityID)
 	if err != nil {

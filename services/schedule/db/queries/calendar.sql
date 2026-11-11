@@ -33,7 +33,7 @@ SELECT EXISTS (
 );
 
 -- name: CreateImportRun :exec
--- range_end は、切り替えの取り込み（cutover_id がある）では NULL にする。
+-- range_end は、移行の取り込み（cutover_id がある）では NULL にする。
 INSERT INTO import_runs (id, facility_id, external_calendar_id, requested_by, range_start, range_end, status, cutover_id)
 VALUES (
     sqlc.arg(id), sqlc.arg(facility_id), sqlc.arg(external_calendar_id), sqlc.arg(requested_by), sqlc.arg(range_start), sqlc.narg(range_end),

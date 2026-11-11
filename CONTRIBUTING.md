@@ -109,13 +109,13 @@ worktree では、ホスト名の `buddy` の部分が worktree ごとの名前�
   - 2 つ目の事業所（組織 `org-sample-b`）: `nagisa.ueno@example.com`（上野 渚、マネージャー）
     - ほかに、休職の職員の `takumi.ono@example.com`（小野 拓海）がいる
       - ログインすると、ログインの失敗の画面になる。
-  - 1 つ目と 2 つ目の事業所は、buddy を予定の正本にする（`buddy_primary`）。
+  - 1 つ目と 2 つ目の事業所は、予定を buddy で管理する（`buddy_primary`）。
   - 3 つ目の事業所（組織 `org-sample-c`）: `aoi.okada@example.com`（岡田 葵、マネージャー）
-    - Google カレンダーを予定の正本にする（`google_primary`）。予定の API は、予定の作成、変更、キャンセルと取り込みを 409 で拒む。
+    - 予定を Google カレンダーで管理する（`google_primary`）。予定の API は、予定の作成、変更、キャンセルと取り込みを 409 で拒む。
     - 岡田に calendarpit のカレンダー `aoi.okada@example.com` を結び付けてある。同期の Worker は、このカレンダーの予定を参照のモデル（`calendar_event_projections`）に写す。
   - 4 つ目の事業所（組織 `org-sample-d`）: `ren.ishida@example.com`（石田 蓮、マネージャー）
     - 3 つ目と同じく `google_primary` で、石田に calendarpit のカレンダー `ren.ishida@example.com` を結び付けてある。
-    - 予定の正本の切り替えを確認するのに使う。切り替えを完了すると `buddy_primary` に移り、戻せない。戻すときは `portless compose down -v` で作り直す。
+    - 予定の管理の移行を確認するのに使う。移行を完了すると `buddy_primary` に移り、戻せない。戻すときは `portless compose down -v` で作り直す。
   - 組織 `org-sample-e` は、上流の IdP の設定にだけあり、シードに事業所と職員が無い。
     - 運営用の CLI で事業所と最初のマネージャーを足すのに使う。手順は下の「事業所と最初のマネージャーを足す」にある。
   - 1 つ目と 2 つ目の事業所のカレンダーは、同期が読まない。Google カレンダーでの変更は buddy の予定に当たらない。
@@ -328,7 +328,7 @@ pnpm check:design   # 色の値、プリミティブトークンの名前、14px
 
 ## Changing the API Definition
 
-各 API の定義の正本は、`services/schedule/openapi.yaml` と `services/receipt/openapi.yaml` である。  
+各 API の定義の元は、`services/schedule/openapi.yaml` と `services/receipt/openapi.yaml` である。  
 openapi.yaml を変えたら、`pnpm lint:openapi` を流し、同じコミットで生成物も生成し直す。  
 定義の書き方の規約は、[コードと文書の規約](context/conventions.md#api-definitions) にある。  
 項目の削除と意味の変更は、互換なしとして新しいパスで出す。  

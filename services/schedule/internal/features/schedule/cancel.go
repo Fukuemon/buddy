@@ -24,7 +24,7 @@ func NewCancel(schedules Repository, staff StaffRefs, locks FacilityLock, export
 }
 
 // Do は、単発の予定をキャンセルする。予定が見つからないときは apperr.ErrNotFound を、
-// キャンセル済みのときと、事業所が buddy を予定の正本にしていないとき（code は CodeGooglePrimary）は apperr.ErrConflict を返す。
+// キャンセル済みのときと、事業所が予定を buddy で管理していないとき（code は CodeGooglePrimary）は apperr.ErrConflict を返す。
 func (s Cancel) Do(ctx context.Context, scheduleID, reason string) (Cancellation, error) {
 	c, err := NewCancellation(s.ids.NewID(), scheduleID, reason)
 	if err != nil {

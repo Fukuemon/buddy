@@ -9,8 +9,8 @@ export type CalendarImportDoneProps = {
   result: ImportResult
   onOpenCalendar: () => void
   /**
-   * 予定の正本の切り替えの取り込みのときに渡す。渡すと、予定のカレンダーへのボタンの代わりに、切り替えの状況へのボタンを出す。
-   * 切り替えの間は、予定のカレンダーが Google カレンダーの写しを出し、取り込んだ予定を出さないためである。
+   * 予定の管理の移行の取り込みのときに渡す。渡すと、予定のカレンダーへのボタンの代わりに、移行の状況へのボタンを出す。
+   * 移行の間は、予定のカレンダーが Google カレンダーの写しを出し、取り込んだ予定を出さないためである。
    */
   onBackToCutover?: () => void
 }
@@ -47,7 +47,7 @@ export const CalendarImportDone = ({
     </div>
     {onBackToCutover !== undefined ? (
       <Button data-testid="calendar-import-back-to-cutover" onClick={onBackToCutover} size="S">
-        切り替えの状況に戻る
+        移行の状況に戻る
       </Button>
     ) : (
       <Button data-testid="calendar-import-open-calendar" onClick={onOpenCalendar} size="S">

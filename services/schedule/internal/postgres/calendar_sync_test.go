@@ -12,7 +12,7 @@ import (
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/organization"
 )
 
-// 同期の状態のリポジトリが取る、事業所の正本のモード。
+// 同期の状態のリポジトリが取る、事業所の予定の管理先。
 var (
 	buddyPrimary  = []organization.SourceMode{organization.SourceBuddyPrimary}
 	googlePrimary = []organization.SourceMode{organization.SourceGooglePrimary}
@@ -80,7 +80,7 @@ func TestCalendarSyncRepository(t *testing.T) {
 func TestCalendarSyncForgetsTokenToReadAll(t *testing.T) {
 	ctx := txContext(t)
 	tx := ctx.Value(txKey{}).(pgx.Tx)
-	// 同期は、Google カレンダーを正本にする事業所のカレンダーを読む（ADR-0029）
+	// 同期は、予定を Google カレンダーで管理している事業所のカレンダーを読む（ADR-0029）
 	if _, err := tx.Exec(ctx, "UPDATE facilities SET source_mode = 'google_primary' WHERE id = $1", seedFacility); err != nil {
 		t.Fatal(err)
 	}

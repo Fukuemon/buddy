@@ -95,7 +95,7 @@ func scheduleIDs(ds []scheduleview.Detail) []string {
 	return ids
 }
 
-// TestSchedulesListBuddyPrimaryIgnoresProjections は、buddy を正本にする事業所（buddy_primary）の一覧が、
+// TestSchedulesListBuddyPrimaryIgnoresProjections は、予定を buddy で管理している事業所（buddy_primary）の一覧が、
 // 結び付けたカレンダーに Projection の行があっても、buddy の予定のテーブルの予定だけを返すことを確認する。
 func TestSchedulesListBuddyPrimaryIgnoresProjections(t *testing.T) {
 	s := inmem.Seeded()
@@ -425,8 +425,8 @@ func TestSchedulesListGooglePrimaryReviewReasons(t *testing.T) {
 	}
 }
 
-// TestSchedulesListGooglePrimaryCutover は、google_primary の事業所の一覧が、open の切り替えの間だけ切り替えを返し、
-// 切り替えを始めた職員の ID と名前を、職員が退職していても返すことと、切り替えの間も Projection を読むことを確認する（ADR-0031）。
+// TestSchedulesListGooglePrimaryCutover は、google_primary の事業所の一覧が、open の移行の間だけ移行を返し、
+// 移行を始めた職員の ID と名前を、職員が退職していても返すことと、移行の間も Projection を読むことを確認する（ADR-0031）。
 func TestSchedulesListGooglePrimaryCutover(t *testing.T) {
 	s := googleStore()
 	putEvent(s, ownCalendarID, "own", "研修", tokyo(10, 20, 13), 60, nil)
@@ -435,7 +435,7 @@ func TestSchedulesListGooglePrimaryCutover(t *testing.T) {
 		t.Fatal(err)
 	}
 	if list.Cutover != nil {
-		t.Errorf("切り替えの前 = %+v, want nil", list.Cutover)
+		t.Errorf("移行の前 = %+v, want nil", list.Cutover)
 	}
 	started := tokyo(10, 5, 9)
 	retired := tokyo(10, 6, 9)
@@ -451,9 +451,9 @@ func TestSchedulesListGooglePrimaryCutover(t *testing.T) {
 	}
 	if list.Cutover == nil || !list.Cutover.StartedAt.Equal(started) || list.Cutover.RangeStart != (civil.Date{Year: 2026, Month: 10, Day: 1}) ||
 		list.Cutover.StartedBy != "MANAGER" || list.Cutover.StartedByName != "退職した 管理者" {
-		t.Errorf("切り替え = %+v", list.Cutover)
+		t.Errorf("移行 = %+v", list.Cutover)
 	}
 	if len(list.Schedules) != 1 || list.Schedules[0].Source != scheduleview.SourceGoogleCalendar {
-		t.Errorf("予定 = %+v, want 切り替えの間も Projection を読む", list.Schedules)
+		t.Errorf("予定 = %+v, want 移行の間も Projection を読む", list.Schedules)
 	}
 }

@@ -16,7 +16,7 @@ import { formatDateTime, formatDateTimeRange } from '../lib/dateTime'
 export type ScheduleSourceNoticesProps = {
   sourceMode: SourceMode
   calendarSyncs: CalendarSyncStatus[]
-  /** 予定の正本を buddy に切り替えている間の、open の切り替え。無ければ null である。 */
+  /** 予定の管理を buddy に移している間の、open の移行。無ければ null である。 */
   cutover?: OpenCalendarCutover | null
   /** 確認が必要な予定。期間の外の予定も含む。 */
   needsReview: Schedule[]
@@ -33,11 +33,11 @@ export type ScheduleSourceNoticesProps = {
 }
 
 /**
- * Google カレンダーを予定の正本にする事業所（google_primary）で、カレンダーの上に出す通知。
+ * 予定を Google カレンダーで管理している事業所（google_primary）で、カレンダーの上に出す通知。
  * Google カレンダーと buddy のどちらでも予定を変えられる案内を常に出し、同期が失敗しているか古いカレンダーがあれば同期の警告を、
  * 確認が必要な予定があれば、予定ごとの日時、職員、理由を出す。確認が必要な終日の予定は、時刻のある予定の後に、日付、職員、理由を押せない行で出す。表示の期間にカレンダーに出せない予定があれば、件数と職員ごとの件数を出し、
- * Google カレンダーで確認するよう促す。予定の中身は出さない。予定の正本を buddy に切り替えている間は、切り替え中であることと、
- * Google カレンダーで予定を変えないよう頼み、buddy でも予定を変えられないことを伝える文と、切り替えを始めた職員と時刻を出す。
+ * Google カレンダーで確認するよう促す。予定の中身は出さない。予定の管理を buddy に移している間は、移行中であることと、
+ * Google カレンダーで予定を変えないよう頼み、buddy でも予定を変えられないことを伝える文と、移行を始めた職員と時刻を出す。
  * buddy_primary の事業所では何も出さない。
  */
 export const ScheduleSourceNotices = ({
@@ -74,10 +74,10 @@ export const ScheduleSourceNotices = ({
           className="rounded-8 border-l-4 border-primary bg-primary-surface px-4 py-3"
           data-testid="schedule-calendar-cutover"
         >
-          <h2 className="text-label">予定の正本を buddy に切り替えています</h2>
+          <h2 className="text-label">予定の管理を buddy に移しています</h2>
           <p className="mt-2 text-body-dense">
-            切り替えが終わるまで、Google カレンダーで予定を作成、変更しないでください。buddy
-            でも予定を作成、変更できません。切り替えの間も、buddy には Google
+            移行が終わるまで、Google カレンダーで予定を作成、変更しないでください。buddy
+            でも予定を作成、変更できません。移行の間も、buddy には Google
             カレンダーの予定を表示します。
           </p>
           <p className="mt-1 text-body-dense" data-testid="schedule-calendar-cutover-started">

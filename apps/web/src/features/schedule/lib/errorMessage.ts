@@ -24,7 +24,7 @@ export const scheduleLoadErrorMessage = (error: unknown) => {
   return SCHEDULE_LOAD_ERROR_MESSAGE
 }
 
-/** 事業所が Google カレンダーを予定の正本にしていて、予定を書けないときの文（409 の google_primary）。 */
+/** 事業所が予定を Google カレンダーで管理していて、予定を書けないときの文（409 の google_primary）。 */
 export const SCHEDULE_GOOGLE_PRIMARY_MESSAGE =
   'この事業所の予定は Google カレンダーで管理しています。予定は Google カレンダーで作成、変更してください。'
 
@@ -32,9 +32,9 @@ export const SCHEDULE_GOOGLE_PRIMARY_MESSAGE =
 export const SCHEDULE_GOOGLE_EVENT_CHANGED_MESSAGE =
   'Google カレンダーで予定が変更されていました。最新の予定を確認してから、もう一度保存してください。'
 
-/** 予定の正本を buddy に切り替えている間に、予定を変えようとしたときの文（409 の cutover_open と、切り替えの間に開いた編集の画面）。 */
+/** 予定の管理を buddy に移している間に、予定を変えようとしたときの文（409 の cutover_open と、移行の間に開いた編集の画面）。 */
 export const SCHEDULE_CUTOVER_OPEN_MESSAGE =
-  '予定の正本を buddy に切り替えています。切り替えが終わるまで、予定を作成、変更、キャンセルできません。'
+  '予定の管理を buddy に移しています。終わるまで、予定を作成、変更、キャンセルできません。'
 
 /**
  * google_primary の事業所で、予定の API が Google カレンダーに書けなかったときの code ごとの文（ADR-0029）。
@@ -58,7 +58,7 @@ const GOOGLE_WRITE_MESSAGES: Record<string, string> = {
 /**
  * 予定の作成、保存、キャンセルを拒まれたときの文。verb は「作成」「更新」「キャンセル」のいずれかである。
  * 400 は、入力が予定の規則に合わないときである。API は合わない項目を返さないので、項目には示さない。
- * 409 の google_primary は、正本の切り替えの前の予定の API が、Google カレンダーを予定の正本にする事業所の書き込みを拒んだときである。
+ * 409 の google_primary は、移行の前の予定の API が、予定を Google カレンダーで管理している事業所の書き込みを拒んだときである。
  * google_primary の事業所で Google カレンダーに書けなかったときは、code ごとの文を返す（GOOGLE_WRITE_MESSAGES）。
  * 503 の google_write_unknown は、作成なら同じ予定として送り直せることを、ほかの操作なら開き直すことを案内する。
  */

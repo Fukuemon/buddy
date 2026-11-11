@@ -30,7 +30,7 @@ type projectionEnv struct {
 }
 
 // newProjectionSyncer は、e の Store の上で、組み立てと同じく google_primary の事業所にだけ ProjectionApplier を渡した同期の処理を作る。
-// 職員の休職、復職、退職とモードの切り替えを locks で待たせ、ログを log に書く。
+// 職員の休職、復職、退職とモードの変更を locks で待たせ、ログを log に書く。
 func newProjectionSyncer(t *testing.T, e syncEnv, locks calendarsync.FacilityLock, log *slog.Logger) *calendarsync.Syncer {
 	t.Helper()
 	return calendarsync.NewSyncer(syncerDeps(e.store, gcal.NewReader(gcaltest.Start(t, e.srv)), e.sources, locks), calendarsync.Appliers{
@@ -279,7 +279,7 @@ func TestSyncProjectionRereadsAllOnExpiredToken(t *testing.T) {
 	}
 }
 
-// TestSyncStopsProjectingWhenModeChanged は、カレンダーを取った後に事業所の正本のモードが buddy_primary に変わったとき、
+// TestSyncStopsProjectingWhenModeChanged は、カレンダーを取った後に事業所の予定の管理先が buddy_primary に変わったとき、
 // 予定を Projection に写さず、同期の状態を前のまま書き、次から取らないことを確認する。
 func TestSyncStopsProjectingWhenModeChanged(t *testing.T) {
 	e := newProjectionEnv(t)

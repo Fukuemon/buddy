@@ -1,7 +1,7 @@
 # 予定の API
 
 訪問看護の事業所の予定を管理する HTTP の API。  
-API の定義の正本は [openapi.yaml](openapi.yaml) である。
+API の定義の元は [openapi.yaml](openapi.yaml) である。
 
 ## Setup
 

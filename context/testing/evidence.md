@@ -214,7 +214,7 @@ node .claude/skills/playwright-capture/scripts/collect.mjs packages/e2e/evidence
   - 撮った後にデータを消さない。撮り終えたら `down -v` で compose ごと消す。
   - ほかの撮影の前提を変える操作は、撮った後に `try/finally` で戻す。
     - 当たる操作は、カレンダーの結び付けと、職員の名前、チーム、権限の変更である。シードのままの DB を前提にする spec があり、戻さないと、全部を 1 回で流したときにその spec が失敗する。
-    - 戻せない変更（予定の正本の切り替えの完了のように、戻す API が無いもの）を持つ spec は、spec の先頭のコメントに「DB を作り直してから単独で流す」と書く。その spec は、`portless compose down -v` の後に起動し直してから、ファイルを指定して流す。
+    - 戻せない変更（予定の管理の移行の完了のように、戻す API が無いもの）を持つ spec は、spec の先頭のコメントに「DB を作り直してから単独で流す」と書く。その spec は、`portless compose down -v` の後に起動し直してから、ファイルを指定して流す。
 - 認証コードを求められる環境（検証環境）のログインの手順は、検証環境ができてから決める。
 
 ## Attachment

@@ -79,7 +79,7 @@ func (r ChangeRule) Do(ctx context.Context, facilityID, recurringScheduleID, id,
 	rule schedule.RuleInput) (scheduleview.RecurringDetail, error) {
 	u := r.update
 	if etag == "" {
-		return scheduleview.RecurringDetail{}, apperr.Invalid("Google カレンダーを予定の正本にする事業所では、読んだ繰り返しの予定の etag が必須です")
+		return scheduleview.RecurringDetail{}, apperr.Invalid("予定を Google カレンダーで管理している事業所では、読んだ繰り返しの予定の etag が必須です")
 	}
 	if u.accounts == nil {
 		return scheduleview.RecurringDetail{}, calendar.ErrNotConfigured
@@ -189,7 +189,7 @@ func recurringOf(ev calendar.Event, row scheduleview.ProjectionDetail) (schedule
 // Google に書く前に確認し、例外の回を作り直した後に作成を拒まないためである。
 func requireNewID(id string, parent parentEvent) error {
 	if id == "" {
-		return apperr.Invalid("Google カレンダーを予定の正本にする事業所で繰り返しの規則を変えるときは、新しい繰り返しの予定の ID（id）が必須です")
+		return apperr.Invalid("予定を Google カレンダーで管理している事業所で繰り返しの規則を変えるときは、新しい繰り返しの予定の ID（id）が必須です")
 	}
 	if _, err := calendar.EventIDOf(id); err != nil {
 		return apperr.Invalid("予定の ID %s は ULID ではありません", id)

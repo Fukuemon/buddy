@@ -219,10 +219,10 @@ describe('ScheduleEditModalContainer', () => {
     expect(screen.queryByTestId('schedule-edit-submit')).not.toBeInTheDocument()
   })
 
-  it('予定の正本を切り替えている間に開くと、フォームと保存のボタンを出さずに、切り替えていることと閉じるボタンを出す', async () => {
+  it('予定の管理を buddy に移している間に開くと、フォームと保存のボタンを出さずに、移していることと閉じるボタンを出す', async () => {
     render(<Cutover />)
     expect(await screen.findByTestId('schedule-edit-cutover')).toHaveTextContent(
-      '予定の正本を buddy に切り替えています。切り替えが終わるまで、予定を作成、変更、キャンセルできません。',
+      '予定の管理を buddy に移しています。終わるまで、予定を作成、変更、キャンセルできません。',
     )
     expect(screen.getByTestId('modal-close')).toBeInTheDocument()
     expect(screen.queryByTestId('schedule-edit-submit')).not.toBeInTheDocument()
@@ -248,7 +248,7 @@ describe('ScheduleEditModalContainer', () => {
     expect(screen.queryByTestId('schedule-edit-submit')).not.toBeInTheDocument()
   })
 
-  it('開いた後に切り替えが始まっても、フォームを残し、保存すると切り替え中の文を出す', async () => {
+  it('開いた後に移行が始まっても、フォームを残し、保存すると移行中の文を出す', async () => {
     const { api } = GooglePrimaryBeforeCutover.parameters.appRouter as AppRouterParameters
     if (api === undefined) throw new Error('story にフェイクの API が無い')
     const list = vi.spyOn(api.schedules, 'list')
@@ -257,7 +257,7 @@ describe('ScheduleEditModalContainer', () => {
 
     await api.calendars.startCutover(MOCK_FACILITY_ID)
     const listed = list.mock.calls.length
-    // 窓に戻ったときの読み直しで、一覧が切り替えを返しても、開いたときの状態のままにする
+    // 窓に戻ったときの読み直しで、一覧が移行を返しても、開いたときの状態のままにする
     act(() => {
       focusManager.setFocused(false)
       focusManager.setFocused(true)
@@ -270,7 +270,7 @@ describe('ScheduleEditModalContainer', () => {
 
     await userEvent.click(submit)
     expect(await screen.findByRole('alert')).toHaveTextContent(
-      '予定の正本を buddy に切り替えています。',
+      '予定の管理を buddy に移しています。',
     )
     expect(screen.getByTestId('schedule-form')).toBeInTheDocument()
   })

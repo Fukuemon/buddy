@@ -29,7 +29,7 @@ describe('canChangeSchedule', () => {
     }
   })
 
-  it('予定の正本を切り替えている間と、キャンセルした予定は、変更もキャンセルもできない', () => {
+  it('予定の管理を buddy に移している間と、キャンセルした予定は、変更もキャンセルもできない', () => {
     expect(canChangeSchedule(schedule, cutover)).toBe(false)
     const cancelled = { ...schedule, cancel: { reason: '中止' } }
     expect(canChangeSchedule(cancelled, null)).toBe(false)
@@ -63,7 +63,7 @@ describe('canDeleteSchedule', () => {
     ).toBe(true)
   })
 
-  it('google_primary の事業所の予定と、キャンセルした予定と、切り替えている間は削除できない', () => {
+  it('google_primary の事業所の予定と、キャンセルした予定と、移している間は削除できない', () => {
     expect(canDeleteSchedule(schedule, 'google_primary', null, startOfDay)).toBe(false)
     const cancelled = { ...schedule, cancel: { reason: '中止' } }
     expect(canDeleteSchedule(cancelled, 'buddy_primary', null, startOfDay)).toBe(false)

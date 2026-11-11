@@ -464,7 +464,7 @@ func TestCreateRejects(t *testing.T) {
 			wantErr: func(err error) bool { return isConflict(err, calendarwrite.CodeCalendarNotLinked) },
 		},
 		{
-			name: "open の切り替えがある",
+			name: "open の移行がある",
 			prepare: func(fx *fixture) {
 				fx.store.Cutovers["CUT"] = calendarimport.Cutover{ID: "CUT", FacilityID: inmem.FacilityID, Status: calendarimport.CutoverOpen}
 			},

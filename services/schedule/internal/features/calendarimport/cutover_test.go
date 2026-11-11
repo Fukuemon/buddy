@@ -22,7 +22,7 @@ import (
 	"github.com/Fukuemon/buddy/services/schedule/internal/inmem"
 )
 
-// cutoverEnv は、Google カレンダーを予定の正本にする事業所の、切り替えのテストの環境である。
+// cutoverEnv は、予定を Google カレンダーで管理している事業所の、移行のテストの環境である。
 // カレンダーの最後の同期は成功していて、事業所の Projection に 1 行ある。
 type cutoverEnv struct {
 	env
@@ -56,7 +56,7 @@ func withName(s *inmem.Store, id, name string) staff.Detail {
 	return d
 }
 
-// cutoverRange は、cutoverNow に始めた切り替えの取り込みの期間である。
+// cutoverRange は、cutoverNow に始めた移行の取り込みの期間である。
 func cutoverRange() calendarimport.Range {
 	return calendarimport.Range{Start: civil.Date{Year: 2026, Month: 11, Day: 1}}
 }
@@ -103,7 +103,7 @@ func requireIncomplete(t *testing.T, err error, want ...calendarimport.UnmetReas
 func (c cutoverEnv) requireStillOpen(t *testing.T, id string) {
 	t.Helper()
 	if cut := c.store.Cutovers[id]; cut.Status != calendarimport.CutoverOpen {
-		t.Errorf("切り替え = %+v, want open のまま", cut)
+		t.Errorf("移行 = %+v, want open のまま", cut)
 	}
 	if f := c.store.Facilities[inmem.FacilityID]; f.SourceMode != organization.SourceGooglePrimary {
 		t.Errorf("モード = %s, want google_primary のまま", f.SourceMode)
@@ -113,13 +113,13 @@ func (c cutoverEnv) requireStillOpen(t *testing.T, id string) {
 	}
 }
 
-// TestCutover は、切り替えを始め、切り替えの期間で取り込み、同期の後に完了すると、事業所が buddy を予定の正本にし、
-// Projection の行を消し、切り替えを completed にすることを確認する（ADR-0031）。
+// TestCutover は、移行を始め、移行の期間で取り込み、同期の後に完了すると、事業所が予定を buddy で管理し、
+// Projection の行を消し、移行を completed にすることを確認する（ADR-0031）。
 func TestCutover(t *testing.T) {
 	c := newCutoverEnv(t, fixture())
 	cut := c.start(t)
 	if cut.Status != calendarimport.CutoverOpen || cut.RangeStart != (civil.Date{Year: 2026, Month: 11, Day: 1}) || cut.StartedBy != inmem.StaffID {
-		t.Fatalf("始めた切り替え = %+v", cut)
+		t.Fatalf("始めた移行 = %+v", cut)
 	}
 
 	p, err := c.uc.Preview(c.ctx, calID, cutoverRange())
@@ -139,11 +139,11 @@ func TestCutover(t *testing.T) {
 
 	res := c.importAll(t, cutoverDecisions())
 	if res.Run.CutoverID == nil || *res.Run.CutoverID != cut.ID || res.Run.RangeEnd != (civil.Date{}) || res.Run.RangeStart != cut.RangeStart {
-		t.Errorf("取り込みの記録 = %+v, want 切り替えを持ち、終わりの無い期間", res.Run)
+		t.Errorf("取り込みの記録 = %+v, want 移行を持ち、終わりの無い期間", res.Run)
 	}
 	for _, l := range c.store.Links {
 		if l.CutoverID == nil || *l.CutoverID != cut.ID {
-			t.Errorf("%s の対応の切り替え = %v", l.ExternalEventID, l.CutoverID)
+			t.Errorf("%s の対応の移行 = %v", l.ExternalEventID, l.CutoverID)
 		}
 	}
 	if rs := recurringOf(t, c.env, "weekly"); rs.Rule.EndDate != nil {
@@ -161,7 +161,7 @@ func TestCutover(t *testing.T) {
 		t.Fatal(err)
 	}
 	if done.Status != calendarimport.CutoverCompleted || done.FinishedAt == nil {
-		t.Errorf("完了した切り替え = %+v", done)
+		t.Errorf("完了した移行 = %+v", done)
 	}
 	f := c.store.Facilities[inmem.FacilityID]
 	if f.SourceMode != organization.SourceBuddyPrimary || schedule.RequireWritable(f) != nil {
@@ -254,7 +254,7 @@ func TestCompleteCutoverRejects(t *testing.T) {
 	})
 }
 
-// TestImportDuringCutoverOverwrites は、切り替えの間に取り込み直すと、取り込んだ後に Google で変わったか消えた予定の buddy の写しを消し、
+// TestImportDuringCutoverOverwrites は、移行の間に取り込み直すと、取り込んだ後に Google で変わったか消えた予定の buddy の写しを消し、
 // Google の今の内容で取り込み直すことを確認する。繰り返しの親が変わったときは、親と回の全てを取り込み直す。取り込み直すと完了できる。
 func TestImportDuringCutoverOverwrites(t *testing.T) {
 	c := newCutoverEnv(t, fixture())
@@ -341,8 +341,8 @@ func TestCutoverRestoredOccurrence(t *testing.T) {
 	}
 }
 
-// TestCancelCutover は、切り替えをやめると、この切り替えの取り込みで作った予定、繰り返しの予定、訪問の情報、予定の対応を消し、
-// 事業所を google_primary のままにして、切り替えを canceled にすることを確認する。やめた後は、取り込みを拒む。
+// TestCancelCutover は、移行をやめると、この移行の取り込みで作った予定、繰り返しの予定、訪問の情報、予定の対応を消し、
+// 事業所を google_primary のままにして、移行を canceled にすることを確認する。やめた後は、取り込みを拒む。
 func TestCancelCutover(t *testing.T) {
 	c := newCutoverEnv(t, fixture())
 	seeded := inmem.Seeded()
@@ -356,7 +356,7 @@ func TestCancelCutover(t *testing.T) {
 		t.Fatal(err)
 	}
 	if done.Status != calendarimport.CutoverCanceled || done.FinishedAt == nil {
-		t.Errorf("やめた切り替え = %+v", done)
+		t.Errorf("やめた移行 = %+v", done)
 	}
 	if len(c.store.Links) != 0 || len(c.store.Schedules) != len(seeded.Schedules) || len(c.store.Recurring) != len(seeded.Recurring) || len(c.store.Infos) != 0 {
 		t.Errorf("対応 %d、予定 %d、繰り返し %d、訪問の情報 %d, want 取り込んだものを全て消す",
@@ -377,19 +377,19 @@ func TestCancelCutover(t *testing.T) {
 	}
 }
 
-// TestStartCutoverRejects は、切り替えを始められない 3 つの場合を確認する。
+// TestStartCutoverRejects は、移行を始められない 3 つの場合を確認する。
 func TestStartCutoverRejects(t *testing.T) {
-	t.Run("open の切り替えが 1 つの事業所に 2 つできない", func(t *testing.T) {
+	t.Run("open の移行が 1 つの事業所に 2 つできない", func(t *testing.T) {
 		c := newCutoverEnv(t, fixture())
 		c.start(t)
 		if _, err := c.uc.StartCutover(c.ctx, inmem.FacilityID); !isConflict(err, calendarimport.CodeCutoverOpen) {
 			t.Errorf("err = %v, want %s", err, calendarimport.CodeCutoverOpen)
 		}
 		if len(c.store.Cutovers) != 1 {
-			t.Errorf("切り替え = %d 件, want 1", len(c.store.Cutovers))
+			t.Errorf("移行 = %d 件, want 1", len(c.store.Cutovers))
 		}
 	})
-	t.Run("buddy を予定の正本にしている", func(t *testing.T) {
+	t.Run("予定を buddy で管理している", func(t *testing.T) {
 		e := newEnv(t, fixture())
 		if _, err := e.uc.StartCutover(e.ctx, inmem.FacilityID); !isConflict(err, calendarimport.CodeCutoverNotGooglePrimary) {
 			t.Errorf("err = %v, want %s", err, calendarimport.CodeCutoverNotGooglePrimary)
@@ -411,7 +411,7 @@ func TestStartCutoverRejects(t *testing.T) {
 	})
 }
 
-// TestImportDuringCutoverRejects は、切り替えの間の取り込みの期間と、規則に写せない繰り返しの取り込み方の誤りを、何も書かずに拒むことを確認する。
+// TestImportDuringCutoverRejects は、移行の間の取り込みの期間と、規則に写せない繰り返しの取り込み方の誤りを、何も書かずに拒むことを確認する。
 func TestImportDuringCutoverRejects(t *testing.T) {
 	c := newCutoverEnv(t, fixture())
 	c.start(t)
@@ -427,7 +427,7 @@ func TestImportDuringCutoverRejects(t *testing.T) {
 	}
 }
 
-// TestGetCutover は、切り替えの状況が、open の切り替えと、カレンダーごとの同期とこの切り替えの最後の取り込みを返すことを確認する。
+// TestGetCutover は、移行の状況が、open の移行と、カレンダーごとの同期とこの移行の最後の取り込みを返すことを確認する。
 func TestGetCutover(t *testing.T) {
 	c := newCutoverEnv(t, fixture())
 	st, err := c.uc.GetCutover(c.ctx, inmem.FacilityID)
@@ -456,7 +456,7 @@ func (c cutoverEnv) putPending() {
 	}
 }
 
-// TestCutoverRejectsPendingWrites は、予定の API の保留の版の記録がある事業所では、切り替えを始める操作と完了する操作が
+// TestCutoverRejectsPendingWrites は、予定の API の保留の版の記録がある事業所では、移行を始める操作と完了する操作が
 // google_write_pending を返して何も書かず、保留の版が解けた後は始められて完了できることを確認する（ADR-0031）。
 func TestCutoverRejectsPendingWrites(t *testing.T) {
 	c := newCutoverEnv(t, fixture())
@@ -465,7 +465,7 @@ func TestCutoverRejectsPendingWrites(t *testing.T) {
 		t.Fatalf("始める: err = %v, want %s", err, calendarimport.CodeWritePending)
 	}
 	if len(c.store.Cutovers) != 0 {
-		t.Fatalf("切り替え = %d 件, want 0", len(c.store.Cutovers))
+		t.Fatalf("移行 = %d 件, want 0", len(c.store.Cutovers))
 	}
 	delete(c.store.Records, "PENDING")
 	cut := c.start(t)
@@ -486,7 +486,7 @@ func TestCutoverRejectsPendingWrites(t *testing.T) {
 	}
 }
 
-// TestCutoverImportUsesRecordVisit は、予定の API の記録が訪問の情報を持つ予定を、切り替えの取り込みが、タイトルの読み替えではなく
+// TestCutoverImportUsesRecordVisit は、予定の API の記録が訪問の情報を持つ予定を、移行の取り込みが、タイトルの読み替えではなく
 // 記録の訪問の情報（同行者と訪問の区分を含む）で訪問の予定にし、記録の訪問の情報を写した別の訪問の情報を作ることを確認する。
 // タイトルの利用者名（利用者Z）が記録の利用者と食い違っても、記録の訪問の情報を使い、確認が必要な予定にしない。
 func TestCutoverImportUsesRecordVisit(t *testing.T) {
@@ -542,7 +542,7 @@ func TestCutoverImportUsesRecordVisit(t *testing.T) {
 	}
 }
 
-// TestCutoverImportUsesParentRecordVisit は、予定の API の記録が繰り返しの予定の親に訪問の情報を持つとき、切り替えの取り込みが、
+// TestCutoverImportUsesParentRecordVisit は、予定の API の記録が繰り返しの予定の親に訪問の情報を持つとき、移行の取り込みが、
 // 自分の記録を持たない例外の回も、親の記録の訪問の情報（同行者を含む）で訪問の予定にすることを確認する。一覧（scheduleview）と同じ規則である。
 func TestCutoverImportUsesParentRecordVisit(t *testing.T) {
 	c := newCutoverEnv(t, fixture())

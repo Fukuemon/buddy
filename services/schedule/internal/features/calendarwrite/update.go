@@ -80,7 +80,7 @@ func (c change) moving() bool { return c.to.ID != c.from.ID || c.toEventID != c.
 // 親の予定を Google から読み直して比べる。
 //
 // 入力と参照のエラー、apperr.ErrForbidden は schedule.Update と同じである。予定が無いときは apperr.ErrNotFound を返す。
-// 次のときは apperr.ErrConflict を返す: 事業所が google_primary でない、open の切り替えがある（CodeCutoverOpen）、新しい予定の職員に
+// 次のときは apperr.ErrConflict を返す: 事業所が google_primary でない、open の移行がある（CodeCutoverOpen）、新しい予定の職員に
 // 外していないカレンダーが無い（CodeCalendarNotLinked）、予定に保留の版がある（CodeWritePending）、読んだ後に Google で予定が変わった
 // （CodeEventChanged）、Google で予定が消されたか見つからない（CodeEventNotFound）、カレンダーに書けない（CodeCalendarUnwritable）、
 // Google が内容を受け付けない（CodeEventRejected）、繰り返しの予定の親である、例外の回の親の記録に保留の版がある（CodeWritePending）。
@@ -89,7 +89,7 @@ func (c change) moving() bool { return c.to.ID != c.from.ID || c.toEventID != c.
 // 保留の版を書いた後は、リクエストが取り消されても、Google の結果を記録に残すまで続ける。
 func (u Update) Do(ctx context.Context, facilityID, id, etag string, in schedule.SlotInput) (scheduleview.Detail, error) {
 	if etag == "" {
-		return scheduleview.Detail{}, apperr.Invalid("Google カレンダーを予定の正本にする事業所では、読んだ予定の etag が必須です")
+		return scheduleview.Detail{}, apperr.Invalid("予定を Google カレンダーで管理している事業所では、読んだ予定の etag が必須です")
 	}
 	if u.accounts == nil {
 		return scheduleview.Detail{}, calendar.ErrNotConfigured

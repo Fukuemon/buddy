@@ -340,11 +340,11 @@ test.describe('予定のカレンダー', () => {
     )
   })
 
-  test.describe(`予定の作成の繰り返し（${OKADA.staff.name}、Google カレンダーを正本にする事業所のマネージャー）`, () => {
+  test.describe(`予定の作成の繰り返し（${OKADA.staff.name}、予定を Google カレンダーで管理している事業所のマネージャー）`, () => {
     test.use({ storageState: OKADA_STATE })
 
     // 改修前は予定の作成に繰り返しが無いので、改修前と比べない
-    test('schedule-create-recurring-google-primary Google カレンダーを正本にする事業所で繰り返しの予定を作った場合、Google カレンダーに繰り返しの予定ができること', async ({
+    test('schedule-create-recurring-google-primary 予定を Google カレンダーで管理している事業所で繰り返しの予定を作った場合、Google カレンダーに繰り返しの予定ができること', async ({
       page,
       request,
     }) => {
@@ -358,7 +358,7 @@ test.describe('予定のカレンダー', () => {
           page,
           OKADA.staff.id,
           start,
-          'Google カレンダーを正本にする事業所で、予定の作成から毎週の月曜と木曜の繰り返しの予定を作ると、Google カレンダー（calendarpit）に繰り返しの予定ができ、回が buddy と同じ日に出る',
+          '予定を Google カレンダーで管理している事業所で、予定の作成から毎週の月曜と木曜の繰り返しの予定を作ると、Google カレンダー（calendarpit）に繰り返しの予定ができ、回が buddy と同じ日に出る',
           '月曜',
         )
 

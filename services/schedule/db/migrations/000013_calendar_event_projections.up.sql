@@ -1,4 +1,4 @@
--- Google カレンダーを予定の正本にする事業所（google_primary）の予定の写し（Projection、ADR-0029）。
+-- 予定を Google カレンダーで管理している事業所（google_primary）の予定の写し（Projection、ADR-0029）。
 -- 同期の処理（calendarsync の ProjectionApplier）だけが書き、予定の表示の読み出し（scheduleview）だけが読む。
 -- Google カレンダーの 1 つの予定を 1 行にし、繰り返しの予定は展開せずに親の予定と例外の回を別の行に持つ。
 -- 説明、場所、参加者、作成者と主催者のメール、添付は持たない。
@@ -35,7 +35,7 @@ CREATE TABLE calendar_event_projections (
 -- 予定の表示の読み出しが、事業所の行を、読む期間より後に終わる行に絞って読む。
 CREATE INDEX calendar_event_projections_facility_end_idx ON calendar_event_projections (facility_id, last_end_date);
 
-COMMENT ON TABLE calendar_event_projections IS 'Google カレンダーを予定の正本にする事業所の、Google カレンダーの予定の写し（Projection）。1 つの予定を 1 行にする';
+COMMENT ON TABLE calendar_event_projections IS '予定を Google カレンダーで管理している事業所の、Google カレンダーの予定の写し（Projection）。1 つの予定を 1 行にする';
 COMMENT ON COLUMN calendar_event_projections.external_event_id IS 'Google の予定の ID';
 COMMENT ON COLUMN calendar_event_projections.facility_id IS '写した時点のカレンダーの事業所';
 COMMENT ON COLUMN calendar_event_projections.staff_id IS '写した時点のカレンダーの職員';

@@ -62,7 +62,7 @@ describe('scheduleSubmitErrorMessage', () => {
     )
   })
 
-  it('Google カレンダーを予定の正本にする事業所で拒まれたときは、Google カレンダーで作るよう示す', () => {
+  it('予定を Google カレンダーで管理している事業所で拒まれたときは、Google カレンダーで作るよう示す', () => {
     const error = new ApiError(409, 'conflict', [], 'google_primary')
     for (const verb of ['作成', '更新'] as const) {
       expect(scheduleSubmitErrorMessage(error, verb)).toBe(
@@ -86,7 +86,7 @@ describe('scheduleSubmitErrorMessage', () => {
       '予定の職員が Google カレンダーを結び付けていません。カレンダーの結び付けを、事業所の管理者に頼んでください。',
     )
     expect(scheduleSubmitErrorMessage(of('cutover_open'), '更新')).toBe(
-      '予定の正本を buddy に切り替えています。切り替えが終わるまで、予定を作成、変更、キャンセルできません。',
+      '予定の管理を buddy に移しています。終わるまで、予定を作成、変更、キャンセルできません。',
     )
     expect(scheduleSubmitErrorMessage(of('google_unavailable', 503), '作成')).toBe(
       'Google カレンダーに書けませんでした。時間をおいて、やり直してください。',

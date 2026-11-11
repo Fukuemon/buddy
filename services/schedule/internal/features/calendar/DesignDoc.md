@@ -146,7 +146,7 @@ verified_commit: 8254dde
 プレビューは `calendarimport` の `Preview` が、確定は `Import` が行う。  
 画面の動きと、職員から見た取り込みの結果は、画面仕様書の [予定の取り込み](https://github.com/Fukuemon/buddy/blob/develop/docs/screens/schedule-import_予定の取り込み/index.md) と [カレンダーの連携](https://github.com/Fukuemon/buddy/blob/develop/docs/screens/schedule-link_カレンダーの連携/index.md) にある。
 
-- ADR-0029: [Google カレンダーとの連携を、事業所ごとの正本のモードで分ける](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0029-google-calendar-sync.md)
+- ADR-0029: [Google カレンダーとの連携を、事業所ごとの予定の管理先で分ける](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0029-google-calendar-sync.md)
 
 次の図は、プレビューから確定までの呼び出しと、確定が何も書かずに返る道を示す。
 
@@ -164,7 +164,7 @@ sequenceDiagram
   api->>db: 予定の対応、利用者、サービスコードを読む
   api-->>web: 件数、確認が必要な予定、取り込まない予定
   web->>api: 確定（期間、取り込み方）
-  api->>db: 事業所の行に共有のロックを取り、正本のモードを読む
+  api->>db: 事業所の行に共有のロックを取り、予定の管理先を読む
   break 事業所が buddy_primary でない
     api-->>web: 409（google_primary）
   end
@@ -177,7 +177,7 @@ sequenceDiagram
   break 確認が必要な予定が、送られた取り込み方と違う
     api-->>web: 409（import_preview_changed）
   end
-  api->>db: 事業所の行に共有のロックを取り、正本のモード、カレンダー、職員を読み直す
+  api->>db: 事業所の行に共有のロックを取り、予定の管理先、カレンダー、職員を読み直す
   break 事業所が buddy_primary でなくなった
     api-->>web: 409（google_primary）
   end
@@ -204,16 +204,16 @@ web は、プレビューの結果と選んだ取り込み方を画面の中だ�
 確定の始めにカレンダーのレコードに排他のロックを取り、10 分以内に始めた `running` の記録があれば 409 を返す。  
 止まった取り込みが次の取り込みを止め続けないよう、10 分より前の `running` は数えない。
 
-取り込みの確定は、予定の正本のモードが `buddy_primary` の事業所と、`open` の切り替えがある `google_primary` の事業所でだけ書く。  
-切り替えの間の取り込みの規則は、[予定の正本の切り替え](#予定の正本の切り替え) にある。  
+取り込みの確定は、予定の管理先が `buddy_primary` の事業所と、`open` の移行がある `google_primary` の事業所でだけ書く。  
+移行の間の取り込みの規則は、[予定の管理の移行](#予定の管理の移行) にある。  
 確定は、取り込みの記録を作るトランザクションの始めと、予定を書くトランザクションの始めの 2 回、事業所の行を共有のロックで読み、`schedule.RequireWritable` でモードを確認する。  
 1 回目は、Google を読む前に、取り込みの記録を作らずに拒む。  
 2 回目は、読み替えている間にモードが変わったときに、記録を `failed` にして何も書かない。  
-切り替えの無い `google_primary` の事業所では 409（`google_primary`）を返す。  
+移行の無い `google_primary` の事業所では 409（`google_primary`）を返す。  
 プレビューは書かないので、モードによらず動く。
 
 - ADR-0026: [予定の書き込みのモデルを schedule に、読み取りのモデルを scheduleview に置く](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0026-schedule-write-read-models.md)
-- ADR-0031: [事業所の予定の正本を、期間のある切り替えの記録で Google カレンダーから buddy へ移す](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0031-calendar-cutover.md)
+- ADR-0031: [事業所の予定の管理先を、期間のある移行の記録で Google カレンダーから buddy へ移す](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0031-calendar-cutover.md)
 
 取り込んだ Google の予定は、`external_event_links` の対応を持つ。  
 対応のある予定は取り込み済みに数え、もう一度は書かない。
@@ -296,75 +296,75 @@ web は、印の付いた予定と `multi_day` の予定の終了の時刻に「
 - 退職が先にコミットすれば確定は 404 になる。
   - 確定が先にコミットし、今日以降の予定を取り込んでいれば、退職はその予定が残るので 409 になる。
 
-### 予定の正本の切り替え
+### 予定の管理の移行
 
-Google カレンダーを正本にする事業所（`google_primary`）の予定を buddy に取り込み、正本を buddy（`buddy_primary`）に移す作業を、切り替え（`Cutover`）の記録で行う。  
-切り替えの操作と記録は `calendarimport` に置き、最後のモードの変更だけを `organization` に頼む。  
-決定の背景は ADR-0031 にあり、画面の動きは画面仕様書の [予定の正本の切り替え](https://github.com/Fukuemon/buddy/blob/develop/docs/screens/schedule-cutover_予定の正本の切り替え/index.md) にある。
+予定を Google カレンダーで管理している事業所（`google_primary`）の予定を buddy に取り込み、予定の管理を buddy（`buddy_primary`）に移す作業を、移行（`Cutover`）の記録で行う。  
+移行の操作と記録は `calendarimport` に置き、最後のモードの変更だけを `organization` に頼む。  
+決定の背景は ADR-0031 にあり、画面の動きは画面仕様書の [予定の管理を buddy に移す](https://github.com/Fukuemon/buddy/blob/develop/docs/screens/schedule-cutover_予定の管理をbuddyに移す/index.md) にある。
 
-- ADR-0031: [事業所の予定の正本を、期間のある切り替えの記録で Google カレンダーから buddy へ移す](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0031-calendar-cutover.md)
+- ADR-0031: [事業所の予定の管理先を、期間のある移行の記録で Google カレンダーから buddy へ移す](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0031-calendar-cutover.md)
 
-切り替えの操作は次の 4 つで、どれも職員の管理の権限（`staff.manage`）を求める。
+移行の操作は次の 4 つで、どれも職員の管理の権限（`staff.manage`）を求める。
 
-- `StartCutover`（始める）: 事業所の行を排他のロックで取り、確認を満たせば `open` の切り替えを作る。
-  - 確認するのは、`google_primary` で、`open` の切り替えと保留の版を持つ記録が無く、外していない全てのカレンダーの最後の同期が成功していることである。
+- `StartCutover`（始める）: 事業所の行を排他のロックで取り、確認を満たせば `open` の移行を作る。
+  - 確認するのは、`google_primary` で、`open` の移行と保留の版を持つ記録が無く、外していない全てのカレンダーの最後の同期が成功していることである。
   - 取り込みの期間は、今の Asia/Tokyo の月の初日から先の全てにする。
-- `GetCutover`（状況を読む）: `open` の切り替えと、カレンダーごとの同期の状況と、この切り替えで最後に成功した取り込みを返す。
+- `GetCutover`（状況を読む）: `open` の移行と、カレンダーごとの同期の状況と、この移行で最後に成功した取り込みを返す。
 - `CompleteCutover`（完了する）: 事業所の行を排他のロックで取って、保留の版を持つ記録が無いことを確認する。
-  - 次に下の「完了の確認」をし、満たせば事業所を `buddy_primary` にし、事業所の Projection の行と記録を消し、切り替えを `completed` にする。
-- `CancelCutover`（やめる）: 事業所の行を排他のロックで取り、この切り替えの取り込みで作った予定、繰り返しの予定、訪問の情報、予定の対応を消して、切り替えを `canceled` にする。
+  - 次に下の「完了の確認」をし、満たせば事業所を `buddy_primary` にし、事業所の Projection の行と記録を消し、移行を `completed` にする。
+- `CancelCutover`（やめる）: 事業所の行を排他のロックで取り、この移行の取り込みで作った予定、繰り返しの予定、訪問の情報、予定の対応を消して、移行を `canceled` にする。
   - モードは `google_primary` のままにする。
 
 記録は 2 つのテーブルに持つ。
 
 - `calendar_cutovers`: 事業所、状態（`open`、`completed`、`canceled`）、取り込みの期間の最初の日、始めた職員と時刻、終えた時刻。
   - `open` の行は、事業所ごとに一意の部分索引で 1 つまでにする。
-- `calendar_cutover_skips`: 切り替えの取り込みで、確認が必要な予定に取り込まないを選んだ記録。
+- `calendar_cutover_skips`: 移行の取り込みで、確認が必要な予定に取り込まないを選んだ記録。
   - カレンダーの取り込みのたびに、そのカレンダーの記録を、その取り込みで選んだものに置き換える。
 
-切り替えの取り込みの記録（`import_runs`）と、取り込みで作った予定の対応（`external_event_links`）は、切り替えの ID（`cutover_id`）を持つ。  
+移行の取り込みの記録（`import_runs`）と、取り込みで作った予定の対応（`external_event_links`）は、移行の ID（`cutover_id`）を持つ。  
 取り込みの記録の期間の終わり（`range_end`）は NULL にする。
 
-`open` の切り替えは、自動の期限では終わらない。マネージャーが完了するか、やめるまで `open` のままになる。  
+`open` の移行は、自動の期限では終わらない。マネージャーが完了するか、やめるまで `open` のままになる。  
 放置を防ぐ運用は、[基盤と運用](https://github.com/Fukuemon/buddy/blob/develop/context/operations.md#switching-a-facility-to-buddy) にある。
 
-#### 切り替えと buddy からの書き込みの順序
+#### 移行と buddy からの書き込みの順序
 
-切り替えの取り込みは、`open` の間に buddy から Google カレンダーへの書き込みが止まっていることを前提にする。  
+移行の取り込みは、`open` の間に buddy から Google カレンダーへの書き込みが止まっていることを前提にする。  
 2 つの操作は、事業所の行のロックで次のとおり並べる。
 
-- `calendarwrite` の作成、変更、取り消しは、手順 1 で事業所の行を共有のロックで読み、`open` の切り替えがあれば、Google に書かずに 409（`cutover_open`）を返す。
+- `calendarwrite` の作成、変更、取り消しは、手順 1 で事業所の行を共有のロックで読み、`open` の移行があれば、Google に書かずに 409（`cutover_open`）を返す。
   - 繰り返しの予定の作成、回の置き換え（`changeOccurrence`）、一覧の回の ID での変更と取り消しも同じである。
 - `StartCutover` と `CompleteCutover` は、事業所の行を排他のロックで取った後に、事業所の記録（`calendar_event_records`）のうち保留の版を持つものを数える。
   - 1 件でもあれば、何も書かずに 409（`google_write_pending`）を返す。
-  - 排他のロックを取った後は、新しい書き込みが `open` の切り替えを見て拒まれる。ロックより前の書き込みは、保留の版を残している。
+  - 排他のロックを取った後は、新しい書き込みが `open` の移行を見て拒まれる。ロックより前の書き込みは、保留の版を残している。
   - 完了の確認の etag の比べ方は、まだ Google に届いていない書き込みを見つけられない。保留の版で、処理中の書き込みを数える。
 - マネージャーは、保留の版が確定するか消えるまで待ってから、もう一度始めるか完了する。結果が分からない保留の版は、同期の読み戻しが解く。
 
-- ADR-0031: [事業所の予定の正本を、期間のある切り替えの記録で Google カレンダーから buddy へ移す](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0031-calendar-cutover.md)
+- ADR-0031: [事業所の予定の管理先を、期間のある移行の記録で Google カレンダーから buddy へ移す](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0031-calendar-cutover.md)
 
-予定の一覧（`listSchedules`）は、`google_primary` の事業所で、`open` の切り替えを `cutover` に返す。  
-画面は、「切り替え中」と、始めた職員と始めた時刻を出し、buddy から予定を変えられないことを示す。
+予定の一覧（`listSchedules`）は、`google_primary` の事業所で、`open` の移行を `cutover` に返す。  
+画面は、「移行中」と、始めた職員と始めた時刻を出し、buddy から予定を変えられないことを示す。
 
 - `cutover` は、始めた時刻（`started_at`）、始めた職員の ID（`started_by`）と名前（`started_by_name`）、取り込みの期間の最初の日を持つ。
   - 職員の ID と名前は、同期の状況（`calendar_syncs`）の `staff_id` と `staff_name` と同じ形にする。
 - 始めた職員が休職か退職していても、名前をそのまま返す。職員を退職にしても、名前は残るためである。
 - 予定の一覧を読める全ての職員に、始めた職員の名前を返す。予定の閲覧の権限では絞らない。
-- `buddy_primary` の事業所では、`open` の切り替えが無いので、`cutover` は常に `null` である。
+- `buddy_primary` の事業所では、`open` の移行が無いので、`cutover` は常に `null` である。
 - 画面は、`cutover` が `null` でない間、予定の作成、変更、キャンセルの操作を閉じる（[画面からの書き込み](#画面からの書き込み)）。
 
-#### 切り替えの取り込み
+#### 移行の取り込み
 
 取り込みは、今の取り込みの操作（`Preview`、`Import`）を使う。  
-事業所に `open` の切り替えがあれば、切り替えの取り込みの規則で読み替える。
+事業所に `open` の移行があれば、移行の取り込みの規則で読み替える。
 
-- 期間は、切り替えの期間（最初の日から先の全て）だけを受ける。
+- 期間は、移行の期間（最初の日から先の全て）だけを受ける。
   - Google の予定は `timeMax` を付けずに読む。ほかの期間は 400 を返す。
-- 書き込みの確認は、`schedule.RequireWritable` の例外として、`open` の切り替えがある `google_primary` の事業所も通す（`requireImportable`）。
-  - 確定は 2 回のトランザクションの始めで、事業所の行を共有のロックで読んでから `open` の切り替えを読む。2 回目に切り替えが終わっていれば 409（`cutover_not_open`）を返し、何も書かない。
+- 書き込みの確認は、`schedule.RequireWritable` の例外として、`open` の移行がある `google_primary` の事業所も通す（`requireImportable`）。
+  - 確定は 2 回のトランザクションの始めで、事業所の行を共有のロックで読んでから `open` の移行を読む。2 回目に移行が終わっていれば 409（`cutover_not_open`）を返し、何も書かない。
 - 予定の API の記録が、Google が受けたと分かった版の訪問の情報を持つ予定は、タイトルを読み替えずに、記録の訪問の情報の訪問の予定にする。
-  - 利用者、主訪問者、同行者、サービスコード、訪問の区分を写した、新しい訪問の情報を作る。記録が指す訪問の情報を予定に指させると、切り替えをやめるときに予定と一緒に消せないためである。
-  - タイトルが記録の訪問の情報と食い違う予定（一覧の `title_mismatch`）と、タイトルを読めない予定も、記録の訪問の情報を使い、確認が必要な予定にしない。ADR-0029 は、記録の訪問の情報を訪問の情報の正本にするためである。
+  - 利用者、主訪問者、同行者、サービスコード、訪問の区分を写した、新しい訪問の情報を作る。記録が指す訪問の情報を予定に指させると、移行をやめるときに予定と一緒に消せないためである。
+  - タイトルが記録の訪問の情報と食い違う予定（一覧の `title_mismatch`）と、タイトルを読めない予定も、記録の訪問の情報を使い、確認が必要な予定にしない。ADR-0029 は、訪問の情報を記録で管理するためである。
   - 主訪問者は記録の訪問の情報のとおりにし、予定の職員はカレンダーの職員のままにする。
   - 利用の終了の利用者の過去の予定は、タイトルを読み替える取り込みと同じく、入力のエラーになる。
   - 確定した版の無い記録（保留の版だけの記録）は使わず、タイトルを読み替える。開始と完了が保留の版を拒むので、取り込みの時点ではこの記録は無い。
@@ -379,7 +379,7 @@ Google カレンダーを正本にする事業所（`google_primary`）の予定
 - 前の取り込みの後に Google で変わったか消えた予定は、buddy の写しを消し、Google の今の内容で取り込み直す（上書き）。
   - 予定の対応の etag と Google の etag が違うか、読み直した予定に無い対応を、食い違う対応にする。
   - 繰り返しの親か回の 1 つが食い違えば、親と回の全ての対応を食い違うものにする。回の置き換えは親の繰り返しの予定を指すので、親だけを取り込み直せないためである。
-  - 切り替えの間は buddy から予定を書けないので、写しを消しても職員の変更は失われない。
+  - 移行の間は buddy から予定を書けないので、写しを消しても職員の変更は失われない。
 
 #### 完了の確認
 
@@ -391,15 +391,15 @@ sequenceDiagram
   participant api as schedule
   participant g as Google Calendar API
   participant db as PostgreSQL
-  web->>api: 完了（切り替えの ID）
-  api->>db: 切り替えを読む
-  break 切り替えが open でない
+  web->>api: 完了（移行の ID）
+  api->>db: 移行を読む
+  break 移行が open でない
     api-->>web: 409（cutover_not_open）
   end
-  api->>g: カレンダーごとに、切り替えの期間の予定を読み直す
+  api->>g: カレンダーごとに、移行の期間の予定を読み直す
   g-->>api: 予定
-  api->>db: 事業所の行に排他のロックを取り、切り替えを読み直す
-  break 切り替えが open でない
+  api->>db: 事業所の行に排他のロックを取り、移行を読み直す
+  break 移行が open でない
     api-->>web: 409（cutover_not_open）
   end
   api->>db: 保留の版を持つ記録を数える
@@ -410,14 +410,14 @@ sequenceDiagram
   break 満たさないカレンダーか予定がある
     api-->>web: 409（cutover_incomplete と満たさない一覧）
   end
-  api->>db: 事業所を buddy_primary にし、Projection の行と記録を消し、切り替えを completed にする
-  api-->>web: 完了した切り替え
+  api->>db: 事業所を buddy_primary にし、Projection の行と記録を消し、移行を completed にする
+  api-->>web: 完了した移行
 ```
 
 カレンダーごとに、次の 3 つを確認する。
 
-- この切り替えで取り込み（`not_imported`）、最後の取り込みの後に同期が成功している（`sync_stale`）。
-- 読み直した予定を切り替えの取り込みの規則で読み替え、取り込む予定と除外の日が残っていない（`event_not_imported`）。
+- この移行で取り込み（`not_imported`）、最後の取り込みの後に同期が成功している（`sync_stale`）。
+- 読み直した予定を移行の取り込みの規則で読み替え、取り込む予定と除外の日が残っていない（`event_not_imported`）。
   - 確認が必要な予定は、取り込まないと決めた記録があり、記録のバージョンが今のバージョンと同じである（`needs_review`）。
 - 予定の対応の etag と Google の etag が同じで（`changed`）、読み直した予定に無い対応が無い（`deleted`）。
 
@@ -426,11 +426,11 @@ sequenceDiagram
 
 完了は、Projection の行を消すのと同じトランザクションで、事業所の記録（`calendar_event_records`）を全て消す。  
 記録の確定した版と保留の版が指していた訪問の情報は、どの予定、繰り返しの予定、記録も指さなくなったものだけを消す。  
-`buddy_primary` の後は記録を誰も読まず、記録の訪問の情報は切り替えの取り込みが buddy の予定に写してあるためである。  
+`buddy_primary` の後は記録を誰も読まず、記録の訪問の情報は移行の取り込みが buddy の予定に写してあるためである。  
 保留の版があって 409（`google_write_pending`）で止まったときと、完了の確認を満たさないときは、何も消さない。
 
 完了の後は、同期が事業所のカレンダーを読まなくなり、予定の変更を書き出すようになる。  
-切り替えの取り込みで作った予定は、書き出しの待ちを持たない。  
+移行の取り込みで作った予定は、書き出しの待ちを持たない。  
 Google の予定と同じ内容なので、完了の後に変えた予定から書き出す。
 
 ### Google カレンダーへの書き出し
@@ -438,7 +438,7 @@ Google の予定と同じ内容なので、完了の後に変えた予定から�
 buddy で作り、変え、キャンセルし、削除した予定を、予定の職員が結び付けた Google カレンダーに書く（ADR-0029 の書き出し）。  
 Google カレンダーで直された予定は、書き出しでは buddy に当てず、確認が必要な予定に出す。  
 Google カレンダーで変わった予定は、buddy の予定に当てない。  
-同期は、buddy を予定の正本にする事業所のカレンダーを読まない（[Google カレンダーとの同期](#google-カレンダーとの同期)）。
+同期は、予定を buddy で管理している事業所のカレンダーを読まない（[Google カレンダーとの同期](#google-カレンダーとの同期)）。
 
 次の図は、予定の操作が書き出しの待ちを積み、書き出しの Worker（`calendar-worker export`）が Google に書くまでを示す。  
 Google の応答ごとの扱いは、[衝突とエラー](#衝突とエラー) の表にある。
@@ -481,7 +481,7 @@ sequenceDiagram
 予定の操作（`schedule` の `Create` など）は、予定を書くのと同じトランザクションで `calendarexport` の `Outbox` に待ちを積む。  
 待ちを Google に書くのは、`calendarexport` の `Exporter` である。  
 積むのは、予定の職員に外していないカレンダーがあるときと、予定の対応のカレンダーを外していないとき（職員を替えて、前のカレンダーの予定を消すとき）だけである。  
-積むのは、予定の正本のモードが `buddy_primary` の事業所の予定だけである。  
+積むのは、予定の管理先が `buddy_primary` の事業所の予定だけである。  
 予定の操作は `google_primary` の事業所で予定を書かないので、`Outbox` のモードの確認は、予定の操作のほかから呼ばれたときの守りになる。  
 取り込みで書いた予定は積まない。  
 カレンダーを結び付ける前に作った予定は書き出さない。  
@@ -505,7 +505,7 @@ sequenceDiagram
   - 保留にした待ちは、要約のログの `held_count` に数え、書いていない待ちの滞留（`pending` だけを数える）には数えない。
   - 確認が必要な予定の一覧に出る。「buddy の内容で書き直す」を選んでも、事業所が `buddy_primary` になるまでは、また保留にする。
 
-- ADR-0029: [Google カレンダーとの連携を、事業所ごとの正本のモードで分ける](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0029-google-calendar-sync.md)
+- ADR-0029: [Google カレンダーとの連携を、事業所ごとの予定の管理先で分ける](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0029-google-calendar-sync.md)
 
 予定の更新の番号（`version`）は、単発の予定の変更とキャンセル、繰り返しの予定の回の除外のたびに 1 つ増える。  
 書いた後に、予定の対応（`external_event_links`）に Google の etag と更新の番号（`synced_version`）を書く。  
@@ -580,7 +580,7 @@ Google カレンダーからはその回だけが消え、ほかの回は残る�
   - 削除の待ちは、待ちの `writing_calendar_id` のカレンダーから、予定の ID から決めた ID の Google の予定を消す。作っている間に削除した予定は、対応を持たないためである。予定の職員を替えてから削除しても、前の職員のカレンダーに予定を残さない。
   - 予定の対応が無いときは、予定の職員の今のカレンダーからも、予定の ID から決めた ID の Google の予定を消す。`writing_calendar_id` を足す前に積んだ待ちのためである。
   - 404 と 410 は消せたものとして扱う。外したカレンダーからは消さない。
-  - 書き出しは、対応のカレンダーの Google の予定を `If-Match` を付けずに消し、予定の対応を消す。buddy が正本で、削除は Google での変更より優先するためである。Google で既に消されていれば（410）、消せたものとして扱う。
+  - 書き出しは、対応のカレンダーの Google の予定を `If-Match` を付けずに消し、予定の対応を消す。予定を buddy で管理し、削除は Google での変更より優先するためである。Google で既に消されていれば（410）、消せたものとして扱う。
   - 削除の待ちは、確認が必要な予定の一覧に出さない。一覧に出す予定の時刻を、監査の記録が持たないためである。
 - 回の削除（`deleteOccurrence`）は、回のキャンセルと同じく繰り返しの予定の変更を待ちに積み、その日を親の予定の `EXDATE` にする。
 - 置き換えた回を削除すると、その単発の予定の Google の予定を消す。親の予定の `EXDATE` は、置き換えたときに書いたまま残る。
@@ -632,15 +632,15 @@ Google は、消された予定に、消す前の etag を `If-Match` に付け�
 
 ### Google カレンダーとの同期
 
-同期は、事業所の予定の正本のモードで、読むカレンダーと当て方を分ける。
+同期は、事業所の予定の管理先で、読むカレンダーと当て方を分ける。
 
-- Google カレンダーを正本にする事業所（`google_primary`）では、職員が Google カレンダーで作り、変え、取り消した予定を、参照のモデル（Projection）に写す。
+- 予定を Google カレンダーで管理している事業所（`google_primary`）では、職員が Google カレンダーで作り、変え、取り消した予定を、参照のモデル（Projection）に写す。
   - 予定の対応の有無によらず、Google で新しく作った予定も写す。buddy の予定のテーブルには書かない。
-- buddy を正本にする事業所（`buddy_primary`）では、同期はカレンダーを読まない。
+- 予定を buddy で管理している事業所（`buddy_primary`）では、同期はカレンダーを読まない。
   - Google カレンダーでの変更は、buddy に取り込まない。
   - Google カレンダーで直された予定は、書き出しが `If-Match` の 412 で見つけ、確認が必要な予定に出す。
 - 同期は、どのモードでも、外部の変更を buddy の予定のテーブルに当てない。
-  - ADR-0029: [Google カレンダーとの連携を、事業所ごとの正本のモードで分ける](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0029-google-calendar-sync.md)
+  - ADR-0029: [Google カレンダーとの連携を、事業所ごとの予定の管理先で分ける](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0029-google-calendar-sync.md)
 
 次の図は、同期の Worker（`calendar-worker sync`）が `google_primary` の事業所のカレンダーの変わった予定を読み、予定ごとに Projection に写すまでを示す。
 
@@ -654,7 +654,7 @@ sequenceDiagram
     s->>g: events.list（syncToken。無いか 410 なら、消した予定を含む全件）
     g-->>s: 変わった予定と、次のトークン
     loop 変わった予定ごとに 1 つのトランザクション
-      s->>db: 事業所の行を共有のロックで読み、正本のモードとカレンダーを読み直す
+      s->>db: 事業所の行を共有のロックで読み、予定の管理先とカレンダーを読み直す
       alt 取り消した単発の予定か親の予定
         s->>db: 予定の行と、その例外の回の行を消す
       else 保持する期間より前に終わった予定か、例外の回の元の開始を読めない予定
@@ -679,7 +679,7 @@ sequenceDiagram
 この制約は、`buddy_primary` の事業所で Google の変更を buddy に当てていたときのものである。  
 `google_primary` の事業所の同期は、書き出しを使わない。
 
-同期の処理は、`calendarsync` の `Syncer` が変わった予定を読み、事業所の正本のモードの `Applier` が 1 つの予定ずつ当てる。  
+同期の処理は、`calendarsync` の `Syncer` が変わった予定を読み、事業所の予定の管理先の `Applier` が 1 つの予定ずつ当てる。  
 モードと `Applier` の対応（`Appliers`）は、組み立て（`cmd/calendar-worker` の `worker.go`）が決めて `Syncer` に渡す。  
 組み立ては、`google_primary` に `projectionApplier` だけを渡し、`buddy_primary` には渡さない。  
 同期の処理は、API と別のプロセスの `calendar-worker sync` で動く。
@@ -698,9 +698,9 @@ sequenceDiagram
 トークンが無いときと、Google が 410 を返したときは、`showDeleted=true` で全ての予定を読み直す。  
 `syncToken` と期間は一緒に渡せないので、カレンダー全体を読む。
 
-予定ごとのトランザクションの始めに、事業所の行を共有のロックで読み、正本のモードを読む。  
+予定ごとのトランザクションの始めに、事業所の行を共有のロックで読み、予定の管理先を読む。  
 カレンダーを取った後にモードが変わり、そのモードの `Applier` が無ければ、残りの予定を当てずに、トークンと状態を前のまま返す。  
-モードの切り替えは同じ行に排他のロックを取るので、`buddy_primary` に切り替えた後に、Projection に写さない。
+モードの変更は同じ行に排他のロックを取るので、`buddy_primary` に移行の後に、Projection に写さない。
 
 予定を当てられなかったときは、トークンを進めずに返し、次に同じ予定から読み直す。  
 同期の状態は `failed`（`apply`）にする。
@@ -808,7 +808,7 @@ Projection を読むのは、予定の表示の読み出し（`scheduleview` の
 `updateSchedule`、`cancelSchedule`、`getSchedule` のパスは事業所を持たないので、`httpapi` は認証した職員の事業所のモードで呼び分ける。  
 予定がほかの事業所のものなら、認証のミドルウェアが予定の ID から事業所を引いて 403 を返す。
 
-- ADR-0029: [Google カレンダーとの連携を、事業所ごとの正本のモードで分ける](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0029-google-calendar-sync.md)
+- ADR-0029: [Google カレンダーとの連携を、事業所ごとの予定の管理先で分ける](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0029-google-calendar-sync.md)
 
 `calendarwrite` は `calendar` まで import し、`calendarimport`、`calendarsync`、`calendarexport` を import しない。  
 入力と権限は、作成では `schedule.PrepareSchedule` で、変更では `schedule.PrepareChange` で確認し、`schedule.Create` と `schedule.Update` と同じ規則を当てる。  
@@ -885,7 +885,7 @@ sequenceDiagram
   participant db as PostgreSQL
   participant g as Google Calendar API
   h->>w: Do（事業所、予定の ID、入力）
-  w->>db: 1 つ目のトランザクション。事業所の行を共有のロックで読み、google_primary で open の切り替えが無いことを確認する
+  w->>db: 1 つ目のトランザクション。事業所の行を共有のロックで読み、google_primary で open の移行が無いことを確認する
   w->>db: 入力と権限を確認し、訪問の情報を作り、記録に「書いている途中」の保留の版と書く期限を書く
   alt 確認で拒んだ
     w-->>h: 400、403、409（cutover_open、calendar_not_linked、google_write_pending）
@@ -965,7 +965,7 @@ sequenceDiagram
 `buddy_primary` の書き出しの、親の予定の `EXDATE` と別の単発の予定にする形は使わない。  
 訪問の情報は親の予定の記録に持ち、例外の回で訪問の情報を変えたときだけ回の記録を足す。
 
-- ADR-0029: [Google カレンダーとの連携を、事業所ごとの正本のモードで分ける](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0029-google-calendar-sync.md)
+- ADR-0029: [Google カレンダーとの連携を、事業所ごとの予定の管理先で分ける](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0029-google-calendar-sync.md)
 
 `calendarwrite.CreateRecurring` は、繰り返しの予定を、書き出しと同じ RRULE の繰り返しの予定（`calendar.RecurringBody`）として、予定の職員のカレンダーに 1 つ作る。
 
@@ -1120,7 +1120,7 @@ sequenceDiagram
 確定と消す規則は `calendar` の `ConfirmPending` と `RejectPending` にあり、予定の API の書き込みと同期が同じ規則を使う。  
 `calendarsync` は `calendarwrite` を import できないためである。
 
-- ADR-0029: [Google カレンダーとの連携を、事業所ごとの正本のモードで分ける](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0029-google-calendar-sync.md)
+- ADR-0029: [Google カレンダーとの連携を、事業所ごとの予定の管理先で分ける](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0029-google-calendar-sync.md)
 
 同期の増分は、読んだ予定を Projection に写すのと同じトランザクションで、保留の版を確定する。
 

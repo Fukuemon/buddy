@@ -27,7 +27,7 @@ func NewPreview(calendars Calendars, accounts calendar.Accounts, staff calendar.
 
 // Do は、カレンダー id の期間 rng の予定を読み、取り込むとどうなるかを返す。予定は書かない。
 // 職員が休職か訪問しない職員なら、新しい予定を SkipStaffOnLeave か SkipStaffNonVisiting の取り込まない予定にする。
-// 事業所に open の切り替えがあれば、切り替えの取り込みの規則で読み替える。期間は切り替えの期間でなければならない（requireCutoverRange）。
+// 事業所に open の移行があれば、移行の取り込みの規則で読み替える。期間は移行の期間でなければならない（requireCutoverRange）。
 // カレンダーが無いか外したとき、職員が退職したときは apperr.ErrNotFound を、読めないときは calendar.ErrUnreadable か calendar.ErrUnavailable か calendar.ErrNotConfigured を返す。
 func (u Preview) Do(ctx context.Context, id string, rng Range) (ImportPreview, error) {
 	if err := u.guard(ctx); err != nil {

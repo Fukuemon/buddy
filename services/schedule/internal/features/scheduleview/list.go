@@ -20,7 +20,7 @@ import (
 type ProjectionDeps struct {
 	Projections Projections
 	Syncs       CalendarSyncs
-	// Cutovers は、open の切り替えを読む。nil なら、切り替えを読まない。
+	// Cutovers は、open の移行を読む。nil なら、移行を読まない。
 	Cutovers     Cutovers
 	Rules        EventRules
 	Patients     Patients

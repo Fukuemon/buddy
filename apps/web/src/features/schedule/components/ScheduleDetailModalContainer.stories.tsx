@@ -54,7 +54,7 @@ export const ReadOnly: Story = {
 /** 見る権限の無い予定。読み直しても変わらないので、権限が無いことを出す。 */
 export const Forbidden: Story = { parameters: route({ api: failingBuddyApi(403) }) }
 
-/** Google カレンダーを予定の正本にする事業所の予定。一覧から引いて出し、buddy で変えると Google カレンダーにも書く案内と、編集とキャンセルのボタンを出す。 */
+/** 予定を Google カレンダーで管理している事業所の予定。一覧から引いて出し、buddy で変えると Google カレンダーにも書く案内と、編集とキャンセルのボタンを出す。 */
 export const GoogleCalendar: Story = {
   parameters: route({
     url: '/schedule/gcal-schedule-3',
@@ -78,7 +78,7 @@ export const GoogleCalendarRecurrenceUnsupported: Story = {
   }),
 }
 
-/** 予定の正本を buddy に切り替えている事業所の予定。編集とキャンセルのボタンを出さない。 */
+/** 予定の管理を buddy に移している事業所の予定。編集とキャンセルのボタンを出さない。 */
 export const GoogleCalendarCutover: Story = {
   parameters: route({ url: '/schedule/gcal-schedule-3', api: cutoverBuddyApi() }),
 }

@@ -24,7 +24,7 @@ type CalendarSyncBacklogRow struct {
 	OldestSuccessAgeSeconds float64
 }
 
-// 外していないカレンダーのうち、事業所の正本のモードが modes にあるカレンダーの、読む時刻を過ぎたものの数と、
+// 外していないカレンダーのうち、事業所の予定の管理先が modes にあるカレンダーの、読む時刻を過ぎたものの数と、
 // 最も古い最後の成功からの秒数を返す。
 // 1 回も成功していないカレンダーは、同期の状態の行を足した時刻から数える。カレンダーが無ければ秒数は 0 である。
 func (q *Queries) CalendarSyncBacklog(ctx context.Context, modes []string) (CalendarSyncBacklogRow, error) {
@@ -70,7 +70,7 @@ type ClaimCalendarSyncsRow struct {
 }
 
 // 複数の処理が同時に取っても同じカレンダーを渡さないよう、行をロックできたものだけを取る。外したカレンダーは取らない。
-// 事業所の正本のモードが modes に無いカレンダーは取らない（ADR-0029）。
+// 事業所の予定の管理先が modes に無いカレンダーは取らない（ADR-0029）。
 func (q *Queries) ClaimCalendarSyncs(ctx context.Context, arg ClaimCalendarSyncsParams) ([]ClaimCalendarSyncsRow, error) {
 	rows, err := q.db.Query(ctx, claimCalendarSyncs, arg.LeaseSeconds, arg.Modes, arg.MaxCount)
 	if err != nil {

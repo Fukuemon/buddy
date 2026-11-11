@@ -16,9 +16,9 @@ type Calendars interface {
 	Get(ctx context.Context, id string) (calendar.ExternalCalendar, error)
 }
 
-// Cutovers は、事業所の予定の正本の切り替えを読む。実装は postgres.CalendarProjectionRepository である。
+// Cutovers は、事業所の予定の管理の移行を読む。実装は postgres.CalendarProjectionRepository である。
 type Cutovers interface {
-	// FindOpenCutover は、事業所 facilityID の open の切り替えを返す。無ければ nil を返す。
+	// FindOpenCutover は、事業所 facilityID の open の移行を返す。無ければ nil を返す。
 	FindOpenCutover(ctx context.Context, facilityID string) (*scheduleview.OpenCutover, error)
 }
 

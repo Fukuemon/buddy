@@ -51,13 +51,13 @@ func NewImport(calendars Calendars, accounts calendar.Accounts, staff calendar.S
 
 // Do は、カレンダー id の期間 rng の予定を読み直し、プレビューと同じ規則で読み替えて、1 つのトランザクションで書く。
 // 確認が必要な予定には decisions の取り込み方を当てる。職員が休職していれば、新しい予定は書かない。
-// 事業所が Google カレンダーを予定の正本にしていても、open の切り替えがあれば、切り替えの取り込みとして書く（ADR-0031）。
-// 切り替えの取り込みは、期間を切り替えの期間にし、取り込みの記録と予定の対応に切り替えを持たせ、取り込まないを選んだ予定を記録する。
+// 事業所が予定を Google カレンダーで管理していても、open の移行があれば、移行の取り込みとして書く（ADR-0031）。
+// 移行の取り込みは、期間を移行の期間にし、取り込みの記録と予定の対応に移行を持たせ、取り込まないを選んだ予定を記録する。
 // 前の取り込みの後に Google で変わったか消えた予定は、buddy の写しを消し、Google の今の内容で取り込み直す。
 // 確認が必要な予定の集合が decisions と違うとき、読み替えた後に職員が休職か復職になったとき、
-// 同じカレンダーの取り込みが進んでいるとき、事業所が buddy を予定の正本にせず open の切り替えも無いとき（code は schedule.CodeGooglePrimary）、
-// 読み替えた後に切り替えを完了したかやめたとき（code は CodeCutoverNotOpen）は apperr.ErrConflict を返し、何も書かない。
-// 期間が切り替えの期間と合わないときは入力のエラーを返す。
+// 同じカレンダーの取り込みが進んでいるとき、事業所が予定を buddy で管理せず open の移行も無いとき（code は schedule.CodeGooglePrimary）、
+// 読み替えた後に移行を完了したかやめたとき（code は CodeCutoverNotOpen）は apperr.ErrConflict を返し、何も書かない。
+// 期間が移行の期間と合わないときは入力のエラーを返す。
 // 読み替えた後に職員が退職し、カレンダーが外れたときは apperr.ErrNotFound を返し、何も書かない。
 // ほかのエラーは Preview と同じである。
 func (u Import) Do(ctx context.Context, id string, rng Range, decisions []Decision) (ImportResult, error) {
@@ -118,8 +118,8 @@ func (u Import) Do(ctx context.Context, id string, rng Range, decisions []Decisi
 }
 
 // requireImportable は、事業所 facilityID の行を共有のロックで読み、予定を取り込めるかを確認して（requireImportable）、
-// open の切り替えを返す。トランザクションの中で呼ぶ。切り替えの操作は同じ行を排他のロックで取るので、トランザクションの終わりまで、
-// 返した切り替えは open のままである。事業所が無いときは apperr.ErrNotFound を返す。
+// open の移行を返す。トランザクションの中で呼ぶ。移行の操作は同じ行を排他のロックで取るので、トランザクションの終わりまで、
+// 返した移行は open のままである。事業所が無いときは apperr.ErrNotFound を返す。
 func (u Import) requireImportable(ctx context.Context, facilityID string) (*Cutover, error) {
 	f, err := u.locks.GetForShare(ctx, facilityID)
 	if err != nil {
@@ -172,14 +172,14 @@ func (u Import) importPlan(ctx context.Context, src calendar.EventSource, c cale
 	return res, err
 }
 
-// recheck は、取り込みを書くトランザクションの始めに、事業所の職員の休職、復職、退職と正本のモードの切り替えを終わりまで待たせてから、
-// 事業所に予定を取り込めることと、読み替えたときの切り替えが open のままであることと、カレンダーを外していないことと、
+// recheck は、取り込みを書くトランザクションの始めに、事業所の職員の休職、復職、退職と予定の管理先の変更を終わりまで待たせてから、
+// 事業所に予定を取り込めることと、読み替えたときの移行が open のままであることと、カレンダーを外していないことと、
 // 職員の休職と訪問しない職員かが読み替えたときの blocked と同じことを確認する。
 // 退職は事業所の同じ行に排他のロックを取り、残る予定を数えてカレンダーを外すので、退職とこの取り込みのどちらかが、
 // もう片方のコミットを待ってから読む。取り込んだ予定が残れば退職を拒み、退職が先ならここでカレンダーが外れている。
-// 訪問しない職員への変更と、切り替えの完了とやめるのも事業所の行に排他のロックを取るので、この取り込みと行き違わない。
+// 訪問しない職員への変更と、移行の完了とやめるのも事業所の行に排他のロックを取るので、この取り込みと行き違わない。
 // カレンダーが外れていれば apperr.ErrNotFound を、休職か訪問しない職員かが変わっていたとき、予定を取り込めないとき、
-// 切り替えが open でなくなったときは apperr.ErrConflict を返す。
+// 移行が open でなくなったときは apperr.ErrConflict を返す。
 func (u Import) recheck(ctx context.Context, c calendar.ExternalCalendar, blocked calendar.SkipReason, planned *Cutover) error {
 	open, err := u.requireImportable(ctx, c.FacilityID)
 	if err != nil {
@@ -203,7 +203,7 @@ func (u Import) recheck(ctx context.Context, c calendar.ExternalCalendar, blocke
 
 var errStaffStatusChanged = apperr.ConflictCode(CodeReviewChanged, "プレビューの後に、職員が休職か復職になったか、訪問するかが変わりました。もう一度プレビューしてください")
 
-// write は、p の予定と除外する日と予定の対応を書く。予定の対応には切り替え cutoverID を持たせる。トランザクションの中で呼ぶ。
+// write は、p の予定と除外する日と予定の対応を書く。予定の対応には移行 cutoverID を持たせる。トランザクションの中で呼ぶ。
 func (u Import) write(ctx context.Context, c calendar.ExternalCalendar, p plan, cutoverID *string) error {
 	types, err := u.types.List(ctx)
 	if err != nil {
@@ -303,7 +303,7 @@ func (x excluder) exclude(ctx context.Context, recurringScheduleID string, d civ
 
 // slot は、取り込む予定 e の枠と種類を組み立てる。訪問の予定なら訪問の情報を書く。
 // 予定の API の記録の訪問の情報を使う予定は、記録の訪問の情報を写した新しい訪問の情報を書く。記録が指す訪問の情報を予定に指させると、
-// 切り替えをやめるときに予定と一緒に消せないためである。
+// 移行をやめるときに予定と一緒に消せないためである。
 func (u Import) slot(ctx context.Context, c calendar.ExternalCalendar, e entry, types map[schedule.TypeCode]schedule.Type) (schedule.Slot, schedule.Type, error) {
 	slot := schedule.Slot{
 		FacilityID:  c.FacilityID,

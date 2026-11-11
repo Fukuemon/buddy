@@ -157,7 +157,7 @@ describe('CalendarImportContainer', () => {
     expect(screen.queryByTestId('calendar-import-form')).toBeNull()
   })
 
-  it('予定の正本の切り替えの間は、切り替えの期間で取り込み、規則を写せない繰り返しは取り込まないだけを選べる', async () => {
+  it('予定の管理の移行の間は、移行の期間で取り込み、規則を写せない繰り返しは取り込まないだけを選べる', async () => {
     render(<Cutover />)
     expect(await screen.findByTestId('calendar-import-cutover-range')).toHaveTextContent(
       '2026年11月1日（日）〜',

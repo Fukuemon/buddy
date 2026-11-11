@@ -92,18 +92,18 @@ type CalendarSyncs interface {
 	ListSyncsByFacility(ctx context.Context, facilityID string) ([]CalendarSync, error)
 }
 
-// OpenCutover は、事業所の予定の正本を buddy に切り替えている間の、open の切り替えである（ADR-0031）。
-// StartedBy と StartedByName は、切り替えを始めた職員の ID と名前である。職員の状態（休職、退職）によらず名前を持つ。
+// OpenCutover は、事業所の予定の管理を buddy に移している間の、open の移行である（ADR-0031）。
+// StartedBy と StartedByName は、移行を始めた職員の ID と名前である。職員の状態（休職、退職）によらず名前を持つ。
 type OpenCutover struct {
 	StartedAt     time.Time
 	StartedBy     string
 	StartedByName string
-	// RangeStart は、切り替えの取り込みの期間の最初の日である。
+	// RangeStart は、移行の取り込みの期間の最初の日である。
 	RangeStart civil.Date
 }
 
-// Cutovers は、事業所の open の切り替えを読む。実装は postgres.CalendarProjectionRepository である。
+// Cutovers は、事業所の open の移行を読む。実装は postgres.CalendarProjectionRepository である。
 type Cutovers interface {
-	// FindOpenCutover は、事業所 facilityID の open の切り替えを、始めた職員の名前を付けて返す。無ければ nil を返す。
+	// FindOpenCutover は、事業所 facilityID の open の移行を、始めた職員の名前を付けて返す。無ければ nil を返す。
 	FindOpenCutover(ctx context.Context, facilityID string) (*OpenCutover, error)
 }

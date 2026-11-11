@@ -2,7 +2,7 @@
 
 ## Description
 
-職員の外部のカレンダーと同期の状態、外部の予定と予定の対応、取り込みの記録、書き出しの待ち、Google カレンダーの予定の写し（Projection）。書き出しは、予定の正本のモードが buddy_primary の事業所に限る。同期は google_primary の事業所のカレンダーだけを読み、予定の写しに書く。google_primary の事業所で buddy から Google カレンダーに書いた予定は、訪問の情報と書き込みの保留の版を記録に持つ。切り替えは、google_primary の事業所の予定を取り込み、完了で事業所を buddy_primary にする
+職員の外部のカレンダーと同期の状態、外部の予定と予定の対応、取り込みの記録、書き出しの待ち、Google カレンダーの予定の写し（Projection）。書き出しは、予定の管理先が buddy_primary の事業所に限る。同期は google_primary の事業所のカレンダーだけを読み、予定の写しに書く。google_primary の事業所で buddy から Google カレンダーに書いた予定は、訪問の情報と書き込みの保留の版を記録に持つ。移行は、google_primary の事業所の予定を取り込み、完了で事業所を buddy_primary にする
 
 ## Tables
 
@@ -18,9 +18,9 @@
 | [public.external_event_links](public.external_event_links.md)             | 13      | 外部の予定と、buddy の単発か繰り返しの予定の対応                                                                                                               | BASE TABLE |
 | [public.import_runs](public.import_runs.md)                               | 15      | 外部のカレンダーからの取り込みの 1 回ごとの記録                                                                                                                | BASE TABLE |
 | [public.calendar_exports](public.calendar_exports.md)                     | 16      | 予定を外部のカレンダーに書き出す待ち。予定の変更と同じトランザクションで積む                                                                                   | BASE TABLE |
-| [public.calendar_event_projections](public.calendar_event_projections.md) | 20      | Google カレンダーを予定の正本にする事業所の、Google カレンダーの予定の写し（Projection）。1 つの予定を 1 行にする                                              | BASE TABLE |
-| [public.calendar_cutovers](public.calendar_cutovers.md)                   | 9       | 事業所の予定の正本を Google カレンダーから buddy に切り替える作業の記録（切り替え）。事業所ごとに open は 1 つまで                                             | BASE TABLE |
-| [public.calendar_cutover_skips](public.calendar_cutover_skips.md)         | 6       | 切り替えの取り込みで、確認が必要な予定に取り込まないを選んだ記録                                                                                               | BASE TABLE |
+| [public.calendar_event_projections](public.calendar_event_projections.md) | 20      | 予定を Google カレンダーで管理している事業所の、Google カレンダーの予定の写し（Projection）。1 つの予定を 1 行にする                                           | BASE TABLE |
+| [public.calendar_cutovers](public.calendar_cutovers.md)                   | 9       | 事業所の予定の管理を Google カレンダーから buddy に移す作業の記録（移行）。事業所ごとに open は 1 つまで                                                       | BASE TABLE |
+| [public.calendar_cutover_skips](public.calendar_cutover_skips.md)         | 6       | 移行の取り込みで、確認が必要な予定に取り込まないを選んだ記録                                                                                                   | BASE TABLE |
 | [public.calendar_event_records](public.calendar_event_records.md)         | 15      | google_primary の事業所で、予定の API が Google カレンダーに書いた予定の、訪問の情報と書き込みの保留の版（ADR-0029）。通常の予定も保留の版を持つために行を作る | BASE TABLE |
 | [public.schedule_deletions](public.schedule_deletions.md)                 | 8       | 誤って入れた予定を削除した監査の記録（ADR-0040）。画面に出さない。消した時点の内容（訪問の情報と利用者）は持たない                                             | BASE TABLE |
 

@@ -112,7 +112,7 @@ func testAppliers(s *inmem.Store) calendarsync.Appliers {
 	}
 }
 
-// syncerDeps は、Store s の上で、source で読み、職員の休職、復職、退職とモードの切り替えを locks で待たせる同期の処理の依存である。
+// syncerDeps は、Store s の上で、source で読み、職員の休職、復職、退職とモードの変更を locks で待たせる同期の処理の依存である。
 // 読む手段を引いた事業所を sources に足す。
 func syncerDeps(s *inmem.Store, source calendar.EventSource, sources *[]string, locks calendarsync.FacilityLock) calendarsync.SyncerDeps {
 	return calendarsync.SyncerDeps{
@@ -156,12 +156,12 @@ func (e syncEnv) sync(t *testing.T) {
 	}
 }
 
-// setSourceMode は、事業所 inmem.FacilityID の正本のモードを m にする。
+// setSourceMode は、事業所 inmem.FacilityID の予定の管理先を m にする。
 func setSourceMode(s *inmem.Store, m organization.SourceMode) {
 	setFacilitySourceMode(s, inmem.FacilityID, m)
 }
 
-// setFacilitySourceMode は、事業所 facilityID の正本のモードを m にする。
+// setFacilitySourceMode は、事業所 facilityID の予定の管理先を m にする。
 func setFacilitySourceMode(s *inmem.Store, facilityID string, m organization.SourceMode) {
 	f := s.Facilities[facilityID]
 	f.SourceMode = m

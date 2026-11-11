@@ -16,7 +16,7 @@
 | `schedule-link` | `/schedule/link` | [カレンダーの連携](schedule-link_カレンダーの連携/index.md) |
 | `schedule-import` | `/schedule/import` | [予定の取り込み](schedule-import_予定の取り込み/index.md) |
 | `schedule-review` | `/schedule/review` | [確認が必要な予定](schedule-review_確認が必要な予定/index.md) |
-| `schedule-cutover` | `/schedule/link/cutover` | [予定の正本の切り替え](schedule-cutover_予定の正本の切り替え/index.md) |
+| `schedule-cutover` | `/schedule/link/cutover` | [予定の管理を buddy に移す](schedule-cutover_予定の管理をbuddyに移す/index.md) |
 | `patient-list` | `/patients` | [利用者の一覧](patient-list_利用者の一覧/index.md) |
 | `patient-new` | `/patients/new` | [利用者の登録](patient-new_利用者の登録/index.md) |
 | `patient-detail` | `/patients/$patientId` | [利用者の詳細](patient-detail_利用者の詳細/index.md) |
@@ -61,7 +61,7 @@
 | `link` | 外部のサービスとの結び付け |
 | `import` | 外部のサービスからの取り込み |
 | `review` | 人が確認して決める必要があるものの一覧 |
-| `cutover` | 正本の切り替え |
+| `cutover` | 移行 |
 | `recurrence` | 繰り返しの規則の変更 |
 | `login`、`profile`、`error` | `account` のドメインだけで使う。`error` はログインの失敗 |
 
@@ -122,10 +122,10 @@ flowchart TB
   calendar -- "ナビゲーションの「連携」" --> link
   import -- "「カレンダーの連携」" --> link
   link -- "「取り込む」" --> import
-  cutover["予定の正本の切り替え<br/>/schedule/link/cutover"]
-  link -- "「予定の正本の切り替え」" --> cutover
+  cutover["予定の管理を buddy に移す<br/>/schedule/link/cutover"]
+  link -- "「予定の管理を buddy に移す」" --> cutover
   cutover -- "「取り込む」" --> import
-  import -- "「切り替えの状況に戻る」" --> cutover
+  import -- "「移行の状況に戻る」" --> cutover
   cutover -- "「カレンダーの連携」" --> link
   import -- "「予定のカレンダーで見る」、ナビゲーションの「カレンダー」" --> calendar
   link -- "ナビゲーションの「カレンダー」" --> calendar
@@ -212,7 +212,7 @@ flowchart TB
 - タイトルは「画面を表示できませんでした」、説明の文は「時間をおいて、読み直してください。」。
 - 「読み直す」のリンクを押すと、今の画面の URL を読み込み直す。
 - E2E が指す目印は、表示の全体の `page-error`。
-  - この状態はモックを持たないので、`page-error` の正本はこのセクションである。
+  - この状態はモックを持たないので、`page-error` の元はこのセクションである。
 - 実装は `apps/web/src/routes/__root.tsx` の `RootError` と、`apps/web/src/components/page/PageErrorMessage.tsx`。
 - カタログ: [PageErrorMessage の Default](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-common-pageerrormessage--default)
 

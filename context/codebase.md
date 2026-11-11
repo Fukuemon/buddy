@@ -77,7 +77,7 @@ status: stable
     - ADR-0026: [予定の書き込みのモデルを schedule に、読み取りのモデルを scheduleview に置く](../docs/adr/0026-schedule-write-read-models.md)
     - `calendarimport`、`calendarsync`、`calendarexport` は `calendar` まで import してよく、3 つの間では import しない。
     - `calendarwrite` は、`google_primary` の事業所で buddy から Google カレンダーに予定を書くために、`calendar` まで import してよい。`calendarimport`、`calendarsync`、`calendarexport` を import せず、ほかの機能のパッケージから import されない。
-      - ADR-0029: [Google カレンダーとの連携を、事業所ごとの正本のモードで分ける](../docs/adr/0029-google-calendar-sync.md)
+      - ADR-0029: [Google カレンダーとの連携を、事業所ごとの予定の管理先で分ける](../docs/adr/0029-google-calendar-sync.md)
     - ADR-0021: [予定の API を機能ごとのパッケージに分ける](../docs/adr/0021-schedule-api-packages.md)
   - `principal` は `organization` と `staff` に依存し、`schedule`、`scheduleview`、`calendarimport`、`access`、`httpapi`、`cmd/api` から使う。
   - 機能のパッケージは、自分の集約のリポジトリのインターフェースと、使う側で定義したインターフェースだけに依存する。
@@ -182,7 +182,7 @@ status: stable
 - サーバーだけで動く web の処理は `src/server/` に置く。
   - `runtime.ts` は、プロセスで 1 つの依存（設定、セッションの保存先、OIDC のクライアント）と MSW の起動だけを持つ。
   - `auth.ts` はログインとログアウト、`session.ts` はセッションの読み取りと更新を持つ。
-- web のダミーデータの正本と MSW の handler は `src/mocks/` に置く。
+- web のダミーデータの元と MSW の handler は `src/mocks/` に置く。
   - ADR-0027: [web の画面の型を API の型と分けて持ち、ダミーデータを API の形で 1 か所に置く](../docs/adr/0027-web-view-types.md)
 - ライブラリの開発用のコンポーネント（TanStack Query の devtools など）は `src/integrations/` に置く。
 - Storybook の decorator は `src/storybook/`、テストの setup と MSW のサーバーは `src/test/` に置く。

@@ -356,7 +356,7 @@ func TestListSchedules(t *testing.T) {
 	}
 }
 
-// TestListSchedulesProjected は、google_primary の事業所の一覧の応答が、正本のモード、カレンダーの同期の状況、
+// TestListSchedulesProjected は、google_primary の事業所の一覧の応答が、予定の管理先、カレンダーの同期の状況、
 // Projection の予定の読み元と確認が必要な理由、終日の予定、出せない予定の職員ごとの件数を返すことを確認する。
 func TestListSchedulesProjected(t *testing.T) {
 	succeeded := time.Date(2026, 10, 20, 9, 0, 0, 0, time.UTC)
@@ -1132,7 +1132,7 @@ func TestCreateUserVisits(t *testing.T) {
 	}
 }
 
-// TestGetFacility は、事業所の応答が、事業所の予定の正本のモードを返すことを確認する。
+// TestGetFacility は、事業所の応答が、事業所の予定の管理先を返すことを確認する。
 func TestGetFacility(t *testing.T) {
 	h := httpapi.NewRouter(httpapi.Apps{
 		Organization: httpapi.OrganizationApp{GetFacility: func(_ context.Context, id string) (organization.Facility, error) {

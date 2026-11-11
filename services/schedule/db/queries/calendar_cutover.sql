@@ -9,7 +9,7 @@ SELECT * FROM calendar_cutovers WHERE id = $1;
 SELECT * FROM calendar_cutovers WHERE facility_id = $1 AND status = 'open';
 
 -- name: FinishCalendarCutover :one
--- open の切り替えだけを終える。終えた切り替えでは行を返さない。
+-- open の移行だけを終える。終えた移行では行を返さない。
 UPDATE calendar_cutovers SET status = sqlc.arg(status), finished_at = now()
 WHERE id = sqlc.arg(id) AND status = 'open'
 RETURNING *;
@@ -19,7 +19,7 @@ RETURNING *;
 SELECT facility_id FROM calendar_cutovers WHERE id = $1;
 
 -- name: ListLatestCutoverImportRuns :many
--- 切り替えの取り込みのうち、カレンダーごとに、最も新しく終えた成功した取り込みを返す。
+-- 移行の取り込みのうち、カレンダーごとに、最も新しく終えた成功した取り込みを返す。
 SELECT DISTINCT ON (external_calendar_id) * FROM import_runs
 WHERE cutover_id = sqlc.arg(cutover_id) AND status = 'succeeded'
 ORDER BY external_calendar_id, finished_at DESC, id DESC;
@@ -37,7 +37,7 @@ WHERE cutover_id = sqlc.arg(cutover_id) AND external_calendar_id = sqlc.arg(exte
 ORDER BY external_event_id;
 
 -- name: ListCutoverEventLinks :many
--- 切り替えの取り込みで作った予定の対応を返す。
+-- 移行の取り込みで作った予定の対応を返す。
 SELECT * FROM external_event_links WHERE cutover_id = sqlc.arg(cutover_id) ORDER BY id;
 
 -- name: DeleteExternalEventLinksByID :many
@@ -62,11 +62,11 @@ RETURNING visit_info_id;
 DELETE FROM visit_infos WHERE id = ANY(sqlc.arg(ids)::text[]);
 
 -- name: CountPendingCalendarEventRecords :one
--- 切り替えを始める操作と完了する操作が、予定の API が Google に書いている途中か、結果が分からない書き込みを数える（ADR-0031）。
+-- 移行を始める操作と完了する操作が、予定の API が Google に書いている途中か、結果が分からない書き込みを数える（ADR-0031）。
 SELECT count(*) FROM calendar_event_records WHERE facility_id = sqlc.arg(facility_id) AND pending_version IS NOT NULL;
 
 -- name: ListCalendarEventRecordVisits :many
--- 切り替えの取り込みが、予定の API が Google に書いた予定の訪問の情報を、タイトルの読み替えより優先して使う（ADR-0031）。
+-- 移行の取り込みが、予定の API が Google に書いた予定の訪問の情報を、タイトルの読み替えより優先して使う（ADR-0031）。
 -- Google が受けたと分かった版の訪問の情報だけを返し、保留の版の訪問の情報は返さない。
 -- 訪問の情報を持たない確定した記録（通常の予定）も、訪問の情報を空にして返す。繰り返しの予定の例外の回が、自分の記録を持つかを見分けるためである。
 SELECT r.external_event_id, vi.id, vi.patient_id, vi.assigned_staff_id, vi.companion_id, vi.service_code_id,
@@ -79,7 +79,7 @@ WHERE r.external_calendar_id = sqlc.arg(external_calendar_id) AND r.version > 0
 ORDER BY r.external_event_id;
 
 -- name: DeleteCalendarEventRecordsByFacility :many
--- 切り替えの完了が、事業所の記録を消し、記録が指していた訪問の情報を返す。訪問の情報は、呼ぶ側が使われていなければ消す。
+-- 移行の完了が、事業所の記録を消し、記録が指していた訪問の情報を返す。訪問の情報は、呼ぶ側が使われていなければ消す。
 -- 同じ文の中では消した記録がまだ見えるので、訪問の情報は別の文（DeleteUnusedVisitInfo）で消す。
 DELETE FROM calendar_event_records WHERE facility_id = sqlc.arg(facility_id)
 RETURNING visit_info_id, pending_visit_info_id;

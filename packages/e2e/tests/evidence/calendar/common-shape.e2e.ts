@@ -176,7 +176,7 @@ test.describe('画面の共通の形', () => {
     test.use({ storageState: LOGIN_STATE })
 
     // 改修前は右上の × で閉じ、改修後はフッターの「閉じる」で閉じる。改修前と改修後で操作が違うので、改修後の流れだけを撮る
-    test('review-detail-dialog buddy を正本にする事業所で確認が必要な予定の行を押した場合、予定と、buddy の内容で書き直すと、閉じるためのボタンを入れたダイアログが出ること', async ({
+    test('review-detail-dialog 予定を buddy で管理している事業所で確認が必要な予定の行を押した場合、予定と、buddy の内容で書き直すと、閉じるためのボタンを入れたダイアログが出ること', async ({
       browser,
       context,
     }) => {
@@ -189,7 +189,7 @@ test.describe('画面の共通の形', () => {
         await expect(commonShapeParts(row).buttons).toHaveCount(1)
         await intro(
           page,
-          'buddy を正本にする事業所で確認が必要な予定の行を押し、予定と書き直すだけを入れたダイアログを見て、閉じる\n前提 確認が必要な予定の画面を開いている。行に、行ごとのボタンは無い',
+          '予定を buddy で管理している事業所で確認が必要な予定の行を押し、予定と書き直すだけを入れたダイアログを見て、閉じる\n前提 確認が必要な予定の画面を開いている。行に、行ごとのボタンは無い',
         )
 
         await step(page, '1 行目の予定の行を押す', () => row.click())

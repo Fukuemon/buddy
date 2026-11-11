@@ -36,7 +36,7 @@ func NewChangeOccurrence(recurring RecurringRepository, staff StaffRefs, locks F
 // Do は、繰り返しの予定の originalDate の回を、in の内容の単発の予定に置き換える。
 // 元の回は繰り返しの予定から除外し、作った単発の予定を返す。繰り返しの予定の行は、トランザクションの最初にロックして読む。
 // 繰り返しの予定が見つからないときは apperr.ErrNotFound を、originalDate が回に当たらないときは入力のエラーを、
-// その回をすでに置き換えたときと、事業所が buddy を予定の正本にしていないとき（code は CodeGooglePrimary）は apperr.ErrConflict を返す。
+// その回をすでに置き換えたときと、事業所が予定を buddy で管理していないとき（code は CodeGooglePrimary）は apperr.ErrConflict を返す。
 func (s ChangeOccurrence) Do(ctx context.Context, recurringScheduleID string, originalDate civil.Date, in SlotInput) (Schedule, error) {
 	var created Schedule
 	err := s.tx.WithinTx(ctx, func(ctx context.Context) error {

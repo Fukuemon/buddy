@@ -103,7 +103,7 @@ export const WEEKLY_RULE: RecurringRule = {
   endDate: null,
 }
 
-/** 予定の正本を buddy に切り替えている、google_primary の事業所のフェイクの API。 */
+/** 予定の管理を buddy に移している、google_primary の事業所のフェイクの API。 */
 export const cutoverBuddyApi = () => {
   const api = createFakeBuddyApi({ sourceMode: 'google_primary', calendarSyncs: [] })
   void api.calendars.startCutover(MOCK_FACILITY_ID)

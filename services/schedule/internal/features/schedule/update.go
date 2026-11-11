@@ -30,7 +30,7 @@ func NewUpdate(schedules Repository, staff StaffRefs, locks FacilityLock, types 
 }
 
 // Do は、単発の予定の枠を in の内容に置き換え、書いた予定を返す。訪問の情報は in の内容で作り直し、前の訪問の情報は消す。
-// 予定が見つからないときは apperr.ErrNotFound を、キャンセル済みのときは apperr.ErrConflict を、事業所が buddy を予定の正本にしていないときは
+// 予定が見つからないときは apperr.ErrNotFound を、キャンセル済みのときは apperr.ErrConflict を、事業所が予定を buddy で管理していないときは
 // code が CodeGooglePrimary の apperr.ErrConflict を、
 // 参照が見つからないか別の事業所のものであるときは入力のエラーを返す。
 func (s Update) Do(ctx context.Context, scheduleID string, in SlotInput) (Schedule, error) {

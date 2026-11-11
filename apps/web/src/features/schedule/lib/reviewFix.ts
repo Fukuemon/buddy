@@ -20,7 +20,7 @@ export const canAddVisitInfo = (schedule: Schedule) =>
 
 /**
  * 確認が必要な Google カレンダーの予定の、直し方の文を返す。
- * title_mismatch は、buddy の訪問の情報が正本なので、buddy で保存し直すと Google カレンダーのタイトルがそろう（ADR-0029）。
+ * title_mismatch は、訪問の情報は buddy で管理するので、buddy で保存し直すと Google カレンダーのタイトルがそろう（ADR-0029）。
  * recurrence_unsupported は、buddy から繰り返しの規則を変えられないので、Google カレンダーで直す。
  * ほかの理由は、タイトルから訪問の情報を読み取れなかった予定なので、buddy の編集で訪問の情報を入れるか、Google カレンダーでタイトルを直す。
  */

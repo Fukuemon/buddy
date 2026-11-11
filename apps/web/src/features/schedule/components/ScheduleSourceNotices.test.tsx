@@ -104,10 +104,10 @@ describe('ScheduleSourceNotices', () => {
     expect(container).toBeEmptyDOMElement()
   })
 
-  it('予定の正本を buddy に切り替えている間は、切り替え中であることと、予定を変えられないことを伝える文と、始めた職員と時刻を出す', () => {
+  it('予定の管理を buddy に移している間は、移行中であることと、予定を変えられないことを伝える文と、始めた職員と時刻を出す', () => {
     render(<Cutover />)
     const notice = screen.getByTestId('schedule-calendar-cutover')
-    expect(notice).toHaveTextContent('予定の正本を buddy に切り替えています')
+    expect(notice).toHaveTextContent('予定の管理を buddy に移しています')
     expect(notice).toHaveTextContent('Google カレンダーで予定を作成、変更しないでください')
     expect(notice).toHaveTextContent('buddy でも予定を作成、変更できません')
     expect(within(notice).getByTestId('schedule-calendar-cutover-started')).toHaveTextContent(
@@ -115,7 +115,7 @@ describe('ScheduleSourceNotices', () => {
     )
   })
 
-  it('切り替えていないときは、切り替え中を出さない', () => {
+  it('移していないときは、移行中を出さない', () => {
     render(<GuideOnly />)
     expect(screen.queryByTestId('schedule-calendar-cutover')).toBeNull()
   })

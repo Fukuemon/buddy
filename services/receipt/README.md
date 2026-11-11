@@ -97,7 +97,7 @@ golangci-lint run
 
 ## Code Generation
 
-API の定義の正本は [openapi.yaml](openapi.yaml) である。  
+API の定義の元は [openapi.yaml](openapi.yaml) である。  
 openapi.yaml を変えたら、`services/receipt` で生成し直し、生成物も一緒にコミットする。  
 画面の型の生成と生成物の確認は、[CONTRIBUTING.md](../../CONTRIBUTING.md#changing-the-api-definition) の Changing the API Definition にある。
 

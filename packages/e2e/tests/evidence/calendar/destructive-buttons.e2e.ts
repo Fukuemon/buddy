@@ -24,7 +24,7 @@ const openCutover = async (page: Page) => {
 
 // ボタンの色、位置、閉じる側の文言は、改修前と改修後の判定のスクリーンショットを並べて比べる。
 // 確認する関数は、両方の版で通る文言と色だけを見る。閉じる側の文言は、改修前の「キャンセル」も受け付ける
-test.describe('予定の正本と確認が必要な予定', () => {
+test.describe('予定の管理先と確認が必要な予定', () => {
   test.describe('データを失う操作のボタン（ログインなし、Storybook の story）', () => {
     test(
       'calendar-review-rewrite-button 確認が必要な予定のダイアログを開いた場合、buddy の内容で書き直すボタンが赤い文字でフッターの左端にあり、閉じるボタンから離れていること',
@@ -72,22 +72,22 @@ test.describe('予定の正本と確認が必要な予定', () => {
     )
 
     test(
-      'calendar-cutover-cancel-button 予定の正本の切り替え中の画面を開いた場合、切り替えをやめるボタンが赤い文字で、完了するボタンから離れていること',
+      'calendar-cutover-cancel-button 移行中の画面を開いた場合、移行をやめるボタンが赤い文字で、完了するボタンから離れていること',
       { tag: '@compare' },
       async ({ page }) => {
         await openCutover(page)
         await intro(
           page,
-          '予定の正本の切り替え中の画面で、切り替えをやめるボタンの見た目と位置を見る\n前提 切り替え中の画面（Storybook の CalendarCutoverContainer の Open）を開いている',
+          '移行中の画面で、移行をやめるボタンの見た目と位置を見る\n前提 移行中の画面（Storybook の CalendarCutoverContainer の Open）を開いている',
         )
 
         const cancel = page.getByTestId('calendar-cutover-cancel')
         await check(
           page,
-          '「切り替えをやめる」が赤い文字で、「完了する」から離れた行の右端にある',
+          '「移行をやめる」が赤い文字で、「完了する」から離れた行の右端にある',
           async () => {
             await cancel.scrollIntoViewIfNeeded()
-            await expect(cancel).toHaveText('切り替えをやめる')
+            await expect(cancel).toHaveText('移行をやめる')
             await expect(page.getByTestId('calendar-cutover-complete')).toHaveText('完了する')
           },
         )
@@ -95,16 +95,16 @@ test.describe('予定の正本と確認が必要な予定', () => {
     )
 
     test(
-      'calendar-cutover-cancel-dialog-labels 切り替えをやめるボタンを押した場合、確認のダイアログの閉じる側のボタンにキャンセルの語が無いこと',
+      'calendar-cutover-cancel-dialog-labels 移行をやめるボタンを押した場合、確認のダイアログの閉じる側のボタンにキャンセルの語が無いこと',
       { tag: '@compare' },
       async ({ page }) => {
         await openCutover(page)
         await intro(
           page,
-          '切り替えをやめる確認のダイアログの、閉じる側のボタンと確定のボタンを見る\n前提 切り替え中の画面を開いている',
+          '移行をやめる確認のダイアログの、閉じる側のボタンと確定のボタンを見る\n前提 移行中の画面を開いている',
         )
 
-        await step(page, '「切り替えをやめる」を押す', () =>
+        await step(page, '「移行をやめる」を押す', () =>
           page.getByTestId('calendar-cutover-cancel').click(),
         )
         const dialog = page.getByTestId('calendar-cutover-cancel-confirm-dialog')
