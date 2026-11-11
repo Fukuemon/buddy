@@ -38,8 +38,8 @@
 | 要求 | #875 の受け入れ条件 | 上の 5 つの条件 |
 | 設計 | [ADR-0041](../../adr/0041-pbac-grants.md#職員の管理の権限) の職員の管理の権限 | 操作ごとの「自分に」「ほかの職員に」「拒むとき」の表。職員の管理の権限を持たない職員は 403 で拒まれ、判定は予定の API で行う |
 | 設計 | [ADR-0042](../../adr/0042-permission-audit.md#decision) の Decision | 残す操作、記録の中身、失敗した操作（400、403、404、409）は残さない、休職と退職は残さない |
-| 業務 | [事業所の分離](../../../context/domain/facility.md) | 本文が指す参照が別の事業所なら 400 |
-| 設計 | [職員の管理の Design Doc の Interface](../../../services/schedule/internal/features/staff/DesignDoc.md#interface) | 最後の有効な管理者から `staff.manage` を外すか、残らない役職に変えると 409 の `conflict`。自分を休職か退職にすると 409 |
+| 業務 | [事業所の分離](https://github.com/Fukuemon/buddy/blob/develop/context/domain/facility.md) | 本文が指す参照が別の事業所なら 400 |
+| 設計 | [職員の管理の Design Doc の Interface](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/internal/features/staff/DesignDoc.md#interface) | 最後の有効な管理者から `staff.manage` を外すか、残らない役職に変えると 409 の `conflict`。自分を休職か退職にすると 409 |
 | API | `services/schedule/openapi.yaml` の `addUserPolicy` | 同じ権限を足すと 409 |
 | 不具合 | #279 の検証の観点 | 最後の有効な管理者の権限を外すと 409、役職を変えると 409、2 人なら外せる、同時でも 1 人に残る |
 | 実装 | `services/schedule/internal/features/staff/audit.go`、`internal/audit/audit.go` | 6 つの操作で、変更を書いた後に読み直した全量で記録を書く |
