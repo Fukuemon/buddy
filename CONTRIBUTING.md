@@ -122,6 +122,10 @@ worktree では、ホスト名の `buddy` の部分が worktree ごとの名前�
   - シードは、空の DB にだけ適用される。
     - シードを変えた後は、`portless compose down -v` で作り直す。
 - 照合の画面で、予定の取り方に「Google カレンダー」を、対象の月に `2026-11` を選ぶと、calendarpit の森 健太のカレンダーの予定で照合できる。
+- web のセッションは、デフォルトでは Valkey に置く。PostgreSQL に置くときは、`WEB_SESSION_STORE_URL` を渡して web を起動し直す。
+  - `WEB_SESSION_STORE_URL='postgres://buddy:buddy-dev@postgres:5432/web?sslmode=disable' portless compose up -d --wait web`
+  - テーブルは、compose の `web-migrate` が、保存先を問わずデータベース `web` に作る。
+  - ADR-0047: [web のセッションを、web 用の PostgreSQL のデータベースに暗号化して置けるようにし、期限の切れた行を web が消す](docs/adr/0047-web-session-postgres.md)
 - データを消して最初からにするときは、`portless compose down -v` でボリュームを消す。
 - 別の worktree で同時に起動するときは、worktree を `wt switch --create <ブランチ>` で作り、同じ手順で起動する。
   - worktrunk のフック（`.config/wt.toml`）が、compose のプロジェクトの名前、ブラウザが開く URL、E2E の URL を、worktree の `.env` に書く。

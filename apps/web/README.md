@@ -81,12 +81,14 @@ route は、`src/routes/` のファイルから TanStack Router が生成する�
 
 - `/auth/login` は、Hydra の認可のエンドポイントへリダイレクトする。
 - `/auth/callback` は、トークンを取り、予定の API の `GET /v1/me` で職員と事業所を引いてセッションを作る。
-- セッションは Valkey に置き、ブラウザには署名つきの cookie でセッションの ID だけを渡す。
+- セッションは Valkey か PostgreSQL に置き、ブラウザには署名つきの cookie でセッションの ID だけを渡す。
+  - 保存先は `SESSION_STORE_URL` のスキームで選ぶ。PostgreSQL では、値を暗号化して置き、期限の切れた行を 10 分ごとに消す。
+  - ADR-0047: [web のセッションを、web 用の PostgreSQL のデータベースに暗号化して置けるようにし、期限の切れた行を web が消す](../../docs/adr/0047-web-session-postgres.md)
   - ADR-0001: [認証を OIDC のブローカーと BFF のサーバー側のセッションにし、職員の身元をブローカーが、権限と業務のデータを予定の API が持つ](../../docs/adr/0001-auth.md)
 - 画面の API の呼び出しは、server function（`src/api/bff/serverFns.ts`）を通る。
   - サーバーは、画面が渡した事業所の代わりに、セッションの事業所を使う。
 - access token の期限が 1 分を切ったら、refresh token で更新する。
-  - 同じセッションの更新は、Valkey のキーで 1 本にまとめる。
+  - 同じセッションの更新は、保存先の鍵で 1 本にまとめる。
   - Hydra が refresh token を拒めば、セッションを消し、画面はログインへ移る。
 - ほかのサイトのページからの POST は、TanStack Start の CSRF の middleware で 403 を返す（`src/start.ts`）。
 - 画面の引数は、server function で操作ごとの形を確認し、合わなければ 400 を返す。
