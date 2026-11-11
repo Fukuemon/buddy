@@ -64,9 +64,11 @@ var activeStaff = staff.Member{ID: staffA, OrgID: "org-a", Email: "a@example.com
 // 検証の観点 1: DB が答えないとき、hook は待ちの上限の後に 500 を返す。
 func TestTokenHookDBTimeout(t *testing.T) {
 	const limit = 50 * time.Millisecond
-	store := &slowStore{fakeStore: newStore(activeStaff), wait: 5 * time.Second}
+	const wait = 10 * time.Second
+	store := &slowStore{fakeStore: newStore(activeStaff), wait: wait}
+	var buf bytes.Buffer
 	start := time.Now()
-	rec := callHook(newHookHandler(slog.New(slog.DiscardHandler), store, limit), hookKey,
+	rec := callHook(newHookHandler(slog.New(slog.NewJSONHandler(&buf, nil)), store, limit), hookKey,
 		hookBody("web", "refresh_token", staffA, now.Add(-time.Minute)))
 	elapsed := time.Since(start)
 	if rec.Code != http.StatusInternalServerError {
@@ -75,12 +77,40 @@ func TestTokenHookDBTimeout(t *testing.T) {
 	if code := errorCode(t, rec); code != "internal" {
 		t.Errorf("body code = %q, want internal", code)
 	}
-	if elapsed < limit || elapsed > time.Second {
-		t.Errorf("elapsed = %v, want >= %v and <= 1s", elapsed, limit)
+	// 上限が無ければ wait まで待つので、wait の半分より短ければ上限で打ち切ったとみなす
+	if elapsed < limit || elapsed > wait/2 {
+		t.Errorf("elapsed = %v, want >= %v and <= %v", elapsed, limit, wait/2)
 	}
 	if !store.hasLimit {
 		t.Error("Get の ctx に期限が無い")
 	}
+	got := readHookLog(t, &buf)
+	if got.Result != "failed" || got.Level != "ERROR" || got.DurationMS == nil || *got.DurationMS < limit.Milliseconds() {
+		t.Errorf("log = %+v, want failed, ERROR, duration_ms >= %d", got, limit.Milliseconds())
+	}
+}
+
+// hookLog は、token_hook の結果のログの 1 行である。
+type hookLog struct {
+	Level      string `json:"level"`
+	Msg        string `json:"msg"`
+	Result     string `json:"result"`
+	Status     int    `json:"status"`
+	DurationMS *int64 `json:"duration_ms"`
+}
+
+// readHookLog は、buf に 1 行だけ書かれたログを読む。
+func readHookLog(t *testing.T, buf *bytes.Buffer) hookLog {
+	t.Helper()
+	lines := strings.Split(strings.TrimSpace(buf.String()), "\n")
+	if len(lines) != 1 {
+		t.Fatalf("ログの行 = %d, want 1: %s", len(lines), buf.String())
+	}
+	var got hookLog
+	if err := json.Unmarshal([]byte(lines[0]), &got); err != nil {
+		t.Fatalf("ログを読めない: %v", err)
+	}
+	return got
 }
 
 // 上限を渡さなければ、職員を引く ctx の期限は DefaultTokenHookDBTimeout の後になる。
@@ -120,6 +150,7 @@ func TestTokenHookLog(t *testing.T) {
 		{"拒めば denied", newStore(suspended), hookKey, hookBody("web", "refresh_token", staffA, now.Add(-time.Minute)), "denied", http.StatusForbidden, "WARN"},
 		{"DB の失敗は failed", &fakeStore{err: errors.New("down")}, hookKey, hookBody("web", "refresh_token", staffA, now), "failed", http.StatusInternalServerError, "ERROR"},
 		{"鍵の誤りは failed", newStore(activeStaff), "wrong", hookBody("web", "refresh_token", staffA, now), "failed", http.StatusUnauthorized, "WARN"},
+		{"本文の誤りは failed", newStore(activeStaff), hookKey, "{", "failed", http.StatusBadRequest, "WARN"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -129,20 +160,7 @@ func TestTokenHookLog(t *testing.T) {
 			if rec.Code != tt.status {
 				t.Fatalf("code = %d, want %d", rec.Code, tt.status)
 			}
-			lines := strings.Split(strings.TrimSpace(buf.String()), "\n")
-			if len(lines) != 1 {
-				t.Fatalf("ログの行 = %d, want 1: %s", len(lines), buf.String())
-			}
-			var got struct {
-				Level      string `json:"level"`
-				Msg        string `json:"msg"`
-				Result     string `json:"result"`
-				Status     int    `json:"status"`
-				DurationMS *int64 `json:"duration_ms"`
-			}
-			if err := json.Unmarshal([]byte(lines[0]), &got); err != nil {
-				t.Fatalf("ログを読めない: %v", err)
-			}
+			got := readHookLog(t, &buf)
 			if got.Msg != "token_hook の結果" || got.Result != tt.result || got.Status != tt.status || got.Level != tt.level {
 				t.Errorf("log = %+v, want result %s, status %d, level %s", got, tt.result, tt.status, tt.level)
 			}

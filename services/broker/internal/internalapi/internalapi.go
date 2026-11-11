@@ -45,7 +45,7 @@ type Config struct {
 	NewID func() string
 	// TokenHookKey は、Hydra が token_hook を呼ぶときに TokenHookKeyHeader に入れる値である。
 	TokenHookKey string
-	// TokenHookDBTimeout は、token_hook が職員を DB から引くのを待つ上限である。0 なら DefaultTokenHookDBTimeout を使う。
+	// TokenHookDBTimeout は、token_hook が職員を DB から引くのを待つ上限である。0 以下なら DefaultTokenHookDBTimeout を使う。
 	TokenHookDBTimeout time.Duration
 	// Now は、token_hook がログインからの長さを測る時刻である。nil なら time.Now を使う。
 	Now func() time.Time
@@ -69,7 +69,7 @@ func NewHandler(cfg Config) http.Handler {
 	if cfg.Now == nil {
 		cfg.Now = time.Now
 	}
-	if cfg.TokenHookDBTimeout == 0 {
+	if cfg.TokenHookDBTimeout <= 0 {
 		cfg.TokenHookDBTimeout = DefaultTokenHookDBTimeout
 	}
 	all := slices.Concat(cfg.Clients, cfg.OnboardingClients)

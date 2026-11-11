@@ -72,7 +72,7 @@ func (h tokenHook) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	case http.StatusNoContent, http.StatusForbidden:
 		w.WriteHeader(out.code)
 	default:
-		WriteJSON(h.logger, w, out.code, ErrorBody{Code: errorCode(out.code), Message: out.reason})
+		WriteJSON(h.logger, w, out.code, ErrorBody{Code: toErrorCode(out.code), Message: out.reason})
 	}
 	result, level := hookFailed, slog.LevelError
 	switch {
@@ -92,12 +92,14 @@ func (h tokenHook) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 // 職員を DB から引くのは h.dbTimeout まで待ち、過ぎれば 500 にする。
 func (h tokenHook) decide(r *http.Request, in *tokenHookRequest) hookOutcome {
 	if subtle.ConstantTimeCompare([]byte(r.Header.Get(TokenHookKeyHeader)), []byte(h.tokenHookKey)) != 1 {
-		return hookOutcome{http.StatusUnauthorized, "token_hook の鍵が正しくありません", nil}
+		return hookOutcome{code: http.StatusUnauthorized, reason: "token_hook の鍵が正しくありません"}
 	}
 	if err := json.NewDecoder(io.LimitReader(r.Body, maxHookBodyLen)).Decode(in); err != nil {
-		return hookOutcome{http.StatusBadRequest, "本文を読めません", err}
+		return hookOutcome{code: http.StatusBadRequest, reason: "本文を読めません", err: err}
 	}
-	deny := func(reason string, err error) hookOutcome { return hookOutcome{http.StatusForbidden, reason, err} }
+	deny := func(reason string, err error) hookOutcome {
+		return hookOutcome{code: http.StatusForbidden, reason: reason, err: err}
+	}
 	// client credentials のトークンは職員のものでなく、予定の API が内部の API を呼ぶのに使う。許したクライアントにだけ出す
 	if slices.Equal(in.Request.GrantTypes, []string{"client_credentials"}) {
 		if !slices.Contains(h.clients, in.Request.ClientID) {
@@ -119,7 +121,7 @@ func (h tokenHook) decide(r *http.Request, in *tokenHookRequest) hookOutcome {
 		return deny("職員がいない", nil)
 	}
 	if err != nil {
-		return hookOutcome{http.StatusInternalServerError, "職員を引けません", err}
+		return hookOutcome{code: http.StatusInternalServerError, reason: "職員を読めません", err: err}
 	}
 	if !m.CanLogin() {
 		return deny("職員が有効でない", errors.New(m.Status))
@@ -134,8 +136,8 @@ func (h tokenHook) decide(r *http.Request, in *tokenHookRequest) hookOutcome {
 	return hookOutcome{code: http.StatusNoContent}
 }
 
-// errorCode は、token_hook の失敗の状態コードを、ErrorBody の code にする。
-func errorCode(status int) string {
+// toErrorCode は、token_hook の失敗の状態コードを、ErrorBody の code にする。
+func toErrorCode(status int) string {
 	switch status {
 	case http.StatusUnauthorized:
 		return "unauthenticated"

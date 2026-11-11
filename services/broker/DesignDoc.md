@@ -453,7 +453,7 @@ Hydra は、トークンを発行するたびに `oauth2.token_hook` でブロ�
   - 値が違えば 401 を返す。
 - 職員を DB から読むのは 2 秒で打ち切り、読めなければ 500 を返す（ADR-0044）。
   - Hydra は 500 の hook を呼び直すが、トークンは発行しない。
-  - hook の呼び出しごとに、結果と所要の時間をログに出す。項目は [基盤と運用](../../context/operations.md#監視の項目とアラートの条件) にある。
+  - hook の呼び出しごとに、結果と所要の時間をログに出す。項目は [基盤と運用](https://github.com/Fukuemon/buddy/blob/develop/context/operations.md#監視の項目とアラートの条件) にある。
 - 休職と退職の職員の refresh token は、休職と退職のときに取り消すので、token_hook より前に `invalid_grant` で拒まれる。
   - web の BFF は、`invalid_grant` と `access_denied` のどちらでもセッションを消す。
 
