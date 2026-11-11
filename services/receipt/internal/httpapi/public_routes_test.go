@@ -30,13 +30,18 @@ func TestOnlyHealthChecksArePublic(t *testing.T) {
 		t.Fatal(err)
 	}
 	param := regexp.MustCompile(`\{[^}]+\}`)
-	routes := map[string]bool{"GET /no-such-path": true}
-	for path, ops := range spec.Paths {
-		for method := range ops {
-			if method == "parameters" {
-				continue
+	// 定義に無いパスと、ヘルスチェックの下のパスも調べる。publicPaths の完全一致を前方一致に変えた誤りを見つけるためである
+	routes := map[string]bool{"GET /no-such-path": true, "GET /healthz/x": true, "GET /readyz/x": true}
+	methods := map[string]bool{"get": true, "put": true, "post": true, "delete": true, "options": true, "head": true, "patch": true, "trace": true}
+	for path, item := range spec.Paths {
+		for k := range item {
+			switch {
+			case methods[k]:
+				routes[strings.ToUpper(k)+" "+param.ReplaceAllString(path, "x")] = true
+			case k == "parameters" || k == "summary" || k == "description" || strings.HasPrefix(k, "x-"):
+			default:
+				t.Fatalf("%s の %s を読めない。操作を漏らさないよう、このテストを直す", path, k)
 			}
-			routes[strings.ToUpper(method)+" "+param.ReplaceAllString(path, "x")] = true
 		}
 	}
 	for path := range publicPaths {
