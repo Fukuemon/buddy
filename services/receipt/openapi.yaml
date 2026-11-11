@@ -10,6 +10,7 @@ info:
     - エラーは Error の形で返す。
     - `/v1` は全て、Hydra が発行した access token（JWT）を `Authorization: Bearer` で求める。
       トークンがないか検証に失敗したときは 401 を返す。
+      Hydra の discovery の文書をまだ読めていないときは、トークンを検証せずに 503 を返す。`code` は auth_unavailable で、時間をおいてやり直せば通る。
 security:
   - bearerAuth: []
 servers:
@@ -40,11 +41,16 @@ paths:
       tags: [health]
       operationId: getReadyz
       summary: リクエストを受けられるかを返す
-      description: 照合の API は、起動のときに Hydra の discovery の文書を読み、読めなければ起動しない。起動した後は依存先を確認しないので、レスポンスを返せれば 200 を返す。
+      description: Hydra の discovery の文書を 1 度読めたら 200 を、まだ読めていなければ 503 を返す。discovery を読めた後は、依存先を確認しない。
       security: []
       responses:
         "200":
           description: リクエストを受けられる
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Health" }
+        "503":
+          description: discovery をまだ読めていない
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Health" }
@@ -185,11 +191,17 @@ paths:
                   summary: Google カレンダーから予定を取れない
                   value: { code: schedule_source_failed, message: "Google カレンダーから予定を取れない" }
         "503":
-          description: サーバーに、トークンの組織の Google カレンダーの設定がないのに `month` で呼ばれた（`calendar_not_configured`）
+          description: サーバーに、トークンの組織の Google カレンダーの設定がないのに `month` で呼ばれた（`calendar_not_configured`）か、トークンを検証する準備ができていない（`auth_unavailable`）
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Error" }
-              example: { code: calendar_not_configured, message: "サーバーに事業所の Google カレンダーの設定がないので、month では照合できない" }
+              examples:
+                calendar:
+                  summary: Google カレンダーの設定がない
+                  value: { code: calendar_not_configured, message: "サーバーに事業所の Google カレンダーの設定がないので、month では照合できない" }
+                auth:
+                  summary: Hydra の discovery の文書をまだ読めていない
+                  value: { code: auth_unavailable, message: "認証の準備ができていない。時間をおいてやり直す" }
 
 components:
   securitySchemes:
@@ -207,7 +219,7 @@ components:
       properties:
         status:
           type: string
-          enum: [ok]
+          enum: [ok, unavailable]
 
     Error:
       type: object
@@ -227,6 +239,7 @@ components:
             - calendar_not_configured
             - schedule_source_failed
             - permission_check_failed
+            - auth_unavailable
         message:
           type: string
           description: 人が読む日本語の説明。文言は変わることがあるので、利用者の分岐は `code` で行う
