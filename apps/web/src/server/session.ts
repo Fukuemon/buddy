@@ -1,6 +1,14 @@
 import type { Viewer } from '#/api/types'
 
-import { GrantRejectedError, OIDC_TIMEOUT_SECONDS, type OidcClient, type Tokens } from './oidc'
+import { SessionUnavailableError } from '#/api/sessionUnavailable'
+
+import {
+  GrantRejectedError,
+  OIDC_TIMEOUT_SECONDS,
+  refreshFailureOf,
+  type OidcClient,
+  type Tokens,
+} from './oidc'
 import type { SessionStore } from './sessionStore'
 import { verifySignedValue } from './signedValue'
 
@@ -64,7 +72,8 @@ export const expiresAtOf = (tokens: Tokens, now: number) =>
  * リクエストの cookie のセッションを返す。access token の期限が近ければ refresh token で更新して置き直す。
  *
  * セッションが無いとき、期限が切れて更新できないときは undefined を返す。Hydra が refresh token を拒んだときだけ、
- * セッションを消す。通信の失敗では消さず、access token がまだ使えればそれを返し、使えなければ投げる。
+ * セッションを消す。そのほかの失敗では消さず、access token がまだ使えればそれを返し、使えなければ SessionUnavailableError を投げる。
+ * 更新は 1 回の呼び出しで 1 度だけ試し、失敗しても試し直さない（ADR-0044）。
  */
 export const readSession = async (
   request: Request,
@@ -112,7 +121,9 @@ const refresh = async (
       if (latest.accessToken !== session.accessToken) return latest
       if (!(await deps.store.exists(lockKey))) break
     }
-    return stillValid(session) ? session : undefined
+    // 鍵を持つリクエストが更新できなかったか、待ちの上限を過ぎた。鍵を持つ側と同じく、セッションを残して一時的な失敗にする
+    if (stillValid(session)) return session
+    throw new SessionUnavailableError()
   }
   try {
     // 鍵を取る前に、ほかのリクエストが更新し終えていることがある。古い refresh token を送らないよう読み直す
@@ -122,6 +133,8 @@ const refresh = async (
       return latest
     try {
       const tokens = await deps.oidc.refresh(latest.refreshToken)
+      // refresh の失敗の率の分母にする（context/operations.md の監視の項目とアラートの条件）
+      console.info(JSON.stringify({ msg: 'session refreshed' }))
       const refreshed: Session = {
         ...latest,
         accessToken: tokens.accessToken,
@@ -131,12 +144,14 @@ const refresh = async (
       }
       return (await deps.store.replace(sessionKey(id), refreshed)) ? refreshed : undefined
     } catch (error) {
+      // トークンとセッションの ID は書かない
+      console.warn(JSON.stringify({ msg: 'session refresh failed', ...refreshFailureOf(error) }))
       if (error instanceof GrantRejectedError) {
         await deps.store.delete(sessionKey(id))
         return undefined
       }
       if (stillValid(latest)) return latest
-      throw error
+      throw new SessionUnavailableError()
     }
   } finally {
     await deps.store.unlock(lockKey, token)

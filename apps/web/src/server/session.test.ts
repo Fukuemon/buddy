@@ -1,6 +1,8 @@
 // @vitest-environment node
 import { describe, expect, it, vi } from 'vite-plus/test'
 
+import { SessionUnavailableError } from '#/api/sessionUnavailable'
+
 import { GrantRejectedError, type OidcClient } from './oidc'
 import { readCookie, readSession, type Session, type SessionDeps } from './session'
 import { createMemorySessionStore } from './sessionStore'
@@ -201,20 +203,73 @@ describe('readSession', () => {
     expect(await deps.store.get('session:id-1')).toBeDefined()
   })
 
+  it('切れた access token の更新が一時的に失敗したら、セッションを残し、試し直さずに SessionUnavailableError を投げる', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const refresh = vi.fn<OidcClient['refresh']>(async () => {
+      throw new Error('ECONNRESET')
+    })
+    const { deps } = setup({ oidc: fakeOidc({ refresh }) })
+    const req = await withSession(
+      { ...VIEWER, accessToken: 'old', refreshToken: 'r', expiresAt: 1_000_000 - 1 },
+      deps,
+    )
+    await expect(readSession(req, deps)).rejects.toBeInstanceOf(SessionUnavailableError)
+    expect(refresh).toHaveBeenCalledTimes(1)
+    expect(await deps.store.get('session:id-1')).toMatchObject({ accessToken: 'old' })
+    // トークンとセッションの ID はログに出さない
+    expect(warn).toHaveBeenCalledWith(
+      JSON.stringify({ msg: 'session refresh failed', reason: 'other' }),
+    )
+    warn.mockRestore()
+  })
+
+  it('ほかのリクエストが更新できずに鍵を放し、access token が切れていたら、ログインに戻さず SessionUnavailableError を投げる', async () => {
+    const refresh = vi.fn<OidcClient['refresh']>()
+    const { deps } = setup({ oidc: fakeOidc({ refresh }) })
+    const req = await withSession(
+      { ...VIEWER, accessToken: 'old', refreshToken: 'r', expiresAt: 1_000_000 - 1 },
+      deps,
+    )
+    const token = await deps.store.lock('refresh-lock:id-1', 1000)
+    deps.wait = async () => {
+      await deps.store.unlock('refresh-lock:id-1', token as string)
+    }
+    await expect(readSession(req, deps)).rejects.toBeInstanceOf(SessionUnavailableError)
+    expect(refresh).not.toHaveBeenCalled()
+    expect(await deps.store.get('session:id-1')).toBeDefined()
+  })
+
+  it('更新できたら、失敗の率の分母にするログを出す', async () => {
+    const info = vi.spyOn(console, 'info').mockImplementation(() => {})
+    const { deps } = setup()
+    const req = await withSession(
+      { ...VIEWER, accessToken: 'old', refreshToken: 'r', expiresAt: 1_000_000 - 1 },
+      deps,
+    )
+    expect((await readSession(req, deps))?.accessToken).toBe('access-2')
+    expect(info).toHaveBeenCalledWith(JSON.stringify({ msg: 'session refreshed' }))
+    info.mockRestore()
+  })
+
   it('refresh token を拒まれたらセッションを消す', async () => {
     const { deps } = setup({
       oidc: fakeOidc({
         refresh: async () => {
-          throw new GrantRejectedError()
+          throw new GrantRejectedError('access_denied')
         },
       }),
     })
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     const req = await withSession(
       { ...VIEWER, accessToken: 'old', refreshToken: 'r', expiresAt: 1_000_000 - 1 },
       deps,
     )
     expect(await readSession(req, deps)).toBeUndefined()
     expect(await deps.store.get('session:id-1')).toBeUndefined()
+    expect(warn).toHaveBeenCalledWith(
+      JSON.stringify({ msg: 'session refresh failed', reason: 'rejected', error: 'access_denied' }),
+    )
+    warn.mockRestore()
   })
 })
 

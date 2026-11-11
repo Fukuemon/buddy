@@ -19,6 +19,8 @@ import { SiteLayoutContainer } from '#/components/layout/SiteLayoutContainer'
 import { siteNavHrefOf } from '#/components/layout/SiteNav'
 import { PageErrorMessage } from '#/components/page/PageErrorMessage'
 import { PageForbiddenMessage } from '#/components/page/PageForbiddenMessage'
+import { PageUnavailableMessage } from '#/components/page/PageUnavailableMessage'
+import { isSessionUnavailable } from '#/api/sessionUnavailable'
 import { CalendarReviewBadgeContainer } from '#/features/calendar/components/CalendarReviewBadgeContainer'
 
 import TanStackQueryDevtools from '../integrations/tanstack-query/devtools'
@@ -136,7 +138,11 @@ function RootError({ error }: ErrorComponentProps) {
     <div className="flex h-dvh flex-col">
       <SiteHeader />
       <main className="grow">
-        <PageErrorMessage reloadHref={href} />
+        {isSessionUnavailable(error) ? (
+          <PageUnavailableMessage reloadHref={href} />
+        ) : (
+          <PageErrorMessage reloadHref={href} />
+        )}
       </main>
     </div>
   )

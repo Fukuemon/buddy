@@ -8,10 +8,35 @@ import type { ServerConfig } from './config'
  * 12 時間を過ぎたログイン）は access_denied になる。
  */
 export class GrantRejectedError extends Error {
-  constructor() {
+  /** Hydra が返した OAuth のエラーの値。ログに出す。 */
+  readonly code: string
+
+  constructor(code = 'invalid_grant') {
     super('Hydra が refresh token を拒んだ')
     this.name = 'GrantRejectedError'
+    this.code = code
   }
+}
+
+/**
+ * refresh の失敗の種類。ログの reason に出す（context/operations.md の監視の項目とアラートの条件）。
+ * rejected は Hydra が refresh token を拒んだ、hydra_error は Hydra がそのほかのエラーを返した、timeout は待ちの上限を過ぎた、
+ * unreachable は Hydra に届かなかった、other はそれ以外である。
+ */
+export type RefreshFailureReason = 'rejected' | 'hydra_error' | 'timeout' | 'unreachable' | 'other'
+
+/** refresh が投げた error から、失敗の種類と、Hydra が返した OAuth のエラーの値を取り出す。トークンは含めない。 */
+export const refreshFailureOf = (
+  error: unknown,
+): { reason: RefreshFailureReason; error?: string } => {
+  if (error instanceof GrantRejectedError) return { reason: 'rejected', error: error.code }
+  if (error instanceof client.ResponseBodyError)
+    return { reason: 'hydra_error', error: error.error }
+  // openid-client は、待ちの上限を過ぎると code が OAUTH_TIMEOUT の ClientError を、つながらないと fetch の TypeError を投げる
+  if (error instanceof client.ClientError && error.code === 'OAUTH_TIMEOUT')
+    return { reason: 'timeout' }
+  if (error instanceof TypeError) return { reason: 'unreachable' }
+  return { reason: 'other' }
 }
 
 /** トークンのエンドポイントのレスポンスのうち、BFF が使う値。 */
@@ -49,7 +74,7 @@ export interface OidcClient {
 const REJECTED_GRANT_ERRORS = new Set(['invalid_grant', 'access_denied'])
 
 /** error が、Hydra が refresh token を拒んだことを示すかを返す。 */
-export const isGrantRejected = (error: unknown) =>
+export const isGrantRejected = (error: unknown): error is client.ResponseBodyError =>
   error instanceof client.ResponseBodyError && REJECTED_GRANT_ERRORS.has(error.error)
 
 /** Hydra へのリクエストを待つ上限。auth.ts の更新の鍵の期限より短くする。 */
@@ -119,7 +144,7 @@ export const createOidcClient = async (cfg: ServerConfig['oidc']): Promise<OidcC
         return toTokens(await client.refreshTokenGrant(config, refreshToken))
       } catch (error) {
         if (isGrantRejected(error)) {
-          throw new GrantRejectedError()
+          throw new GrantRejectedError(error.error)
         }
         throw error
       }

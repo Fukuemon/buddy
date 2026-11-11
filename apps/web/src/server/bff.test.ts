@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { http, HttpResponse } from 'msw'
-import { describe, expect, it } from 'vite-plus/test'
+import { describe, expect, it, vi } from 'vite-plus/test'
 
 import { scheduleHttp, server, TEST_SCHEDULE_URL } from '#/test/server'
 
@@ -108,5 +108,31 @@ describe('callBff', () => {
       await setup(),
     )
     expect(result).toMatchObject({ ok: false, status: 401 })
+  })
+
+  it('ログインの期限を延ばせなければ、503 と session_unavailable を返し、API を呼ばない', async () => {
+    server.use(mustNotCall())
+    const deps = await setup()
+    await deps.auth.store.set(
+      'session:id-1',
+      {
+        staffId: 'staff-1',
+        staffName: '青木 陽菜',
+        facilityId: 'facility-1',
+        accessToken: 'access-1',
+        refreshToken: 'refresh-1',
+        expiresAt: Date.now() - 1000,
+      },
+      60,
+    )
+    deps.auth.oidc = {
+      refresh: async () => {
+        throw new TypeError('fetch failed')
+      },
+    } as unknown as AuthDeps['oidc']
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const result = await callBff(signedIn(), { op: 'teams.list', args: ['facility-1'] }, deps)
+    warn.mockRestore()
+    expect(result).toMatchObject({ ok: false, status: 503, code: 'session_unavailable' })
   })
 })
