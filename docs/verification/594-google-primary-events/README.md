@@ -9,10 +9,10 @@
 ## 撮るシナリオ
 
 spec は `packages/e2e/tests/evidence/schedule/google-primary-event-kinds.e2e.ts` である。  
-検証環境ができるまで、pull request のエビデンスと同じ薄い層（`recordPrEvidence`）で、ローカル環境の compose で撮る。  
+検証環境ができるまで、pull request のエビデンスと同じ `caption.ts` の字幕で、ローカル環境の compose で撮る。  
 入れる先は `issue-933` である。
 
-| シナリオ | `recordPrEvidence` の `name` | test の名前 |
+| シナリオ | `<name>` | test の名前 |
 | --- | --- | --- |
 | 繰り返しの予定と例外の回 | `s1-recurring` | 繰り返しの予定の回を変えたか取り消した場合と、buddy の規則に写せない繰り返しの予定がある場合、回が格子に出て、写せない予定は確認が必要な予定に出ること |
 | 終日の予定 | `s2-all-day` | 1 日の終日の予定、何日かにわたる終日の予定、回を除外した繰り返しの終日の予定がある場合、かかる日と回の日の「終日」の行に出ること |
@@ -29,7 +29,7 @@ spec は `packages/e2e/tests/evidence/schedule/google-primary-event-kinds.e2e.ts
 
 ## 撮影のための操作
 
-- 予定は、録画の前（`prepare`）に calendarpit の管理の API で作る。
+- 予定は、録画の前（`prepareOutsideRecording`）に calendarpit の管理の API で作る。
   - 例外の回は、親の予定の `recurringEventId` と `originalStartTime` を付けて作る。
   - 終了の日時を読めない予定は、中継の gcalhold の `POST /break` で、作る前にタイトルを登録して作る。calendarpit は日時を読めない予定を作れないためである。
 - 訪問の情報に変換できない予定のシナリオの利用者は、録画の前に予定の API で登録する。同じ名前の利用者を 2 人登録する。

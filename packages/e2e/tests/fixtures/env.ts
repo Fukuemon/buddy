@@ -177,5 +177,8 @@ export const LEADER_STATE = loginStatePath('mori')
 /** メンバーの林でログインした状態のファイル。setup が書き、林で撮るエビデンスの spec が storageState に渡す。 */
 export const HAYASHI_STATE = loginStatePath('hayashi')
 
+/** 2 つ目の事業所のマネージャーの上野でログインした状態のファイル。setup が書き、その事業所で撮るエビデンスの spec が storageState に渡す。 */
+export const OFFICE_B_STATE = loginStatePath('ueno')
+
 /** 1 つ目の事業所の事務の中村でログインした状態のファイル。setup が書き、事務の職員で撮るエビデンスの spec が storageState に渡す。 */
 export const OFFICE_CLERK_STATE = loginStatePath('nakamura')

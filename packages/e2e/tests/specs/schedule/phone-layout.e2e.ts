@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test'
 
 import { LOGIN_STAFF, OFFICE_A_SCHEDULE } from '../../fixtures/env'
-import { PHONE_VIEWPORT } from '../../fixtures/evidence'
+import { PHONE_VIEWPORT } from '../../fixtures/recording'
 import { scrollToRightEnd } from '../../widgets/scroll/actions/scroll'
 
 /** シードのカンファレンスの翌日。週の一覧の見出しを押して移る先にする。 */
