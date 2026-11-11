@@ -61,7 +61,7 @@ services:
       timeout: 5s
       retries: 30
 
-  # 同じ PostgreSQL に、Hydra とブローカーのデータベースを作る
+  # 同じ PostgreSQL に、Hydra、ブローカー、web のセッションのデータベースを作る
   postgres-init:
     image: postgres:18.6
     entrypoint: ['/bin/sh', '/config/create-databases.sh']
@@ -374,10 +374,22 @@ services:
       schedule: { condition: service_healthy }
       calendarpit-authorize: { condition: service_completed_successfully }
 
+  # web のセッションを PostgreSQL に置くときのテーブルを作る（ADR-0045）。Valkey に置くときも流し、切り替えに作り直しを要らなくする
+  web-migrate:
+    build: { context: ., dockerfile: apps/web/Dockerfile }
+    # イメージの名前にプロジェクトの名前を含め、-p で分けた別の worktree のビルドに上書きされないようにする
+    image: ${COMPOSE_PROJECT_NAME}-web
+    entrypoint: ['/usr/local/bin/migrate']
+    command: ['up']
+    environment:
+      SESSION_STORE_URL: postgres://buddy:buddy-dev@postgres:5432/web?sslmode=disable
+    depends_on:
+      postgres-init: { condition: service_completed_successfully }
+
   web:
-    build:
-      context: .
-      dockerfile: apps/web/Dockerfile
+    image: ${COMPOSE_PROJECT_NAME}-web
+    # イメージは web-migrate がビルドする
+    pull_policy: never
     environment:
       # discovery の文書の認可のエンドポイントは、ブラウザが開く URL を指す（compose/hydra/hydra.yml）
       OIDC_ISSUER: http://hydra:4444
@@ -385,7 +397,8 @@ services:
       OIDC_CLIENT_SECRET: web-dev
       # Hydra は discovery の end_session_endpoint を Issuer の URL（コンテナの間の名前）から作るので、ブラウザが開く URL を渡す
       OIDC_END_SESSION_ENDPOINT: ${HYDRA_PUBLIC_ORIGIN:-https://hydra.${COMPOSE_PROJECT_NAME}.localhost}/oauth2/sessions/logout
-      SESSION_STORE_URL: redis://valkey:6379
+      # PostgreSQL に置くときは、WEB_SESSION_STORE_URL に postgres://buddy:buddy-dev@postgres:5432/web?sslmode=disable を渡す
+      SESSION_STORE_URL: ${WEB_SESSION_STORE_URL:-redis://valkey:6379}
       SESSION_SECRET: buddy-dev-session-secret-for-compose-only
       # portless は TLS を終端して web へ http で渡すので、ログインとログアウトの戻り先は、ブラウザが開く URL から作る
       PUBLIC_URL: ${WEB_ORIGIN:-https://web.${COMPOSE_PROJECT_NAME}.localhost}
@@ -407,6 +420,7 @@ services:
       retries: 30
     depends_on:
       valkey: { condition: service_healthy }
+      web-migrate: { condition: service_completed_successfully }
       hydra-clients: { condition: service_completed_successfully }
       broker: { condition: service_healthy }
       schedule: { condition: service_healthy }
