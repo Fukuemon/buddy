@@ -374,7 +374,7 @@ services:
       schedule: { condition: service_healthy }
       calendarpit-authorize: { condition: service_completed_successfully }
 
-  # web のセッションを PostgreSQL に置くときのテーブルを作る（ADR-0045）。Valkey に置くときも流し、切り替えに作り直しを要らなくする
+  # web のセッションを PostgreSQL に置くときのテーブルを作る（ADR-0047）。Valkey に置くときも流し、切り替えに作り直しを要らなくする
   web-migrate:
     build: { context: ., dockerfile: apps/web/Dockerfile }
     # イメージの名前にプロジェクトの名前を含め、-p で分けた別の worktree のビルドに上書きされないようにする

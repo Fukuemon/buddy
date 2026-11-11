@@ -25,7 +25,7 @@ FROM node:24-slim
 ENV NODE_ENV=production PORT=3000
 WORKDIR /app
 COPY --from=build /out /app
-# 予定の API とブローカーのイメージと同じく、/usr/local/bin/migrate up でセッションのテーブルを作る（ADR-0045）
+# 予定の API とブローカーのイメージと同じく、/usr/local/bin/migrate up でセッションのテーブルを作る（ADR-0047）
 RUN chmod +x /app/migrate/migrate.ts && ln -s /app/migrate/migrate.ts /usr/local/bin/migrate
 EXPOSE 3000
 USER node

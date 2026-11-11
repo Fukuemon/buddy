@@ -23,7 +23,7 @@ type Runtime = { config: ServerConfig; store: SessionStore }
 let runtime: Runtime | undefined
 let oidc: Promise<OidcClient> | undefined
 
-/** PostgreSQL のセッションの、期限の切れた行を消す間隔（ADR-0045）。 */
+/** PostgreSQL のセッションの、期限の切れた行を消す間隔（ADR-0047）。 */
 const PURGE_INTERVAL_MS = 10 * 60 * 1000
 
 /** SESSION_STORE_URL のスキームで保存先を選ぶ。PostgreSQL なら、期限の切れた行を定期に消す。 */

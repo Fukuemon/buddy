@@ -16,7 +16,7 @@ export type ServerConfig = {
      */
     endSessionEndpoint?: string
   }
-  /** セッションの保存先。`redis://` なら Valkey、`postgres://` か `postgresql://` なら PostgreSQL に置く（ADR-0045）。 */
+  /** セッションの保存先。`redis://` なら Valkey、`postgres://` か `postgresql://` なら PostgreSQL に置く（ADR-0047）。 */
   sessionStoreUrl: string
   /** 保存先が PostgreSQL のときの、接続のプールの接続の数の上限。 */
   sessionStoreMaxConnections: number

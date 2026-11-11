@@ -19,7 +19,7 @@ export type PostgresSessionStore = SessionStore & {
 
 /**
  * 値を暗号化する鍵を、cookie の署名の鍵から HKDF で導く。
- * 新しいシークレットを足さないためである。SESSION_SECRET を替えると、置いた値は全て読めなくなる（ADR-0045）。
+ * 新しいシークレットを足さないためである。SESSION_SECRET を替えると、置いた値は全て読めなくなる（ADR-0047）。
  */
 const deriveKey = (secret: string): Buffer =>
   Buffer.from(hkdfSync('sha256', secret, '', 'buddy-web-session-store', 32))

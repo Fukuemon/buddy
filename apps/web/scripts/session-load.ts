@@ -1,5 +1,5 @@
 /**
- * PostgreSQL のセッションの保存先の負荷の検証（ADR-0045）。web の SessionStore の実装を直接呼び、想定の利用を再現する。
+ * PostgreSQL のセッションの保存先の負荷の検証（ADR-0047）。web の SessionStore の実装を直接呼び、想定の利用を再現する。
  *
  * 使い方: SESSION_STORE_URL=postgres://... node apps/web/scripts/session-load.ts
  * テーブルは先に migrate up で作っておく。結果を 1 行の JSON で標準出力に書く。

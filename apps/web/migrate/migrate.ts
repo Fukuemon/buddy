@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * web のセッションのテーブルを、SESSION_STORE_URL の PostgreSQL に作るマイグレーション（ADR-0045）。
+ * web のセッションのテーブルを、SESSION_STORE_URL の PostgreSQL に作るマイグレーション（ADR-0047）。
  *
  * `migrate up` で、まだ当てていない版を順に当てて終わる。イメージでは /usr/local/bin/migrate から呼ぶ。
  * 予定の API とブローカーの migrate と同じく、インフラが新しいイメージを起動する前に 1 回流す。
