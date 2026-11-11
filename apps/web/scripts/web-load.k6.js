@@ -47,6 +47,18 @@ const loginDuration = new Trend('login_duration', true)
 const bffDuration = new Trend('bff_duration', true)
 const bffFailed = new Counter('bff_failed')
 const loginFailed = new Counter('login_failed')
+/**
+ * BFF の失敗を、callBff が返した status ごとに数える。k6 のまとめは tag ごとの数を出さないので、status ごとに分ける。
+ * callBff の status は bff_failed_401 のように数え、HTTP の応答が 200 でないときは bff_failed_http に数える。
+ */
+const bffFailedByStatus = Object.fromEntries(
+  ['401', '403', '500', '502', '503', 'unknown', 'other', 'http'].map((s) => [
+    s,
+    new Counter(`bff_failed_${s}`),
+  ]),
+)
+/** BFF が 1 回でも 401 を返した職員の数。callBff は、セッションが無いときと、予定の API が access token を拒んだときに 401 を返す。 */
+const unauthorizedStaff = new Counter('unauthorized_staff')
 
 export const options = {
   setupTimeout: '20m',
@@ -195,6 +207,14 @@ export function setup() {
 /** BFF の応答の本文から、callBff が返した ok を読む。seroval の JSON の ok のキーの値が true（t: 2, s: 2）かを見る。 */
 const bffOk = (body) => /"k":\["ok"[^\]]*\],"v":\[\{"t":2,"s":2\}/.test(body || '')
 
+/** callBff が ok: false で返した status を、文字列で返す。読めなければ unknown を返す。 */
+const bffStatus = (body) => {
+  const found = /"k":\["ok","status"[^\]]*\],"v":\[\{"t":2,"s":3\},\{"t":0,"s":(\d+)\}/.exec(
+    body || '',
+  )
+  return found === null ? 'unknown' : found[1]
+}
+
 /**
  * 1 人の職員の使い方を、LOAD_DURATION_S の間流す。ログインの窓の中で VU の番号の順にログインし、ログアウトの時刻まで BFF を呼び続ける。
  * ログインに失敗したら login_failed に数え、画面の操作をせずに終える。
@@ -230,6 +250,7 @@ export default function (data) {
     Origin: WEB,
     'x-tsr-serverfn': 'true',
   }
+  let unauthorized = false
   let i = 0
   while (Date.now() < logoutAt) {
     const calls = scheduleScreenCalls()
@@ -239,8 +260,15 @@ export default function (data) {
       tags: { name: `bff:${call.op}` },
     })
     bffDuration.add(res.timings.duration, { op: call.op })
-    if (!check(res, { 'BFF が ok を返す': (r) => r.status === 200 && bffOk(r.body) }))
+    if (!check(res, { 'BFF が ok を返す': (r) => r.status === 200 && bffOk(r.body) })) {
       bffFailed.add(1, { op: call.op })
+      const status = res.status === 200 ? bffStatus(res.body) : 'http'
+      bffFailedByStatus[status in bffFailedByStatus ? status : 'other'].add(1)
+      if (status === '401' && !unauthorized) {
+        unauthorized = true
+        unauthorizedStaff.add(1)
+      }
+    }
     sleep(Math.min((logoutAt - Date.now()) / 1000, READ_INTERVAL_S * (0.5 + Math.random())))
   }
 
