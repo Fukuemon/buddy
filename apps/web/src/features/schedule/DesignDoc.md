@@ -47,6 +47,10 @@ web と予定の API の責務と依存は、[buddy Design Doc](https://github.c
 - 読み込みが失敗すると、3 回まで取り直してから失敗にする。
   - 4xx の `ApiError` は、取り直さずにすぐ失敗にする（`apps/web/src/appContext.ts` の `shouldRetryQuery`）。
   - 予定が見つからないとき、権限が無いとき、入力が規則に合わないときは、取り直しても結果が変わらないためである。
+  - ログインの期限を延ばせなかったときも取り直さない。BFF は status が 503 でコードが `session_unavailable` の失敗を返す。
+  - 1 回の表示で refresh を 1 度だけ試すためである（[ADR-0044](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0044-token-hook-fail-closed.md#bff-は-refresh-を-1-度だけ試す)）。
+- ログインした職員を読むときに、ログインの期限を延ばせなければ、どの画面も「一時的に使えない」の表示に替わる。
+  - 表示は [画面仕様書の全ての画面に共通する状態](https://github.com/Fukuemon/buddy/blob/develop/docs/screens/index.md#一時的に使えない) にある。
   - 文の選び方は [画面仕様書の規約のエラーの見せ方](https://github.com/Fukuemon/buddy/blob/develop/docs/screens/rules.md#エラーの見せ方) にある。
 - 画面の出し分けに使う予定の権限は、画面を読み込むたびに web のサーバーが `GET /v1/me` で読む。
   - web のサーバーは、`policies` のうち予定の権限と対象を、`Viewer` の `schedulePolicies` に入れる。変換は `apps/web/src/api/http/scheduleMapper.ts` の `fromApiSchedulePolicies` にある。

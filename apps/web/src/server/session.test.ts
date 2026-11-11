@@ -1,5 +1,7 @@
 // @vitest-environment node
-import { describe, expect, it, vi } from 'vite-plus/test'
+import { afterEach, describe, expect, it, vi } from 'vite-plus/test'
+
+import { SessionUnavailableError } from '#/api/sessionUnavailable'
 
 import { GrantRejectedError, type OidcClient } from './oidc'
 import { readCookie, readSession, type Session, type SessionDeps } from './session'
@@ -34,6 +36,10 @@ const setup = (overrides: Partial<SessionDeps> = {}) => {
   }
   return { deps }
 }
+
+afterEach(() => {
+  vi.restoreAllMocks()
+})
 
 describe('readSession', () => {
   const withSession = async (session: Session, deps: SessionDeps) => {
@@ -186,6 +192,7 @@ describe('readSession', () => {
   })
 
   it('通信の失敗ではセッションを消さず、まだ使える token を返す', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     const { deps } = setup({
       oidc: fakeOidc({
         refresh: async () => {
@@ -199,22 +206,171 @@ describe('readSession', () => {
     )
     expect((await readSession(req, deps))?.accessToken).toBe('old')
     expect(await deps.store.get('session:id-1')).toBeDefined()
+    expect(warn).toHaveBeenCalledWith(
+      JSON.stringify({ msg: 'session refresh failed', reason: 'other' }),
+    )
+  })
+
+  it('切れた access token の更新が一時的に失敗したら、セッションを残し、試し直さずに SessionUnavailableError を投げる', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const refresh = vi.fn<OidcClient['refresh']>(async () => {
+      throw new Error('ECONNRESET')
+    })
+    const { deps } = setup({ oidc: fakeOidc({ refresh }) })
+    const req = await withSession(
+      { ...VIEWER, accessToken: 'old', refreshToken: 'r', expiresAt: 1_000_000 - 1 },
+      deps,
+    )
+    await expect(readSession(req, deps)).rejects.toBeInstanceOf(SessionUnavailableError)
+    expect(refresh).toHaveBeenCalledTimes(1)
+    expect(await deps.store.get('session:id-1')).toMatchObject({ accessToken: 'old' })
+    expect(await deps.store.exists('refresh-failed:id-1')).toBe(true)
+    // トークンとセッションの ID はログに出さない
+    expect(warn).toHaveBeenCalledWith(
+      JSON.stringify({ msg: 'session refresh failed', reason: 'other' }),
+    )
+  })
+
+  it('ほかのリクエストが更新できずに鍵を放し、access token が切れていたら、ログインに戻さず SessionUnavailableError を投げる', async () => {
+    const refresh = vi.fn<OidcClient['refresh']>()
+    const { deps } = setup({ oidc: fakeOidc({ refresh }) })
+    const req = await withSession(
+      { ...VIEWER, accessToken: 'old', refreshToken: 'r', expiresAt: 1_000_000 - 1 },
+      deps,
+    )
+    const token = await deps.store.lock('refresh-lock:id-1', 1000)
+    deps.wait = async () => {
+      await deps.store.unlock('refresh-lock:id-1', token as string)
+    }
+    await expect(readSession(req, deps)).rejects.toBeInstanceOf(SessionUnavailableError)
+    expect(refresh).not.toHaveBeenCalled()
+    expect(await deps.store.get('session:id-1')).toBeDefined()
+  })
+
+  it('更新できたら、失敗の率の分母にするログを出す', async () => {
+    const info = vi.spyOn(console, 'info').mockImplementation(() => {})
+    const { deps } = setup()
+    const req = await withSession(
+      { ...VIEWER, accessToken: 'old', refreshToken: 'r', expiresAt: 1_000_000 - 1 },
+      deps,
+    )
+    expect((await readSession(req, deps))?.accessToken).toBe('access-2')
+    expect(info).toHaveBeenCalledWith(JSON.stringify({ msg: 'session refreshed' }))
+  })
+
+  it('鍵を見る前に、ほかのリクエストが置き直してから鍵を放していたら、置き直したセッションを返す', async () => {
+    const { deps } = setup()
+    const req = await withSession(
+      { ...VIEWER, accessToken: 'old', refreshToken: 'r', expiresAt: 1_000_000 - 1 },
+      deps,
+    )
+    const token = await deps.store.lock('refresh-lock:id-1', 1000)
+    const get = deps.store.get.bind(deps.store)
+    let reads = 0
+    deps.store.get = async <T>(key: string) => {
+      const value = await get<T>(key)
+      // 待つ側が 1 度目に読んだ後に、鍵を持つ側が置き直して鍵を放す
+      if (key === 'session:id-1' && ++reads === 2) {
+        await deps.store.replace('session:id-1', { ...VIEWER, accessToken: 'by-other' })
+        await deps.store.unlock('refresh-lock:id-1', token as string)
+      }
+      return value
+    }
+    expect((await readSession(req, deps))?.accessToken).toBe('by-other')
+  })
+
+  it('鍵を見る前に、ほかのリクエストがセッションを消してから鍵を放していたら、undefined を返す', async () => {
+    const { deps } = setup()
+    const req = await withSession(
+      { ...VIEWER, accessToken: 'old', refreshToken: 'r', expiresAt: 1_000_000 - 1 },
+      deps,
+    )
+    const token = await deps.store.lock('refresh-lock:id-1', 1000)
+    deps.wait = async () => {
+      await deps.store.delete('session:id-1')
+      await deps.store.unlock('refresh-lock:id-1', token as string)
+    }
+    expect(await readSession(req, deps)).toBeUndefined()
+  })
+
+  it('鍵が待ちの上限を過ぎても放されず、access token が切れていたら、SessionUnavailableError を投げる', async () => {
+    const { deps } = setup()
+    const req = await withSession(
+      { ...VIEWER, accessToken: 'old', refreshToken: 'r', expiresAt: 1_000_000 - 1 },
+      deps,
+    )
+    await deps.store.lock('refresh-lock:id-1', 60_000)
+    await expect(readSession(req, deps)).rejects.toBeInstanceOf(SessionUnavailableError)
+  })
+
+  it('同じプロセスで同時に読んだ 2 つ目の呼び出しも、refresh を試さずに同じエラーになる', async () => {
+    const refresh = vi.fn<OidcClient['refresh']>(async () => {
+      throw new Error('ECONNRESET')
+    })
+    const { deps } = setup({ oidc: fakeOidc({ refresh }) })
+    const req = await withSession(
+      { ...VIEWER, accessToken: 'old', refreshToken: 'r', expiresAt: 1_000_000 - 1 },
+      deps,
+    )
+    const results = await Promise.allSettled([readSession(req, deps), readSession(req, deps)])
+    expect(results.map((r) => r.status)).toEqual(['rejected', 'rejected'])
+    expect(refresh).toHaveBeenCalledTimes(1)
+  })
+
+  it('期限の手前で refresh が一時的に失敗したら、続く呼び出しは試し直さず、まだ使える token を返す', async () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const refresh = vi.fn<OidcClient['refresh']>(async () => {
+      throw new Error('ECONNRESET')
+    })
+    const { deps } = setup({ oidc: fakeOidc({ refresh }) })
+    const req = await withSession(
+      { ...VIEWER, accessToken: 'old', refreshToken: 'r', expiresAt: 1_000_000 + 30_000 },
+      deps,
+    )
+    const set = vi.spyOn(deps.store, 'set')
+    expect((await readSession(req, deps))?.accessToken).toBe('old')
+    expect((await readSession(req, deps))?.accessToken).toBe('old')
+    expect(refresh).toHaveBeenCalledTimes(1)
+    // 印は ADR-0044 の 10 秒で置く
+    expect(set).toHaveBeenCalledWith('refresh-failed:id-1', true, 10)
+    // 印の期限が切れたら、また試す
+    await deps.store.delete('refresh-failed:id-1')
+    await readSession(req, deps)
+    expect(refresh).toHaveBeenCalledTimes(2)
+  })
+
+  it('refresh が一時的に失敗した後に access token が切れたら、試し直さずに SessionUnavailableError を投げる', async () => {
+    const refresh = vi.fn<OidcClient['refresh']>()
+    const { deps } = setup({ oidc: fakeOidc({ refresh }) })
+    const req = await withSession(
+      { ...VIEWER, accessToken: 'old', refreshToken: 'r', expiresAt: 1_000_000 - 1 },
+      deps,
+    )
+    await deps.store.set('refresh-failed:id-1', true, 10)
+    await expect(readSession(req, deps)).rejects.toBeInstanceOf(SessionUnavailableError)
+    expect(refresh).not.toHaveBeenCalled()
   })
 
   it('refresh token を拒まれたらセッションを消す', async () => {
     const { deps } = setup({
       oidc: fakeOidc({
         refresh: async () => {
-          throw new GrantRejectedError()
+          throw new GrantRejectedError('access_denied')
         },
       }),
     })
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     const req = await withSession(
       { ...VIEWER, accessToken: 'old', refreshToken: 'r', expiresAt: 1_000_000 - 1 },
       deps,
     )
     expect(await readSession(req, deps)).toBeUndefined()
     expect(await deps.store.get('session:id-1')).toBeUndefined()
+    // 拒まれたときは、一時的な失敗の印を置かない
+    expect(await deps.store.exists('refresh-failed:id-1')).toBe(false)
+    expect(warn).toHaveBeenCalledWith(
+      JSON.stringify({ msg: 'session refresh failed', reason: 'rejected', error: 'access_denied' }),
+    )
   })
 })
 

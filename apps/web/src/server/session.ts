@@ -1,6 +1,14 @@
 import type { Viewer } from '#/api/types'
 
-import { GrantRejectedError, OIDC_TIMEOUT_SECONDS, type OidcClient, type Tokens } from './oidc'
+import { SessionUnavailableError } from '#/api/sessionUnavailable'
+
+import {
+  GrantRejectedError,
+  OIDC_TIMEOUT_SECONDS,
+  refreshFailureOf,
+  type OidcClient,
+  type Tokens,
+} from './oidc'
 import type { SessionStore } from './sessionStore'
 import { verifySignedValue } from './signedValue'
 
@@ -30,12 +38,18 @@ export const SESSION_TTL_SECONDS = 12 * 60 * 60
 const REFRESH_MARGIN_MS = 60 * 1000
 /** 更新の鍵を持つ長さ。Hydra のレスポンスを待つ上限の 2 倍にする。 */
 const REFRESH_LOCK_MS = OIDC_TIMEOUT_SECONDS * 2 * 1000
+/**
+ * refresh が一時的に失敗した後、試し直さない長さ。access token の期限の手前でも、1 回の表示で refresh を 1 度だけにする（ADR-0044）。
+ * 1 回の表示で続く BFF の呼び出しが収まり、障害が直った後の読み直しを長く待たせない長さにする。
+ */
+const REFRESH_FAILED_TTL_SECONDS = 10
 /** ほかのリクエストの更新を待つ間隔。待つのは、鍵が放されるか期限が切れるまでである。 */
 const REFRESH_POLL_MS = 200
 
 /** セッションの ID から、Valkey のキーを作る。 */
 export const sessionKey = (id: string) => `session:${id}`
 const refreshLockKey = (id: string) => `refresh-lock:${id}`
+const refreshFailedKey = (id: string) => `refresh-failed:${id}`
 const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms))
 
 /** Cookie のヘッダーから name の値を取り出す。値を読めなければ undefined を返す。 */
@@ -64,7 +78,8 @@ export const expiresAtOf = (tokens: Tokens, now: number) =>
  * リクエストの cookie のセッションを返す。access token の期限が近ければ refresh token で更新して置き直す。
  *
  * セッションが無いとき、期限が切れて更新できないときは undefined を返す。Hydra が refresh token を拒んだときだけ、
- * セッションを消す。通信の失敗では消さず、access token がまだ使えればそれを返し、使えなければ投げる。
+ * セッションを消す。そのほかの失敗では消さず、access token がまだ使えればそれを返し、使えなければ SessionUnavailableError を投げる。
+ * 更新は 1 回の呼び出しで 1 度だけ試し、失敗しても試し直さない。一時的に失敗した後の 10 秒は、ほかの呼び出しも試さない（ADR-0044）。
  */
 export const readSession = async (
   request: Request,
@@ -77,6 +92,11 @@ export const readSession = async (
   const now = (deps.now ?? Date.now)()
   if (session.expiresAt === undefined || session.expiresAt - REFRESH_MARGIN_MS > now) return session
   if (session.refreshToken === undefined) return session.expiresAt > now ? session : undefined
+  // 少し前に refresh が一時的に失敗していたら試し直さず、失敗したときと同じに扱う
+  if (await deps.store.exists(refreshFailedKey(id))) {
+    if (session.expiresAt > now) return session
+    throw new SessionUnavailableError()
+  }
   return refreshOnce(id, session, now, deps)
 }
 
@@ -112,7 +132,13 @@ const refresh = async (
       if (latest.accessToken !== session.accessToken) return latest
       if (!(await deps.store.exists(lockKey))) break
     }
-    return stillValid(session) ? session : undefined
+    // 読んだ後、鍵を見る前に、鍵を持つリクエストが置き直すか消してから鍵を放すことがある。その結果を読み直す
+    const latest = await deps.store.get<Session>(sessionKey(id))
+    if (latest === undefined) return undefined
+    if (latest.accessToken !== session.accessToken) return latest
+    // 鍵を持つリクエストが更新できなかったか、待ちの上限を過ぎた。鍵を持つ側と同じく、セッションを残して一時的な失敗にする
+    if (stillValid(session)) return session
+    throw new SessionUnavailableError()
   }
   try {
     // 鍵を取る前に、ほかのリクエストが更新し終えていることがある。古い refresh token を送らないよう読み直す
@@ -120,25 +146,34 @@ const refresh = async (
     if (latest === undefined) return undefined
     if (latest.accessToken !== session.accessToken || latest.refreshToken === undefined)
       return latest
+    let tokens: Tokens
     try {
-      const tokens = await deps.oidc.refresh(latest.refreshToken)
-      const refreshed: Session = {
-        ...latest,
-        accessToken: tokens.accessToken,
-        refreshToken: tokens.refreshToken ?? latest.refreshToken,
-        expiresAt: expiresAtOf(tokens, now),
-        idToken: tokens.idToken ?? latest.idToken,
-      }
-      return (await deps.store.replace(sessionKey(id), refreshed)) ? refreshed : undefined
+      tokens = await deps.oidc.refresh(latest.refreshToken)
     } catch (error) {
+      // トークンとセッションの ID は書かない
+      console.warn(JSON.stringify({ msg: 'session refresh failed', ...refreshFailureOf(error) }))
       if (error instanceof GrantRejectedError) {
         await deps.store.delete(sessionKey(id))
         return undefined
       }
+      await deps.store.set(refreshFailedKey(id), true, REFRESH_FAILED_TTL_SECONDS)
       if (stillValid(latest)) return latest
-      throw error
+      throw new SessionUnavailableError()
     }
+    // refresh の失敗の率の分母にする（context/operations.md の監視の項目とアラートの条件）
+    console.info(JSON.stringify({ msg: 'session refreshed' }))
+    const refreshed: Session = {
+      ...latest,
+      accessToken: tokens.accessToken,
+      refreshToken: tokens.refreshToken ?? latest.refreshToken,
+      expiresAt: expiresAtOf(tokens, now),
+      idToken: tokens.idToken ?? latest.idToken,
+    }
+    return (await deps.store.replace(sessionKey(id), refreshed)) ? refreshed : undefined
   } finally {
-    await deps.store.unlock(lockKey, token)
+    // 鍵は期限で切れるので、放せなくても結果を返す。放す失敗で、refresh の結果のエラーを上書きしない
+    await deps.store.unlock(lockKey, token).catch(() => {
+      console.warn(JSON.stringify({ msg: 'session refresh unlock failed' }))
+    })
   }
 }

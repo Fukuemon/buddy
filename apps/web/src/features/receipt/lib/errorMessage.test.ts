@@ -22,6 +22,10 @@ describe('checkErrorMessage', () => {
       '照合の権限を確認できませんでした',
     )
     expect(checkErrorMessage(new ApiError(503, 'x'))).toContain('予定の CSV で照合')
+    // ログインの期限を延ばせなかった 503 は、Google カレンダーの準備の文にしない
+    expect(checkErrorMessage(new ApiError(503, 'x', [], 'session_unavailable'))).toContain(
+      '時間をおいて',
+    )
     expect(checkErrorMessage(new ApiError(500, 'x'))).toContain('時間をおいて')
     expect(checkErrorMessage(new TypeError('Failed to fetch'))).toContain('時間をおいて')
   })

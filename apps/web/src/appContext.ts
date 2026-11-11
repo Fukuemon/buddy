@@ -2,6 +2,7 @@ import { QueryClient } from '@tanstack/react-query'
 
 import { ApiError, type BuddyApi, type ReceiptApi } from '#/api/BuddyApi'
 import { createBuddyApi, type ApiMode } from '#/api/createBuddyApi'
+import { isSessionUnavailable, SESSION_UNAVAILABLE_CODE } from '#/api/sessionUnavailable'
 import type { Viewer } from '#/api/types'
 
 /** route の loader と部品が共有する値。ログインした職員は、root の route の beforeLoad が足す。 */
@@ -19,10 +20,13 @@ const MAX_RETRIES = 3
 
 /**
  * 失敗した取得を取り直すか。4xx は取り直しても同じ結果になるので、すぐに失敗の表示にする。
+ * ログインの期限を延ばせなかった失敗も取り直さない。1 回の表示で refresh を 1 度だけ試すためである（ADR-0044）。
  * 規則は docs/screens/rules.md の「エラーの見せ方」にある。
  */
 export const shouldRetryQuery = (failureCount: number, error: Error) =>
   !(error instanceof ApiError && error.status >= 400 && error.status < 500) &&
+  !(error instanceof ApiError && error.code === SESSION_UNAVAILABLE_CODE) &&
+  !isSessionUnavailable(error) &&
   failureCount < MAX_RETRIES
 
 /**

@@ -8,10 +8,72 @@ import type { ServerConfig } from './config'
  * 12 時間を過ぎたログイン）は access_denied になる。
  */
 export class GrantRejectedError extends Error {
-  constructor() {
+  /** Hydra が返した OAuth のエラーの値（invalid_grant か access_denied）。ログに出す。 */
+  readonly oauthError: string
+
+  constructor(oauthError: string) {
     super('Hydra が refresh token を拒んだ')
     this.name = 'GrantRejectedError'
+    this.oauthError = oauthError
   }
+}
+
+/**
+ * Hydra が refresh に、openid-client が形の合わないものとして扱うレスポンス（5xx など）を返したときに投げる。
+ * openid-client はその本文を読まないので、OAuth のエラーの値をここで読む。
+ * 障害の間は、ブローカーの token_hook が失敗した server_error が返る。
+ */
+export class HydraRefreshError extends Error {
+  /** Hydra が返した HTTP の状態コード。 */
+  readonly status: number
+  /** 本文の OAuth のエラーの値。本文が JSON でなければ undefined。 */
+  readonly oauthError?: string
+
+  constructor(status: number, oauthError?: string) {
+    super(`Hydra が refresh に ${status} を返した`)
+    this.name = 'HydraRefreshError'
+    this.status = status
+    this.oauthError = oauthError
+  }
+}
+
+/** openid-client が、Hydra のレスポンスを形が合わないとして投げたエラーなら、HydraRefreshError にする。ほかは undefined を返す。 */
+const toHydraRefreshError = async (error: unknown) => {
+  if (!(error instanceof client.ClientError) || error.code !== 'OAUTH_RESPONSE_IS_NOT_CONFORM')
+    return undefined
+  const response = error.cause
+  if (!(response instanceof Response)) return undefined
+  const body = (await response.json().catch(() => undefined)) as { error?: unknown } | undefined
+  return new HydraRefreshError(
+    response.status,
+    typeof body?.error === 'string' ? body.error : undefined,
+  )
+}
+
+/**
+ * refresh の失敗の種類。ログの reason に出す（context/operations.md の監視の項目とアラートの条件）。
+ * rejected は Hydra が refresh token を拒んだ、hydra_error は Hydra がそのほかのエラーを返した、timeout は待ちの上限を過ぎた、
+ * unreachable は Hydra に届かなかった、other はそれ以外である。
+ */
+export type RefreshFailureReason = 'rejected' | 'hydra_error' | 'timeout' | 'unreachable' | 'other'
+
+/**
+ * refresh が投げた error から、失敗の種類と、Hydra が返した OAuth のエラーの値と HTTP の状態コードを取り出す。トークンは含めない。
+ */
+export const refreshFailureOf = (
+  error: unknown,
+): { reason: RefreshFailureReason; error?: string; status?: number } => {
+  if (error instanceof GrantRejectedError) return { reason: 'rejected', error: error.oauthError }
+  if (error instanceof HydraRefreshError)
+    return { reason: 'hydra_error', error: error.oauthError, status: error.status }
+  if (error instanceof client.ResponseBodyError)
+    return { reason: 'hydra_error', error: error.error, status: error.status }
+  // openid-client は、待ちの上限を過ぎると code が OAUTH_TIMEOUT の ClientError を、つながらないと fetch の TypeError を投げる。
+  // oauth4webapi が引数の誤りで投げる TypeError は code を持つので、届かなかったものに数えない
+  if (error instanceof client.ClientError && error.code === 'OAUTH_TIMEOUT')
+    return { reason: 'timeout' }
+  if (error instanceof TypeError && !('code' in error)) return { reason: 'unreachable' }
+  return { reason: 'other' }
 }
 
 /** トークンのエンドポイントのレスポンスのうち、BFF が使う値。 */
@@ -49,7 +111,7 @@ export interface OidcClient {
 const REJECTED_GRANT_ERRORS = new Set(['invalid_grant', 'access_denied'])
 
 /** error が、Hydra が refresh token を拒んだことを示すかを返す。 */
-export const isGrantRejected = (error: unknown) =>
+export const isGrantRejected = (error: unknown): error is client.ResponseBodyError =>
   error instanceof client.ResponseBodyError && REJECTED_GRANT_ERRORS.has(error.error)
 
 /** Hydra へのリクエストを待つ上限。auth.ts の更新の鍵の期限より短くする。 */
@@ -119,9 +181,9 @@ export const createOidcClient = async (cfg: ServerConfig['oidc']): Promise<OidcC
         return toTokens(await client.refreshTokenGrant(config, refreshToken))
       } catch (error) {
         if (isGrantRejected(error)) {
-          throw new GrantRejectedError()
+          throw new GrantRejectedError(error.error)
         }
-        throw error
+        throw (await toHydraRefreshError(error)) ?? error
       }
     },
   }

@@ -17,7 +17,7 @@ import { loginHref, useRecheckPermissionsOnViewerChange, viewerQueryOptions } fr
 import { SiteHeader } from '#/components/layout/SiteHeader'
 import { SiteLayoutContainer } from '#/components/layout/SiteLayoutContainer'
 import { siteNavHrefOf } from '#/components/layout/SiteNav'
-import { PageErrorMessage } from '#/components/page/PageErrorMessage'
+import { PageFailureMessage } from '#/components/page/PageFailureMessage'
 import { PageForbiddenMessage } from '#/components/page/PageForbiddenMessage'
 import { CalendarReviewBadgeContainer } from '#/features/calendar/components/CalendarReviewBadgeContainer'
 
@@ -136,7 +136,7 @@ function RootError({ error }: ErrorComponentProps) {
     <div className="flex h-dvh flex-col">
       <SiteHeader />
       <main className="grow">
-        <PageErrorMessage reloadHref={href} />
+        <PageFailureMessage error={error} reloadHref={href} />
       </main>
     </div>
   )

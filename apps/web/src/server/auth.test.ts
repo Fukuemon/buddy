@@ -10,6 +10,8 @@ import {
   viewerOf,
   type AuthDeps,
 } from './auth'
+import { SessionUnavailableError } from '#/api/sessionUnavailable'
+
 import type { OidcClient } from './oidc'
 import { readSession, type Session } from './session'
 import { createMemorySessionStore } from './sessionStore'
@@ -367,6 +369,32 @@ describe('readViewer', () => {
       schedulePolicies: [],
     })
     expect(getMe).toHaveBeenCalledWith('at')
+  })
+
+  it('ログインの期限を延ばせなければ、SessionUnavailableError をそのまま投げる', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const { deps } = setup({
+      oidc: fakeOidc({
+        refresh: async () => {
+          throw new TypeError('fetch failed')
+        },
+      }),
+    })
+    await deps.store.set(
+      'session:id-1',
+      {
+        ...VIEWER,
+        accessToken: 'at',
+        refreshToken: 'rt',
+        expiresAt: 1_000_000 - 1,
+      } satisfies Session,
+      60,
+    )
+    const request = new Request('http://web.test/', {
+      headers: { Cookie: `buddy_session=${encodeURIComponent(signValue('id-1', SECRET))}` },
+    })
+    await expect(readViewer(request, deps)).rejects.toBeInstanceOf(SessionUnavailableError)
+    warn.mockRestore()
   })
 
   it('GET /v1/me が失敗したとき、届かないときは、セッションの値を返す', async () => {
