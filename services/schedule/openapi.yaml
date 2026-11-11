@@ -14,9 +14,11 @@ info:
       google_primary、staff_has_assignments、patient_has_schedules と、
       予定の管理の移行の cutover_open、cutover_not_google_primary、cutover_sync_not_ready、cutover_not_open、cutover_incomplete と、
       google_primary の事業所で Google カレンダーに予定を書く calendar_not_linked、google_write_pending、google_event_changed、google_event_not_found、
-      google_calendar_unwritable、google_event_rejected、google_write_unknown、google_unavailable のいずれかである。
+      google_calendar_unwritable、google_event_rejected、google_write_unknown、google_unavailable と、
+      トークンを検証する準備ができていない auth_unavailable のいずれかである。
     - `/v1` は全て、Hydra が発行した access token（JWT）を `Authorization: Bearer` で求める。
       トークンがないか検証に失敗したときは 401 を、トークンの組織と職員の事業所が、パスの指す事業所と違うときは 403 を返す。
+      Hydra の discovery の文書をまだ読めていないときは、トークンを検証せずに 503 を返す。`code` は auth_unavailable で、時間をおいてやり直せば通る。
     - 読めないクエリ（例は `;` を含むもの）は 400 を返す。
 security:
   - bearerAuth: []
@@ -59,7 +61,7 @@ paths:
       tags: [health]
       operationId: getReadyz
       summary: リクエストを受けられるかを返す
-      description: DB に届けば 200、届かなければ 503 を返す。
+      description: Hydra の discovery の文書を 1 度読めて、DB に届けば 200 を返す。discovery をまだ読めていないか、DB に届かなければ 503 を返す。discovery を読めた後は、Hydra に届くかを確認しない。
       security: []
       responses:
         "200":
@@ -68,7 +70,7 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/Health" }
         "503":
-          description: DB に届かない
+          description: discovery をまだ読めていないか、DB に届かない
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Health" }
@@ -2390,6 +2392,7 @@ components:
             - google_event_rejected
             - google_write_unknown
             - google_unavailable
+            - auth_unavailable
         message:
           type: string
           description: 人が読む日本語の説明。文言は変わることがあるので、利用者の分岐は `code` で行う

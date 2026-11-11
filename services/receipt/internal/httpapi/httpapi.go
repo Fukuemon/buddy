@@ -3,6 +3,7 @@
 package httpapi
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"log/slog"
@@ -33,6 +34,8 @@ type Config struct {
 	Permission PermissionChecker
 	// AllowOrigins は、CORS でレスポンスを読ませる Origin である。空なら CORS のヘッダーを返さない。
 	AllowOrigins []string
+	// Ready は GET /readyz が確認する関数で、エラーを返せば 503 にする。nil なら常にリクエストを受けられるとみなす。
+	Ready func(context.Context) error
 }
 
 type server struct {

@@ -33,7 +33,7 @@ export interface paths {
         };
         /**
          * リクエストを受けられるかを返す
-         * @description DB に届けば 200、届かなければ 503 を返す。
+         * @description Hydra の discovery の文書を 1 度読めて、DB に届けば 200 を返す。discovery をまだ読めていないか、DB に届かなければ 503 を返す。discovery を読めた後は、Hydra に届くかを確認しない。
          */
         get: operations["getReadyz"];
         put?: never;
@@ -1160,7 +1160,7 @@ export interface components {
         Time: string;
         Error: {
             /** @enum {string} */
-            code: "invalid_input" | "unauthenticated" | "forbidden" | "not_found" | "conflict" | "internal" | "calendar_unreadable" | "calendar_unavailable" | "calendar_not_configured" | "calendar_taken" | "calendar_already_linked" | "staff_has_calendar" | "import_running" | "import_preview_changed" | "export_not_in_review" | "google_primary" | "staff_has_assignments" | "patient_has_schedules" | "cutover_open" | "cutover_not_google_primary" | "cutover_sync_not_ready" | "cutover_not_open" | "cutover_incomplete" | "calendar_not_linked" | "google_write_pending" | "google_event_changed" | "google_event_not_found" | "google_calendar_unwritable" | "google_event_rejected" | "google_write_unknown" | "google_unavailable";
+            code: "invalid_input" | "unauthenticated" | "forbidden" | "not_found" | "conflict" | "internal" | "calendar_unreadable" | "calendar_unavailable" | "calendar_not_configured" | "calendar_taken" | "calendar_already_linked" | "staff_has_calendar" | "import_running" | "import_preview_changed" | "export_not_in_review" | "google_primary" | "staff_has_assignments" | "patient_has_schedules" | "cutover_open" | "cutover_not_google_primary" | "cutover_sync_not_ready" | "cutover_not_open" | "cutover_incomplete" | "calendar_not_linked" | "google_write_pending" | "google_event_changed" | "google_event_not_found" | "google_calendar_unwritable" | "google_event_rejected" | "google_write_unknown" | "google_unavailable" | "auth_unavailable";
             /** @description 人が読む日本語の説明。文言は変わることがあるので、利用者の分岐は `code` で行う */
             message: string;
         };
@@ -2062,7 +2062,7 @@ export interface operations {
                     "application/json": components["schemas"]["Health"];
                 };
             };
-            /** @description DB に届かない */
+            /** @description discovery をまだ読めていないか、DB に届かない */
             503: {
                 headers: {
                     [name: string]: unknown;

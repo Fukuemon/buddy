@@ -26,6 +26,10 @@ describe('checkErrorMessage', () => {
     expect(checkErrorMessage(new ApiError(503, 'x', [], 'session_unavailable'))).toContain(
       '時間をおいて',
     )
+    // 照合の API がトークンを検証する準備をまだ終えていない 503 も、Google カレンダーの準備の文にしない
+    expect(checkErrorMessage(new ApiError(503, 'x', [], 'auth_unavailable'))).toContain(
+      '時間をおいて',
+    )
     expect(checkErrorMessage(new ApiError(500, 'x'))).toContain('時間をおいて')
     expect(checkErrorMessage(new TypeError('Failed to fetch'))).toContain('時間をおいて')
   })

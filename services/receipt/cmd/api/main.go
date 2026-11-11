@@ -19,6 +19,9 @@
 //
 // `api healthcheck` は、サーバーを起動せず、動いているサーバーの GET /readyz を確認して終わる。
 //
+// Hydra の discovery の文書を読めなくても起動を続け、読めるまで 5 秒ごとに読み直す。読めるまでは、GET /readyz が 503 を、
+// トークンの付いたリクエストが 503（auth_unavailable）を返す。
+//
 // SIGINT か SIGTERM を受けると、処理中のリクエストを待ってから終了する。設定のエラーと起動の失敗では終了コード 1 で終わる。
 package main
 
@@ -67,10 +70,8 @@ func run() error {
 	}
 	logger.Info("Google カレンダーのデータソースの設定を読んだ", "enabled", reader != nil)
 
-	verifier, err := oidc.NewVerifier(ctx, cfg.oidc, nil, logger)
-	if err != nil {
-		return err
-	}
+	// Hydra が止まっていても起動を続け、discovery を読めるまで /readyz を 503 にする（ADR-0044 の「冗長化」）
+	verifier := oidc.StartVerifier(ctx, cfg.oidc, nil, logger)
 	checker, err := permission.NewChecker(cfg.scheduleURL)
 	if err != nil {
 		return err
@@ -84,6 +85,7 @@ func run() error {
 			Verifier:       verifier,
 			Permission:     checker,
 			AllowOrigins:   cfg.allowOrigins,
+			Ready:          func(context.Context) error { return verifier.Ready() },
 		}),
 		ReadHeaderTimeout: 10 * time.Second,
 		ReadTimeout:       30 * time.Second,

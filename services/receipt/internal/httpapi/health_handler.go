@@ -11,7 +11,13 @@ func (s *server) GetHealthz(_ context.Context, _ openapi.GetHealthzRequestObject
 	return openapi.GetHealthz200JSONResponse{Status: openapi.Ok}, nil
 }
 
-// GetReadyz は、{"status":"ok"} を返す。依存先は起動のときに確認したので、レスポンスを返せればリクエストを受けられる。
-func (s *server) GetReadyz(_ context.Context, _ openapi.GetReadyzRequestObject) (openapi.GetReadyzResponseObject, error) {
+// GetReadyz は、cfg.Ready が nil を返せば {"status":"ok"} を、エラーを返せば 503 の {"status":"unavailable"} を返す。
+func (s *server) GetReadyz(ctx context.Context, _ openapi.GetReadyzRequestObject) (openapi.GetReadyzResponseObject, error) {
+	if s.cfg.Ready != nil {
+		if err := s.cfg.Ready(ctx); err != nil {
+			s.logger.WarnContext(ctx, "リクエストを受けられない", "error", err)
+			return openapi.GetReadyz503JSONResponse{Status: openapi.Unavailable}, nil
+		}
+	}
 	return openapi.GetReadyz200JSONResponse{Status: openapi.Ok}, nil
 }

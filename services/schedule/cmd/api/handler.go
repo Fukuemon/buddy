@@ -2,6 +2,8 @@ package main
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"log/slog"
 	"net/http"
 
@@ -120,7 +122,7 @@ type handlerConfig struct {
 	// Accounts は openAccounts の戻り値である。nil なら、外部のカレンダーを読む操作は ErrNotConfigured を返す。
 	Accounts *gcal.Accounts
 	// Verifier は、リクエストの access token を検証する。
-	Verifier *oidc.Verifier
+	Verifier *oidc.StartingVerifier
 	Logger   *slog.Logger
 	// Ready は GET /readyz が依存先を確認する関数で、nil なら常にリクエストを受けられるとみなす。
 	Ready func(ctx context.Context) error
@@ -198,12 +200,17 @@ func calendarAccounts(a *gcal.Accounts) calendar.Accounts {
 	return a
 }
 
-// tokenVerifier は、共有の oidc.Verifier を httpapi.TokenVerifier にする。httpapi は oidc を import しないので、主張の型をここで写す。
-type tokenVerifier struct{ v *oidc.Verifier }
+// tokenVerifier は、共有の oidc.StartingVerifier を httpapi.TokenVerifier にする。httpapi は oidc を import しないので、
+// 主張の型とエラーをここで写す。
+type tokenVerifier struct{ v *oidc.StartingVerifier }
 
-// Verify は、トークンを検証し、主張を principal.Identity にして返す。
+// Verify は、トークンを検証し、主張を principal.Identity にして返す。discovery をまだ読めていなければ、
+// httpapi.ErrVerifierNotReady を包んだエラーを返す。
 func (t tokenVerifier) Verify(ctx context.Context, raw string) (principal.Identity, error) {
 	id, err := t.v.Verify(ctx, raw)
+	if errors.Is(err, oidc.ErrNotReady) {
+		return principal.Identity{}, fmt.Errorf("%w: %w", httpapi.ErrVerifierNotReady, err)
+	}
 	return principal.Identity{Subject: id.Subject, OrgID: id.OrgID}, err
 }
 
