@@ -228,6 +228,8 @@ flowchart TB
 - タイトルは「buddy を一時的に使えません」、説明の文は「ログインしたまま、しばらく待ってから読み直してください。」。
 - 「読み直す」のリンクを押すと、今の画面の URL を読み込み直す。
 - E2E が指す目印は、表示の全体の `page-unavailable`。
-  - この状態はモックを持たないので、`page-unavailable` の正本はこのセクションである。
-- 実装は `apps/web/src/routes/__root.tsx` の `RootError` と、`apps/web/src/components/page/PageUnavailableMessage.tsx`。
+  - この状態はモックを持たないので、`page-unavailable` の元はこのセクションである。
+- 実装は `apps/web/src/routes/__root.tsx` の `RootError` と、`apps/web/src/components/page/` の次の 2 つ。
+  - `PageFailureMessage.tsx`: 原因で、この表示か画面を表示できない表示かを選ぶ
+  - `PageUnavailableMessage.tsx`: この表示
 - カタログ: [PageUnavailableMessage の Default](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-common-pageunavailablemessage--default)

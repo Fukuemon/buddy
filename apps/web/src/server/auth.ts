@@ -230,6 +230,7 @@ export const viewerOf = ({
  * 権限は、ログインのときにセッションへ写した値ではなく、その度に GET /v1/me で読み直す。
  * ログインの後に職員の管理の画面で権限を変えても、ログインし直さずに画面の出し分けへ写すためである。
  * GET /v1/me が失敗したとき、届かないときは、セッションの値を返す。拒むのは各 API である。
+ * ログインの期限を延ばせなかったときは、readSession の SessionUnavailableError をそのまま投げる。root の route が、一時的に使えない表示にする。
  */
 export const readViewer = async (request: Request, deps: AuthDeps): Promise<Viewer | null> => {
   const session = await readSession(request, deps)

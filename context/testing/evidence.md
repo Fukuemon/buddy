@@ -163,6 +163,8 @@ node .claude/skills/playwright-capture/scripts/collect.mjs packages/e2e/evidence
     - 改修後を、URL を渡さずに撮ってまとめる。
     - 改修前は、`E2E_BASE_URL` を改修前の環境の web（改修前の worktree の `.env` の `WEB_ORIGIN`）に向け、`VARIANT=改修前` でタグ `@compare` のテストだけを撮る。
     - 前準備で API を呼ぶ spec は、`E2E_SCHEDULE_URL`、`E2E_HYDRA_URL` のように spec が使う URL も、改修前の環境に向ける。向けないと、改修後の環境の API を呼ぶ。改修後の compose を止めていれば、前準備が失敗する。URL の環境変数の一覧は `packages/e2e/tests/fixtures/env.ts` にある。
+    - compose のコンテナを docker で操作する spec は、`E2E_COMPOSE_PROJECT` に改修前の worktree の `.env` の `COMPOSE_PROJECT_NAME` を渡す。
+      - 当たるのは、`packages/e2e/tests/fixtures/sessionFaults.ts` を使う spec である。渡さないと、改修後の compose のコンテナを操作する。
     - setup の project は、`E2E_BASE_URL` の環境にログインし、ホストごとのファイルに状態を保存する。改修前の環境でもログインの場面は録画されない。
     - まとめた後に、`compare.sh` で改修前と改修後の判定のスクリーンショットを並べる。
 

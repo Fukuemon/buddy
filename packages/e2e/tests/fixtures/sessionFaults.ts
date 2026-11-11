@@ -4,16 +4,28 @@ import { execFileSync, spawnSync } from 'node:child_process'
 
 import type { BrowserContext } from '@playwright/test'
 
-/** 操作する compose のプロジェクトの名前。main の checkout の compose（buddy）を止めないよう、worktree の .env の値だけを使う。 */
+import { COMPOSE_PROJECT } from './env'
+
+/** 操作する compose のプロジェクトの名前。main の checkout の compose（buddy）は止めない。 */
 const composeProject = () => {
-  const project = process.env.COMPOSE_PROJECT_NAME
-  if (project === undefined || project === 'buddy')
-    throw new Error('worktree の .env の COMPOSE_PROJECT_NAME で、撮る compose を指す')
-  return project
+  if (COMPOSE_PROJECT === undefined || COMPOSE_PROJECT === 'buddy')
+    throw new Error('worktree の .env の COMPOSE_PROJECT_NAME か E2E_COMPOSE_PROJECT で、撮る compose を指す')
+  return COMPOSE_PROJECT
 }
 
 const container = (service: string) => `${composeProject()}-${service}-1`
-const docker = (...args: string[]) => execFileSync('docker', args, { encoding: 'utf8' })
+
+/**
+ * docker を流し、標準出力を返す。失敗したら、docker の操作の名前だけを文にして投げる。
+ * 引数にはセッションの JSON（トークンを含む）が入ることがあるので、例外の文に引数を載せない。
+ */
+const docker = (...args: string[]) => {
+  try {
+    return execFileSync('docker', args, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] })
+  } catch {
+    throw new Error(`docker ${args[0]} が失敗した`)
+  }
+}
 
 /** context の cookie から、web のセッションの ID を取り出す。cookie の値は `ID.署名` である。 */
 const sessionIdOf = async (context: BrowserContext) => {
@@ -30,10 +42,11 @@ const sessionIdOf = async (context: BrowserContext) => {
 export const expireAccessToken = async (context: BrowserContext) => {
   const key = `session:${await sessionIdOf(context)}`
   const raw = docker('exec', container('valkey'), 'valkey-cli', '--raw', 'GET', key).trim()
-  if (raw === '') throw new Error(`セッション ${key} が Valkey に無い`)
+  if (raw === '') throw new Error('セッションが Valkey に無い')
   const session = JSON.parse(raw) as Record<string, unknown>
   const expired = JSON.stringify({ ...session, expiresAt: Date.now() - 1000 })
-  docker('exec', container('valkey'), 'valkey-cli', 'SET', key, expired, 'KEEPTTL', 'XX')
+  const result = docker('exec', container('valkey'), 'valkey-cli', 'SET', key, expired, 'KEEPTTL', 'XX')
+  if (result.trim() !== 'OK') throw new Error('セッションの期限を書き換えられなかった')
 }
 
 /** セッションが Valkey に残っているかを返す。 */
@@ -66,6 +79,7 @@ export const countFailedHookCalls = (since: Date) => {
   const logs = spawnSync('docker', ['logs', '--since', since.toISOString(), container('hydra')], {
     encoding: 'utf8',
   })
+  if (logs.status !== 0) throw new Error('Hydra のログを読めなかった')
   return `${logs.stdout}${logs.stderr}`
     .split('\n')
     .filter((line) => /retrying in|giving up after/.test(line)).length

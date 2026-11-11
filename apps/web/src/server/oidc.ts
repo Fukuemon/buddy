@@ -8,36 +8,37 @@ import type { ServerConfig } from './config'
  * 12 時間を過ぎたログイン）は access_denied になる。
  */
 export class GrantRejectedError extends Error {
-  /** Hydra が返した OAuth のエラーの値。ログに出す。 */
-  readonly code: string
+  /** Hydra が返した OAuth のエラーの値（invalid_grant か access_denied）。ログに出す。 */
+  readonly oauthError: string
 
-  constructor(code = 'invalid_grant') {
+  constructor(oauthError: string) {
     super('Hydra が refresh token を拒んだ')
     this.name = 'GrantRejectedError'
-    this.code = code
+    this.oauthError = oauthError
   }
 }
 
 /**
- * Hydra が refresh に 5xx を返したときに投げる。openid-client は 5xx の本文を読まないので、OAuth のエラーの値をここで読む。
+ * Hydra が refresh に、openid-client が形の合わないものとして扱うレスポンス（5xx など）を返したときに投げる。
+ * openid-client はその本文を読まないので、OAuth のエラーの値をここで読む。
  * 障害の間は、ブローカーの token_hook が失敗した server_error が返る。
  */
 export class HydraRefreshError extends Error {
   /** Hydra が返した HTTP の状態コード。 */
   readonly status: number
   /** 本文の OAuth のエラーの値。本文が JSON でなければ undefined。 */
-  readonly code?: string
+  readonly oauthError?: string
 
-  constructor(status: number, code?: string) {
+  constructor(status: number, oauthError?: string) {
     super(`Hydra が refresh に ${status} を返した`)
     this.name = 'HydraRefreshError'
     this.status = status
-    this.code = code
+    this.oauthError = oauthError
   }
 }
 
-/** openid-client が、Hydra の 5xx を形の合わないレスポンスとして投げたものなら、HydraRefreshError にする。ほかは undefined を返す。 */
-const hydraRefreshErrorOf = async (error: unknown) => {
+/** openid-client が、Hydra のレスポンスを形が合わないとして投げたエラーなら、HydraRefreshError にする。ほかは undefined を返す。 */
+const toHydraRefreshError = async (error: unknown) => {
   if (!(error instanceof client.ClientError) || error.code !== 'OAUTH_RESPONSE_IS_NOT_CONFORM')
     return undefined
   const response = error.cause
@@ -62,15 +63,16 @@ export type RefreshFailureReason = 'rejected' | 'hydra_error' | 'timeout' | 'unr
 export const refreshFailureOf = (
   error: unknown,
 ): { reason: RefreshFailureReason; error?: string; status?: number } => {
-  if (error instanceof GrantRejectedError) return { reason: 'rejected', error: error.code }
+  if (error instanceof GrantRejectedError) return { reason: 'rejected', error: error.oauthError }
   if (error instanceof HydraRefreshError)
-    return { reason: 'hydra_error', error: error.code, status: error.status }
+    return { reason: 'hydra_error', error: error.oauthError, status: error.status }
   if (error instanceof client.ResponseBodyError)
     return { reason: 'hydra_error', error: error.error, status: error.status }
-  // openid-client は、待ちの上限を過ぎると code が OAUTH_TIMEOUT の ClientError を、つながらないと fetch の TypeError を投げる
+  // openid-client は、待ちの上限を過ぎると code が OAUTH_TIMEOUT の ClientError を、つながらないと fetch の TypeError を投げる。
+  // oauth4webapi が引数の誤りで投げる TypeError は code を持つので、届かなかったものに数えない
   if (error instanceof client.ClientError && error.code === 'OAUTH_TIMEOUT')
     return { reason: 'timeout' }
-  if (error instanceof TypeError) return { reason: 'unreachable' }
+  if (error instanceof TypeError && !('code' in error)) return { reason: 'unreachable' }
   return { reason: 'other' }
 }
 
@@ -181,7 +183,7 @@ export const createOidcClient = async (cfg: ServerConfig['oidc']): Promise<OidcC
         if (isGrantRejected(error)) {
           throw new GrantRejectedError(error.error)
         }
-        throw (await hydraRefreshErrorOf(error)) ?? error
+        throw (await toHydraRefreshError(error)) ?? error
       }
     },
   }

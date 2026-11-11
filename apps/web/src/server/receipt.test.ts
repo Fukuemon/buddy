@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { http, HttpResponse } from 'msw'
-import { describe, expect, it } from 'vite-plus/test'
+import { describe, expect, it, vi } from 'vite-plus/test'
 
 import { MAX_RECEIPT_UPLOAD_BYTES } from '#/api/BuddyApi'
 import { parseReceiptForm } from '#/api/bff/receiptCall'
@@ -114,5 +114,39 @@ describe('checkReceipt', () => {
       { auth: await setup(), receiptApiUrl: TEST_RECEIPT_URL },
     )
     expect(anonymous).toMatchObject({ ok: false, status: 401 })
+  })
+
+  it('ログインの期限を延ばせなければ、503 と session_unavailable を返し、API を呼ばない', async () => {
+    server.use(
+      http.all(`${TEST_RECEIPT_URL}/*`, () =>
+        HttpResponse.json({ code: 'internal', message: '呼ばれてはいけない' }, { status: 500 }),
+      ),
+    )
+    const auth = await setup()
+    await auth.store.set(
+      'session:id-1',
+      {
+        staffId: 's',
+        staffName: 'n',
+        facilityId: 'f',
+        accessToken: 'access-1',
+        refreshToken: 'refresh-1',
+        expiresAt: Date.now() - 1000,
+      },
+      60,
+    )
+    auth.oidc = {
+      refresh: async () => {
+        throw new TypeError('fetch failed')
+      },
+    } as unknown as AuthDeps['oidc']
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const failed = await checkReceipt(
+      request(`buddy_session=${signValue('id-1', SECRET)}`),
+      form({ visits: new Blob(['v']), month: '2024-04' }),
+      { auth, receiptApiUrl: TEST_RECEIPT_URL },
+    )
+    warn.mockRestore()
+    expect(failed).toMatchObject({ ok: false, status: 503, code: 'session_unavailable' })
   })
 })

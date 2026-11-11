@@ -1,5 +1,5 @@
 // @vitest-environment node
-import { describe, expect, it, vi } from 'vite-plus/test'
+import { afterEach, describe, expect, it, vi } from 'vite-plus/test'
 
 import { SessionUnavailableError } from '#/api/sessionUnavailable'
 
@@ -36,6 +36,10 @@ const setup = (overrides: Partial<SessionDeps> = {}) => {
   }
   return { deps }
 }
+
+afterEach(() => {
+  vi.restoreAllMocks()
+})
 
 describe('readSession', () => {
   const withSession = async (session: Session, deps: SessionDeps) => {
@@ -188,6 +192,7 @@ describe('readSession', () => {
   })
 
   it('通信の失敗ではセッションを消さず、まだ使える token を返す', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     const { deps } = setup({
       oidc: fakeOidc({
         refresh: async () => {
@@ -201,6 +206,9 @@ describe('readSession', () => {
     )
     expect((await readSession(req, deps))?.accessToken).toBe('old')
     expect(await deps.store.get('session:id-1')).toBeDefined()
+    expect(warn).toHaveBeenCalledWith(
+      JSON.stringify({ msg: 'session refresh failed', reason: 'other' }),
+    )
   })
 
   it('切れた access token の更新が一時的に失敗したら、セッションを残し、試し直さずに SessionUnavailableError を投げる', async () => {
@@ -220,7 +228,6 @@ describe('readSession', () => {
     expect(warn).toHaveBeenCalledWith(
       JSON.stringify({ msg: 'session refresh failed', reason: 'other' }),
     )
-    warn.mockRestore()
   })
 
   it('ほかのリクエストが更新できずに鍵を放し、access token が切れていたら、ログインに戻さず SessionUnavailableError を投げる', async () => {
@@ -248,7 +255,65 @@ describe('readSession', () => {
     )
     expect((await readSession(req, deps))?.accessToken).toBe('access-2')
     expect(info).toHaveBeenCalledWith(JSON.stringify({ msg: 'session refreshed' }))
-    info.mockRestore()
+  })
+
+  it('鍵を見る前に、ほかのリクエストが置き直してから鍵を放していたら、置き直したセッションを返す', async () => {
+    const { deps } = setup()
+    const req = await withSession(
+      { ...VIEWER, accessToken: 'old', refreshToken: 'r', expiresAt: 1_000_000 - 1 },
+      deps,
+    )
+    const token = await deps.store.lock('refresh-lock:id-1', 1000)
+    const get = deps.store.get.bind(deps.store)
+    let reads = 0
+    deps.store.get = async <T>(key: string) => {
+      const value = await get<T>(key)
+      // 待つ側が 1 度目に読んだ後に、鍵を持つ側が置き直して鍵を放す
+      if (key === 'session:id-1' && ++reads === 2) {
+        await deps.store.replace('session:id-1', { ...VIEWER, accessToken: 'by-other' })
+        await deps.store.unlock('refresh-lock:id-1', token as string)
+      }
+      return value
+    }
+    expect((await readSession(req, deps))?.accessToken).toBe('by-other')
+  })
+
+  it('鍵を見る前に、ほかのリクエストがセッションを消してから鍵を放していたら、undefined を返す', async () => {
+    const { deps } = setup()
+    const req = await withSession(
+      { ...VIEWER, accessToken: 'old', refreshToken: 'r', expiresAt: 1_000_000 - 1 },
+      deps,
+    )
+    const token = await deps.store.lock('refresh-lock:id-1', 1000)
+    deps.wait = async () => {
+      await deps.store.delete('session:id-1')
+      await deps.store.unlock('refresh-lock:id-1', token as string)
+    }
+    expect(await readSession(req, deps)).toBeUndefined()
+  })
+
+  it('鍵が待ちの上限を過ぎても放されず、access token が切れていたら、SessionUnavailableError を投げる', async () => {
+    const { deps } = setup()
+    const req = await withSession(
+      { ...VIEWER, accessToken: 'old', refreshToken: 'r', expiresAt: 1_000_000 - 1 },
+      deps,
+    )
+    await deps.store.lock('refresh-lock:id-1', 60_000)
+    await expect(readSession(req, deps)).rejects.toBeInstanceOf(SessionUnavailableError)
+  })
+
+  it('同じプロセスで同時に読んだ 2 つ目の呼び出しも、refresh を試さずに同じエラーになる', async () => {
+    const refresh = vi.fn<OidcClient['refresh']>(async () => {
+      throw new Error('ECONNRESET')
+    })
+    const { deps } = setup({ oidc: fakeOidc({ refresh }) })
+    const req = await withSession(
+      { ...VIEWER, accessToken: 'old', refreshToken: 'r', expiresAt: 1_000_000 - 1 },
+      deps,
+    )
+    const results = await Promise.allSettled([readSession(req, deps), readSession(req, deps)])
+    expect(results.map((r) => r.status)).toEqual(['rejected', 'rejected'])
+    expect(refresh).toHaveBeenCalledTimes(1)
   })
 
   it('refresh token を拒まれたらセッションを消す', async () => {
@@ -269,7 +334,6 @@ describe('readSession', () => {
     expect(warn).toHaveBeenCalledWith(
       JSON.stringify({ msg: 'session refresh failed', reason: 'rejected', error: 'access_denied' }),
     )
-    warn.mockRestore()
   })
 })
 

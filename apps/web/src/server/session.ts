@@ -121,6 +121,10 @@ const refresh = async (
       if (latest.accessToken !== session.accessToken) return latest
       if (!(await deps.store.exists(lockKey))) break
     }
+    // 読んだ後、鍵を見る前に、鍵を持つリクエストが置き直すか消してから鍵を放すことがある。その結果を読み直す
+    const latest = await deps.store.get<Session>(sessionKey(id))
+    if (latest === undefined) return undefined
+    if (latest.accessToken !== session.accessToken) return latest
     // 鍵を持つリクエストが更新できなかったか、待ちの上限を過ぎた。鍵を持つ側と同じく、セッションを残して一時的な失敗にする
     if (stillValid(session)) return session
     throw new SessionUnavailableError()
@@ -131,18 +135,9 @@ const refresh = async (
     if (latest === undefined) return undefined
     if (latest.accessToken !== session.accessToken || latest.refreshToken === undefined)
       return latest
+    let tokens: Tokens
     try {
-      const tokens = await deps.oidc.refresh(latest.refreshToken)
-      // refresh の失敗の率の分母にする（context/operations.md の監視の項目とアラートの条件）
-      console.info(JSON.stringify({ msg: 'session refreshed' }))
-      const refreshed: Session = {
-        ...latest,
-        accessToken: tokens.accessToken,
-        refreshToken: tokens.refreshToken ?? latest.refreshToken,
-        expiresAt: expiresAtOf(tokens, now),
-        idToken: tokens.idToken ?? latest.idToken,
-      }
-      return (await deps.store.replace(sessionKey(id), refreshed)) ? refreshed : undefined
+      tokens = await deps.oidc.refresh(latest.refreshToken)
     } catch (error) {
       // トークンとセッションの ID は書かない
       console.warn(JSON.stringify({ msg: 'session refresh failed', ...refreshFailureOf(error) }))
@@ -153,7 +148,20 @@ const refresh = async (
       if (stillValid(latest)) return latest
       throw new SessionUnavailableError()
     }
+    // refresh の失敗の率の分母にする（context/operations.md の監視の項目とアラートの条件）
+    console.info(JSON.stringify({ msg: 'session refreshed' }))
+    const refreshed: Session = {
+      ...latest,
+      accessToken: tokens.accessToken,
+      refreshToken: tokens.refreshToken ?? latest.refreshToken,
+      expiresAt: expiresAtOf(tokens, now),
+      idToken: tokens.idToken ?? latest.idToken,
+    }
+    return (await deps.store.replace(sessionKey(id), refreshed)) ? refreshed : undefined
   } finally {
-    await deps.store.unlock(lockKey, token)
+    // 鍵は期限で切れるので、放せなくても結果を返す。放す失敗で、refresh の結果のエラーを上書きしない
+    await deps.store.unlock(lockKey, token).catch(() => {
+      console.warn(JSON.stringify({ msg: 'session refresh unlock failed' }))
+    })
   }
 }
