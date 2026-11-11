@@ -53,11 +53,11 @@ flowchart TB
     hydra["Hydra<br/>[コンテナ: Ory Hydra]<br/>トークンの発行"]
     broker["broker<br/>[コンテナ: Go]<br/>ログインと同意、職員の身元"]
     web["web<br/>[コンテナ: TanStack Start]<br/>画面と BFF"]
-    valkey[("Valkey<br/>[データの保存先]<br/>web のセッション")]
+    valkey[("Valkey<br/>[データの保存先]<br/>web のセッション（PostgreSQL に置かないとき）")]
     schedule["schedule<br/>[コンテナ: Go]<br/>事業所、職員、予定、権限"]
     worker["calendar-worker<br/>[コンテナ: Go、予定の API と同じイメージ]<br/>Google カレンダーへの書き出しと同期"]
     receipt["receipt<br/>[コンテナ: Go]<br/>照合"]
-    postgres[("PostgreSQL 18<br/>[データの保存先]<br/>予定の API、ブローカー、Hydra のデータ")]
+    postgres[("PostgreSQL 18<br/>[データの保存先]<br/>予定の API、ブローカー、Hydra のデータと、web のセッション")]
   end
   gcal["Google Calendar API<br/>[外部のシステム]<br/>職員のカレンダーの予定"]
   staff -- "画面を使う" --> web
@@ -69,6 +69,7 @@ flowchart TB
   broker -- "SQL" --> postgres
   hydra -- "SQL" --> postgres
   web -- "セッションを読み書きする" --> valkey
+  web -- "SQL でセッションを読み書きする" --> postgres
   web -- "access token を付けて呼ぶ" --> schedule
   web -- "access token を付けて呼ぶ" --> receipt
   receipt -- "受けた access token で権限を読む" --> schedule
@@ -188,7 +189,9 @@ PRD の 4 つの業務の領域は、次のコンテナが持つ。
 
 表のつなぎ方に足す規則は次のとおり。
 
-- web は、取得したトークンを Valkey のセッションに置く。
+- web は、取得したトークンをセッションに置く。セッションの保存先は、Valkey か PostgreSQL を `SESSION_STORE_URL` で選ぶ。
+  - PostgreSQL では、web 用のデータベースに、値を暗号化して置く。
+  - ADR-0047: [web のセッションを、web 用の PostgreSQL のデータベースに暗号化して置けるようにし、期限の切れた行を web が消す](../adr/0047-web-session-postgres.md)
 - ブローカーは、同意の accept で、access token の `aud`（`schedule`、`receipt`）と `org_id` を決める。
 - 予定の API は、ブローカーを呼ぶときに、Hydra の client credentials で `aud` が `broker` の access token を取って付ける。
 - 2 つの API は、access token の検証に失敗したら 401 を返す。
@@ -247,7 +250,8 @@ buddy がデプロイのために満たす要件は、コンテナのイメー�
 | `OIDC_CLIENT_SECRET` | 使う | 使わない | 使わない | 使わない | web のクライアントのシークレット |
 | `OIDC_AUTHORIZATION_ENDPOINT` | 任意 | 使わない | 使わない | 使わない | ブラウザをリダイレクトする認可の URL |
 | `OIDC_END_SESSION_ENDPOINT` | 任意 | 使わない | 使わない | 使わない | ログアウトでブラウザをリダイレクトする RP-Initiated Logout の URL |
-| `SESSION_STORE_URL` | 使う | 使わない | 使わない | 使わない | Valkey の接続先 |
+| `SESSION_STORE_URL` | 使う | 使わない | 使わない | 使わない | セッションの保存先。`redis://` なら Valkey、`postgres://` か `postgresql://` なら PostgreSQL。PostgreSQL のときは、パスワードと `sslmode` を URL に入れ、シークレットとして扱う |
+| `SESSION_STORE_MAX_CONNS` | 任意 | 使わない | 使わない | 使わない | 保存先が PostgreSQL のときの、インスタンスごとの接続の数の上限。デフォルトは 5 |
 | `SESSION_SECRET` | 使う | 使わない | 使わない | 使わない | cookie の署名の鍵。32 バイト以上 |
 | `SESSION_COOKIE_SECURE` | 任意 | 使わない | 使わない | 使わない | `false` のときだけ、セッションの cookie に Secure を付けない。https でない CI の E2E と、portless を通さずに起動したローカル環境で使う |
 | `PUBLIC_URL` | 任意 | 使わない | 使わない | 使わない | ブラウザが開く web のオリジン。ログインとログアウトの戻り先の URL をこれから作る。TLS を終端するプロキシの後ろで、リクエストの URL が http になるときに渡す。渡さなければリクエストの URL を使う |
@@ -294,7 +298,7 @@ Hydra は discovery の `end_session_endpoint` を Issuer の URL から作る�
 - `GET /healthz`: プロセスが動いていれば 200 を返す。
   - 依存先を確認しない。
 - `GET /readyz`: 依存先に届けば 200、届かなければ 503 を返す。
-  - 予定の API は PostgreSQL、web は Valkey を確認する。
+  - 予定の API は PostgreSQL、web はセッションの保存先（Valkey か PostgreSQL）を確認する。
   - 照合の API は起動のときに Hydra の discovery を読み、読めなければ起動しない。起動した後は依存先を確認せず、プロセスが動いていれば 200 を返す。
 - 2 つとも認証を求めない。
 
@@ -305,6 +309,9 @@ Hydra は discovery の `end_session_endpoint` を Issuer の URL から作る�
 - インフラは、新しいイメージを起動する前に、同じイメージで `migrate up` を 1 回実行する。
   - マイグレーションは、前のバージョンのアプリが動いたまま適用できる変更だけにする。
 - ブローカーのイメージも、`broker` と `migrate` の 2 つのバイナリを持ち、同じ手順でマイグレーションを適用する。
+- web のイメージも `/usr/local/bin/migrate` を持ち、セッションの保存先が PostgreSQL のときは、同じ手順で `up` を渡してセッションのテーブルを作る。
+  - 接続先は `SESSION_STORE_URL` で受ける。接続のプーラーを通さず、直に PostgreSQL につなぐ。
+  - ADR-0047: [web のセッションを、web 用の PostgreSQL のデータベースに暗号化して置けるようにし、期限の切れた行を web が消す](../adr/0047-web-session-postgres.md)
 - Hydra のマイグレーションは、Hydra のイメージの `migrate sql up` で適用する。
 
 ## Cross-Cutting Concerns

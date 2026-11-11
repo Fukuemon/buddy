@@ -161,8 +161,10 @@ Worker は、待ちかカレンダーを取って処理する 1 回（バッチ�
 ## Databases
 
 Hydra、ブローカー、予定の API は、それぞれ自分のデータベースを持つ。  
-検証環境と本番環境では、3 つのデータベースを同じ PostgreSQL のインスタンスに置き、アプリごとに DB のロールを分ける。  
-calendar-worker は、予定の API と同じデータベースとロールを使う。
+web は、セッションを PostgreSQL に置くときだけ、自分のデータベースを持つ。  
+検証環境と本番環境では、これらのデータベースを同じ PostgreSQL のインスタンスに置き、アプリごとに DB のロールを分ける。  
+calendar-worker は、予定の API と同じデータベースとロールを使う。  
+ADR-0047: [web のセッションを、web 用の PostgreSQL のデータベースに暗号化して置けるようにし、期限の切れた行を web が消す](../docs/adr/0047-web-session-postgres.md)
 
 - アプリのロールが CONNECT できるのは、自分のデータベースだけにする。
   - 1 つのアプリの資格が漏れたときに、ほかのアプリのデータベースを読めないようにするためである。
@@ -172,11 +174,16 @@ calendar-worker は、予定の API と同じデータベースとロールを�
 - アプリは、`sslmode=require` 以上で DB につなぐ。
   - Hydra は、`DSN` の `sslmode` で指定する。
   - 予定の API、calendar-worker、ブローカーには、`sslmode` を渡す環境変数が無い。DB のドライバー（pgx）が読む `PGSSLMODE` で指定する。
+  - web は、`SESSION_STORE_URL` の `sslmode` で指定する。
 - 同じインスタンスでは、PostgreSQL の管理者の権限とインスタンスのバックアップが、全てのアプリのデータに届く。管理者の権限とバックアップに触れられる人を絞る。
 - 次のときは、インスタンスを分ける。
   - 規制や監査で、物理的な分離を求められたとき
   - DB の管理者をアプリごとに分けるとき
   - Hydra が求める PostgreSQL のバージョンが、業務の DB と合わないとき
+- web の接続の数は、web のインスタンスの数に `SESSION_STORE_MAX_CONNS`（デフォルト 5）を掛けた数まで増える。ほかのアプリの接続のプールと足して、DB の接続の数の上限に収める。
+  - web は、使っていない接続を 30 秒で閉じる。
+- web は、期限の切れたセッションの行を、10 分ごとに自分で消す。インフラのジョブは要らない。
+  - 消すのに失敗すると、警告のログ（`msg` が `session purge failed`）を書く。期限の切れた行は読まれないので、続いても動きは変わらないが、行が増える。
 - ローカル環境の compose は、1 つの DB のロールで全てのデータベースにつなぐ。開発用の構成なので、この要件の対象外である。
 
 ### Hydra の DB を失ったとき
@@ -239,6 +246,8 @@ hydra janitor -c <hydra serve の設定ファイル> -e --tokens --requests --gr
 ## Secrets
 
 - シークレットは、`OIDC_CLIENT_SECRET`、`SESSION_SECRET`、`DB_PASSWORD`、Google の Workload Identity Federation の外部アカウントの設定である。
+  - web のセッションを PostgreSQL に置くときは、パスワードを含む `SESSION_STORE_URL` もシークレットである。
+  - web は、PostgreSQL に置くセッションの値を、`SESSION_SECRET` から導いた鍵で暗号化する。`SESSION_SECRET` を替えると、置いたセッションが全て読めなくなり、全ての職員のログインが切れる。
   - ブローカーでは、上流の IdP の client secret のファイル（`UPSTREAM_IDP_CLIENT_SECRETS_FILE`）と、token_hook のヘッダーの値（`TOKEN_HOOK_KEY`）もシークレットである。
   - ブローカーの、ログインの途中の cookie に署名する鍵（`LOGIN_COOKIE_KEYS`）もシークレットである。
     - `LOGIN_COOKIE_KEYS` は、カンマで区切った 32 バイト以上の鍵である。ブローカーは先頭の鍵で署名し、全ての鍵で検証する。

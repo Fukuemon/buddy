@@ -55,6 +55,20 @@ jobs:
   typescript:
     runs-on: ${{ fromJSON(vars.RUNS_ON || '"ubuntu-latest"') }}
     timeout-minutes: 15
+    # web の PostgreSQL のセッションの保存先のテストが、このデータベースにつなぐ（ADR-0045）。
+    # self-hosted runner の機械のローカル環境の compose とぶつからないよう、ポートを compose のデフォルトからずらす
+    services:
+      postgres:
+        image: postgres:18.6
+        env:
+          POSTGRES_DB: web
+          POSTGRES_USER: buddy
+          POSTGRES_PASSWORD: buddy-dev
+        ports: ['127.0.0.1:25433:5432']
+        options: >-
+          --health-cmd "pg_isready -U buddy -d web" --health-interval 2s --health-timeout 5s --health-retries 30
+    env:
+      SESSION_STORE_TEST_URL: postgres://buddy:buddy-dev@127.0.0.1:25433/web
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
