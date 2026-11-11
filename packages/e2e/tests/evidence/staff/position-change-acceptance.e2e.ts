@@ -173,7 +173,7 @@ const issueTokenOf = async (email: string) => {
   }
 }
 
-/** 事業所で、職員の管理の権限を持つ有効な職員の ID を返す。s4 の前提（撮る職員が唯一の有効な管理者）を確かめるのに使う。 */
+/** 事業所で、職員の管理の権限を持つ有効な職員の ID を返す。s4 の前提（撮る職員が唯一の有効な管理者）を確認するのに使う。 */
 const activeManagers = async (request: APIRequestContext, token: string) => {
   const res = await listStaff(request, token, FACILITY_ID)
   if (!res.ok()) throw new Error(`職員を一覧できない: ${res.status()} ${await res.text()}`)
