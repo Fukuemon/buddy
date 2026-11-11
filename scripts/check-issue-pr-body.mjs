@@ -84,20 +84,9 @@ export function checkSections(body) {
 }
 
 /**
- * pull request のタイトルが issue のタイトルと違えば、指摘の文を返す。
- * 分けた pull request の、末尾の「（n/m 内容）」か「（n 内容）」の付け足しは通す。
- */
-export function checkPullRequestTitle(title, issueTitle) {
-  if (title === issueTitle) return []
-  if (title.startsWith(`${issueTitle}（`) && /（\d+(\/\d+)? .+）$/.test(title)) return []
-  return [
-    `タイトルが issue のタイトル「${issueTitle}」と違う。分けたときは末尾に「（n/m 内容）」を付ける`,
-  ]
-}
-
-/**
  * pull request の指摘を、errors（チェックを失敗にする）と warnings（知らせるだけ）に分けて返す。
  * issueTitle は、リンク先の issue のタイトル。issue が無ければ null。
+ * pull request のタイトルは、その pull request がした内容の 1 文なので、issue のタイトルと比べない。
  */
 export function checkPullRequest({ repo, number, title, body, issueTitle }) {
   const errors = [...checkTitle(title), ...checkCommon(body), ...checkSections(body)]
@@ -106,8 +95,6 @@ export function checkPullRequest({ repo, number, title, body, issueTitle }) {
     errors.push('本文の先頭の行が `Closes #<番号>` か `Refs #<番号>` ではない')
   } else if (issueTitle === null) {
     errors.push(`本文の先頭の行が指す #${link.number} の issue が無い`)
-  } else {
-    errors.push(...checkPullRequestTitle(title, issueTitle))
   }
   const warnings = []
   // エビデンスはスレッドで確認を受けてから本文の表に並べるので、スレッドへのリンクだけで動画の URL が無ければ、並べ忘れである
