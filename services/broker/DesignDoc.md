@@ -496,7 +496,7 @@ Hydra は、トークンを発行するたびに `oauth2.token_hook` でブロ�
   - `org_id` は同意で職員のトークンにだけ入る。
   - `INTERNAL_API_CLIENTS`（デフォルトは `schedule`）のクライアントには、全ての操作を許す。
   - `INTERNAL_API_ONBOARDING_CLIENTS`（デフォルトは `schedule-ops`）のクライアントには、職員の登録、有効化、登録の途中の職員の削除だけを許す。予定の API の運営用の CLI が、事業所と最初のマネージャーの登録に使う。
-  - ADR-0043: [事業所と最初のマネージャーを予定の API の運営用の CLI で登録し、ブローカーは運営用のクライアントに職員の登録だけを許す](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0043-facility-onboarding-cli.md)
+  - ADR-0052: [事業所と最初のマネージャーを予定の API の運営用の CLI で登録し、ブローカーは運営用のクライアントに職員の登録と結び付けを外す操作だけを許す](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0052-facility-onboarding-cli-unlink.md)
 
 | パス | 働き | 主な応答 |
 | --- | --- | --- |

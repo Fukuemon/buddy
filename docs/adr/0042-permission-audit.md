@@ -2,7 +2,7 @@
 
 ## Status
 
-承認
+ADR-0051 に置換
 
 ## Context
 
