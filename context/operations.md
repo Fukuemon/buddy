@@ -1,7 +1,7 @@
 ---
 type: context
 title: 基盤と運用
-description: 環境の種類、デプロイと切り戻しの条件、監視、ログインとトークンの発行の障害の監視と復旧、Google カレンダーの Worker の動かし方、DB の分け方と権限、Hydra の DB と期限の切れた行の扱い、シークレットの配置先の方針、事業所を足す手順、CI のランナーの切り替え
+description: 環境の種類、デプロイと切り戻しの条件、監視、認証を求めないルートの規則、ログインとトークンの発行の障害の監視と復旧、Google カレンダーの Worker の動かし方、DB の分け方と権限、Hydra の DB と期限の切れた行の扱い、シークレットの配置先の方針、事業所を足す手順、CI のランナーの切り替え
 status: stable
 ---
 
@@ -41,6 +41,20 @@ buddy のコードと設定は、特定のデプロイ先を前提にしない�
   - トークン、cookie、DB の接続の設定、利用者の名前、CSV の中身をログに出さない。
 - ログとメトリクスを集める先と、通知の条件は、インフラのリポジトリが決める。
   - ログインとトークンの発行の監視の項目と、アラートの条件の推奨の値は、[Login and Token Failures](#login-and-token-failures) にある。
+
+## Public Routes
+
+本番と検証環境では、予定の API、照合の API、ブローカーの内部の API に、インターネットから届く。  
+インフラの側はルートを絞らないので、守りはアプリの認証（access token と、token_hook の `Token-Hook-Key`）だけである。
+
+- 3 つのサービスで認証を求めないルートは、`GET /healthz` と `GET /readyz` だけにする。
+- 認証を求めないルートを足すときは、先にインフラの側に知らせ、この規則と次のテストを直す。
+- 3 つのサービスの `internal/httpapi/public_routes_test.go` が、資格情報の無いリクエストを 401 で拒まないルートを見つけると失敗する。
+  - 予定の API は、gin のルーターに登録したルートを読む。
+  - 照合の API は、`openapi.yaml` の操作と、トークンを求めないパスの一覧（`publicPaths`）を読む。
+  - ブローカーは、`internal/httpapi` と `internal/internalapi` のソースから、`Handle` と `HandleFunc` に渡したルートを読む。
+- ブローカーのログインの画面は、インターネットから開く画面なので、この規則の対象にしない。
+- ローカル環境だけで動かす `devissuer` と `gcalhold` は、本番のイメージに入らないので、対象にしない。
 
 ## Login and Token Failures
 

@@ -16,6 +16,7 @@ status: stable
 | Go の結合テスト（リポジトリ） | SQL が、マイグレーションとシードを適用した PostgreSQL で期待どおりに動く | `services/schedule/internal/postgres` | 同上（`-short` で飛ばす） |
 | Go のトークンの検証のテスト | access token の署名、`iss`、`aud`、期限の検証 | `packages/go/oidc`（テストの中で鍵を作るフェイクの Issuer） | 同上 |
 | Go のハンドラのテスト | 状態コード、レスポンスの本文、認証と事業所の確認 | `services/schedule/internal/httpapi`、`services/receipt/internal/httpapi` | 同上 |
+| 認証を求めないルートのテスト | 認証を求めないルートが `GET /healthz` と `GET /readyz` だけである（[基盤と運用](operations.md) の「Public Routes」） | 3 つのサービスの `internal/httpapi/public_routes_test.go` | 同上 |
 | 照合の互換のテスト | Go の照合が、元の Python の実装と同じ結果を返す | `services/receipt/internal/check/parity_test.go` と `testdata/parity/` | `go test ./...`。期待値の作り直しは `tools/parity/run.sh` |
 | web の単体とコンポーネントのテスト | 変換、表示の規則（照合の印と CSV）、コンポーネントの操作 | 対象の隣の `*.test.ts(x)`。コンポーネントは story を `composeStories` で使う | `pnpm --filter @buddy/web test`（jsdom） |
 | デザインシステムのテスト | 押せる領域とフォーカスの移り方、story の描画とアクセシビリティ | `packages/ui/src` の `*.test.tsx` と story | `pnpm --filter @buddy/ui test`（ブラウザ） |
