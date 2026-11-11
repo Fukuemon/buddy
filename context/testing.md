@@ -40,6 +40,7 @@ status: stable
   - CI の `typescript` のジョブは、PostgreSQL のサービスのコンテナに向けて渡す。
 - `packages/ui` のテストは、Playwright の chromium が要る（`pnpm --filter @buddy/ui exec playwright install chromium`）。
 - E2E は、ルートの compose の全体（ポートは [CONTRIBUTING.md](../CONTRIBUTING.md) の Running Locally）と、Playwright の chromium が要る。
+- token_hook とブローカーの故障を入れる測定（`pnpm --filter @buddy/e2e faults`）は、E2E と同じものに加えて、compose の override を重ねて起動し直す。CI では流さない。流し方は [基盤と運用](operations.md) の「故障を入れる仕組み」にある。
 - 照合の互換のテストの期待値を作り直すときだけ、元の Python の実装のチェックアウトと uv が要る（`services/receipt/tools/parity/README.md`）。
 
 ## Mocking and Test Data

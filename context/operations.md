@@ -113,7 +113,33 @@ hook の 403 でセッションが消えた職員を除いて、職員の操作�
 ### 故障を入れる仕組み
 
 故障を入れる仕組みは、本番のコードに足さない。  
-compose の override と、hook に故障を入れるテスト用のスタブを、テストのディレクトリに入れる。入れるのは #1020 である。
+compose の override と、hook に故障を入れるテスト用のスタブを、`packages/e2e/faults/` に置く。  
+上の障害の間の動き、監視の項目、復旧の手順を変えたときは、この測定を流して、結果が変わらないかを確認する。
+
+```sh
+pnpm --filter @buddy/e2e faults           # 全ての項目。compose の起動を除き約 4 分
+pnpm --filter @buddy/e2e faults --quick   # 答えない hook（約 93 秒）を外す
+```
+
+- worktree の `.env` の `COMPOSE_PROJECT_NAME` の compose に、`packages/e2e/faults/compose.faults.yml` を重ねて起動し直してから流す。main の checkout の compose（`buddy`）には流さない。
+  - override は、hook を受けるスタブ `hook-stub` を足し、Hydra の `oauth2.token_hook.url` を環境変数でスタブに向ける。スタブは、答え方を切り替えるまでブローカーへ素通しする。
+  - スタブの答え方は `docker exec` で切り替える。ホストのポートは開けない。
+- 終わったら、失敗しても、入れた故障を戻し、スタブを外した compose に起動し直す。`--keep` を付けると、スタブを重ねたままにする。
+- 測った値は、故障ごとの表で `packages/e2e/faults/results/<実行の時刻>.md` に書く。Git で追跡しない。
+  - 各行の「比べる元」は、`#877` が [#877 の測った結果](../docs/verification/877-token-hook-failures/README.md)、`ADR` が ADR-0044 とこのセクション、`記録だけ` が期待で判定しない値である。
+  - 期待と合わない値があると、その測定が失敗する。
+
+故障の入れ方は次のとおり。結果は [故障を入れる測定を繰り返せる形にした後の結果](../docs/verification/1020-token-hook-faults/README.md) にある。
+
+| 故障 | 入れ方 |
+| --- | --- |
+| hook の 500、403、501、遅れ、答えない | スタブの答え方を切り替える |
+| ブローカーの停止 | `docker stop` |
+| ブローカーの DB の停止 | `broker` のデータベースへの接続を禁じ、張られた接続を切る |
+| ブローカーの DB が答えない | 別の接続で、ブローカーの `staff` のテーブルを排他のロックで握る |
+| Hydra の停止 | `docker stop`。止めた間に予定の API を再起動する |
+| Hydra の DB の停止 | `hydra` のデータベースへの接続を禁じ、張られた接続を切る |
+| 止めた職員 | 予定の API で休職にするか、ブローカーの DB の職員の状態だけを `suspended` にする |
 
 ## Calendar Worker
 
