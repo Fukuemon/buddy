@@ -10,7 +10,6 @@
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
-    "@fukuemon/e2e-kit": "0.2.1",
     "@playwright/test": "1.64.1",
     "@types/node": "^26.6.5",
     "@typescript-eslint/parser": "8.72.0",

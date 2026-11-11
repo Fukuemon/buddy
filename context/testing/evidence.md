@@ -95,14 +95,6 @@ buddy は、spec の配置先、テストの名前、本文の表の形がスキ
   ffmpeg -i <名前>.webm -vf "scale=trunc(iw/2)*2:trunc(ih/2)*2" -c:v libx264 -pix_fmt yuv420p -movflags +faststart <名前>.mp4
   ```
 
-### 移す前のエビデンスの spec
-
-- `tests/evidence/` の spec の多くは、まだ kit 0.2.1 の薄い層 `tests/fixtures/evidence.ts` の `recordPrEvidence` で撮る。#1000〜#1007 で、機能のディレクトリごとに上の形へ移す。
-  - 移す前の spec は、`recordPrEvidence` に渡した `name` と `title` で、`.ai-out/evidence/<入れる先>/evidence/<name>_<title>/` に撮る。
-  - 入れる先は環境変数 `EVIDENCE_FOR` で渡す。改修前と改修後は `EVIDENCE_BEFORE_URL` か `EVIDENCE_ONLY` で選ぶ。
-  - 移す前の spec を撮り直すときは、先にその spec を上の形に移す。
-- 移した spec に、`recordPrEvidence`、`EVIDENCE_VARIANTS`、kit の import を残さない。
-
 ## Capture Environment
 
 撮るときに開く画面は、変更の種類で選ぶ。

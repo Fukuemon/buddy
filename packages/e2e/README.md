@@ -6,7 +6,7 @@ buddy の E2E のテストと、手動検証のエビデンスを撮る spec。
   - 層（specs、setup、screens、widgets、selectors、fixtures）は [DesignDoc.md](DesignDoc.md) にある。
   - `tests/evidence/`: エビデンスの動画を撮る spec
     - 字幕の関数は `tests/fixtures/caption.ts`、録画の外の前準備は `tests/fixtures/recording.ts` にある。
-    - 移す前の spec が使う kit 0.2.1 の薄い層は `tests/fixtures/evidence.ts` にある。
+    - Storybook の story と画面仕様書のモックを開く URL の関数は `tests/fixtures/evidence.ts` にある。
 - `templates/`: 検証シナリオのエビデンスを撮る spec のテンプレート
   - 型のチェックと ESLint の対象の外に置く。
 - `eslint/`: テストの書き方の ESLint の規則。agent-harness のスキル setup-e2e-lint から写したもの
