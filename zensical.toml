@@ -141,7 +141,11 @@ nav = [
     "adr/0044-token-hook-fail-closed.md",
     "adr/0045-home-screen-web-app.md",
     "adr/0046-offline-own-schedules.md",
-    "adr/0047-web-session-postgres.md", "adr/0048-workspace-group-access.md", "adr/0049-jit-staff-registration.md", "adr/0050-unlink-upstream-account.md", "adr/0051-permission-audit-unlink.md", "adr/0052-facility-onboarding-cli-unlink.md",
+    "adr/0047-web-session-postgres.md",
+    "adr/0048-workspace-group-access.md",
+    "adr/0049-jit-staff-registration.md",
+    "adr/0050-unlink-upstream-account.md",
+    "adr/0051-permission-audit-unlink.md",
   ] },
 ]
 
