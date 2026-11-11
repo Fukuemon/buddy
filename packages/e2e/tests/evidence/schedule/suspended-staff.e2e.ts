@@ -13,7 +13,13 @@ import {
 import { createNormalSchedule, getSchedule } from '../../fixtures/schedule'
 import { leaveStaff, listStaff, reinstateStaff, STAFF_FORM } from '../../fixtures/staff'
 
-type ListedStaff = { id: string; username: string; status: string; leave_started_at: string | null }
+type ListedStaff = {
+  id: string
+  username: string
+  status: string
+  visits: boolean
+  leave_started_at: string | null
+}
 
 /** 予定の API の職員の一覧を、email の職員のトークンで取る。録画に映らない API の結果を字幕に出すのに使う。 */
 const listOfficeStaff = async (request: APIRequestContext, email: string, facilityId: string) => {
@@ -29,14 +35,14 @@ const listOfficeBStaff = async (request: APIRequestContext) => {
   return staff
 }
 
-/** 字幕に出す、API の職員の一覧の 1 行。休職の職員には休職にした時刻を添える。 */
+/** 字幕に出す、API の職員の一覧の 1 行。休職の職員には休職にした時刻を、訪問しない職員にはそのことを添える。 */
 const describeStaff = (staffList: ListedStaff[]) =>
   staffList
-    .map((staff) =>
-      staff.leave_started_at === null
-        ? staff.username
-        : `${staff.username}（休職にした時刻 ${staff.leave_started_at}）`,
-    )
+    .map((staff) => {
+      if (staff.leave_started_at !== null)
+        return `${staff.username}（休職にした時刻 ${staff.leave_started_at}）`
+      return staff.visits ? staff.username : `${staff.username}（訪問しない）`
+    })
     .join('、')
 
 const OFFICE_B_ACTOR = `${OFFICE_B.staff.name}、2 つ目の事業所のマネージャー`
@@ -121,7 +127,7 @@ test.describe('予定のカレンダー', () => {
       await intro(
         page,
         [
-          '止めていない職員だけの事業所で予定のカレンダーを日の表示で開くと、全ての職員の列が今と同じ順に出る',
+          '止めていない職員だけの事業所で予定のカレンダーを日の表示で開くと、訪問する全ての職員の列が今と同じ順に出る',
           '前提 止めた職員がいない 1 つ目の事業所で、予定のカレンダーを開いている',
           `（撮影のため、録画に映らない予定の API の職員の一覧を、API が返した順に出す）${describeStaff(staff)}`,
         ].join('\n'),
@@ -131,12 +137,14 @@ test.describe('予定のカレンダー', () => {
         await page.goto('/schedule?view=day')
       })
       const columns = page.getByTestId(/^day-grid-staff-/)
+      // 訪問しない職員は、予定のカレンダーの列に出ない（予定の API の Staff の visits）
+      const visiting = staff.filter(({ visits }) => visits)
       await check(
         page,
-        `${staff.length} 人の職員の列が、API の一覧と同じ順に全て出る`,
+        `訪問する ${visiting.length} 人の職員の列が、API の一覧と同じ順に全て出る。訪問しない職員の列は出ない`,
         async () => {
-          await expect(columns).toHaveCount(staff.length)
-          for (const [index, { id }] of staff.entries()) {
+          await expect(columns).toHaveCount(visiting.length)
+          for (const [index, { id }] of visiting.entries()) {
             await expect(columns.nth(index)).toHaveAttribute('data-testid', `day-grid-staff-${id}`)
           }
         },
