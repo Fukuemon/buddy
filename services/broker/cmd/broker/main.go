@@ -1,6 +1,7 @@
 // Command broker は、Ory Hydra の login and consent app として動く ID ブローカーを起動する（ADR-0002）。
 // ログイン、同意、ログアウトの画面、職員の登録、休職、復職、退職の内部の API、Hydra の oauth2.token_hook、ヘルスチェックを持つ。
 // ログイン、同意、ログアウトの画面は PORT で、内部の API と token_hook は INTERNAL_PORT で待ち受ける。内部のポートはブラウザに開かない。
+// LISTEN_TARGET を public か internal にすると、PORT で片方だけを待ち受け、公開と内部を別のサービスで動かせる。
 //
 // 設定は環境変数から読む。読む値とデフォルト値は config.Load にある。
 // 上流の IdP の設定のファイルか client secret のファイルに誤りがあれば、待ち受けを始めずに終了コード 1 で終わる。
@@ -113,23 +114,20 @@ func run(getenv func(string) string) error {
 		defer cancel()
 		return db.Ping(ctx)
 	}
-	servers := []*http.Server{
-		newServer(logger, cfg.Port, httpapi.NewHandler(httpapi.Config{Logger: logger, Ready: ready, Login: loginHandler})),
-		newServer(logger, cfg.InternalPort, httpapi.NewHandler(httpapi.Config{
-			Logger: logger,
-			Ready:  ready,
-			Internal: internalapi.NewHandler(internalapi.Config{
-				Logger:            logger,
-				Staff:             staff,
-				Hydra:             hydraAdmin,
-				Verifier:          verifier,
-				Clients:           cfg.InternalAPIClients,
-				OnboardingClients: cfg.InternalAPIOnboardingClients,
-				KnownOrg:          func(orgID string) bool { _, ok := idps.Of(orgID); return ok },
-				NewID:             func() string { return ulid.Make().String() },
-				TokenHookKey:      cfg.TokenHookKey,
-			}),
-		})),
+	internalHandler := internalapi.NewHandler(internalapi.Config{
+		Logger:            logger,
+		Staff:             staff,
+		Hydra:             hydraAdmin,
+		Verifier:          verifier,
+		Clients:           cfg.InternalAPIClients,
+		OnboardingClients: cfg.InternalAPIOnboardingClients,
+		KnownOrg:          func(orgID string) bool { _, ok := idps.Of(orgID); return ok },
+		NewID:             func() string { return ulid.Make().String() },
+		TokenHookKey:      cfg.TokenHookKey,
+	})
+	var servers []*http.Server
+	for _, l := range listeners(cfg, logger, ready, loginHandler, internalHandler) {
+		servers = append(servers, newServer(logger, l.port, l.handler))
 	}
 
 	errCh := make(chan error, len(servers))
@@ -164,6 +162,28 @@ func run(getenv func(string) string) error {
 		}
 	}
 	return errors.Join(errs...)
+}
+
+// listener は、待ち受けるポートと、そのポートのハンドラである。
+type listener struct {
+	port    string
+	handler http.Handler
+}
+
+// listeners は、cfg.ListenTarget に合わせて、待ち受けるポートとハンドラの組を返す。どの組も、ヘルスチェックを持つ。
+// both はログインの画面を cfg.Port で、内部の API を cfg.InternalPort で待ち受ける 2 つの組を返す。
+// public と internal は、cfg.Port で片方だけを待ち受ける 1 つの組を返し、もう片方のパスには 404 を返す。
+func listeners(cfg config.Config, logger *slog.Logger, ready func(context.Context) error, login, internal http.Handler) []listener {
+	public := httpapi.Config{Logger: logger, Ready: ready, Login: login}
+	internalOnly := httpapi.Config{Logger: logger, Ready: ready, Internal: internal}
+	switch cfg.ListenTarget {
+	case config.ListenPublic:
+		return []listener{{cfg.Port, httpapi.NewHandler(public)}}
+	case config.ListenInternal:
+		return []listener{{cfg.Port, httpapi.NewHandler(internalOnly)}}
+	default:
+		return []listener{{cfg.Port, httpapi.NewHandler(public)}, {cfg.InternalPort, httpapi.NewHandler(internalOnly)}}
+	}
 }
 
 // toCookieKeys は、設定の鍵の文字列を、ログインの画面が署名に使うバイト列にする。
