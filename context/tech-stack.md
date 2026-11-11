@@ -39,6 +39,7 @@ status: stable
 | 文章のチェック | textlint | `package.json` |
 | Git のフック、コミットの形式 | lefthook、commitlint | `package.json` |
 | スキルとフックの配置 | apm | `mise.toml`、パッケージは `apm.yml` と `apm.lock.yaml` |
+| web の負荷の検証 | k6 | `mise.toml`。CI では流さない |
 | エビデンスの動画の添付 | gh | `mise.toml`。CI のワークフローは、GitHub のランナーではランナーの gh を使い、self-hosted runner では mise で入れる |
 | ローカル環境の全体の起動 | Docker Compose（PostgreSQL、Valkey、Ory Hydra、mock-oauth2-server、calendarpit） | `compose.yml` のイメージのタグ |
 | 実行のイメージ | distroless（API、ブローカー）、`node:24-slim`（web） | `services/*/Dockerfile` |
