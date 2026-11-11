@@ -24,9 +24,12 @@
     - `oauth2/token_hook.go:91-111` / [GitHub](https://github.com/ory/hydra/blob/0b84568fffccf151dc5e6c7955fdfb738555bf4b/oauth2/token_hook.go#L91-L111)
   - 共通の HTTP クライアントは、呼び直しを 2 回、1 回の打ち切りを 30 秒に固定して作る。
     - `driver/registry_sql.go:454-458` / [GitHub](https://github.com/ory/hydra/blob/0b84568fffccf151dc5e6c7955fdfb738555bf4b/driver/registry_sql.go#L454-L458)
-  - 呼び直しの間は、最短 1 秒のデフォルト値のままで、測った 1 秒と 2 秒の間になる。
+  - 呼び直しの間は、最短 1 秒のデフォルト値を倍にしていくので、測った 1 秒と 2 秒になる。
     - `oryx/httpx/resilient_client.go:30-38` / [GitHub](https://github.com/ory/hydra/blob/0b84568fffccf151dc5e6c7955fdfb738555bf4b/oryx/httpx/resilient_client.go#L30-L38)
-  - 設定のスキーマは、`oauth2.token_hook` に `url` と `auth` だけを許し、ほかの項目を拒む。
+    - `oryx/httpx/resilient_client.go:99-103` / [GitHub](https://github.com/ory/hydra/blob/0b84568fffccf151dc5e6c7955fdfb738555bf4b/oryx/httpx/resilient_client.go#L99-L103)
+    - go-retryablehttp v0.7.8 の `client.go:551-566` / [GitHub](https://github.com/hashicorp/go-retryablehttp/blob/e1f5485fe84728709b857cb89e17088894c301d6/client.go#L551-L566)
+  - 設定のスキーマは、`oauth2.token_hook` に、URL の文字列か、`url` と `auth` だけの `webhook_config` を許し、ほかの項目を拒む。
+    - `spec/config.json:965-977` / [GitHub](https://github.com/ory/hydra/blob/0b84568fffccf151dc5e6c7955fdfb738555bf4b/spec/config.json#L965-L977)
     - `spec/config.json:29-71` / [GitHub](https://github.com/ory/hydra/blob/0b84568fffccf151dc5e6c7955fdfb738555bf4b/spec/config.json#L29-L71)
     - `driver/config/provider.go:595-598` / [GitHub](https://github.com/ory/hydra/blob/0b84568fffccf151dc5e6c7955fdfb738555bf4b/driver/config/provider.go#L595-L598)
 - 監視のツールと通知の設定は、インフラのリポジトリ（非公開）が持つ。
@@ -45,7 +48,6 @@ hook が 204 以外を返すか、答えないときは、ログインでも ref
 - ブローカーは、hook の中の DB の呼び出しに、2 秒ほどの待ちの上限を付ける。上限を過ぎたら 500 を返す。
   - 理由: DB が答えないと、Hydra は 30 秒の打ち切りを 3 回待つ。1 回 2 秒の上限なら、呼び直しの間を含めて約 9 秒で失敗が決まる。
 - Hydra の hook の待ちの上限と呼び直しの回数は設定で変えられないので、待ちはブローカーの側の上限だけで短くする。
-  - 1 回 2 秒の上限では、失敗が決まるまでの約 9 秒が、BFF の 5 秒の待ちに収まらない。
 
 ### BFF は refresh を 1 度だけ試す
 
