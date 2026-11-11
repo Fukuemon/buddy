@@ -66,9 +66,9 @@ type Store struct {
 	SyncedAt map[string]time.Time
 	// Projections は、ProjectionKey ごとの、Google カレンダーの予定の写しである。
 	Projections map[ProjectionKey]scheduleview.Projection
-	// Cutovers は、切り替えの ID ごとの切り替えである。
+	// Cutovers は、移行の ID ごとの移行である。
 	Cutovers map[string]calendarimport.Cutover
-	// CutoverSkips は、切り替えの取り込みで、取り込まないを選んだ予定の記録である。
+	// CutoverSkips は、移行の取り込みで、取り込まないを選んだ予定の記録である。
 	CutoverSkips []calendarimport.CutoverSkip
 	// Records は、予定の ID ごとの、Google カレンダーに書いた予定の記録である。
 	Records map[string]calendar.EventRecord

@@ -471,7 +471,7 @@ func TestMigratePermissionAudits(t *testing.T) {
 	if err := MigrateUp(cfg); err != nil {
 		t.Fatal(err)
 	}
-	if err := MigrateDown(cfg, 1); err != nil {
+	if err := MigrateDown(cfg, 2); err != nil {
 		t.Fatal(err)
 	}
 	if applied, err := Seed(ctx, cfg, db.Seed); err != nil || !applied {
@@ -516,7 +516,7 @@ func TestMigratePermissionAudits(t *testing.T) {
 	if len(seen) != users {
 		t.Errorf("記録のある職員 = %d 人, want %d 人", len(seen), users)
 	}
-	if err := MigrateDown(cfg, 1); err != nil {
+	if err := MigrateDown(cfg, 2); err != nil {
 		t.Fatal(err)
 	}
 }

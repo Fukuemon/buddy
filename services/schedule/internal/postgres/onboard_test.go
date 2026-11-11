@@ -122,7 +122,7 @@ func TestOnboardCreatesFacilityAndManager(t *testing.T) {
 		t.Errorf("役職 = %v, want %v", res.Setup.CreatedPositions, want)
 	}
 	if res.Setup.Facility.SourceMode != organization.SourceGooglePrimary {
-		t.Errorf("正本のモード = %s, want google_primary", res.Setup.Facility.SourceMode)
+		t.Errorf("予定の管理先 = %s, want google_primary", res.Setup.Facility.SourceMode)
 	}
 	m := res.Manager
 	if m.Email != "mao.arai@example.com" || m.PositionName != "マネージャー" || m.Sub == nil {

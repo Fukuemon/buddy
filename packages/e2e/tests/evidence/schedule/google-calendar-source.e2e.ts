@@ -29,7 +29,7 @@ const okadaEvent = (page: Page, title: string) =>
     .filter({ hasText: title })
 
 test.describe('予定のカレンダー', () => {
-  test.describe(`Google カレンダーを正本にする事業所（${OKADA.staff.name}、Google カレンダーを正本にする事業所のマネージャー）`, () => {
+  test.describe(`予定を Google カレンダーで管理している事業所（${OKADA.staff.name}、予定を Google カレンダーで管理している事業所のマネージャー）`, () => {
     test.use({ storageState: OKADA_STATE })
 
     test('google-primary-synced-event Google カレンダーに予定を作った場合、同期の後に手動の取り込みをせずに予定のカレンダーに出ること', async ({
@@ -203,14 +203,14 @@ test.describe('予定のカレンダー', () => {
       }
     })
 
-    test('google-primary-edit-guide Google カレンダーを正本にする事業所で予定のカレンダーを開いた場合、予定の作成と変更の操作が出ず、Google カレンダーで編集する案内が出ること', async ({
+    test('google-primary-edit-guide 予定を Google カレンダーで管理している事業所で予定のカレンダーを開いた場合、予定の作成と変更の操作が出ず、Google カレンダーで編集する案内が出ること', async ({
       page,
     }) => {
       await page.goto('/schedule?view=week')
       await expect(page.getByTestId('schedule-calendar-google-primary')).toBeVisible()
       await intro(
         page,
-        'Google カレンダーを正本にする事業所では、予定の作成と変更の操作が出ず、Google カレンダーで編集する案内が出る\n前提 予定のカレンダーを週の表示で開いている',
+        '予定を Google カレンダーで管理している事業所では、予定の作成と変更の操作が出ず、Google カレンダーで編集する案内が出る\n前提 予定のカレンダーを週の表示で開いている',
       )
 
       await check(

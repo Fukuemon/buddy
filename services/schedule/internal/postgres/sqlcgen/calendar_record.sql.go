@@ -59,7 +59,7 @@ type ClaimExpiredCalendarEventRecordsRow struct {
 
 // 書く期限を過ぎた保留の版を持つ記録を、同期が読み戻すために取る（ADR-0029）。保留の版の状態（writing、unknown）では絞らない。
 // 複数の処理が同時に取っても同じ記録を渡さないよう、行をロックできたものだけを取り、locked_until までほかの処理に渡さない。
-// 保留の版を書く予定のカレンダー（移す書き込みでは移す先）を外した記録と、事業所の正本のモードが modes に無い記録は取らない。
+// 保留の版を書く予定のカレンダー（移す書き込みでは移す先）を外した記録と、事業所の予定の管理先が modes に無い記録は取らない。
 // 返すカレンダーも、保留の版を書く予定のカレンダーである。
 func (q *Queries) ClaimExpiredCalendarEventRecords(ctx context.Context, arg ClaimExpiredCalendarEventRecordsParams) ([]ClaimExpiredCalendarEventRecordsRow, error) {
 	rows, err := q.db.Query(ctx, claimExpiredCalendarEventRecords,

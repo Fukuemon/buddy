@@ -30,7 +30,7 @@ const SkipStaffOnLeave calendar.SkipReason = "staff_on_leave"
 const SkipStaffNonVisiting calendar.SkipReason = "staff_non_visiting"
 
 // Range は、取り込む予定の期間で、両端の日を含む。予定はこの期間に始まるものを取り込む。
-// End が零の値の期間は終わりを持たず、Start から先の全てである。切り替えの取り込みだけが使う（ADR-0031）。
+// End が零の値の期間は終わりを持たず、Start から先の全てである。移行の取り込みだけが使う（ADR-0031）。
 type Range struct {
 	Start civil.Date
 	End   civil.Date
@@ -100,7 +100,7 @@ const (
 	ReviewPatientNotFound ReviewReason = "patient_not_found"
 	// ReviewPatientAmbiguous は、タイトルの利用者名の利用者が 2 人以上いる予定である。
 	ReviewPatientAmbiguous ReviewReason = "patient_ambiguous"
-	// ReviewRecurrenceUnsupported は、buddy の繰り返しの規則に写せない繰り返しの予定である。切り替えの取り込みだけが返し、
+	// ReviewRecurrenceUnsupported は、buddy の繰り返しの規則に写せない繰り返しの予定である。移行の取り込みだけが返し、
 	// 回に展開しない。取り込み方は取り込まないだけを選べる（ADR-0031）。
 	ReviewRecurrenceUnsupported ReviewReason = "recurrence_unsupported"
 )
@@ -151,7 +151,7 @@ type Counts struct {
 	NeedsReview       int
 	Skipped           int
 	AlreadyImported   int
-	// Overwrite は、切り替えの取り込みで、取り込んだ後に Google で変わったか消えた予定の数である。取り込み直すと、
+	// Overwrite は、移行の取り込みで、取り込んだ後に Google で変わったか消えた予定の数である。取り込み直すと、
 	// buddy の写しを消し、Google の今の内容で取り込み直す。ほかの取り込みでは 0 である。
 	Overwrite int
 }
@@ -201,9 +201,9 @@ type entry struct {
 	serviceCodeID string
 	// reviewKey は、確認が必要な予定の ReviewItem.ExternalEventID で、ほかの予定では空である。
 	reviewKey string
-	// unsupported は、切り替えの取り込みで、buddy の繰り返しの規則に写せない繰り返しの親の予定である。取り込まない以外を選べない。
+	// unsupported は、移行の取り込みで、buddy の繰り返しの規則に写せない繰り返しの親の予定である。取り込まない以外を選べない。
 	unsupported bool
-	// recordVisit は、切り替えの取り込みで、予定の API の記録が持つ訪問の情報で、ほかの予定では nil である。
+	// recordVisit は、移行の取り込みで、予定の API の記録が持つ訪問の情報で、ほかの予定では nil である。
 	// 持つ予定は、タイトルの読み替えの代わりに、この訪問の情報を写した訪問の予定にする。
 	recordVisit *visit.Info
 }
@@ -223,9 +223,9 @@ type plan struct {
 	reviewItems  []ReviewItem
 	skippedItems []Skipped
 	counts       Counts
-	// cutover は、切り替えの取り込みの plan かである。
+	// cutover は、移行の取り込みの plan かである。
 	cutover bool
-	// overwrite は、切り替えの取り込みで、Google で変わったか消えたので消して取り込み直す予定の対応である。
+	// overwrite は、移行の取り込みで、Google で変わったか消えたので消して取り込み直す予定の対応である。
 	overwrite []calendar.EventLink
 }
 
@@ -246,10 +246,10 @@ type planInput struct {
 	staffBlocked calendar.SkipReason
 	// staffID は、カレンダーを結び付けた職員である。休職か訪問しない職員でも、この職員に割り振った繰り返しの予定の回の置き換えは当てる。
 	staffID string
-	// cutover は、切り替えの取り込みかである。切り替えの取り込みは、繰り返しの予定を回に展開せず、写せない繰り返しの予定を
+	// cutover は、移行の取り込みかである。移行の取り込みは、繰り返しの予定を回に展開せず、写せない繰り返しの予定を
 	// 確認が必要な予定にし、規則のまま取り込まない親の予定の回を取り込まない（ADR-0031）。
 	cutover bool
-	// recordVisits は、切り替えの取り込みで、予定の API の記録が持つ、Google が受けたと分かった版の訪問の情報を、
+	// recordVisits は、移行の取り込みで、予定の API の記録が持つ、Google が受けたと分かった版の訪問の情報を、
 	// Google の予定の ID で引く。ほかの取り込みでは空である。
 	recordVisits map[string]visit.Info
 }
@@ -483,7 +483,7 @@ func (b *planner) addException(ev calendar.Event) {
 		return
 	}
 	if !ok {
-		// 切り替えの取り込みでは、除外した日を取り込んだことと見なさない。取り消した回は予定の対応を持たないので、
+		// 移行の取り込みでは、除外した日を取り込んだことと見なさない。取り消した回は予定の対応を持たないので、
 		// 取り込んだ後に Google で戻した回を見落とし、Projection を消すと予定が失われるためである。
 		if !b.in.cutover && b.isExcludedBefore(ev) {
 			// 前の取り込みか buddy で、その回をすでに除外か置き換えにした。
@@ -506,7 +506,7 @@ func (b *planner) addException(ev calendar.Event) {
 	}
 }
 
-// isSeriesDropped は、切り替えの取り込みで、親の予定 parentID を期間で読めたのに、規則のまま取り込まないかを返す。
+// isSeriesDropped は、移行の取り込みで、親の予定 parentID を期間で読めたのに、規則のまま取り込まないかを返す。
 // 親が取り込まない予定か写せない繰り返しの予定なら、その回も取り込まない。繰り返しの一部だけを単発の予定にして移さないためである。
 // 前の取り込みで結び付けた親と、期間で読めなかった親の回は、ほかの取り込みと同じく扱う。
 func (b *planner) isSeriesDropped(parentID string) bool {
@@ -556,7 +556,7 @@ func (b *planner) isExcludedBefore(ev calendar.Event) bool {
 }
 
 // add は、予定を取り込む予定か確認が必要な予定に足し、取り込まない予定なら取り込まない予定に足す。取り込む予定に足したときは true を返す。
-// 切り替えの取り込みで、予定の API の記録が訪問の情報を持つ予定は、タイトルの読み替えより記録の訪問の情報を使う（ADR-0031）。
+// 移行の取り込みで、予定の API の記録が訪問の情報を持つ予定は、タイトルの読み替えより記録の訪問の情報を使う（ADR-0031）。
 func (b *planner) add(e entry) bool {
 	e = b.withRecordVisit(e)
 	if e.cand.Kind == calendar.KindSkipped {
@@ -762,7 +762,7 @@ func (p *plan) applyDecisions(decisions []Decision, patients []PatientRef) (int,
 	if len(byKey) != len(p.reviewItems) {
 		return 0, errReviewChanged
 	}
-	// skippedSeries は、切り替えの取り込みで、取り込まないを選んだ繰り返しの親の予定である。その回も取り込まない。
+	// skippedSeries は、移行の取り込みで、取り込まないを選んだ繰り返しの親の予定である。その回も取り込まない。
 	skippedSeries := map[string]bool{}
 	for _, r := range p.reviewItems {
 		d, ok := byKey[r.ExternalEventID]

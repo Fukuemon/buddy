@@ -29,7 +29,7 @@ type ProjectionTime struct {
 	Date *civil.Date
 }
 
-// Projection は、Google カレンダーを予定の正本にする事業所（google_primary）の、Google カレンダーの 1 つの予定の写しである（ADR-0029）。
+// Projection は、予定を Google カレンダーで管理している事業所（google_primary）の、Google カレンダーの 1 つの予定の写しである（ADR-0029）。
 // calendarsync の同期の処理だけが書き、scheduleview だけが読む。繰り返しの予定は展開せず、親の予定と例外の回を別の行に持つ。
 // 説明、場所、参加者、作成者と主催者のメール、添付は持たない。タイトルは利用者名を含むが、表示と照合に要るので持つ。
 type Projection struct {

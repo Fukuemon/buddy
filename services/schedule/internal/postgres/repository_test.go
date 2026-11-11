@@ -32,7 +32,7 @@ const (
 	seedGoogleFacility = "01MA0GP0000000000000000FAC"
 	seedOkada          = "01MA0GP0000000000000000STF"
 	seedOkadaCalendar  = "01MA0GP0000000000000000GCA"
-	// seedIshidaCalendar は、4 つ目の事業所（google_primary）の石田のカレンダーである。予定の正本の切り替えの E2E が使う。
+	// seedIshidaCalendar は、4 つ目の事業所（google_primary）の石田のカレンダーである。予定の管理の移行の E2E が使う。
 	seedIshidaCalendar = "01MA0CT0000000000000000GCA"
 	seedDepartment     = "01M3TC5HZ8A18D2TP3PTKDXJMN"
 	seedTeam           = "01M3TC5KXRSEVXQZ2MTJK9FS45"
@@ -78,7 +78,7 @@ func TestFacilityGet(t *testing.T) {
 	}
 }
 
-// TestFacilityGetForShare は、共有のロックを取って読んだ事業所が、シードの正本のモードを持つことを確認する。
+// TestFacilityGetForShare は、共有のロックを取って読んだ事業所が、シードの予定の管理先を持つことを確認する。
 func TestFacilityGetForShare(t *testing.T) {
 	ctx := txContext(t)
 	r := NewFacilityRepository(testDB)

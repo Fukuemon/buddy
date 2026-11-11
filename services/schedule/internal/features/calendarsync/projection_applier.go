@@ -13,7 +13,7 @@ import (
 // retainedMonths は、Projection に行を残す期間の始まりを、今月から何か月前の初日にするかである。照合で前月の予定を読むためである（ADR-0029）。
 const retainedMonths = 2
 
-// projectionApplier は、Google カレンダーを予定の正本にする事業所（google_primary）で、Google カレンダーの予定の変更を
+// projectionApplier は、予定を Google カレンダーで管理している事業所（google_primary）で、Google カレンダーの予定の変更を
 // 予定の写し（Projection）に写す（ADR-0029）。予定の対応（EventLink）の有無によらず、Google で新しく作った予定も写す。
 //   - 新しい予定と変わった予定は、カレンダーと Google の予定の ID の組の行に書く。同じ予定を何度読んでも、行は 1 つになる。
 //     行を書き直すのは、Google の更新の時刻が行より新しいときだけである（Projections.Put）。

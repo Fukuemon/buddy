@@ -34,14 +34,14 @@ const ACCOUNTS = [
   },
   {
     title:
-      'compose のブローカーに Google カレンダーを正本にする事業所の職員でログインした状態を保存する',
+      'compose のブローカーに予定を Google カレンダーで管理している事業所の職員でログインした状態を保存する',
     path: OKADA_STATE,
     email: OKADA.email,
     staffName: OKADA.staff.name,
   },
   {
     title:
-      'compose のブローカーに予定の正本の切り替えを確認する事業所の職員でログインした状態を保存する',
+      'compose のブローカーに予定の管理の移行を確認する事業所の職員でログインした状態を保存する',
     path: ISHIDA_STATE,
     email: ISHIDA.email,
     staffName: ISHIDA.staff.name,

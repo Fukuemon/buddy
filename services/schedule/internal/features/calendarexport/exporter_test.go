@@ -906,7 +906,7 @@ func TestExportLogsRequeuedOnShutdown(t *testing.T) {
 	wantCounts(t, e.logged(t, "calendar export batch")[0], map[string]float64{"claimed_count": 1, "requeued_count": 1, "succeeded_count": 0})
 }
 
-// 取った待ちの事業所が buddy を予定の正本にしていなければ、書かずに確認が必要な待ち（conflict、not_buddy_primary）にして保留にする。
+// 取った待ちの事業所が予定を buddy で管理していなければ、書かずに確認が必要な待ち（conflict、not_buddy_primary）にして保留にする。
 // 保留にした待ちは、要約の held_count に数え、書いていない待ちの滞留（pending）には数えない（ADR-0029）。
 func TestExportHoldsNotBuddyPrimary(t *testing.T) {
 	e := newExportEnv(t)

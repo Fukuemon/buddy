@@ -54,7 +54,7 @@ func NewDelete(schedules Repository, staff StaffRefs, locks FacilityLock, now fu
 
 // Do は、単発の予定 scheduleID を監査の記録に移して消す。回を置き換えた予定を消しても、元の回の日は除外する日のまま残る。
 // 予定が見つからないときは apperr.ErrNotFound を、開始の日が今日より前のときは入力のエラーを、
-// キャンセル済みのときと、事業所が buddy を予定の正本にしていないとき（code は CodeGooglePrimary）は apperr.ErrConflict を返す。
+// キャンセル済みのときと、事業所が予定を buddy で管理していないとき（code は CodeGooglePrimary）は apperr.ErrConflict を返す。
 func (s Delete) Do(ctx context.Context, scheduleID string) error {
 	p, err := Current(ctx)
 	if err != nil {
@@ -111,7 +111,7 @@ func NewDeleteOccurrence(recurring RecurringRepository, staff StaffRefs, locks F
 // 書き出しの待ちには繰り返しの予定の変更を積み、その日を外部の予定の EXDATE にする。回のキャンセルと同じである。
 // 置き換えた後の回は単発の予定なので、Delete で削除する。
 // 繰り返しの予定が見つからないときは apperr.ErrNotFound を、回に当たらない日か今日より前の日のときは入力のエラーを、
-// その回をすでに置き換えたか、キャンセルしたか、削除したときと、事業所が buddy を予定の正本にしていないとき（code は CodeGooglePrimary）は
+// その回をすでに置き換えたか、キャンセルしたか、削除したときと、事業所が予定を buddy で管理していないとき（code は CodeGooglePrimary）は
 // apperr.ErrConflict を返す。
 func (s DeleteOccurrence) Do(ctx context.Context, recurringScheduleID string, originalDate civil.Date) error {
 	p, err := Current(ctx)

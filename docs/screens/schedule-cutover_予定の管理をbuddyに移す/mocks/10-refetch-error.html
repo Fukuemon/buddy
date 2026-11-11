@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>schedule-cutover 始められない</title>
+    <title>schedule-cutover 最新の情報の読み込みの失敗</title>
     <link rel="stylesheet" href="../../_common/mock.css" />
     <link rel="stylesheet" href="../../_common/tokens.css" />
     <link rel="stylesheet" href="../../_common/wireframe.css" />
@@ -15,21 +15,25 @@
         <div class="screen-body">
           <main class="wf-page">
             <div class="sc-title">
-              <h1 class="wf-heading" data-m="1">予定の正本の切り替え</h1>
+              <h1 class="wf-heading" data-m="1">予定の管理を buddy に移す</h1>
               <span class="wf-btn wf-btn--text" data-m="2" data-testid="calendar-cutover-link-settings" data-go="../../schedule-link_カレンダーの連携/mocks/01-list.html">カレンダーの連携</span>
             </div>
-            <p class="wf-lead" data-m="3">Google カレンダーで管理している予定を buddy に取り込み、この事業所の予定の正本を buddy に切り替えます。切り替えた後は、予定を buddy で作成、変更し、Google カレンダーには buddy の予定を書き出します。</p>
+            <p class="wf-lead" data-m="3">Google カレンダーで管理している予定を buddy に取り込み、この事業所の予定の管理を buddy に移します。移した後は、予定を buddy で作成、変更し、Google カレンダーには buddy の予定を書き出します。</p>
+            <div class="wf-alert wf-refetch-error" role="alert" data-m="8" data-testid="refetch-error">
+              <span>最新の情報を読み込めませんでした。</span>
+              <span class="wf-btn" data-m="9" data-testid="refetch-retry" data-go="01-not-started.html">読み直す</span>
+            </div>
             <section class="wf-stack" data-m="4">
-              <h2 class="wf-heading">切り替えの手順</h2>
+              <h2 class="wf-heading">移行の手順</h2>
               <ol class="sc-steps">
-                <li>切り替えを始めます。始めた月の初日から先の全ての予定が、取り込みの対象になります。</li>
+                <li>移行を始めます。始めた月の初日から先の全ての予定が、取り込みの対象になります。</li>
                 <li>職員ごとに、予定を取り込みます。取り込みの間も、予定のカレンダーには Google カレンダーの予定が出ます。</li>
                 <li>全ての職員を取り込み、同期が終わったら、完了します。</li>
               </ol>
             </section>
             <section class="sc-notice sc-notice--warning" data-m="5" data-testid="calendar-cutover-no-edit">
-              <strong>切り替えの間は、Google カレンダーで予定を変えない</strong>
-              <p>職員に、切り替えが終わるまで Google カレンダーで予定を作成、変更しないよう頼んでください。取り込んだ後に変えた予定は、完了するときに見つかり、取り込み直すまで完了できません。</p>
+              <strong>移行の間は、Google カレンダーで予定を変えない</strong>
+              <p>職員に、移行が終わるまで Google カレンダーで予定を作成、変更しないよう頼んでください。取り込んだ後に変えた予定は、完了するときに見つかり、取り込み直すまで完了できません。</p>
             </section>
             <section class="wf-stack">
               <h2 class="wf-heading">カレンダーの同期</h2>
@@ -42,8 +46,7 @@
                 </tbody>
               </table>
             </section>
-            <p class="wf-alert" role="alert" data-m="7" data-testid="calendar-cutover-start-error">最後の同期が成功していないカレンダーがあります（石川 二葉）。同期が成功してから始めてください</p>
-            <div><span class="wf-btn wf-btn--primary" data-m="8" data-testid="calendar-cutover-start">切り替えを始める</span></div>
+            <div><span class="wf-btn wf-btn--primary" data-m="7" data-testid="calendar-cutover-start" data-go="02-open.html">移行を始める</span></div>
           </main>
 
         </div>

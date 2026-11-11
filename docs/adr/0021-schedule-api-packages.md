@@ -22,7 +22,7 @@ Go の API は 3 つある。予定の API（`services/schedule`）、照合の 
   - 出典: [Go Code Review Comments の Interfaces](https://go.dev/wiki/CodeReviewComments#interfaces)
 - Google Go Style は、1 つの領域とその複数の責務を 1 つのパッケージに持つ形を例に挙げ、ファイルは、どのファイルに何があるかが分かる程度に分けるとする。Go の blog は、`types` や `interfaces` のように、種類でパッケージをまとめることを誤りとする。
   - 出典: [Google Go Style Best Practices の Package size](https://google.github.io/styleguide/go/best-practices#package-size)、[Package names](https://go.dev/blog/package-names)
-- 外部のカレンダーは、結び付け、手動の取り込み、同期の変更の取得、取った変更を当てる規則、書き出しの 5 つの理由で変わる。Google カレンダーの書き出しと同期を Worker に分ける変更（#593）と、Google カレンダーを予定の正本にする変更（#594）は、同期と書き出しだけを変える。
+- 外部のカレンダーは、結び付け、手動の取り込み、同期の変更の取得、取った変更を当てる規則、書き出しの 5 つの理由で変わる。Google カレンダーの書き出しと同期を Worker に分ける変更（#593）と、予定を Google カレンダーで管理する変更（#594）は、同期と書き出しだけを変える。
 - 外部のカレンダーの機能の間には、次の共有がある。
   - 同期の適用の規則は、書き出しの待ちを読んで、待ちを保留か解決にする。
   - 同期と取り込みは、外部の予定と buddy の予定を読み替える規則を共有する。
@@ -102,21 +102,21 @@ flowchart BT
 - 書き出しの待ちの記録（`Export`、`Target`、`ExportStatus`、`ExportErrorCode`）は `calendar` に置く。同期は、書いている途中の待ちを見て、外部の変更を当てるか保留にするかを決めるので、待ちの記録は書き出しと同期が共有する状態である。
 - 書き出しの待ちの一覧と書き直しは、buddy の内容を書く側なので `calendarexport` に置く。
 - 外部の変更と buddy の予定を比べて当てる `ReconcileApplier` と、確認が必要な待ちを外部の内容で解決する `AcceptExport` は、どのモードでも使わないので消す。この判断は ADR-0029 にある。
-  - ADR-0029: [Google カレンダーとの連携を、事業所ごとの正本のモードで分ける](0029-google-calendar-sync.md)
+  - ADR-0029: [Google カレンダーとの連携を、事業所ごとの予定の管理先で分ける](0029-google-calendar-sync.md)
 
 同期は、取得と、当てる規則の 2 つの型に分ける。
 
-- `Syncer` は、同期の状態の Claim と Finish、`EventSource` の変更の読み取り、syncToken の失効（410）の読み直しを持つ。正本のモードを知らない。
-- `Applier` は、1 つの外部の予定を 1 つのトランザクションで当てるインターフェースにする。Google カレンダーを正本にする事業所の参照のモデルを書く型は `ProjectionApplier` である。
-- `Syncer` は、1 つの予定を当てるトランザクションの中で事業所の正本のモードを読み、モードごとの `Applier` を選ぶ。モードごとの `Applier` は組み立ての場所が渡し、`Syncer` はモードの値と `Applier` の対応だけを持つ。
+- `Syncer` は、同期の状態の Claim と Finish、`EventSource` の変更の読み取り、syncToken の失効（410）の読み直しを持つ。予定の管理先を知らない。
+- `Applier` は、1 つの外部の予定を 1 つのトランザクションで当てるインターフェースにする。予定を Google カレンダーで管理している事業所の参照のモデルを書く型は `ProjectionApplier` である。
+- `Syncer` は、1 つの予定を当てるトランザクションの中で事業所の予定の管理先を読み、モードごとの `Applier` を選ぶ。モードごとの `Applier` は組み立ての場所が渡し、`Syncer` はモードの値と `Applier` の対応だけを持つ。
   - モードごとの同期の向きは ADR-0029 にある。
-    - ADR-0029: [Google カレンダーとの連携を、事業所ごとの正本のモードで分ける](0029-google-calendar-sync.md)
+    - ADR-0029: [Google カレンダーとの連携を、事業所ごとの予定の管理先で分ける](0029-google-calendar-sync.md)
 
-`calendarexport` は、事業所の正本のモードが buddy を正本にするときだけ書く。
+`calendarexport` は、事業所の予定の管理先が予定を buddy で管理するときだけ書く。
 
-- `Outbox` は、予定を書くトランザクションの中で事業所のモードを読み、buddy を正本にしないモードなら待ちを積まない。
-- `Exporter` は、取った待ちの事業所のモードが buddy を正本にしないモードなら、外部のカレンダーに書かずに待ちを保留にする。
-- プロセスの全体にかかる設定のフラグ（`GOOGLE_CALENDAR_EXPORT_ENABLED`）は残す。フラグとモードの両方が許すときだけ書き、フラグを誤って有効にしても、正本と逆の向きに書かない。
+- `Outbox` は、予定を書くトランザクションの中で事業所のモードを読み、予定を buddy で管理しないモードなら待ちを積まない。
+- `Exporter` は、取った待ちの事業所のモードが予定を buddy で管理しないモードなら、外部のカレンダーに書かずに待ちを保留にする。
+- プロセスの全体にかかる設定のフラグ（`GOOGLE_CALENDAR_EXPORT_ENABLED`）は残す。フラグとモードの両方が許すときだけ書き、フラグを誤って有効にしても、予定の管理先と逆の向きに書かない。
 
 予定の対応と書き出しの待ちを書くメソッドは、使う側のパッケージの `calendar_port.go` に、使うものだけを並べる。
 

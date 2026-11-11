@@ -157,7 +157,7 @@ test.describe('予定の API', () => {
   test.describe(`繰り返しの予定の毎週の曜日と間隔（${LOGIN_STAFF.name}、マネージャー）`, () => {
     test.use({ storageState: LOGIN_STATE })
 
-    test('recurring-weekly-days buddy を正本にする事業所で、毎週の月曜と木曜の繰り返しの予定を API で作った場合、予定の表示に月曜と木曜の両方の回が出ること', async ({
+    test('recurring-weekly-days 予定を buddy で管理している事業所で、毎週の月曜と木曜の繰り返しの予定を API で作った場合、予定の表示に月曜と木曜の両方の回が出ること', async ({
       browser,
       context,
     }) => {
@@ -175,7 +175,7 @@ test.describe('予定の API', () => {
       await openDay(page, HAYASHI.id, monday)
       await intro(
         page,
-        `buddy を正本にする事業所で、毎週の月曜と木曜の繰り返しの予定を作ると、月曜と木曜の両方に回が出る\n前提 予定の API（createRecurringSchedule）で、${HAYASHI.name} の ${monday} から「days_of_week: [1, 4]」の「${title}」を作った。201 が返り、規則は days_of_week [1, 4]、interval 1 だった。${monday}（月曜）の日の表示を開いている`,
+        `予定を buddy で管理している事業所で、毎週の月曜と木曜の繰り返しの予定を作ると、月曜と木曜の両方に回が出る\n前提 予定の API（createRecurringSchedule）で、${HAYASHI.name} の ${monday} から「days_of_week: [1, 4]」の「${title}」を作った。201 が返り、規則は days_of_week [1, 4]、interval 1 だった。${monday}（月曜）の日の表示を開いている`,
       )
       await checkShown(page, HAYASHI.id, monday, title, true, '月曜')
       await checkDay(page, HAYASHI.id, fromNextMonday(2), title, false, '水曜')
@@ -183,7 +183,7 @@ test.describe('予定の API', () => {
       await checkDay(page, HAYASHI.id, fromNextMonday(7), title, true, '次の週の月曜')
     })
 
-    test('recurring-weekly-interval buddy を正本にする事業所で、隔週の火曜の繰り返しの予定を API で作った場合、最初の日付の週から 2 週ごとの火曜に回が出て、間の週に出ないこと', async ({
+    test('recurring-weekly-interval 予定を buddy で管理している事業所で、隔週の火曜の繰り返しの予定を API で作った場合、最初の日付の週から 2 週ごとの火曜に回が出て、間の週に出ないこと', async ({
       browser,
       context,
     }) => {
@@ -201,7 +201,7 @@ test.describe('予定の API', () => {
       await openDay(page, HAYASHI.id, tuesday)
       await intro(
         page,
-        `buddy を正本にする事業所で、隔週の火曜の繰り返しの予定を作ると、2 週ごとの火曜に回が出て、間の週に出ない\n前提 予定の API（createRecurringSchedule）で、${HAYASHI.name} の ${tuesday}（火曜）から「interval: 2」の「${title}」を作った。201 が返り、規則は days_of_week [2]、interval 2 だった。${tuesday} の日の表示を開いている`,
+        `予定を buddy で管理している事業所で、隔週の火曜の繰り返しの予定を作ると、2 週ごとの火曜に回が出て、間の週に出ない\n前提 予定の API（createRecurringSchedule）で、${HAYASHI.name} の ${tuesday}（火曜）から「interval: 2」の「${title}」を作った。201 が返り、規則は days_of_week [2]、interval 2 だった。${tuesday} の日の表示を開いている`,
       )
       await checkShown(page, HAYASHI.id, tuesday, title, true, '1 週目の火曜')
       await checkDay(page, HAYASHI.id, fromNextMonday(8), title, false, '2 週目の火曜')
@@ -210,10 +210,10 @@ test.describe('予定の API', () => {
     })
   })
 
-  test.describe(`繰り返しの予定の毎週の曜日と間隔（${OKADA.staff.name}、Google カレンダーを正本にする事業所のマネージャー）`, () => {
+  test.describe(`繰り返しの予定の毎週の曜日と間隔（${OKADA.staff.name}、予定を Google カレンダーで管理している事業所のマネージャー）`, () => {
     test.use({ storageState: OKADA_STATE })
 
-    test('recurring-weekly-google-primary Google カレンダーを正本にする事業所で、Google カレンダーに隔週の火曜と、毎週の月曜と木曜の繰り返しの予定がある場合、どちらも確認が必要な予定にならず、回ごとに出ること', async ({
+    test('recurring-weekly-google-primary 予定を Google カレンダーで管理している事業所で、Google カレンダーに隔週の火曜と、毎週の月曜と木曜の繰り返しの予定がある場合、どちらも確認が必要な予定にならず、回ごとに出ること', async ({
       browser,
       context,
       request,
@@ -248,7 +248,7 @@ test.describe('予定の API', () => {
         await openDay(page, OKADA.staff.id, fromNextMonday(0))
         await intro(
           page,
-          `Google カレンダーを正本にする事業所で、隔週の火曜と、毎週の月曜と木曜の Google の繰り返しの予定が、確認が必要な予定にならずに回ごとに出る\n前提 calendarpit の ${OKADA.calendarId} に、「${biweekly}」（FREQ=WEEKLY;INTERVAL=2;BYDAY=TU）と「${twice}」（FREQ=WEEKLY;BYDAY=MO,TH）を作った`,
+          `予定を Google カレンダーで管理している事業所で、隔週の火曜と、毎週の月曜と木曜の Google の繰り返しの予定が、確認が必要な予定にならずに回ごとに出る\n前提 calendarpit の ${OKADA.calendarId} に、「${biweekly}」（FREQ=WEEKLY;INTERVAL=2;BYDAY=TU）と「${twice}」（FREQ=WEEKLY;BYDAY=MO,TH）を作った`,
         )
         await check(
           page,
@@ -287,7 +287,7 @@ test.describe('予定の API', () => {
   test.describe(`繰り返しの予定の毎週の曜日と間隔（${LOGIN_STAFF.name}、マネージャー）`, () => {
     test.use({ storageState: LOGIN_STATE })
 
-    test('recurring-weekly-export buddy を正本にする事業所で、隔週の月曜と木曜の繰り返しの予定を書き出した場合、Google カレンダーの回が buddy の予定の表示の回と同じ日に出ること', async ({
+    test('recurring-weekly-export 予定を buddy で管理している事業所で、隔週の月曜と木曜の繰り返しの予定を書き出した場合、Google カレンダーの回が buddy の予定の表示の回と同じ日に出ること', async ({
       browser,
       context,
       request,
@@ -321,7 +321,7 @@ test.describe('予定の API', () => {
         await openDay(page, HAYASHI.id, fromNextMonday(0))
         await intro(
           page,
-          `buddy を正本にする事業所で、隔週の月曜と木曜の繰り返しの予定を書き出すと、calendarpit の回が buddy の回と同じ日に出る\n前提 ${HAYASHI.name} に Google カレンダーを結び付け、${fromNextMonday(0)} から隔週の月曜と木曜の「${title}」を API で作った`,
+          `予定を buddy で管理している事業所で、隔週の月曜と木曜の繰り返しの予定を書き出すと、calendarpit の回が buddy の回と同じ日に出る\n前提 ${HAYASHI.name} に Google カレンダーを結び付け、${fromNextMonday(0)} から隔週の月曜と木曜の「${title}」を API で作った`,
         )
         let rrule = ''
         await step(page, '（撮影のため、calendarpit に書き出されるまで待つ）', async () => {

@@ -415,7 +415,7 @@
   color: var(--wf-muted);
 }
 
-/* Google カレンダーを予定の正本にする事業所で、ツールバーとカレンダーの間に出す通知（apps/web の ScheduleSourceNotices） */
+/* 予定を Google カレンダーで管理している事業所で、ツールバーとカレンダーの間に出す通知（apps/web の ScheduleSourceNotices） */
 .sc-notices {
   display: flex;
   flex-direction: column;
@@ -548,7 +548,7 @@
   margin-top: 4px;
 }
 
-/* 予定の正本を buddy に切り替えている間の案内 */
+/* 予定の管理を buddy に移している間の案内 */
 .sc-notice--cutover {
   border-left: 4px solid var(--wf-primary);
   background: var(--wf-primary-surface);

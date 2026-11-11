@@ -22,7 +22,7 @@ import { CalendarCutoverCancelDialog } from './CalendarCutoverCancelDialog'
 import { CalendarCutoverView, type CalendarCutoverViewState } from './CalendarCutoverView'
 
 /**
- * 予定の正本の切り替えの画面。事業所の予定の正本と切り替えの状況を読み、切り替えを始める、完了する、やめるの操作を渡す。
+ * 予定の管理を buddy に移す画面。事業所の予定の管理先と移行の状況を読み、移行を始める、完了する、やめるの操作を渡す。
  * 完了の確認を満たさなければ、満たさない一覧を出す。やめる前に、確認のダイアログを開く。
  */
 export const CalendarCutoverContainer = () => {
@@ -33,7 +33,7 @@ export const CalendarCutoverContainer = () => {
   const start = useStartCutover()
   const complete = useCompleteCutover()
   const cancel = useCancelCutover()
-  // やめる前の確認を開いた切り替え。ほかの画面でやめた後に始め直した切り替えでは、ダイアログを開かない
+  // やめる前の確認を開いた移行。ほかの画面でやめた後に始め直した移行では、ダイアログを開かない
   const [cancelTargetId, setCancelTargetId] = useState<CalendarCutover['id'] | null>(null)
 
   const screenQueries = [facilityQuery, cutoverQuery]

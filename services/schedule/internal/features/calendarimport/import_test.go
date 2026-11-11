@@ -400,7 +400,7 @@ func TestImportServiceAliases(t *testing.T) {
 	}
 }
 
-// Google カレンダーを予定の正本にする事業所では、手動の取り込みを 409 で拒み、取り込みの記録、予定、予定の対応を書かない（ADR-0026）。
+// 予定を Google カレンダーで管理している事業所では、手動の取り込みを 409 で拒み、取り込みの記録、予定、予定の対応を書かない（ADR-0026）。
 // 読み替えた後に、書くトランザクションの前にモードが変わったときも、同じく拒む。
 func TestImportRejectsGooglePrimary(t *testing.T) {
 	toGooglePrimary := func(s *inmem.Store) {
@@ -441,7 +441,7 @@ func TestImportRejectsGooglePrimary(t *testing.T) {
 }
 
 // TestImportLinksCarryGoogleETags は、取り込みが、取り込んだ全ての予定の対応に、読んだ時点の Google の etag と、
-// 作ったばかりの予定の更新の番号を書くことを確認する。切り替えの完了は、この etag と Google の今の etag を比べる（ADR-0031）。
+// 作ったばかりの予定の更新の番号を書くことを確認する。移行の完了は、この etag と Google の今の etag を比べる（ADR-0031）。
 func TestImportLinksCarryGoogleETags(t *testing.T) {
 	e := newEnv(t, fixture())
 	if _, err := e.importDecided(t, e.rng, decisions()); err != nil {
@@ -489,7 +489,7 @@ func TestImportKeepsRecurrenceAsRule(t *testing.T) {
 }
 
 // TestImportSkipDecisionWritesNothing は、確認が必要な予定に取り込まないを選ぶと、予定も予定の対応も書かず、
-// 次のプレビューで同じバージョンの確認が必要な予定として返すことを確認する。切り替えの完了は、この予定を取り込まないと決めた予定として扱う。
+// 次のプレビューで同じバージョンの確認が必要な予定として返すことを確認する。移行の完了は、この予定を取り込まないと決めた予定として扱う。
 func TestImportSkipDecisionWritesNothing(t *testing.T) {
 	e := newEnv(t, fixture())
 	before, err := e.uc.Preview(e.ctx, calID, e.rng)

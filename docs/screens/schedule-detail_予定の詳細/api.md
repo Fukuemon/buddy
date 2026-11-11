@@ -88,7 +88,7 @@ OpenAPI の項目は、`getSchedule`（`GET /v1/schedules/{schedule_id}`）の�
 | 条件 | 判定に使う値 |
 | --- | --- |
 | 開いた予定が、キャンセルした予定である | `Schedule.cancel` がある |
-| 事業所が、予定の正本を buddy に切り替えている途中である | `google_primary` の事業所で、`ScheduleList.cutover` が `null` でない（`listSchedules` の `cutover`）。`buddy_primary` の事業所では読まず、`null` として扱う |
+| 事業所が、予定の管理を buddy に移している途中である | `google_primary` の事業所で、`ScheduleList.cutover` が `null` でない（`listSchedules` の `cutover`）。`buddy_primary` の事業所では読まず、`null` として扱う |
 | 開いた予定が、繰り返しの規則を buddy で表せない予定である | `Schedule.reviewReason` が `recurrence_unsupported`（`listSchedules` の `Schedule.review_reason`） |
 | ログインした職員が、開いた予定の職員の予定を編集できる | `Viewer.schedulePolicies` の `code`、`targetStaffIds`、`targetTeamIds` と、予定の職員の `Schedule.staffId` と、`Schedule.staffId` を職員の一覧で引いた `Staff.teamId` |
 | 開いた予定が、通常の予定である | `Schedule.kind` が `normal` |
@@ -98,7 +98,7 @@ OpenAPI の項目は、`getSchedule`（`GET /v1/schedules/{schedule_id}`）の�
 | 開いた予定に、メモがある | `Schedule.description` が空の文字列でない |
 | 職員が、キャンセルを送っている途中である | `cancelSchedule` を呼ぶ mutation（`useCancelSchedule`）の `isPending` が `true`（`ScheduleCancelDialog` の `isSubmitting`） |
 | 職員が、キャンセルの理由の欄に、前後の空白を除いて 1 文字以上 255 文字以下を入れている | キャンセルの理由の欄の値の前後の空白を除いた長さが 1 以上 255 以下（`ScheduleCancelDialog` が `ConfirmDialog` に渡す `canSubmit`） |
-| 事業所が、予定を buddy で管理する事業所である | `Facility.sourceMode` が `buddy_primary`（`getFacility` の `Facility.source_mode`） |
+| 事業所が、予定を buddy で管理している事業所である | `Facility.sourceMode` が `buddy_primary`（`getFacility` の `Facility.source_mode`） |
 | 開いた予定の開始の日が、今日以降である | `Schedule.startsAt` の Asia/Tokyo の日付が、予定の詳細を開いた時刻の Asia/Tokyo の日付と同じか後 |
 | 職員が、削除を送っている途中である | `deleteSchedule` か `deleteOccurrence` を呼ぶ mutation（`useDeleteSchedule`）の `isPending` が `true`（`ScheduleDeleteDialog` の `isSubmitting`） |
 
@@ -218,7 +218,7 @@ OpenAPI の項目は、`getSchedule`（`GET /v1/schedules/{schedule_id}`）の�
 | キャンセルの失敗 | 「Google カレンダーが予定を受け付けませんでした。入力を確認してください。」 | `cancelSchedule` が 409 `google_event_rejected` |
 | キャンセルの失敗 | 「予定の職員が Google カレンダーを結び付けていません。カレンダーの結び付けを、事業所の管理者に頼んでください。」 | `cancelSchedule` が 409 `calendar_not_linked` |
 | キャンセルの失敗 | 「この事業所には、Google カレンダーと連携する設定がありません。事業所の管理者に確認してください。」 | `cancelSchedule` が 503 `calendar_not_configured` |
-| キャンセルの失敗 | 「予定の正本を buddy に切り替えています。切り替えが終わるまで、予定を作成、変更、キャンセルできません。」 | `cancelSchedule` が 409 `cutover_open` |
+| キャンセルの失敗 | 「予定の管理を buddy に移しています。終わるまで、予定を作成、変更、キャンセルできません。」 | `cancelSchedule` が 409 `cutover_open` |
 | キャンセルの失敗 | 「入力の内容では予定をキャンセルできません。内容を直してください。」 | `cancelSchedule` が 400 |
 | キャンセルの失敗 | 「予定をキャンセルできませんでした。」 | `cancelSchedule` が、ここまでのほかの失敗（404、409 `conflict`、500）。API に届かない |
 | キャンセルの送信中 | なし（ログインの画面へ移るまで続く） | `cancelSchedule` が 401 |

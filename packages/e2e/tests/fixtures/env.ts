@@ -64,7 +64,7 @@ export const OFFICE_CLERK = {
 }
 
 /**
- * シードの 3 つ目の事業所の職員。事業所は Google カレンダーを予定の正本にし（google_primary）、岡田には calendarpit のカレンダーを結び付けてある。
+ * シードの 3 つ目の事業所の職員。事業所は予定を Google カレンダーで管理し（google_primary）、岡田には calendarpit のカレンダーを結び付けてある。
  * 同期の Worker が、このカレンダーの予定を Projection に写す。
  */
 export const OKADA = {
@@ -78,8 +78,8 @@ export const OKADA = {
 }
 
 /**
- * シードの 4 つ目の事業所の職員。事業所は Google カレンダーを予定の正本にし（google_primary）、石田には calendarpit のカレンダーを
- * 結び付けてある。予定の正本の切り替えの spec だけが使う。切り替えを完了すると事業所は buddy_primary に移り、戻せない。
+ * シードの 4 つ目の事業所の職員。事業所は予定を Google カレンダーで管理し（google_primary）、石田には calendarpit のカレンダーを
+ * 結び付けてある。予定の管理の移行の spec だけが使う。移行を完了すると事業所は buddy_primary に移り、戻せない。
  */
 export const ISHIDA = {
   email: 'ren.ishida@example.com',
@@ -165,10 +165,10 @@ const loginStatePath = (key: string): string =>
 /** ログインした状態のファイル。setup が書き、spec の project の storageState に渡す。 */
 export const LOGIN_STATE = loginStatePath('aoki')
 
-/** Google カレンダーを正本にする事業所の岡田でログインした状態のファイル。setup が書き、その事業所の spec が storageState に渡す。 */
+/** 予定を Google カレンダーで管理している事業所の岡田でログインした状態のファイル。setup が書き、その事業所の spec が storageState に渡す。 */
 export const OKADA_STATE = loginStatePath('okada')
 
-/** 予定の正本の切り替えを確認する事業所の石田でログインした状態のファイル。setup が書き、切り替えの spec が storageState に渡す。 */
+/** 予定の管理の移行を確認する事業所の石田でログインした状態のファイル。setup が書き、移行の spec が storageState に渡す。 */
 export const ISHIDA_STATE = loginStatePath('ishida')
 
 /** リーダーでログインした状態のファイル。setup が書き、リーダーの spec が storageState に渡す。 */

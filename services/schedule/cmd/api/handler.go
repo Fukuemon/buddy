@@ -378,7 +378,7 @@ func calendarApp(
 	}
 }
 
-// cutoverDeps は、calendarimport の切り替えの操作が使う依存である。
+// cutoverDeps は、calendarimport の移行の操作が使う依存である。
 type cutoverDeps struct {
 	cutovers    calendarimport.CutoverRepository
 	syncs       scheduleview.CalendarSyncs

@@ -27,7 +27,7 @@ export type CalendarLinkViewProps = {
   copy?: (text: string) => Promise<void>
 }
 
-/** カレンダーの連携の画面の本文。タイトル、予定の正本の切り替えへのリンク、説明の文の下に、共有の手順と職員の一覧を並べる。 */
+/** カレンダーの連携の画面の本文。タイトル、予定の管理を buddy に移す画面へのリンク、説明の文の下に、共有の手順と職員の一覧を並べる。 */
 export const CalendarLinkView = ({
   state,
   onRetry,
@@ -46,7 +46,7 @@ export const CalendarLinkView = ({
         data-testid="calendar-link-cutover"
         href="/schedule/link/cutover"
       >
-        予定の正本の切り替え
+        予定の管理を buddy に移す
       </a>
     </div>
     <p className="max-w-3xl text-body">職員ごとに Google カレンダーを結び付けます。</p>

@@ -124,7 +124,7 @@ export const AllImported: Story = {
   },
 }
 
-/** 予定の正本の切り替えを始めた、Google カレンダーを正本にする事業所のフェイクの API。 */
+/** 予定の管理の移行を始めた、予定を Google カレンダーで管理している事業所のフェイクの API。 */
 const cutoverApi = (): BuddyApi => {
   const api = createFakeBuddyApi({
     baseDate: new Date('2026-11-05T09:00:00+09:00'),
@@ -135,7 +135,7 @@ const cutoverApi = (): BuddyApi => {
   return api
 }
 
-/** 予定の正本の切り替えの間。期間の入力の代わりに切り替えの期間を出し、規則を写せない繰り返しの予定は取り込まないだけを選べる。 */
+/** 予定の管理の移行の間。期間の入力の代わりに移行の期間を出し、規則を写せない繰り返しの予定は取り込まないだけを選べる。 */
 export const Cutover: Story = {
   parameters: route({ api: cutoverApi() }),
   play: async ({ canvasElement }) => {

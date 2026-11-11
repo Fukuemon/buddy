@@ -66,12 +66,12 @@ web は `BuddyApi.calendars`（`apps/web/src/api/BuddyApi.ts`）で API を呼�
 | 15 | 要確認 | `site-nav-review` |
 | 16 | 取り込み | `site-nav-import` |
 | 17 | メニュー | `site-nav-toggle` |
-| 18 | 予定の正本の切り替え | `calendar-link-cutover` |
+| 18 | 予定の管理の移行 | `calendar-link-cutover` |
 | 11 | 結び付ける | `calendar-link-open-{職員の id}` |
 | 12 | 要確認 | `site-nav-review` |
 | 13 | 取り込み | `site-nav-import` |
 | 14 | メニュー | `site-nav-toggle` |
-| 15 | 予定の正本の切り替え | `calendar-link-cutover` |
+| 15 | 予定の管理の移行 | `calendar-link-cutover` |
 | 2 | 結び付けるダイアログ | `calendar-link-dialog` |
 | 3 | 職員の名前 | `calendar-link-staff` |
 | 4 | カレンダーの ID のヘルプ | `schedule-link-calendar-id-help` |
@@ -87,13 +87,13 @@ web は `BuddyApi.calendars`（`apps/web/src/api/BuddyApi.ts`）で API を呼�
 | 7 | 要確認 | `site-nav-review` |
 | 8 | 取り込み | `site-nav-import` |
 | 9 | メニュー | `site-nav-toggle` |
-| 10 | 予定の正本の切り替え | `calendar-link-cutover` |
+| 10 | 予定の管理の移行 | `calendar-link-cutover` |
 | 6 | 読み込みの失敗の文 | `calendar-link-error` |
 | 7 | 読み直す | `calendar-link-retry` |
 | 8 | 要確認 | `site-nav-review` |
 | 9 | 取り込み | `site-nav-import` |
 | 10 | メニュー | `site-nav-toggle` |
-| 11 | 予定の正本の切り替え | `calendar-link-cutover` |
+| 11 | 予定の管理の移行 | `calendar-link-cutover` |
 | 6 | 準備ができていないことの文 | `calendar-link-not-configured` |
 | 7 | 職員の一覧 | `calendar-link-table` |
 | 8 | カレンダーの ID | `calendar-link-calendar-id-{職員の id}` |

@@ -104,7 +104,7 @@ func (q ListQuery) Validate() error {
 	return nil
 }
 
-// Listing は、事業所の単発の予定と繰り返しの予定と、事業所の予定の正本のモードと、カレンダーの同期の状況である。
+// Listing は、事業所の単発の予定と繰り返しの予定と、事業所の予定の管理先と、カレンダーの同期の状況である。
 // google_primary の事業所では、Projection の繰り返しの予定を回に展開して Schedules に入れ、RecurringSchedules は空である。
 // CalendarSyncs は google_primary の事業所でだけ持ち、見てよい職員のカレンダーに限る。
 type Listing struct {
@@ -112,7 +112,7 @@ type Listing struct {
 	RecurringSchedules []RecurringDetail
 	SourceMode         organization.SourceMode
 	CalendarSyncs      []CalendarSync
-	// Cutover は、google_primary の事業所の open の切り替えで、無ければ nil である。画面は「切り替え中」を出す（ADR-0031）。
+	// Cutover は、google_primary の事業所の open の移行で、無ければ nil である。画面は「移行中」を出す（ADR-0031）。
 	Cutover *OpenCutover
 	// AllDayEvents は、google_primary の事業所で、期間に重なる見てよい職員の終日の予定である。buddy_primary の事業所と、
 	// 予定の種類で絞ったときは空である（#672）。

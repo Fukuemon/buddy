@@ -148,7 +148,7 @@ export const Replaced: Story = {
   parameters: route({ api: recurringOccurrenceApi(1, { replaced: true }) }),
 }
 
-/** 予定の正本を buddy に切り替えている事業所で、URL を直に開いた。欄と保存のボタンを出さずに、切り替えていることを出す。 */
+/** 予定の管理を buddy に移している事業所で、URL を直に開いた。欄と保存のボタンを出さずに、移していることを出す。 */
 export const Cutover: Story = {
   parameters: route({
     api: recurringOccurrenceApi(1, { base: cutoverBuddyApi(), sourceId: 'gcal-schedule-1' }),
@@ -156,7 +156,7 @@ export const Cutover: Story = {
 }
 
 /**
- * 切り替えをやめた後に開き直した。予定の一覧の cache には切り替え中の古い結果が残っているが、開いてから読み直した一覧は切り替えていない。
+ * 移行をやめた後に開き直した。予定の一覧の cache には移行中の古い結果が残っているが、開いてから読み直した一覧は移行中でない。
  * 読み直し終えてから決めるので、欄を出す。
  */
 export const StaleCutoverCache: Story = {
@@ -190,7 +190,7 @@ export const StaleCutoverCache: Story = {
   }),
 }
 
-/** google_primary の事業所で、切り替えていないときに開いた。欄を出す。 */
+/** google_primary の事業所で、移していないときに開いた。欄を出す。 */
 export const GooglePrimary: Story = {
   parameters: route({
     api: recurringOccurrenceApi(1, {

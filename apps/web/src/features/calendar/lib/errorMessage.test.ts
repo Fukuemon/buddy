@@ -92,8 +92,8 @@ describe('rewriteErrorMessage', () => {
 
 describe('cutoverErrorMessage', () => {
   it.each([
-    [apiError(409, 'cutover_open'), 'ほかの画面で切り替えを始めています。'],
-    [apiError(409, 'cutover_not_google_primary'), '予定の正本は、すでに buddy です。'],
+    [apiError(409, 'cutover_open'), 'ほかの画面で移行を始めています。'],
+    [apiError(409, 'cutover_not_google_primary'), 'すでに予定を buddy で管理しています。'],
     [
       new ApiError(
         409,

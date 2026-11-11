@@ -88,7 +88,7 @@ export interface ReceiptApi {
  */
 export interface BuddyApi {
   facilities: {
-    /** 事業所を返す。画面は予定の正本（sourceMode）で、予定を書く操作を出すかを決める。 */
+    /** 事業所を返す。画面は予定の管理先（sourceMode）で、予定を書く操作を出すかを決める。 */
     get(facilityId: FacilityId): Promise<Facility>
   }
   /**
@@ -315,7 +315,7 @@ export interface BuddyApi {
     unlink(facilityId: FacilityId, externalCalendarId: ExternalCalendar['id']): Promise<void>
     /**
      * 期間の予定を読み、取り込むとどうなるかを返す。予定は書かない。
-     * 予定の正本の切り替えの間は、期間を切り替えの range_start から終わりの無い期間（range_end が null）にする。
+     * 予定の管理の移行の間は、期間を移行の range_start から終わりの無い期間（range_end が null）にする。
      */
     preview(
       facilityId: FacilityId,
@@ -335,22 +335,22 @@ export interface BuddyApi {
      * 確認が必要な書き出しでなければ、code が export_not_in_review の ApiError を投げる。
      */
     retryExport(facilityId: FacilityId, exportId: CalendarExport['id']): Promise<CalendarExport>
-    /** 予定の正本の切り替えの状況を返す。open の切り替えが無ければ cutover は null で、カレンダーの last_import は null である。 */
+    /** 予定の管理の移行の状況を返す。open の移行が無ければ cutover は null で、カレンダーの last_import は null である。 */
     cutoverStatus(facilityId: FacilityId): Promise<CalendarCutoverState>
     /**
-     * 予定の正本の切り替えを始める。始められない原因は、status が 409 の ApiError の code
+     * 予定の管理の移行を始める。始められない原因は、status が 409 の ApiError の code
      *（cutover_open、cutover_not_google_primary、cutover_sync_not_ready）にある。
      */
     startCutover(facilityId: FacilityId): Promise<CalendarCutover>
     /**
-     * 切り替えを完了し、事業所の予定の正本を buddy にする。完了の確認を満たさなければ、拒まれた結果として満たさないカレンダーと予定を返す。
-     * 切り替えが open でなければ、code が cutover_not_open の ApiError を投げる。
+     * 移行を完了し、事業所の予定の管理を buddy に移す。完了の確認を満たさなければ、拒まれた結果として満たさないカレンダーと予定を返す。
+     * 移行が open でなければ、code が cutover_not_open の ApiError を投げる。
      */
     completeCutover(
       facilityId: FacilityId,
       cutoverId: CalendarCutover['id'],
     ): Promise<CalendarCutoverCompletion>
-    /** 切り替えをやめ、この切り替えで取り込んだ予定を消す。切り替えが open でなければ、code が cutover_not_open の ApiError を投げる。 */
+    /** 移行をやめ、この移行で取り込んだ予定を消す。移行が open でなければ、code が cutover_not_open の ApiError を投げる。 */
     cancelCutover(
       facilityId: FacilityId,
       cutoverId: CalendarCutover['id'],

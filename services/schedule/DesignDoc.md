@@ -160,9 +160,9 @@ erDiagram
   recurring_schedules |o--o| external_event_links : "対応する"
   external_calendars ||--o{ import_runs : "取り込みの記録"
   users ||--o{ import_runs : "確定する"
-  facilities ||--o{ calendar_cutovers : "正本の切り替え"
-  calendar_cutovers |o--o{ import_runs : "切り替えの取り込み"
-  calendar_cutovers |o--o{ external_event_links : "切り替えで作った対応"
+  facilities ||--o{ calendar_cutovers : "移行"
+  calendar_cutovers |o--o{ import_runs : "移行の取り込み"
+  calendar_cutovers |o--o{ external_event_links : "移行で作った対応"
   calendar_cutovers ||--o{ calendar_cutover_skips : "取り込まない予定"
   facilities ||--o{ calendar_exports : "持つ"
   schedules |o--o{ calendar_exports : "書き出しの待ち"
@@ -211,11 +211,11 @@ erDiagram
 NULL を許し、値があれば一意にする。  
 認証のミドルウェアは、トークンの組織のクレームでこのカラムを探す。
 
-`facilities.source_mode` は、予定の正本のモード（`google_primary` か `buddy_primary`）を持つ。  
+`facilities.source_mode` は、予定の管理先（`google_primary` か `buddy_primary`）を持つ。  
 マイグレーションで足したときに今ある事業所を `buddy_primary` にし、後から足す事業所のデフォルトを `google_primary` にする。  
-値による書き込みの制限は [事業所の正本のモードと予定の書き込み](#事業所の正本のモードと予定の書き込み) にある。
+値による書き込みの制限は [事業所の予定の管理先と予定の書き込み](#事業所の予定の管理先と予定の書き込み) にある。
 
-- ADR-0029: [Google カレンダーとの連携を、事業所ごとの正本のモードで分ける](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0029-google-calendar-sync.md)
+- ADR-0029: [Google カレンダーとの連携を、事業所ごとの予定の管理先で分ける](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0029-google-calendar-sync.md)
 
 `teams.color` は、チームの色を持つ。  
 値と選び方は [チームの色](#チームの色) にある。
@@ -457,7 +457,7 @@ sequenceDiagram
   - 回の置き換えで作った単発の予定は、自分の `ends_next_day` を持つ。
 
 規則の変更（`changeRecurringRule`、`schedule.ChangeRule`）は、適用の日以降の回にだけ当てる。  
-当て方は、両方の正本のモードで使う `schedule.PlanRuleChange` が、今の繰り返しの予定、適用の日、新しい規則、今日から決める。
+当て方は、両方の予定の管理先で使う `schedule.PlanRuleChange` が、今の繰り返しの予定、適用の日、新しい規則、今日から決める。
 
 - ADR-0037: [繰り返しの予定の規則の変更を、適用の日以降の回にだけ当て、繰り返しの予定を適用の日で分ける](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0037-recurring-rule-change.md)
 
@@ -498,31 +498,31 @@ sequenceDiagram
 `httpapi` は、書いたトランザクションを終えた後に、`scheduleview` の `Get` か `GetRecurring` で予定を読み直し、レスポンスを作る。  
 書き込みと読み出しは別のトランザクションになる。
 
-### 事業所の正本のモードと予定の書き込み
+### 事業所の予定の管理先と予定の書き込み
 
-予定の API が buddy の予定のテーブルに予定を書けるのは、予定の正本のモードが `buddy_primary` の事業所だけである。  
+予定の API が buddy の予定のテーブルに予定を書けるのは、予定の管理先が `buddy_primary` の事業所だけである。  
 予定を書く 9 つの操作は、トランザクションの中で事業所の行を共有のロックで読む（`schedule.FacilityLock` の `GetForShare`）。  
 9 つは、予定の作成、変更、キャンセル、削除、繰り返しの予定の作成、回の置き換え、回のキャンセル、回の削除、規則の変更である。  
 読んだ事業所のモードは、`schedule.RequireWritable` で確認する。  
 `google_primary` の事業所では、何も書かずに 409（`google_primary`）を返す。  
 Google カレンダーの手動の取り込みの確定も、同じ規則で拒む（[Google カレンダーとの連携の Design Doc](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/internal/features/calendar/DesignDoc.md#google-カレンダーの取り込み)）。  
-例外として、`open` の予定の正本の切り替えがある `google_primary` の事業所では、切り替えの取り込みだけを書ける（`calendarimport` の `requireImportable`）。  
+例外として、`open` の予定の管理の移行がある `google_primary` の事業所では、移行の取り込みだけを書ける（`calendarimport` の `requireImportable`）。  
 `google_primary` の事業所の単発の予定の作成、変更、キャンセルは、`httpapi` が `schedule` でなく `calendarwrite` を呼び、Google カレンダーに書く。  
 回のキャンセル、削除、回の削除は、`httpapi` が職員の事業所のモードを先に確認し、`google_primary` なら予定を読まずに 409（`google_primary`）を返す。`google_primary` の予定の ID は予定の写しの ID で、`schedule` に渡すと 404 になるためである。  
 手順は [Google カレンダーとの連携の Design Doc の Google カレンダーへの書き込み](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/internal/features/calendar/DesignDoc.md#google-カレンダーへの書き込み) にある。  
-切り替えの手順は [Google カレンダーとの連携の Design Doc の予定の正本の切り替え](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/internal/features/calendar/DesignDoc.md#予定の正本の切り替え) にある。
+移行の手順は [Google カレンダーとの連携の Design Doc の予定の管理の移行](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/internal/features/calendar/DesignDoc.md#予定の管理の移行) にある。
 
 ロックは、事業所が決まった時点で最初に取る。  
 予定の作成と繰り返しの予定の作成は、パスの事業所の行のロックから始める。  
 予定の変更、キャンセル、削除、回の置き換え、回のキャンセル、回の削除、規則の変更は、予定か繰り返しの予定の行を排他のロックで読んでから、その事業所の行を共有のロックで読む。  
 予定の行から事業所が決まるので、予定の行、事業所の行の順にする。  
-モードを切り替える切り替えの完了は、ADR-0026 のとおり事業所の行に排他のロックを取るので、確認した後に書き終えるまでモードは変わらない。
+モードを変える移行の完了は、ADR-0026 のとおり事業所の行に排他のロックを取るので、確認した後に書き終えるまでモードは変わらない。
 
 - ADR-0026: [予定の書き込みのモデルを schedule に、読み取りのモデルを scheduleview に置く](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0026-schedule-write-read-models.md)
 
 ### 予定の一覧の読み元
 
-予定の一覧（`scheduleview.List`、`listSchedules`）は、事業所の予定の正本のモードで読み元を選ぶ。  
+予定の一覧（`scheduleview.List`、`listSchedules`）は、事業所の予定の管理先で読み元を選ぶ。  
 `buddy_primary` の事業所では、buddy の予定のテーブルを読む。  
 `google_primary` の事業所では、同期が写した Google カレンダーの予定（Projection、`calendar_event_projections`）を読む。  
 どちらの読み元でも `scheduleview.Detail` の同じ型で返すので、画面と照合は読み元を知らずに予定を出せる。  
@@ -556,7 +556,7 @@ Google カレンダーの手動の取り込みの確定も、同じ規則で拒�
    - 保留の版の訪問の情報（`pending_visit_info_id`）は使わない。確定した版の無い記録と、訪問の情報を持たない記録（通常の予定）の予定は、記録の無い予定と同じくタイトルを読み替える。
    - タイトルの利用者名とサービス内容が、記録の訪問の情報の利用者とサービスコードと違うときは、理由（`title_mismatch`）を付ける。Google でタイトルを変えた予定が当たり、訪問のタイトルを読めない予定も含む。
    - 比べる前に、取り込みと同じ規則（`gcaltitle.NormalizeClient`、`ServiceKey`）で表記をそろえる。
-   - ADR-0029: [Google カレンダーとの連携を、事業所ごとの正本のモードで分ける](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0029-google-calendar-sync.md)
+   - ADR-0029: [Google カレンダーとの連携を、事業所ごとの予定の管理先で分ける](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0029-google-calendar-sync.md)
 7. 記録の訪問の情報が無い訪問のタイトルの予定は、タイトルのサービス内容と利用者名で、サービスコードのマスタと事業所の利用者（利用の終了を除く）を引く。
    - 引けた予定は、利用者とサービスコードの訪問の情報を付けた訪問の予定にする。主訪問者は予定の職員にし、同行者と訪問の区分は付けない。
    - 引けない予定は、訪問の情報を付けず、Google のタイトルの通常の予定にして、理由（`service_code_not_found`、`patient_not_found`、`patient_ambiguous`）を付ける。タイトルを読めない予定には `title_unreadable` を付ける。
@@ -568,12 +568,12 @@ buddy から書いた予定と buddy で変えた予定は、予定の API が�
 単発の予定は、`getSchedule`（`scheduleview.GetProjected`）でこの `id` の 1 件を読める。  
 決め方は [Google カレンダーとの連携の Design Doc の Projection の予定の ID](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/internal/features/calendar/DesignDoc.md#projection-の予定の-id) にある。
 
-一覧の応答は、事業所の正本のモード（`source_mode`）と、カレンダーごとの同期の状況（`calendar_syncs`）を持つ。  
+一覧の応答は、事業所の予定の管理先（`source_mode`）と、カレンダーごとの同期の状況（`calendar_syncs`）を持つ。  
 同期の状況は、最後の結果、変わった予定を最後まで読んで写した最後の同期の時刻、最後の失敗の理由を持つ。  
 最新でないとみなす時間は、画面が決める。  
-`google_primary` の事業所の応答は、`open` の予定の正本の切り替え（`cutover`）も持つ。  
-画面は「切り替え中」の表示を出す。  
-切り替えの間も、一覧は Projection を読み、切り替えの取り込みで作った buddy の予定を読まない。
+`google_primary` の事業所の応答は、`open` の予定の管理の移行（`cutover`）も持つ。  
+画面は「移行中」の表示を出す。  
+移行の間も、一覧は Projection を読み、移行の取り込みで作った buddy の予定を読まない。
 
 ### 休職と退職の職員と、訪問しない職員への割り振り
 
@@ -628,7 +628,7 @@ Google カレンダーの取り込みの確定、同期の予定ごとのトラ�
 可否はキャンセルと同じく、予定の職員の予定を編集する権限で判定する。  
 確認は次の順に行う。
 
-1. 予定か繰り返しの予定の行を排他のロックで読み、事業所の行を共有のロックで読む（[事業所の正本のモードと予定の書き込み](#事業所の正本のモードと予定の書き込み)）。
+1. 予定か繰り返しの予定の行を排他のロックで読み、事業所の行を共有のロックで読む（[事業所の予定の管理先と予定の書き込み](#事業所の予定の管理先と予定の書き込み)）。
 2. 予定の職員の予定を編集する権限を確認する。
 3. 単発の予定はキャンセル済みでないこと、回の削除は日が規則の回に当たることを確認する。
 4. 開始の日（回の削除では回の日）が今日以降であることを確認する。
@@ -692,8 +692,8 @@ Google カレンダーの取り込みの確定、同期の予定ごとのトラ�
 | 409 | `calendar_taken`、`calendar_already_linked`、`staff_has_calendar` | カレンダーを結び付けられない原因 | [Google カレンダーとの連携の Design Doc](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/internal/features/calendar/DesignDoc.md) |
 | 409 | `import_running`、`import_preview_changed` | 取り込みを確定できない原因 | [Google カレンダーとの連携の Design Doc](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/internal/features/calendar/DesignDoc.md) |
 | 409 | `export_not_in_review` | 確認が必要な書き出しを解けない原因 | [Google カレンダーとの連携の Design Doc](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/internal/features/calendar/DesignDoc.md) |
-| 409 | `cutover_open`、`cutover_not_google_primary`、`cutover_sync_not_ready`、`cutover_not_open`、`cutover_incomplete` | 予定の正本の切り替えを始められないか、完了できないか、やめられない原因。`cutover_incomplete` は本文の `items` に満たさない一覧を持つ | [Google カレンダーとの連携の Design Doc の予定の正本の切り替え](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/internal/features/calendar/DesignDoc.md#予定の正本の切り替え) |
-| 409 | `google_primary` | Google カレンダーを予定の正本にする事業所で、単発の予定の作成、変更、キャンセルのほかの予定を書くか、切り替えの無いときに取り込もうとした | [事業所の正本のモードと予定の書き込み](#事業所の正本のモードと予定の書き込み) |
+| 409 | `cutover_open`、`cutover_not_google_primary`、`cutover_sync_not_ready`、`cutover_not_open`、`cutover_incomplete` | 予定の管理の移行を始められないか、完了できないか、やめられない原因。`cutover_incomplete` は本文の `items` に満たさない一覧を持つ | [Google カレンダーとの連携の Design Doc の予定の管理の移行](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/internal/features/calendar/DesignDoc.md#予定の管理の移行) |
+| 409 | `google_primary` | 予定を Google カレンダーで管理している事業所で、単発の予定の作成、変更、キャンセルのほかの予定を書くか、移行の無いときに取り込もうとした | [事業所の予定の管理先と予定の書き込み](#事業所の予定の管理先と予定の書き込み) |
 | 422 | `calendar_unreadable` | Google カレンダーが無いか、事業所のサービスアカウントに共有されていない | [Google カレンダーとの連携の Design Doc](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/internal/features/calendar/DesignDoc.md) |
 | 500 | `internal` | サーバーのエラー。ブローカーに届かないときも含む | - |
 | 502 | `calendar_unavailable` | Google に届かないか、Google がエラーを返した | [Google カレンダーとの連携の Design Doc](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/internal/features/calendar/DesignDoc.md) |

@@ -1,6 +1,6 @@
 import type { ImportRange } from '#/api/types'
 
-/** 期間を選んで取り込むときの、終わりのある期間。予定の正本の切り替えの間の、終わりの無い期間を含めない。 */
+/** 期間を選んで取り込むときの、終わりのある期間。予定の管理の移行の間の、終わりの無い期間を含めない。 */
 export type BoundedImportRange = ImportRange & { range_end: string }
 
 const pad = (value: number) => String(value).padStart(2, '0')

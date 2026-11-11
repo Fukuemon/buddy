@@ -1,4 +1,4 @@
-# #594 Google カレンダーを正本にする事業所の、取り込めない予定の扱いのエビデンスの一覧
+# #594 予定を Google カレンダーで管理している事業所の、取り込めない予定の扱いのエビデンスの一覧
 
 [#594](https://github.com/Fukuemon/buddy/issues/594) の受け入れの条件の 5 つ目の、検証のシナリオとエビデンスの spec の対応。  
 検証の issue は [#933](https://github.com/Fukuemon/buddy/issues/933) である。

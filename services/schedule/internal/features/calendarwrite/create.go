@@ -76,13 +76,13 @@ type write struct {
 type draft func(ctx context.Context) (w write, staffID string, visitID *string, err error)
 
 // Do は、事業所 facilityID に、画面が決めた ID が id の単発の予定を、予定の職員のカレンダーに書いて作り、書いた予定を返す。
-// 書き込みは ADR-0029 の手順に従う。1 つ目のトランザクションで、事業所の行を共有のロックで読んでモードと切り替えを確認し、
+// 書き込みは ADR-0029 の手順に従う。1 つ目のトランザクションで、事業所の行を共有のロックで読んでモードと移行を確認し、
 // schedule の規則（schedule.PrepareSchedule）で入力と権限を確認して、記録に保留の版を書く。トランザクションの外で Google に作り、
 // 2 つ目のトランザクションで、Google が返した予定を Projection に写して保留の版を確定する。
 // 同じ id で送り直したときは、Google の予定を 1 つのままにし、Google の予定が送った内容と同じなら成功を返す。
 //
 // 入力と参照のエラー、apperr.ErrForbidden は schedule.Create と同じである。事業所が無いときは apperr.ErrNotFound を返す。
-// 次のときは apperr.ErrConflict を返す: 事業所が google_primary でない、open の切り替えがある（CodeCutoverOpen）、予定の職員に
+// 次のときは apperr.ErrConflict を返す: 事業所が google_primary でない、open の移行がある（CodeCutoverOpen）、予定の職員に
 // 外していないカレンダーが無い（CodeCalendarNotLinked）、同じ id の書き込みが途中である（CodeWritePending）、
 // Google の予定が送った内容と違う（CodeEventChanged）、Google で予定が見つからない（CodeEventNotFound）、
 // カレンダーに書けない（CodeCalendarUnwritable）、Google が内容を受け付けない（CodeEventRejected）、id がほかの予定に使われている。
@@ -114,7 +114,7 @@ func (c Create) Do(ctx context.Context, facilityID, id string, in schedule.SlotI
 // 返す write の応答の訪問の情報は、Google が受けた版の訪問の情報である。
 func (c Create) run(ctx context.Context, facilityID, id string, prepare draft) (write, calendar.Event, error) {
 	if id == "" {
-		return write{}, calendar.Event{}, apperr.Invalid("Google カレンダーを予定の正本にする事業所では、予定の ID（id）が必須です")
+		return write{}, calendar.Event{}, apperr.Invalid("予定を Google カレンダーで管理している事業所では、予定の ID（id）が必須です")
 	}
 	eventID, err := calendar.EventIDOf(id)
 	if err != nil {

@@ -296,5 +296,5 @@ func build(d deps, tx tx.Transactor, ids kernel.IDGenerator, guard kernel.Guard)
 	}
 }
 
-// cutoverNow は、切り替えを始める時刻である。取り込みの期間は、この月の初日の 2026-11-01 から先の全てになる。
+// cutoverNow は、移行を始める時刻である。取り込みの期間は、この月の初日の 2026-11-01 から先の全てになる。
 func cutoverNow() time.Time { return time.Date(2026, 11, 5, 9, 0, 0, 0, calendar.Tokyo) }

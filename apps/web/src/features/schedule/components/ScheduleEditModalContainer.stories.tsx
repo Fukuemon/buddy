@@ -107,7 +107,7 @@ export const Forbidden: Story = {
 
 export const NotFound: Story = { parameters: route({ url: '/schedule/missing/edit' }) }
 
-/** Google カレンダーを予定の正本にする事業所の予定。同じフォームを出し、編集を開いたときの etag で保存する。 */
+/** 予定を Google カレンダーで管理している事業所の予定。同じフォームを出し、編集を開いたときの etag で保存する。 */
 export const GooglePrimary: Story = {
   parameters: route({
     url: '/schedule/gcal-schedule-1/edit',
@@ -152,7 +152,7 @@ export const BuddyPrimary: Story = {
   parameters: route({ url: '/schedule/schedule-4/edit', api: createFakeBuddyApi() }),
 }
 
-/** google_primary の事業所で、切り替えていないときに開いた。開いた後に切り替えを始めるテストが、この story の API を書き換える。 */
+/** google_primary の事業所で、移していないときに開いた。開いた後に移行を始めるテストが、この story の API を書き換える。 */
 export const GooglePrimaryBeforeCutover: Story = {
   parameters: route({
     url: '/schedule/gcal-schedule-1/edit',
@@ -160,7 +160,7 @@ export const GooglePrimaryBeforeCutover: Story = {
   }),
 }
 
-/** 予定の正本を buddy に切り替えている事業所で、URL を直に開いた。フォームと保存のボタンを出さずに、切り替えていることを出す。 */
+/** 予定の管理を buddy に移している事業所で、URL を直に開いた。フォームと保存のボタンを出さずに、移していることを出す。 */
 export const Cutover: Story = {
   parameters: route({ url: '/schedule/gcal-schedule-1/edit', api: cutoverBuddyApi() }),
 }

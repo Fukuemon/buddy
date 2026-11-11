@@ -102,7 +102,7 @@ export const Loading: Story = { parameters: route({ api: pendingBuddyApi() }) }
 /** 自分の予定だけを編集できる職員。主訪問者の候補は自分だけになる。 */
 export const SelfEditOnly: Story = { parameters: route({ viewer: selfEditViewer }) }
 
-/** Google カレンダーを予定の正本にする事業所。同じフォームを出し、予定の API が Google カレンダーに書く。 */
+/** 予定を Google カレンダーで管理している事業所。同じフォームを出し、予定の API が Google カレンダーに書く。 */
 export const GooglePrimary: Story = {
   parameters: route({ api: createFakeBuddyApi({ sourceMode: 'google_primary' }) }),
 }

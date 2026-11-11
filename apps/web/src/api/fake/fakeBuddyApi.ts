@@ -44,14 +44,14 @@ export type FakeBuddyApiOptions = {
   /** 予定のダミーデータを散らす基準の日。デフォルトは呼んだ時の日付。 */
   baseDate?: Date
   /**
-   * 事業所の予定の正本。デフォルトは buddy_primary。google_primary にすると、予定を同期が写した Google カレンダーの予定にし、
+   * 事業所の予定の管理先。デフォルトは buddy_primary。google_primary にすると、予定を同期が写した Google カレンダーの予定にし、
    * 同期の状況と確認が必要な予定を返す。作成、更新、キャンセルは、予定の API と同じく Google カレンダーに書いたものとして扱う。
-   * 更新とキャンセルは etag を求め、予定の etag と違えば 409（google_event_changed）を、切り替え中は 409（cutover_open）を投げる。
+   * 更新とキャンセルは etag を求め、予定の etag と違えば 409（google_event_changed）を、移行中は 409（cutover_open）を投げる。
    */
   sourceMode?: SourceMode
   /**
    * google_primary の事業所のカレンダーの同期の状況。デフォルトは createMockCalendarSyncs（青木 一郎だけが同期できている）。
-   * 予定の正本の切り替えは、全てのカレンダーの同期が成功していると始められる。
+   * 予定の管理の移行は、全てのカレンダーの同期が成功していると始められる。
    */
   calendarSyncs?: CalendarSyncStatus[]
 }
@@ -81,7 +81,7 @@ export const createFakeBuddyApi = ({
   calendarSyncs: syncs,
 }: FakeBuddyApiOptions = {}): BuddyApi => {
   const isGooglePrimary = sourceMode === 'google_primary'
-  // 切り替えを完了すると buddy_primary に移る
+  // 移行を完了すると buddy_primary に移る
   let mode = sourceMode
   let cutover: CalendarCutover | null = null
   let cutoverSequence = 0
@@ -103,12 +103,12 @@ export const createFakeBuddyApi = ({
     etagSequence += 1
     return `"fake-${etagSequence}"`
   }
-  // 本物の API と同じく、google_primary の事業所では、切り替えの間の書き込みを 409 で拒み、変更とキャンセルの etag を比べる
+  // 本物の API と同じく、google_primary の事業所では、移行の間の書き込みを 409 で拒み、変更とキャンセルの etag を比べる
   const assertWritable = () => {
     if (mode === 'google_primary' && cutover !== null) {
       throw new ApiError(
         409,
-        'この事業所では予定の正本を切り替えています。切り替えの間は予定を作成、変更、取り消しできません',
+        'この事業所では予定の管理を buddy に移しています。終わるまで、予定を作成、変更、取り消しできません',
         [],
         'cutover_open',
       )
@@ -197,7 +197,7 @@ export const createFakeBuddyApi = ({
     }
   }
   const conflict = (code: string, message: string) => new ApiError(409, message, [], code)
-  // 本物の API と同じく、切り替えの間は、切り替えの range_start から終わりの無い期間だけを受ける
+  // 本物の API と同じく、移行の間は、移行の range_start から終わりの無い期間だけを受ける
   const assertCutoverRange = (range: { range_start: string; range_end?: string | null }) => {
     const open =
       cutover !== null && (range.range_start !== cutover.range_start || range.range_end != null)
@@ -221,7 +221,7 @@ export const createFakeBuddyApi = ({
     })
   const findOpenCutover = (cutoverId: CalendarCutover['id']) => {
     if (cutover === null || cutover.id !== cutoverId)
-      throw conflict('cutover_not_open', 'この切り替えは、すでに完了したか、やめています')
+      throw conflict('cutover_not_open', 'この移行は、すでに完了したか、やめています')
     return cutover
   }
   const finishCutover = (status: CalendarCutover['status']) => {
@@ -541,7 +541,7 @@ export const createFakeBuddyApi = ({
       import: async (facilityId, externalCalendarId, { decisions, ...range }) => {
         assertFacility(facilityId)
         const calendar = findCalendar(externalCalendarId)
-        // 本物の API と同じく、google_primary の事業所では、切り替えの間だけ取り込める
+        // 本物の API と同じく、google_primary の事業所では、移行の間だけ取り込める
         if (mode === 'google_primary' && cutover === null) {
           throw new ApiError(
             409,
@@ -591,10 +591,10 @@ export const createFakeBuddyApi = ({
         if (mode !== 'google_primary')
           throw conflict(
             'cutover_not_google_primary',
-            'この事業所の予定の正本は、すでに buddy です',
+            'この事業所は、すでに予定を buddy で管理しています',
           )
         if (cutover !== null)
-          throw conflict('cutover_open', 'この事業所では、切り替えをすでに始めています')
+          throw conflict('cutover_open', 'この事業所では、移行をすでに始めています')
         const notSynced = cutoverCalendars().filter((c) => c.last_status !== 'succeeded')
         if (notSynced.length > 0)
           throw conflict(
@@ -616,7 +616,7 @@ export const createFakeBuddyApi = ({
       completeCutover: async (facilityId, cutoverId) => {
         assertFacility(facilityId)
         findOpenCutover(cutoverId)
-        // 本物の API と同じく、この切り替えで取り込んでいないカレンダーがあれば完了を拒む
+        // 本物の API と同じく、この移行で取り込んでいないカレンダーがあれば完了を拒む
         const unmet = cutoverCalendars()
           .filter((c) => c.last_import === null)
           .map((c): CalendarCutoverUnmet => ({

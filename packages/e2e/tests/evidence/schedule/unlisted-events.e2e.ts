@@ -63,7 +63,7 @@ const deleteEvents = async (request: APIRequestContext, ids: string[]) => {
 }
 
 test.describe('予定のカレンダー', () => {
-  test.describe(`Google カレンダーのカレンダーに出せない予定（${OKADA.staff.name}、Google カレンダーを正本にする事業所のマネージャー）`, () => {
+  test.describe(`Google カレンダーのカレンダーに出せない予定（${OKADA.staff.name}、予定を Google カレンダーで管理している事業所のマネージャー）`, () => {
     test.use({ storageState: OKADA_STATE })
 
     test('unlisted-time 表示している週に時刻を読めない予定がある場合、通知の欄に件数と Google カレンダーで確認する案内が出て、格子には出ないこと', async ({

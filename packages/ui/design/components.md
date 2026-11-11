@@ -117,7 +117,7 @@ DADS から外れる規則は、外れることと理由を、その規則に書
 - データを失う操作は、起点のボタンを `variant="destructive"` にして確認のダイアログを開き、確認のダイアログの確定のボタンを `variant="danger"` にする。
   - 起点のボタンに赤い塗りを使わない。赤い塗りは、確認の手順の最後の確定の 1 か所だけにする。
   - 起点のボタンを、よく使う安全な操作のボタン（「閉じる」「編集」「完了する」）の隣に並べない。ラベルの違いだけでは押し間違いを防げない。ダイアログの中の配置は、下の `Modal`、`Dialog` の規則にある。
-    - 画面の中で安全な操作と同じ行に置くときは、行の反対の端に離して置く（予定の正本の切り替えの「切り替えをやめる」）。
+    - 画面の中で安全な操作と同じ行に置くときは、行の反対の端に離して置く（予定の管理の移行の「移行をやめる」）。
   - 入力のダイアログが、何が失われるかを示して確定するとき（職員の役職を変える）は、その確定のボタンを確認の手順の最後とみなし、`variant="danger"` にする。
   - 確定のボタンの文字は、操作の動詞（「外す」「書き直す」）にする。
   - 出典: [Nielsen Norman Group: Proximity of Consequential Options](https://www.nngroup.com/articles/proximity-consequential-options/)、[GOV.UK Design System: Warning buttons](https://design-system.service.gov.uk/components/button/)

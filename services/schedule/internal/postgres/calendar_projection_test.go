@@ -320,7 +320,7 @@ func TestCalendarSyncProjectsGooglePrimaryCalendar(t *testing.T) {
 	}
 }
 
-// TestCalendarSyncClaimsByMode は、同期の状態のリポジトリが、事業所の正本のモードが渡したモードにあるカレンダーだけを取り、
+// TestCalendarSyncClaimsByMode は、同期の状態のリポジトリが、事業所の予定の管理先が渡したモードにあるカレンダーだけを取り、
 // 滞留も同じモードのカレンダーだけで数えることを確認する。
 func TestCalendarSyncClaimsByMode(t *testing.T) {
 	ctx := txContext(t)

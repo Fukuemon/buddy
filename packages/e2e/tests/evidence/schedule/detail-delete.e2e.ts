@@ -53,7 +53,7 @@ const CONFLICT_MESSAGE =
   '予定がキャンセルか変更されていたので、削除できませんでした。予定を開き直してください。'
 
 const AOKI = `${LOGIN_STAFF.name}（マネージャー）`
-const OKADA_ACTOR = `${OKADA.staff.name}（Google カレンダーを正本にする事業所のマネージャー）`
+const OKADA_ACTOR = `${OKADA.staff.name}（予定を Google カレンダーで管理している事業所のマネージャー）`
 
 /** 通常の予定の値。時刻を省くと 10:00〜11:00 にする。 */
 type Slot = { staffId: string; title: string; date: string; start?: string; end?: string }
@@ -480,7 +480,7 @@ test.describe('予定の詳細', () => {
     test.describe(OKADA_ACTOR, () => {
       test.use({ storageState: OKADA_STATE })
 
-      test('detail-delete-hidden-google Google カレンダーで管理する事業所の職員が明日の予定の詳細を開いた場合、「予定をキャンセル」と「編集」は出て「予定を削除」は出ないこと', async ({
+      test('detail-delete-hidden-google Google カレンダーで管理している事業所の職員が明日の予定の詳細を開いた場合、「予定をキャンセル」と「編集」は出て「予定を削除」は出ないこと', async ({
         browser,
         context,
       }) => {
@@ -494,7 +494,7 @@ test.describe('予定の詳細', () => {
         await expect(event).toBeVisible()
         await intro(
           page,
-          `Google カレンダーで管理する事業所の予定には削除が出ない\n前提 ${OKADA.staff.name}（google_primary の事業所）で入っている。calendarpit に作った明日（${date}）の 13:00〜14:00 の「${title}」が、同期の後に明日の日の表示に出ている`,
+          `Google カレンダーで管理している事業所の予定には削除が出ない\n前提 ${OKADA.staff.name}（google_primary の事業所）で入っている。calendarpit に作った明日（${date}）の 13:00〜14:00 の「${title}」が、同期の後に明日の日の表示に出ている`,
         )
 
         await step(page, '予定を押して詳細を開く', () => openDetail(page, event))
@@ -510,7 +510,7 @@ test.describe('予定の詳細', () => {
         )
       })
 
-      test('detail-google-opens Google カレンダーで管理する事業所の職員が date の無い予定のカレンダーから明日の予定を押した場合、詳細が開くこと', async ({
+      test('detail-google-opens Google カレンダーで管理している事業所の職員が date の無い予定のカレンダーから明日の予定を押した場合、詳細が開くこと', async ({
         browser,
         context,
       }) => {
@@ -529,7 +529,7 @@ test.describe('予定の詳細', () => {
         expect(new URL(page.url()).searchParams.has('date')).toBe(false)
         await intro(
           page,
-          `Google カレンダーで管理する事業所の予定の詳細を開ける\n前提 ${OKADA.staff.name} で入り、search params に date の無い予定のカレンダー（/schedule?view=week）を開いている。明日（${date}）の 15:00〜16:00 に、calendarpit に作った「${title}」が出ている`,
+          `Google カレンダーで管理している事業所の予定の詳細を開ける\n前提 ${OKADA.staff.name} で入り、search params に date の無い予定のカレンダー（/schedule?view=week）を開いている。明日（${date}）の 15:00〜16:00 に、calendarpit に作った「${title}」が出ている`,
         )
 
         await step(page, '明日の予定を押して詳細を開く', async () => {

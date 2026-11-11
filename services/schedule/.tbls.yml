@@ -14,7 +14,7 @@ name: schedule
 viewpoints:
   - id: organization
     name: 事業所と組織
-    desc: 事業所と、その中の部署、チーム、役職、職員。事業所は予定の正本のモードを持つ
+    desc: 事業所と、その中の部署、チーム、役職、職員。事業所は予定の管理先を持つ
     tables:
       - facilities
       - departments
@@ -73,7 +73,7 @@ viewpoints:
       - recurring_schedule_details
   - id: calendar-sync
     name: 外部のカレンダーの取り込みと書き出し
-    desc: 職員の外部のカレンダーと同期の状態、外部の予定と予定の対応、取り込みの記録、書き出しの待ち、Google カレンダーの予定の写し（Projection）。書き出しは、予定の正本のモードが buddy_primary の事業所に限る。同期は google_primary の事業所のカレンダーだけを読み、予定の写しに書く。google_primary の事業所で buddy から Google カレンダーに書いた予定は、訪問の情報と書き込みの保留の版を記録に持つ。切り替えは、google_primary の事業所の予定を取り込み、完了で事業所を buddy_primary にする
+    desc: 職員の外部のカレンダーと同期の状態、外部の予定と予定の対応、取り込みの記録、書き出しの待ち、Google カレンダーの予定の写し（Projection）。書き出しは、予定の管理先が buddy_primary の事業所に限る。同期は google_primary の事業所のカレンダーだけを読み、予定の写しに書く。google_primary の事業所で buddy から Google カレンダーに書いた予定は、訪問の情報と書き込みの保留の版を記録に持つ。移行は、google_primary の事業所の予定を取り込み、完了で事業所を buddy_primary にする
     tables:
       - external_calendars
       - calendar_sync_states

@@ -91,7 +91,7 @@ type CreateImportRunParams struct {
 	CutoverID          *string
 }
 
-// range_end は、切り替えの取り込み（cutover_id がある）では NULL にする。
+// range_end は、移行の取り込み（cutover_id がある）では NULL にする。
 func (q *Queries) CreateImportRun(ctx context.Context, arg CreateImportRunParams) error {
 	_, err := q.db.Exec(ctx, createImportRun,
 		arg.ID,

@@ -8,7 +8,7 @@ import (
 	"github.com/Fukuemon/buddy/services/schedule/internal/kernel"
 )
 
-// GetCutover は、事業所の切り替えの状況を返す。
+// GetCutover は、事業所の移行の状況を返す。
 type GetCutover struct {
 	syncs    scheduleview.CalendarSyncs
 	cutovers CutoverRepository
@@ -20,8 +20,8 @@ func NewGetCutover(syncs scheduleview.CalendarSyncs, cutovers CutoverRepository,
 	return GetCutover{syncs: syncs, cutovers: cutovers, guard: guard}
 }
 
-// Do は、事業所 facilityID の open の切り替えと、外していない全てのカレンダーの同期の状況と、この切り替えで最後に成功した取り込みを返す。
-// open の切り替えが無ければ、CutoverState.Cutover は nil で、取り込みは持たない。
+// Do は、事業所 facilityID の open の移行と、外していない全てのカレンダーの同期の状況と、この移行で最後に成功した取り込みを返す。
+// open の移行が無ければ、CutoverState.Cutover は nil で、取り込みは持たない。
 func (u GetCutover) Do(ctx context.Context, facilityID string) (CutoverState, error) {
 	if err := u.guard(ctx); err != nil {
 		return CutoverState{}, err

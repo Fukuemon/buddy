@@ -22,7 +22,7 @@ func NewCalendarSyncRepository(pool *pgxpool.Pool) *CalendarSyncRepository {
 
 var _ calendarsync.SyncRepository = (*CalendarSyncRepository)(nil)
 
-// Claim は、同期の状態の行が無いカレンダーに行を足してから、事業所の正本のモードが modes にあり、読む時刻を過ぎた
+// Claim は、同期の状態の行が無いカレンダーに行を足してから、事業所の予定の管理先が modes にあり、読む時刻を過ぎた
 // 外していないカレンダーを max 件まで取る。
 func (r *CalendarSyncRepository) Claim(ctx context.Context, max int, lease time.Duration, modes []organization.SourceMode) ([]calendarsync.SyncState, error) {
 	n, err := int32Of(max)
@@ -72,7 +72,7 @@ func (r *CalendarSyncRepository) Finish(ctx context.Context, s calendarsync.Sync
 	return translate("finish calendar sync", err)
 }
 
-// Backlog は、事業所の正本のモードが modes にある、読む時刻を過ぎた外していないカレンダーの数と、最も古い最後の成功からの時間を返す。
+// Backlog は、事業所の予定の管理先が modes にある、読む時刻を過ぎた外していないカレンダーの数と、最も古い最後の成功からの時間を返す。
 func (r *CalendarSyncRepository) Backlog(ctx context.Context, modes []organization.SourceMode) (calendarsync.SyncBacklog, error) {
 	row, err := r.q(ctx).CalendarSyncBacklog(ctx, modeStrings(modes))
 	if err != nil {
@@ -81,7 +81,7 @@ func (r *CalendarSyncRepository) Backlog(ctx context.Context, modes []organizati
 	return calendarsync.SyncBacklog{OverdueCount: int(row.OverdueCount), OldestSuccessAge: secondsOf(row.OldestSuccessAgeSeconds)}, nil
 }
 
-// modeStrings は、正本のモードを、クエリに渡す文字列の配列にする。
+// modeStrings は、予定の管理先を、クエリに渡す文字列の配列にする。
 func modeStrings(modes []organization.SourceMode) []string {
 	out := make([]string, len(modes))
 	for i, m := range modes {

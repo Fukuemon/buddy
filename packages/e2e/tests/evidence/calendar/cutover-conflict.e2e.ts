@@ -1,5 +1,5 @@
 // DB を作り直してから単独で流す。
-// cutover-conflict-complete は、石田の事業所の正本の切り替えを完了し、戻す API が無いので、ファイルの最後に置く。
+// cutover-conflict-complete は、石田の事業所の移行を完了し、戻す API が無いので、ファイルの最後に置く。
 import { expect, test, type Page } from '@playwright/test'
 
 import { check, intro, step } from '../../fixtures/caption'
@@ -10,15 +10,14 @@ import { pageBody } from '../../selectors/page'
 
 const CUTOVER_URL = '/schedule/link/cutover'
 const NOT_OPEN_MESSAGE =
-  'この切り替えは、ほかの画面で完了したか、やめています。画面を読み直してください。'
-const STARTED_MESSAGE =
-  'この事業所では、ほかの画面で切り替えを始めています。画面を読み直してください。'
+  'この移行は、ほかの画面で完了したか、やめています。画面を読み直してください。'
+const STARTED_MESSAGE = 'この事業所では、ほかの画面で移行を始めています。画面を読み直してください。'
 
-/** 今日の Asia/Tokyo の日付（YYYY-MM-DD）。切り替えの取り込みの期間は今月の初日から先の全てなので、今日に予定を作る。 */
+/** 今日の Asia/Tokyo の日付（YYYY-MM-DD）。移行の取り込みの期間は今月の初日から先の全てなので、今日に予定を作る。 */
 const todayInTokyo = () => new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().slice(0, 10)
 
 /**
- * 録画の外の準備。石田のコンテキストで、切り替えの画面を、切り替えの前（open が false）か切り替え中（true）にする。
+ * 録画の外の準備。石田のコンテキストで、移行の画面を、移行の前（open が false）か移行中（true）にする。
  * 前の撮影が残した状態は、やめるか始めるかで合わせる。
  * 取り込む予定が無いと完了の撮影で取り込めないので、Google カレンダーの今日に予定を 1 件作る。
  */
@@ -45,7 +44,7 @@ const prepare = (browser: Parameters<typeof prepareOutsideRecording>[0], open: b
     }
   })
 
-/** 録画の画面で、切り替えの画面を開き、目印の要素が出るまで待つ。 */
+/** 録画の画面で、移行の画面を開き、目印の要素が出るまで待つ。 */
 const openCutover = async (page: Page, open: boolean) => {
   await page.goto(CUTOVER_URL)
   await expect(
@@ -66,7 +65,7 @@ const inOtherTab = async (page: Page, action: (other: Page) => Promise<void>) =>
   })
 }
 
-/** 別のタブで切り替えをやめる。 */
+/** 別のタブで移行をやめる。 */
 const cancelInOtherTab = (page: Page) =>
   inOtherTab(page, async (other) => {
     await other.getByTestId('calendar-cutover-cancel').click()
@@ -75,7 +74,7 @@ const cancelInOtherTab = (page: Page) =>
   })
 
 /**
- * 職員がほかのタブからこの画面のタブに戻ったときの出来事を送り、画面に切り替えの状況を読み直させる。
+ * 職員がほかのタブからこの画面のタブに戻ったときの出来事を送り、画面に移行の状況を読み直させる。
  * 録画のブラウザはタブを切り替えても戻ったときの出来事を送らないので、撮影のために送る。
  */
 const returnToTab = (page: Page) =>
@@ -83,14 +82,14 @@ const returnToTab = (page: Page) =>
     document.dispatchEvent(new Event('visibilitychange', { bubbles: true }))
   })
 
-/** やめる前の確認を開き、別のタブで切り替えをやめてから、確認の「やめる」を押す。 */
+/** やめる前の確認を開き、別のタブで移行をやめてから、確認の「やめる」を押す。 */
 const cancelAfterOtherTabCanceled = async (page: Page) => {
   const dialog = page.getByTestId('calendar-cutover-cancel-confirm-dialog')
-  await step(page, '「切り替えをやめる」を押し、やめる前の確認を開く', async () => {
+  await step(page, '「移行をやめる」を押し、やめる前の確認を開く', async () => {
     await page.getByTestId('calendar-cutover-cancel').click()
     await dialog.waitFor()
   })
-  await step(page, '撮影のため、同じ職員が開いた別のタブで、先に切り替えをやめる', () =>
+  await step(page, '撮影のため、同じ職員が開いた別のタブで、先に移行をやめる', () =>
     cancelInOtherTab(page),
   )
   await step(page, 'この画面の確認で「やめる」を押す', () =>
@@ -99,13 +98,13 @@ const cancelAfterOtherTabCanceled = async (page: Page) => {
   return dialog
 }
 
-const INTRO_OPEN = '前提 予定の正本の切り替えの画面を、切り替え中の状態で開いている'
+const INTRO_OPEN = '前提 予定の管理を buddy に移す画面を、移行中の状態で開いている'
 
-test.describe('予定の正本の切り替えで、ほかの画面で先に操作されたとき', () => {
-  test.describe(`${ISHIDA.staff.name}（Google カレンダーを正本にする事業所のマネージャー）`, () => {
+test.describe('予定の管理の移行で、ほかの画面で先に操作されたとき', () => {
+  test.describe(`${ISHIDA.staff.name}（予定を Google カレンダーで管理している事業所のマネージャー）`, () => {
     test.use({ storageState: ISHIDA_STATE })
 
-    // 改修前は文を出さずにダイアログが閉じる。確認する関数は、文が出るか、切り替えの前の状態に替わるかのどちらかを見る
+    // 改修前は文を出さずにダイアログが閉じる。確認する関数は、文が出るか、移行の前の状態に替わるかのどちらかを見る
     test(
       'cutover-conflict-cancel ほかの画面でやめた後に、やめる前の確認でやめるを押した場合、やめるの失敗の文を出すこと',
       { tag: '@compare' },
@@ -132,7 +131,7 @@ test.describe('予定の正本の切り替えで、ほかの画面で先に操�
     )
 
     // 改修前は、失敗の文が出ないので「戻る」とタブに戻る 2 つの操作が無い。改修前と改修後で流れが違うので、改修後の流れだけを撮る
-    test('cutover-conflict-restart ほかの画面でやめた後にやめるを押し、切り替えを始めるを押した場合、やめる前の確認のダイアログを開かないこと', async ({
+    test('cutover-conflict-restart ほかの画面でやめた後にやめるを押し、移行を始めるを押した場合、やめる前の確認のダイアログを開かないこと', async ({
       browser,
       context,
     }) => {
@@ -142,7 +141,7 @@ test.describe('予定の正本の切り替えで、ほかの画面で先に操�
       await openCutover(page, true)
       await intro(
         page,
-        `ほかの画面でやめた後にやめるを押し、切り替えを始め直すと、やめる前の確認のダイアログを開かない\n${INTRO_OPEN}`,
+        `ほかの画面でやめた後にやめるを押し、移行を始め直すと、やめる前の確認のダイアログを開かない\n${INTRO_OPEN}`,
       )
 
       const dialog = await cancelAfterOtherTabCanceled(page)
@@ -155,19 +154,19 @@ test.describe('予定の正本の切り替えで、ほかの画面で先に操�
         'ほかのタブからこのタブに戻る（撮影のため、戻ったときの出来事を送り、画面に読み直させる）',
         () => returnToTab(page),
       )
-      await step(page, '切り替えの前の状態で、「切り替えを始める」を押す', async () => {
+      await step(page, '移行の前の状態で、「移行を始める」を押す', async () => {
         await page.getByTestId('calendar-cutover-start').waitFor()
         await page.getByTestId('calendar-cutover-start').click()
       })
-      await check(page, '切り替え中になり、やめる前の確認のダイアログは開かない', async () => {
+      await check(page, '移行中になり、やめる前の確認のダイアログは開かない', async () => {
         await expect(page.getByTestId('calendar-cutover-open')).toBeVisible()
         await expect(dialog).toHaveCount(0)
       })
     })
 
-    // 改修前は文を出さずに切り替え中に替わる。確認する関数は、文が出るか、切り替え中に替わるかのどちらかを見る
+    // 改修前は文を出さずに移行中に替わる。確認する関数は、文が出るか、移行中に替わるかのどちらかを見る
     test(
-      'cutover-conflict-start ほかの画面で始めた後に、切り替えを始めるを押した場合、始めるの失敗の文を出すこと',
+      'cutover-conflict-start ほかの画面で始めた後に、移行を始めるを押した場合、始めるの失敗の文を出すこと',
       { tag: '@compare' },
       async ({ browser, context }) => {
         await prepare(browser, false)
@@ -176,19 +175,19 @@ test.describe('予定の正本の切り替えで、ほかの画面で先に操�
         await openCutover(page, false)
         await intro(
           page,
-          'ほかの画面で始めた後に、切り替えを始めるを押すと、始めるの失敗の文を出す\n前提 予定の正本の切り替えの画面を、切り替えの前の状態で開いている',
+          'ほかの画面で始めた後に、移行を始めるを押すと、始めるの失敗の文を出す\n前提 予定の管理を buddy に移す画面を、移行の前の状態で開いている',
         )
 
-        await step(page, '撮影のため、同じ職員が開いた別のタブで、先に切り替えを始める', () =>
+        await step(page, '撮影のため、同じ職員が開いた別のタブで、先に移行を始める', () =>
           inOtherTab(page, async (other) => {
             await other.getByTestId('calendar-cutover-start').click()
             await other.getByTestId('calendar-cutover-open').waitFor()
           }),
         )
-        await step(page, 'この画面で「切り替えを始める」を押す', () =>
+        await step(page, 'この画面で「移行を始める」を押す', () =>
           page.getByTestId('calendar-cutover-start').click(),
         )
-        await check(page, `「切り替えを始める」の上に「${STARTED_MESSAGE}」が出る`, () =>
+        await check(page, `「移行を始める」の上に「${STARTED_MESSAGE}」が出る`, () =>
           expect(
             page
               .getByTestId('calendar-cutover-start-error')
@@ -200,8 +199,8 @@ test.describe('予定の正本の切り替えで、ほかの画面で先に操�
       },
     )
 
-    // 完了すると事業所の正本が buddy に替わり、ほかの撮影の前提に戻せないので、最後に撮る。
-    // 改修前は文を出さずに正本が buddy の状態に替わる。確認する関数は、文が出るか、正本が buddy の状態に替わるかのどちらかを見る
+    // 完了すると事業所の予定の管理先が buddy に替わり、ほかの撮影の前提に戻せないので、最後に撮る。
+    // 改修前は文を出さずに予定の管理先が buddy の状態に替わる。確認する関数は、文が出るか、予定の管理先が buddy の状態に替わるかのどちらかを見る
     test(
       'cutover-conflict-complete ほかの画面で完了した後に、完了するを押した場合、完了の失敗の文を出すこと',
       { tag: '@compare' },
@@ -217,7 +216,7 @@ test.describe('予定の正本の切り替えで、ほかの画面で先に操�
 
         await step(
           page,
-          '撮影のため、同じ職員が開いた別のタブで、取り込んでから先に切り替えを完了する',
+          '撮影のため、同じ職員が開いた別のタブで、取り込んでから先に移行を完了する',
           () =>
             inOtherTab(page, async (other) => {
               await other.getByTestId(`calendar-cutover-open-import-${ISHIDA.staff.id}`).click()

@@ -31,7 +31,7 @@ export const queryKeys = {
   receiptResult: () => ['receipt', 'result'] as const,
   /** 事業所の全てのデータ。 */
   facility,
-  /** 事業所そのもの（名前と予定の正本）。予定の画面とカレンダーの画面で cache を共有する。 */
+  /** 事業所そのもの（名前と予定の管理先）。予定の画面とカレンダーの画面で cache を共有する。 */
   facilityDetail: (facilityId: FacilityId) => [...facility(facilityId), 'detail'] as const,
 
   /** 自分の情報の画面が読む、ログインした職員の詳細と、結び付いたカレンダー。 */
@@ -90,7 +90,7 @@ export const queryKeys = {
       [...facility(facilityId), 'calendar-service-account'] as const,
     exportIssues: (facilityId: FacilityId) =>
       [...facility(facilityId), 'calendar-export-issues'] as const,
-    /** 予定の正本の切り替えの状況。取り込みの画面と切り替えの画面で cache を共有する。 */
+    /** 予定の管理の移行の状況。取り込みの画面と移行の画面で cache を共有する。 */
     cutover: (facilityId: FacilityId) => [...facility(facilityId), 'calendar-cutover'] as const,
   },
 }

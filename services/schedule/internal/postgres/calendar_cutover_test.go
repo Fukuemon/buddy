@@ -25,7 +25,7 @@ import (
 	"github.com/Fukuemon/buddy/services/schedule/internal/ulid"
 )
 
-// cutoverOps は、シードの google_primary の事業所で、DB と Google カレンダーのフェイクを使う切り替えの操作である。
+// cutoverOps は、シードの google_primary の事業所で、DB と Google カレンダーのフェイクを使う移行の操作である。
 type cutoverOps struct {
 	start    calendarimport.StartCutover
 	imp      calendarimport.Import
@@ -110,8 +110,8 @@ func countRows(t *testing.T, ctx context.Context, tx pgx.Tx, query string, args 
 	return n
 }
 
-// TestCalendarCutoverInDB は、切り替えを始め、終わりの無い期間で取り込み、Google で変わった予定を取り込み直し、
-// 同期の後に完了する手順が、テーブルの制約に合う形で書けることを確認する。open の切り替えは、DB の一意の索引で 1 つまでである。
+// TestCalendarCutoverInDB は、移行を始め、終わりの無い期間で取り込み、Google で変わった予定を取り込み直し、
+// 同期の後に完了する手順が、テーブルの制約に合う形で書けることを確認する。open の移行は、DB の一意の索引で 1 つまでである。
 func TestCalendarCutoverInDB(t *testing.T) {
 	ctx, tx := cutoverContext(t)
 	ops := newCutoverOps(t)
@@ -120,18 +120,18 @@ func TestCalendarCutoverInDB(t *testing.T) {
 		t.Fatal(err)
 	}
 	if cut.RangeStart != (civil.Date{Year: 2026, Month: 11, Day: 1}) || cut.Status != calendarimport.CutoverOpen || cut.StartedBy != seedOkada {
-		t.Fatalf("始めた切り替え = %+v", cut)
+		t.Fatalf("始めた移行 = %+v", cut)
 	}
 	open, err := NewCalendarProjectionRepository(testDB).FindOpenCutover(ctx, seedGoogleFacility)
 	if err != nil || open == nil || open.StartedBy != seedOkada || open.StartedByName != "岡田 葵" || !open.StartedAt.Equal(cut.StartedAt) || open.RangeStart != cut.RangeStart {
-		t.Fatalf("予定の一覧の open の切り替え = %+v, err = %v", open, err)
+		t.Fatalf("予定の一覧の open の移行 = %+v, err = %v", open, err)
 	}
 	// 操作の確認を通らずに書いても、DB の一意の索引が 2 つ目の open を拒む
 	err = NewCalendarCutoverRepository(testDB).Create(ctx, calendarimport.Cutover{
 		ID: ulid.Generator{}.NewID(), FacilityID: seedGoogleFacility, RangeStart: cut.RangeStart, StartedBy: seedOkada,
 	})
 	if !errors.Is(err, apperr.ErrConflict) {
-		t.Fatalf("2 つ目の open の切り替え: err = %v, want ErrConflict", err)
+		t.Fatalf("2 つ目の open の移行: err = %v, want ErrConflict", err)
 	}
 
 	rng := cut.Range()
@@ -144,7 +144,7 @@ func TestCalendarCutoverInDB(t *testing.T) {
 		t.Fatalf("取り込みの記録 = %+v", res.Run)
 	}
 	if n := countRows(t, ctx, tx, `SELECT count(*) FROM external_event_links WHERE cutover_id = $1`, cut.ID); n != 4 {
-		t.Errorf("切り替えの予定の対応 = %d, want 4", n)
+		t.Errorf("移行の予定の対応 = %d, want 4", n)
 	}
 	if n := countRows(t, ctx, tx, `SELECT count(*) FROM import_runs WHERE cutover_id = $1 AND range_end IS NULL`, cut.ID); n != 1 {
 		t.Errorf("終わりの無い取り込みの記録 = %d, want 1", n)
@@ -183,7 +183,7 @@ func TestCalendarCutoverInDB(t *testing.T) {
 		t.Fatal(err)
 	}
 	if done.Status != calendarimport.CutoverCompleted || done.FinishedAt == nil {
-		t.Errorf("完了した切り替え = %+v", done)
+		t.Errorf("完了した移行 = %+v", done)
 	}
 	f, err := NewFacilityRepository(testDB).Get(ctx, seedGoogleFacility)
 	if err != nil || f.SourceMode != organization.SourceBuddyPrimary {
@@ -197,7 +197,7 @@ func TestCalendarCutoverInDB(t *testing.T) {
 	}
 }
 
-// TestCalendarCutoverCancelInDB は、切り替えをやめると、切り替えの取り込みで作った予定、繰り返しの予定、除外の日、予定の対応を消し、
+// TestCalendarCutoverCancelInDB は、移行をやめると、移行の取り込みで作った予定、繰り返しの予定、除外の日、予定の対応を消し、
 // 事業所を google_primary のままにすることを確認する。
 func TestCalendarCutoverCancelInDB(t *testing.T) {
 	ctx, tx := cutoverContext(t)
@@ -214,7 +214,7 @@ func TestCalendarCutoverCancelInDB(t *testing.T) {
 		t.Fatal(err)
 	}
 	if done.Status != calendarimport.CutoverCanceled {
-		t.Errorf("やめた切り替え = %+v", done)
+		t.Errorf("やめた移行 = %+v", done)
 	}
 	for table, n := range map[string]int{
 		"schedules":            countRows(t, ctx, tx, `SELECT count(*) FROM schedules WHERE facility_id = $1`, seedGoogleFacility),
@@ -235,8 +235,8 @@ func TestCalendarCutoverCancelInDB(t *testing.T) {
 	}
 }
 
-// TestCalendarCutoverPendingInDB は、事業所に保留の版を持つ記録があると、切り替えを始める操作が google_write_pending を返し、
-// 切り替えを書かないことを確認する。
+// TestCalendarCutoverPendingInDB は、事業所に保留の版を持つ記録があると、移行を始める操作が google_write_pending を返し、
+// 移行を書かないことを確認する。
 func TestCalendarCutoverPendingInDB(t *testing.T) {
 	ctx, tx := cutoverContext(t)
 	ops := newCutoverOps(t)
@@ -251,7 +251,7 @@ func TestCalendarCutoverPendingInDB(t *testing.T) {
 		t.Fatalf("始める: err = %v, want %s", err, calendarimport.CodeWritePending)
 	}
 	if n := countRows(t, ctx, tx, `SELECT count(*) FROM calendar_cutovers WHERE facility_id = $1`, seedGoogleFacility); n != 0 {
-		t.Errorf("切り替え = %d 件, want 0", n)
+		t.Errorf("移行 = %d 件, want 0", n)
 	}
 }
 

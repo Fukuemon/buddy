@@ -73,7 +73,7 @@ describe('ScheduleDetailModalContainer', () => {
     expect(screen.queryByTestId('schedule-detail-review-reason')).not.toBeInTheDocument()
   })
 
-  it('予定の正本を切り替えている間は、編集とキャンセルのボタンを出さない', async () => {
+  it('予定の管理を buddy に移している間は、編集とキャンセルのボタンを出さない', async () => {
     render(<GoogleCalendarCutover />)
     expect(await screen.findByTestId('schedule-detail-close')).toBeInTheDocument()
     expect(screen.queryByTestId('schedule-detail-edit')).not.toBeInTheDocument()

@@ -10,7 +10,7 @@ import (
 	"github.com/Fukuemon/buddy/services/schedule/internal/ulid"
 )
 
-// Google カレンダーを予定の正本にする事業所の予定の変更は、職員がカレンダーを結び付けていても積まない（ADR-0029）。
+// 予定を Google カレンダーで管理している事業所の予定の変更は、職員がカレンダーを結び付けていても積まない（ADR-0029）。
 func TestOutboxSkipsGooglePrimary(t *testing.T) {
 	s := inmem.Seeded()
 	s.Calendars[calID] = calendar.ExternalCalendar{ID: calID, FacilityID: inmem.FacilityID, StaffID: inmem.StaffID, Provider: calendar.ProviderGoogle, CalendarID: googleCalID}
@@ -35,7 +35,7 @@ func TestOutboxSkipsGooglePrimary(t *testing.T) {
 	}
 }
 
-// setSourceMode は、事業所 inmem.FacilityID の正本のモードを m にする。
+// setSourceMode は、事業所 inmem.FacilityID の予定の管理先を m にする。
 func setSourceMode(s *inmem.Store, m organization.SourceMode) {
 	f := s.Facilities[inmem.FacilityID]
 	f.SourceMode = m

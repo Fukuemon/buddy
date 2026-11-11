@@ -59,10 +59,10 @@ const deleteEvents = async (request: APIRequestContext, calendarId: string, ids:
 }
 
 test.describe('予定のカレンダー', () => {
-  test.describe(`Google カレンダーの終日の予定（${OKADA.staff.name}、Google カレンダーを正本にする事業所のマネージャー）`, () => {
+  test.describe(`Google カレンダーの終日の予定（${OKADA.staff.name}、予定を Google カレンダーで管理している事業所のマネージャー）`, () => {
     test.use({ storageState: OKADA_STATE })
 
-    test('all-day-week Google カレンダーを正本にする事業所で表示している週に終日の予定がある場合、その日の「終日」の行に押せないラベルで出ること', async ({
+    test('all-day-week 予定を Google カレンダーで管理している事業所で表示している週に終日の予定がある場合、その日の「終日」の行に押せないラベルで出ること', async ({
       browser,
       context,
       request,
@@ -346,10 +346,10 @@ test.describe('予定のカレンダー', () => {
     })
   })
 
-  test.describe(`Google カレンダーの終日の予定（${LOGIN_STAFF.name}、buddy を正本にする事業所のマネージャー）`, () => {
+  test.describe(`Google カレンダーの終日の予定（${LOGIN_STAFF.name}、予定を buddy で管理している事業所のマネージャー）`, () => {
     test.use({ storageState: LOGIN_STATE })
 
-    test('buddy-primary buddy を正本にする事業所で週の表示を開いた場合、通知の欄と「終日」の行が無く、時刻のある予定は押すと詳細が開くこと', async ({
+    test('buddy-primary 予定を buddy で管理している事業所で週の表示を開いた場合、通知の欄と「終日」の行が無く、時刻のある予定は押すと詳細が開くこと', async ({
       browser,
       context,
       request,
@@ -403,7 +403,7 @@ test.describe('予定のカレンダー', () => {
         await expect(event).toBeAttached()
         await intro(
           page,
-          `buddy を正本にする事業所\n前提 ${LEADER.staff.name} の calendarpit のカレンダーに、${dayLabel(allDayDate)} の終日の予定「${allDayTitle}」と、${dayLabel(spanStart)} 09:00 から翌日 18:00 の「${spanTitle}」を作ってある。buddy を正本にする事業所の予定のカレンダーを、週の表示で開いている`,
+          `予定を buddy で管理している事業所\n前提 ${LEADER.staff.name} の calendarpit のカレンダーに、${dayLabel(allDayDate)} の終日の予定「${allDayTitle}」と、${dayLabel(spanStart)} 09:00 から翌日 18:00 の「${spanTitle}」を作ってある。予定を buddy で管理している事業所の予定のカレンダーを、週の表示で開いている`,
         )
 
         await check(

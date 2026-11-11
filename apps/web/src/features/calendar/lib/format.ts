@@ -10,7 +10,7 @@ export { formatLastImport } from '#/components/lastImport'
 
 const WEEKDAYS = ['日', '月', '火', '水', '木', '金', '土'] as const
 
-/** `YYYY-MM-DD` の期間を「2026年11月1日（日）〜2026年11月30日（月）」の形にする。終わりの無い期間（切り替えの取り込み）は「2026年11月1日（日）〜」にする。 */
+/** `YYYY-MM-DD` の期間を「2026年11月1日（日）〜2026年11月30日（月）」の形にする。終わりの無い期間（移行の取り込み）は「2026年11月1日（日）〜」にする。 */
 export const formatDateRange = formatDateKeyRange
 
 /** オフセットつきの日時を、デバイスの時間帯で「2026年10月20日（火） 15:42」の形にする。 */

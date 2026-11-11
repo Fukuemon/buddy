@@ -185,7 +185,7 @@ func (r *CalendarProjectionRepository) DeleteByFacility(ctx context.Context, fac
 
 var _ scheduleview.Cutovers = (*CalendarProjectionRepository)(nil)
 
-// FindOpenCutover は、scheduleview.Cutovers の FindOpenCutover を実装する。open の切り替えが無ければ nil を返す。
+// FindOpenCutover は、scheduleview.Cutovers の FindOpenCutover を実装する。open の移行が無ければ nil を返す。
 func (r *CalendarProjectionRepository) FindOpenCutover(ctx context.Context, facilityID string) (*scheduleview.OpenCutover, error) {
 	c, err := r.q(ctx).FindOpenCalendarCutoverWithStarter(ctx, facilityID)
 	if errors.Is(err, pgx.ErrNoRows) {

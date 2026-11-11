@@ -47,7 +47,7 @@ export const toDecisions = (
   })
 
 /**
- * 確定して取り込むを押せるかを返す。取り込む予定か、確認が必要な予定か、切り替えの取り込みで上書きする予定があり、全てを選び終えたときに押せる。
+ * 確定して取り込むを押せるかを返す。取り込む予定か、確認が必要な予定か、移行の取り込みで上書きする予定があり、全てを選び終えたときに押せる。
  */
 export const canSubmitImport = (preview: ImportPreview, choices: ReviewChoices) =>
   (preview.counts.import > 0 || preview.needs_review.length > 0 || preview.counts.overwrite > 0) &&

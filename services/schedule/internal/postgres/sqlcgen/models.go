@@ -10,15 +10,15 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-// 事業所の予定の正本を Google カレンダーから buddy に切り替える作業の記録（切り替え）。事業所ごとに open は 1 つまで
+// 事業所の予定の管理を Google カレンダーから buddy に移す作業の記録（移行）。事業所ごとに open は 1 つまで
 type CalendarCutover struct {
 	ID         string
 	FacilityID string
 	// open、completed、canceled。completed で事業所を buddy_primary にし、canceled は google_primary のまま
 	Status string
-	// 取り込みの期間の最初の日。切り替えを始めた月の初日。期間は終わりを持たない
+	// 取り込みの期間の最初の日。移行を始めた月の初日。期間は終わりを持たない
 	RangeStart time.Time
-	// 切り替えを始めた職員
+	// 移行を始めた職員
 	StartedBy string
 	StartedAt time.Time
 	// 完了したかやめた時刻。open なら NULL
@@ -27,7 +27,7 @@ type CalendarCutover struct {
 	UpdatedAt  time.Time
 }
 
-// 切り替えの取り込みで、確認が必要な予定に取り込まないを選んだ記録
+// 移行の取り込みで、確認が必要な予定に取り込まないを選んだ記録
 type CalendarCutoverSkip struct {
 	CutoverID          string
 	FacilityID         string
@@ -39,7 +39,7 @@ type CalendarCutoverSkip struct {
 	CreatedAt time.Time
 }
 
-// Google カレンダーを予定の正本にする事業所の、Google カレンダーの予定の写し（Projection）。1 つの予定を 1 行にする
+// 予定を Google カレンダーで管理している事業所の、Google カレンダーの予定の写し（Projection）。1 つの予定を 1 行にする
 type CalendarEventProjection struct {
 	ExternalCalendarID string
 	// Google の予定の ID
@@ -127,7 +127,7 @@ type CalendarExport struct {
 	LockedUntil *time.Time
 	// 外部の予定の etag を比べずに、buddy の内容で書き直すか
 	Overwrite bool
-	// 最後に書けなかった理由。外部の予定の題名とカレンダーの ID を含めない。unappliable は、外部の変更を buddy の予定に読み替えられなかったこと。not_buddy_primary は、事業所が buddy を正本にしていないので書かなかったこと
+	// 最後に書けなかった理由。外部の予定の題名とカレンダーの ID を含めない。unappliable は、外部の変更を buddy の予定に読み替えられなかったこと。not_buddy_primary は、事業所が予定を buddy で管理していないので書かなかったこと
 	ErrorCode  *string
 	FinishedAt *time.Time
 	CreatedAt  time.Time
@@ -198,7 +198,7 @@ type ExternalEventLink struct {
 	UpdatedAt           time.Time
 	// 最後に外部の予定と同じにした時点の、buddy の予定の更新の番号。この列を足す前の行は NULL
 	SyncedVersion *int32
-	// 切り替えの取り込みで作った対応のとき、その切り替え。切り替えをやめると、この対応と予定を消す
+	// 移行の取り込みで作った対応のとき、その移行。移行をやめると、この対応と予定を消す
 	CutoverID *string
 	// 削除した単発の予定の ID。書き出しが外部の予定を消すまで対応を残す（ADR-0040）
 	DeletedScheduleID *string
@@ -215,7 +215,7 @@ type Facility struct {
 	TimeZone  string
 	CreatedAt time.Time
 	UpdatedAt time.Time
-	// 予定の正本のモード。google_primary は Google カレンダーが正本で予定の API から予定を書けない。buddy_primary は buddy が正本で Google カレンダーへ書き出す
+	// 予定の管理先。google_primary は予定を Google カレンダーで管理し、予定の API から予定を書けない。buddy_primary は予定を buddy で管理し、Google カレンダーへ書き出す
 	SourceMode string
 }
 
@@ -228,7 +228,7 @@ type ImportRun struct {
 	RequestedBy string
 	// 取り込む期間の最初の日
 	RangeStart time.Time
-	// 取り込む期間の最後の日。この日を含む。切り替えの取り込みでは NULL（終わりを持たない）
+	// 取り込む期間の最後の日。この日を含む。移行の取り込みでは NULL（終わりを持たない）
 	RangeEnd *time.Time
 	// running、succeeded、failed
 	Status        string
@@ -240,7 +240,7 @@ type ImportRun struct {
 	FinishedAt   *time.Time
 	CreatedAt    time.Time
 	UpdatedAt    time.Time
-	// 切り替えの取り込みのとき、その切り替え
+	// 移行の取り込みのとき、その移行
 	CutoverID *string
 }
 

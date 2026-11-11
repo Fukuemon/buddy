@@ -650,7 +650,7 @@ export interface paths {
          * @description 事業所の単発の予定と繰り返しの予定のうち、職員が見てよい予定を返す。見てよくない職員の予定は除く。
          *     sort_field と sort_order は許可した値だけを受け付け、ほかの値は 400 を返す。date_from と date_to は単発の予定だけを、予定の日付（開始の日）で絞る。
          *     date_from の前の日に始まり、date_from に終わる ends_next_day の予定も返す。
-         *     Google カレンダーを予定の正本にする事業所（google_primary）では、同期が写した Google カレンダーの予定（Projection）を読む（ADR-0029）。
+         *     予定を Google カレンダーで管理している事業所（google_primary）では、同期が写した Google カレンダーの予定（Projection）を読む（ADR-0029）。
          *     繰り返しの予定は、date_from から date_to までの回に展開し、回ごとに単発の予定（source が google_calendar）として返す。recurring_schedules は空である。
          *     date_from か date_to を省くと、Projection を保持する期間（前々月の初日から 3 か月後の月末）の端を使う。
          *     外したカレンダーの予定は返さない。buddy の繰り返しの規則に写せない繰り返しの予定は、最初の回の日時の 1 件にし、review_reason を付けて返す。
@@ -1056,9 +1056,9 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * 予定の正本の切り替えの状況を取得する
-         * @description 事業所の open の切り替えと、外していない全てのカレンダーの同期の状況と、この切り替えで最後に成功した取り込みを返す（ADR-0031）。
-         *     open の切り替えが無ければ、cutover は null で、カレンダーの last_import は null である。
+         * 予定の管理の移行の状況を取得する
+         * @description 事業所の open の移行と、外していない全てのカレンダーの同期の状況と、この移行で最後に成功した取り込みを返す（ADR-0031）。
+         *     open の移行が無ければ、cutover は null で、カレンダーの last_import は null である。
          *     職員の管理の権限（staff.manage）を持つ職員だけが呼べる。
          */
         get: operations["getCalendarCutoverStatus"];
@@ -1080,13 +1080,13 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * 予定の正本の切り替えを始める
-         * @description Google カレンダーを予定の正本にする事業所（google_primary）で、予定の正本を buddy に切り替える作業（切り替え）を始める（ADR-0031）。
+         * 予定の管理の移行を始める
+         * @description 予定を Google カレンダーで管理している事業所（google_primary）で、予定の管理を buddy に移す作業（移行）を始める（ADR-0031）。
          *     取り込みの期間は、今の Asia/Tokyo の月の初日から先の全てで、終わりを持たない。
-         *     始めると、カレンダーごとに、取り込みのプレビューと確定（期間は range_start が切り替えの range_start、range_end が null）で取り込む。
-         *     画面と照合は、切り替えの間も Google カレンダーの予定の写し（Projection）を読む。
+         *     始めると、カレンダーごとに、取り込みのプレビューと確定（期間は range_start が移行の range_start、range_end が null）で取り込む。
+         *     画面と照合は、移行の間も Google カレンダーの予定の写し（Projection）を読む。
          *     外していない全てのカレンダーの最後の同期が成功していて、buddy から Google カレンダーに書いた結果がまだ分からない予定（保留の版）が無いことを条件にする。
-         *     切り替えの間は、buddy から予定を作成、変更、取り消しできない（createSchedule などが 409 の cutover_open を返す）。
+         *     移行の間は、buddy から予定を作成、変更、取り消しできない（createSchedule などが 409 の cutover_open を返す）。
          *     職員の管理の権限（staff.manage）を持つ職員だけが呼べる。
          */
         post: operations["startCalendarCutover"];
@@ -1106,13 +1106,13 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * 予定の正本の切り替えを完了する
-         * @description Google カレンダーを切り替えの月の初日から先の全てで読み直し、事業所の行を排他のロックで取って、カレンダーごとに次の 3 つを確認する（ADR-0031）。
+         * 予定の管理の移行を完了する
+         * @description Google カレンダーを移行の月の初日から先の全てで読み直し、事業所の行を排他のロックで取って、カレンダーごとに次の 3 つを確認する（ADR-0031）。
          *     確認の前に、buddy から Google カレンダーに書いた結果がまだ分からない予定（保留の版）があれば、何も書かずに 409（google_write_pending）を返す。
          *     最後の取り込みの後に同期が成功している。読み直した予定が全て、予定の対応を持つか取り込まないと決めた予定で、規則に写せない繰り返しの予定が残っていない。
          *     予定の対応の etag と Google の etag が同じである。
-         *     満たせば、事業所を buddy_primary にし、事業所の Projection の行を消し、切り替えを completed にする。同期をやめ、書き出しを始める。
-         *     満たさなければ、何も書かずに 409（cutover_incomplete）で満たさないカレンダーと予定の一覧を返し、切り替えを open のままにする。
+         *     満たせば、事業所を buddy_primary にし、事業所の Projection の行を消し、移行を completed にする。同期をやめ、書き出しを始める。
+         *     満たさなければ、何も書かずに 409（cutover_incomplete）で満たさないカレンダーと予定の一覧を返し、移行を open のままにする。
          *     職員の管理の権限（staff.manage）を持つ職員だけが呼べる。
          */
         post: operations["createCalendarCutoverCompletion"];
@@ -1132,9 +1132,9 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * 予定の正本の切り替えをやめる
-         * @description この切り替えの取り込みで作った buddy の予定、繰り返しの予定、訪問の情報、予定の対応を消し、切り替えを canceled にする（ADR-0031）。
-         *     事業所は Google カレンダーを予定の正本にしたままで、画面と照合は Projection を読み続ける。やめた後に、もう一度始められる。
+         * 予定の管理の移行をやめる
+         * @description この移行の取り込みで作った buddy の予定、繰り返しの予定、訪問の情報、予定の対応を消し、移行を canceled にする（ADR-0031）。
+         *     事業所は予定を Google カレンダーで管理したままで、画面と照合は Projection を読み続ける。やめた後に、もう一度始められる。
          *     職員の管理の権限（staff.manage）を持つ職員だけが呼べる。
          */
         post: operations["cancelCalendarCutover"];
@@ -1508,7 +1508,7 @@ export interface components {
          */
         ScheduleReviewReason: "recurrence_unsupported" | "patient_not_found" | "patient_ambiguous" | "service_code_not_found" | "title_unreadable" | "title_mismatch";
         /**
-         * @description 事業所の予定の正本。google_primary は Google カレンダー、buddy_primary は buddy である（ADR-0029）
+         * @description 事業所の予定の管理先。google_primary は Google カレンダー、buddy_primary は buddy である（ADR-0029）
          * @enum {string}
          */
         SourceMode: "google_primary" | "buddy_primary";
@@ -1624,7 +1624,7 @@ export interface components {
         ImportRun: {
             id: components["schemas"]["ID"];
             range_start: components["schemas"]["Date"];
-            /** @description この日を含む。切り替えの取り込みでは、期間が終わりを持たないので null */
+            /** @description この日を含む。移行の取り込みでは、期間が終わりを持たないので null */
             range_end: (string & components["schemas"]["Date"]) | null;
             /** @enum {string} */
             status: "running" | "succeeded" | "failed";
@@ -1655,7 +1655,7 @@ export interface components {
              *     forbidden はサービスアカウントがカレンダーに書けない、rejected は Google が予定の内容を受け付けなかった（400）、
              *     unavailable は Google に届かないか一時的なエラーが続いた、unappliable は Google カレンダーの変更を buddy の予定に読み替えられない
              *     （終日にした予定、タイトルの利用者を引けない予定、繰り返しの予定そのものの変更）。
-             *     not_buddy_primary は事業所が buddy を予定の正本にしていないので、書かずに保留にした（ADR-0029）
+             *     not_buddy_primary は事業所が予定を buddy で管理していないので、書かずに保留にした（ADR-0029）
              * @enum {string|null}
              */
             error_code: "precondition_failed" | "not_found" | "forbidden" | "rejected" | "unavailable" | "unappliable" | "not_buddy_primary" | null;
@@ -1694,13 +1694,13 @@ export interface components {
             last_import: components["schemas"]["ImportRun"] | null;
         };
         /**
-         * @description 事業所に open の予定の正本の切り替えがあるときは、range_start を切り替えの range_start にし、range_end を省くか null にする（ADR-0031）。
-         *     ほかの期間は 400 になる。open の切り替えが無いときは、range_end を省けない。
+         * @description 事業所に open の予定の管理の移行があるときは、range_start を移行の range_start にし、range_end を省くか null にする（ADR-0031）。
+         *     ほかの期間は 400 になる。open の移行が無いときは、range_end を省けない。
          */
         ImportRange: {
             /** @description 期間の最初の日。この日から range_end までに始まる予定を取り込む */
             range_start: components["schemas"]["Date"];
-            /** @description 期間の最後の日。この日を含む。range_start 以降で、range_start から 1 年未満の日。切り替えの取り込みでは null */
+            /** @description 期間の最後の日。この日を含む。range_start 以降で、range_start から 1 年未満の日。移行の取り込みでは null */
             range_end?: (string & components["schemas"]["Date"]) | null;
         };
         /** @description 件数は Google の予定の数で数え、繰り返しのまま取り込む予定は 1 件、回ごとにした予定は 1 回を 1 件に数える。 */
@@ -1725,7 +1725,7 @@ export interface components {
             skipped: number;
             /** @description 前の取り込みで取り込んだ予定の数 */
             already_imported: number;
-            /** @description 切り替えの取り込みで、取り込んだ後に Google で変わったか消えた予定の数。確定すると buddy の写しを消し、Google の今の内容で取り込み直す。ほかの取り込みでは 0 */
+            /** @description 移行の取り込みで、取り込んだ後に Google で変わったか消えた予定の数。確定すると buddy の写しを消し、Google の今の内容で取り込み直す。ほかの取り込みでは 0 */
             overwrite: number;
         };
         PatientCandidate: {
@@ -1750,7 +1750,7 @@ export interface components {
             client_name: string;
             /**
              * @description patient_not_found は利用者がいない、patient_ambiguous は同じ名前の利用者が 2 人以上いる。
-             *     recurrence_unsupported は buddy の繰り返しの規則に写せない繰り返しの予定で、切り替えの取り込みだけが返し、回に展開しない。取り込み方は skip だけを選べる
+             *     recurrence_unsupported は buddy の繰り返しの規則に写せない繰り返しの予定で、移行の取り込みだけが返し、回に展開しない。取り込み方は skip だけを選べる
              * @enum {string}
              */
             reason: "patient_not_found" | "patient_ambiguous" | "recurrence_unsupported";
@@ -1780,7 +1780,7 @@ export interface components {
         };
         ImportPreview: {
             range_start: components["schemas"]["Date"];
-            /** @description 切り替えの取り込みでは、期間が終わりを持たないので null */
+            /** @description 移行の取り込みでは、期間が終わりを持たないので null */
             range_end: (string & components["schemas"]["Date"]) | null;
             counts: components["schemas"]["ImportCounts"];
             /** @description 取り込み方を選ぶ予定。日時の順 */
@@ -1806,16 +1806,16 @@ export interface components {
             /** @description 前の取り込みで取り込んでいて、今回は書かなかった予定の数 */
             already_imported_count: number;
         };
-        /** @description 事業所の予定の正本を Google カレンダーから buddy に切り替える作業の記録（ADR-0031） */
+        /** @description 事業所の予定の管理を Google カレンダーから buddy に移す作業の記録（ADR-0031） */
         CalendarCutover: {
             id: components["schemas"]["ID"];
             facility_id: components["schemas"]["ID"];
             /**
-             * @description open は切り替え中、completed は完了して事業所を buddy_primary にした、canceled はやめた
+             * @description open は移行中、completed は完了して事業所を buddy_primary にした、canceled はやめた
              * @enum {string}
              */
             status: "open" | "completed" | "canceled";
-            /** @description 取り込みの期間の最初の日。切り替えを始めた月の初日で、期間は終わりを持たない */
+            /** @description 取り込みの期間の最初の日。移行を始めた月の初日で、期間は終わりを持たない */
             range_start: components["schemas"]["Date"];
             started_by: components["schemas"]["ID"];
             /** Format: date-time */
@@ -1826,24 +1826,24 @@ export interface components {
              */
             finished_at: string | null;
         };
-        /** @description 切り替えの状況のうち、結び付けたカレンダー 1 つの同期の状況と、この切り替えで最後に成功した取り込み */
+        /** @description 移行の状況のうち、結び付けたカレンダー 1 つの同期の状況と、この移行で最後に成功した取り込み */
         CalendarCutoverCalendar: components["schemas"]["CalendarSyncStatus"] & {
-            /** @description この切り替えで最後に成功した取り込み。取り込んでいないか、open の切り替えが無ければ null */
+            /** @description この移行で最後に成功した取り込み。取り込んでいないか、open の移行が無ければ null */
             last_import: components["schemas"]["ImportRun"] | null;
         };
         CalendarCutoverState: {
-            /** @description open の切り替え。無ければ null */
+            /** @description open の移行。無ければ null */
             cutover: components["schemas"]["CalendarCutover"] | null;
             /** @description 事業所の外していない全てのカレンダー */
             calendars: components["schemas"]["CalendarCutoverCalendar"][];
         };
-        /** @description 切り替えの完了の確認を満たさないカレンダーか予定。予定のタイトルは利用者名を含むので返さない */
+        /** @description 移行の完了の確認を満たさないカレンダーか予定。予定のタイトルは利用者名を含むので返さない */
         CalendarCutoverUnmet: {
             external_calendar_id: components["schemas"]["ID"];
             staff_id: components["schemas"]["ID"];
             staff_name: string;
             /**
-             * @description not_imported はカレンダーをこの切り替えで取り込んでいない、sync_stale は最後の取り込みの後に同期が成功していない。
+             * @description not_imported はカレンダーをこの移行で取り込んでいない、sync_stale は最後の取り込みの後に同期が成功していない。
              *     event_not_imported は取り込んでいない Google の予定（取り込んだ後に作った予定、取り消した回を含む）、
              *     needs_review は確認が必要な予定の取り込み方を決めていないか決めた後に変わった（規則に写せない繰り返しを含む）、
              *     changed は取り込んだ後に Google で変わった、deleted は取り込んだ後に Google で消えた予定である。
@@ -1869,13 +1869,13 @@ export interface components {
             /** @description code が cutover_incomplete のとき、満たさないカレンダーと予定。カレンダーの順に、カレンダーの中は日時の順（日時の無い予定は最後） */
             items?: components["schemas"]["CalendarCutoverUnmet"][];
         };
-        /** @description 予定の正本を buddy に切り替えている間の、open の切り替え */
+        /** @description 予定の管理を buddy に移している間の、open の移行 */
         OpenCalendarCutover: {
             /** Format: date-time */
             started_at: string;
-            /** @description 切り替えを始めた職員 */
+            /** @description 移行を始めた職員 */
             started_by: components["schemas"]["ID"];
-            /** @description 切り替えを始めた職員の名前。職員の状態（休職、退職）によらず返し、予定の一覧を読める全ての職員に返す */
+            /** @description 移行を始めた職員の名前。職員の状態（休職、退職）によらず返し、予定の一覧を読める全ての職員に返す */
             started_by_name: string;
             /** @description 取り込みの期間の最初の日 */
             range_start: components["schemas"]["Date"];
@@ -3484,7 +3484,7 @@ export interface operations {
                          *     最新でないとみなす時間は画面が決める。
                          */
                         calendar_syncs: components["schemas"]["CalendarSyncStatus"][];
-                        /** @description google_primary の事業所で、予定の正本を buddy に切り替えている間の open の切り替え。無ければ null（ADR-0031） */
+                        /** @description google_primary の事業所で、予定の管理を buddy に移している間の open の移行。無ければ null（ADR-0031） */
                         cutover: components["schemas"]["OpenCalendarCutover"] | null;
                         /**
                          * @description google_primary の事業所で、date_from から date_to までの期間に重なる、職員が見てよい職員の Google カレンダーの終日の予定。
@@ -3548,7 +3548,7 @@ export interface operations {
             404: components["responses"]["NotFound"];
             /**
              * @description google_primary の事業所で、予定を書けない。code は次のいずれかである。
-             *     conflict（id がほかの予定に使われているか、事業所の予定の正本が変わった）、cutover_open（予定の正本を切り替えている）、
+             *     conflict（id がほかの予定に使われているか、事業所の予定の管理先が変わった）、cutover_open（予定の管理を buddy に移している）、
              *     calendar_not_linked（予定の職員が外していないカレンダーを持たない。Google に書かない）、
              *     google_write_pending（同じ id の書き込みが途中である）、google_event_changed（Google の予定が送った内容と違う）、
              *     google_event_not_found（Google で予定が見つからない）、google_calendar_unwritable（サービスアカウントがカレンダーに書けない）、
@@ -3693,7 +3693,7 @@ export interface operations {
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
             /**
-             * @description キャンセル済み（conflict）か、予定を書いている間に事業所の予定の正本が変わった（google_primary、conflict）。
+             * @description キャンセル済み（conflict）か、予定を書いている間に事業所の予定の管理先が変わった（google_primary、conflict）。
              *     google_primary の事業所では、createSchedule の 409 と同じ code も返す。google_write_pending は、予定の前の書き込みの結果がまだ分からないことを表す。
              *     繰り返しの予定の全体は、conflict で拒む。繰り返しの回を変えると、Google の例外の回にし、親の予定の EXDATE は変えない。
              *     回の etag は親の予定の etag で、読んだ後に親の予定が変わっていれば google_event_changed を返す。
@@ -3797,7 +3797,7 @@ export interface operations {
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
             /**
-             * @description キャンセル済み（conflict）か、予定を書いている間に事業所の予定の正本が変わった（google_primary、conflict）。
+             * @description キャンセル済み（conflict）か、予定を書いている間に事業所の予定の管理先が変わった（google_primary、conflict）。
              *     google_primary の事業所では、createSchedule の 409 と同じ code も返す。Google で消されていた予定は google_event_not_found である。
              *     繰り返しの予定の全体は、conflict で拒む。繰り返しの回を取り消すと、Google はその回だけを取り消し、ほかの回は残る。
              *     回の etag は親の予定の etag で、読んだ後に親の予定が変わっていれば google_event_changed を返す。
@@ -4313,7 +4313,7 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
-            /** @description プレビューの後に確認が必要な予定か職員の休職が変わった（import_preview_changed）か、同じカレンダーの取り込みが進んでいる（import_running）か、事業所が Google カレンダーを予定の正本にしている（google_primary）。何も書いていない */
+            /** @description プレビューの後に確認が必要な予定か職員の休職が変わった（import_preview_changed）か、同じカレンダーの取り込みが進んでいる（import_running）か、事業所が予定を Google カレンダーで管理している（google_primary）。何も書いていない */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -4403,7 +4403,7 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description 切り替えの状況 */
+            /** @description 移行の状況 */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -4429,7 +4429,7 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description 始めた切り替え */
+            /** @description 始めた移行 */
             201: {
                 headers: {
                     [name: string]: unknown;
@@ -4443,7 +4443,7 @@ export interface operations {
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
             /**
-             * @description 事業所が buddy を予定の正本にしている（cutover_not_google_primary）か、open の切り替えがある（cutover_open）か、
+             * @description 事業所が予定を buddy で管理している（cutover_not_google_primary）か、open の移行がある（cutover_open）か、
              *     保留の版がある（google_write_pending。buddy から Google カレンダーに書いた結果がまだ分からない予定がある）か、
              *     最後の同期が成功していないカレンダーがある（cutover_sync_not_ready）
              */
@@ -4469,7 +4469,7 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description 完了した切り替え */
+            /** @description 完了した移行 */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -4483,7 +4483,7 @@ export interface operations {
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
             /**
-             * @description 完了の確認を満たさない（cutover_incomplete。items に一覧がある）か、切り替えが open でない（cutover_not_open）か、
+             * @description 完了の確認を満たさない（cutover_incomplete。items に一覧がある）か、移行が open でない（cutover_not_open）か、
              *     保留の版がある（google_write_pending。buddy から Google カレンダーに書いた結果がまだ分からない予定がある。items を持たない）
              */
             409: {
@@ -4511,7 +4511,7 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description やめた切り替え */
+            /** @description やめた移行 */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -4524,7 +4524,7 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
-            /** @description 切り替えが open でない（cutover_not_open） */
+            /** @description 移行が open でない（cutover_not_open） */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -4533,7 +4533,7 @@ export interface operations {
                     /**
                      * @example {
                      *       "code": "cutover_not_open",
-                     *       "message": "この切り替えは、すでに完了したか、やめています"
+                     *       "message": "この移行は、すでに完了したか、やめています"
                      *     }
                      */
                     "application/json": components["schemas"]["Error"];

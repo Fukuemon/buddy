@@ -21,13 +21,13 @@ const refetchIntervalAfterFetch = async (sourceMode: 'buddy_primary' | 'google_p
 }
 
 describe('scheduleListQueryOptions', () => {
-  it('Google カレンダーを正本にする事業所の一覧は、同期の状況を新しく保つため読み直す', async () => {
+  it('予定を Google カレンダーで管理している事業所の一覧は、同期の状況を新しく保つため読み直す', async () => {
     await expect(refetchIntervalAfterFetch('google_primary')).resolves.toBe(
       CALENDAR_SYNC_REFRESH_MS,
     )
   })
 
-  it('buddy を正本にする事業所の一覧は、読み直さない', async () => {
+  it('予定を buddy で管理している事業所の一覧は、読み直さない', async () => {
     await expect(refetchIntervalAfterFetch('buddy_primary')).resolves.toBe(false)
   })
 })

@@ -250,8 +250,7 @@ const CALENDAR_IMPORT: readonly Shot[] = [
   },
   {
     story: '画面-calendar-calendarcutovercontainer--open',
-    opened:
-      '予定の正本の切り替え中の画面（Storybook の CalendarCutoverContainer の Open）を開いている',
+    opened: '移行中の画面（Storybook の CalendarCutoverContainer の Open）を開いている',
     target: (page) => page.getByTestId('calendar-cutover-open'),
     check: {
       before: '取り込みの期間が「2026/11/01〜」、最後の同期が「2026/11/05 09:59」の形で出る',
@@ -295,8 +294,9 @@ const VIEWPOINTS = [
   },
   {
     name: 'date-time-calendar-import',
-    test: '予定の取り込みとカレンダーの連携と正本の切り替えを開いた場合、期間と日時が規則の形で出ること',
-    title: '予定の取り込み、カレンダーの連携、予定の正本の切り替えの、期間と日時の書き方を見る',
+    test: '予定の取り込みとカレンダーの連携と移行を開いた場合、期間と日時が規則の形で出ること',
+    title:
+      '予定の取り込み、カレンダーの連携、予定の管理を buddy に移す画面の、期間と日時の書き方を見る',
     shots: CALENDAR_IMPORT,
   },
   {

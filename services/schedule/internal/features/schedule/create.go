@@ -33,7 +33,7 @@ func NewCreate(facilities kernel.Finder[organization.Facility], schedules Reposi
 }
 
 // Do は、事業所に単発の予定を作り、書いた予定を返す。訪問の情報があれば同じトランザクションで保存する。
-// 事業所が見つからないときは apperr.ErrNotFound を、事業所が buddy を予定の正本にしていないときは code が CodeGooglePrimary の
+// 事業所が見つからないときは apperr.ErrNotFound を、事業所が予定を buddy で管理していないときは code が CodeGooglePrimary の
 // apperr.ErrConflict を、参照が見つからないか別の事業所のものであるときは入力のエラーを返す。
 func (s Create) Do(ctx context.Context, facilityID string, in SlotInput) (Schedule, error) {
 	if _, err := s.facilities.Get(ctx, facilityID); err != nil {

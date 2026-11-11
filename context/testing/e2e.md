@@ -33,7 +33,7 @@ E2E のテストのディレクトリは、`context/project.yml` の `e2e.dir`�
 
 ## Test IDs
 
-- testid は、画面仕様書のモック（`docs/screens/<画面 ID>_<画面の名前>/mocks/`）の `data-testid` を正本にする。
+- testid は、画面仕様書のモック（`docs/screens/<画面 ID>_<画面の名前>/mocks/`）の `data-testid` を元にする。
   - testid を足すときは、同じ pull request でモックにも足す。
   - E2E が使う testid がモックにあるかは、`pnpm check:screens` が確認する。
   - 形は、小文字の英語と `-` で、`<画面か部品>-<要素>` にする（例: `receipt-check-submit`）。
@@ -86,12 +86,12 @@ E2E のテストのディレクトリは、`context/project.yml` の `e2e.dir`�
   - spec は、タイトルに時刻を入れて自分の作ったデータを見分ける。
 - `setup` は、次の 7 人のログインの状態を保存する（`packages/e2e/tests/setup/login.setup.ts`）。保存した状態を使い回さず、流すたびにログインし直す。
   - 青木 陽菜（マネージャー）、森 健太（チームリーダー）、林 さくら（メンバー）
-  - 岡田 葵（Google カレンダーを正本にする 3 つ目の事業所のマネージャー）、石田 蓮（予定の正本の切り替えを確認する 4 つ目の事業所の職員）
+  - 岡田 葵（予定を Google カレンダーで管理する 3 つ目の事業所のマネージャー）、石田 蓮（予定の管理の移行を確認する 4 つ目の事業所の職員）
   - 上野 渚（2 つ目の事業所のマネージャー。止めた職員がいる事業所で撮るのに使う）
   - 中村 結衣（1 つ目の事業所の事務。訪問しない職員で、照合の権限を持つ）
   - spec が別の職員で入るときは、`ACCOUNTS` と `env.ts` の状態のファイルに足す。
   - リーダーで確認する spec は、`test.use({ storageState: LEADER_STATE })` で切り替える。
-  - Google カレンダーを正本にする事業所で確認する spec は、`test.use({ storageState: OKADA_STATE })` で切り替える。
+  - 予定を Google カレンダーで管理している事業所で確認する spec は、`test.use({ storageState: OKADA_STATE })` で切り替える。
   - ログインのメールは、`packages/e2e/tests/fixtures/env.ts` の `LOGIN_EMAIL` と `LEADER.email` である。
   - ログインの状態を保存したアカウントを、並列の worker で共有しない。保存したファイルを書き合うためである。
 - E2E は、メールの @ の前の部分を上流の `sub` にして入る。

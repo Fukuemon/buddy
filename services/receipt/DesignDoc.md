@@ -370,7 +370,7 @@ API は、判定の結果だけを JSON で返す。
 
 ## Interface
 
-API の定義の正本は [openapi.yaml](https://github.com/Fukuemon/buddy/blob/develop/services/receipt/openapi.yaml) である。
+API の定義の元は [openapi.yaml](https://github.com/Fukuemon/buddy/blob/develop/services/receipt/openapi.yaml) である。
 
 - `POST /v1/checks`
   - `Authorization: Bearer` の access token を求める。

@@ -15,7 +15,7 @@ web は `BuddyApi.calendars`（`apps/web/src/api/BuddyApi.ts`）で API を呼�
 | 要確認 | 確認が必要な予定の件数。100 件以上は「99+」 | `calendars.exportIssues` の戻り値の数 | `listCalendarExportIssues` の `items` の数 |
 | 職員 | 結び付けた職員の名前 | `ExternalCalendar.staff_id` と `Staff.name` | `listExternalCalendars` の `items[].staff_id` と、`listUsers` の `Staff.username` |
 | 期間の開始日、期間の終了日 | 日付 | `ImportRange.range_start`、`range_end` | リクエストの `range_start`、`range_end` |
-| 切り替えの期間 | 期間の最初の日 | `CalendarCutoverState.cutover` の `range_start`（`CalendarImportContainer` の `openCutover`） | `getCalendarCutoverStatus` の `cutover.range_start`。プレビューと取り込みのリクエストでは、`range_start` に入れ、`range_end` を `null` にする |
+| 移行の期間 | 期間の最初の日 | `CalendarCutoverState.cutover` の `range_start`（`CalendarImportContainer` の `openCutover`） | `getCalendarCutoverStatus` の `cutover.range_start`。プレビューと取り込みのリクエストでは、`range_start` に入れ、`range_end` を `null` にする |
 | プレビューの結果のタイトル | 職員と期間 | `ImportPreview.range_start`、`range_end` | `createCalendarImportPreview` のレスポンスの `range_start`、`range_end` |
 | 件数 | 6 つの件数と内訳。件数の箱は 5 つで、取り込まない件数（`skipped`）は取り込まない予定の見出しに出す | `ImportPreview.counts` | `ImportPreview.counts` |
 | 確認が必要な予定 | 日時、利用者名、サービス内容、理由、繰り返し | `ImportPreview.needs_review` | `ImportPreview.needs_review[]` |
@@ -31,7 +31,7 @@ web は `BuddyApi.calendars`（`apps/web/src/api/BuddyApi.ts`）で API を呼�
 | --- | --- |
 | 職員が、プレビューを送っている途中である | `usePreviewImport` の mutation の `isPending` が `true`（`CalendarImportContainer` の `isLocked`、`CalendarImportForm` の `isPreviewing`） |
 | 職員が、取り込みを送っている途中である | `useImportCalendar` の mutation の `isPending` が `true`（`CalendarImportContainer` の `isLocked`、`CalendarImportPreview` の `isSubmitting`） |
-| 事業所が、予定の正本を buddy に切り替えている途中である | `getCalendarCutoverStatus` の `cutover` が `null` でない（`CalendarImportContainer` の `openCutover`。`CalendarImportForm` には `cutoverRangeStart` で渡す） |
+| 事業所が、予定の管理を buddy に移している途中である | `getCalendarCutoverStatus` の `cutover` が `null` でない（`CalendarImportContainer` の `openCutover`。`CalendarImportForm` には `cutoverRangeStart` で渡す） |
 | 職員の欄が、空である | `CalendarImportForm` の `staffId` が空。`CalendarImportContainer` は、選んだ職員か、結び付けたカレンダーのある職員の 1 人目を必ず渡す |
 | 期間の欄が、プレビューできる期間である | `isImportRangeReady(range_start, range_end)` が true。`range_start` と `range_end` が `YYYY-MM-DD` の形で、`validateImportRange` が `start`（開始日が終了日より後）と `end`（1 年を超える）のエラーを返さない。`CalendarImportContainer` は、`openCutover` が `null` でないか、これが true のときに `CalendarImportForm` の `canPreview` を true にする |
 | プレビューの結果に、確認が必要な予定がある | `ImportPreview.needs_review` が空でない |
@@ -42,12 +42,12 @@ web は `BuddyApi.calendars`（`apps/web/src/api/BuddyApi.ts`）で API を呼�
 | プレビューの結果に、上書きの予定がある | `ImportPreview.counts.overwrite` が 1 以上 |
 
 - 判定の処理は、次のファイルにある。
-  - 送っている途中かと切り替えの間かは、`apps/web/src/features/calendar/components/CalendarImportContainer.tsx` が決める。
+  - 送っている途中かと移行の間かは、`apps/web/src/features/calendar/components/CalendarImportContainer.tsx` が決める。
     - `CalendarImportForm.tsx` と `CalendarImportPreview.tsx` に渡す。
   - 期間の確認は、`apps/web/src/features/calendar/lib/importRange.ts` の `validateImportRange` と `isImportRangeReady` にある。
   - 選び残りと確定して取り込むを押せるかは、`apps/web/src/features/calendar/lib/importSummary.ts` の `countRemaining` と `canSubmitImport` にある。
   - 取り込み済みの文を出すかは、同じファイルの `isAllImported` にある。
-    - `counts.overwrite` が 1 以上のときは出さない。切り替えの取り込み直しで上書きする予定があるためである。
+    - `counts.overwrite` が 1 以上のときは出さない。移行の取り込み直しで上書きする予定があるためである。
   - プレビューするの横の文は、`CalendarImportForm.tsx` の `showsPreviewHint` が決める。
     - `canPreview` が false で、送っている途中でなく、`cutoverRangeStart` が無く、`range_start` か `range_end` が空のときに出す。
 - 状態は、`CalendarImportContainer.tsx` が、読み込みの失敗、読み込み中、結び付けたカレンダーが無い、入力の表示の順に決める。
@@ -113,7 +113,7 @@ web は `BuddyApi.calendars`（`apps/web/src/api/BuddyApi.ts`）で API を呼�
 | 11 | メニュー | `site-nav-toggle` |
 | 6 | 予定のカレンダーへ | `page-forbidden-back` |
 | 7 | メニュー | `site-nav-toggle` |
-| 8 | 切り替えの期間 | `calendar-import-cutover-range` |
+| 8 | 移行の期間 | `calendar-import-cutover-range` |
 | 9 | プレビューする | `calendar-import-preview` |
 | 11 | ヘルプ | `schedule-import-help` |
 | 12 | 件数 | `calendar-import-summary` |
@@ -125,7 +125,7 @@ web は `BuddyApi.calendars`（`apps/web/src/api/BuddyApi.ts`）で API を呼�
 | 19 | 取り込み | `site-nav-import` |
 | 20 | メニュー | `site-nav-toggle` |
 | 11 | 結果の件数 | `calendar-import-result-counts` |
-| 12 | 切り替えの状況に戻る | `calendar-import-back-to-cutover` |
+| 12 | 移行の状況に戻る | `calendar-import-back-to-cutover` |
 | 13 | 要確認 | `site-nav-review` |
 | 14 | 取り込み | `site-nav-import` |
 | 15 | メニュー | `site-nav-toggle` |
@@ -164,8 +164,8 @@ web は `BuddyApi.calendars`（`apps/web/src/api/BuddyApi.ts`）で API を呼�
 | 取り込みの失敗 | 「この操作をする権限がありません。」 | `createCalendarImport` が 403 |
 | 取り込みの失敗 | 「プレビューの後に、Google カレンダーの予定か職員の休職が変わりました。もう一度プレビューしてから取り込んでください。予定は 1 件も取り込んでいません。」 | `createCalendarImport` が 409 `import_preview_changed`。確認が必要な予定の集合か版が、プレビューのときと違うか、職員の休職と訪問しない職員かの判定が、読み替えたときと違う |
 | 取り込みの失敗 | 「この職員の取り込みが、ほかの画面で進んでいます。終わってから、もう一度プレビューしてください。予定は 1 件も取り込んでいません。」 | `createCalendarImport` が 409 `import_running` |
-| 取り込みの失敗 | 「この事業所の予定は Google カレンダーで管理しているので、buddy に取り込めません。予定は 1 件も取り込んでいません。」 | `createCalendarImport` が 409 `google_primary`。事業所が Google カレンダーを予定の正本にしている |
-| 取り込みの失敗 | 「予定の正本の切り替えが、ほかの画面で完了したか、やめました。画面を読み直してください。予定は 1 件も取り込んでいません。」 | `createCalendarImport` が 409 `cutover_not_open` |
+| 取り込みの失敗 | 「この事業所の予定は Google カレンダーで管理しているので、buddy に取り込めません。予定は 1 件も取り込んでいません。」 | `createCalendarImport` が 409 `google_primary`。事業所が予定を Google カレンダーで管理している |
+| 取り込みの失敗 | 「予定の管理の移行が、ほかの画面で完了したか、やめました。画面を読み直してください。予定は 1 件も取り込んでいません。」 | `createCalendarImport` が 409 `cutover_not_open` |
 | 取り込みの失敗 | 「選んだ利用者が見つかりません。利用者を選び直してください。予定は 1 件も取り込んでいません。」 | `createCalendarImport` が 400 `invalid_input`。web は期間と取り込み方の値を確認してから送るので、残るのは選んだ利用者が事業所にいないときである |
 | 取り込みの失敗 | 「この職員のカレンダーの結び付けが外れています。画面を読み直してください。予定は 1 件も取り込んでいません。」 | `createCalendarImport` が 404 `not_found` |
 | 取り込みの失敗 | 「利用者の一覧を読み込めませんでした。時間をおいて、もう一度プレビューしてください。」 | 確認が必要な予定があり、`listPatients` が失敗した |
@@ -184,7 +184,7 @@ web は `BuddyApi.calendars`（`apps/web/src/api/BuddyApi.ts`）で API を呼�
 | operationId | メソッドとパス | リクエスト | 成功のレスポンス | エラー |
 | --- | --- | --- | --- | --- |
 | `createCalendarImportPreview` | `POST /v1/external_calendars/{external_calendar_id}/import_previews` | `range_start`、`range_end` | 200。`ImportPreview`。予定を書かず、プレビューの結果も保存しない | 400 `invalid_input`: 期間の形が違う、開始が終了より後、1 年を超える。404 `not_found`: カレンダーが無いか、外した。422 `calendar_unreadable`。502 `calendar_unavailable`。503 `calendar_not_configured` |
-| `createCalendarImport` | `POST /v1/external_calendars/{external_calendar_id}/imports` | `range_start`、`range_end`、`decisions[]` | 201。`ImportResult` | `createCalendarImportPreview` のエラーに加え、400 `invalid_input`: 選んだ利用者が事業所にいないか、取り込み方の値が違う。409 `import_preview_changed`: プレビューの後に確認が必要な予定が変わった。409 `import_running`: 同じカレンダーの取り込みが進んでいる。409 `google_primary`: 事業所が Google カレンダーを予定の正本にしている |
+| `createCalendarImport` | `POST /v1/external_calendars/{external_calendar_id}/imports` | `range_start`、`range_end`、`decisions[]` | 201。`ImportResult` | `createCalendarImportPreview` のエラーに加え、400 `invalid_input`: 選んだ利用者が事業所にいないか、取り込み方の値が違う。409 `import_preview_changed`: プレビューの後に確認が必要な予定が変わった。409 `import_running`: 同じカレンダーの取り込みが進んでいる。409 `google_primary`: 事業所が予定を Google カレンダーで管理している |
 
 ### ImportPreview
 

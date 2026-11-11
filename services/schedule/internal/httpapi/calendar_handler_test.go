@@ -297,7 +297,7 @@ func (f *fakeCalendars) CancelCutover(context.Context, string) (calendarimport.C
 	return testCutover(calendarimport.CutoverCanceled), f.err
 }
 
-// TestCalendarCutover は、切り替えの 4 つの操作のレスポンスと、完了の確認を満たさないときの 409 の一覧を確認する。
+// TestCalendarCutover は、移行の 4 つの操作のレスポンスと、完了の確認を満たさないときの 409 の一覧を確認する。
 func TestCalendarCutover(t *testing.T) {
 	f := &fakeCalendars{}
 	rec, body := do(t, newCalendarRouter(f), http.MethodGet, "/v1/facilities/"+facilityID+"/calendar_cutover_status", "")
@@ -352,7 +352,7 @@ func TestCalendarCutover(t *testing.T) {
 		err          error
 		want         string
 	}{
-		{"始める: open の切り替えがある", "/v1/facilities/" + facilityID + "/calendar_cutovers", apperr.ConflictCode(calendarimport.CodeCutoverOpen, "始めています"), "cutover_open"},
+		{"始める: open の移行がある", "/v1/facilities/" + facilityID + "/calendar_cutovers", apperr.ConflictCode(calendarimport.CodeCutoverOpen, "始めています"), "cutover_open"},
 		{"始める: 保留の版がある", "/v1/facilities/" + facilityID + "/calendar_cutovers", apperr.ConflictCode(calendarimport.CodeWritePending, "分かりません"), "google_write_pending"},
 		{"完了: open でない", "/v1/calendar_cutovers/" + cutoverID + "/completions", apperr.ConflictCode(calendarimport.CodeCutoverNotOpen, "終えています"), "cutover_not_open"},
 		{"完了: 保留の版がある", "/v1/calendar_cutovers/" + cutoverID + "/completions", apperr.ConflictCode(calendarimport.CodeWritePending, "分かりません"), "google_write_pending"},
@@ -365,7 +365,7 @@ func TestCalendarCutover(t *testing.T) {
 	}
 }
 
-// TestCalendarImportOpenRange は、range_end を省くか null にした取り込みが、終わりを持たない期間（切り替えの取り込み）を操作に渡し、
+// TestCalendarImportOpenRange は、range_end を省くか null にした取り込みが、終わりを持たない期間（移行の取り込み）を操作に渡し、
 // レスポンスの range_end を null で返すことを確認する。
 func TestCalendarImportOpenRange(t *testing.T) {
 	for _, body := range []string{`{"range_start":"2026-11-01"}`, `{"range_start":"2026-11-01","range_end":null}`} {

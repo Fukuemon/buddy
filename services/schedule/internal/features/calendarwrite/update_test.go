@@ -285,7 +285,7 @@ func TestUpdateFailures(t *testing.T) {
 }
 
 // TestUpdateRejects は、保留の版がある予定、etag が無い入力、繰り返しの予定、無い予定を、Google に書かずに拒むことを確認する。
-// TestWritesRejectOpenCutover は、open の切り替えがある事業所では、変更と取り消しが cutover_open を返し、Google に書かず、
+// TestWritesRejectOpenCutover は、open の移行がある事業所では、変更と取り消しが cutover_open を返し、Google に書かず、
 // 記録を変えないことを確認する。作成は TestCreateRejects にある。
 func TestWritesRejectOpenCutover(t *testing.T) {
 	fx := newFixture(t)

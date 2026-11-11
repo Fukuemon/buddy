@@ -12,8 +12,8 @@ import (
 	"github.com/Fukuemon/buddy/services/schedule/internal/postgres/sqlcgen"
 )
 
-// CalendarCutoverRepository は、calendarimport.CutoverRepository を実装する。切り替えの記録と、取り込まない予定の記録を読み書きし、
-// 切り替えの取り込みで作った予定を消す。
+// CalendarCutoverRepository は、calendarimport.CutoverRepository を実装する。移行の記録と、取り込まない予定の記録を読み書きし、
+// 移行の取り込みで作った予定を消す。
 type CalendarCutoverRepository struct{ conn }
 
 // NewCalendarCutoverRepository は CalendarCutoverRepository を作る。
@@ -30,14 +30,14 @@ func toCutover(c sqlcgen.CalendarCutover) calendarimport.Cutover {
 	}
 }
 
-// Create は、open の切り替えを書く。事業所に open の切り替えがあるときは、一意の索引の違反を apperr.ErrConflict で返す。
+// Create は、open の移行を書く。事業所に open の移行があるときは、一意の索引の違反を apperr.ErrConflict で返す。
 func (r *CalendarCutoverRepository) Create(ctx context.Context, c calendarimport.Cutover) error {
 	return translate("create calendar cutover", r.q(ctx).CreateCalendarCutover(ctx, sqlcgen.CreateCalendarCutoverParams{
 		ID: c.ID, FacilityID: c.FacilityID, RangeStart: c.RangeStart.Time(), StartedBy: c.StartedBy,
 	}))
 }
 
-// Get は、切り替え id を返す。無いときは apperr.ErrNotFound を返す。
+// Get は、移行 id を返す。無いときは apperr.ErrNotFound を返す。
 func (r *CalendarCutoverRepository) Get(ctx context.Context, id string) (calendarimport.Cutover, error) {
 	c, err := r.q(ctx).GetCalendarCutover(ctx, id)
 	if err != nil {
@@ -46,13 +46,13 @@ func (r *CalendarCutoverRepository) Get(ctx context.Context, id string) (calenda
 	return toCutover(c), nil
 }
 
-// GetFacilityID は、access.FacilityReader を実装する。切り替え id の事業所の ID を返す。無いときは apperr.ErrNotFound を返す。
+// GetFacilityID は、access.FacilityReader を実装する。移行 id の事業所の ID を返す。無いときは apperr.ErrNotFound を返す。
 func (r *CalendarCutoverRepository) GetFacilityID(ctx context.Context, id string) (string, error) {
 	f, err := r.q(ctx).GetCalendarCutoverFacilityID(ctx, id)
 	return f, translate("get calendar cutover facility", err)
 }
 
-// FindOpen は、事業所 facilityID の open の切り替えを返す。無いときは apperr.ErrNotFound を返す。
+// FindOpen は、事業所 facilityID の open の移行を返す。無いときは apperr.ErrNotFound を返す。
 func (r *CalendarCutoverRepository) FindOpen(ctx context.Context, facilityID string) (calendarimport.Cutover, error) {
 	c, err := r.q(ctx).FindOpenCalendarCutover(ctx, facilityID)
 	if err != nil {
@@ -61,7 +61,7 @@ func (r *CalendarCutoverRepository) FindOpen(ctx context.Context, facilityID str
 	return toCutover(c), nil
 }
 
-// Finish は、open の切り替え id を status にし、終えた時刻を入れて返す。open でないか無いときは apperr.ErrNotFound を返す。
+// Finish は、open の移行 id を status にし、終えた時刻を入れて返す。open でないか無いときは apperr.ErrNotFound を返す。
 func (r *CalendarCutoverRepository) Finish(ctx context.Context, id string, status calendarimport.CutoverStatus) (calendarimport.Cutover, error) {
 	c, err := r.q(ctx).FinishCalendarCutover(ctx, sqlcgen.FinishCalendarCutoverParams{ID: id, Status: string(status)})
 	if err != nil {
@@ -70,7 +70,7 @@ func (r *CalendarCutoverRepository) Finish(ctx context.Context, id string, statu
 	return toCutover(c), nil
 }
 
-// ListLatestRuns は、切り替え cutoverID の取り込みのうち、カレンダーごとに最も新しく終えた成功した取り込みを返す。
+// ListLatestRuns は、移行 cutoverID の取り込みのうち、カレンダーごとに最も新しく終えた成功した取り込みを返す。
 func (r *CalendarCutoverRepository) ListLatestRuns(ctx context.Context, cutoverID string) ([]calendar.ImportRun, error) {
 	rows, err := r.q(ctx).ListLatestCutoverImportRuns(ctx, &cutoverID)
 	if err != nil {
@@ -83,7 +83,7 @@ func (r *CalendarCutoverRepository) ListLatestRuns(ctx context.Context, cutoverI
 	return out, nil
 }
 
-// ReplaceSkips は、切り替え cutoverID のカレンダー externalCalendarID の取り込まない予定の記録を、skips に置き換える。
+// ReplaceSkips は、移行 cutoverID のカレンダー externalCalendarID の取り込まない予定の記録を、skips に置き換える。
 // トランザクションの中で呼ぶ。
 func (r *CalendarCutoverRepository) ReplaceSkips(ctx context.Context, cutoverID, externalCalendarID string, skips []calendarimport.CutoverSkip) error {
 	q := r.q(ctx)
@@ -101,7 +101,7 @@ func (r *CalendarCutoverRepository) ReplaceSkips(ctx context.Context, cutoverID,
 	return nil
 }
 
-// ListSkips は、切り替え cutoverID のカレンダー externalCalendarID の取り込まない予定の記録を返す。
+// ListSkips は、移行 cutoverID のカレンダー externalCalendarID の取り込まない予定の記録を返す。
 func (r *CalendarCutoverRepository) ListSkips(ctx context.Context, cutoverID, externalCalendarID string) ([]calendarimport.CutoverSkip, error) {
 	rows, err := r.q(ctx).ListCalendarCutoverSkips(ctx, sqlcgen.ListCalendarCutoverSkipsParams{CutoverID: cutoverID, ExternalCalendarID: externalCalendarID})
 	if err != nil {
@@ -116,7 +116,7 @@ func (r *CalendarCutoverRepository) ListSkips(ctx context.Context, cutoverID, ex
 	return out, nil
 }
 
-// ListLinks は、切り替え cutoverID の取り込みで作った予定の対応を返す。
+// ListLinks は、移行 cutoverID の取り込みで作った予定の対応を返す。
 func (r *CalendarCutoverRepository) ListLinks(ctx context.Context, cutoverID string) ([]calendar.EventLink, error) {
 	rows, err := r.q(ctx).ListCutoverEventLinks(ctx, &cutoverID)
 	if err != nil {
