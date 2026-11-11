@@ -42,7 +42,7 @@ func startVerifier(ctx context.Context, cfg Config, client *http.Client, log *sl
 				return
 			}
 			log.WarnContext(ctx, "oidc discovery failed", slog.String("issuer", cfg.Issuer),
-				slog.Duration("retry_in", interval), slog.Any("error", err))
+				slog.String("retry_in", interval.String()), slog.Any("error", err))
 			select {
 			case <-ctx.Done():
 				return
