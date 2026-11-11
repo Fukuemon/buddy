@@ -87,7 +87,7 @@ const REASON = {
 } as const
 
 test.describe('予定のカレンダー', () => {
-  test.describe(`Google カレンダーを正本にする事業所の、取り込めない予定の扱い（${OKADA.staff.name}、Google カレンダーを正本にする事業所のマネージャー）`, () => {
+  test.describe(`予定を Google カレンダーで管理している事業所の、取り込めない予定の扱い（${OKADA.staff.name}、予定を Google カレンダーで管理している事業所のマネージャー）`, () => {
     test.use({ storageState: OKADA_STATE })
 
     test('s1-recurring 繰り返しの予定の回を変えたか取り消した場合と、buddy の規則に写せない繰り返しの予定がある場合、回が格子に出て、写せない予定は確認が必要な予定に出ること', async ({

@@ -34,8 +34,8 @@ web の型（`apps/web/src/api/types.ts`）はフェイクの API に合わせ�
 | 通知の予定 | 職員の名前 | `Schedule.staffId` を、職員の一覧（`Staff.name`）で引く | `Schedule.staff_id` を、`listUsers` の `Staff.username` で引く |
 | 通知の予定、要確認の印 | 理由 | `Schedule.reviewReason` | `listSchedules` の `Schedule.review_reason` |
 | 予定 | Google カレンダーの予定か | `Schedule.fromGoogleCalendar` | `listSchedules` の `Schedule.source` が `google_calendar` |
-| 切り替え中の案内、予定を作成、空いた時間、時間の枠 | 切り替え中か | `ScheduleList.cutover` が `null` でない | `listSchedules` の `cutover` |
-| 切り替えの開始 | 始めた職員の名前と時刻 | `OpenCalendarCutover.started_by_name`、`OpenCalendarCutover.started_at` | `listSchedules` の `cutover.started_by_name`、`cutover.started_at` |
+| 移行中の案内、予定を作成、空いた時間、時間の枠 | 移行中か | `ScheduleList.cutover` が `null` でない | `listSchedules` の `cutover` |
+| 移行の開始 | 始めた職員の名前と時刻 | `OpenCalendarCutover.started_by_name`、`OpenCalendarCutover.started_at` | `listSchedules` の `cutover.started_by_name`、`cutover.started_at` |
 | 終日の予定、終日の行、一覧の終日の予定、終日の見出し、職員の終日の欄 | かかる最初の日と最後の日（最後の日を含む） | `AllDayEvent.startDate`、`AllDayEvent.endDate` | `listSchedules` の `all_day_events[].start_date`、`end_date` |
 | 終日の予定、一覧の終日の予定 | タイトル。空白だけなら「（タイトルなし）」 | `AllDayEvent.title` を `formatAllDayEventTitle` に通した値 | `listSchedules` の `all_day_events[].title` |
 | 終日の予定、一覧の終日の予定 | 職員の名前 | `AllDayEvent.staffName` | `listSchedules` の `all_day_events[].staff_name` |
@@ -152,7 +152,7 @@ web の型（`apps/web/src/api/types.ts`）はフェイクの API に合わせ�
 | ログインした職員が、チェックボックスの職員の予定を見られる | `canReadScheduleOf(viewer, staff)` が true |
 | チェックボックスの職員の名前が、検索の語を含む | `Staff.name` の全角と半角をそろえ、空白を除いた値が `keyword` を含む |
 | ログインした職員が、誰かの予定を編集できる | `Viewer.schedulePolicies` に、`code` が `.edit` で終わる権限がある（`canEditAnySchedule`） |
-| 事業所が、予定の正本を buddy に切り替えている途中である | `google_primary` の事業所で、`ScheduleList.cutover` が `null` でない（`listSchedules` の `cutover`）。`buddy_primary` の事業所では読まず、`null` として扱う |
+| 事業所が、予定の管理を buddy に移している途中である | `google_primary` の事業所で、`ScheduleList.cutover` が `null` でない（`listSchedules` の `cutover`）。`buddy_primary` の事業所では読まず、`null` として扱う |
 | 事業所が、予定を buddy で管理している | `ScheduleList.sourceMode` があればそれが、無ければ `Facility.sourceMode` が `buddy_primary` |
 | 表示の期間の予定を、読み終えている | `scheduleListQueryOptions` の結果（`ScheduleList`）がある。日付を移ると query のキーが変わるので、読み直す間は無い |
 | 予定が、表示の期間に重なる | web のサーバーが、`ScheduleListParams` の `from` と `to` に重なる予定だけを `ScheduleList.schedules` に入れる |
@@ -357,8 +357,8 @@ web の型（`apps/web/src/api/types.ts`）はフェイクの API に合わせ�
 | 33 | 通知の予定 | `schedule-calendar-needs-review-{予定の id}` |
 | 39 | 通知の終日の予定 | `schedule-calendar-needs-review-all-day-{終日の予定の id}` |
 | 34 | 要確認の印 | `schedule-event-{予定の id}-needs-review` |
-| 35 | 切り替え中の案内 | `schedule-calendar-cutover` |
-| 36 | 切り替えの開始 | `schedule-calendar-cutover-started` |
+| 35 | 移行中の案内 | `schedule-calendar-cutover` |
+| 36 | 移行の開始 | `schedule-calendar-cutover-started` |
 | 31 | 週の一覧 | `schedule-agenda` |
 | 32 | 一覧の日の見出し | `schedule-agenda-day-{日付}` |
 | 33 | 一覧の予定 | `schedule-event-{予定の id}` |

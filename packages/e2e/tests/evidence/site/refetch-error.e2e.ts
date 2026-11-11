@@ -55,10 +55,10 @@ const SCREENS: Screen[] = [
   },
   {
     name: 'calendar-cutover-refetch-error',
-    label: '予定の正本の切り替え',
+    label: '予定の管理を buddy に移す',
     storyId: '画面-calendar-calendarcutovercontainer--refetch-error',
     storyName: 'CalendarCutoverContainer の RefetchError',
-    what: '切り替えの状況',
+    what: '移行の状況',
     shown: (page) => page.getByTestId('calendar-cutover-calendars'),
   },
   {

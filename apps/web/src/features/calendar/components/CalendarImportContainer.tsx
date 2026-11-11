@@ -49,7 +49,7 @@ const CalendarImportContent = ({ staffId, onStaffChange }: CalendarImportContain
   const calendarsQuery = useQuery(externalCalendarListQueryOptions(api, facilityId))
   const staffQuery = useQuery(staffListQueryOptions(api, facilityId))
   const cutoverQuery = useQuery(cutoverStatusQueryOptions(api, facilityId))
-  // 予定の正本の切り替えの間は、切り替えの期間（切り替えの月の初日から先の全て）だけで取り込む
+  // 予定の管理の移行の間は、移行の期間（移行の月の初日から先の全て）だけで取り込む
   const openCutover = cutoverQuery.data?.cutover ?? null
   const preview = usePreviewImport()
   const runImport = useImportCalendar()

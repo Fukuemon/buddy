@@ -11,7 +11,7 @@ const headerCellClassName = 'px-3 py-2 text-left text-body-dense font-normal tex
 const cellClassName = 'px-3 py-2 text-body-dense'
 
 /**
- * 切り替えを完了できなかったときの、満たさないカレンダーと予定の一覧。職員、日時、理由、次にすることを並べる。
+ * 移行を完了できなかったときの、満たさないカレンダーと予定の一覧。職員、日時、理由、次にすることを並べる。
  * 予定のタイトルは利用者名を含むので、API が返さず、ここにも出さない。
  */
 export const CalendarCutoverUnmetTable = ({ items }: CalendarCutoverUnmetTableProps) => (

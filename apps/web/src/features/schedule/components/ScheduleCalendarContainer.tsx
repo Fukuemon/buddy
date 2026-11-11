@@ -65,10 +65,10 @@ export type ScheduleCalendarContainerProps = {
  * 職員の列は、ログインした職員が予定を見てよい職員に限る。「予定を作成」は誰かの予定を編集できる職員にだけ出し、
  * 時間の枠は、予定を編集できる職員の列でだけ押せる。
  * 幅 768px 未満の週の表示は、時刻の格子の代わりに、予定を日ごとに縦に並べる週の一覧で出す。日の表示は、ログインした職員の列を左端に置く。
- * Google カレンダーを予定の正本にする事業所（google_primary）でも予定を作る操作を出し、予定の API が Google カレンダーに書く（ADR-0029）。
- * 予定の正本を buddy に切り替えている間は、予定を作る操作を出さない。カレンダーの上には、Google カレンダーと buddy のどちらでも
- * 予定を変えられる案内、切り替え中の案内、同期の警告、確認が必要な予定の通知、カレンダーに出せない予定の件数を出す。
- * Google カレンダーの終日の予定は、どの表示でも押せない終日の欄に出す。事業所の正本は、予定の一覧か事業所から読む。
+ * 予定を Google カレンダーで管理している事業所（google_primary）でも予定を作る操作を出し、予定の API が Google カレンダーに書く（ADR-0029）。
+ * 予定の管理を buddy に移している間は、予定を作る操作を出さない。カレンダーの上には、Google カレンダーと buddy のどちらでも
+ * 予定を変えられる案内、移行中の案内、同期の警告、確認が必要な予定の通知、カレンダーに出せない予定の件数を出す。
+ * Google カレンダーの終日の予定は、どの表示でも押せない終日の欄に出す。事業所の予定の管理先は、予定の一覧か事業所から読む。
  */
 export const ScheduleCalendarContainer = ({
   staffFilterToggle,
@@ -100,7 +100,7 @@ export const ScheduleCalendarContainer = ({
   const facilityQuery = useQuery(facilityQueryOptions(api, facilityId))
   // 日付を移ると一覧を読み直す間は一覧の値が無いので、事業所の値で予定を作る操作を出し分け、ちらつかせない
   const sourceMode = schedulesQuery.data?.sourceMode ?? facilityQuery.data?.sourceMode
-  // google_primary の事業所では、予定の正本を切り替えている間（一覧の cutover）は予定を作らせない。一覧を読み直す間は、切り替え中かが分からないので出さない
+  // google_primary の事業所では、予定の管理を buddy に移している間（一覧の cutover）は予定を作らせない。一覧を読み直す間は、移行中かが分からないので出さない
   const canWriteSchedules =
     sourceMode === 'buddy_primary' ||
     (sourceMode === 'google_primary' &&

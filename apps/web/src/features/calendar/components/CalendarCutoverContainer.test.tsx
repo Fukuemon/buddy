@@ -12,10 +12,10 @@ import * as stories from './CalendarCutoverContainer.stories'
 const { BuddyPrimary, NotStarted, Open, SyncNotReady } = composeStories(stories)
 
 describe('CalendarCutoverContainer', () => {
-  it('始める前は、手順、Google カレンダーを変えない案内、カレンダーごとの同期を出し、始めると切り替え中にする', async () => {
+  it('始める前は、手順、Google カレンダーを変えない案内、カレンダーごとの同期を出し、始めると移行中にする', async () => {
     render(<NotStarted />)
     expect(await screen.findByTestId('calendar-cutover-no-edit')).toHaveTextContent(
-      '切り替えが終わるまで Google カレンダーで予定を作成、変更しないよう頼んでください',
+      '移行が終わるまで Google カレンダーで予定を作成、変更しないよう頼んでください',
     )
     expect(screen.getByTestId('calendar-cutover-calendar-staff-2')).toHaveTextContent('石川 二葉')
     await userEvent.click(screen.getByTestId('calendar-cutover-start'))
@@ -44,7 +44,7 @@ describe('CalendarCutoverContainer', () => {
     expect(unmet).toHaveTextContent('完了できません（2 件）')
     const rows = within(unmet).getAllByTestId('calendar-cutover-unmet-not_imported')
     expect(rows[0]).toHaveTextContent('青木 一郎')
-    expect(rows[0]).toHaveTextContent('この切り替えで、まだ取り込んでいない')
+    expect(rows[0]).toHaveTextContent('この移行で、まだ取り込んでいない')
     expect(screen.getByTestId('calendar-cutover-open')).toBeInTheDocument()
   })
 
@@ -54,7 +54,7 @@ describe('CalendarCutoverContainer', () => {
     expect(cancel).toHaveClass('text-danger')
     await userEvent.click(cancel)
     const dialog = await screen.findByTestId('calendar-cutover-cancel-confirm-dialog')
-    expect(dialog).toHaveTextContent('この切り替えで取り込んだ予定を、buddy から消します')
+    expect(dialog).toHaveTextContent('この移行で取り込んだ予定を、buddy から消します')
     expect(within(dialog).getByTestId('calendar-cutover-cancel-confirm-cancel')).toHaveTextContent(
       '戻る',
     )
@@ -63,14 +63,14 @@ describe('CalendarCutoverContainer', () => {
     expect(screen.queryByTestId('calendar-cutover-cancel-confirm-dialog')).toBeNull()
   })
 
-  it('予定の正本が buddy の事業所では、操作を出さない', async () => {
+  it('予定の予定を buddy で管理している事業所では、操作を出さない', async () => {
     render(<BuddyPrimary />)
     expect(await screen.findByTestId('calendar-cutover-buddy-primary')).toBeInTheDocument()
     expect(screen.queryByTestId('calendar-cutover-start')).toBeNull()
   })
 })
 
-/** 切り替え中のフェイクの API を、この画面と、ほかの画面で操作する API として作り、その API で story を描く。 */
+/** 移行中のフェイクの API を、この画面と、ほかの画面で操作する API として作り、その API で story を描く。 */
 const renderWithApi = (story: typeof stories.Open, api: BuddyApi) => {
   const Story = composeStory(
     {
@@ -85,10 +85,10 @@ const renderWithApi = (story: typeof stories.Open, api: BuddyApi) => {
   render(<Story />)
 }
 
-/** ほかの画面で、全ての職員を取り込んでから切り替えを完了する。確認が必要な予定は取り込まない。 */
+/** ほかの画面で、全ての職員を取り込んでから移行を完了する。確認が必要な予定は取り込まない。 */
 const completeElsewhere = async (api: BuddyApi) => {
   const { cutover, calendars } = await api.calendars.cutoverStatus(MOCK_FACILITY_ID)
-  if (cutover === null) throw new Error('切り替え中でない')
+  if (cutover === null) throw new Error('移行中でない')
   const range = { range_start: cutover.range_start }
   for (const calendar of calendars) {
     const preview = await api.calendars.preview(
@@ -122,10 +122,10 @@ describe('ほかの画面で先に操作されたとき', () => {
     expect(
       await within(dialog).findByTestId('calendar-cutover-cancel-confirm-error'),
     ).toHaveTextContent(
-      'この切り替えは、ほかの画面で完了したか、やめています。画面を読み直してください。',
+      'この移行は、ほかの画面で完了したか、やめています。画面を読み直してください。',
     )
 
-    // 職員が、読み直してくださいに従って画面に戻り、切り替えの前の状態で始め直す
+    // 職員が、読み直してくださいに従って画面に戻り、移行の前の状態で始め直す
     await userEvent.click(within(dialog).getByTestId('calendar-cutover-cancel-confirm-cancel'))
     refocusWindow()
     await userEvent.click(await screen.findByTestId('calendar-cutover-start'))
@@ -155,7 +155,7 @@ describe('ほかの画面で先に操作されたとき', () => {
 
     await userEvent.click(start)
     expect(await screen.findByTestId('calendar-cutover-start-error')).toHaveTextContent(
-      'この事業所では、ほかの画面で切り替えを始めています。画面を読み直してください。',
+      'この事業所では、ほかの画面で移行を始めています。画面を読み直してください。',
     )
   })
 
@@ -167,13 +167,13 @@ describe('ほかの画面で先に操作されたとき', () => {
 
     await userEvent.click(complete)
     expect(await screen.findByTestId('calendar-cutover-complete-error')).toHaveTextContent(
-      'この切り替えは、ほかの画面で完了したか、やめています。画面を読み直してください。',
+      'この移行は、ほかの画面で完了したか、やめています。画面を読み直してください。',
     )
   })
 })
 
-describe('予定の正本の切り替えの読み直し', () => {
-  it('読み終えた後に読み直して切り替えの状況を読めなければ、表示を残して失敗の文を出し、読み直すで読めたら消す', async () => {
+describe('予定の管理の移行の読み直し', () => {
+  it('読み終えた後に読み直して移行の状況を読めなければ、表示を残して失敗の文を出し、読み直すで読めたら消す', async () => {
     const Story = composeStory(
       {
         ...stories.RefetchError,

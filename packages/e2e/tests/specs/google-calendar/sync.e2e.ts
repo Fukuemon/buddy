@@ -21,7 +21,7 @@ const openSchedule = async (page: Page, title: string) => {
 const reviewRow = (page: Page, scheduleId: string) =>
   page.getByTestId(`calendar-review-row-schedule-${scheduleId}`)
 
-// シードの 1 つ目の事業所は buddy を予定の正本にする（buddy_primary）。同期はこの事業所のカレンダーを読まず、
+// シードの 1 つ目の事業所は予定を buddy で管理する（buddy_primary）。同期はこの事業所のカレンダーを読まず、
 // Google カレンダーでの変更を buddy の予定に当てない（ADR-0029）。
 test.describe('確認が必要な予定', () => {
   test.describe('Google カレンダーとの同期', () => {
@@ -38,7 +38,7 @@ test.describe('確認が必要な予定', () => {
       }
     })
 
-    test('buddy を正本にする事業所で Google カレンダーの予定を直した場合、buddy の予定に当たらず、buddy で変えると確認が必要な予定に出て、Google の内容に合わせる操作が出ないこと', async ({
+    test('予定を buddy で管理している事業所で Google カレンダーの予定を直した場合、buddy の予定に当たらず、buddy で変えると確認が必要な予定に出て、Google の内容に合わせる操作が出ないこと', async ({
       page,
       request,
     }) => {

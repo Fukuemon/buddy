@@ -63,14 +63,14 @@ export const DaySelfEditOnly: Story = {
 }
 
 /**
- * Google カレンダーを予定の正本にする事業所。「予定を作成」を出し、カレンダーの上に、buddy と Google カレンダーのどちらでも作成、変更できる案内、
+ * 予定を Google カレンダーで管理している事業所。「予定を作成」を出し、カレンダーの上に、buddy と Google カレンダーのどちらでも作成、変更できる案内、
  * 同期の警告（石川 二葉は失敗、上田 三奈は未同期）、確認が必要な予定の 3 件を出す。予定には「要確認」の印を付ける。
  */
 export const GooglePrimary: Story = {
   parameters: route({ api: createFakeBuddyApi({ sourceMode: 'google_primary' }) }),
 }
 
-/** Google カレンダーを予定の正本にする事業所の日の表示。時間の枠を押して予定を作れる。 */
+/** 予定を Google カレンダーで管理している事業所の日の表示。時間の枠を押して予定を作れる。 */
 export const GooglePrimaryDay: Story = {
   parameters: route({
     url: '/schedule?view=day',
@@ -78,7 +78,7 @@ export const GooglePrimaryDay: Story = {
   }),
 }
 
-/** 予定の正本を buddy に切り替えている事業所の日の表示。「予定を作成」を出さず、時間の枠を押して予定を作れない。 */
+/** 予定の管理を buddy に移している事業所の日の表示。「予定を作成」を出さず、時間の枠を押して予定を作れない。 */
 export const GooglePrimaryCutoverDay: Story = {
   parameters: route({
     url: '/schedule?view=day',

@@ -228,17 +228,17 @@ describe('ScheduleRecurrenceModalContainer', () => {
     expect(changeRule).toHaveBeenCalledOnce()
   })
 
-  it('予定の正本を切り替えている間に開くと、欄と保存のボタンを出さずに、切り替えていることと閉じるボタンを出す', async () => {
+  it('予定の管理を buddy に移している間に開くと、欄と保存のボタンを出さずに、移していることと閉じるボタンを出す', async () => {
     render(<Cutover />)
     expect(await screen.findByTestId('schedule-recurrence-cutover')).toHaveTextContent(
-      '予定の正本を buddy に切り替えています。切り替えが終わるまで、予定を作成、変更、キャンセルできません。',
+      '予定の管理を buddy に移しています。終わるまで、予定を作成、変更、キャンセルできません。',
     )
     expect(screen.getByTestId('modal-close')).toBeInTheDocument()
     expect(screen.queryByTestId('recurring-rule-preset')).not.toBeInTheDocument()
     expect(screen.queryByTestId('schedule-recurrence-submit')).not.toBeInTheDocument()
   })
 
-  it('google_primary の事業所で切り替えていなければ欄を出し、開いた後に切り替えが始まっても欄を残し、保存の失敗で知らせる', async () => {
+  it('google_primary の事業所で移行中でなければ欄を出し、開いた後に移行が始まっても欄を残し、保存の失敗で知らせる', async () => {
     const { api } = apiOf(GooglePrimary.parameters)
     const list = vi.spyOn(api.schedules, 'list')
     render(<GooglePrimary />)
@@ -246,7 +246,7 @@ describe('ScheduleRecurrenceModalContainer', () => {
 
     await api.calendars.startCutover(MOCK_FACILITY_ID)
     const listed = list.mock.calls.length
-    // 窓に戻ったときの読み直しで、一覧が切り替えを返しても、開いたときの状態のままにする
+    // 窓に戻ったときの読み直しで、一覧が移行を返しても、開いたときの状態のままにする
     act(() => {
       focusManager.setFocused(false)
       focusManager.setFocused(true)
@@ -260,15 +260,15 @@ describe('ScheduleRecurrenceModalContainer', () => {
     expect(screen.getByTestId('recurring-rule-preset')).toHaveValue('monthly-day')
 
     vi.spyOn(api.schedules, 'changeRule').mockRejectedValue(
-      new ApiError(409, '切り替えています', [], 'cutover_open'),
+      new ApiError(409, '予定の管理を buddy に移しています', [], 'cutover_open'),
     )
     await userEvent.click(screen.getByTestId('schedule-recurrence-submit'))
     expect(await screen.findByTestId('schedule-recurrence-error')).toHaveTextContent(
-      '予定の正本を buddy に切り替えています。',
+      '予定の管理を buddy に移しています。',
     )
   })
 
-  it('予定の一覧の cache に切り替え中の古い結果が残っていても、開いてから読み直した一覧が切り替えていなければ欄を出す', async () => {
+  it('予定の一覧の cache に移行中の古い結果が残っていても、開いてから読み直した一覧が移行中でなければ欄を出す', async () => {
     render(<StaleCutoverCache />)
     expect(await screen.findByTestId('recurring-rule-preset')).toBeInTheDocument()
     expect(screen.queryByTestId('schedule-recurrence-cutover')).not.toBeInTheDocument()

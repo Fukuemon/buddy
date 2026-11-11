@@ -54,7 +54,7 @@ const prepareSyncedEvent = (browser: Browser, title: string, start: string, end:
   })
 
 test.describe('予定のカレンダー', () => {
-  test.describe(`Google カレンダーを正本にする事業所の buddy からの書き込み（${OKADA.staff.name}、Google カレンダーを正本にする事業所のマネージャー）`, () => {
+  test.describe(`予定を Google カレンダーで管理している事業所の buddy からの書き込み（${OKADA.staff.name}、予定を Google カレンダーで管理している事業所のマネージャー）`, () => {
     test.use({ storageState: OKADA_STATE })
 
     test('google-primary-write-create 予定の作成の画面で訪問の予定を保存した場合、予定のカレンダーに予定が出て、calendarpit にも同じ予定ができること', async ({
@@ -74,7 +74,7 @@ test.describe('予定のカレンダー', () => {
         await openDay(page, todayInTokyo())
         await intro(
           page,
-          `Google カレンダーを正本にする事業所で buddy から訪問の予定を作ると、予定のカレンダーと calendarpit に出る\n前提 予定のカレンダーを日の表示で開いている。利用者の ${patientName} を API で登録してある`,
+          `予定を Google カレンダーで管理している事業所で buddy から訪問の予定を作ると、予定のカレンダーと calendarpit に出る\n前提 予定のカレンダーを日の表示で開いている。利用者の ${patientName} を API で登録してある`,
         )
 
         await step(page, '「予定を作成」を押し、訪問の予定で「訪看I3」を選ぶ', async () => {
@@ -139,7 +139,7 @@ test.describe('予定のカレンダー', () => {
         await event.scrollIntoViewIfNeeded()
         await intro(
           page,
-          `Google カレンダーを正本にする事業所で buddy から予定を取り消すと、予定のカレンダーと calendarpit から消える\n前提 予定のカレンダーを日の表示で開いている。${OKADA.staff.name} の列の 16:00〜17:00 に「${title}」が出ている`,
+          `予定を Google カレンダーで管理している事業所で buddy から予定を取り消すと、予定のカレンダーと calendarpit から消える\n前提 予定のカレンダーを日の表示で開いている。${OKADA.staff.name} の列の 16:00〜17:00 に「${title}」が出ている`,
         )
 
         await step(page, '予定を押して詳細を開き、「予定をキャンセル」を押す', async () => {

@@ -7,10 +7,10 @@ import type {
 /** 事業所の ID。API の `/v1/facilities/{facility_id}` に入る。 */
 export type FacilityId = string
 
-/** 事業所の予定の正本。google_primary は Google カレンダー、buddy_primary は buddy である（ADR-0029）。 */
+/** 事業所の予定の管理先。google_primary は Google カレンダー、buddy_primary は buddy である（ADR-0029）。 */
 export type SourceMode = ScheduleComponents['schemas']['SourceMode']
 
-/** 事業所。API の型の ID、名前、予定の正本だけを使う。 */
+/** 事業所。API の型の ID、名前、予定の管理先だけを使う。 */
 export type Facility = {
   id: FacilityId
   name: string
@@ -214,7 +214,7 @@ export type ScheduleList = {
   sourceMode: SourceMode
   /** google_primary の事業所のカレンダーの同期の状況。職員の絞り込みを当てる。buddy_primary の事業所では空である。 */
   calendarSyncs: CalendarSyncStatus[]
-  /** google_primary の事業所で、予定の正本を buddy に切り替えている間の open の切り替え。無ければ null である。 */
+  /** google_primary の事業所で、予定の管理を buddy に移している間の open の移行。無ければ null である。 */
   cutover: OpenCalendarCutover | null
   /** google_primary の事業所の、期間に重なる Google カレンダーの終日の予定。職員の絞り込みを当てる。buddy_primary の事業所では空である。 */
   allDayEvents: AllDayEvent[]
@@ -306,17 +306,17 @@ export type ImportResult = ScheduleSchemas['ImportResult']
 export type CalendarExport = ScheduleSchemas['CalendarExport']
 /** 確認が必要な書き出しと、その予定の日時と職員。予定のタイトルと利用者名は持たない。 */
 export type CalendarExportIssue = ScheduleSchemas['CalendarExportIssue']
-/** 予定の正本を Google カレンダーから buddy に切り替える作業の記録。予定の API の CalendarCutover をそのまま使う。 */
+/** 予定の管理を Google カレンダーから buddy に移す作業の記録。予定の API の CalendarCutover をそのまま使う。 */
 export type CalendarCutover = ScheduleSchemas['CalendarCutover']
-/** 切り替えの状況。open の切り替えと、カレンダーごとの同期とこの切り替えの最後の取り込み。 */
+/** 移行の状況。open の移行と、カレンダーごとの同期とこの移行の最後の取り込み。 */
 export type CalendarCutoverState = ScheduleSchemas['CalendarCutoverState']
-/** 切り替えの状況のうち、結び付けたカレンダー 1 つ。 */
+/** 移行の状況のうち、結び付けたカレンダー 1 つ。 */
 export type CalendarCutoverCalendar = ScheduleSchemas['CalendarCutoverCalendar']
-/** 切り替えの完了の確認を満たさないカレンダーか予定。予定のタイトルは持たない。 */
+/** 移行の完了の確認を満たさないカレンダーか予定。予定のタイトルは持たない。 */
 export type CalendarCutoverUnmet = ScheduleSchemas['CalendarCutoverUnmet']
-/** 予定の一覧が返す、open の切り替えの開始の時刻と取り込みの期間の最初の日。 */
+/** 予定の一覧が返す、open の移行の開始の時刻と取り込みの期間の最初の日。 */
 export type OpenCalendarCutover = ScheduleSchemas['OpenCalendarCutover']
-/** 切り替えの完了の結果。完了の確認を満たさずに拒まれたときは、満たさないカレンダーと予定を unmet に持つ。 */
+/** 移行の完了の結果。完了の確認を満たさずに拒まれたときは、満たさないカレンダーと予定を unmet に持つ。 */
 export type CalendarCutoverCompletion =
   | { completed: CalendarCutover }
   | { unmet: CalendarCutoverUnmet[] }

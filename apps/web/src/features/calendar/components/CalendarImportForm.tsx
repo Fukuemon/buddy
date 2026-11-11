@@ -27,15 +27,15 @@ export type CalendarImportFormProps = {
   /** プレビューの失敗の文。 */
   errorMessage?: string
   /**
-   * 予定の正本の切り替えの取り込みの期間の最初の日（`YYYY-MM-DD`）。渡すと、期間の入力を出さず、この日から先の全ての予定を読む
-   * ことを示す。切り替えの間の取り込みの期間は、API が決めた期間だけである。
+   * 予定の管理の移行の取り込みの期間の最初の日（`YYYY-MM-DD`）。渡すと、期間の入力を出さず、この日から先の全ての予定を読む
+   * ことを示す。移行の間の取り込みの期間は、API が決めた期間だけである。
    */
   cutoverRangeStart?: string
 }
 
 /**
  * 予定を取り込む職員と期間の入力。幅 768px 以上では、職員と期間を横に並べる。
- * 予定の正本の切り替えの間は、期間の入力の代わりに、切り替えの期間を示す。
+ * 予定の管理の移行の間は、期間の入力の代わりに、移行の期間を示す。
  */
 export const CalendarImportForm = ({
   staffOptions,
@@ -98,7 +98,7 @@ export const CalendarImportForm = ({
             <div className="flex flex-col gap-3 desktop:col-span-2">
               <span className="text-label">期間</span>
               <span className="text-body" data-testid="calendar-import-cutover-range">
-                {formatDateRange(cutoverRangeStart, null)}（切り替えの月の初日から先の全て）
+                {formatDateRange(cutoverRangeStart, null)}（移行の月の初日から先の全て）
               </span>
             </div>
           ) : (
@@ -152,7 +152,7 @@ export const CalendarImportForm = ({
         </div>
         <span className="text-caption text-text-secondary" id={hintId}>
           {cutoverRangeStart !== undefined
-            ? '切り替えの月の初日から先に始まる全ての予定を、職員の Google カレンダーから読みます。繰り返しの予定は、規則のまま取り込みます。'
+            ? '移行の月の初日から先に始まる全ての予定を、職員の Google カレンダーから読みます。繰り返しの予定は、規則のまま取り込みます。'
             : '開始日から終了日までに始まる予定を、職員の Google カレンダーから読みます。'}
         </span>
         <div className="flex flex-wrap items-center gap-3">

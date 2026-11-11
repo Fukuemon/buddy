@@ -93,7 +93,7 @@ export const importErrorMessage = (error: unknown) => {
     case 'google_primary':
       return 'この事業所の予定は Google カレンダーで管理しているので、buddy に取り込めません。予定は 1 件も取り込んでいません。'
     case 'cutover_not_open':
-      return '予定の正本の切り替えが、ほかの画面で完了したか、やめました。画面を読み直してください。予定は 1 件も取り込んでいません。'
+      return '予定の管理の移行が、ほかの画面で完了したか、やめました。画面を読み直してください。予定は 1 件も取り込んでいません。'
     // 画面は期間と取り込み方の値を確認してから送るので、残る入力のエラーは、選んだ利用者がいないことである
     case 'invalid_input':
       return '選んだ利用者が見つかりません。利用者を選び直してください。予定は 1 件も取り込んでいません。'
@@ -104,27 +104,27 @@ export const importErrorMessage = (error: unknown) => {
   }
 }
 
-/** 予定の正本の切り替えの状況を読めなかったときの文。 */
+/** 予定の管理の移行の状況を読めなかったときの文。 */
 export const CUTOVER_LOAD_ERROR_MESSAGE =
-  '予定の正本の切り替えの状況を読み込めませんでした。時間をおいて、読み直してください。'
+  '予定の管理の移行の状況を読み込めませんでした。時間をおいて、読み直してください。'
 
 /**
- * 切り替えの操作（始める、完了する、やめる）の失敗を、失敗の文にする。
+ * 移行の操作（始める、完了する、やめる）の失敗を、失敗の文にする。
  * 最後の同期が成功していないカレンダーがあるときは、API の文（職員の名前を含む）をそのまま出す。
  */
 export const cutoverErrorMessage = (error: unknown) => {
   if (statusOf(error) === 403) return FORBIDDEN_MESSAGE
   switch (codeOf(error)) {
     case 'cutover_open':
-      return 'この事業所では、ほかの画面で切り替えを始めています。画面を読み直してください。'
+      return 'この事業所では、ほかの画面で移行を始めています。画面を読み直してください。'
     case 'cutover_not_google_primary':
-      return 'この事業所の予定の正本は、すでに buddy です。画面を読み直してください。'
+      return 'この事業所は、すでに予定を buddy で管理しています。画面を読み直してください。'
     case 'cutover_sync_not_ready':
       return error instanceof Error
         ? error.message
         : '最後の同期が成功していないカレンダーがあります。'
     case 'cutover_not_open':
-      return 'この切り替えは、ほかの画面で完了したか、やめています。画面を読み直してください。'
+      return 'この移行は、ほかの画面で完了したか、やめています。画面を読み直してください。'
     case 'calendar_unavailable':
       return 'Google カレンダーから予定を読めませんでした。時間をおいて、もう一度完了してください。'
     case 'calendar_unreadable':

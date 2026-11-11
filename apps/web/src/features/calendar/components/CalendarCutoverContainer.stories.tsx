@@ -28,7 +28,7 @@ const synced = (id: string, staffId: string, name: string): CalendarSyncStatus =
   last_error: null,
 })
 
-/** Google カレンダーを予定の正本にし、結び付けた 2 人のカレンダーの最後の同期が成功している事業所のフェイクの API。 */
+/** 予定を Google カレンダーで管理し、結び付けた 2 人のカレンダーの最後の同期が成功している事業所のフェイクの API。 */
 export const googlePrimaryApi = (): BuddyApi =>
   createFakeBuddyApi({
     baseDate: new Date('2026-11-05T09:00:00+09:00'),
@@ -39,7 +39,7 @@ export const googlePrimaryApi = (): BuddyApi =>
     ],
   })
 
-/** 切り替えを始めたフェイクの API。startCutover は待たずに状態を変える。 */
+/** 移行を始めたフェイクの API。startCutover は待たずに状態を変える。 */
 export const openApi = (): BuddyApi => {
   const api = googlePrimaryApi()
   void api.calendars.startCutover(MOCK_FACILITY_ID)
@@ -56,7 +56,7 @@ const meta = {
 export default meta
 type Story = StoryObj<typeof meta>
 
-/** Google カレンダーを正本にし、切り替えを始めていない。手順、同期の状況、始めるボタンを出す。 */
+/** 予定を Google カレンダーで管理し、移行を始めていない。手順、同期の状況、始めるボタンを出す。 */
 export const NotStarted: Story = {}
 
 /** 最後の同期が成功していないカレンダーがあり、始めると拒まれる。 */
@@ -69,7 +69,7 @@ export const SyncNotReady: Story = {
   },
 }
 
-/** 切り替え中。職員ごとの取り込みと同期の状況と、完了とやめるのボタンを出す。 */
+/** 移行中。職員ごとの取り込みと同期の状況と、完了とやめるのボタンを出す。 */
 export const Open: Story = { parameters: route({ api: openApi() }) }
 
 /** 取り込んでいないカレンダーがあり、完了すると満たさない一覧を出す。 */
@@ -94,14 +94,14 @@ export const CancelConfirm: Story = {
   },
 }
 
-/** 予定の正本が buddy の事業所。 */
+/** 予定の予定を buddy で管理している事業所。 */
 export const BuddyPrimary: Story = { parameters: route({ api: createFakeBuddyApi() }) }
 
 export const Loading: Story = { parameters: route({ api: pendingBuddyApi() }) }
 
 export const LoadError: Story = { parameters: route({ api: failingBuddyApi() }) }
 
-/** 切り替えの状況を、2 回目だけ読めないフェイクの API を作る。 */
+/** 移行の状況を、2 回目だけ読めないフェイクの API を作る。 */
 export const refetchFailingApi = (): BuddyApi => {
   const base = googlePrimaryApi()
   return {
@@ -113,5 +113,5 @@ export const refetchFailingApi = (): BuddyApi => {
   }
 }
 
-/** 読み終えた後に読み直して、切り替えの状況を読めない。表示を残し、見出しの下に失敗の文と読み直すを出す。 */
+/** 読み終えた後に読み直して、移行の状況を読めない。表示を残し、見出しの下に失敗の文と読み直すを出す。 */
 export const RefetchError: Story = { parameters: route({ api: refetchFailingApi() }) }

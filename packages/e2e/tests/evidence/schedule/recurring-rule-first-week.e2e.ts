@@ -218,10 +218,10 @@ test.describe('繰り返しの変更', () => {
     })
   })
 
-  test.describe(`隔週の 1 週目（${OKADA.staff.name}、Google カレンダーを正本にする事業所のマネージャー）`, () => {
+  test.describe(`隔週の 1 週目（${OKADA.staff.name}、予定を Google カレンダーで管理している事業所のマネージャー）`, () => {
     test.use({ storageState: OKADA_STATE })
 
-    test('recurring-rule-first-week-google-primary Google カレンダーを正本にする事業所で、今日より前の回を開き、隔週の月曜と木曜に変えた場合、Google カレンダーにも同じ日の回が出ること', async ({
+    test('recurring-rule-first-week-google-primary 予定を Google カレンダーで管理している事業所で、今日より前の回を開き、隔週の月曜と木曜に変えた場合、Google カレンダーにも同じ日の回が出ること', async ({
       browser,
       context,
       request,
@@ -244,7 +244,7 @@ test.describe('繰り返しの変更', () => {
         await openDay(page, OKADA.staff.id, opened)
         await intro(
           page,
-          `Google カレンダーを正本にする事業所で、今日より前の回から隔週の月曜と木曜に変えると、開いた回の週から数えた日に、Google カレンダー（calendarpit）にも buddy と同じ回が出る\n前提 今日は ${daysFromToday(0)}。${fromLastWeekMonday(-14)} から隔週の月曜の「${title}」を ${OKADA.staff.name} の Google カレンダーに作ってある。今日より前の ${opened}（月曜）の日の表示を開いている`,
+          `予定を Google カレンダーで管理している事業所で、今日より前の回から隔週の月曜と木曜に変えると、開いた回の週から数えた日に、Google カレンダー（calendarpit）にも buddy と同じ回が出る\n前提 今日は ${daysFromToday(0)}。${fromLastWeekMonday(-14)} から隔週の月曜の「${title}」を ${OKADA.staff.name} の Google カレンダーに作ってある。今日より前の ${opened}（月曜）の日の表示を開いている`,
         )
         await changeToMondayThursday(page, OKADA.staff.id, title, '2')
 

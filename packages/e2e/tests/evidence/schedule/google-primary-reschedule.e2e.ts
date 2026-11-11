@@ -83,7 +83,7 @@ const prepareVisit = (browser: Browser) =>
   })
 
 test.describe('予定のカレンダー', () => {
-  test.describe(`Google カレンダーを正本にする事業所の予定の日時の変更（${OKADA.staff.name}、Google カレンダーを正本にする事業所のマネージャー）`, () => {
+  test.describe(`予定を Google カレンダーで管理している事業所の予定の日時の変更（${OKADA.staff.name}、予定を Google カレンダーで管理している事業所のマネージャー）`, () => {
     test.use({ storageState: OKADA_STATE })
 
     test('google-primary-reschedule-from-buddy 予定の編集の画面で単発の予定の日時を変えて保存した場合、予定のカレンダーと calendarpit の両方で新しい日時になること', async ({
@@ -103,7 +103,7 @@ test.describe('予定のカレンダー', () => {
         await event.scrollIntoViewIfNeeded()
         await intro(
           page,
-          `Google カレンダーを正本にする事業所で buddy から予定の日時を変えると、予定のカレンダーと calendarpit で新しい日時になる\n前提 予定のカレンダーを ${today} の日の表示で開いている。${OKADA.staff.name} の列の 10:00〜11:00 に、Google カレンダーで作った「${title}」が出ている`,
+          `予定を Google カレンダーで管理している事業所で buddy から予定の日時を変えると、予定のカレンダーと calendarpit で新しい日時になる\n前提 予定のカレンダーを ${today} の日の表示で開いている。${OKADA.staff.name} の列の 10:00〜11:00 に、Google カレンダーで作った「${title}」が出ている`,
         )
 
         await step(page, '予定を押して詳細を開き、「編集」を押す', async () => {
@@ -189,7 +189,7 @@ test.describe('予定のカレンダー', () => {
         await event.scrollIntoViewIfNeeded()
         await intro(
           page,
-          `Google カレンダーを正本にする事業所で Google カレンダーから訪問の予定の日時を変えると、同期の後に予定のカレンダーで新しい日時になり、訪問の情報が残る\n前提 予定のカレンダーを ${today} の日の表示で開いている。buddy で作った ${patientName} の「訪看I3」の訪問が、${OKADA.staff.name} の列に出ている`,
+          `予定を Google カレンダーで管理している事業所で Google カレンダーから訪問の予定の日時を変えると、同期の後に予定のカレンダーで新しい日時になり、訪問の情報が残る\n前提 予定のカレンダーを ${today} の日の表示で開いている。buddy で作った ${patientName} の「訪看I3」の訪問が、${OKADA.staff.name} の列に出ている`,
         )
 
         const written = await findOkadaGoogleEvent(request, patientName)

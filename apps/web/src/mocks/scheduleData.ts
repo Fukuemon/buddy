@@ -292,7 +292,7 @@ export const createMockSchedules = (base: Date): Schemas['Schedule'][] => {
   ]
 }
 
-/** ダミーの事業所。予定の正本は buddy（buddy_primary）である。 */
+/** ダミーの事業所。予定の管理先は buddy（buddy_primary）である。 */
 export const mockFacility: Schemas['Facility'] = {
   id: MOCK_FACILITY_ID,
   name: 'buddy 訪問看護ステーション',
@@ -751,7 +751,7 @@ export const createMockImportResult = (
 }
 
 /**
- * 予定の正本の切り替えの間のプレビューの結果。期間は終わりを持たず、2 日ごとの繰り返しの予定を、規則を buddy に写せない確認が必要な予定にする。
+ * 予定の管理の移行の間のプレビューの結果。期間は終わりを持たず、2 日ごとの繰り返しの予定を、規則を buddy に写せない確認が必要な予定にする。
  * 取り込んだ後に Google で変わった予定が 1 件ある。
  */
 export const createMockCutoverPreview = (rangeStart: string): Schemas['ImportPreview'] => {

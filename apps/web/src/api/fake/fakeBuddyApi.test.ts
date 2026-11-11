@@ -148,7 +148,7 @@ describe('createFakeBuddyApi', () => {
     })
   })
 
-  it('予定の正本の切り替えを、始める、終わりの無い期間で取り込む、完了するの順に進め、完了すると buddy を正本にする', async () => {
+  it('予定の管理の移行を、始める、終わりの無い期間で取り込む、完了するの順に進め、完了すると予定を buddy で管理する', async () => {
     const api = createFakeBuddyApi({ baseDate, sourceMode: 'google_primary', calendarSyncs: [] })
     const cutover = await api.calendars.startCutover(MOCK_FACILITY_ID)
     expect(cutover).toMatchObject({ status: 'open', range_start: '2026-10-01' })

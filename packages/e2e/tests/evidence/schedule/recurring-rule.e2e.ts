@@ -125,7 +125,7 @@ test.describe('予定の API', () => {
   test.describe(`繰り返しの予定の規則の変更（${LOGIN_STAFF.name}、マネージャー）`, () => {
     test.use({ storageState: LOGIN_STATE })
 
-    test('recurring-rule-buddy-primary buddy を正本にする事業所で、毎週月曜の繰り返しの予定を API で毎週火曜に変えた場合、予定の表示と Google カレンダーの予定が火曜になること', async ({
+    test('recurring-rule-buddy-primary 予定を buddy で管理している事業所で、毎週月曜の繰り返しの予定を API で毎週火曜に変えた場合、予定の表示と Google カレンダーの予定が火曜になること', async ({
       browser,
       context,
       request,
@@ -168,7 +168,7 @@ test.describe('予定の API', () => {
         await expect(dayEvent(page, HAYASHI.id, title)).toBeVisible()
         await intro(
           page,
-          `buddy を正本にする事業所で、毎週月曜の繰り返しの予定を適用の日から毎週火曜に変えると、予定の表示と林の Google カレンダー（calendarpit）が火曜になる\n前提 ${HAYASHI.name} に Google カレンダーを結び付け、${start} から毎週月曜の「${title}」を API で作ってある。${effective}（月曜）の日の表示を開いている`,
+          `予定を buddy で管理している事業所で、毎週月曜の繰り返しの予定を適用の日から毎週火曜に変えると、予定の表示と林の Google カレンダー（calendarpit）が火曜になる\n前提 ${HAYASHI.name} に Google カレンダーを結び付け、${start} から毎週月曜の「${title}」を API で作ってある。${effective}（月曜）の日の表示を開いている`,
         )
         await check(page, `${effective}（月曜）に「${title}」が出る`, () =>
           expect(dayEvent(page, HAYASHI.id, title)).toBeVisible(),
@@ -240,10 +240,10 @@ test.describe('予定の API', () => {
     })
   })
 
-  test.describe(`繰り返しの予定の規則の変更（${OKADA.staff.name}、Google カレンダーを正本にする事業所のマネージャー）`, () => {
+  test.describe(`繰り返しの予定の規則の変更（${OKADA.staff.name}、予定を Google カレンダーで管理している事業所のマネージャー）`, () => {
     test.use({ storageState: OKADA_STATE })
 
-    test('recurring-rule-google-primary Google カレンダーを正本にする事業所で、毎週月曜の繰り返しの予定を API で毎週火曜に変えた場合、calendarpit の親の予定の RRULE が火曜になり、予定の表示が火曜の回を出すこと', async ({
+    test('recurring-rule-google-primary 予定を Google カレンダーで管理している事業所で、毎週月曜の繰り返しの予定を API で毎週火曜に変えた場合、calendarpit の親の予定の RRULE が火曜になり、予定の表示が火曜の回を出すこと', async ({
       browser,
       context,
       request,
@@ -276,7 +276,7 @@ test.describe('予定の API', () => {
         await expect(dayEvent(page, OKADA.staff.id, title)).toBeVisible()
         await intro(
           page,
-          `Google カレンダーを正本にする事業所で、毎週月曜の繰り返しの予定を適用の日から毎週火曜に変えると、calendarpit の親の予定の RRULE が火曜になり、予定の表示が火曜の回を出す\n前提 ${start} から毎週月曜の「${title}」を API で ${OKADA.staff.name} の Google カレンダーに作ってある。${effective}（月曜）の日の表示を開いている`,
+          `予定を Google カレンダーで管理している事業所で、毎週月曜の繰り返しの予定を適用の日から毎週火曜に変えると、calendarpit の親の予定の RRULE が火曜になり、予定の表示が火曜の回を出す\n前提 ${start} から毎週月曜の「${title}」を API で ${OKADA.staff.name} の Google カレンダーに作ってある。${effective}（月曜）の日の表示を開いている`,
         )
         await check(page, `${effective}（月曜）に「${title}」が出る`, () =>
           expect(dayEvent(page, OKADA.staff.id, title)).toBeVisible(),

@@ -20,7 +20,7 @@ export const externalCalendarListQueryOptions = (api: BuddyApi, facilityId: Faci
     queryFn: () => api.calendars.list(facilityId),
   })
 
-/** 事業所を読む query。予定の正本の切り替えの画面が、正本のモード（sourceMode）を読む。予定の画面と cache を共有する。 */
+/** 事業所を読む query。予定の管理を buddy に移す画面が、予定の管理先（sourceMode）を読む。予定の画面と cache を共有する。 */
 export const facilityQueryOptions = (api: BuddyApi, facilityId: FacilityId) =>
   queryOptions({
     queryKey: queryKeys.facilityDetail(facilityId),
@@ -123,7 +123,7 @@ export const usePreviewImport = () => {
   })
 }
 
-/** 予定を取り込む mutation。成功したら、カレンダーの最後の取り込みと予定と、切り替えの最後の取り込みを読み直す。 */
+/** 予定を取り込む mutation。成功したら、カレンダーの最後の取り込みと予定と、移行の最後の取り込みを読み直す。 */
 export const useImportCalendar = () => {
   const { api, facilityId } = useBuddyApi()
   const queryClient = useQueryClient()
@@ -146,14 +146,14 @@ export const useImportCalendar = () => {
   })
 }
 
-/** 予定の正本の切り替えの状況の query。open の切り替えが無ければ cutover は null である。 */
+/** 予定の管理の移行の状況の query。open の移行が無ければ cutover は null である。 */
 export const cutoverStatusQueryOptions = (api: BuddyApi, facilityId: FacilityId) =>
   queryOptions({
     queryKey: queryKeys.calendars.cutover(facilityId),
     queryFn: () => api.calendars.cutoverStatus(facilityId),
   })
 
-/** 切り替えの操作の後に読み直す query。切り替えの状況、事業所の正本、カレンダーの最後の取り込み、予定の一覧の「切り替え中」の表示である。 */
+/** 移行の操作の後に読み直す query。移行の状況、事業所の予定の管理先、カレンダーの最後の取り込み、予定の一覧の「移行中」の表示である。 */
 const invalidateCutover = (queryClient: QueryClient, facilityId: FacilityId) =>
   Promise.all(
     [
@@ -165,9 +165,9 @@ const invalidateCutover = (queryClient: QueryClient, facilityId: FacilityId) =>
   )
 
 /**
- * 予定の正本の切り替えを始める mutation。始められたら、切り替えの状況と予定を読み直す。
+ * 予定の管理の移行を始める mutation。始められたら、移行の状況と予定を読み直す。
  * 始められなければ読み直さず、今の状態のまま始めるの失敗の文を出させる。
- * 最後の同期が成功していない職員がいて始められないときだけ、カレンダーの一覧の最後の同期を出し直すため、切り替えの状況を読み直す。
+ * 最後の同期が成功していない職員がいて始められないときだけ、カレンダーの一覧の最後の同期を出し直すため、移行の状況を読み直す。
  */
 export const useStartCutover = () => {
   const { api, facilityId } = useBuddyApi()
@@ -183,8 +183,8 @@ export const useStartCutover = () => {
 }
 
 /**
- * 切り替えを完了する mutation。完了の確認を満たさなければ、data に満たさないカレンダーと予定（unmet）を持つ。
- * 完了したか満たさない一覧が返ったら、切り替えの状況、事業所の正本、予定を読み直す。
+ * 移行を完了する mutation。完了の確認を満たさなければ、data に満たさないカレンダーと予定（unmet）を持つ。
+ * 完了したか満たさない一覧が返ったら、移行の状況、事業所の予定の管理先、予定を読み直す。
  * 完了の操作が失敗したら読み直さず、今の状態のまま完了の失敗の文を出させる。
  */
 export const useCompleteCutover = () => {
@@ -198,7 +198,7 @@ export const useCompleteCutover = () => {
 }
 
 /**
- * 切り替えをやめる mutation。やめられたら、切り替えの状況と予定を読み直す。
+ * 移行をやめる mutation。やめられたら、移行の状況と予定を読み直す。
  * やめられなければ読み直さず、確認のダイアログにやめるの失敗の文を出させる。
  */
 export const useCancelCutover = () => {

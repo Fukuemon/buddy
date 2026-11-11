@@ -219,7 +219,7 @@ describe('createHttpBuddyApi', () => {
     })
   })
 
-  it('事業所を読み、予定の正本を返す', async () => {
+  it('事業所を読み、予定の管理先を返す', async () => {
     server.use(
       scheduleHttp.get('/v1/facilities/{facility_id}', ({ params, response }) =>
         response(200).json({

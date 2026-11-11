@@ -193,7 +193,7 @@ OpenAPI の項目のうち、送る値は `createSchedule`（`POST /v1/facilitie
 | 読み込みの失敗 | 「職員と利用者を読み込めませんでした。閉じてから、開き直してください。」 | `listUsers`、`listPatients`、`listServiceCodes` のどれかが 401 以外で失敗。API に届かない |
 | 作成の失敗 | 「この操作をする権限がありません。」 | `createSchedule` が 403 |
 | 作成の失敗 | 「入力の内容では予定を作成できません。内容を直してください。」 | `createSchedule` が 400。休職か退職の職員か、訪問しない職員を主訪問者か予定者にしたときと、利用の終了の利用者を指したときを含む |
-| 作成の失敗 | 「この事業所の予定は Google カレンダーで管理しています。予定は Google カレンダーで作成、変更してください。」 | `createSchedule` が 409 `google_primary`。事業所が Google カレンダーを予定の正本にしている |
+| 作成の失敗 | 「この事業所の予定は Google カレンダーで管理しています。予定は Google カレンダーで作成、変更してください。」 | `createSchedule` が 409 `google_primary`。事業所が予定を Google カレンダーで管理している |
 | Google カレンダーに書けたかを確認できなかった | 「Google カレンダーに書けたかを確認できませんでした。もう一度「作成」を押すと、同じ予定として送り直します。」 | `createSchedule` が 503 `google_write_unknown` |
 | 作成の失敗 | 「Google カレンダーで予定が変更されていました。最新の予定を確認してから、もう一度保存してください。」 | `createSchedule` が 409 `google_event_changed` |
 | 作成の失敗 | 「Google カレンダーで予定が消されたか、見つかりません。」 | `createSchedule` が 409 `google_event_not_found` |
@@ -203,7 +203,7 @@ OpenAPI の項目のうち、送る値は `createSchedule`（`POST /v1/facilitie
 | 作成の失敗 | 「Google カレンダーが予定を受け付けませんでした。入力を確認してください。」 | `createSchedule` が 409 `google_event_rejected` |
 | 作成の失敗 | 「予定の職員が Google カレンダーを結び付けていません。カレンダーの結び付けを、事業所の管理者に頼んでください。」 | `createSchedule` が 409 `calendar_not_linked` |
 | 作成の失敗 | 「この事業所には、Google カレンダーと連携する設定がありません。事業所の管理者に確認してください。」 | `createSchedule` が 503 `calendar_not_configured` |
-| 作成の失敗 | 「予定の正本を buddy に切り替えています。切り替えが終わるまで、予定を作成、変更、キャンセルできません。」 | `createSchedule` が 409 `cutover_open` |
+| 作成の失敗 | 「予定の管理を buddy に移しています。終わるまで、予定を作成、変更、キャンセルできません。」 | `createSchedule` が 409 `cutover_open` |
 | 作成の失敗 | 「予定を作成できませんでした。」 | `createSchedule` が、ここまでのほかの失敗（409 `conflict`、500 など）。マスタ（`listScheduleTypes`、`listServiceCodes`、`listVisitCategories`）の取得が失敗。選んだ値に当たるマスタが無い。API に届かない |
 | 送信中 | なし（ログインの画面へ移るまで続く） | `createSchedule` か、マスタの取得が 401 |
 

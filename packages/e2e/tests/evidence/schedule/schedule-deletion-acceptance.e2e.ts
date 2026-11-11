@@ -467,10 +467,10 @@ test.describe('予定の詳細', () => {
       })
     })
 
-    test.describe(`${OKADA.staff.name}（Google カレンダーを正本にする事業所のマネージャー）`, () => {
+    test.describe(`${OKADA.staff.name}（予定を Google カレンダーで管理している事業所のマネージャー）`, () => {
       test.use({ storageState: OKADA_STATE })
 
-      test('s4-google-primary Google カレンダーで管理する事業所の職員が明日の予定の詳細を開いた場合、「予定を削除」が出ず、「予定をキャンセル」で取り消すと Google カレンダーからも消えること', async ({
+      test('s4-google-primary Google カレンダーで管理している事業所の職員が明日の予定の詳細を開いた場合、「予定を削除」が出ず、「予定をキャンセル」で取り消すと Google カレンダーからも消えること', async ({
         browser,
         context,
         request,
@@ -504,7 +504,7 @@ test.describe('予定の詳細', () => {
           await expect(event).toBeVisible()
           await intro(
             page,
-            `Google カレンダーで管理する事業所\n前提 ${OKADA.staff.name} の Google カレンダー（calendarpit）の明日（${date}）の 13:00〜14:00 に「${title}」があり、予定のカレンダーに出ている`,
+            `Google カレンダーで管理している事業所\n前提 ${OKADA.staff.name} の Google カレンダー（calendarpit）の明日（${date}）の 13:00〜14:00 に「${title}」があり、予定のカレンダーに出ている`,
           )
 
           await step(page, 'もし 予定の詳細を開く', () => openDetail(page, event))

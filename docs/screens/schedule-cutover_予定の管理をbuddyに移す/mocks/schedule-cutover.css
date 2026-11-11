@@ -1,4 +1,4 @@
-/* 予定の正本の切り替えのモックだけの見た目 */
+/* 予定の管理の移行のモックだけの見た目 */
 .sc-title {
   display: flex;
   flex-wrap: wrap;
@@ -57,7 +57,7 @@
 }
 
 /*
- * 完了すると、切り替えをやめるの行（apps/web の CalendarCutoverView の justify-between）。
+ * 完了すると、移行をやめるの行（apps/web の CalendarCutoverView の justify-between）。
  * やめるは取り込んだ予定を消す操作の起点なので、完了するから離して右端に置く
  */
 .sc-actions {

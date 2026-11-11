@@ -24,8 +24,8 @@ import { receiptCategoryRowCells, receiptResultRow } from '../../selectors/recei
 import { calendarTimeLabel } from '../../selectors/scheduleCalendar'
 
 // 照合の API は、compose/receipt-calendars.json の森のカレンダーを calendarpit から読む。
-// buddy を正本にする 1 つ目の事業所で森に Google カレンダーを結び付けると、予定の API が森の繰り返しの予定を RRULE で書き出す。
-// 書き出しの RRULE は、Google カレンダーを正本にする事業所の書き込みと同じ処理で作る（ADR-0039）。
+// 予定を buddy で管理する 1 つ目の事業所で森に Google カレンダーを結び付けると、予定の API が森の繰り返しの予定を RRULE で書き出す。
+// 書き出しの RRULE は、予定を Google カレンダーで管理している事業所の書き込みと同じ処理で作る（ADR-0039）。
 const MORI = LEADER.staff
 const MORI_CALENDAR = 'kenta.mori@example.com'
 const END_DATE = '2027-01-31'

@@ -6,7 +6,7 @@ import { formatDateTime } from './format'
 
 /** 完了の確認を満たさない理由の文言。満たさない一覧の理由の列に出す。 */
 export const UNMET_REASON_LABEL: Record<CalendarCutoverUnmet['reason'], string> = {
-  not_imported: 'この切り替えで、まだ取り込んでいない',
+  not_imported: 'この移行で、まだ取り込んでいない',
   sync_stale: '最後の取り込みの後に、同期が成功していない',
   event_not_imported: '取り込んでいない予定がある',
   needs_review: '確認が必要な予定の取り込み方を決めていない',
@@ -32,7 +32,7 @@ export const formatUnmetDateTime = (item: CalendarCutoverUnmet) => {
   return `${date} ${formatTimeRange(item.start_time, item.end_time, item.ends_next_day ? 'nextDay' : 'sameDay')}`
 }
 
-/** カレンダーのこの切り替えの最後の取り込みを「2026年10月20日（火） 15:42」の形にする。取り込んでいなければ「まだ取り込んでいない」。 */
+/** カレンダーのこの移行の最後の取り込みを「2026年10月20日（火） 15:42」の形にする。取り込んでいなければ「まだ取り込んでいない」。 */
 export const formatCutoverImport = (calendar: CalendarCutoverCalendar) =>
   calendar.last_import === null
     ? 'まだ取り込んでいない'
@@ -47,6 +47,6 @@ export const formatCutoverSync = (calendar: CalendarCutoverCalendar) => {
   return calendar.last_status === 'failed' ? `${at}（最後の同期は失敗）` : at
 }
 
-/** 全てのカレンダーの最後の同期が成功しているかを返す。切り替えを始める条件である。 */
+/** 全てのカレンダーの最後の同期が成功しているかを返す。移行を始める条件である。 */
 export const isAllSynced = (calendars: readonly CalendarCutoverCalendar[]) =>
   calendars.every((calendar) => calendar.last_status === 'succeeded')

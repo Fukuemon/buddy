@@ -340,10 +340,10 @@ test.describe('繰り返しの変更', () => {
     })
   })
 
-  test.describe(`規則の欄の間隔と複数の曜日（${OKADA.staff.name}、Google カレンダーを正本にする事業所のマネージャー）`, () => {
+  test.describe(`規則の欄の間隔と複数の曜日（${OKADA.staff.name}、予定を Google カレンダーで管理している事業所のマネージャー）`, () => {
     test.use({ storageState: OKADA_STATE })
 
-    test('recurring-rule-days-interval-google-primary Google カレンダーを正本にする事業所で、毎週月曜の繰り返しの予定を隔週の月曜と木曜に変えた場合、Google カレンダーにも同じ日の回が出ること', async ({
+    test('recurring-rule-days-interval-google-primary 予定を Google カレンダーで管理している事業所で、毎週月曜の繰り返しの予定を隔週の月曜と木曜に変えた場合、Google カレンダーにも同じ日の回が出ること', async ({
       browser,
       context,
       request,
@@ -366,7 +366,7 @@ test.describe('繰り返しの変更', () => {
         await openDay(page, OKADA.staff.id, effective)
         await intro(
           page,
-          `Google カレンダーを正本にする事業所で、毎週月曜の繰り返しの予定の回から隔週の月曜と木曜に変えると、Google カレンダー（calendarpit）にも buddy と同じ日に回が出る\n前提 ${start} から毎週月曜の「${title}」を ${OKADA.staff.name} の Google カレンダーに作ってある。${effective}（月曜）の日の表示を開いている`,
+          `予定を Google カレンダーで管理している事業所で、毎週月曜の繰り返しの予定の回から隔週の月曜と木曜に変えると、Google カレンダー（calendarpit）にも buddy と同じ日に回が出る\n前提 ${start} から毎週月曜の「${title}」を ${OKADA.staff.name} の Google カレンダーに作ってある。${effective}（月曜）の日の表示を開いている`,
         )
         await openCustomRecurrence(page, OKADA.staff.id, title)
         await step(

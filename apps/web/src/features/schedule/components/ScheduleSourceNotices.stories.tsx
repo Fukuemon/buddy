@@ -50,7 +50,7 @@ export const BuddyPrimary: Story = {
   },
 }
 
-/** 予定の正本を buddy に切り替えている。切り替え中であることと、予定を変えられないことを伝える文と、始めた職員と時刻を出す。 */
+/** 予定の管理を buddy に移している。移行中であることと、予定を変えられないことを伝える文と、始めた職員と時刻を出す。 */
 export const Cutover: Story = {
   args: {
     calendarSyncs: storyCalendarSyncs.slice(0, 1),
