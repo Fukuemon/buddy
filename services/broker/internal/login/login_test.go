@@ -1,6 +1,7 @@
 package login_test
 
 import (
+	"bytes"
 	"context"
 	"encoding/base64"
 	"encoding/json"
@@ -856,6 +857,31 @@ func TestRejectFailsShowsOutagePage(t *testing.T) {
 	rec := e.submit("nobody@example.com")
 	if rec.Code != http.StatusBadGateway || !strings.Contains(rec.Body.String(), "時間をおいて、もう一度ログインしてください。") {
 		t.Errorf("code = %d, body = %s", rec.Code, rec.Body)
+	}
+}
+
+// TestCallbackHostedDomainLog は、hd が許すドメインと合わずに拒んだログインのログに、事業所、職員の ID、受け取った hd を書き、
+// メールを書かないことを確認する。
+func TestCallbackHostedDomainLog(t *testing.T) {
+	var buf bytes.Buffer
+	e := newEnvWith(10, func(c *login.Config) { c.Logger = slog.New(slog.NewJSONHandler(&buf, nil)) })
+	e.upstream.err = fmt.Errorf("%w: hd %q", upstream.ErrHostedDomain, "other.example")
+	location(t, e.callback(t, e.submit("aoki@example.com"), "code-1"))
+	var got map[string]any
+	for line := range strings.Lines(buf.String()) {
+		var rec map[string]any
+		if err := json.Unmarshal([]byte(line), &rec); err != nil {
+			t.Fatal(err)
+		}
+		if rec["msg"] == "ログインを拒む" {
+			got = rec
+		}
+	}
+	if got["level"] != "WARN" || got["org_id"] != "org-a" || got["staff_id"] != aokiID || !strings.Contains(fmt.Sprint(got["error"]), `hd "other.example"`) {
+		t.Errorf("ログ = %v, want Warn で org_id、staff_id、hd を書く", got)
+	}
+	if strings.Contains(buf.String(), "aoki@example.com") {
+		t.Errorf("ログにメールを書いた: %s", buf.String())
 	}
 }
 

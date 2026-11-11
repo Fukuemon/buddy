@@ -177,7 +177,14 @@ func (h callback) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		reject(h.logger, h.hydra, w, r, p.Challenge, "職員が有効でない", nil)
 		return
 	}
+	// hd の確認は、結び付け済みの職員にも行い、結び付けより前に行う。許すドメインを足す前に結び付けたアカウントも拒み、
+	// 拒むアカウントを職員に結び付けない
 	id, err := h.upstream.Exchange(ctx, m.OrgID, q.Get("code"), q.Get("iss"), p.Attempt)
+	if errors.Is(err, upstream.ErrHostedDomain) {
+		rejectAs(h.logger, h.hydra, w, r, p.Challenge, hydra.AccountMismatch, "上流のアカウントの hd が許すドメインと違う", err,
+			"org_id", m.OrgID, "staff_id", m.ID)
+		return
+	}
 	if err != nil {
 		rejectAs(h.logger, h.hydra, w, r, p.Challenge, hydra.ServerError, "上流の IdP の ID token を検証できない", err)
 		return
