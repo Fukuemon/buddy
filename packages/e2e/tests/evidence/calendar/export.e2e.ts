@@ -1,87 +1,83 @@
-import { expect, test, type Page } from '@playwright/test'
+import { expect, test } from '@playwright/test'
 
-import { CALENDARPIT_URL, HAYASHI, LOGIN_EMAIL, LOGIN_STAFF } from '../../fixtures/env'
-import { EVIDENCE_VARIANTS, recordPrEvidence } from '../../fixtures/evidence'
+import { check, intro, step } from '../../fixtures/caption'
+import { CALENDARPIT_URL, HAYASHI, LOGIN_STAFF, LOGIN_STATE } from '../../fixtures/env'
 import { findGoogleEvent } from '../../fixtures/googleCalendar'
-import { linkStaffCalendar, unlinkStaffCalendar } from '../../setup/calendar'
-import { signInAtBroker } from '../../screens/login'
+import { prepareOutsideRecording } from '../../fixtures/recording'
 import { calendarpitEvent } from '../../selectors/calendarpit'
-
-/** ログインして、林にカレンダーを結び付ける。予定の API は、結び付けた職員の予定だけを書き出す。 */
-const prepareHayashiLinked = async (page: Page) => {
-  await page.goto('/schedule/link')
-  await signInAtBroker(page, LOGIN_EMAIL)
-  await linkStaffCalendar(page, HAYASHI.id)
-}
+import { linkStaffCalendar, unlinkStaffCalendar } from '../../setup/calendar'
 
 test.describe('確認が必要な予定', () => {
-  test.describe('Google カレンダーへの書き出し', () => {
-    for (const variant of EVIDENCE_VARIANTS) {
-      test(`${variant.label ? `${variant.label}: ` : ''}カレンダーを結び付けた職員の予定を buddy で作った場合、職員の Google カレンダーに同じタイトルで出ること`, async ({
-        browser,
-        request,
-      }) => {
-        const title = `会議 ${Date.now()}`
-        await recordPrEvidence(
-          browser,
-          {
-            name: 'calendar-export-create',
-            title:
-              'カレンダーを結び付けた林 さくらの予定を buddy で作ると、林の Google カレンダー（calendarpit）に同じタイトルで出る',
-            actor: `${LOGIN_STAFF.name}（マネージャー）`,
-            variant,
-          },
-          prepareHayashiLinked,
-          async ({ page, step, check }) => {
-            try {
-              await page.goto('/schedule?view=day')
-              await expect(page.getByTestId(`day-grid-staff-${HAYASHI.id}`)).toBeVisible()
-              await step(
-                `${HAYASHI.name} に Google カレンダー（${HAYASHI.calendarId}、calendarpit）を結び付けてあり、日の表示を開いている`,
-              )
+  test.describe(`Google カレンダーへの書き出し（${LOGIN_STAFF.name}、マネージャー）`, () => {
+    test.use({ storageState: LOGIN_STATE })
 
-              await step(
-                `「予定を作成」を押し、タイトル「${title}」、予定者 ${HAYASHI.name} で作る`,
-              )
-              await page.getByTestId('schedule-create-open').click()
-              await page.getByTestId('schedule-kind-tab-normal').check()
-              await page.getByTestId('schedule-field-title').click()
-              await page.getByTestId('schedule-form-title').fill(title)
-              await page.getByTestId('schedule-field-staff').click()
-              await page.getByTestId(`staff-select-option-${HAYASHI.id}`).check()
-              await page.getByTestId('schedule-create-submit').click()
-              await expect(page.getByTestId('schedule-form-modal')).toBeHidden()
-              await expect(
-                page
-                  .getByTestId(`day-grid-staff-${HAYASHI.id}`)
-                  .getByTestId(/^schedule-event-/)
-                  .filter({ hasText: title }),
-              ).toBeVisible()
-              await check(`日の表示の ${HAYASHI.name} の列に「${title}」が出る`)
+    test('calendar-export-create カレンダーを結び付けた職員の予定を buddy で作った場合、職員の Google カレンダーに同じタイトルで出ること', async ({
+      browser,
+      context,
+      request,
+    }) => {
+      const title = `会議 ${Date.now()}`
+      // 予定の API は、結び付けた職員の予定だけを書き出す
+      await prepareOutsideRecording(browser, { storageState: LOGIN_STATE }, (page) =>
+        linkStaffCalendar(page, HAYASHI.id),
+      )
 
-              // 書き出しは別の処理が行うので、calendarpit に出るまで待ってから管理の画面を開く
-              await expect
-                .poll(
-                  async () => (await findGoogleEvent(request, HAYASHI.calendarId, title))?.status,
-                )
-                .toBe('confirmed')
-              const event = await findGoogleEvent(request, HAYASHI.calendarId, title)
-              const date = event?.start?.dateTime?.slice(0, 10) ?? ''
-              await step(
-                `Google カレンダーの代わりの calendarpit の管理の画面で、${HAYASHI.calendarId} の ${date} を開く`,
-              )
-              await page.goto(
-                `${CALENDARPIT_URL}/?calendar=${encodeURIComponent(HAYASHI.calendarId)}&date=${date}`,
-              )
-              await expect(calendarpitEvent(page, title)).toBeVisible()
-              await check(`${HAYASHI.calendarId} に「${title}」が出る`)
-            } finally {
-              await step('（撮影のため、ほかの撮影の前提に戻すよう、結び付けを外す）')
-              await unlinkStaffCalendar(page, HAYASHI.id)
-            }
+      const page = await context.newPage()
+      try {
+        await page.goto('/schedule?view=day')
+        await expect(page.getByTestId(`day-grid-staff-${HAYASHI.id}`)).toBeVisible()
+        await intro(
+          page,
+          `カレンダーを結び付けた林 さくらの予定を buddy で作ると、林の Google カレンダー（calendarpit）に同じタイトルで出る\n前提 ${HAYASHI.name} に Google カレンダー（${HAYASHI.calendarId}、calendarpit）を結び付けてあり、日の表示を開いている`,
+        )
+
+        await step(
+          page,
+          `「予定を作成」を押し、タイトル「${title}」、予定者 ${HAYASHI.name} で作る`,
+          async () => {
+            await page.getByTestId('schedule-create-open').click()
+            await page.getByTestId('schedule-kind-tab-normal').check()
+            await page.getByTestId('schedule-field-title').click()
+            await page.getByTestId('schedule-form-title').fill(title)
+            await page.getByTestId('schedule-field-staff').click()
+            await page.getByTestId(`staff-select-option-${HAYASHI.id}`).check()
+            await page.getByTestId('schedule-create-submit').click()
           },
         )
-      })
-    }
+        await check(page, `日の表示の ${HAYASHI.name} の列に「${title}」が出る`, async () => {
+          await expect(page.getByTestId('schedule-form-modal')).toBeHidden()
+          await expect(
+            page
+              .getByTestId(`day-grid-staff-${HAYASHI.id}`)
+              .getByTestId(/^schedule-event-/)
+              .filter({ hasText: title }),
+          ).toBeVisible()
+        })
+
+        // 書き出しは別の処理が行うので、calendarpit に出るまで待ってから、書き出された予定の日を開く
+        await expect
+          .poll(async () => (await findGoogleEvent(request, HAYASHI.calendarId, title))?.status)
+          .toBe('confirmed')
+        const event = await findGoogleEvent(request, HAYASHI.calendarId, title)
+        const date = event?.start?.dateTime?.slice(0, 10) ?? ''
+        await step(
+          page,
+          `Google カレンダーの代わりの calendarpit の管理の画面で、${HAYASHI.calendarId} の ${date} を開く`,
+          () =>
+            page
+              .goto(
+                `${CALENDARPIT_URL}/?calendar=${encodeURIComponent(HAYASHI.calendarId)}&date=${date}`,
+              )
+              .then(() => undefined),
+        )
+        await check(page, `${HAYASHI.calendarId} に「${title}」が出る`, () =>
+          expect(calendarpitEvent(page, title)).toBeVisible(),
+        )
+      } finally {
+        await step(page, '（撮影のため、ほかの撮影の前提に戻すよう、結び付けを外す）', () =>
+          unlinkStaffCalendar(page, HAYASHI.id),
+        )
+      }
+    })
   })
 })

@@ -1,25 +1,35 @@
 import { expect, test, type Page } from '@playwright/test'
 
-import { HAYASHI, LOGIN_EMAIL, LOGIN_STAFF } from '../../fixtures/env'
-import { EVIDENCE_VARIANTS, PHONE_VIEWPORT, recordPrEvidence } from '../../fixtures/evidence'
+import { check, intro, step } from '../../fixtures/caption'
+import { HAYASHI, LOGIN_STAFF, LOGIN_STATE } from '../../fixtures/env'
 import { findGoogleEvent, holdGoogleChanges, shiftGoogleEvent } from '../../fixtures/googleCalendar'
+import { PHONE_VIEWPORT, prepareOutsideRecording } from '../../fixtures/recording'
 import { SCHEDULE_DETAIL_URL, scheduleIdFromUrl } from '../../fixtures/schedule'
-import { linkStaffCalendar } from '../../setup/calendar'
-import { signInAtBroker } from '../../screens/login'
+import { linkStaffCalendar, unlinkStaffCalendar } from '../../setup/calendar'
 import { commonShapeParts } from '../../selectors/commonShape'
 import { pageRoot } from '../../selectors/page'
-
-const ACTOR = `${LOGIN_STAFF.name}（マネージャー、職員の管理の権限あり）`
 
 /** 確認が必要な予定の一覧の、単発の予定の行。 */
 const scheduleRows = (page: Page) => page.getByTestId(/^calendar-review-row-schedule-/)
 
-/** カレンダーの連携の画面を開き、林にカレンダーを結び付けていなければ結び付ける。 */
+/** カレンダーの連携の画面を開き、林にカレンダーを結び付けていなければ結び付ける。結び付けたら true を返す。 */
 const ensureHayashiLinked = async (page: Page) => {
   await page.goto('/schedule/link')
   await page.getByTestId(`calendar-link-row-${HAYASHI.id}`).waitFor()
-  if (await page.getByTestId(`calendar-link-menu-${HAYASHI.id}`).isVisible()) return
+  if (await page.getByTestId(`calendar-link-menu-${HAYASHI.id}`).isVisible()) return false
   await linkStaffCalendar(page, HAYASHI.id)
+  return true
+}
+
+/** ほかの撮影の前提に戻すため、このテストで結び付けた林のカレンダーを、録画の外で外す。 */
+const unlinkHayashiIfLinked = async (
+  browser: Parameters<typeof prepareOutsideRecording>[0],
+  linked: boolean,
+) => {
+  if (!linked) return
+  await prepareOutsideRecording(browser, { storageState: LOGIN_STATE }, (page) =>
+    unlinkStaffCalendar(page, HAYASHI.id),
+  )
 }
 
 /**
@@ -71,175 +81,192 @@ const createConflict = async (page: Page) => {
   }
 }
 
-/** ログインし、確認が必要な予定に単発の予定の行が 1 件も無ければ作る。前の撮影の行があれば、それを使う。 */
-const prepareReview = async (page: Page) => {
-  await page.goto('/schedule/review')
-  await signInAtBroker(page, LOGIN_EMAIL)
-  await expect(page.getByTestId('calendar-review-loading')).toBeHidden()
-  if ((await scheduleRows(page).count()) > 0) return
-  await ensureHayashiLinked(page)
-  await createConflict(page)
-}
+/**
+ * 録画の外で、確認が必要な予定に単発の予定の行が 1 件も無ければ作る。前の撮影の行があれば、それを使う。
+ * 行を作るために林を結び付けたら true を返す。
+ */
+const prepareReview = (browser: Parameters<typeof prepareOutsideRecording>[0]) =>
+  prepareOutsideRecording(browser, { storageState: LOGIN_STATE }, async (page) => {
+    await page.goto('/schedule/review')
+    await expect(page.getByTestId('calendar-review-loading')).toBeHidden()
+    if ((await scheduleRows(page).count()) > 0) return false
+    const linked = await ensureHayashiLinked(page)
+    await createConflict(page)
+    return linked
+  })
+
+const ACTOR = `${LOGIN_STAFF.name}、マネージャー、職員の管理の権限あり`
 
 test.describe('画面の共通の形', () => {
-  for (const variant of EVIDENCE_VARIANTS) {
-    const prefix = variant.label ? `${variant.label}: ` : ''
+  test.describe(`スマートフォンの幅（${ACTOR}）`, () => {
+    test.use({ storageState: LOGIN_STATE, viewport: PHONE_VIEWPORT })
 
-    test(`${prefix}スマートフォンの幅で確認が必要な予定を開いた場合、予定が 2 行のリストで並び、横にスクロールしないこと`, async ({
+    test('review-list-phone スマートフォンの幅で確認が必要な予定を開いた場合、予定が 2 行のリストで並び、横にスクロールしないこと', async ({
       browser,
+      context,
     }) => {
-      await recordPrEvidence(
-        browser,
-        {
-          name: 'review-list-phone',
-          title: 'スマートフォンの幅で確認が必要な予定を開き、2 行のリストの行を見る',
-          actor: ACTOR,
-          variant,
-          viewport: PHONE_VIEWPORT,
-        },
-        prepareReview,
-        async ({ page, step, check }) => {
-          await page.goto('/schedule/review')
-          const row = scheduleRows(page).first()
-          await expect(row).toBeVisible()
-          await step('スマートフォンの幅（390x844）で、確認が必要な予定の画面を開いている')
-          await expect(row.getByTestId(/^calendar-review-reason-/)).toBeHidden()
-          await expect(pageRoot(page)).toHaveJSProperty('scrollWidth', PHONE_VIEWPORT.width)
-          await check(
-            '行の 1 行目に予定の日時、2 行目に職員と最後に変わった日時が「・」でつながって並び、理由は出ない。画面は横にスクロールしない',
-          )
-        },
-      )
+      const linked = await prepareReview(browser)
+      try {
+        const page = await context.newPage()
+        await page.goto('/schedule/review')
+        const row = scheduleRows(page).first()
+        await expect(row).toBeVisible()
+        await intro(
+          page,
+          'スマートフォンの幅で確認が必要な予定を開き、2 行のリストの行を見る\n前提 スマートフォンの幅（390x844）で、確認が必要な予定の画面を開いている',
+        )
+
+        await check(
+          page,
+          '行の 1 行目に予定の日時、2 行目に職員と最後に変わった日時が「・」でつながって並び、理由は出ない。画面は横にスクロールしない',
+          async () => {
+            await expect(row.getByTestId(/^calendar-review-reason-/)).toBeHidden()
+            await expect(pageRoot(page)).toHaveJSProperty('scrollWidth', PHONE_VIEWPORT.width)
+          },
+        )
+      } finally {
+        await unlinkHayashiIfLinked(browser, linked)
+      }
     })
 
-    test(`${prefix}buddy を正本にする事業所で確認が必要な予定の行を押した場合、予定と、buddy の内容で書き直すと、閉じるためのボタンを入れたダイアログが出ること`, async ({
+    test('link-list-phone スマートフォンの幅でカレンダーの連携を開いた場合、職員が 2 行のリストで並び、外すは行のメニューにあること', async ({
       browser,
+      context,
     }) => {
-      await recordPrEvidence(
+      const linked = await prepareOutsideRecording(
         browser,
-        {
-          name: 'review-detail-dialog',
-          title:
-            'buddy を正本にする事業所で確認が必要な予定の行を押し、予定と書き直すだけを入れたダイアログを見て、閉じる',
-          actor: ACTOR,
-          variant,
-        },
-        prepareReview,
-        async ({ page, step, check }) => {
-          await page.goto('/schedule/review')
-          const row = scheduleRows(page).first()
-          await expect(row).toBeVisible()
-          await expect(commonShapeParts(row).buttons).toHaveCount(1)
-          await step('確認が必要な予定の画面を開いている。行に、行ごとのボタンは無い')
-
-          await step('1 行目の予定の行を押す')
-          await row.click()
-          const dialog = page.getByTestId('calendar-review-dialog')
-          await expect(dialog).toBeVisible()
-          await expect(dialog.getByTestId('calendar-review-dialog-datetime')).toBeVisible()
-          await expect(dialog.getByTestId('calendar-review-dialog-reason')).toBeVisible()
-          const rewrite = dialog.getByTestId(/^calendar-review-rewrite-/)
-          await expect(rewrite).not.toHaveClass(/bg-primary/)
-          await expect(dialog).not.toContainText('Google の内容に合わせる')
-          if (variant.name === 'before') {
-            await check(
-              '「食い違った予定」のダイアログに、予定の日時、職員、最後に変わった日時、理由、予定を開くが出て、右上に × があり、フッターに「buddy の内容で書き直す」だけが主ボタンの色でなく出る',
-            )
-
-            await step('右上の × を押す')
-            await commonShapeParts(dialog).closeButton.click()
-          } else {
-            await expect(commonShapeParts(dialog).closeButton).toHaveCount(0)
-            await expect(rewrite).toHaveClass(/text-danger/)
-            await expect(dialog.getByTestId('calendar-review-cancel')).toHaveText('閉じる')
-            await check(
-              '「食い違った予定」のダイアログに、予定の日時、職員、最後に変わった日時、理由、予定を開くが出て、右上に × が無く、フッターの左端に赤い文字の「buddy の内容で書き直す」と、右に「閉じる」が出る',
-            )
-
-            await step('フッターの「閉じる」を押す')
-            await dialog.getByTestId('calendar-review-cancel').click()
-          }
-          await expect(dialog).toBeHidden()
-          await check('ダイアログが閉じ、一覧に戻る')
-        },
+        { storageState: LOGIN_STATE },
+        ensureHayashiLinked,
       )
-    })
+      try {
+        const page = await context.newPage()
+        await page.goto('/schedule/link')
+        const row = page.getByTestId(`calendar-link-row-${HAYASHI.id}`)
+        await row.scrollIntoViewIfNeeded()
+        await expect(page.getByTestId(`calendar-link-menu-${HAYASHI.id}`)).toBeVisible()
+        await intro(
+          page,
+          `スマートフォンの幅でカレンダーの連携を開き、2 行のリストの行と、行の操作のメニューを見る\n前提 スマートフォンの幅（390x844）で、カレンダーの連携の画面を開いている。${HAYASHI.name} にカレンダーを結び付けてある`,
+        )
 
-    test(`${prefix}buddy の内容で書き直すを確定するダイアログを開いた場合、確定のボタンが赤で出ること`, async ({
-      browser,
-    }) => {
-      await recordPrEvidence(
-        browser,
-        {
-          name: 'review-rewrite-confirm',
-          title:
-            '予定の確認のダイアログで buddy の内容で書き直すを押し、確定のボタンの色を見て、戻るで戻る',
-          actor: ACTOR,
-          variant,
-        },
-        prepareReview,
-        async ({ page, step, check }) => {
-          await page.goto('/schedule/review')
-          await scheduleRows(page).first().click()
-          const detail = page.getByTestId('calendar-review-dialog')
-          await expect(detail).toBeVisible()
-          await step('確認が必要な予定の 1 行目を押し、予定の確認のダイアログを開いている')
+        await check(
+          page,
+          `職員の行は、1 行目に職員の名前と行の操作、2 行目にカレンダーの ID と最後の取り込みが並ぶ。結び付けた ${HAYASHI.name} の行に「外す」のボタンは無く、画面は横にスクロールしない`,
+          async () => {
+            await expect(page.getByTestId(`calendar-link-remove-${HAYASHI.id}`)).toHaveCount(0)
+            await expect(pageRoot(page)).toHaveJSProperty('scrollWidth', PHONE_VIEWPORT.width)
+          },
+        )
 
-          await step('「buddy の内容で書き直す」を押す')
-          await detail.getByTestId(/^calendar-review-rewrite-/).click()
-          const confirm = page.getByTestId('calendar-rewrite-dialog')
-          await expect(confirm).toBeVisible()
-          await expect(confirm.getByTestId('calendar-rewrite-submit')).toHaveClass(/bg-danger/)
-          await check(
-            '「buddy の内容で書き直しますか」の確認のダイアログが出て、確定の「書き直す」が赤い面で出る。× は無い',
-          )
-
-          await step('「戻る」を押す')
-          await confirm.getByTestId('calendar-rewrite-cancel').click()
-          await expect(confirm).toBeHidden()
-          await expect(detail).toBeVisible()
-          await check('書き直さずに、予定の確認のダイアログに戻る')
-        },
-      )
-    })
-
-    test(`${prefix}スマートフォンの幅でカレンダーの連携を開いた場合、職員が 2 行のリストで並び、外すは行のメニューにあること`, async ({
-      browser,
-    }) => {
-      await recordPrEvidence(
-        browser,
-        {
-          name: 'link-list-phone',
-          title:
-            'スマートフォンの幅でカレンダーの連携を開き、2 行のリストの行と、行の操作のメニューを見る',
-          actor: ACTOR,
-          variant,
-          viewport: PHONE_VIEWPORT,
-        },
-        async (page) => {
-          await page.goto('/schedule/link')
-          await signInAtBroker(page, LOGIN_EMAIL)
-          await ensureHayashiLinked(page)
-        },
-        async ({ page, step, check }) => {
-          await page.goto('/schedule/link')
-          const row = page.getByTestId(`calendar-link-row-${HAYASHI.id}`)
-          await row.scrollIntoViewIfNeeded()
-          await expect(page.getByTestId(`calendar-link-remove-${HAYASHI.id}`)).toHaveCount(0)
-          await expect(pageRoot(page)).toHaveJSProperty('scrollWidth', PHONE_VIEWPORT.width)
-          await step('スマートフォンの幅（390x844）で、カレンダーの連携の画面を開いている')
-          await check(
-            `職員の行は、1 行目に職員の名前と行の操作、2 行目にカレンダーの ID と最後の取り込みが並ぶ。結び付けた ${HAYASHI.name} の行に「外す」のボタンは無く、画面は横にスクロールしない`,
-          )
-
-          await step(`${HAYASHI.name} の行の右端の「…」を押す`)
-          await page.getByTestId(`calendar-link-menu-${HAYASHI.id}`).click()
-          const menu = page.getByTestId(`calendar-link-menu-list-${HAYASHI.id}`)
+        await step(page, `${HAYASHI.name} の行の右端の「…」を押す`, () =>
+          page.getByTestId(`calendar-link-menu-${HAYASHI.id}`).click(),
+        )
+        const menu = page.getByTestId(`calendar-link-menu-list-${HAYASHI.id}`)
+        await check(page, 'メニューに「取り込む」と、赤の「外す」がこの順に出る', async () => {
           await page.getByTestId(`calendar-link-remove-${HAYASHI.id}`).scrollIntoViewIfNeeded()
           await expect(commonShapeParts(menu).menuItems).toHaveText(['取り込む', '外す'])
-          await check('メニューに「取り込む」と、赤の「外す」がこの順に出る')
-        },
-      )
+        })
+      } finally {
+        await unlinkHayashiIfLinked(browser, linked)
+      }
     })
-  }
+  })
+
+  test.describe(`パソコンの幅（${ACTOR}）`, () => {
+    test.use({ storageState: LOGIN_STATE })
+
+    // 改修前は右上の × で閉じ、改修後はフッターの「閉じる」で閉じる。改修前と改修後で操作が違うので、改修後の流れだけを撮る
+    test('review-detail-dialog buddy を正本にする事業所で確認が必要な予定の行を押した場合、予定と、buddy の内容で書き直すと、閉じるためのボタンを入れたダイアログが出ること', async ({
+      browser,
+      context,
+    }) => {
+      const linked = await prepareReview(browser)
+      try {
+        const page = await context.newPage()
+        await page.goto('/schedule/review')
+        const row = scheduleRows(page).first()
+        await expect(row).toBeVisible()
+        await expect(commonShapeParts(row).buttons).toHaveCount(1)
+        await intro(
+          page,
+          'buddy を正本にする事業所で確認が必要な予定の行を押し、予定と書き直すだけを入れたダイアログを見て、閉じる\n前提 確認が必要な予定の画面を開いている。行に、行ごとのボタンは無い',
+        )
+
+        await step(page, '1 行目の予定の行を押す', () => row.click())
+        const dialog = page.getByTestId('calendar-review-dialog')
+        const rewrite = dialog.getByTestId(/^calendar-review-rewrite-/)
+        await check(
+          page,
+          '「食い違った予定」のダイアログに、予定の日時、職員、最後に変わった日時、理由、予定を開くが出て、右上に × が無く、フッターの左端に赤い文字の「buddy の内容で書き直す」と、右に「閉じる」が出る',
+          async () => {
+            await expect(dialog).toBeVisible()
+            await expect(dialog.getByTestId('calendar-review-dialog-datetime')).toBeVisible()
+            await expect(dialog.getByTestId('calendar-review-dialog-reason')).toBeVisible()
+            await expect(rewrite).not.toHaveClass(/bg-primary/)
+            await expect(dialog).not.toContainText('Google の内容に合わせる')
+            // #886 でフッターのボタンも「閉じる」になったので、右上の × が無ければ、フッターの 1 件だけが当たる
+            await expect(commonShapeParts(dialog).closeButton).toHaveCount(1)
+            await expect(rewrite).toHaveClass(/text-danger/)
+            await expect(dialog.getByTestId('calendar-review-cancel')).toHaveText('閉じる')
+          },
+        )
+
+        await step(page, 'フッターの「閉じる」を押す', () =>
+          dialog.getByTestId('calendar-review-cancel').click(),
+        )
+        await check(page, 'ダイアログが閉じ、一覧に戻る', () => expect(dialog).toBeHidden())
+      } finally {
+        await unlinkHayashiIfLinked(browser, linked)
+      }
+    })
+
+    test('review-rewrite-confirm buddy の内容で書き直すを確定するダイアログを開いた場合、確定のボタンが赤で出ること', async ({
+      browser,
+      context,
+    }) => {
+      const linked = await prepareReview(browser)
+      try {
+        const page = await context.newPage()
+        await page.goto('/schedule/review')
+        const row = scheduleRows(page).first()
+        await expect(row).toBeVisible()
+        await intro(
+          page,
+          '予定の確認のダイアログで buddy の内容で書き直すを押し、確定のボタンの色を見て、戻るで戻る\n前提 確認が必要な予定の画面を開いている',
+        )
+
+        const detail = page.getByTestId('calendar-review-dialog')
+        await step(
+          page,
+          '確認が必要な予定の 1 行目を押し、予定の確認のダイアログを開く',
+          async () => {
+            await row.click()
+            await expect(detail).toBeVisible()
+          },
+        )
+        await step(page, '「buddy の内容で書き直す」を押す', () =>
+          detail.getByTestId(/^calendar-review-rewrite-/).click(),
+        )
+        const confirm = page.getByTestId('calendar-rewrite-dialog')
+        await check(
+          page,
+          '「buddy の内容で書き直しますか」の確認のダイアログが出て、確定の「書き直す」が赤い面で出る。× は無い',
+          async () => {
+            await expect(confirm).toBeVisible()
+            await expect(confirm.getByTestId('calendar-rewrite-submit')).toHaveClass(/bg-danger/)
+          },
+        )
+
+        await step(page, '「戻る」を押す', () =>
+          confirm.getByTestId('calendar-rewrite-cancel').click(),
+        )
+        await check(page, '書き直さずに、予定の確認のダイアログに戻る', async () => {
+          await expect(confirm).toBeHidden()
+          await expect(detail).toBeVisible()
+        })
+      } finally {
+        await unlinkHayashiIfLinked(browser, linked)
+      }
+    })
+  })
 })
