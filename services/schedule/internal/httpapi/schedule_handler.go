@@ -94,7 +94,7 @@ func (s server) ListSchedules(ctx context.Context, req openapi.ListSchedulesRequ
 	}, nil
 }
 
-// GetSchedule は、職員の事業所の正本のモードで、buddy_primary なら buddy の予定を、google_primary なら Projection の予定を返す。
+// GetSchedule は、職員の事業所の予定の管理先で、buddy_primary なら buddy の予定を、google_primary なら Projection の予定を返す。
 func (s server) GetSchedule(ctx context.Context, req openapi.GetScheduleRequestObject) (openapi.GetScheduleResponseObject, error) {
 	f, err := s.staffFacility(ctx)
 	if err != nil {
@@ -122,7 +122,7 @@ func (s server) GetRecurringSchedule(ctx context.Context, req openapi.GetRecurri
 	return openapi.GetRecurringSchedule200JSONResponse(toRecurringSchedule(d)), nil
 }
 
-// CreateSchedule は、事業所の正本のモードで、buddy_primary なら schedule の作成を、google_primary なら calendarwrite の作成を呼ぶ。
+// CreateSchedule は、事業所の予定の管理先で、buddy_primary なら schedule の作成を、google_primary なら calendarwrite の作成を呼ぶ。
 func (s server) CreateSchedule(ctx context.Context, req openapi.CreateScheduleRequestObject) (openapi.CreateScheduleResponseObject, error) {
 	b := req.Body
 	in, err := slotInput(openapi.SlotRequest{
@@ -155,7 +155,7 @@ func (s server) CreateSchedule(ctx context.Context, req openapi.CreateScheduleRe
 	return openapi.CreateSchedule201JSONResponse(toSchedule(d)), nil
 }
 
-// CreateRecurringSchedule は、事業所の正本のモードで、buddy_primary なら schedule の作成を、google_primary なら calendarwrite の作成を呼ぶ。
+// CreateRecurringSchedule は、事業所の予定の管理先で、buddy_primary なら schedule の作成を、google_primary なら calendarwrite の作成を呼ぶ。
 func (s server) CreateRecurringSchedule(ctx context.Context, req openapi.CreateRecurringScheduleRequestObject) (openapi.CreateRecurringScheduleResponseObject, error) {
 	b := req.Body
 	in, err := slotInput(openapi.SlotRequest{
@@ -223,7 +223,7 @@ func ruleInput(rule openapi.RecurringRule) (schedule.RuleInput, error) {
 	}, nil
 }
 
-// ChangeRecurringRule は、職員の事業所の正本のモードで、buddy_primary なら schedule の規則の変更を、google_primary なら calendarwrite の規則の変更を呼ぶ。
+// ChangeRecurringRule は、職員の事業所の予定の管理先で、buddy_primary なら schedule の規則の変更を、google_primary なら calendarwrite の規則の変更を呼ぶ。
 func (s server) ChangeRecurringRule(ctx context.Context, req openapi.ChangeRecurringRuleRequestObject) (openapi.ChangeRecurringRuleResponseObject, error) {
 	b := req.Body
 	ruleIn, err := ruleInput(b.RecurringRule)
@@ -268,7 +268,7 @@ func (s server) ChangeRecurringRule(ctx context.Context, req openapi.ChangeRecur
 	return openapi.ChangeRecurringRule200JSONResponse(toRecurringSchedule(d)), nil
 }
 
-// ChangeOccurrence は、職員の事業所の正本のモードで、buddy_primary なら schedule の回の置き換えを、google_primary なら calendarwrite の回の変更を呼ぶ。
+// ChangeOccurrence は、職員の事業所の予定の管理先で、buddy_primary なら schedule の回の置き換えを、google_primary なら calendarwrite の回の変更を呼ぶ。
 func (s server) ChangeOccurrence(ctx context.Context, req openapi.ChangeOccurrenceRequestObject) (openapi.ChangeOccurrenceResponseObject, error) {
 	b := req.Body
 	in, err := slotInput(openapi.SlotRequest{
@@ -304,7 +304,7 @@ func (s server) ChangeOccurrence(ctx context.Context, req openapi.ChangeOccurren
 	return openapi.ChangeOccurrence201JSONResponse(toSchedule(d)), nil
 }
 
-// UpdateSchedule は、職員の事業所の正本のモードで、buddy_primary なら schedule の変更を、google_primary なら calendarwrite の変更を呼ぶ。
+// UpdateSchedule は、職員の事業所の予定の管理先で、buddy_primary なら schedule の変更を、google_primary なら calendarwrite の変更を呼ぶ。
 func (s server) UpdateSchedule(ctx context.Context, req openapi.UpdateScheduleRequestObject) (openapi.UpdateScheduleResponseObject, error) {
 	b := req.Body
 	in, err := slotInput(openapi.SlotRequest{
@@ -336,7 +336,7 @@ func (s server) UpdateSchedule(ctx context.Context, req openapi.UpdateScheduleRe
 	return openapi.UpdateSchedule200JSONResponse(toSchedule(d)), nil
 }
 
-// CancelSchedule は、職員の事業所の正本のモードで、buddy_primary なら schedule のキャンセルを、google_primary なら calendarwrite の取り消しを呼ぶ。
+// CancelSchedule は、職員の事業所の予定の管理先で、buddy_primary なら schedule のキャンセルを、google_primary なら calendarwrite の取り消しを呼ぶ。
 func (s server) CancelSchedule(ctx context.Context, req openapi.CancelScheduleRequestObject) (openapi.CancelScheduleResponseObject, error) {
 	f, err := s.staffFacility(ctx)
 	if err != nil {
@@ -409,7 +409,7 @@ func (s server) requireStaffFacilityWritable(ctx context.Context) error {
 	return schedule.RequireWritable(f)
 }
 
-// staffFacility は、認証のミドルウェアが特定した職員の事業所を返す。パスに事業所の無い予定の操作が、正本のモードを読むのに使う。
+// staffFacility は、認証のミドルウェアが特定した職員の事業所を返す。パスに事業所の無い予定の操作が、予定の管理先を読むのに使う。
 // パスの予定が見つかれば、ミドルウェアが予定の事業所と職員の事業所が同じことを確認している。見つからない予定は、職員の事業所の中で探す。
 func (s server) staffFacility(ctx context.Context) (organization.Facility, error) {
 	p, ok := principal.From(ctx)

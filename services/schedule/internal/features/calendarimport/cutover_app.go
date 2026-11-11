@@ -10,7 +10,7 @@ import (
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/schedule"
 )
 
-// findOpen は、事業所 facilityID の open の切り替えを返す。無ければ nil を返す。
+// findOpen は、事業所 facilityID の open の移行を返す。無ければ nil を返す。
 func findOpen(ctx context.Context, cutovers CutoverRepository, facilityID string) (*Cutover, error) {
 	c, err := cutovers.FindOpen(ctx, facilityID)
 	if errors.Is(err, apperr.ErrNotFound) {
@@ -37,8 +37,8 @@ func requireNoPendingWrites(ctx context.Context, cutovers CutoverRepository, fac
 	return nil
 }
 
-// requireImportable は、事業所 f に予定を取り込めるかを確認する。buddy を予定の正本にする事業所と、open の切り替え open がある
-// Google カレンダーを予定の正本にする事業所で取り込める（ADR-0026 の RequireWritable の例外、ADR-0031）。
+// requireImportable は、事業所 f に予定を取り込めるかを確認する。予定を buddy で管理している事業所と、open の移行 open がある
+// 予定を Google カレンダーで管理している事業所で取り込める（ADR-0026 の RequireWritable の例外、ADR-0031）。
 // 取り込めないときは、schedule.RequireWritable と同じく code が schedule.CodeGooglePrimary の apperr.ErrConflict を返す。
 func requireImportable(f organization.Facility, open *Cutover) error {
 	if open != nil && open.FacilityID == f.ID && f.SourceMode == organization.SourceGooglePrimary {
@@ -47,12 +47,12 @@ func requireImportable(f organization.Facility, open *Cutover) error {
 	return schedule.RequireWritable(f)
 }
 
-// requireCutoverRange は、取り込みの期間 rng を確認する。open の切り替えがあれば、期間は切り替えの期間（切り替えの月の初日から
+// requireCutoverRange は、取り込みの期間 rng を確認する。open の移行があれば、期間は移行の期間（移行の月の初日から
 // 先の全て）でなければならない。無ければ、期間は終わりを持たなければならない。合わなければ入力のエラーを返す。
 func requireCutoverRange(rng Range, open *Cutover) error {
 	if open != nil {
 		if rng != open.Range() {
-			return apperr.Invalid("切り替えの間の取り込みの期間は、%s から終わりを持たない期間にします", open.RangeStart)
+			return apperr.Invalid("移行の間の取り込みの期間は、%s から終わりを持たない期間にします", open.RangeStart)
 		}
 		return nil
 	}
@@ -62,8 +62,8 @@ func requireCutoverRange(rng Range, open *Cutover) error {
 	return nil
 }
 
-// errCutoverClosed は、取り込みを読み替えた後に、切り替えを完了したかやめたことを表す。
-var errCutoverClosed = apperr.ConflictCode(CodeCutoverNotOpen, "取り込みの途中で、切り替えが完了したか、やめました。もう一度プレビューしてください")
+// errCutoverClosed は、取り込みを読み替えた後に、移行を完了したかやめたことを表す。
+var errCutoverClosed = apperr.ConflictCode(CodeCutoverNotOpen, "取り込みの途中で、移行が完了したか、やめました。もう一度プレビューしてください")
 
 // staleLink は、Google の予定と食い違う予定の対応である。event は Google の今の予定で、Google で消えていれば nil である。
 type staleLink struct {
@@ -177,7 +177,7 @@ func unmetOf(reason UnmetReason, eventID string, c calendar.Candidate) Unmet {
 	return u
 }
 
-// skipsOf は、取り込み方 decisions のうち、取り込まないを選んだものを、切り替えの取り込まない予定の記録にする。
+// skipsOf は、取り込み方 decisions のうち、取り込まないを選んだものを、移行の取り込まない予定の記録にする。
 func skipsOf(cutoverID string, c calendar.ExternalCalendar, decisions []Decision) []CutoverSkip {
 	var out []CutoverSkip
 	for _, d := range decisions {

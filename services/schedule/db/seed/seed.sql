@@ -1,7 +1,7 @@
 -- 開発とテストに使うダミーデータ。実在の事業所、人、連絡先を入れない。
 -- 予定の種類、サービスコード、訪問の区分、権限は、全ての環境で同じ値なので初期のマイグレーションが入れる。
 
--- 予定の正本のモードは、シードの 2 つの事業所を buddy_primary（buddy が正本）にし、今の動作で確認する（ADR-0029）。
+-- 予定の管理先は、シードの 2 つの事業所を buddy_primary（予定を buddy で管理する）にし、今の動作で確認する（ADR-0029）。
 INSERT INTO facilities (id, name, org_id, source_mode) VALUES
     ('01M3TC5H00QV17BC0J9V3393ZP', 'サンプル訪問看護ステーション', 'org-sample', 'buddy_primary');
 
@@ -145,7 +145,7 @@ INSERT INTO schedules (id, facility_id, staff_id, schedule_type_id, date, start_
     ('01M5J5EE096G64C9R6091DBQ0B', '01M5J5EE00QGG4M6GGZQ9AT9GW', '01M5J5EE04P946KC3JAE2P1JQ4', '01M3TC68E05E1N46YCCBT6ZQB2',
      '2026-10-20', '13:00:00', '14:00:00', NULL, NULL, NULL, '第二ステーションの定例', NULL);
 
--- 3 つ目の事業所。Google カレンダーを予定の正本にする（google_primary）。予定の API から予定を書けないことと、
+-- 3 つ目の事業所。予定を Google カレンダーで管理する（google_primary）。予定の API から予定を書けないことと、
 -- 同期が Google カレンダーの予定を参照のモデル（Projection）に写すことを確認するのに使う。
 INSERT INTO facilities (id, name, org_id, source_mode) VALUES
     ('01MA0GP0000000000000000FAC', 'サンプル第三訪問看護ステーション', 'org-sample-c', 'google_primary');
@@ -182,8 +182,8 @@ INSERT INTO user_policies (id, facility_id, user_id, policy_id) VALUES
     ('01MA0GP000000000000000GP04', '01MA0GP0000000000000000FAC', '01MA0GP0000000000000000STF', '01M5E5GP6Q8BQYNWN66QHJF60J'),
     ('01MA0GP000000000000000GP05', '01MA0GP0000000000000000FAC', '01MA0GP0000000000000000STF', '01M69C7BNKSXX7PPWX7SWZGFWK');
 
--- 4 つ目の事業所。Google カレンダーを予定の正本にし（google_primary）、予定の正本の切り替えを確認するのに使う（ADR-0029、ADR-0031）。
--- 切り替えを完了すると buddy_primary に移り、戻せないので、3 つ目の事業所と分ける。
+-- 4 つ目の事業所。予定を Google カレンダーで管理し（google_primary）、予定の管理の移行を確認するのに使う（ADR-0029、ADR-0031）。
+-- 移行を完了すると buddy_primary に移り、戻せないので、3 つ目の事業所と分ける。
 INSERT INTO facilities (id, name, org_id, source_mode) VALUES
     ('01MA0CT0000000000000000FAC', 'サンプル第四訪問看護ステーション', 'org-sample-d', 'google_primary');
 

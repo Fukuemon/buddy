@@ -11,11 +11,11 @@ import (
 	"github.com/Fukuemon/buddy/services/schedule/internal/features/organization"
 )
 
-// Syncs は、calendarsync.SyncRepository のメモリ上の実装である。読む時刻と lease を持たず、取るたびに、事業所の正本のモードが
+// Syncs は、calendarsync.SyncRepository のメモリ上の実装である。読む時刻と lease を持たず、取るたびに、事業所の予定の管理先が
 // modes にある外していない全てのカレンダーを返す。
 type Syncs struct{ *Store }
 
-// Claim は、事業所の正本のモードが modes にある外していないカレンダーを ID の順に max 件まで、最後に同期した結果のトークンを付けて返す。
+// Claim は、事業所の予定の管理先が modes にある外していないカレンダーを ID の順に max 件まで、最後に同期した結果のトークンを付けて返す。
 func (s Syncs) Claim(_ context.Context, max int, _ time.Duration, modes []organization.SourceMode) ([]calendarsync.SyncState, error) {
 	var out []calendarsync.SyncState
 	for _, c := range s.Calendars {
@@ -42,7 +42,7 @@ func (s Syncs) Finish(_ context.Context, st calendarsync.SyncState, r calendarsy
 }
 
 // Backlog は、calendarsync.SyncRepository の Backlog を実装する。メモリ上の実装は読む時刻と成功の時刻を持たないので、
-// 事業所の正本のモードが modes にある外していない全てのカレンダーを読む時刻を過ぎたものとして数え、最後の成功からの時間は 0 を返す。
+// 事業所の予定の管理先が modes にある外していない全てのカレンダーを読む時刻を過ぎたものとして数え、最後の成功からの時間は 0 を返す。
 func (s Syncs) Backlog(_ context.Context, modes []organization.SourceMode) (calendarsync.SyncBacklog, error) {
 	var b calendarsync.SyncBacklog
 	for _, c := range s.Calendars {
@@ -53,7 +53,7 @@ func (s Syncs) Backlog(_ context.Context, modes []organization.SourceMode) (cale
 	return b, nil
 }
 
-// synced は、カレンダー c を外しておらず、c の事業所の正本のモードが modes にあるかを返す。
+// synced は、カレンダー c を外しておらず、c の事業所の予定の管理先が modes にあるかを返す。
 func (s Syncs) synced(c calendar.ExternalCalendar, modes []organization.SourceMode) bool {
 	return c.DisabledAt == nil && slices.Contains(modes, s.Facilities[c.FacilityID].SourceMode)
 }

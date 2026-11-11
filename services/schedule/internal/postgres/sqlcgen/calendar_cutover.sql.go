@@ -14,7 +14,7 @@ const countPendingCalendarEventRecords = `-- name: CountPendingCalendarEventReco
 SELECT count(*) FROM calendar_event_records WHERE facility_id = $1 AND pending_version IS NOT NULL
 `
 
-// 切り替えを始める操作と完了する操作が、予定の API が Google に書いている途中か、結果が分からない書き込みを数える（ADR-0031）。
+// 移行を始める操作と完了する操作が、予定の API が Google に書いている途中か、結果が分からない書き込みを数える（ADR-0031）。
 func (q *Queries) CountPendingCalendarEventRecords(ctx context.Context, facilityID string) (int64, error) {
 	row := q.db.QueryRow(ctx, countPendingCalendarEventRecords, facilityID)
 	var count int64
@@ -92,7 +92,7 @@ type DeleteCalendarEventRecordsByFacilityRow struct {
 	PendingVisitInfoID *string
 }
 
-// 切り替えの完了が、事業所の記録を消し、記録が指していた訪問の情報を返す。訪問の情報は、呼ぶ側が使われていなければ消す。
+// 移行の完了が、事業所の記録を消し、記録が指していた訪問の情報を返す。訪問の情報は、呼ぶ側が使われていなければ消す。
 // 同じ文の中では消した記録がまだ見えるので、訪問の情報は別の文（DeleteUnusedVisitInfo）で消す。
 func (q *Queries) DeleteCalendarEventRecordsByFacility(ctx context.Context, facilityID string) ([]DeleteCalendarEventRecordsByFacilityRow, error) {
 	rows, err := q.db.Query(ctx, deleteCalendarEventRecordsByFacility, facilityID)
@@ -246,7 +246,7 @@ type FinishCalendarCutoverParams struct {
 	ID     string
 }
 
-// open の切り替えだけを終える。終えた切り替えでは行を返さない。
+// open の移行だけを終える。終えた移行では行を返さない。
 func (q *Queries) FinishCalendarCutover(ctx context.Context, arg FinishCalendarCutoverParams) (CalendarCutover, error) {
 	row := q.db.QueryRow(ctx, finishCalendarCutover, arg.Status, arg.ID)
 	var i CalendarCutover
@@ -356,7 +356,7 @@ type ListCalendarEventRecordVisitsRow struct {
 	CategoryIds     []string
 }
 
-// 切り替えの取り込みが、予定の API が Google に書いた予定の訪問の情報を、タイトルの読み替えより優先して使う（ADR-0031）。
+// 移行の取り込みが、予定の API が Google に書いた予定の訪問の情報を、タイトルの読み替えより優先して使う（ADR-0031）。
 // Google が受けたと分かった版の訪問の情報だけを返し、保留の版の訪問の情報は返さない。
 // 訪問の情報を持たない確定した記録（通常の予定）も、訪問の情報を空にして返す。繰り返しの予定の例外の回が、自分の記録を持つかを見分けるためである。
 func (q *Queries) ListCalendarEventRecordVisits(ctx context.Context, externalCalendarID string) ([]ListCalendarEventRecordVisitsRow, error) {
@@ -391,7 +391,7 @@ const listCutoverEventLinks = `-- name: ListCutoverEventLinks :many
 SELECT id, facility_id, external_calendar_id, external_event_id, recurring_event_id, etag, schedule_id, recurring_schedule_id, created_at, updated_at, synced_version, cutover_id, deleted_schedule_id FROM external_event_links WHERE cutover_id = $1 ORDER BY id
 `
 
-// 切り替えの取り込みで作った予定の対応を返す。
+// 移行の取り込みで作った予定の対応を返す。
 func (q *Queries) ListCutoverEventLinks(ctx context.Context, cutoverID *string) ([]ExternalEventLink, error) {
 	rows, err := q.db.Query(ctx, listCutoverEventLinks, cutoverID)
 	if err != nil {
@@ -432,7 +432,7 @@ WHERE cutover_id = $1 AND status = 'succeeded'
 ORDER BY external_calendar_id, finished_at DESC, id DESC
 `
 
-// 切り替えの取り込みのうち、カレンダーごとに、最も新しく終えた成功した取り込みを返す。
+// 移行の取り込みのうち、カレンダーごとに、最も新しく終えた成功した取り込みを返す。
 func (q *Queries) ListLatestCutoverImportRuns(ctx context.Context, cutoverID *string) ([]ImportRun, error) {
 	rows, err := q.db.Query(ctx, listLatestCutoverImportRuns, cutoverID)
 	if err != nil {

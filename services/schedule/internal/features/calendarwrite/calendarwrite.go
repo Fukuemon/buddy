@@ -1,4 +1,4 @@
-// Package calendarwrite は、Google カレンダーを予定の正本にする事業所（google_primary）で、職員が buddy から作り、変え、取り消す予定を、
+// Package calendarwrite は、予定を Google カレンダーで管理している事業所（google_primary）で、職員が buddy から作り、変え、取り消す予定を、
 // リクエストの中で Google カレンダーに書く（ADR-0029）。書いた予定の訪問の情報と書き込みの保留の版は、記録（calendar.EventRecord）に持つ。
 // 予定の閲覧と編集の判定、訪問の情報の規則は schedule の規則を使い、予定の本文と Projection の行は calendar の規則で作る。
 package calendarwrite
@@ -26,7 +26,7 @@ const (
 const (
 	// CodeCalendarNotLinked は、予定の職員に外していないカレンダーが無いことを表す。
 	CodeCalendarNotLinked = "calendar_not_linked"
-	// CodeCutoverOpen は、事業所が予定の正本を buddy に切り替えている（open の切り替えがある）ことを表す。calendarimport と同じ code である。
+	// CodeCutoverOpen は、事業所が予定の管理を buddy に移している（open の移行がある）ことを表す。calendarimport と同じ code である。
 	CodeCutoverOpen = "cutover_open"
 	// CodeWritePending は、予定に書き込みの保留の版があり、その書き込みが終わっていないことを表す。
 	CodeWritePending = "google_write_pending"
@@ -49,8 +49,8 @@ var (
 )
 
 var (
-	errNotGooglePrimary  = apperr.Conflict("この事業所の予定の正本が変わりました。画面を開き直してください")
-	errCutoverOpen       = apperr.ConflictCode(CodeCutoverOpen, "この事業所では予定の正本を切り替えています。切り替えの間は予定を作成、変更、取り消しできません")
+	errNotGooglePrimary  = apperr.Conflict("この事業所の予定の管理先が変わりました。画面を開き直してください")
+	errCutoverOpen       = apperr.ConflictCode(CodeCutoverOpen, "この事業所では予定の管理を buddy に移しています。終わるまで、予定を作成、変更、取り消しできません")
 	errCalendarNotLinked = apperr.ConflictCode(CodeCalendarNotLinked, "予定の職員が Google カレンダーを結び付けていません。カレンダーを結び付けてから予定を作ってください")
 	errWritePending      = apperr.ConflictCode(CodeWritePending, "この予定は Google カレンダーに書いている途中です。時間をおいて予定を開き直してください")
 	errIDTaken           = apperr.Conflict("この予定の ID は、ほかの予定に使われています")

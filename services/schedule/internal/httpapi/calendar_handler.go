@@ -106,8 +106,8 @@ func rangeEnd(d civil.Date) *string {
 	return &s
 }
 
-// importRange は、本文の期間を読み、期間の規則を検証する。end が nil なら、終わりを持たない期間（切り替えの取り込み）にする。
-// 終わりを持たない期間を受けるかは、取り込みの操作が事業所の切り替えで決める。
+// importRange は、本文の期間を読み、期間の規則を検証する。end が nil なら、終わりを持たない期間（移行の取り込み）にする。
+// 終わりを持たない期間を受けるかは、取り込みの操作が事業所の移行で決める。
 func importRange(start string, end *string) (calendarimport.Range, error) {
 	s, err := bodyDate(start)
 	if err != nil {
@@ -323,7 +323,7 @@ func toCalendarCutoverUnmet(u calendarimport.Unmet) openapi.CalendarCutoverUnmet
 	return out
 }
 
-// GetCalendarCutoverStatus は、事業所の切り替えの状況を返す。
+// GetCalendarCutoverStatus は、事業所の移行の状況を返す。
 func (s server) GetCalendarCutoverStatus(ctx context.Context, req openapi.GetCalendarCutoverStatusRequestObject) (openapi.GetCalendarCutoverStatusResponseObject, error) {
 	st, err := s.u.Calendars.GetCutover(ctx, req.FacilityId)
 	if err != nil {
@@ -337,7 +337,7 @@ func (s server) GetCalendarCutoverStatus(ctx context.Context, req openapi.GetCal
 	return out, nil
 }
 
-// StartCalendarCutover は、事業所の切り替えを始め、始めた切り替えを返す。
+// StartCalendarCutover は、事業所の移行を始め、始めた移行を返す。
 func (s server) StartCalendarCutover(ctx context.Context, req openapi.StartCalendarCutoverRequestObject) (openapi.StartCalendarCutoverResponseObject, error) {
 	c, err := s.u.Calendars.StartCutover(ctx, req.FacilityId)
 	if err != nil {
@@ -346,7 +346,7 @@ func (s server) StartCalendarCutover(ctx context.Context, req openapi.StartCalen
 	return openapi.StartCalendarCutover201JSONResponse(toCalendarCutover(c)), nil
 }
 
-// CreateCalendarCutoverCompletion は、切り替えを完了し、完了した切り替えを返す。完了の確認を満たさないときは、一覧を付けた 409 を返す。
+// CreateCalendarCutoverCompletion は、移行を完了し、完了した移行を返す。完了の確認を満たさないときは、一覧を付けた 409 を返す。
 func (s server) CreateCalendarCutoverCompletion(ctx context.Context, req openapi.CreateCalendarCutoverCompletionRequestObject) (openapi.CreateCalendarCutoverCompletionResponseObject, error) {
 	c, err := s.u.Calendars.CompleteCutover(ctx, req.CalendarCutoverId)
 	if ie, ok := errors.AsType[*calendarimport.IncompleteError](err); ok {
@@ -361,7 +361,7 @@ func (s server) CreateCalendarCutoverCompletion(ctx context.Context, req openapi
 	return openapi.CreateCalendarCutoverCompletion200JSONResponse(toCalendarCutover(c)), nil
 }
 
-// CancelCalendarCutover は、切り替えをやめ、やめた切り替えを返す。
+// CancelCalendarCutover は、移行をやめ、やめた移行を返す。
 func (s server) CancelCalendarCutover(ctx context.Context, req openapi.CancelCalendarCutoverRequestObject) (openapi.CancelCalendarCutoverResponseObject, error) {
 	c, err := s.u.Calendars.CancelCutover(ctx, req.CalendarCutoverId)
 	if err != nil {

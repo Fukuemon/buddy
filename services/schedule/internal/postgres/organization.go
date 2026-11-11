@@ -57,7 +57,7 @@ func (r *FacilityRepository) Share(ctx context.Context, facilityID string) error
 }
 
 // GetForShare は、Share と同じ共有のロックを事業所 facilityID の行に取り、事業所を返す。呼び出し側がトランザクションの中で呼ぶ。
-// 予定を書く操作が、ロックの中で正本のモードを読む。モードの切り替えは同じ行に排他のロックを取るので、読んだ後にモードが変わらない。
+// 予定を書く操作が、ロックの中で予定の管理先を読む。モードの変更は同じ行に排他のロックを取るので、読んだ後にモードが変わらない。
 // 事業所が無いときは apperr.ErrNotFound を返す。
 func (r *FacilityRepository) GetForShare(ctx context.Context, facilityID string) (organization.Facility, error) {
 	f, err := r.q(ctx).GetFacilityForShare(ctx, facilityID)
@@ -68,7 +68,7 @@ func (r *FacilityRepository) GetForShare(ctx context.Context, facilityID string)
 }
 
 // GetForUpdate は、Lock と同じ排他のロックを事業所 facilityID の行に取り、事業所を返す。呼び出し側がトランザクションの中で呼ぶ。
-// 切り替えの操作が、ロックの中で正本のモードを読んで変える。事業所が無いときは apperr.ErrNotFound を返す。
+// 移行の操作が、ロックの中で予定の管理先を読んで変える。事業所が無いときは apperr.ErrNotFound を返す。
 func (r *FacilityRepository) GetForUpdate(ctx context.Context, facilityID string) (organization.Facility, error) {
 	f, err := r.q(ctx).GetFacilityForUpdate(ctx, facilityID)
 	if err != nil {
@@ -77,7 +77,7 @@ func (r *FacilityRepository) GetForUpdate(ctx context.Context, facilityID string
 	return toFacility(f), nil
 }
 
-// ChangeSourceMode は、事業所 facilityID の正本のモードを mode にする。呼び出し側が GetForUpdate のロックの中で呼ぶ。
+// ChangeSourceMode は、事業所 facilityID の予定の管理先を mode にする。呼び出し側が GetForUpdate のロックの中で呼ぶ。
 func (r *FacilityRepository) ChangeSourceMode(ctx context.Context, facilityID string, mode organization.SourceMode) error {
 	return translate("update facility source mode", r.q(ctx).UpdateFacilitySourceMode(ctx, sqlcgen.UpdateFacilitySourceModeParams{ID: facilityID, SourceMode: string(mode)}))
 }

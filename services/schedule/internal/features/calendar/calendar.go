@@ -45,9 +45,9 @@ type ImportRun struct {
 	ExternalCalendarID string
 	RequestedBy        string
 	RangeStart         civil.Date
-	// RangeEnd は、期間の最後の日で、その日を含む。切り替えの取り込みでは、期間が終わりを持たないので零の値である。
+	// RangeEnd は、期間の最後の日で、その日を含む。移行の取り込みでは、期間が終わりを持たないので零の値である。
 	RangeEnd civil.Date
-	// CutoverID は、切り替えの取り込みのときの切り替えで、ほかの取り込みでは nil である（ADR-0031）。
+	// CutoverID は、移行の取り込みのときの移行で、ほかの取り込みでは nil である（ADR-0031）。
 	CutoverID     *string
 	Status        RunStatus
 	ImportedCount int
@@ -70,7 +70,7 @@ type EventLink struct {
 	ScheduleID          *string
 	RecurringScheduleID *string
 	DeletedScheduleID   *string
-	// CutoverID は、切り替えの取り込みで作った対応のときの切り替えで、ほかの対応では nil である。切り替えをやめると、対応と予定を消す。
+	// CutoverID は、移行の取り込みで作った対応のときの移行で、ほかの対応では nil である。移行をやめると、対応と予定を消す。
 	CutoverID *string
 }
 

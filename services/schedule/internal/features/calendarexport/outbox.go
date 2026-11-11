@@ -13,7 +13,7 @@ import (
 )
 
 // Outbox は、schedule.Exports を実装し、予定の変更を書き出しの待ちに積む。
-// 積むのは、事業所が buddy を予定の正本にしていて（buddy_primary）、予定の職員が外していないカレンダーを結び付けているときと、
+// 積むのは、事業所が予定を buddy で管理していて（buddy_primary）、予定の職員が外していないカレンダーを結び付けているときと、
 // 予定の対応のカレンダーを外していないとき（職員が替わり、前のカレンダーの予定を消すとき）だけである。
 type Outbox struct {
 	facilities kernel.Finder[organization.Facility]
@@ -22,7 +22,7 @@ type Outbox struct {
 	ids        kernel.IDGenerator
 }
 
-// NewOutbox は Outbox を作る。facilities は、事業所の正本のモードを読む。
+// NewOutbox は Outbox を作る。facilities は、事業所の予定の管理先を読む。
 func NewOutbox(facilities kernel.Finder[organization.Facility], exports ExportRepository, calendars ExportCalendars, ids kernel.IDGenerator) *Outbox {
 	return &Outbox{facilities: facilities, exports: exports, calendars: calendars, ids: ids}
 }
@@ -51,7 +51,7 @@ func (o *Outbox) RecurringChanged(ctx context.Context, facilityID, staffID, recu
 }
 
 func (o *Outbox) enqueue(ctx context.Context, staffID string, t calendar.Target, linkOf func(context.Context) (calendar.EventLink, error)) error {
-	// google_primary の事業所は Google カレンダーが正本なので、buddy から書き出さない（ADR-0029）。
+	// google_primary の事業所は予定を Google カレンダーで管理するので、buddy から書き出さない（ADR-0029）。
 	f, err := o.facilities.Get(ctx, t.FacilityID)
 	if err != nil || !f.IsBuddyPrimary() {
 		return err

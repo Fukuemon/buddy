@@ -60,13 +60,13 @@ func flowRouter() http.Handler {
 	return flowRouterWith(organization.SourceBuddyPrimary)
 }
 
-// flowRouterWith は、事業所の正本のモードを mode にした flowRouter を返す。
+// flowRouterWith は、事業所の予定の管理先を mode にした flowRouter を返す。
 func flowRouterWith(mode organization.SourceMode) http.Handler {
 	h, _ := flowRouterOn(mode, nil)
 	return h
 }
 
-// flowRouterOn は、事業所の正本のモードを mode にし、google_primary の予定の作成が accounts で Google カレンダーに書く
+// flowRouterOn は、事業所の予定の管理先を mode にし、google_primary の予定の作成が accounts で Google カレンダーに書く
 // flowRouter と、そのメモリ上のリポジトリを返す。
 func flowRouterOn(mode organization.SourceMode, accounts calendar.Accounts) (http.Handler, *inmem.Store) {
 	s := inmem.NewStore()
@@ -367,9 +367,9 @@ func TestUpdateAndCancelScheduleGooglePrimary(t *testing.T) {
 	request(t, h, http.MethodGet, target, "", http.StatusNotFound)
 }
 
-// TestScheduleWritesRejectOpenCutover は、google_primary の事業所に open の切り替えがあると、createSchedule、updateSchedule、
+// TestScheduleWritesRejectOpenCutover は、google_primary の事業所に open の移行があると、createSchedule、updateSchedule、
 // cancelSchedule、createRecurringSchedule、changeOccurrence が 409 の cutover_open を返し、Google カレンダーに書かないことと、
-// listSchedules が切り替えを始めた職員の ID と名前と時刻を返すことを確認する（ADR-0031）。
+// listSchedules が移行を始めた職員の ID と名前と時刻を返すことを確認する（ADR-0031）。
 func TestScheduleWritesRejectOpenCutover(t *testing.T) {
 	const (
 		calendarAddr = "staff@example.com"

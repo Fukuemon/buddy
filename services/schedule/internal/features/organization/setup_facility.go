@@ -53,7 +53,7 @@ func NewSetupFacility(facilities FacilityRepository, creator FacilityCreator, de
 
 // Do は、組織の ID が in.OrgID の事業所を、無ければ作り、あれば使う。呼び出し側がトランザクションの中で呼ぶ。
 //
-//   - 事業所を作ったときは、標準の 4 つの役職をデフォルトの権限とともに作る。予定の正本は、新しい事業所のデフォルト（google_primary）にする。
+//   - 事業所を作ったときは、標準の 4 つの役職をデフォルトの権限とともに作る。予定の管理先は、新しい事業所のデフォルト（google_primary）にする。
 //   - 事業所があったときは、役職を作らず、職員の管理の権限をデフォルトに持つ役職を使う。役職の名前は事業所ごとに変えてよいためである。
 //     その役職が無いときは apperr.ErrConflict を返す。名前が in.Name と違うときは、名前を変えずに apperr.ErrConflict を返す。
 //   - 部署とチームは、同じ名前があれば使い、無ければ作る。チームの色は NextTeamColor で選ぶ。

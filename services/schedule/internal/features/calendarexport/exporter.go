@@ -31,7 +31,7 @@ const (
 )
 
 // ExporterDeps は、Exporter が使うリポジトリと、外部のカレンダーに書く EventWriter を事業所ごとに返す Writers である。
-// Facilities は、待ちの事業所の正本のモードを読む。
+// Facilities は、待ちの事業所の予定の管理先を読む。
 type ExporterDeps struct {
 	Facilities kernel.Finder[organization.Facility]
 	Exports    ExportRepository
@@ -52,7 +52,7 @@ type DeletedSchedules interface {
 // Exporter は、書き出しの待ちを、予定の職員が結び付けた外部のカレンダーに書く処理である。ADR-0029 の書き出しに当たる。
 // 待ちは予定の変更と同じトランザクションで積まれ（Outbox）、Exporter はトランザクションの外で外部のカレンダーを呼ぶ。
 // 外部のカレンダーで変わった予定は buddy に当てず、確認が必要な待ち（conflict）にする。
-// 事業所が buddy を予定の正本にしていない（buddy_primary でない）待ちは、書かずに確認が必要な待ち（conflict）にして保留にする。
+// 事業所が予定を buddy で管理していない（buddy_primary でない）待ちは、書かずに確認が必要な待ち（conflict）にして保留にする。
 type Exporter struct {
 	deps ExporterDeps
 	ids  kernel.IDGenerator
@@ -152,8 +152,8 @@ func resultOf(e calendar.Export, err error) calendar.ExportResult {
 	}
 }
 
-// errNotBuddyPrimary は、待ちの事業所が buddy を予定の正本にしていないので、書かなかったことを表す。
-var errNotBuddyPrimary = errors.New("事業所が buddy を予定の正本にしていない")
+// errNotBuddyPrimary は、待ちの事業所が予定を buddy で管理していないので、書かなかったことを表す。
+var errNotBuddyPrimary = errors.New("事業所が予定を buddy で管理していない")
 
 func (x *Exporter) export(ctx context.Context, e calendar.Export) error {
 	// Outbox は buddy_primary でない事業所の待ちを積まないが、積んだ後にモードが変わったときと、ほかの経路で積まれたときに書かない。
@@ -198,7 +198,7 @@ func (x *Exporter) exportSchedule(ctx context.Context, e calendar.Export) error 
 // 待ちが外部の予定を作ろうとしたカレンダー（WritingCalendarID）からも、予定の ID から決めた ID の外部の予定を消す。
 // 書き出しが作成を書いている間に削除すると、待ちは削除の待ちに付け替わり、作った外部の予定は対応を持たないためである（#964）。
 // 予定の対応が無いときは、予定の職員の今のカレンダーからも消す。作ろうとしたカレンダーを書く前に積んだ待ちのためである。
-// buddy が正本なので、外部で予定が変わっていても etag を比べずに消す。外部で既に消されていれば（410）、消せたものとして扱う。
+// 予定を buddy で管理するので、外部で予定が変わっていても etag を比べずに消す。外部で既に消されていれば（410）、消せたものとして扱う。
 func (x *Exporter) exportDeletion(ctx context.Context, e calendar.Export) error {
 	link, err := optionalLink(x.deps.Calendars.LinkByDeletedSchedule(ctx, e.DeletedScheduleID))
 	if err != nil {

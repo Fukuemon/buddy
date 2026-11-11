@@ -39,8 +39,8 @@ func newExporter(db *pgxpool.Pool, accounts *gcal.Accounts, log *slog.Logger) *c
 }
 
 // newSyncer は、accounts の Google カレンダーの変更を interval ごとに読む Syncer を作る。
-// Google カレンダーを予定の正本にする事業所（google_primary）のカレンダーの変更を、ProjectionApplier で予定の写し（Projection）に写す。
-// buddy を予定の正本にする事業所（buddy_primary）の Applier は渡さないので、そのカレンダーは読まない（ADR-0029）。
+// 予定を Google カレンダーで管理している事業所（google_primary）のカレンダーの変更を、ProjectionApplier で予定の写し（Projection）に写す。
+// 予定を buddy で管理している事業所（buddy_primary）の Applier は渡さないので、そのカレンダーは読まない（ADR-0029）。
 // 同期と読み戻しは、予定の API が Google に書いた予定の保留の版を、記録（records）で確定するか消す。
 // accounts は nil にしない。同期を有効にした設定（config.Calendar の SyncEnabled）のときだけ作って動かす。
 func newSyncer(db *pgxpool.Pool, accounts *gcal.Accounts, interval time.Duration, log *slog.Logger) *calendarsync.Syncer {

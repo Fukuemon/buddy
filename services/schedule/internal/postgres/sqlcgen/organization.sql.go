@@ -167,7 +167,7 @@ const getFacilityForShare = `-- name: GetFacilityForShare :one
 SELECT id, name, org_id, time_zone, created_at, updated_at, source_mode FROM facilities WHERE id = $1 FOR SHARE
 `
 
-// ShareFacility と同じ共有のロックを取り、事業所の行を返す。予定を書く操作が、ロックの中で正本のモードを読む。
+// ShareFacility と同じ共有のロックを取り、事業所の行を返す。予定を書く操作が、ロックの中で予定の管理先を読む。
 func (q *Queries) GetFacilityForShare(ctx context.Context, id string) (Facility, error) {
 	row := q.db.QueryRow(ctx, getFacilityForShare, id)
 	var i Facility
@@ -187,7 +187,7 @@ const getFacilityForUpdate = `-- name: GetFacilityForUpdate :one
 SELECT id, name, org_id, time_zone, created_at, updated_at, source_mode FROM facilities WHERE id = $1 FOR UPDATE
 `
 
-// LockFacility と同じ排他のロックを取り、事業所の行を返す。正本のモードを変える操作（切り替えの完了）が、ロックの中でモードを読む。
+// LockFacility と同じ排他のロックを取り、事業所の行を返す。予定の管理先を変える操作（移行の完了）が、ロックの中でモードを読む。
 // 予定を書く操作は GetFacilityForShare で同じ行を読むので、モードを変えるまでの間に、前のモードで予定を書けない。
 func (q *Queries) GetFacilityForUpdate(ctx context.Context, id string) (Facility, error) {
 	row := q.db.QueryRow(ctx, getFacilityForUpdate, id)

@@ -15,7 +15,7 @@ import (
 	"github.com/Fukuemon/buddy/services/schedule/internal/tx"
 )
 
-// CompleteCutover は、切り替えを完了し、事業所の予定の正本を buddy にする（ADR-0031）。
+// CompleteCutover は、移行を完了し、事業所の予定の管理を buddy に移す（ADR-0031）。
 type CompleteCutover struct {
 	calendars          Calendars
 	accounts           calendar.Accounts
@@ -39,17 +39,17 @@ func NewCompleteCutover(calendars Calendars, accounts calendar.Accounts, staff c
 	}
 }
 
-// Do は、切り替え id の完了の確認をし、満たせば事業所を buddy_primary にし、事業所の Projection の行と、予定の API の記録と、
-// 記録だけが指していた訪問の情報を消し、切り替えを completed にして返す。
-// Google カレンダーを、切り替えの月の初日から先の全てで、トランザクションの前に読み直す。事業所の行を排他のロックで取った
+// Do は、移行 id の完了の確認をし、満たせば事業所を buddy_primary にし、事業所の Projection の行と、予定の API の記録と、
+// 記録だけが指していた訪問の情報を消し、移行を completed にして返す。
+// Google カレンダーを、移行の月の初日から先の全てで、トランザクションの前に読み直す。事業所の行を排他のロックで取った
 // トランザクションの中で、外していないカレンダーごとに、次の 3 つを確認する。
-//   - この切り替えで取り込み、最後の取り込みの後に同期が成功している。
+//   - この移行で取り込み、最後の取り込みの後に同期が成功している。
 //   - 読み直した予定が全て、予定の対応を持つか、取り込みで取り込まないと決めた予定で、規則に写せない繰り返しの予定が残っていない。
 //   - 予定の対応の etag と、Google の etag が同じである。
 //
 // 確認の前に、事業所に予定の API の保留の版がある記録があれば、code が CodeWritePending の apperr.ErrConflict を返し、何も書かない。
-// 満たさないカレンダーか予定があれば、一覧を持つ *IncompleteError を返し、何も書かない。切り替えは open のままである。
-// 切り替えが無いときは apperr.ErrNotFound を、open でないときは code が CodeCutoverNotOpen の apperr.ErrConflict を返す。
+// 満たさないカレンダーか予定があれば、一覧を持つ *IncompleteError を返し、何も書かない。移行は open のままである。
+// 移行が無いときは apperr.ErrNotFound を、open でないときは code が CodeCutoverNotOpen の apperr.ErrConflict を返す。
 // Google カレンダーを読めないときは calendar.ErrUnreadable か calendar.ErrUnavailable か calendar.ErrNotConfigured を返す。
 func (u CompleteCutover) Do(ctx context.Context, id string) (Cutover, error) {
 	if err := u.guard(ctx); err != nil {
@@ -104,7 +104,7 @@ func (u CompleteCutover) Do(ctx context.Context, id string) (Cutover, error) {
 	return out, err
 }
 
-// readCalendars は、事業所の外していないカレンダーの、切り替えの期間の Google の予定を、カレンダーの ID ごとに読む。
+// readCalendars は、事業所の外していないカレンダーの、移行の期間の Google の予定を、カレンダーの ID ごとに読む。
 func (u CompleteCutover) readCalendars(ctx context.Context, c Cutover) (map[string][]calendar.Event, error) {
 	cals, err := u.calendars.ListByFacility(ctx, c.FacilityID)
 	if err != nil || len(cals) == 0 {
@@ -125,7 +125,7 @@ func (u CompleteCutover) readCalendars(ctx context.Context, c Cutover) (map[stri
 	return out, nil
 }
 
-// unmet は、切り替え c の完了の確認を満たさないカレンダーと予定を返す。read は、トランザクションの前に読んだ Google の予定である。
+// unmet は、移行 c の完了の確認を満たさないカレンダーと予定を返す。read は、トランザクションの前に読んだ Google の予定である。
 // トランザクションの中で呼ぶ。トランザクションの前に無かったカレンダーは、取り込んでいないカレンダーにする。
 func (u CompleteCutover) unmet(ctx context.Context, c Cutover, read map[string][]calendar.Event) ([]Unmet, error) {
 	cals, err := u.calendars.ListByFacility(ctx, c.FacilityID)

@@ -1,5 +1,5 @@
 // Package httpapi は、照合の HTTP の API を提供する。
-// エンドポイントとレスポンスの形は openapi.yaml が正本で、server は生成した openapi.StrictServerInterface を実装する。
+// エンドポイントとレスポンスの形は openapi.yaml を元にし、server は生成した openapi.StrictServerInterface を実装する。
 package httpapi
 
 import (

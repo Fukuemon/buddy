@@ -37,8 +37,8 @@ type SyncerDeps struct {
 	Calendars CalendarReader
 	// Staff は、カレンダーの職員が退職したかを読む。
 	Staff calendar.StaffRefs
-	// Locks は、予定を当てる前に事業所の行を共有のロックで読み、正本のモードを読む。読んだ後に、職員の休職、復職、退職と、
-	// モードの切り替えを待たせる。退職がカレンダーを外した後と、モードを切り替えた後に、当てないためである。
+	// Locks は、予定を当てる前に事業所の行を共有のロックで読み、予定の管理先を読む。読んだ後に、職員の休職、復職、退職と、
+	// モードの変更を待たせる。退職がカレンダーを外した後と、モードを変えた後に、当てないためである。
 	Locks   FacilityLock
 	Sources calendar.SourceFor
 	// Records と Visits は、読み戻し（ReadBackDue）が、書く期限を過ぎた保留の版を取って確定するか消し、使われなくなった訪問の情報を消す。
@@ -57,14 +57,14 @@ type Applier interface {
 	Settle(ctx context.Context, c calendar.ExternalCalendar, full bool, eventIDs []string) error
 }
 
-// Appliers は、事業所の正本のモードごとの Applier である。組み立て（cmd/calendar-worker）が決めて Syncer に渡す（ADR-0021）。
+// Appliers は、事業所の予定の管理先ごとの Applier である。組み立て（cmd/calendar-worker）が決めて Syncer に渡す（ADR-0021）。
 // Applier の無いモードの事業所のカレンダーは、同期で読まない。
 type Appliers map[organization.SourceMode]Applier
 
-// errModeChanged は、同期の途中で事業所の正本のモードが変わり、そのモードの Applier が無いので、残りの予定を当てないことを表す。
-var errModeChanged = errors.New("同期の途中で事業所の正本のモードが変わった")
+// errModeChanged は、同期の途中で事業所の予定の管理先が変わり、そのモードの Applier が無いので、残りの予定を当てないことを表す。
+var errModeChanged = errors.New("同期の途中で事業所の予定の管理先が変わった")
 
-// Syncer は、職員が結び付けた外部のカレンダーの変わった予定を、増分の取得（syncToken）で読み、事業所の正本のモードの Applier で
+// Syncer は、職員が結び付けた外部のカレンダーの変わった予定を、増分の取得（syncToken）で読み、事業所の予定の管理先の Applier で
 // 当てる処理である。Applier の無いモードの事業所のカレンダーは取らない（ADR-0029）。
 // トークンが切れていれば（410）、全ての予定を読み直す。
 type Syncer struct {
@@ -234,10 +234,10 @@ func (s *Syncer) stopped(ctx context.Context, st SyncState, token string, err er
 // errCalendarUnlinked は、同期の途中でカレンダーが外れたので、残りの予定を当てないことを表す。
 var errCalendarUnlinked = errors.New("同期の途中でカレンダーが外れた")
 
-// applierFor は、事業所の行を共有のロックで読み、カレンダー c を外していないかを読み直して、事業所の正本のモードの Applier を返す。
+// applierFor は、事業所の行を共有のロックで読み、カレンダー c を外していないかを読み直して、事業所の予定の管理先の Applier を返す。
 // 外していれば errCalendarUnlinked を、モードの Applier が無ければ errModeChanged を返す。トランザクションの中で呼ぶ。
-// ロックは、トランザクションが終わるまで職員の休職、復職、退職とモードの切り替えを待たせる。退職とモードの切り替えは同じ事業所の行に
-// 排他のロックを取るので、カレンダーを取った後に職員が退職しても、モードを buddy_primary に切り替えても、外部の変更を当てない。
+// ロックは、トランザクションが終わるまで職員の休職、復職、退職とモードの変更を待たせる。退職とモードの変更は同じ事業所の行に
+// 排他のロックを取るので、カレンダーを取った後に職員が退職しても、モードを buddy_primary にしても、外部の変更を当てない。
 func (s *Syncer) applierFor(ctx context.Context, c calendar.ExternalCalendar) (Applier, error) {
 	f, err := s.deps.Locks.GetForShare(ctx, c.FacilityID)
 	if err != nil {

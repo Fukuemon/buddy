@@ -7,7 +7,7 @@ ON CONFLICT (external_calendar_id) DO NOTHING;
 
 -- name: ClaimCalendarSyncs :many
 -- 複数の処理が同時に取っても同じカレンダーを渡さないよう、行をロックできたものだけを取る。外したカレンダーは取らない。
--- 事業所の正本のモードが modes に無いカレンダーは取らない（ADR-0029）。
+-- 事業所の予定の管理先が modes に無いカレンダーは取らない（ADR-0029）。
 UPDATE calendar_sync_states s
 SET locked_until = now() + make_interval(secs => sqlc.arg(lease_seconds)::float8)
 FROM external_calendars c
@@ -32,7 +32,7 @@ SET sync_token = sqlc.narg(sync_token), last_status = sqlc.arg(last_status), las
 WHERE external_calendar_id = sqlc.arg(external_calendar_id) AND locked_until = sqlc.arg(locked_until);
 
 -- name: CalendarSyncBacklog :one
--- 外していないカレンダーのうち、事業所の正本のモードが modes にあるカレンダーの、読む時刻を過ぎたものの数と、
+-- 外していないカレンダーのうち、事業所の予定の管理先が modes にあるカレンダーの、読む時刻を過ぎたものの数と、
 -- 最も古い最後の成功からの秒数を返す。
 -- 1 回も成功していないカレンダーは、同期の状態の行を足した時刻から数える。カレンダーが無ければ秒数は 0 である。
 SELECT count(*) FILTER (WHERE s.next_sync_at <= now())::int AS overdue_count,

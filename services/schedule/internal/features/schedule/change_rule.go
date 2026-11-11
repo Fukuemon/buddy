@@ -37,7 +37,7 @@ func NewChangeRule(recurring RecurringRepository, staff StaffRefs, locks Facilit
 // 当て方は PlanRuleChange が決める。繰り返しの予定を分けるときは、元の繰り返しの予定の終了日を適用の日の前の日にし、
 // 時刻、職員、訪問の情報を写した新しい繰り返しの予定を作る。置き換えた回の単発の予定は、元の繰り返しの予定を指したまま残す。
 // 繰り返しの予定が見つからないときは apperr.ErrNotFound を、入力が規則に合わないときは入力のエラーを、
-// 事業所が buddy を予定の正本にしていないとき（code は CodeGooglePrimary）は apperr.ErrConflict を返す。
+// 事業所が予定を buddy で管理していないとき（code は CodeGooglePrimary）は apperr.ErrConflict を返す。
 func (s ChangeRule) Do(ctx context.Context, recurringScheduleID string, effective, firstWeek *civil.Date, rule RuleInput) (RecurringSchedule, error) {
 	var out RecurringSchedule
 	err := s.tx.WithinTx(ctx, func(ctx context.Context) error {

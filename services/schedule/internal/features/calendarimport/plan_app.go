@@ -31,7 +31,7 @@ func staffBlocked(ctx context.Context, staffRefs calendar.StaffRefs, c calendar.
 }
 
 // planDeps は、外部の予定を読み替えるときに読む、buddy の予定の対応、利用者、繰り返しの予定、サービスコードと、
-// 切り替えの取り込みで読む予定の API の記録の訪問の情報である。
+// 移行の取り込みで読む予定の API の記録の訪問の情報である。
 type planDeps struct {
 	calendars          Calendars
 	patients           calendar.Patients
@@ -42,9 +42,9 @@ type planDeps struct {
 
 // planMode は、読み替えの規則の分かれ目である。
 type planMode struct {
-	// cutover は、切り替えの取り込みかである（planInput.cutover）。
+	// cutover は、移行の取り込みかである（planInput.cutover）。
 	cutover bool
-	// overwrite は、切り替えの取り込みで、Google で変わったか消えた予定の対応を、消して取り込み直す予定にするかである。
+	// overwrite は、移行の取り込みで、Google で変わったか消えた予定の対応を、消して取り込み直す予定にするかである。
 	// 取り込みとそのプレビューは true、完了の確認は false にする。
 	overwrite bool
 }
@@ -75,7 +75,7 @@ func planEvents(ctx context.Context, d planDeps, src calendar.EventSource, c cal
 }
 
 // planRead は、読んだ予定 events を、buddy の予定の対応と利用者とサービスコードを読んで読み替える。
-// 切り替えの取り込みでは繰り返しの予定を回に展開しないので、src を読まない。
+// 移行の取り込みでは繰り返しの予定を回に展開しないので、src を読まない。
 func planRead(ctx context.Context, d planDeps, src calendar.EventSource, c calendar.ExternalCalendar, rng Range, events []calendar.Event, blocked calendar.SkipReason, mode planMode) (plan, []PatientRef, error) {
 	links, err := d.calendars.ListLinks(ctx, c.ID)
 	if err != nil {
