@@ -46,7 +46,7 @@ CPU は、1 回の値の最大では満たさず、1 分の平均の最大では
 
 - アプリの接続のプールの上限の合計が、DB の接続の数の上限の 25 を超えていた。
   - 予定の API は 25（`DB_MAX_CONNS` のデフォルト）で、2 つの calendar-worker も同じデータベースにつなぐ。
-  - ブローカーは 10 に固定で、環境変数で変えられない（[#1061](https://github.com/Fukuemon/buddy/issues/1061)）。
+  - ブローカーは 10 に固定で、環境変数で変えられなかった。[#1061](https://github.com/Fukuemon/buddy/issues/1061) で、`DB_MAX_CONNS` で変えられるようにした。
   - web は 5（`SESSION_STORE_MAX_CONNS` のデフォルト）。
   - Hydra は DSN で接続の数を指定していなかった。Hydra のデフォルトの上限は未確認である。
 - 上限に張り付いたのは、ログインを終えた職員が 138 人になったときだった。

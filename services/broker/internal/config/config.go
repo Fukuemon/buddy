@@ -18,6 +18,8 @@ type DB struct {
 	User     string
 	Password string
 	Name     string
+	// MaxConns は、接続のプールの接続の数の上限である。0 なら、DB のアダプタのデフォルトの数にする。
+	MaxConns int32
 }
 
 // ListenTarget は、ブローカーが待ち受ける対象である。
@@ -87,6 +89,7 @@ type Config struct {
 //   - LOG_LEVEL: debug、info、warn、error。デフォルトは info
 //   - DB_HOST: デフォルトは localhost
 //   - DB_PORT: デフォルトは 5432
+//   - DB_MAX_CONNS: 接続のプールの接続の数の上限。1 以上の数で、空なら DB のアダプタのデフォルトの数（10）にする
 //   - DB_USER、DB_PASSWORD、DB_NAME
 //   - HYDRA_ADMIN_URL: Hydra の admin API の URL
 //   - UPSTREAM_IDPS_FILE: 組織の ID と、上流の IdP の issuer と client ID の対応（JSON）のパス
@@ -180,6 +183,10 @@ func load(getenv func(string) string, includesBroker bool) (Config, error) {
 			return Config{}, fmt.Errorf("ポート %q は 1 から 65535 の数にする", p)
 		}
 	}
+	var err error
+	if c.DB.MaxConns, err = maxConnsOf(get("DB_MAX_CONNS", "")); err != nil {
+		return Config{}, err
+	}
 	if includesBroker {
 		if c.ListenTarget == ListenBoth && c.Port == c.InternalPort {
 			return Config{}, fmt.Errorf("INTERNAL_PORT %q は PORT と違う値にする", c.InternalPort)
@@ -216,6 +223,18 @@ func load(getenv func(string) string, includesBroker bool) (Config, error) {
 		return Config{}, errors.New("LOG_LEVEL は debug、info、warn、error のいずれかにする")
 	}
 	return c, nil
+}
+
+// maxConnsOf は、DB_MAX_CONNS の値 v を接続の数の上限として読む。空なら 0 である。
+func maxConnsOf(v string) (int32, error) {
+	if v == "" {
+		return 0, nil
+	}
+	n, err := strconv.ParseInt(v, 10, 32)
+	if err != nil || n < 1 {
+		return 0, fmt.Errorf("DB_MAX_CONNS %q は 1 以上の数にする", v)
+	}
+	return int32(n), nil
 }
 
 // list は、カンマで区切った値を、空の要素を除いて返す。
