@@ -41,4 +41,10 @@ func TestOnlyHealthChecksArePublic(t *testing.T) {
 			t.Errorf("%s: トークンの無いリクエストに %d を返した。認証を求めないルートは /healthz と /readyz だけにする", key, rec.Code)
 		}
 	}
+	// Routes() は NoRoute のハンドラと、ルートに当たる前に応答するミドルウェアを返さない。登録していないパスが 404 になることで、それらが無いことを確認する
+	rec := httptest.NewRecorder()
+	r.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/no-such-path", nil))
+	if rec.Code != http.StatusNotFound {
+		t.Errorf("GET /no-such-path: 登録していないパスに %d を返した。ルートに当たらないリクエストには認証を当てないので、404 のほかを返さない", rec.Code)
+	}
 }
