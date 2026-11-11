@@ -144,8 +144,6 @@ nav = [
     "adr/0047-web-session-postgres.md",
     "adr/0048-workspace-group-access.md",
     "adr/0049-jit-staff-registration.md",
-    "adr/0050-unlink-upstream-account.md",
-    "adr/0051-permission-audit-unlink.md",
   ] },
 ]
 
