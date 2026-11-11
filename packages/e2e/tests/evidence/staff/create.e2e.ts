@@ -1,10 +1,11 @@
 import { expect, test } from '@playwright/test'
 
 import { issueAccessToken, routeApiReference } from '../../fixtures/apiReference'
+import { check, intro, step } from '../../fixtures/caption'
 import { LOGIN_EMAIL, LOGIN_STAFF } from '../../fixtures/env'
-import { EVIDENCE_VARIANTS, recordPrEvidence } from '../../fixtures/evidence'
+import { prepareOutsideRecording } from '../../fixtures/recording'
 import { STAFF_FORM } from '../../fixtures/staff'
-import { openApiClient, openApiReference } from '../../screens/apiReference'
+import { openApiClient } from '../../screens/apiReference'
 import {
   fillApiBody,
   fillApiToken,
@@ -33,35 +34,34 @@ const cases = [
 
 test.describe('職員の管理', () => {
   test.describe('職員の作成', () => {
-    for (const variant of EVIDENCE_VARIANTS) {
+    test.describe(`${LOGIN_STAFF.name}（マネージャー、職員の管理の権限あり、API の参照のページ）`, () => {
       for (const c of cases) {
-        test(`${variant.label ? `${variant.label}: ` : ''}${c.condition}、409 で「メール … の職員はこの事業所にすでにいます」が返ること`, async ({
+        test(`${c.name} ${c.condition}、409 で「メール … の職員はこの事業所にすでにいます」が返ること`, async ({
           browser,
+          context,
         }) => {
-          await recordPrEvidence(
-            browser,
-            {
-              name: c.name,
-              title: c.title,
-              actor: `${LOGIN_STAFF.name}（マネージャー、職員の管理の権限あり）`,
-              variant,
-            },
-            async (page) => {
-              await routeApiReference(page)
-              await openApiReference(page, 'schedule')
-              return issueAccessToken(page.request, LOGIN_EMAIL)
-            },
-            async ({ page, step, check }, token) => {
-              await routeApiReference(page)
-              await openApiClient(page, 'schedule', CREATE_USER)
-              await step('API の参照のページで「職員を作る」のリクエストを開いている')
+          const token = await prepareOutsideRecording(browser, {}, (page) =>
+            issueAccessToken(page.request, LOGIN_EMAIL),
+          )
 
-              await step(`認証の欄に ${LOGIN_STAFF.name} のトークンを入れる（伏せ字で出る）`)
-              await fillApiToken(page, token)
+          const page = await context.newPage()
+          await routeApiReference(page)
+          await openApiClient(page, 'schedule', CREATE_USER)
+          await expect(apiClient(page).send).toBeVisible()
+          await intro(
+            page,
+            `${c.title}\n前提 API の参照のページで「職員を作る」のリクエストを開いている`,
+          )
 
-              await step(
-                `メールを ${c.email}（${LOGIN_STAFF.name} のメール）にして、職員を作るリクエストを送る`,
-              )
+          await step(
+            page,
+            `認証の欄に ${LOGIN_STAFF.name} のトークンを入れる（伏せ字で出る）`,
+            () => fillApiToken(page, token),
+          )
+          await step(
+            page,
+            `メールを ${c.email}（${LOGIN_STAFF.name} のメール）にして、職員を作るリクエストを送る`,
+            async () => {
               await fillApiVariable(page, 'facility_id', STAFF_FORM.facilityId)
               await fillApiBody(page, {
                 username: '見本 職員',
@@ -71,17 +71,20 @@ test.describe('職員の管理', () => {
                 position_id: STAFF_FORM.positionId,
               })
               await apiClient(page).send.click()
+            },
+          )
+          await check(
+            page,
+            '409 が返り、message に「メール hina.aoki@example.com の職員はこの事業所にすでにいます」が出る',
+            async () => {
               await expect(apiClient(page).dialog).toContainText('409 Conflict')
               await expect(apiClient(page).dialog).toContainText(
                 '"message": "メール hina.aoki@example.com の職員はこの事業所にすでにいます"',
-              )
-              await check(
-                '409 が返り、message に「メール hina.aoki@example.com の職員はこの事業所にすでにいます」が出る',
               )
             },
           )
         })
       }
-    }
+    })
   })
 })
