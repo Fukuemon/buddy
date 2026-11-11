@@ -2,7 +2,7 @@
 import * as client from 'openid-client'
 import { describe, expect, it } from 'vite-plus/test'
 
-import { GrantRejectedError, isGrantRejected, refreshFailureOf } from './oidc'
+import { GrantRejectedError, HydraRefreshError, isGrantRejected, refreshFailureOf } from './oidc'
 
 const bodyError = (error: string) =>
   new client.ResponseBodyError('token endpoint', {
@@ -22,6 +22,12 @@ describe('refreshFailureOf', () => {
     expect(refreshFailureOf(bodyError('server_error'))).toEqual({
       reason: 'hydra_error',
       error: 'server_error',
+      status: 400,
+    })
+    expect(refreshFailureOf(new HydraRefreshError(500, 'server_error'))).toEqual({
+      reason: 'hydra_error',
+      error: 'server_error',
+      status: 500,
     })
   })
 
