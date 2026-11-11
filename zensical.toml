@@ -138,6 +138,8 @@ nav = [
     "adr/0041-pbac-grants.md",
     "adr/0042-permission-audit.md",
     "adr/0043-facility-onboarding-cli.md",
+    "adr/0045-home-screen-web-app.md",
+    "adr/0046-offline-own-schedules.md",
     "adr/0047-web-session-postgres.md",
   ] },
 ]
