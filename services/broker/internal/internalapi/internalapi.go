@@ -45,6 +45,8 @@ type Config struct {
 	NewID func() string
 	// TokenHookKey は、Hydra が token_hook を呼ぶときに TokenHookKeyHeader に入れる値である。
 	TokenHookKey string
+	// TokenHookDBTimeout は、token_hook が職員を DB から引くのを待つ上限である。0 なら DefaultTokenHookDBTimeout を使う。
+	TokenHookDBTimeout time.Duration
 	// Now は、token_hook がログインからの長さを測る時刻である。nil なら time.Now を使う。
 	Now func() time.Time
 }
@@ -61,10 +63,14 @@ type Config struct {
 // /internal/staff の下は、cfg.Verifier が検証した access token が無ければ 401 を、許していないクライアントか
 // 組織の ID を持つトークン（職員のトークン）なら 403 を返す。登録、有効化、削除は cfg.Clients と cfg.OnboardingClients に許し、
 // 休職、復職、退職は cfg.Clients にだけ許す。
-// /internal/token-hook は、TokenHookKeyHeader が cfg.TokenHookKey と違えば 401 を返す。
+// /internal/token-hook は、TokenHookKeyHeader が cfg.TokenHookKey と違えば 401 を、職員を cfg.TokenHookDBTimeout までに
+// DB から引けなければ 500 を返す。
 func NewHandler(cfg Config) http.Handler {
 	if cfg.Now == nil {
 		cfg.Now = time.Now
+	}
+	if cfg.TokenHookDBTimeout == 0 {
+		cfg.TokenHookDBTimeout = DefaultTokenHookDBTimeout
 	}
 	all := slices.Concat(cfg.Clients, cfg.OnboardingClients)
 	// onboarding は、運営用のクライアントにも許す操作である。client は、Clients だけに許す
@@ -82,7 +88,7 @@ func NewHandler(cfg Config) http.Handler {
 	mux.Handle("POST /internal/staff/{id}/resume", client(resume{logger: cfg.Logger, staff: cfg.Staff}))
 	mux.Handle("POST /internal/staff/{id}/retire", client(retire{logger: cfg.Logger, staff: cfg.Staff, hydra: cfg.Hydra}))
 	mux.Handle("POST /internal/token-hook", tokenHook{
-		logger: cfg.Logger, staff: cfg.Staff, clients: all, tokenHookKey: cfg.TokenHookKey, now: cfg.Now,
+		logger: cfg.Logger, staff: cfg.Staff, clients: all, tokenHookKey: cfg.TokenHookKey, dbTimeout: cfg.TokenHookDBTimeout, now: cfg.Now,
 	})
 	return mux
 }

@@ -1,6 +1,7 @@
 package internalapi
 
 import (
+	"context"
 	"crypto/subtle"
 	"encoding/json"
 	"errors"
@@ -11,6 +12,17 @@ import (
 	"time"
 
 	"github.com/Fukuemon/buddy/services/broker/internal/staff"
+)
+
+// DefaultTokenHookDBTimeout は、token_hook が職員を DB から引くのを待つ上限である（ADR-0044）。
+// Hydra は hook が 2xx と 403 以外を返すと、1 秒と 2 秒の間を置いて 3 回まで呼ぶので、DB が答えなくても約 9 秒で失敗が決まる。
+const DefaultTokenHookDBTimeout = 2 * time.Second
+
+// tokenHook の結果の名前である。ログの result に出す。
+const (
+	hookAllowed = "allowed"
+	hookDenied  = "denied"
+	hookFailed  = "failed"
 )
 
 // tokenHookRequest は、Hydra が token_hook に送る本文のうち、ブローカーが読む値である。
@@ -32,71 +44,103 @@ type tokenHookRequest struct {
 	} `json:"request"`
 }
 
+// hookOutcome は、token_hook の 1 回の判定である。code は返す状態コード、reason はログに出す理由、err は原因のエラーである。
+type hookOutcome struct {
+	code   int
+	reason string
+	err    error
+}
+
 // tokenHook は、Hydra がトークンを発行する前に呼ぶ。発行してよければ 204 を返し、Hydra はセッションを変えずに発行する。
 // 拒むときは 403 を返し、Hydra はトークンの要求に access_denied を返す。
 // 200 を返すと Hydra は access token の追加のクレームを本文で置き換え、同意で入れた org_id が消えるので、200 は返さない。
+// 呼び出しごとに、結果（allowed、denied、failed）と所要の時間をログに 1 行出す。
 type tokenHook struct {
 	logger       *slog.Logger
 	staff        Store
 	clients      []string
 	tokenHookKey string
+	dbTimeout    time.Duration
 	now          func() time.Time
 }
 
 func (h tokenHook) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-	if subtle.ConstantTimeCompare([]byte(r.Header.Get(TokenHookKeyHeader)), []byte(h.tokenHookKey)) != 1 {
-		writeError(h.logger, w, r, http.StatusUnauthorized, "unauthenticated", "token_hook の鍵が正しくありません", nil)
-		return
-	}
+	start := time.Now()
 	var in tokenHookRequest
-	if err := json.NewDecoder(io.LimitReader(r.Body, maxHookBodyLen)).Decode(&in); err != nil {
-		writeError(h.logger, w, r, http.StatusBadRequest, "invalid", "本文を読めません", err)
-		return
+	out := h.decide(r, &in)
+	switch out.code {
+	case http.StatusNoContent, http.StatusForbidden:
+		w.WriteHeader(out.code)
+	default:
+		WriteJSON(h.logger, w, out.code, ErrorBody{Code: errorCode(out.code), Message: out.reason})
 	}
-	deny := func(reason string, err error) {
-		h.logger.WarnContext(ctx, "トークンの発行を拒む", "reason", reason, "client_id", in.Request.ClientID,
-			"grant_types", in.Request.GrantTypes, "error", err)
-		w.WriteHeader(http.StatusForbidden)
+	result, level := hookFailed, slog.LevelError
+	switch {
+	case out.code == http.StatusNoContent:
+		result, level = hookAllowed, slog.LevelInfo
+	case out.code == http.StatusForbidden:
+		result, level = hookDenied, slog.LevelWarn
+	case out.code < http.StatusInternalServerError:
+		level = slog.LevelWarn
 	}
+	h.logger.Log(r.Context(), level, "token_hook の結果", "result", result, "status", out.code,
+		"duration_ms", time.Since(start).Milliseconds(), "reason", out.reason,
+		"client_id", in.Request.ClientID, "grant_types", in.Request.GrantTypes, "error", out.err)
+}
+
+// decide は、鍵、本文、client credentials、職員の取得、状態、上流でのログインからの時間の順に判定する。
+// 職員を DB から引くのは h.dbTimeout まで待ち、過ぎれば 500 にする。
+func (h tokenHook) decide(r *http.Request, in *tokenHookRequest) hookOutcome {
+	if subtle.ConstantTimeCompare([]byte(r.Header.Get(TokenHookKeyHeader)), []byte(h.tokenHookKey)) != 1 {
+		return hookOutcome{http.StatusUnauthorized, "token_hook の鍵が正しくありません", nil}
+	}
+	if err := json.NewDecoder(io.LimitReader(r.Body, maxHookBodyLen)).Decode(in); err != nil {
+		return hookOutcome{http.StatusBadRequest, "本文を読めません", err}
+	}
+	deny := func(reason string, err error) hookOutcome { return hookOutcome{http.StatusForbidden, reason, err} }
 	// client credentials のトークンは職員のものでなく、予定の API が内部の API を呼ぶのに使う。許したクライアントにだけ出す
 	if slices.Equal(in.Request.GrantTypes, []string{"client_credentials"}) {
 		if !slices.Contains(h.clients, in.Request.ClientID) {
-			deny("内部の API を呼べないクライアント", nil)
-			return
+			return deny("内部の API を呼べないクライアント", nil)
 		}
-		w.WriteHeader(http.StatusNoContent)
-		return
+		return hookOutcome{code: http.StatusNoContent}
 	}
 	sub := in.Session.IDToken.Subject
 	if sub == "" {
 		sub = in.Session.IDToken.Claims.Subject
 	}
 	if sub == "" {
-		deny("職員の ID が無い", nil)
-		return
+		return deny("職員の ID が無い", nil)
 	}
+	ctx, cancel := context.WithTimeout(r.Context(), h.dbTimeout)
+	defer cancel()
 	m, err := h.staff.Get(ctx, sub)
 	if errors.Is(err, staff.ErrNotFound) {
-		deny("職員がいない", nil)
-		return
+		return deny("職員がいない", nil)
 	}
 	if err != nil {
-		writeError(h.logger, w, r, http.StatusInternalServerError, "internal", "職員を引けません", err)
-		return
+		return hookOutcome{http.StatusInternalServerError, "職員を引けません", err}
 	}
 	if !m.CanLogin() {
-		deny("職員が有効でない", errors.New(m.Status))
-		return
+		return deny("職員が有効でない", errors.New(m.Status))
 	}
 	auth := in.Session.IDToken.Claims.AuthTime
 	if auth.IsZero() {
-		deny("ログインの時刻が無い", nil)
-		return
+		return deny("ログインの時刻が無い", nil)
 	}
 	if h.now().Sub(auth) > staff.SessionMaxAge {
-		deny("上流でのログインから時間が経ちすぎた", nil)
-		return
+		return deny("上流でのログインから時間が経ちすぎた", nil)
 	}
-	w.WriteHeader(http.StatusNoContent)
+	return hookOutcome{code: http.StatusNoContent}
+}
+
+// errorCode は、token_hook の失敗の状態コードを、ErrorBody の code にする。
+func errorCode(status int) string {
+	switch status {
+	case http.StatusUnauthorized:
+		return "unauthenticated"
+	case http.StatusBadRequest:
+		return "invalid"
+	}
+	return "internal"
 }
