@@ -53,7 +53,7 @@ web のセッションの保存先を、Valkey のほかに PostgreSQL からも
 - web のイメージに `/usr/local/bin/migrate` を足す。`migrate up` は、`SESSION_STORE_URL` の PostgreSQL に、まだ当てていない版を当てて終わる。
 - インフラは、予定の API とブローカーと同じく、新しいイメージを起動する前に、同じイメージで `migrate up` を 1 回流す。
   - 理由: デプロイの要件の形が、アプリの間でそろう。
-- `migrate` は、版を二重に当てないよう advisory lock を取る。プーラーを通さず、直に PostgreSQL につなぐ。
+- `migrate` は、版を二重に当てないよう advisory lock を取る。transaction のモードのプーラーは advisory lock を使えないので通さず、直に PostgreSQL につなぐか、session のモードのプーラーを通す。
 
 ### 期限の切れた行の扱い
 
