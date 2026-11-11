@@ -44,11 +44,9 @@ test('接頭辞の無いタイトルを指摘する', () => {
   assert.deepEqual(errors, ['タイトルが【要求】【設計】【実装】【検証】【文書】【不具合】のどれかで始まっていない'])
 })
 
-test('issue のタイトルと違うタイトルを指摘し、分けたときの付け足しは通す', () => {
-  assert.match(pr({ title: '【実装】リンクを確認する' }).errors[0], /issue のタイトル/)
-  assert.match(pr({ title: `${ISSUE_TITLE}（なんでも）` }).errors[0], /issue のタイトル/)
-  assert.deepEqual(pr({ title: `${ISSUE_TITLE}（1/2 スクリプト）` }).errors, [])
-  assert.deepEqual(pr({ title: `${ISSUE_TITLE}（3 ワークフロー）` }).errors, [])
+test('接頭辞の付いたタイトルは、issue のタイトルと違っても通す', () => {
+  assert.deepEqual(pr({ title: '【設計】リンクのチェックの ADR を書く' }).errors, [])
+  assert.deepEqual(pr({ title: '【実装】リンクのチェックを CI で流す' }).errors, [])
 })
 
 test('先頭の行が Closes か Refs でなければ指摘し、リンク先の issue が無ければ指摘する', () => {
