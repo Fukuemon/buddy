@@ -30,7 +30,7 @@ export interface paths {
         };
         /**
          * リクエストを受けられるかを返す
-         * @description 照合の API は、起動のときに Hydra の discovery の文書を読み、読めなければ起動しない。起動した後は依存先を確認しないので、レスポンスを返せれば 200 を返す。
+         * @description Hydra の discovery の文書を 1 度読めたら 200 を、まだ読めていなければ 503 を返す。discovery を読めた後は、依存先を確認しない。
          */
         get: operations["getReadyz"];
         put?: never;
@@ -71,11 +71,11 @@ export interface components {
     schemas: {
         Health: {
             /** @enum {string} */
-            status: "ok";
+            status: "ok" | "unavailable";
         };
         Error: {
             /** @enum {string} */
-            code: "bad_request" | "missing_file" | "payload_too_large" | "unauthenticated" | "forbidden" | "invalid_csv" | "not_found" | "internal" | "calendar_not_configured" | "schedule_source_failed" | "permission_check_failed";
+            code: "bad_request" | "missing_file" | "payload_too_large" | "unauthenticated" | "forbidden" | "invalid_csv" | "not_found" | "internal" | "calendar_not_configured" | "schedule_source_failed" | "permission_check_failed" | "auth_unavailable";
             /** @description 人が読む日本語の説明。文言は変わることがあるので、利用者の分岐は `code` で行う */
             message: string;
             /** @description 入力の CSV の誤り。`invalid_csv` のときだけ持ち、1 件以上ある */
@@ -242,6 +242,15 @@ export interface operations {
                     "application/json": components["schemas"]["Health"];
                 };
             };
+            /** @description discovery をまだ読めていない */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Health"];
+                };
+            };
         };
     };
     createCheck: {
@@ -359,18 +368,12 @@ export interface operations {
                     "application/json": components["schemas"]["Error"];
                 };
             };
-            /** @description サーバーに、トークンの組織の Google カレンダーの設定がないのに `month` で呼ばれた（`calendar_not_configured`） */
+            /** @description サーバーに、トークンの組織の Google カレンダーの設定がないのに `month` で呼ばれた（`calendar_not_configured`）か、トークンを検証する準備ができていない（`auth_unavailable`） */
             503: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    /**
-                     * @example {
-                     *       "code": "calendar_not_configured",
-                     *       "message": "サーバーに事業所の Google カレンダーの設定がないので、month では照合できない"
-                     *     }
-                     */
                     "application/json": components["schemas"]["Error"];
                 };
             };

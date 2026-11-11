@@ -44,6 +44,7 @@ type authMiddleware struct {
 
 // authenticate は、Bearer のトークンを検証し、職員を特定して request の context に入れる。
 // トークンがないか検証に失敗したときは 401 を、職員を特定できないときは 403 を返す。
+// トークンを検証する準備ができていないときは、トークンを通さずに 503（code は auth_unavailable）を返す。
 func (m authMiddleware) authenticate(c *gin.Context) {
 	raw, ok := bearerToken(c.GetHeader("Authorization"))
 	if !ok {
@@ -51,6 +52,11 @@ func (m authMiddleware) authenticate(c *gin.Context) {
 		return
 	}
 	id, err := m.verifier.Verify(c.Request.Context(), raw)
+	if errors.Is(err, ErrVerifierNotReady) {
+		m.log.WarnContext(c.Request.Context(), "token verifier not ready", slog.Any("error", err))
+		c.AbortWithStatusJSON(http.StatusServiceUnavailable, errorResponse{Code: "auth_unavailable", Message: "認証の準備ができていません。時間をおいてやり直してください"})
+		return
+	}
 	if err != nil {
 		m.log.InfoContext(c.Request.Context(), "invalid token", slog.Any("error", err))
 		unauthorized(c, `Bearer error="invalid_token"`, "トークンが正しくありません")

@@ -2,6 +2,7 @@ package httpapi
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"strings"
 
@@ -31,6 +32,7 @@ func tokenFrom(ctx context.Context) string {
 
 // authenticate は、publicPaths 以外のリクエストの Bearer のトークンを検証し、主張とトークンを request の context に入れる。
 // トークンがないか検証に失敗したときは 401 を返す。
+// トークンを検証する準備ができていないとき（oidc.ErrNotReady）は、トークンを通さずに 503（code は auth_unavailable）を返す。
 func (s *server) authenticate(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if publicPaths[r.URL.Path] {
@@ -43,6 +45,11 @@ func (s *server) authenticate(next http.Handler) http.Handler {
 			return
 		}
 		id, err := s.cfg.Verifier.Verify(r.Context(), raw)
+		if errors.Is(err, oidc.ErrNotReady) {
+			s.logger.WarnContext(r.Context(), "トークンを検証する準備ができていない", "error", err)
+			s.writeJSON(w, http.StatusServiceUnavailable, errorBody(openapi.AuthUnavailable, "認証の準備ができていない。時間をおいてやり直す"))
+			return
+		}
 		if err != nil {
 			s.logger.InfoContext(r.Context(), "トークンが正しくない", "error", err)
 			s.unauthorized(w, `Bearer error="invalid_token"`, "トークンが正しくない")

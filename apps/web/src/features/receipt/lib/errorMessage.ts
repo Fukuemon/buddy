@@ -8,11 +8,20 @@ const RETRY = '照合できませんでした。時間をおいて、もう一�
 /** 選んだファイルが上限を超えたときの文。 */
 export const TOO_LARGE_MESSAGE = 'ファイルが大きすぎます。10 MB までのファイルにしてください。'
 
+/** 照合の API が、Hydra の discovery の文書をまだ読めずにトークンを検証できないときのエラーのコード。status は 503 である。 */
+const AUTH_UNAVAILABLE_CODE = 'auth_unavailable'
+
 /**
- * 照合の失敗を、職員が次にすることの分かる文にする。ApiError でない失敗と、ログインの期限を延ばせなかった失敗は、やり直しを促す文にする。
+ * 照合の失敗を、職員が次にすることの分かる文にする。ApiError でない失敗と、ログインの期限を延ばせなかった失敗と、
+ * 照合の API がトークンを検証する準備をまだ終えていない失敗は、やり直しを促す文にする。
  */
 export const checkErrorMessage = (error: unknown) => {
-  if (!(error instanceof ApiError) || error.code === SESSION_UNAVAILABLE_CODE) return RETRY
+  if (
+    !(error instanceof ApiError) ||
+    error.code === SESSION_UNAVAILABLE_CODE ||
+    error.code === AUTH_UNAVAILABLE_CODE
+  )
+    return RETRY
   switch (error.status) {
     case 400:
       return '入力を読めませんでした。ファイルを選び直して、もう一度照合してください。'

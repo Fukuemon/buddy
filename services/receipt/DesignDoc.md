@@ -391,9 +391,11 @@ API の定義の元は [openapi.yaml](https://github.com/Fukuemon/buddy/blob/dev
 | 502 | `permission_check_failed` | 予定の API に届かないか、予定の API が 401 と 403 のほかのエラーを返した | 理由は [権限の Design Doc の照合の API の権限の確認](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/internal/access/DesignDoc.md#照合の-api-の権限の確認) にある |
 | 422 | `invalid_csv` | 入力の CSV のエラー | - |
 | 503 | `calendar_not_configured` | Google カレンダーの設定がないか、トークンの組織のカレンダーがないのに `month` で呼ばれた | - |
+| 503 | `auth_unavailable` | Hydra の discovery の文書をまだ読めず、トークンを検証できない | [ADR-0044 の冗長化](https://github.com/Fukuemon/buddy/blob/develop/docs/adr/0044-token-hook-fail-closed.md#冗長化) |
 
 `month` で呼ばれたがトークンに組織がないときに 403 の `forbidden` を返すのは、読むカレンダーを決められないためである。  
-503 の `calendar_not_configured` は、リクエストの形は正しく、照合できない原因がサーバーの設定にあるので、400 にしない。
+503 の `calendar_not_configured` は、リクエストの形は正しく、照合できない原因がサーバーの設定にあるので、400 にしない。  
+503 の `auth_unavailable` は、トークンの誤りではなく、401 にするとブラウザがログインの画面へ移るので、401 にしない。トークンを検証できない間は、リクエストを通さない。
 
 422 の `invalid_csv` は、誤りごとに、理由のコード（`reason`）、CSV の種類、分かれば行と列を `errors` に入れる。  
 画面は `reason` と行と列から職員に見せる文を作り、`message` を出さない。  

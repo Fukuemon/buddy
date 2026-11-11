@@ -42,6 +42,7 @@ func (e Category) Valid() bool {
 
 // Defines values for ErrorCode.
 const (
+	AuthUnavailable       ErrorCode = "auth_unavailable"
 	BadRequest            ErrorCode = "bad_request"
 	CalendarNotConfigured ErrorCode = "calendar_not_configured"
 	Forbidden             ErrorCode = "forbidden"
@@ -58,6 +59,8 @@ const (
 // Valid indicates whether the value is a known member of the ErrorCode enum.
 func (e ErrorCode) Valid() bool {
 	switch e {
+	case AuthUnavailable:
+		return true
 	case BadRequest:
 		return true
 	case CalendarNotConfigured:
@@ -87,13 +90,16 @@ func (e ErrorCode) Valid() bool {
 
 // Defines values for HealthStatus.
 const (
-	Ok HealthStatus = "ok"
+	Ok          HealthStatus = "ok"
+	Unavailable HealthStatus = "unavailable"
 )
 
 // Valid indicates whether the value is a known member of the HealthStatus enum.
 func (e HealthStatus) Valid() bool {
 	switch e {
 	case Ok:
+		return true
+	case Unavailable:
 		return true
 	default:
 		return false
@@ -606,6 +612,20 @@ func (response GetReadyz200JSONResponse) VisitGetReadyzResponse(w http.ResponseW
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetReadyz503JSONResponse Health
+
+func (response GetReadyz503JSONResponse) VisitGetReadyzResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
 	_, err := buf.WriteTo(w)
 	return err
 }

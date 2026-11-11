@@ -346,9 +346,13 @@ sequenceDiagram
 
 - `/v1` の全ての API は、`Authorization: Bearer` の access token を求める。
 - 署名のアルゴリズムは RS256 と ES256 だけを受け付ける。
-- JWKS は、起動のときに discovery の文書から場所を読み、1 時間ごとに取り直す。
+- JWKS は、discovery の文書から場所を読み、1 時間ごとに取り直す。
   - 読んだ JWKS に無い `kid` のトークンが来たときも取り直すが、間隔は 1 分以上あける。
+  - discovery の文書は、起動のときから、読めるまで 5 秒ごとに読み直す。Hydra が止まっていても起動を続ける（ADR-0044 の「冗長化」）。
+  - 1 度読めた後は、discovery の文書を読み直さない。
 - トークンが無いときは `WWW-Authenticate: Bearer` を、検証に失敗したときは `WWW-Authenticate: Bearer error="invalid_token"` を付けて、401 を返す。
+- discovery の文書をまだ読めていないときは、トークンを検証せずに、503 の `auth_unavailable` を返す。
+  - トークンの誤りではないので、401 にしない。401 にすると、ブラウザがログインの画面へ移り、Hydra が止まっているのでログインも失敗する。
 
 ミドルウェアは、パスの引数ごとに、指すリソースの事業所を職員の事業所と比べる。  
 パスの引数ごとの、事業所の確認の仕方は次のとおり。
