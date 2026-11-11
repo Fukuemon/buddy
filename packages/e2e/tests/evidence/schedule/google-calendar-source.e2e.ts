@@ -216,7 +216,7 @@ test.describe('予定のカレンダー', () => {
 
       await check(
         page,
-        '「予定は Google カレンダーと同期しています」の案内が出て、「予定を作成」のボタンが出る',
+        '「予定は Google カレンダーと同期しています」の見出しと、「Google カレンダーと buddy のどちらでも作成、変更できます」の本文が出て、「予定を作成」のボタンが出る',
         async () => {
           await expect(notice).toContainText('予定は Google カレンダーと同期しています')
           await expect(notice).toContainText(
@@ -226,13 +226,16 @@ test.describe('予定のカレンダー', () => {
         },
       )
 
-      await step(page, '日の表示に切り替え、岡田の列の空いた時間の枠を押す', async () => {
-        await openDay(page, todayInTokyo())
-        await expect(page.getByTestId('schedule-create-open')).toBeVisible()
-        await page
-          .getByTestId(`day-grid-staff-${OKADA.staff.id}`)
-          .click({ position: { x: 40, y: 40 } })
-      })
+      // 8 時の枠は、日の表示を開いたときに見えていて、ほかの spec が岡田のカレンダーに今日の予定を作らない時刻である
+      await step(
+        page,
+        `日の表示に切り替え、${OKADA.staff.name} の列の 8:00 の枠を押す`,
+        async () => {
+          await openDay(page, todayInTokyo())
+          await expect(page.getByTestId('schedule-create-open')).toBeVisible()
+          await page.getByTestId(`day-grid-slot-${OKADA.staff.id}-08:00`).click()
+        },
+      )
       await check(page, '時間の枠を押すと、予定の作成のダイアログが開く', () =>
         expect(page.getByTestId('schedule-form-modal')).toBeVisible(),
       )
