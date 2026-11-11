@@ -19,6 +19,16 @@
   - 発行済みの access token は、ブローカーと Hydra が止まっている間も API で通った。access token の期限は 5 分である。
   - BFF は Hydra を 5 秒待つ。access token が切れた職員の 1 回の表示で refresh を 4 回試し、7〜27 秒待って 500 のエラーの画面になった。refresh の失敗はログに出していない。
   - 予定の API と照合の API は、Hydra が止まっている間に起動すると、discovery を読めずに終了した。
+- Hydra v26.2.0 では、hook の 1 回の待ちの上限と呼び直しの回数を、設定で変えられない。#1021 で、v26.2.0 のソースを読んで確認した。
+  - hook は、Hydra の共通の HTTP クライアントで呼ぶ。設定から渡すのは URL と認証の値だけである。
+    - `oauth2/token_hook.go:91-111` / [GitHub](https://github.com/ory/hydra/blob/0b84568fffccf151dc5e6c7955fdfb738555bf4b/oauth2/token_hook.go#L91-L111)
+  - 共通の HTTP クライアントは、呼び直しを 2 回、1 回の打ち切りを 30 秒に固定して作る。
+    - `driver/registry_sql.go:454-458` / [GitHub](https://github.com/ory/hydra/blob/0b84568fffccf151dc5e6c7955fdfb738555bf4b/driver/registry_sql.go#L454-L458)
+  - 呼び直しの間は、最短 1 秒のデフォルト値のままで、測った 1 秒と 2 秒の間になる。
+    - `oryx/httpx/resilient_client.go:30-38` / [GitHub](https://github.com/ory/hydra/blob/0b84568fffccf151dc5e6c7955fdfb738555bf4b/oryx/httpx/resilient_client.go#L30-L38)
+  - 設定のスキーマは、`oauth2.token_hook` に `url` と `auth` だけを許し、ほかの項目を拒む。
+    - `spec/config.json:29-71` / [GitHub](https://github.com/ory/hydra/blob/0b84568fffccf151dc5e6c7955fdfb738555bf4b/spec/config.json#L29-L71)
+    - `driver/config/provider.go:595-598` / [GitHub](https://github.com/ory/hydra/blob/0b84568fffccf151dc5e6c7955fdfb738555bf4b/driver/config/provider.go#L595-L598)
 - 監視のツールと通知の設定は、インフラのリポジトリ（非公開）が持つ。
 
 ## Decision
@@ -34,7 +44,8 @@ hook が 204 以外を返すか、答えないときは、ログインでも ref
 
 - ブローカーは、hook の中の DB の呼び出しに、2 秒ほどの待ちの上限を付ける。上限を過ぎたら 500 を返す。
   - 理由: DB が答えないと、Hydra は 30 秒の打ち切りを 3 回待つ。1 回 2 秒の上限なら、呼び直しの間を含めて約 9 秒で失敗が決まる。
-- Hydra の hook の待ちの上限と呼び直しの回数を設定で変えられるかを調べ、変えられれば、BFF の 5 秒の待ちに収める。調べるのは #1021 である。
+- Hydra の hook の待ちの上限と呼び直しの回数は設定で変えられないので、待ちはブローカーの側の上限だけで短くする。
+  - 1 回 2 秒の上限では、失敗が決まるまでの約 9 秒が、BFF の 5 秒の待ちに収まらない。
 
 ### BFF は refresh を 1 度だけ試す
 
@@ -73,10 +84,11 @@ hook が 204 以外を返すか、答えないときは、ログインでも ref
 
 - 止めた職員は、障害の間もトークンを取れない。
 - 復旧の後に、職員がログインし直す必要が無い。
-- ブローカーの DB が答えないときの待ちが、約 93 秒から約 9 秒になる。Hydra の設定を変えられれば、BFF の 5 秒に収まる。
+- ブローカーの DB が答えないときの待ちが、約 93 秒から約 9 秒になる。
 
 ### Negative
 
 - ブローカーか Hydra が全て止まると、最大で access token の期限（5 分）と JWT の時刻の許容（30 秒）の後に、全ての職員の操作が止まる。
 - BFF に refresh のログと画面、ブローカーに DB の待ちの上限とログ、2 つの API に起動の変更が要る。
 - アラートの閾値は、本番の量で見直す必要がある。
+- ブローカーの DB が答えないときは、Hydra が失敗を返す約 9 秒より先に、BFF の 5 秒の待ちが切れる。Hydra の hook の待ちは、設定で縮められない。
