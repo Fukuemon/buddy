@@ -2,6 +2,7 @@ package httpapi_test
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"log"
 	"log/slog"
@@ -16,6 +17,7 @@ import (
 
 	"github.com/Fukuemon/buddy/services/schedule/internal/access"
 	"github.com/Fukuemon/buddy/services/schedule/internal/apperr"
+	"github.com/Fukuemon/buddy/services/schedule/internal/httpapi"
 	"github.com/Fukuemon/buddy/services/schedule/internal/principal"
 )
 
@@ -178,6 +180,40 @@ func TestAuthenticatedPassesThrough(t *testing.T) {
 		if rec.Code != http.StatusOK {
 			t.Errorf("%s: status = %d, body = %s", target, rec.Code, rec.Body)
 		}
+	}
+}
+
+// notReadyVerifier は、discovery をまだ読めていない TokenVerifier である。
+type notReadyVerifier struct{}
+
+func (notReadyVerifier) Verify(context.Context, string) (principal.Identity, error) {
+	return principal.Identity{}, fmt.Errorf("wrap: %w", httpapi.ErrVerifierNotReady)
+}
+
+func TestVerifierNotReadyReturns503(t *testing.T) {
+	s := &fakeSchedules{}
+	h := httpapi.NewRouter(httpapi.Apps{Organization: buddyPrimary, Schedules: s.app(), Auth: fakeAuth{}}, httpapi.RouterConfig{
+		Logger:   slog.New(slog.NewTextHandler(io.Discard, nil)),
+		Verifier: notReadyVerifier{},
+	})
+	rec, body := doWithToken(t, h, http.MethodGet, "/v1/facilities/"+facilityID+"/schedules", "", token(t, testOrgID))
+	if rec.Code != http.StatusServiceUnavailable {
+		t.Fatalf("status = %d, body = %s", rec.Code, rec.Body)
+	}
+	if body["code"] != "auth_unavailable" {
+		t.Errorf("code = %v", body["code"])
+	}
+	if rec.Header().Get("WWW-Authenticate") != "" {
+		t.Errorf("WWW-Authenticate = %q", rec.Header().Get("WWW-Authenticate"))
+	}
+	if s.listCalls != 0 {
+		t.Error("App が呼ばれた")
+	}
+
+	// トークンが無いリクエストは、準備を待たずに 401 にする
+	rec, _ = doWithToken(t, h, http.MethodGet, "/v1/facilities/"+facilityID+"/schedules", "", "")
+	if rec.Code != http.StatusUnauthorized {
+		t.Errorf("トークンが無いときの status = %d", rec.Code)
 	}
 }
 

@@ -57,10 +57,8 @@ func run() error {
 	}
 	defer db.Close()
 
-	verifier, err := oidc.NewVerifier(ctx, oidc.Config(cfg.OIDC), nil, log)
-	if err != nil {
-		return err
-	}
+	// Hydra が止まっていても起動を続け、discovery を読めるまで /readyz を 503 にする（ADR-0044 の「冗長化」）
+	verifier := oidc.StartVerifier(ctx, oidc.Config(cfg.OIDC), nil, log)
 
 	repos := newRepositories(db)
 	accounts, err := openAccounts(ctx, cfg.Calendar, repos)
@@ -70,6 +68,9 @@ func run() error {
 	router := newHandler(repos, handlerConfig{
 		API: cfg, Accounts: accounts, Verifier: verifier, Logger: log,
 		Ready: func(ctx context.Context) error {
+			if err := verifier.Ready(); err != nil {
+				return err
+			}
 			ctx, cancel := context.WithTimeout(ctx, readyTimeout)
 			defer cancel()
 			return db.Ping(ctx)
