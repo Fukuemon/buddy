@@ -3,20 +3,20 @@ import { expect, test } from '@playwright/test'
 
 import {
   blockDatabase,
-  brokerStaffLocked,
+  isBrokerStaffLocked,
   lockBrokerStaff,
   releaseBrokerStaffLock,
-  serviceLogs,
+  readServiceLogs,
   stopBroker,
-  stubCalls,
+  listStubCalls,
   setStubMode,
   unblockDatabase,
 } from '../lib/compose'
-import { describeCall, report } from '../lib/results'
+import { formatCall, report } from '../lib/results'
 import { restoreAll, waitHealthy } from '../lib/restore'
-import { callScheduleApi, clientCredentials, login, newApiContext, refresh } from '../lib/tokens'
+import { getMe, clientCredentials, login, createApiContext, refresh } from '../lib/tokens'
 import {
-  describeWeb,
+  formatWebObservation,
   openAfterExpiry,
   recoversWithoutLogin,
   registerFaultStaff,
@@ -25,16 +25,16 @@ import {
 
 test.afterEach(restoreAll)
 
-const describeLogin = (r: Awaited<ReturnType<typeof login>>) =>
+const formatLogin = (r: Awaited<ReturnType<typeof login>>) =>
   r.ok
     ? '通った'
-    : `${r.step} で失敗${r.exchange ? `、${describeCall(r.exchange)}` : ''}${r.failure ? `（${r.failure}）` : ''}`
+    : `${r.step} で失敗${r.exchange ? `、${formatCall(r.exchange)}` : ''}${r.failure ? `（${r.failure}）` : ''}`
 
 test('ブローカーの停止: Hydra は約 3 秒で 500 にし、戻せば同じ refresh token が使える', async ({
   browser,
 }) => {
   const staff = await registerFaultStaff('brokerstop')
-  const request = await newApiContext()
+  const request = await createApiContext()
   const before = await login(request, staff.email)
   if (!before.ok) throw new Error(`故障の前にログインできない: ${before.step}`)
   const web = await signInWeb(browser, staff.email)
@@ -42,8 +42,8 @@ test('ブローカーの停止: Hydra は約 3 秒で 500 にし、戻せば同�
   setStubMode()
   stopBroker()
   const refreshed = await refresh(request, before.tokens.refreshToken)
-  const calls = stubCalls()
-  const api = await callScheduleApi(request, before.tokens.accessToken)
+  const calls = listStubCalls()
+  const api = await getMe(request, before.tokens.accessToken)
   const cc = await clientCredentials(request)
   const newLogin = await login(request, staff.email)
   const webSeen = await openAfterExpiry(web.context, web.page)
@@ -53,22 +53,26 @@ test('ブローカーの停止: Hydra は約 3 秒で 500 にし、戻せば同�
   const recovered = await recoversWithoutLogin(web.page)
 
   report('ブローカーの停止', [
-    { label: 'refresh', value: describeCall(refreshed), basis: '#877' },
+    { label: 'refresh', value: formatCall(refreshed), basis: '#877' },
     {
       label:
         'refresh で Hydra が hook を呼んだ回数（スタブが受けた数。スタブはブローカーに届かず 502 を返す）',
       value: `${calls.length} 回`,
       basis: '#877',
     },
-    { label: '既発行の JWT で予定の API', value: describeCall(api), basis: '#877' },
-    { label: 'client credentials', value: describeCall(cc), basis: '#877' },
-    { label: '新しいログイン', value: describeLogin(newLogin), basis: '#877' },
+    { label: '既発行の JWT で予定の API', value: formatCall(api), basis: '#877' },
+    { label: 'client credentials', value: formatCall(cc), basis: '#877' },
+    { label: '新しいログイン', value: formatLogin(newLogin), basis: '#877' },
     {
       label: '戻した後の、同じ refresh token の refresh',
-      value: describeCall(after),
+      value: formatCall(after),
       basis: '#877',
     },
-    { label: 'web の access token が切れた表示', value: describeWeb(webSeen), basis: 'ADR' },
+    {
+      label: 'web の access token が切れた表示',
+      value: formatWebObservation(webSeen),
+      basis: 'ADR',
+    },
     {
       label: 'web を戻した後',
       value: recovered ? 'ログインし直さずに出た' : '出ない',
@@ -94,14 +98,14 @@ test('ブローカーの停止: Hydra は約 3 秒で 500 にし、戻せば同�
 
 test('ブローカーの DB だけの停止: 接続を拒まれ、hook は約 3 秒で 500 になり、client credentials は通る', async () => {
   const staff = await registerFaultStaff('brokerdb')
-  const request = await newApiContext()
+  const request = await createApiContext()
   const before = await login(request, staff.email)
   if (!before.ok) throw new Error(`故障の前にログインできない: ${before.step}`)
 
   setStubMode()
   blockDatabase('broker')
   const refreshed = await refresh(request, before.tokens.refreshToken)
-  const calls = stubCalls()
+  const calls = listStubCalls()
   const cc = await clientCredentials(request)
   const newLogin = await login(request, staff.email)
 
@@ -110,17 +114,17 @@ test('ブローカーの DB だけの停止: 接続を拒まれ、hook は約 3 
   const after = await refresh(request, before.tokens.refreshToken)
 
   report('ブローカーの DB だけの停止（接続を拒む）', [
-    { label: 'refresh', value: describeCall(refreshed), basis: '#877' },
+    { label: 'refresh', value: formatCall(refreshed), basis: '#877' },
     {
       label: 'refresh で Hydra が hook を呼んだ回数と、ブローカーの答え',
       value: `${calls.length} 回（${calls.map((c) => c.status).join('、')}）`,
       basis: '#877',
     },
-    { label: 'client credentials', value: describeCall(cc), basis: '#877' },
-    { label: '新しいログイン', value: describeLogin(newLogin), basis: '#877' },
+    { label: 'client credentials', value: formatCall(cc), basis: '#877' },
+    { label: '新しいログイン', value: formatLogin(newLogin), basis: '#877' },
     {
       label: '戻した後の、同じ refresh token の refresh',
-      value: describeCall(after),
+      value: formatCall(after),
       basis: '#877',
     },
   ])
@@ -129,7 +133,7 @@ test('ブローカーの DB だけの停止: 接続を拒まれ、hook は約 3 
   expect.soft(calls.map((c) => c.status)).toEqual([500, 500, 500])
   expect.soft(refreshed.seconds).toBeLessThan(5)
   expect.soft(cc.status).toBe(200)
-  expect.soft(newLogin.ok).toBe(false)
+  expect.soft(newLogin.ok ? '' : newLogin.step).toBe('broker-login')
   expect.soft(after.status).toBe(200)
   await request.dispose()
 })
@@ -138,19 +142,19 @@ test('ブローカーの DB が答えない: hook は 2 秒で打ち切って 50
   browser,
 }) => {
   const staff = await registerFaultStaff('brokerdbhang')
-  const request = await newApiContext()
+  const request = await createApiContext()
   const before = await login(request, staff.email)
   if (!before.ok) throw new Error(`故障の前にログインできない: ${before.step}`)
   const web = await signInWeb(browser, staff.email)
 
   setStubMode()
   lockBrokerStaff(120)
-  await expect.poll(brokerStaffLocked).toBe(true)
+  await expect.poll(isBrokerStaffLocked).toBe(true)
   const since = new Date()
   const refreshed = await refresh(request, before.tokens.refreshToken)
-  const calls = stubCalls()
+  const calls = listStubCalls()
   const webSeen = await openAfterExpiry(web.context, web.page)
-  const hookLogs = serviceLogs('broker', since)
+  const hookLogs = readServiceLogs('broker', since)
     .split('\n')
     .filter((l) => l.includes('token_hook の結果') && l.includes('"failed"'))
     .map((l) => /"duration_ms":(\d+)/.exec(l)?.[1])
@@ -161,7 +165,7 @@ test('ブローカーの DB が答えない: hook は 2 秒で打ち切って 50
   const recovered = await recoversWithoutLogin(web.page)
 
   report('ブローカーの DB が答えない（staff のテーブルを握る）', [
-    { label: 'refresh', value: describeCall(refreshed), basis: 'ADR' },
+    { label: 'refresh', value: formatCall(refreshed), basis: 'ADR' },
     {
       label: 'hook ごとの、ブローカーが答えるまでの秒',
       value: calls
@@ -176,10 +180,14 @@ test('ブローカーの DB が答えない: hook は 2 秒で打ち切って 50
       value: hookLogs.join('、') || '無し',
       basis: 'ADR',
     },
-    { label: 'web の access token が切れた表示', value: describeWeb(webSeen), basis: 'ADR' },
+    {
+      label: 'web の access token が切れた表示',
+      value: formatWebObservation(webSeen),
+      basis: 'ADR',
+    },
     {
       label: '戻した後の、同じ refresh token の refresh',
-      value: describeCall(after),
+      value: formatCall(after),
       basis: '#877',
     },
     {
@@ -191,6 +199,8 @@ test('ブローカーの DB が答えない: hook は 2 秒で打ち切って 50
 
   expect.soft(refreshed.status).toBe(500)
   expect.soft(calls.length).toBe(3)
+  expect.soft(hookLogs.length).toBeGreaterThanOrEqual(3)
+  expect.soft(hookLogs.every((ms) => Number(ms) >= 1900 && Number(ms) <= 2200)).toBe(true)
   expect.soft(refreshed.seconds).toBeGreaterThan(7)
   expect.soft(refreshed.seconds).toBeLessThan(11)
   expect.soft(webSeen.outcome).toBe('unavailable')

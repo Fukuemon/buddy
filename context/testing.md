@@ -24,6 +24,7 @@ status: stable
 | E2E | ログインから画面の操作までの流れが、compose の全体で動く | `packages/e2e/tests/` | `pnpm e2e`（[E2E のテスト](testing/e2e.md)） |
 | 描画した画面の横方向のオーバーフロー | 主な画面を幅 390、767、768、1280px で開いたとき、ページの全体が横にはみ出さない（DESIGN.md の `LAYOUT-OVERFLOW`）。撮った画像はレビューで見る | `packages/e2e/tests/specs/site/layout-overflow.e2e.ts` | `pnpm e2e`。CI の `e2e` のジョブで流れる |
 | web の負荷の検証 | 想定の利用の量（同時 100 人）と 3 倍の量で、ログイン、画面の BFF の呼び出し、トークンの更新、ログアウトを web に HTTP で流し、ADR-0047 の基準を満たすか。CI では流さない | `apps/web/scripts/web-load.k6.js`（k6 の筋書き）、`apps/web/scripts/load-sample.sh`（DB の接続の数と CPU の記録） | 手で流す。流し方と結果は [web の負荷の検証の結果](../docs/verification/1040-web-load/README.md) |
+| token_hook とブローカーの故障の測定 | hook の失敗、ブローカー、Hydra とその DB の停止、止めた職員で、トークンを発行せず、web がセッションを残し、戻した後に refresh token が使える。CI では流さない | `packages/e2e/faults/` | `pnpm --filter @buddy/e2e faults`（[基盤と運用](operations.md) の「故障を入れる仕組み」） |
 | 生成物のそろい | `openapi.yaml` と SQL から生成したコードが最新である | `scripts/check-generated.sh` | `pnpm check:generated` |
 | テーブル定義書のそろい | マイグレーションを適用した PostgreSQL から作ったテーブル定義書と ER 図の元が、コミットした `docs/db/` と同じである。全てのテーブルがどれかの viewpoint に入る | `scripts/build-db-docs.sh` | `pnpm generate:db-docs`（Docker が要る）。CI の `db-docs` は、生成した後に `docs/db/` の差分を確認する |
 | OpenAPI の定義の lint | 各 API の `openapi.yaml` が Redocly CLI の `recommended-strict` の規則に合う | `redocly.yaml`、`.redocly.lint-ignore.yaml` | `pnpm lint:openapi` |
@@ -100,6 +101,7 @@ E2E の Google Calendar API の置き換えでの、calendarpit の使い方は�
 | `openapi.yaml`、`redocly.yaml`、`.redocly.lint-ignore.yaml` | `pnpm lint:openapi` |
 | マイグレーション、`services/schedule/.tbls.yml` | `pnpm generate:db-docs` でテーブル定義書を生成し直してコミットする |
 | 画面仕様書、モック、story の `title` と export の名前、E2E の testid | `pnpm check:screens` |
+| ブローカーの token_hook、web の refresh の失敗の扱い、Hydra の設定、`compose.yml` の Hydra とブローカー | `pnpm --filter @buddy/e2e faults` |
 
 マージする前に、変えたアプリの `test` と `check`（Go は `go test ./...`、`go vet ./...`、`golangci-lint run`）を流す。  
 Go のテストと lint の流し方（`GOWORK=off`、`packages/go` を変えたとき）は、[CONTRIBUTING.md の Go のモジュール](../CONTRIBUTING.md#go-のモジュール) にある。

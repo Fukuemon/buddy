@@ -7,8 +7,8 @@ import { signInAtBroker } from '../../tests/screens/login'
 import { brokerLogin } from '../../tests/selectors/idp'
 import { pageFailure } from '../../tests/selectors/page'
 import { calendarColumnHeaders } from '../../tests/selectors/scheduleCalendar'
-import { expireAccessToken, serviceLogs, sessionExists } from './compose'
-import { newApiContext } from './tokens'
+import { expireAccessToken, readServiceLogs, sessionExists } from './compose'
+import { createApiContext } from './tokens'
 
 /** 画面が出るまで待つ上限。BFF は refresh を 1 度だけ試し、Hydra を 5 秒まで待つ（ADR-0044）。 */
 const PAGE_WAIT_MS = 30_000
@@ -19,7 +19,7 @@ const RECOVER_WAIT_MS = 25_000
 /** 測るたびに、1 つ目の事業所のメンバーの職員を登録する。setup のセッションの access token を書き換えないためである。 */
 export const registerFaultStaff = async (label: string) => {
   const staff = newStaff(`faults-${label}`)
-  const request = await newApiContext()
+  const request = await createApiContext()
   try {
     const token = await issueManagerToken()
     return { ...staff, id: await registerStaffId(request, token, staff), managerToken: token }
@@ -42,7 +42,7 @@ export const signInWeb = async (browser: Browser, email: string) => {
 }
 
 /** refresh を起こした表示の結果。 */
-export type WebObservation = {
+type WebObservation = {
   /**
    * unavailable は一時的に使えない画面か表示できない画面、login はブローカーのログインの画面、
    * login-failed は web のログインの失敗の画面（/auth/error）、calendar は予定のカレンダー。
@@ -55,8 +55,8 @@ export type WebObservation = {
 }
 
 /** web のログから、since の後の最後の session refresh failed の行を、reason、error、status の文にする。 */
-const lastRefreshFailure = (since: Date) => {
-  const line = serviceLogs('web', since)
+const findLastRefreshFailure = (since: Date) => {
+  const line = readServiceLogs('web', since)
     .split('\n')
     .filter((l) => l.includes('session refresh failed'))
     .at(-1)
@@ -103,9 +103,9 @@ export const openAfterExpiry = async (
           : 'none'
   // ログの行が docker logs に出るのを待つ
   const refreshLog = await expect
-    .poll(() => lastRefreshFailure(since), { timeout: 5_000 })
+    .poll(() => findLastRefreshFailure(since), { timeout: 5_000 })
     .not.toBe('')
-    .then(() => lastRefreshFailure(since))
+    .then(() => findLastRefreshFailure(since))
     .catch(() => '')
   return { outcome, seconds, sessionKept: await sessionExists(context), refreshLog }
 }
@@ -121,5 +121,5 @@ export const recoversWithoutLogin = async (page: Page) =>
     .catch(() => false)
 
 /** 観測を、表のセルの文にする。 */
-export const describeWeb = (o: WebObservation) =>
+export const formatWebObservation = (o: WebObservation) =>
   `${o.outcome}（${o.seconds} 秒）、セッション${o.sessionKept ? 'は残る' : 'が消えた'}${o.refreshLog ? `、ログ ${o.refreshLog}` : ''}`

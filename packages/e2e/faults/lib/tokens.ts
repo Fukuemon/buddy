@@ -14,10 +14,10 @@ const REDIRECT_URI = `${BASE_URL}/auth/callback`
 /**
  * 1 回の呼び出しを待つ上限。Hydra が答えない hook を待つ約 93 秒より長くし、答えない故障でも結果を記録できるようにする。
  */
-export const CALL_TIMEOUT_MS = 120_000
+const CALL_TIMEOUT_MS = 120_000
 
 /** ログインの状態を持たない、新しい request の context を作る。証明書のエラーの扱いは playwright.config.ts と同じにする。 */
-export const newApiContext = () =>
+export const createApiContext = () =>
   apiRequest.newContext({
     storageState: { cookies: [], origins: [] },
     ignoreHTTPSErrors: BASE_URL.startsWith('https://'),
@@ -56,10 +56,10 @@ const measure = async (
 }
 
 /** web のクライアントで取ったトークン。 */
-export type Tokens = { accessToken: string; refreshToken: string }
+type Tokens = { accessToken: string; refreshToken: string }
 
 /** ログインの手順のどこまで進んだか。認可コードの交換まで進めば exchange に結果が入る。 */
-export type LoginResult =
+type LoginResult =
   | { ok: true; tokens: Tokens; code: string; exchange: CallResult }
   | { ok: false; step: string; code?: string; exchange?: CallResult; failure?: string }
 
@@ -162,7 +162,7 @@ export const clientCredentials = async (request: APIRequestContext) =>
   )
 
 /** 予定の API の自分の職員（GET /v1/me）を、access token で呼ぶ。 */
-export const callScheduleApi = async (request: APIRequestContext, accessToken: string) =>
+export const getMe = async (request: APIRequestContext, accessToken: string) =>
   strip(
     await measure(() =>
       request.get(`${SCHEDULE_URL}/v1/me`, { headers: { Authorization: `Bearer ${accessToken}` } }),
@@ -170,5 +170,5 @@ export const callScheduleApi = async (request: APIRequestContext, accessToken: s
   )
 
 /** 予定の API の GET /readyz を呼ぶ。 */
-export const scheduleReady = async (request: APIRequestContext) =>
+export const getReadyz = async (request: APIRequestContext) =>
   strip(await measure(() => request.get(`${SCHEDULE_URL}/readyz`)))

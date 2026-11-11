@@ -127,7 +127,7 @@ export const BROKER_INTERNAL_URL =
 export const HYDRA_URL = process.env.E2E_HYDRA_URL ?? 'https://hydra.buddy.localhost'
 
 /**
- * コンテナを docker で操作する spec（fixtures/sessionFaults.ts）が操作する compose のプロジェクトの名前。
+ * コンテナを docker で操作する spec（fixtures/sessionFaults.ts）と、故障を入れる測定（faults/lib/compose.ts）が操作する compose のプロジェクトの名前。
  * 改修前の環境で撮るときは、E2E_COMPOSE_PROJECT に改修前の worktree の COMPOSE_PROJECT_NAME を渡す。無ければ worktree の .env の値を使う。
  */
 export const COMPOSE_PROJECT = process.env.E2E_COMPOSE_PROJECT ?? process.env.COMPOSE_PROJECT_NAME

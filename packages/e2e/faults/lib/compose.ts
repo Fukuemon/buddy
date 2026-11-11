@@ -6,25 +6,26 @@ import { execFile, execFileSync, spawnSync } from 'node:child_process'
 import type { BrowserContext } from '@playwright/test'
 
 import { COMPOSE_PROJECT } from '../../tests/fixtures/env'
+import type { CallResult } from './tokens'
 
 /**
  * 操作する compose のプロジェクトの名前。main の checkout の compose（buddy）は止めない。
  * docker がコンテナの名前をオプションと読まないよう、compose のプロジェクトの名前の形かも確認する。
  */
-export const composeProject = () => {
+const composeProject = () => {
   if (
     COMPOSE_PROJECT === undefined ||
     COMPOSE_PROJECT === 'buddy' ||
     !/^[a-z0-9][a-z0-9_-]*$/.test(COMPOSE_PROJECT)
   )
     throw new Error(
-      'worktree の .env の COMPOSE_PROJECT_NAME か E2E_COMPOSE_PROJECT で、撮る compose を指す',
+      'worktree の .env の COMPOSE_PROJECT_NAME か E2E_COMPOSE_PROJECT で、操作する compose を指す',
     )
   return COMPOSE_PROJECT
 }
 
 /** compose のサービス service の、1 つ目のコンテナの名前。 */
-export const container = (service: string) => `${composeProject()}-${service}-1`
+const container = (service: string) => `${composeProject()}-${service}-1`
 
 /**
  * docker を流し、標準出力を返す。失敗したら、docker の操作の名前だけを文にして投げる。
@@ -100,7 +101,7 @@ export const sessionExists = async (context: BrowserContext) =>
 export const stopService = (service: string) => docker('stop', container(service))
 
 /** サービスのコンテナを一時停止する。接続は張れるが、答えが返らない。 */
-export const pauseService = (service: string) => docker('pause', container(service))
+const pauseService = (service: string) => docker('pause', container(service))
 
 /** サービスのコンテナを再起動する。 */
 export const restartService = (service: string) => docker('restart', container(service))
@@ -129,7 +130,7 @@ export const restoreBroker = () => restoreService('broker')
 export const brokerHealth = () => serviceHealth('broker')
 
 /** since から後のサービスのログを返す。docker logs は、コンテナの標準エラーを標準エラーに出すので、両方を読む。 */
-export const serviceLogs = (service: string, since: Date) => {
+export const readServiceLogs = (service: string, since: Date) => {
   const logs = spawnSync('docker', ['logs', '--since', since.toISOString(), container(service)], {
     encoding: 'utf8',
   })
@@ -142,7 +143,7 @@ export const serviceLogs = (service: string, since: Date) => {
  * 呼び直しの行（retrying in）と、呼び直しを打ち切った行（giving up after）を足す。
  */
 export const countFailedHookCalls = (since: Date) =>
-  serviceLogs('hydra', since)
+  readServiceLogs('hydra', since)
     .split('\n')
     .filter((line) => /retrying in|giving up after/.test(line)).length
 
@@ -163,7 +164,7 @@ const psql = (sql: string) =>
   )
 
 /** 故障のために流す SQL が触ってよいデータベース。 */
-export type FaultDatabase = 'broker' | 'hydra'
+type FaultDatabase = 'broker' | 'hydra'
 
 /**
  * データベースへの新しい接続を禁じ、張られた接続を切る。ほかのデータベースは動いたままにする。
@@ -203,7 +204,7 @@ export const lockBrokerStaff = (seconds: number) => {
 }
 
 /** ロックを握った接続がロックを取ったかを返す。 */
-export const brokerStaffLocked = () =>
+export const isBrokerStaffLocked = () =>
   psql(
     `SELECT count(*) FROM pg_locks l JOIN pg_stat_activity a ON a.pid = l.pid
      WHERE a.application_name = '${LOCK_APP}' AND l.mode = 'AccessExclusiveLock' AND l.granted`,
@@ -241,11 +242,7 @@ export const setBrokerStaffStatus = (email: string, status: 'active' | 'suspende
  * portless は、Hydra が答えずに切った接続を 502 にして返すので、Hydra が何を返したかは中から呼んで見る。
  * 返すのは、状態コード（答えが無いまま切れたら null）、切れたときの理由、かかった秒である。非同期で、ほかの呼び出しと並べられる。
  */
-export const clientCredentialsInsideCompose = (): Promise<{
-  status: number | null
-  failure?: string
-  seconds: number
-}> => {
+export const clientCredentialsInsideCompose = (): Promise<CallResult> => {
   const script = `const s = Date.now()
 fetch('http://hydra:4444/oauth2/token', {
   method: 'POST',
@@ -263,14 +260,7 @@ fetch('http://hydra:4444/oauth2/token', {
       { encoding: 'utf8' },
       (error, stdout) => {
         if (error) reject(new Error('web のコンテナから Hydra を呼べなかった'))
-        else
-          resolve(
-            JSON.parse(stdout.trim()) as {
-              status: number | null
-              failure?: string
-              seconds: number
-            },
-          )
+        else resolve(JSON.parse(stdout.trim()) as CallResult)
       },
     )
   })
@@ -283,7 +273,7 @@ const stub = (pathAndQuery: string) =>
   ) as unknown
 
 /** スタブの答え方。省いた値は素通し。 */
-export type StubMode = { status?: number; delayMs?: number; hang?: boolean }
+type StubMode = { status?: number; delayMs?: number; hang?: boolean }
 
 /** スタブの答え方を切り替え、受けた hook の一覧を空にする。引数を省くと素通しに戻す。 */
 export const setStubMode = (mode: StubMode = {}) => {
@@ -296,7 +286,7 @@ export const setStubMode = (mode: StubMode = {}) => {
 }
 
 /** スタブが受けた hook の 1 件。時刻はエポックからのミリ秒である。 */
-export type StubCall = {
+type StubCall = {
   receivedAt: number
   respondedAt: number | null
   closedAt: number | null
@@ -304,4 +294,4 @@ export type StubCall = {
 }
 
 /** スタブが受けた hook の一覧を返す。 */
-export const stubCalls = () => stub('/calls') as StubCall[]
+export const listStubCalls = () => stub('/calls') as StubCall[]

@@ -1,10 +1,18 @@
 import { defineConfig, devices } from '@playwright/test'
 
 import { resolveLocalhostToLoopback } from '../localhostResolver'
-import { BASE_URL, TIMEZONE_ID } from '../tests/fixtures/env'
+import { BASE_URL, HYDRA_URL, SCHEDULE_URL, TIMEZONE_ID } from '../tests/fixtures/env'
 
 // 設定は、test の runner と worker のそれぞれで読まれるので、両方のプロセスで差し替わる
 resolveLocalhostToLoopback()
+
+// 測定は職員を登録し、休職にする。run.sh を通さずに流したときも、main の checkout の compose（*.buddy.localhost）に向けない
+for (const url of [BASE_URL, HYDRA_URL, SCHEDULE_URL]) {
+  if (new URL(url).hostname.endsWith('.buddy.localhost'))
+    throw new Error(
+      `main の checkout の compose を指している: ${url}。worktree の .env の E2E_* で指す`,
+    )
+}
 
 /**
  * token_hook とブローカーの故障を入れる測定の config。packages/e2e/faults/run.sh が、compose.faults.yml を重ねた compose に向けて流す。

@@ -9,18 +9,18 @@ import {
   stopService,
   unblockDatabase,
 } from '../lib/compose'
-import { describeCall, report } from '../lib/results'
+import { formatCall, report } from '../lib/results'
 import { restoreAll, waitHealthy } from '../lib/restore'
 import {
-  callScheduleApi,
+  getMe,
   clientCredentials,
   login,
-  newApiContext,
+  createApiContext,
   refresh,
-  scheduleReady,
+  getReadyz,
 } from '../lib/tokens'
 import {
-  describeWeb,
+  formatWebObservation,
   openAfterExpiry,
   recoversWithoutLogin,
   registerFaultStaff,
@@ -36,7 +36,7 @@ test('Hydra の停止: 既発行の JWT は通り、Hydra が止まった間に�
   browser,
 }) => {
   const staff = await registerFaultStaff('hydrastop')
-  const request = await newApiContext()
+  const request = await createApiContext()
   const before = await login(request, staff.email)
   if (!before.ok) throw new Error(`故障の前にログインできない: ${before.step}`)
   const web = await signInWeb(browser, staff.email)
@@ -44,26 +44,26 @@ test('Hydra の停止: 既発行の JWT は通り、Hydra が止まった間に�
   setStubMode()
   stopService('hydra')
   const refreshed = await refresh(request, before.tokens.refreshToken)
-  const api = await callScheduleApi(request, before.tokens.accessToken)
+  const api = await getMe(request, before.tokens.accessToken)
   const webSeen = await openAfterExpiry(web.context, web.page)
   restartService('schedule')
   // 再起動した予定の API が待ち受けるまで待つ。待ち受ける前は、portless が 502 を返すか、接続が切れる。
   // discovery を読めないので、compose のヘルスチェックは通らない
   await expect
-    .poll(async () => (await scheduleReady(request)).status, { timeout: 30_000 })
+    .poll(async () => (await getReadyz(request)).status, { timeout: 30_000 })
     .toBeGreaterThanOrEqual(200)
   await expect
-    .poll(async () => (await scheduleReady(request)).status, { timeout: 30_000 })
+    .poll(async () => (await getReadyz(request)).status, { timeout: 30_000 })
     .not.toBe(502)
-  const readyDown = await scheduleReady(request)
-  const apiDown = await callScheduleApi(request, before.tokens.accessToken)
+  const readyDown = await getReadyz(request)
+  const apiDown = await getMe(request, before.tokens.accessToken)
 
-  const restartedAt = Date.now()
+  const hydraRestoreStartedAt = Date.now()
   restoreService('hydra')
   await waitHealthy('hydra')
   const hydraReadyAt = Date.now()
   await expect
-    .poll(async () => (await scheduleReady(request)).status, {
+    .poll(async () => (await getReadyz(request)).status, {
       timeout: READY_WAIT_MS,
       intervals: [500],
     })
@@ -73,23 +73,27 @@ test('Hydra の停止: 既発行の JWT は通り、Hydra が止まった間に�
   const recovered = await recoversWithoutLogin(web.page)
 
   report('Hydra の停止', [
-    { label: 'refresh', value: describeCall(refreshed), basis: '#877' },
-    { label: '既発行の JWT で予定の API', value: describeCall(api), basis: '#877' },
-    { label: 'web の access token が切れた表示', value: describeWeb(webSeen), basis: 'ADR' },
+    { label: 'refresh', value: formatCall(refreshed), basis: '#877' },
+    { label: '既発行の JWT で予定の API', value: formatCall(api), basis: '#877' },
     {
-      label: 'Hydra が止まった間に再起動した予定の API の /readyz',
-      value: describeCall(readyDown),
+      label: 'web の access token が切れた表示',
+      value: formatWebObservation(webSeen),
       basis: 'ADR',
     },
-    { label: '同じ予定の API に、既発行の JWT で呼ぶ', value: describeCall(apiDown), basis: 'ADR' },
+    {
+      label: 'Hydra が止まった間に再起動した予定の API の /readyz',
+      value: formatCall(readyDown),
+      basis: 'ADR',
+    },
+    { label: '同じ予定の API に、既発行の JWT で呼ぶ', value: formatCall(apiDown), basis: 'ADR' },
     {
       label: 'Hydra のヘルスチェックが通ってから、予定の API の /readyz が 200 になるまで',
-      value: `${readySeconds} 秒（Hydra の起動に ${Math.round((hydraReadyAt - restartedAt) / 100) / 10} 秒）`,
+      value: `${readySeconds} 秒（Hydra の起動に ${Math.round((hydraReadyAt - hydraRestoreStartedAt) / 100) / 10} 秒）`,
       basis: 'ADR',
     },
     {
       label: '戻した後の、同じ refresh token の refresh',
-      value: describeCall(after),
+      value: formatCall(after),
       basis: '#877',
     },
     {
@@ -118,7 +122,7 @@ test('Hydra の DB の停止: Hydra は refresh に 401 の invalid_client を�
   browser,
 }) => {
   const staff = await registerFaultStaff('hydradb')
-  const request = await newApiContext()
+  const request = await createApiContext()
   const before = await login(request, staff.email)
   if (!before.ok) throw new Error(`故障の前にログインできない: ${before.step}`)
   const web = await signInWeb(browser, staff.email)
@@ -126,7 +130,7 @@ test('Hydra の DB の停止: Hydra は refresh に 401 の invalid_client を�
   setStubMode()
   blockDatabase('hydra')
   const refreshed = await refresh(request, before.tokens.refreshToken)
-  const api = await callScheduleApi(request, before.tokens.accessToken)
+  const api = await getMe(request, before.tokens.accessToken)
   const cc = await clientCredentials(request)
   const newLogin = await login(request, staff.email)
   const webSeen = await openAfterExpiry(web.context, web.page)
@@ -137,9 +141,9 @@ test('Hydra の DB の停止: Hydra は refresh に 401 の invalid_client を�
   const recovered = await recoversWithoutLogin(web.page)
 
   report('Hydra の DB の停止（hydra のデータベースへの接続を拒む）', [
-    { label: 'refresh', value: describeCall(refreshed), basis: '#877' },
-    { label: '既発行の JWT で予定の API', value: describeCall(api), basis: '#877' },
-    { label: 'client credentials', value: describeCall(cc), basis: '#877' },
+    { label: 'refresh', value: formatCall(refreshed), basis: '#877' },
+    { label: '既発行の JWT で予定の API', value: formatCall(api), basis: '#877' },
+    { label: 'client credentials', value: formatCall(cc), basis: '#877' },
     {
       label: '新しいログイン',
       value: newLogin.ok
@@ -147,10 +151,14 @@ test('Hydra の DB の停止: Hydra は refresh に 401 の invalid_client を�
         : `${newLogin.step} で失敗${newLogin.failure ? `（${newLogin.failure}）` : ''}`,
       basis: '#877',
     },
-    { label: 'web の access token が切れた表示', value: describeWeb(webSeen), basis: 'ADR' },
+    {
+      label: 'web の access token が切れた表示',
+      value: formatWebObservation(webSeen),
+      basis: 'ADR',
+    },
     {
       label: '戻した後の、同じ refresh token の refresh',
-      value: describeCall(after),
+      value: formatCall(after),
       basis: '#877',
     },
     {
@@ -164,9 +172,10 @@ test('Hydra の DB の停止: Hydra は refresh に 401 の invalid_client を�
   expect.soft(refreshed.error).toBe('invalid_client')
   expect.soft(api.status).toBe(200)
   expect.soft(cc.status).toBe(401)
-  expect.soft(newLogin.ok).toBe(false)
+  expect.soft(newLogin.ok ? '' : newLogin.step).toBe('broker-login')
   expect.soft(webSeen.sessionKept).toBe(true)
   expect.soft(webSeen.outcome).toBe('unavailable')
+  expect.soft(webSeen.refreshLog).toContain('reason=hydra_error error=invalid_client')
   expect.soft(after.status).toBe(200)
   expect.soft(recovered).toBe(true)
   await web.context.close()

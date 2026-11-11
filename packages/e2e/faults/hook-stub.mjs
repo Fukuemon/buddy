@@ -38,13 +38,8 @@ const forward = async (req, body) => {
   return { status: res.status, body: Buffer.from(await res.arrayBuffer()) }
 }
 
-const hook = http.createServer(async (req, res) => {
-  const call = { receivedAt: Date.now(), respondedAt: null, closedAt: null, status: null }
-  calls.push(call)
-  // クライアント（Hydra）が答えを待たずに切ったら記録する。答えた後の close は数えない
-  res.on('close', () => {
-    if (call.respondedAt === null) call.closedAt = Date.now()
-  })
+/** hook を受けて、今の答え方で答える。例外でスタブのプロセスが落ちないよう、失敗は 502 にして記録する。 */
+const answerHook = async (req, res, call) => {
   const current = mode
   const body = await readBody(req)
   if (current.hang) return
@@ -64,6 +59,21 @@ const hook = http.createServer(async (req, res) => {
   call.respondedAt = Date.now()
   res.writeHead(answer.status, { 'content-type': 'application/json' })
   res.end(answer.body)
+}
+
+const hook = http.createServer((req, res) => {
+  const call = { receivedAt: Date.now(), respondedAt: null, closedAt: null, status: null }
+  calls.push(call)
+  // クライアント（Hydra）が答えを待たずに切ったら記録する。答えた後の close は数えない
+  res.on('close', () => {
+    if (call.respondedAt === null) call.closedAt = Date.now()
+  })
+  answerHook(req, res, call).catch(() => {
+    call.status = 502
+    call.respondedAt = Date.now()
+    if (!res.headersSent) res.writeHead(502)
+    res.end()
+  })
 })
 
 const control = http.createServer((req, res) => {
@@ -74,9 +84,19 @@ const control = http.createServer((req, res) => {
   }
   if (url.pathname === '/mode') {
     const status = url.searchParams.get('status')
+    const delayMs = Number(url.searchParams.get('delay_ms') ?? 0)
+    const valid =
+      (status === null ||
+        (/^\d{3}$/.test(status) && Number(status) >= 100 && Number(status) <= 599)) &&
+      Number.isInteger(delayMs) &&
+      delayMs >= 0
+    if (!valid) {
+      res.writeHead(400)
+      return res.end()
+    }
     mode = {
       status: status === null ? null : Number(status),
-      delayMs: Number(url.searchParams.get('delay_ms') ?? 0),
+      delayMs,
       hang: url.searchParams.get('hang') === '1',
     }
     return reply(mode)

@@ -12,17 +12,33 @@ set -eu
 here=$(cd "$(dirname "$0")" && pwd)
 root=$(cd "$here/../../.." && pwd)
 
-if [ -z "${COMPOSE_PROJECT_NAME:-}" ] && [ -f "$root/.env" ]; then
-  COMPOSE_PROJECT_NAME=$(sed -n 's/^COMPOSE_PROJECT_NAME=//p' "$root/.env")
-fi
-project=${COMPOSE_PROJECT_NAME:-}
+fail() {
+  echo "$1" >&2
+  exit 1
+}
+
+# 操作する compose と HTTP の宛先は、worktree の .env を正とする。
+# シェルに別の worktree の値が残っていると、docker の操作と HTTP の宛先が別の compose に向くので、違えば止める
+[ -f "$root/.env" ] || fail "worktree の .env が無い。wt で作った worktree で流す"
+env_value() { sed -n "s/^$1=//p" "$root/.env" | tr -d '\r'; }
+
+project=$(env_value COMPOSE_PROJECT_NAME)
 case $project in
-  '' | buddy)
-    echo "worktree の .env の COMPOSE_PROJECT_NAME で、main の checkout（buddy）以外の compose を指す" >&2
-    exit 1
-    ;;
+  '' | buddy | *[!a-z0-9_-]*) fail ".env の COMPOSE_PROJECT_NAME が、main の checkout（buddy）以外の compose の名前でない: '$project'" ;;
 esac
-export COMPOSE_PROJECT_NAME="$project"
+for name in COMPOSE_PROJECT_NAME E2E_COMPOSE_PROJECT; do
+  value=$(printenv "$name" || true)
+  [ -z "$value" ] || [ "$value" = "$project" ] || fail "シェルの ${name}（${value}）が .env の COMPOSE_PROJECT_NAME（${project}）と違う"
+done
+for name in E2E_BASE_URL E2E_HYDRA_URL E2E_SCHEDULE_URL; do
+  value=$(printenv "$name" || env_value "$name")
+  case $value in
+    '' | *://*.buddy.localhost | *://*.buddy.localhost/* | *://*.buddy.localhost:*)
+      fail "$name が無いか、main の checkout の compose を指す: '$value'"
+      ;;
+  esac
+done
+export COMPOSE_PROJECT_NAME="$project" E2E_COMPOSE_PROJECT="$project"
 
 quick=false
 keep=false
@@ -33,8 +49,11 @@ for arg in "$@"; do
   esac
 done
 
-# 入れた故障を戻す。測定の afterEach が戻せなかったとき（中断、失敗）のためで、戻すものが無くても続ける
+# 入れた故障を戻す。測定の afterEach が戻せなかったとき（中断、失敗）のためで、戻すものが無くても続ける。
+# compose を戻せなかったときは、測定が通っていても失敗で終える
 restore() {
+  rc=$?
+  trap '' INT TERM
   set +e
   pg="$project-postgres-1"
   docker exec "$pg" psql -U buddy -d buddy -Atc "ALTER DATABASE broker ALLOW_CONNECTIONS true" >/dev/null 2>&1
@@ -48,21 +67,29 @@ restore() {
       exited | created) docker start "$c" >/dev/null ;;
     esac
   done
+  # --keep ではスタブを作り直さないので、答え方を素通しに戻す
+  docker exec "$project-hook-stub-1" wget -qO- http://127.0.0.1:9000/mode >/dev/null 2>&1
   cd "$root"
   if [ "$keep" = true ]; then
     portless compose -p "$project" -f compose.yml -f packages/e2e/faults/compose.faults.yml up -d --wait
   else
     portless compose -p "$project" up -d --wait --remove-orphans
   fi
+  if [ $? -ne 0 ]; then
+    echo "compose を戻せなかった。portless compose -p $project up -d --wait --remove-orphans を流し直す" >&2
+    [ "$rc" -ne 0 ] || rc=1
+  fi
+  exit "$rc"
 }
 
 echo "Docker のメモリ（VM は 4GB。足りなければ、ほかの compose を止めてから流す）:"
 docker stats --no-stream --format '  {{.Name}} {{.MemUsage}}'
 
-cd "$root"
-portless compose -p "$project" -f compose.yml -f packages/e2e/faults/compose.faults.yml up -d --build --wait
+# 起動の途中で失敗しても、スタブを外した compose に戻す
 trap restore EXIT
 trap 'exit 130' INT TERM
+cd "$root"
+portless compose -p "$project" -f compose.yml -f packages/e2e/faults/compose.faults.yml up -d --build --wait
 
 FAULTS_RUN_ID=$(date +%Y-%m-%dT%H-%M-%S)
 export FAULTS_RUN_ID

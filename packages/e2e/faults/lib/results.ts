@@ -3,10 +3,12 @@ import { appendFileSync, mkdirSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
+import type { CallResult } from './tokens'
+
 const RESULTS_DIR = fileURLToPath(new URL('../results', import.meta.url))
 
 /** 1 回の実行の結果のファイル。run.sh が FAULTS_RUN_ID に実行の時刻を渡す。 */
-export const RESULTS_FILE = path.join(
+const RESULTS_FILE = path.join(
   RESULTS_DIR,
   `${process.env.FAULTS_RUN_ID ?? new Date().toISOString().replaceAll(':', '-')}.md`,
 )
@@ -32,12 +34,7 @@ export const report = (title: string, rows: Row[]) => {
 }
 
 /** 呼び出しの結果を、表のセルの文にする。 */
-export const describeCall = (r: {
-  status: number | null
-  error?: string
-  seconds: number
-  failure?: string
-}) =>
+export const formatCall = (r: CallResult) =>
   r.status === null
     ? `答えが無いまま切れた（${r.seconds} 秒、${r.failure ?? ''}）`
     : `${r.status}${r.error ? ` \`${r.error}\`` : ''}（${r.seconds} 秒）`
