@@ -14,6 +14,8 @@ uv = "0.13"
 "aqua:k1LoW/tbls" = "1.96.1"
 # gh はエビデンスの動画を pull request と issue に添付する（--attach は 2.99 以降）
 "aqua:cli/cli" = "2.102.1"
+# k6 は web の負荷の検証の筋書きを流す（#1040）
+"aqua:grafana/k6" = "2.3.0"
 # portless はローカル環境の compose を、ホスト名の URL で出す（ADR-0036）
 "npm:portless" = "0.16.0"
 
