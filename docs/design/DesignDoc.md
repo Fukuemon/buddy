@@ -178,7 +178,7 @@ PRD の 4 つの業務の領域は、次のコンテナが持つ。
 | ブラウザ | Hydra とブローカー | ログインとログアウトのリダイレクトでつなぐ | [ID ブローカーの Design Doc のログイン](https://github.com/Fukuemon/buddy/blob/develop/services/broker/DesignDoc.md#ログイン)、[ID ブローカーの Design Doc のログアウト](https://github.com/Fukuemon/buddy/blob/develop/services/broker/DesignDoc.md#ログアウト) |
 | web | Hydra | 認可コードフローでトークンを取得し、更新する | - |
 | ブローカー | Hydra | Hydra の admin API で、ログインと同意を accept か reject し、ログアウトを accept する | - |
-| ブローカー | 上流の IdP | 認可コードフローで ID token を取り、署名、`iss`、`aud`、`nonce` を確認する | - |
+| ブローカー | 上流の IdP | 認可コードフローで ID token を取り、署名、`iss`、`aud`、`nonce` を確認する。許すドメインを設定した事業所では `hd` も確認する | [ID ブローカーの Design Doc の Google の hd の確認](https://github.com/Fukuemon/buddy/blob/develop/services/broker/DesignDoc.md#google-の-hd-の確認) |
 | 予定の API | ブローカー | 職員の登録、休職、復職、退職で、職員の管理の権限を確認してから、ブローカーの内部の API を呼ぶ | [ID ブローカーの Design Doc の職員の登録、休職、復職、退職](https://github.com/Fukuemon/buddy/blob/develop/services/broker/DesignDoc.md#職員の登録休職復職退職) |
 | Hydra | ブローカー | トークンを発行するたびに、`oauth2.token_hook` でブローカーを呼ぶ | [ID ブローカーの Design Doc のトークンの発行の確認](https://github.com/Fukuemon/buddy/blob/develop/services/broker/DesignDoc.md#トークンの発行の確認) |
 | web | 予定の API、照合の API | `Authorization` に access token を Bearer で付ける | [予定の API の openapi.yaml](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/openapi.yaml)、[照合の API の openapi.yaml](https://github.com/Fukuemon/buddy/blob/develop/services/receipt/openapi.yaml) |
