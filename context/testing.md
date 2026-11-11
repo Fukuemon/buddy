@@ -42,7 +42,7 @@ status: stable
 - `packages/ui` のテストは、Playwright の chromium が要る（`pnpm --filter @buddy/ui exec playwright install chromium`）。
 - E2E は、ルートの compose の全体（ポートは [CONTRIBUTING.md](../CONTRIBUTING.md) の Running Locally）と、Playwright の chromium が要る。
 - web の負荷の検証は、mise で入れた k6 と、`compose/load.yml` を重ねた compose の全体が要る。
-  - ブローカーは、送信元の IP アドレスごとにログインの回数を数える。負荷の回だけ `BROKER_CLIENT_IP_HEADER=X-Load-Client-IP` で起動し、k6 に `LOAD_CLIENT_IP_HEADER=X-Load-Client-IP` を渡す。渡さないと、21 人目からログインが 429 で止まる。
+  - ブローカーは、送信元の IP アドレスごとにログインの回数を数える。負荷の回だけ `BROKER_CLIENT_IP_HEADER=X-Load-Client-IP` で起動し、k6 に `LOAD_CLIENT_IP_HEADER=X-Load-Client-IP` を渡す。渡さないと、間を空けずにログインしたときに 21 人目から 429 で止まる。
 - 照合の互換のテストの期待値を作り直すときだけ、元の Python の実装のチェックアウトと uv が要る（`services/receipt/tools/parity/README.md`）。
 
 ## Mocking and Test Data
