@@ -70,7 +70,7 @@ type CutoverSkip struct {
 	Revision           string
 }
 
-// CutoverCalendar は、移行の状況のうち、結び付けたカレンダー 1 つの、最後 の移行の取り込みと同期の状況である。
+// CutoverCalendar は、移行の状況のうち、結び付けたカレンダー 1 つの、最後の移行の取り込みと同期の状況である。
 type CutoverCalendar struct {
 	Sync scheduleview.CalendarSync
 	// LastImport は、この移行で最後に成功した取り込みで、取り込んでいなければ nil である。

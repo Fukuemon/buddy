@@ -292,7 +292,7 @@ test.describe('予定の管理を buddy に移す', () => {
       const preview = page.getByTestId('calendar-import-result-preview')
       await check(
         page,
-        '前 の移行で取り込んだ予定は残っておらず、取り込み済みの件数が出ずに、全てを取り込む件数に出る',
+        '前の移行で取り込んだ予定は残っておらず、取り込み済みの件数が出ずに、全てを取り込む件数に出る',
         async () => {
           await expect(preview.getByTestId('calendar-import-count-import')).toBeVisible()
           await expect(preview.getByTestId('calendar-import-count-already_imported')).toHaveCount(0)

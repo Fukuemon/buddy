@@ -79,7 +79,7 @@ test.describe('予定の管理を buddy に移す', () => {
     await expect(page.getByTestId('schedule-calendar-google-primary')).toBeVisible()
     await expect(page.getByTestId('schedule-calendar-cutover')).toHaveCount(0)
 
-    // 始め直すと、前 の移行で取り込んだ予定は残っていないので、取り込み済みに数えずに、全てを取り込む予定に数える
+    // 始め直すと、前の移行で取り込んだ予定は残っていないので、取り込み済みに数えずに、全てを取り込む予定に数える
     await openNotStarted(page)
     await startCutover(page)
     const preview = await previewIshida(page)
