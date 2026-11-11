@@ -72,7 +72,7 @@ web のセッションの保存先を、Valkey のほかに PostgreSQL からも
   - セッションの読み取りの p95 が 10 ms 以下
   - 接続の数が、DB の接続の数の上限の 80% 以下
   - DB の CPU が 50% 以下
-- ローカルの compose の PostgreSQL に CPU、メモリ、接続の数の上限を付けて流す。検証環境ができたら、同じスクリプト（`apps/web/scripts/session-load.ts`）で流し直す。
+- ローカルの compose の PostgreSQL に CPU、メモリ、接続の数の上限を付けて流す。後から、k6 のようなツールで、ローカルと検証環境で流し直す（#1040）。2026-11-11 に利用者が決めた。
 - 条件と結果は、[#1032 の負荷の検証の結果](../verification/1032-session-store-load/README.md) にある。
 
 ## Considered Options
