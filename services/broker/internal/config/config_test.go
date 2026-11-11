@@ -48,6 +48,7 @@ func TestLoad(t *testing.T) {
 	want := config.Config{
 		Port:                         "8080",
 		InternalPort:                 "9090",
+		ListenTarget:                 config.ListenBoth,
 		LogLevel:                     slog.LevelDebug,
 		DB:                           config.DB{Host: "localhost", Port: "5432", User: "broker", Password: "secret", Name: "broker"},
 		HydraAdminURL:                "http://hydra:4445",
@@ -77,18 +78,44 @@ func TestLoadDefaults(t *testing.T) {
 	if !slices.Equal(c.AutoConsentClients, []string{"web"}) || c.ClientIPHeader != "" {
 		t.Errorf("AutoConsentClients = %v, ClientIPHeader = %q", c.AutoConsentClients, c.ClientIPHeader)
 	}
+	if c.ListenTarget != config.ListenBoth {
+		t.Errorf("ListenTarget = %q, want both", c.ListenTarget)
+	}
 	if c.InternalPort != "8081" || !slices.Equal(c.InternalAPIClients, []string{"schedule"}) || !slices.Equal(c.InternalAPIOnboardingClients, []string{"schedule-ops"}) {
 		t.Errorf("InternalPort = %q, InternalAPIClients = %v, InternalAPIOnboardingClients = %v", c.InternalPort, c.InternalAPIClients, c.InternalAPIOnboardingClients)
 	}
 }
 
 func TestLoadDB(t *testing.T) {
-	db, err := config.LoadDB(env(map[string]string{"DB_HOST": "db", "DB_USER": "broker", "DB_PASSWORD": "secret", "DB_NAME": "broker"}))
+	// マイグレーションは INTERNAL_PORT を使わないので、値を確認しない
+	db, err := config.LoadDB(env(map[string]string{"INTERNAL_PORT": "x", "DB_HOST": "db", "DB_USER": "broker", "DB_PASSWORD": "secret", "DB_NAME": "broker"}))
 	if err != nil {
 		t.Fatal(err)
 	}
 	if db != (config.DB{Host: "db", Port: "5432", User: "broker", Password: "secret", Name: "broker"}) {
 		t.Errorf("got %+v", db)
+	}
+}
+
+// public と internal は INTERNAL_PORT を使わないので、PORT と同じ値や数でない値でも起動する。
+// Cloud Run が PORT に入れる値が、使わない INTERNAL_PORT のデフォルトと重なっても拒まない。
+func TestLoadSingleTarget(t *testing.T) {
+	for _, target := range []string{"public", "internal"} {
+		for _, internalPort := range []string{"", "8081", "x"} {
+			t.Run(target+"/INTERNAL_PORT="+internalPort, func(t *testing.T) {
+				m := baseEnv()
+				m["LISTEN_TARGET"] = target
+				m["PORT"] = "8081"
+				m["INTERNAL_PORT"] = internalPort
+				c, err := config.Load(env(m))
+				if err != nil {
+					t.Fatal(err)
+				}
+				if c.ListenTarget != config.ListenTarget(target) || c.Port != "8081" {
+					t.Errorf("ListenTarget = %q, Port = %q", c.ListenTarget, c.Port)
+				}
+			})
+		}
 	}
 }
 
@@ -103,6 +130,7 @@ func TestLoadErrors(t *testing.T) {
 		{"ポートが数でない", map[string]string{"PORT": "http"}, "ポート"},
 		{"内部のポートが数でない", map[string]string{"INTERNAL_PORT": "x"}, "ポート"},
 		{"内部のポートが画面のポートと同じ", map[string]string{"PORT": "8081"}, "INTERNAL_PORT"},
+		{"LISTEN_TARGET が不正", map[string]string{"LISTEN_TARGET": "admin"}, "LISTEN_TARGET"},
 		{"DB のポートが範囲の外", map[string]string{"DB_PORT": "70000"}, "ポート"},
 		{"HYDRA_ADMIN_URL が URL でない", map[string]string{"HYDRA_ADMIN_URL": "hydra:4445"}, "HYDRA_ADMIN_URL"},
 		{"HYDRA_ISSUER が URL でない", map[string]string{"HYDRA_ISSUER": "hydra"}, "HYDRA_ISSUER"},

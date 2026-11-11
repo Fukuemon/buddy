@@ -20,11 +20,26 @@ type DB struct {
 	Name     string
 }
 
+// ListenTarget は、ブローカーが待ち受ける対象である。
+type ListenTarget string
+
+const (
+	// ListenBoth は、ログインの画面を Port で、内部の API と token_hook を InternalPort で待ち受ける。
+	ListenBoth ListenTarget = "both"
+	// ListenPublic は、Port でログインの画面だけを待ち受け、InternalPort では待ち受けない。
+	ListenPublic ListenTarget = "public"
+	// ListenInternal は、Port で内部の API と token_hook だけを待ち受け、InternalPort では待ち受けない。
+	ListenInternal ListenTarget = "internal"
+)
+
 // Config は、ブローカーとマイグレーションの設定である。
 type Config struct {
 	Port string
 	// InternalPort は、内部の API と token_hook を待ち受けるポートである。ログインの画面の Port と分け、ブラウザに開かない。
+	// ListenTarget が ListenBoth のときだけ使う。
 	InternalPort string
+	// ListenTarget は、待ち受ける対象である。公開と内部を別のサービスで動かすときに、ListenPublic か ListenInternal にする。
+	ListenTarget ListenTarget
 	LogLevel     slog.Level
 	DB           DB
 	// HydraAdminURL は、ログインと同意の accept と reject、セッションの取り消しに呼ぶ Hydra の admin API の URL である。
@@ -63,8 +78,12 @@ type Config struct {
 // UPSTREAM_IDPS_FILE、UPSTREAM_IDP_CLIENT_SECRETS_FILE、PUBLIC_URL、TOKEN_HOOK_KEY、LOGIN_COOKIE_KEYS は必須で、欠けているときは欠けた名前を並べたエラーを返す。
 //
 // 読む環境変数とデフォルト値:
-//   - PORT: ログインと同意の画面とヘルスチェックの待ち受けのポート。デフォルトは 8080
-//   - INTERNAL_PORT: 内部の API と token_hook とヘルスチェックの待ち受けのポート。PORT と違う値にする。デフォルトは 8081
+//   - LISTEN_TARGET: 待ち受ける対象。both、public、internal。デフォルトは both
+//     both は、PORT でログインの画面を、INTERNAL_PORT で内部の API と token_hook を待ち受ける。
+//     public は PORT でログインの画面だけを、internal は PORT で内部の API と token_hook だけを待ち受け、INTERNAL_PORT を使わず、値も確認しない
+//   - PORT: 待ち受けのポート。ヘルスチェックも受ける。デフォルトは 8080
+//   - INTERNAL_PORT: LISTEN_TARGET が both のときの、内部の API と token_hook とヘルスチェックの待ち受けのポート。PORT と違う値にする。
+//     デフォルトは 8081
 //   - LOG_LEVEL: debug、info、warn、error。デフォルトは info
 //   - DB_HOST: デフォルトは localhost
 //   - DB_PORT: デフォルトは 5432
@@ -110,6 +129,7 @@ func load(getenv func(string) string, includesBroker bool) (Config, error) {
 	c := Config{
 		Port:         get("PORT", "8080"),
 		InternalPort: get("INTERNAL_PORT", "8081"),
+		ListenTarget: ListenTarget(get("LISTEN_TARGET", string(ListenBoth))),
 		DB: DB{
 			Host:     get("DB_HOST", "localhost"),
 			Port:     get("DB_PORT", "5432"),
@@ -144,13 +164,24 @@ func load(getenv func(string) string, includesBroker bool) (Config, error) {
 	if len(missingNames) > 0 {
 		return Config{}, fmt.Errorf("環境変数 %s が必要である", strings.Join(missingNames, "、"))
 	}
-	for _, p := range []string{c.Port, c.InternalPort, c.DB.Port} {
+	ports := []string{c.Port, c.DB.Port}
+	if includesBroker {
+		switch c.ListenTarget {
+		case ListenBoth:
+			// 内部のポートは both のときだけ使うので、ほかの対象では値を確認しない
+			ports = append(ports, c.InternalPort)
+		case ListenPublic, ListenInternal:
+		default:
+			return Config{}, fmt.Errorf("LISTEN_TARGET %q は both、public、internal のいずれかにする", c.ListenTarget)
+		}
+	}
+	for _, p := range ports {
 		if n, err := strconv.Atoi(p); err != nil || n < 1 || n > 65535 {
 			return Config{}, fmt.Errorf("ポート %q は 1 から 65535 の数にする", p)
 		}
 	}
 	if includesBroker {
-		if c.Port == c.InternalPort {
+		if c.ListenTarget == ListenBoth && c.Port == c.InternalPort {
 			return Config{}, fmt.Errorf("INTERNAL_PORT %q は PORT と違う値にする", c.InternalPort)
 		}
 		for _, id := range c.InternalAPIOnboardingClients {
