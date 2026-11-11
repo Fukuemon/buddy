@@ -31,12 +31,15 @@ for name in COMPOSE_PROJECT_NAME E2E_COMPOSE_PROJECT; do
   [ -z "$value" ] || [ "$value" = "$project" ] || fail "シェルの ${name}（${value}）が .env の COMPOSE_PROJECT_NAME（${project}）と違う"
 done
 for name in E2E_BASE_URL E2E_HYDRA_URL E2E_SCHEDULE_URL; do
-  value=$(printenv "$name" || env_value "$name")
+  value=$(env_value "$name")
   case $value in
     '' | *://*.buddy.localhost | *://*.buddy.localhost/* | *://*.buddy.localhost:*)
-      fail "$name が無いか、main の checkout の compose を指す: '$value'"
+      fail ".env の ${name} が無いか、main の checkout の compose を指す: '${value}'"
       ;;
   esac
+  # tests/fixtures/env.ts はシェルの値を .env より優先するので、別の worktree の URL が残っていれば止める
+  shell=$(printenv "$name" || true)
+  [ -z "$shell" ] || [ "$shell" = "$value" ] || fail "シェルの ${name}（${shell}）が .env の値（${value}）と違う"
 done
 export COMPOSE_PROJECT_NAME="$project" E2E_COMPOSE_PROJECT="$project"
 
