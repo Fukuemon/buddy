@@ -4,9 +4,12 @@ package upstream
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/url"
 	"os"
+	"regexp"
+	"slices"
 	"strings"
 )
 
@@ -19,6 +22,9 @@ type IdP struct {
 	// ClientID と ClientSecret は、ブローカーを上流の IdP の RP として登録したときの値である。
 	ClientID     string
 	ClientSecret string
+	// AllowedHostedDomains は、ID token の hd に許す Google Workspace のドメインで、小文字にそろえてある。
+	// 空なら hd を確認しない。
+	AllowedHostedDomains []string
 }
 
 // IdPs は、組織の ID から上流の IdP を引く。
@@ -34,6 +40,8 @@ type entry struct {
 	OrgID    string `json:"org_id"`
 	Issuer   string `json:"issuer"`
 	ClientID string `json:"client_id"`
+	// AllowedHostedDomains は、キーを省いたときと、null や空の配列を書いたときを分けるため、読まずに受ける。
+	AllowedHostedDomains json.RawMessage `json:"allowed_hosted_domains"`
 }
 
 // Load は、上流の IdP の設定のファイル idpsPath と、client secret のファイル secretsPath を読む。
@@ -46,6 +54,9 @@ type entry struct {
 //   - issuer が http か https の URL でない
 //   - org_id が重なっている
 //   - 上流の IdP の client secret が無いか空である、または上流の IdP の設定に無い組織の client secret がある
+//   - allowed_hosted_domains が null か空の配列であるか、文字列の配列でないか、空の値、重なる値、ドメインの形でない値がある
+//
+// allowed_hosted_domains は省いてよい。省いた事業所では、ID token の hd を確認しない。
 //
 // エラーの文には、client secret の値を出さない。
 func Load(idpsPath, secretsPath string) (IdPs, error) {
@@ -81,7 +92,11 @@ func Load(idpsPath, secretsPath string) (IdPs, error) {
 		if secret == "" {
 			return nil, fmt.Errorf("上流の IdP の client secret のファイル %s に org_id %s の値が無い", secretsPath, org)
 		}
-		out[org] = IdP{OrgID: org, Issuer: issuer, ClientID: clientID, ClientSecret: secret}
+		domains, err := hostedDomains(e.AllowedHostedDomains)
+		if err != nil {
+			return nil, fmt.Errorf("上流の IdP の設定 %s の org_id %s の allowed_hosted_domains %w", idpsPath, org, err)
+		}
+		out[org] = IdP{OrgID: org, Issuer: issuer, ClientID: clientID, ClientSecret: secret, AllowedHostedDomains: domains}
 	}
 	for org := range secrets {
 		if _, ok := out[org]; !ok {
@@ -107,6 +122,40 @@ func decode(path string, v any) error {
 		return fmt.Errorf("JSON の値の後に余分な値がある")
 	}
 	return nil
+}
+
+// domainLabels は、ドットで区切ったラベルが 2 つ以上あるドメインの名前の形である。ラベルは英小文字、数字、ハイフンで、
+// ハイフンで始まらず終わらない。最後のラベルは英字で始まり、IP アドレスを通さない。
+var domainLabels = regexp.MustCompile(`^([a-z0-9]([a-z0-9-]*[a-z0-9])?\.)+[a-z]([a-z0-9-]*[a-z0-9])?$`)
+
+// hostedDomains は、allowed_hosted_domains の値を、前後の空白を除いて小文字にそろえる。キーを省いたときは nil を返す。
+// null と空の配列は、確認を外すつもりの書き間違いと区別できないので、エラーにする。
+func hostedDomains(msg json.RawMessage) ([]string, error) {
+	if msg == nil {
+		return nil, nil
+	}
+	var raw []string
+	// null は、エラーにならずに nil を読む
+	if err := json.Unmarshal(msg, &raw); err != nil || raw == nil {
+		return nil, errors.New("は文字列の配列にする")
+	}
+	if len(raw) == 0 {
+		return nil, errors.New("が空である。確認しないなら、キーを省く")
+	}
+	out := make([]string, 0, len(raw))
+	for i, d := range raw {
+		d = strings.ToLower(strings.TrimSpace(d))
+		switch {
+		case d == "":
+			return nil, fmt.Errorf("の %d 件目が空である", i+1)
+		case !domainLabels.MatchString(d):
+			return nil, fmt.Errorf("の %q はドメインの形でない", raw[i])
+		case slices.Contains(out, d):
+			return nil, fmt.Errorf("の %q が重なっている", d)
+		}
+		out = append(out, d)
+	}
+	return out, nil
 }
 
 func isHTTPURL(s string) bool {

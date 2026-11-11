@@ -1,6 +1,7 @@
 package login_test
 
 import (
+	"bytes"
 	"context"
 	"encoding/base64"
 	"encoding/json"
@@ -631,6 +632,8 @@ func TestCallback(t *testing.T) {
 	tests := []struct {
 		name     string
 		identity upstream.Identity
+		// err は、上流の IdP の Exchange が返すエラーである。
+		err      error
 		linked   staff.UpstreamAccount
 		code     string
 		accepted bool
@@ -681,11 +684,25 @@ func TestCallback(t *testing.T) {
 			code:      "bad-code",
 			rejection: hydra.ServerError,
 		},
+		{
+			name:      "hd が許すドメインと合わなければ、結び付けずに拒む",
+			err:       fmt.Errorf("%w: hd %q", upstream.ErrHostedDomain, "other.example"),
+			code:      "code-1",
+			rejection: hydra.AccountMismatch,
+		},
+		{
+			name:      "hd が許すドメインと合わなければ、結び付け済みの職員も拒む",
+			err:       fmt.Errorf("%w: hd %q", upstream.ErrHostedDomain, ""),
+			linked:    staff.UpstreamAccount{Issuer: issuerA, Subject: "u-aoki"},
+			code:      "code-1",
+			rejection: hydra.AccountMismatch,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			e := newEnv(10)
 			e.upstream.identity = tt.identity
+			e.upstream.err = tt.err
 			aoki := e.staff.members[aokiID]
 			aoki.Upstream = tt.linked
 			e.staff.members[aokiID] = aoki
@@ -840,6 +857,32 @@ func TestRejectFailsShowsOutagePage(t *testing.T) {
 	rec := e.submit("nobody@example.com")
 	if rec.Code != http.StatusBadGateway || !strings.Contains(rec.Body.String(), "時間をおいて、もう一度ログインしてください。") {
 		t.Errorf("code = %d, body = %s", rec.Code, rec.Body)
+	}
+}
+
+// TestCallbackHostedDomainLog は、hd が許すドメインと合わずに拒んだログインのログに、事業所、職員の ID、受け取った hd を書き、
+// メールを書かないことを確認する。
+func TestCallbackHostedDomainLog(t *testing.T) {
+	var buf bytes.Buffer
+	e := newEnvWith(10, func(c *login.Config) { c.Logger = slog.New(slog.NewJSONHandler(&buf, nil)) })
+	e.upstream.identity = upstream.Identity{Issuer: issuerA, Subject: "u-aoki", Email: "aoki-upstream@example.com", EmailVerified: true}
+	e.upstream.err = fmt.Errorf("%w: hd %q", upstream.ErrHostedDomain, "other.example")
+	location(t, e.callback(t, e.submit("aoki@example.com"), "code-1"))
+	var got map[string]any
+	for line := range strings.Lines(buf.String()) {
+		var rec map[string]any
+		if err := json.Unmarshal([]byte(line), &rec); err != nil {
+			t.Fatal(err)
+		}
+		if rec["msg"] == "ログインを拒む" {
+			got = rec
+		}
+	}
+	if got["level"] != "WARN" || got["org_id"] != "org-a" || got["staff_id"] != aokiID || !strings.Contains(fmt.Sprint(got["error"]), `hd "other.example"`) {
+		t.Errorf("ログ = %v, want Warn で org_id、staff_id、hd を書く", got)
+	}
+	if strings.Contains(buf.String(), "aoki@example.com") || strings.Contains(buf.String(), "aoki-upstream@example.com") {
+		t.Errorf("ログにメールを書いた: %s", buf.String())
 	}
 }
 

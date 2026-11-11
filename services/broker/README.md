@@ -28,6 +28,7 @@ Ory Hydra の login and consent app として動くサービス。
 - `UPSTREAM_IDPS_FILE`: 組織の ID と、上流の IdP の issuer と client ID の対応を書いた JSON のパス。
   - 必須。
   - 形は [upstream-idps.example.json](upstream-idps.example.json) にある。
+  - 事業所ごとに `allowed_hosted_domains`（Google Workspace のドメインの配列）を書けば、ID token の `hd` がどれとも合わないログインを拒む。省けば `hd` を確認しない。例: `"allowed_hosted_domains": ["example.com"]`
 - `PUBLIC_URL`: ブラウザが開くブローカーの URL。
   - 必須。
   - ブローカーは、この URL から上流の IdP のコールバックの URL（`<PUBLIC_URL>/login/callback`）を作る。

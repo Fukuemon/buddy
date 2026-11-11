@@ -3,6 +3,7 @@ package upstream_test
 import (
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -32,7 +33,7 @@ func TestLoad(t *testing.T) {
 		t.Fatalf("len = %d, want 2", len(idps))
 	}
 	got, ok := idps.Of("org-a")
-	if want := (upstream.IdP{OrgID: "org-a", Issuer: "https://accounts.example.com", ClientID: "client-a", ClientSecret: "secret-a"}); !ok || got != want {
+	if want := (upstream.IdP{OrgID: "org-a", Issuer: "https://accounts.example.com", ClientID: "client-a", ClientSecret: "secret-a"}); !ok || !reflect.DeepEqual(got, want) {
 		t.Errorf("Of(org-a) = %+v, %v, want %+v", got, ok, want)
 	}
 	if _, ok := idps.Of("org-c"); ok {
@@ -43,11 +44,28 @@ func TestLoad(t *testing.T) {
 	}
 }
 
+// 許すドメインは、前後の空白を除き、小文字にそろえて読む。
+func TestLoadAllowedHostedDomains(t *testing.T) {
+	idps := `[{"org_id": "org-a", "issuer": "https://accounts.google.com", "client_id": "client-a", "allowed_hosted_domains": [" Example.com ", "example.org"]}]`
+	got, err := upstream.Load(write(t, "idps.json", idps), write(t, "secrets.json", `{"org-a": "secret-a"}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if idp, _ := got.Of("org-a"); !reflect.DeepEqual(idp.AllowedHostedDomains, []string{"example.com", "example.org"}) {
+		t.Errorf("AllowedHostedDomains = %q, want [example.com example.org]", idp.AllowedHostedDomains)
+	}
+}
+
 // 開発用の例のファイルが、そのまま読めることを確認する。
 func TestLoadExample(t *testing.T) {
 	if _, err := upstream.Load("../../upstream-idps.example.json", "../../upstream-idp-client-secrets.example.json"); err != nil {
 		t.Fatal(err)
 	}
+}
+
+// domains は、事業所 org-a の allowed_hosted_domains を list（JSON の配列）にした上流の IdP の設定を返す。
+func domains(list string) string {
+	return `[{"org_id": "org-a", "issuer": "https://accounts.google.com", "client_id": "client-a", "allowed_hosted_domains": ` + list + `}]`
 }
 
 func TestLoadErrors(t *testing.T) {
@@ -69,6 +87,15 @@ func TestLoadErrors(t *testing.T) {
 		{"client secret が空", validIdPs, `{"org-a": "secret-a", "org-b": ""}`, "org_id org-b の値が無い"},
 		{"設定に無い組織の client secret がある", validIdPs, `{"org-a": "secret-a", "org-b": "secret-b", "org-c": "secret-c"}`, "org_id org-c が、上流の IdP の設定"},
 		{"client secret のファイルが壊れている", validIdPs, `{"org-a": "secret-a",`, "client secret のファイル"},
+		{"許すドメインが空の配列", domains(`[]`), `{"org-a": "secret-a"}`, "org-a の allowed_hosted_domains が空"},
+		{"許すドメインが null", domains(`null`), `{"org-a": "secret-a"}`, "org-a の allowed_hosted_domains は文字列の配列にする"},
+		{"許すドメインが文字列", domains(`"example.com"`), `{"org-a": "secret-a"}`, "org-a の allowed_hosted_domains は文字列の配列にする"},
+		{"許すドメインが IP アドレス", domains(`["192.0.2.1"]`), `{"org-a": "secret-a"}`, "ドメインの形でない"},
+		{"許すドメインに空の文字列がある", domains(`["example.com", " "]`), `{"org-a": "secret-a"}`, "org-a の allowed_hosted_domains の 2 件目が空"},
+		{"許すドメインが重なる", domains(`["example.com", "EXAMPLE.com"]`), `{"org-a": "secret-a"}`, `"example.com" が重なっている`},
+		{"許すドメインがメール", domains(`["aoki@example.com"]`), `{"org-a": "secret-a"}`, "ドメインの形でない"},
+		{"許すドメインが URL", domains(`["https://example.com"]`), `{"org-a": "secret-a"}`, "ドメインの形でない"},
+		{"許すドメインにドットが無い", domains(`["localhost"]`), `{"org-a": "secret-a"}`, "ドメインの形でない"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
