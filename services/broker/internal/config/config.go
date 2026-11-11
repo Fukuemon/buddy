@@ -80,7 +80,7 @@ type Config struct {
 // 読む環境変数とデフォルト値:
 //   - LISTEN_TARGET: 待ち受ける対象。both、public、internal。デフォルトは both
 //     both は、PORT でログインの画面を、INTERNAL_PORT で内部の API と token_hook を待ち受ける。
-//     public は PORT でログインの画面だけを、internal は PORT で内部の API と token_hook だけを待ち受け、INTERNAL_PORT を読まない
+//     public は PORT でログインの画面だけを、internal は PORT で内部の API と token_hook だけを待ち受け、INTERNAL_PORT を使わず、値も確認しない
 //   - PORT: 待ち受けのポート。ヘルスチェックも受ける。デフォルトは 8080
 //   - INTERNAL_PORT: LISTEN_TARGET が both のときの、内部の API と token_hook とヘルスチェックの待ち受けのポート。PORT と違う値にする。
 //     デフォルトは 8081

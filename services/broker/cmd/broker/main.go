@@ -133,7 +133,7 @@ func run(getenv func(string) string) error {
 	errCh := make(chan error, len(servers))
 	for _, srv := range servers {
 		go func() {
-			logger.Info("待ち受けを始める", "addr", srv.Addr)
+			logger.Info("待ち受けを始める", "addr", srv.Addr, "listen_target", cfg.ListenTarget)
 			errCh <- srv.ListenAndServe()
 		}()
 	}
@@ -182,6 +182,7 @@ func listeners(cfg config.Config, logger *slog.Logger, ready func(context.Contex
 	case config.ListenInternal:
 		return []listener{{cfg.Port, httpapi.NewHandler(internalOnly)}}
 	default:
+		// config.Load が both、public、internal 以外の値を拒むので、ここに来るのは both である
 		return []listener{{cfg.Port, httpapi.NewHandler(public)}, {cfg.InternalPort, httpapi.NewHandler(internalOnly)}}
 	}
 }

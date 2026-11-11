@@ -16,7 +16,7 @@ Ory Hydra の login and consent app として動くサービス。
   - デフォルトは `both`。`PORT` でログイン、同意、ログアウトの画面を、`INTERNAL_PORT` で内部の API と `oauth2.token_hook` を待ち受ける。
   - `public` は、`PORT` でログイン、同意、ログアウトの画面だけを待ち受け、`/internal/` の下に 404 を返す。
   - `internal` は、`PORT` で内部の API と `oauth2.token_hook` だけを待ち受け、ログイン、同意、ログアウトの画面のパスに 404 を返す。
-  - `public` と `internal` は `INTERNAL_PORT` を読まない。公開と内部を、同じイメージの別のサービスとして動かすときに使う。
+  - `public` と `internal` は `INTERNAL_PORT` を使わず、値も確認しない。公開と内部を、同じイメージの別のサービスとして動かすときに使う。
 - `PORT`: 待ち受けるポート。ヘルスチェックも受ける。
   - デフォルトは `8080`。
 - `INTERNAL_PORT`: `LISTEN_TARGET` が `both` のときに、内部の API と `oauth2.token_hook` とヘルスチェックを待ち受けるポート。

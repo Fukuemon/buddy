@@ -18,9 +18,9 @@ func TestListeners(t *testing.T) {
 	)
 	login := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { w.WriteHeader(loginCode) })
 	internal := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { w.WriteHeader(internalCode) })
-	paths := []string{"/login", "/login/callback", "/consent", "/logout", "/internal/token-hook", "/internal/staff", "/readyz"}
-	publicCodes := []int{loginCode, loginCode, loginCode, loginCode, http.StatusNotFound, http.StatusNotFound, http.StatusOK}
-	internalCodes := []int{http.StatusNotFound, http.StatusNotFound, http.StatusNotFound, http.StatusNotFound, internalCode, internalCode, http.StatusOK}
+	paths := []string{"/login", "/login/callback", "/consent", "/logout", "/internal/token-hook", "/internal/staff", "/healthz", "/readyz"}
+	publicCodes := []int{loginCode, loginCode, loginCode, loginCode, http.StatusNotFound, http.StatusNotFound, http.StatusOK, http.StatusOK}
+	internalCodes := []int{http.StatusNotFound, http.StatusNotFound, http.StatusNotFound, http.StatusNotFound, internalCode, internalCode, http.StatusOK, http.StatusOK}
 	tests := []struct {
 		name   string
 		target config.ListenTarget

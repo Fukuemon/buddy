@@ -87,7 +87,8 @@ func TestLoadDefaults(t *testing.T) {
 }
 
 func TestLoadDB(t *testing.T) {
-	db, err := config.LoadDB(env(map[string]string{"DB_HOST": "db", "DB_USER": "broker", "DB_PASSWORD": "secret", "DB_NAME": "broker"}))
+	// マイグレーションは INTERNAL_PORT を使わないので、値を確認しない
+	db, err := config.LoadDB(env(map[string]string{"INTERNAL_PORT": "x", "DB_HOST": "db", "DB_USER": "broker", "DB_PASSWORD": "secret", "DB_NAME": "broker"}))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -101,18 +102,19 @@ func TestLoadDB(t *testing.T) {
 func TestLoadSingleTarget(t *testing.T) {
 	for _, target := range []string{"public", "internal"} {
 		for _, internalPort := range []string{"", "8081", "x"} {
-			m := baseEnv()
-			m["LISTEN_TARGET"] = target
-			m["PORT"] = "8081"
-			m["INTERNAL_PORT"] = internalPort
-			c, err := config.Load(env(m))
-			if err != nil {
-				t.Errorf("%s で INTERNAL_PORT が %q: %v", target, internalPort, err)
-				continue
-			}
-			if c.ListenTarget != config.ListenTarget(target) || c.Port != "8081" {
-				t.Errorf("ListenTarget = %q, Port = %q", c.ListenTarget, c.Port)
-			}
+			t.Run(target+"/INTERNAL_PORT="+internalPort, func(t *testing.T) {
+				m := baseEnv()
+				m["LISTEN_TARGET"] = target
+				m["PORT"] = "8081"
+				m["INTERNAL_PORT"] = internalPort
+				c, err := config.Load(env(m))
+				if err != nil {
+					t.Fatal(err)
+				}
+				if c.ListenTarget != config.ListenTarget(target) || c.Port != "8081" {
+					t.Errorf("ListenTarget = %q, Port = %q", c.ListenTarget, c.Port)
+				}
+			})
 		}
 	}
 }
