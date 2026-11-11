@@ -14,8 +14,6 @@ E2E のテストのディレクトリは、`context/project.yml` の `e2e.dir`�
 
 - テストのツールは Playwright（`@playwright/test`）である。
 - エビデンスの録画と字幕は、Playwright の録画と、スキル playwright-capture から写した撮影の config と `caption.ts` で撮る（[エビデンス](evidence.md)）。
-- npm の `@fukuemon/e2e-kit` 0.2.1 は、移す前のエビデンスの spec と薄い層 `tests/fixtures/evidence.ts` のためだけに、`packages/e2e` の開発の依存に残してある。
-  - 新しいコードから kit を import しない。エビデンスの spec を移し終えたら、kit を消す（#1008）。
 - スキル write-e2e-test の一般の語は、Playwright の次の API に当たる。
 
 | スキルの語 | Playwright の API |

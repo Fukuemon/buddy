@@ -5,7 +5,6 @@ import { apiClient, testRequestButton } from '../selectors/apiReference'
 
 /**
  * API の参照のページを開く。ページは fixtures の routeApiReference を張ってから開く。
- * recordPrEvidence の prepare で開くと、録画は、このページの origin の sessionStorage を持ち越して始まる。
  *
  * @param api docs/api/ のページの名前
  */
