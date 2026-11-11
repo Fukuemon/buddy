@@ -259,15 +259,6 @@ test.describe('繰り返しの変更', () => {
           page,
           `Google カレンダーの代わりの calendarpit の管理の画面で、${OKADA.calendarId} の ${third}（開いた回の週から 3 週目の月曜）を開く`,
           async () => {
-            await page.goto(
-              `${CALENDARPIT_URL}/?calendar=${encodeURIComponent(OKADA.calendarId)}&date=${third}`,
-            )
-          },
-        )
-        await check(
-          page,
-          `calendarpit の ${third}（月曜）に「${title}」が出る。calendarpit の Calendar API が返す ${third} から 2 週の回は ${expected.join('、')} で、buddy と同じ`,
-          async () => {
             await expect
               .poll(() =>
                 googleInstanceDates(
@@ -279,6 +270,24 @@ test.describe('繰り返しの変更', () => {
                 ),
               )
               .toEqual(expected)
+            await page.goto(
+              `${CALENDARPIT_URL}/?calendar=${encodeURIComponent(OKADA.calendarId)}&date=${third}`,
+            )
+          },
+        )
+        await check(
+          page,
+          `calendarpit の ${third}（月曜）に「${title}」が出る。calendarpit の Calendar API が返す ${third} から 2 週の回は ${expected.join('、')} で、buddy と同じ`,
+          async () => {
+            expect(
+              await googleInstanceDates(
+                request,
+                OKADA.calendarId,
+                title,
+                fromLastWeekMonday(14),
+                fromLastWeekMonday(28),
+              ),
+            ).toEqual(expected)
             await expect(calendarpitEvent(page, title)).toBeVisible()
           },
         )

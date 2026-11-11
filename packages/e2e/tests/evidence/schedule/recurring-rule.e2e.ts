@@ -139,20 +139,26 @@ test.describe('予定の API', () => {
         { storageState: LOGIN_STATE },
         async (page) => {
           await linkStaffCalendar(page, HAYASHI.id)
-          const token = await issueAccessToken(page.request, LOGIN_EMAIL)
-          const created = await createWeeklyNormalSchedule(
-            page.request,
-            token,
-            STAFF_FORM.facilityId,
-            {
-              staffId: HAYASHI.id,
-              title,
-              date: start,
-            },
-          )
-          expect(created.status()).toBe(201)
-          const { id } = (await created.json()) as { id: string }
-          return { token, id }
+          try {
+            const token = await issueAccessToken(page.request, LOGIN_EMAIL)
+            const created = await createWeeklyNormalSchedule(
+              page.request,
+              token,
+              STAFF_FORM.facilityId,
+              {
+                staffId: HAYASHI.id,
+                title,
+                date: start,
+              },
+            )
+            expect(created.status()).toBe(201)
+            const { id } = (await created.json()) as { id: string }
+            return { token, id }
+          } catch (error) {
+            // 録画の page の finally に入らないので、ここでほかの撮影の前提に戻す
+            await unlinkStaffCalendar(page, HAYASHI.id)
+            throw error
+          }
         },
       )
 

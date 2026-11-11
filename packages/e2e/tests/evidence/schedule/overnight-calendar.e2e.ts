@@ -12,9 +12,9 @@ import { wheel } from '../../widgets/scroll/actions/scroll'
  * 夜勤の予定の開始の日（火曜）と翌日。予定は 22:00 に始まり、翌日の 01:00 に終わる。
  * test ごとに週を分け、ほかの test で作った夜勤と重ならないようにする。
  */
-const WEEK = { start: '2026-11-10', next: '2026-11-11' }
+const WEEK = { start: '2026-11-10' }
 const NEXT_DAY = { start: '2026-11-17', next: '2026-11-18' }
-const DETAIL = { start: '2026-11-24', next: '2026-11-25' }
+const DETAIL = { start: '2026-11-24' }
 
 /** 録画する page を開く前に、青木 陽菜の夜勤の予定を予定の API で作って、予定の ID を返す。 */
 const createOvernight = async (request: APIRequestContext, title: string, date: string) => {

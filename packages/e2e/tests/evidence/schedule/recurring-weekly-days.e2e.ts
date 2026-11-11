@@ -295,19 +295,25 @@ test.describe('予定の API', () => {
       const title = `隔週の訪問 ${Date.now()}`
       await prepareOutsideRecording(browser, { storageState: LOGIN_STATE }, async (page) => {
         await linkStaffCalendar(page, HAYASHI.id)
-        const token = await issueAccessToken(page.request, LOGIN_EMAIL)
-        const created = await createWeeklyNormalSchedule(
-          page.request,
-          token,
-          STAFF_FORM.facilityId,
-          {
-            staffId: HAYASHI.id,
-            title,
-            date: fromNextMonday(0),
-            rule: { days_of_week: [1, 4], interval: 2 },
-          },
-        )
-        expect(created.status()).toBe(201)
+        try {
+          const token = await issueAccessToken(page.request, LOGIN_EMAIL)
+          const created = await createWeeklyNormalSchedule(
+            page.request,
+            token,
+            STAFF_FORM.facilityId,
+            {
+              staffId: HAYASHI.id,
+              title,
+              date: fromNextMonday(0),
+              rule: { days_of_week: [1, 4], interval: 2 },
+            },
+          )
+          expect(created.status()).toBe(201)
+        } catch (error) {
+          // 録画の page の finally に入らないので、ここでほかの撮影の前提に戻す
+          await unlinkStaffCalendar(page, HAYASHI.id)
+          throw error
+        }
       })
 
       const page = await context.newPage()
@@ -344,7 +350,7 @@ test.describe('予定の API', () => {
           page,
           `calendarpit が Calendar API で返す回の日は ${instances.join('、')} である`,
           async () => {
-            expect(instances.length).toBeGreaterThan(0)
+            expect(instances).toEqual([0, 3, 14, 17].map(fromNextMonday))
           },
         )
 
@@ -388,7 +394,7 @@ test.describe('予定の API', () => {
           monday,
         )
         if (!listed.recurring_schedules.some((rs) => rs.title === MIGRATION_TITLE)) {
-          // 改修前の compose で 1 度だけ作り、改修後は同じ DB の行を読む
+          // 同じ DB で流し直したときは、前に作った行を読む
           const created = await createWeeklyNormalSchedule(
             page.request,
             token,
@@ -407,7 +413,7 @@ test.describe('予定の API', () => {
       await openDay(page, HAYASHI.id, fromNextMonday(7))
       await intro(
         page,
-        `マイグレーションの前に作った毎週月曜の繰り返しの予定の回が、マイグレーションの後も同じ日に出る\n前提 改修前の版で、${HAYASHI.name} の ${monday}（月曜）から曜日を省いた毎週の「${MIGRATION_TITLE}」を作り、同じ DB で改修後の版を起動した。${fromNextMonday(7)}（月曜）の日の表示を開いている`,
+        `マイグレーションの前に作った毎週月曜の繰り返しの予定の回が、マイグレーションの後も同じ日に出る\n前提 改修後の版の API で、${HAYASHI.name} の ${monday}（月曜）から曜日を省いた毎週の「${MIGRATION_TITLE}」を作った。${fromNextMonday(7)}（月曜）の日の表示を開いている`,
       )
       await checkShown(page, HAYASHI.id, fromNextMonday(7), MIGRATION_TITLE, true, '月曜')
       await checkDay(page, HAYASHI.id, fromNextMonday(8), MIGRATION_TITLE, false, '火曜')

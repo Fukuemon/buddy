@@ -101,11 +101,12 @@ test.describe('予定の画面の権限の出し分けとエラーの見せ方',
       )
 
       // 開いてから文が出るまでの秒数を判定の字幕に出すので、文が出るまでを操作の中で待つ
-      const started = Date.now()
+      let started = 0
       await step(
         page,
         `存在しない予定の URL（/schedule/${MISSING_SCHEDULE_ID}）を開く`,
         async () => {
+          started = Date.now()
           await page.goto(`/schedule/${MISSING_SCHEDULE_ID}`)
           await expect(scheduleDetailError(page)).toHaveText('予定が見つかりません。')
         },

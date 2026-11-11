@@ -204,9 +204,10 @@ test.describe('繰り返しの変更', () => {
       await step(page, '「繰り返しを変更」の「カスタム…」で、曜日の「木」を押す', () =>
         page.getByTestId('recurring-rule-day-of-week-4').check(),
       )
-      await check(page, '曜日に月曜と木曜を選んでいる', () =>
-        expect(page.getByTestId('recurring-rule-day-of-week-1')).toBeChecked(),
-      )
+      await check(page, '曜日に月曜と木曜を選んでいる', async () => {
+        await expect(page.getByTestId('recurring-rule-day-of-week-1')).toBeChecked()
+        await expect(page.getByTestId('recurring-rule-day-of-week-4')).toBeChecked()
+      })
       await step(page, '「保存」を押す', async () => {
         await page.getByTestId('schedule-recurrence-submit').click()
         await expect(page.getByTestId('schedule-recurrence-modal')).toBeHidden()
@@ -388,15 +389,6 @@ test.describe('繰り返しの変更', () => {
           page,
           `Google カレンダーの代わりの calendarpit の管理の画面で、${OKADA.calendarId} の ${effective}（新しい規則の最初の回）を開く`,
           async () => {
-            await page.goto(
-              `${CALENDARPIT_URL}/?calendar=${encodeURIComponent(OKADA.calendarId)}&date=${effective}`,
-            )
-          },
-        )
-        await check(
-          page,
-          `calendarpit の ${effective}（月曜）に「${title}」が出る。calendarpit の Calendar API が返す ${effective} から 4 週の回は ${expected.join('、')} で、buddy と同じ`,
-          async () => {
             await expect
               .poll(() =>
                 googleInstanceDates(
@@ -408,6 +400,24 @@ test.describe('繰り返しの変更', () => {
                 ),
               )
               .toEqual(expected)
+            await page.goto(
+              `${CALENDARPIT_URL}/?calendar=${encodeURIComponent(OKADA.calendarId)}&date=${effective}`,
+            )
+          },
+        )
+        await check(
+          page,
+          `calendarpit の ${effective}（月曜）に「${title}」が出る。calendarpit の Calendar API が返す ${effective} から 4 週の回は ${expected.join('、')} で、buddy と同じ`,
+          async () => {
+            expect(
+              await googleInstanceDates(
+                request,
+                OKADA.calendarId,
+                title,
+                effective,
+                fromNextMonday(28),
+              ),
+            ).toEqual(expected)
             await expect(calendarpitEvent(page, title)).toBeVisible()
           },
         )

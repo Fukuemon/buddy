@@ -281,6 +281,7 @@ test.describe('予定の編集', () => {
       // 休職の職員には予定を作れないので、復職にして予定を作ってから休職に戻す
       expect((await reinstateStaff(request, token, SUSPENDED_STAFF.id)).status()).toBe(200)
       let created: Awaited<ReturnType<typeof createNormalSchedule>>
+      let left: Awaited<ReturnType<typeof leaveStaff>>
       try {
         created = await createNormalSchedule(request, token, OFFICE_B.facilityId, {
           staffId: SUSPENDED_STAFF.id,
@@ -288,8 +289,10 @@ test.describe('予定の編集', () => {
           date: OFFICE_B.schedule.date,
         })
       } finally {
-        expect((await leaveStaff(request, token, SUSPENDED_STAFF.id)).status()).toBe(200)
+        // 作るのに失敗したときは、そのエラーを優先するので、ここでは確認しない
+        left = await leaveStaff(request, token, SUSPENDED_STAFF.id)
       }
+      expect(left.status()).toBe(200)
       expect(created.status()).toBe(201)
       const scheduleId = ((await created.json()) as { id: string }).id
 
@@ -330,6 +333,7 @@ test.describe('予定の編集', () => {
       })
       // 判定の字幕に、録画に映らない予定の API の予定を出すので、字幕の前に取る
       const saved = await getSchedule(request, token, scheduleId)
+      expect(saved.status()).toBe(200)
       const body = (await saved.json()) as { title: string; staff_id: string }
       await check(
         page,
@@ -341,7 +345,6 @@ test.describe('予定の編集', () => {
           await expect(page.getByTestId('schedule-detail-modal')).toContainText(
             SUSPENDED_STAFF.name,
           )
-          expect(saved.status()).toBe(200)
           expect(body).toMatchObject({ title: changed, staff_id: SUSPENDED_STAFF.id })
         },
       )

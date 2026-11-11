@@ -75,8 +75,10 @@ test.describe('予定のカレンダー', () => {
         ).toBeVisible(),
       )
     })
+  })
 
-    // トークンは録画の外で取る。API の参照のページはログインしない
+  // トークンは録画の外で取る。API の参照のページはログインしない
+  test.describe(`職員の権限による予定の API（${LEADER.staff.name}、チーム B のリーダーのトークン）`, () => {
     test('schedule-permission-api-forbidden チームリーダーが見てよくない職員の予定を API で取得した場合、403 が返ること', async ({
       context,
       request,

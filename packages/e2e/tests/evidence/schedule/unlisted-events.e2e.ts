@@ -127,6 +127,7 @@ test.describe('予定のカレンダー', () => {
           page,
           `終了を読める時刻に戻すと、${dayLabel(date)} の 11:00〜12:00 の格子に「${title}」が出て、件数の通知が消える`,
           async () => {
+            await expect(timedEvent(page, title)).toBeVisible()
             await expect(unlistedNotice(page)).toHaveCount(0)
             await calendarTimeLabel(page, '11:00:00').scrollIntoViewIfNeeded()
           },
