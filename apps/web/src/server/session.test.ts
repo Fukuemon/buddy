@@ -316,6 +316,34 @@ describe('readSession', () => {
     expect(refresh).toHaveBeenCalledTimes(1)
   })
 
+  it('期限の手前で refresh が一時的に失敗したら、続く呼び出しは試し直さず、まだ使える token を返す', async () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const refresh = vi.fn<OidcClient['refresh']>(async () => {
+      throw new Error('ECONNRESET')
+    })
+    const { deps } = setup({ oidc: fakeOidc({ refresh }) })
+    const req = await withSession(
+      { ...VIEWER, accessToken: 'old', refreshToken: 'r', expiresAt: 1_000_000 + 30_000 },
+      deps,
+    )
+    expect((await readSession(req, deps))?.accessToken).toBe('old')
+    expect((await readSession(req, deps))?.accessToken).toBe('old')
+    expect(refresh).toHaveBeenCalledTimes(1)
+    expect(await deps.store.exists('refresh-failed:id-1')).toBe(true)
+  })
+
+  it('refresh が一時的に失敗した後に access token が切れたら、試し直さずに SessionUnavailableError を投げる', async () => {
+    const refresh = vi.fn<OidcClient['refresh']>()
+    const { deps } = setup({ oidc: fakeOidc({ refresh }) })
+    const req = await withSession(
+      { ...VIEWER, accessToken: 'old', refreshToken: 'r', expiresAt: 1_000_000 - 1 },
+      deps,
+    )
+    await deps.store.set('refresh-failed:id-1', true, 10)
+    await expect(readSession(req, deps)).rejects.toBeInstanceOf(SessionUnavailableError)
+    expect(refresh).not.toHaveBeenCalled()
+  })
+
   it('refresh token を拒まれたらセッションを消す', async () => {
     const { deps } = setup({
       oidc: fakeOidc({
@@ -331,6 +359,8 @@ describe('readSession', () => {
     )
     expect(await readSession(req, deps)).toBeUndefined()
     expect(await deps.store.get('session:id-1')).toBeUndefined()
+    // 拒まれたときは、一時的な失敗の印を置かない
+    expect(await deps.store.exists('refresh-failed:id-1')).toBe(false)
     expect(warn).toHaveBeenCalledWith(
       JSON.stringify({ msg: 'session refresh failed', reason: 'rejected', error: 'access_denied' }),
     )

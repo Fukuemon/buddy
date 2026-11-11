@@ -38,12 +38,18 @@ export const SESSION_TTL_SECONDS = 12 * 60 * 60
 const REFRESH_MARGIN_MS = 60 * 1000
 /** 更新の鍵を持つ長さ。Hydra のレスポンスを待つ上限の 2 倍にする。 */
 const REFRESH_LOCK_MS = OIDC_TIMEOUT_SECONDS * 2 * 1000
+/**
+ * refresh が一時的に失敗した後、試し直さない長さ。access token の期限の手前でも、1 回の表示で refresh を 1 度だけにする（ADR-0044）。
+ * 1 回の表示で続く BFF の呼び出しが収まり、障害が直った後の読み直しを長く待たせない長さにする。
+ */
+const REFRESH_FAILED_TTL_SECONDS = 10
 /** ほかのリクエストの更新を待つ間隔。待つのは、鍵が放されるか期限が切れるまでである。 */
 const REFRESH_POLL_MS = 200
 
 /** セッションの ID から、Valkey のキーを作る。 */
 export const sessionKey = (id: string) => `session:${id}`
 const refreshLockKey = (id: string) => `refresh-lock:${id}`
+const refreshFailedKey = (id: string) => `refresh-failed:${id}`
 const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms))
 
 /** Cookie のヘッダーから name の値を取り出す。値を読めなければ undefined を返す。 */
@@ -73,7 +79,7 @@ export const expiresAtOf = (tokens: Tokens, now: number) =>
  *
  * セッションが無いとき、期限が切れて更新できないときは undefined を返す。Hydra が refresh token を拒んだときだけ、
  * セッションを消す。そのほかの失敗では消さず、access token がまだ使えればそれを返し、使えなければ SessionUnavailableError を投げる。
- * 更新は 1 回の呼び出しで 1 度だけ試し、失敗しても試し直さない（ADR-0044）。
+ * 更新は 1 回の呼び出しで 1 度だけ試し、失敗しても試し直さない。一時的に失敗した後の 10 秒は、ほかの呼び出しも試さない（ADR-0044）。
  */
 export const readSession = async (
   request: Request,
@@ -86,6 +92,11 @@ export const readSession = async (
   const now = (deps.now ?? Date.now)()
   if (session.expiresAt === undefined || session.expiresAt - REFRESH_MARGIN_MS > now) return session
   if (session.refreshToken === undefined) return session.expiresAt > now ? session : undefined
+  // 少し前に refresh が一時的に失敗していたら試し直さず、失敗したときと同じに扱う
+  if (await deps.store.exists(refreshFailedKey(id))) {
+    if (session.expiresAt > now) return session
+    throw new SessionUnavailableError()
+  }
   return refreshOnce(id, session, now, deps)
 }
 
@@ -145,6 +156,7 @@ const refresh = async (
         await deps.store.delete(sessionKey(id))
         return undefined
       }
+      await deps.store.set(refreshFailedKey(id), true, REFRESH_FAILED_TTL_SECONDS)
       if (stillValid(latest)) return latest
       throw new SessionUnavailableError()
     }
