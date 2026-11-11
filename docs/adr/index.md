@@ -16,6 +16,8 @@
 | [ADR-0006](0006-non-visiting-staff.md) | 訪問するかを職員に持ち、訪問しない職員を予定と担当から外す | 承認 |
 | [ADR-0044](0044-token-hook-fail-closed.md) | token_hook が答えないときはトークンを発行せず、待ちを短くし、冗長化と監視で止まる時間を減らす | 承認 |
 | [ADR-0047](0047-web-session-postgres.md) | web のセッションを、web 用の PostgreSQL のデータベースに暗号化して置けるようにし、期限の切れた行を web が消す | 承認 |
+| [ADR-0048](0048-workspace-group-access.md) | 自動の登録の事業所で buddy を使える人を、Workspace のグループに直接入れた職員にし、ブローカーが上流のログインのたびに Cloud Identity Groups API で所属を読む | 承認 |
+| [ADR-0049](0049-jit-staff-registration.md) | 自動の登録の事業所では、初回のログインで職員を一般の職員として登録し、ブローカーが職員を作って予定の API が業務の職員を作る | 承認 |
 
 ### 権限
 
@@ -147,6 +149,8 @@ flowchart TB
         A0006["0006"]
         A0044["0044"]
         A0047["0047"]
+        A0048["0048"]
+        A0049["0049"]
     end
     subgraph perm["権限"]
         A0041["0041"]
@@ -177,6 +181,7 @@ flowchart TB
     end
     subgraph gcal["Google カレンダーとの連携と予定の管理先"]
         A0029["0029"]
+        A0030["0030"]
         A0031["0031"]
     end
     subgraph worker["calendar-worker"]
@@ -254,9 +259,17 @@ flowchart TB
     A0046 --> A0001
     A0046 --> A0004
     A0047 --> A0001
+    A0048 --> A0049
+    A0048 --> A0044
+    A0048 --> A0002
+    A0048 --> A0030
+    A0049 --> A0048
+    A0049 --> A0001
+    A0049 --> A0043
+    A0049 --> A0004
 ```
 
-- ADR-0027、ADR-0028、ADR-0030、ADR-0033、ADR-0034、ADR-0036 は、ほかの ADR を前提にせず、前提にもされないので、図に描かない。
+- ADR-0027、ADR-0028、ADR-0033、ADR-0034、ADR-0036 は、ほかの ADR を前提にせず、前提にもされないので、図に描かない。
 
 ## 旧番号と新番号
 
