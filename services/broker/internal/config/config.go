@@ -183,6 +183,10 @@ func load(getenv func(string) string, includesBroker bool) (Config, error) {
 			return Config{}, fmt.Errorf("ポート %q は 1 から 65535 の数にする", p)
 		}
 	}
+	var err error
+	if c.DB.MaxConns, err = maxConnsOf(get("DB_MAX_CONNS", "")); err != nil {
+		return Config{}, err
+	}
 	if includesBroker {
 		if c.ListenTarget == ListenBoth && c.Port == c.InternalPort {
 			return Config{}, fmt.Errorf("INTERNAL_PORT %q は PORT と違う値にする", c.InternalPort)
@@ -215,18 +219,22 @@ func load(getenv func(string) string, includesBroker bool) (Config, error) {
 			}
 		}
 	}
-	maxConns := get("DB_MAX_CONNS", "")
-	if maxConns != "" {
-		n, err := strconv.ParseInt(maxConns, 10, 32)
-		if err != nil || n < 1 {
-			return Config{}, fmt.Errorf("DB_MAX_CONNS %q は 1 以上の数にする", maxConns)
-		}
-		c.DB.MaxConns = int32(n)
-	}
 	if err := c.LogLevel.UnmarshalText([]byte(get("LOG_LEVEL", "info"))); err != nil {
 		return Config{}, errors.New("LOG_LEVEL は debug、info、warn、error のいずれかにする")
 	}
 	return c, nil
+}
+
+// maxConnsOf は、DB_MAX_CONNS の値 v を接続の数の上限として読む。空なら 0 である。
+func maxConnsOf(v string) (int32, error) {
+	if v == "" {
+		return 0, nil
+	}
+	n, err := strconv.ParseInt(v, 10, 32)
+	if err != nil || n < 1 {
+		return 0, fmt.Errorf("DB_MAX_CONNS %q は 1 以上の数にする", v)
+	}
+	return int32(n), nil
 }
 
 // list は、カンマで区切った値を、空の要素を除いて返す。

@@ -93,12 +93,20 @@ func TestLoadDefaults(t *testing.T) {
 
 func TestLoadDB(t *testing.T) {
 	// マイグレーションは INTERNAL_PORT を使わないので、値を確認しない
-	db, err := config.LoadDB(env(map[string]string{"INTERNAL_PORT": "x", "DB_HOST": "db", "DB_USER": "broker", "DB_PASSWORD": "secret", "DB_NAME": "broker"}))
+	db, err := config.LoadDB(env(map[string]string{"INTERNAL_PORT": "x", "DB_HOST": "db", "DB_USER": "broker", "DB_PASSWORD": "secret", "DB_NAME": "broker", "DB_MAX_CONNS": "3"}))
 	if err != nil {
 		t.Fatal(err)
 	}
-	if db != (config.DB{Host: "db", Port: "5432", User: "broker", Password: "secret", Name: "broker"}) {
+	if db != (config.DB{Host: "db", Port: "5432", User: "broker", Password: "secret", Name: "broker", MaxConns: 3}) {
 		t.Errorf("got %+v", db)
+	}
+}
+
+// マイグレーションも、予定の API の LoadDB と同じく、1 以上の数でない DB_MAX_CONNS を拒む。
+func TestLoadDBRejectsInvalidMaxConns(t *testing.T) {
+	_, err := config.LoadDB(env(map[string]string{"DB_USER": "broker", "DB_PASSWORD": "secret", "DB_NAME": "broker", "DB_MAX_CONNS": "0"}))
+	if err == nil || !strings.Contains(err.Error(), "DB_MAX_CONNS") {
+		t.Errorf("err = %v, want DB_MAX_CONNS のエラー", err)
 	}
 }
 

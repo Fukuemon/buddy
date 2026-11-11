@@ -193,7 +193,7 @@ func TestOpenMaxConns(t *testing.T) {
 	if testConfig == (Config{}) {
 		t.Skip("PostgreSQL を使うテストは -short では動かさない")
 	}
-	for _, tt := range []struct{ set, want int32 }{{0, defaultMaxConns}, {3, 3}} {
+	for _, tt := range []struct{ set, want int32 }{{0, 10}, {3, 3}} {
 		cfg := testConfig
 		cfg.MaxConns = tt.set
 		pool, err := Open(context.Background(), cfg)
