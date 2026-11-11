@@ -52,6 +52,8 @@ buddy のコードと設定は、特定のデプロイ先を前提にしない�
 
 - 新しいログインはできない。
 - 発行済みの access token は、期限（5 分）まで API で通る。API と同じ DB が止まったときは除く。access token が切れた職員は、refresh できないので操作が止まる。
+  - web は、1 回の表示で refresh を 1 度だけ試し、失敗したら「buddy を一時的に使えません」の画面を出す。Hydra を待つ上限の 5 秒を過ぎたときも同じである。
+  - 開いている画面で読み込みか保存が refresh で失敗したときは、画面の読み込みの失敗か保存の失敗の文を出す。取り直さない。
 - refresh token と web のセッションは残る。復旧すれば、職員はログインし直さずに使い続けられる。
   - hook が設定の誤りで 403 を返したときは、web のセッションが消え、職員はログインし直す。
 - 止めた職員は、障害の間もトークンを取れない。
@@ -74,7 +76,7 @@ buddy のコードと設定は、特定のデプロイ先を前提にしない�
 | hook の 5xx の率と所要の時間 | ブローカーのログ（`token_hook の結果` の `status` と `duration_ms`） | 5xx が hook の呼び出しの 5 分で 1% を超える |
 | hook の 403 の数 | ブローカーのログ（`token_hook の結果` の `result` が `denied`） | 普段の 10 倍を超える。設定の誤りで有効な職員を拒んでいるおそれがある |
 | ログインの失敗の数（`login failed` の reason ごと） | web のログ | `failed` が普段の 10 倍を超える |
-| refresh の失敗の数 | web のログ | 5 分で 1% を超える |
+| refresh の失敗の率 | web のログ（`session refresh failed` の `reason` が `rejected` 以外の行と、`session refreshed` の行） | refresh の 5 分で 1% を超える |
 | ブローカーと Hydra の `/readyz` と `/health/ready` | ヘルスチェック | 1 分続けて 503 か応答が無い |
 
 - ブローカーは、hook の呼び出しごとに、メッセージ `token_hook の結果` のログを 1 行出す。
@@ -82,7 +84,17 @@ buddy のコードと設定は、特定のデプロイ先を前提にしない�
   - レベルは、`allowed` が INFO、`denied` が WARN、`failed` の 5xx が ERROR、`failed` の 4xx（鍵の誤りと本文の誤り）が WARN である。
   - hook の 5xx の率は `status` が 500 以上の行を、hook の 403 の数は `result` が `denied` の行を数える。
   - 職員を DB から読むのは 2 秒で打ち切り、500 を返す。DB が答えないときは、`duration_ms` が 2000 前後の `failed` が、1 回のトークンの要求で 3 行出る。
-- web は、今は refresh の失敗をログに出していない。足すのは #1017 である。
+- web は、refresh のたびに 1 行のログを出す。
+  - 通ったときは INFO でメッセージ `session refreshed`、失敗したときは WARN でメッセージ `session refresh failed` を出す。トークンとセッションの ID は出さない。
+  - 失敗の行の `reason` は、失敗の種類である。
+    - `rejected`: Hydra が `invalid_grant` か `access_denied` で拒んだ。セッションを消す
+    - `hydra_error`: Hydra がそのほかのエラーを返した
+    - `timeout`: Hydra を待つ上限の 5 秒を過ぎた
+    - `unreachable`: Hydra に届かない
+    - `other`: それ以外
+  - `error` は Hydra が返した OAuth のエラーの値、`status` は Hydra が返した HTTP の状態コードである。Hydra が返さなかったときは出さない。
+  - 失敗の率は、`reason` が `rejected` 以外の失敗の行を、それと `session refreshed` の行の和で割る。`rejected` は止めた職員と 12 時間を過ぎたログインで起き、障害ではない。
+  - ブローカーが止まると `hydra_error` の `server_error`（`status` は 500）が、ブローカーが答えないと `timeout` が出る。
 
 ### 復旧の手順
 

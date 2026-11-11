@@ -230,4 +230,4 @@ flowchart TB
 - E2E が指す目印は、表示の全体の `page-unavailable`。
   - この状態はモックを持たないので、`page-unavailable` の正本はこのセクションである。
 - 実装は `apps/web/src/routes/__root.tsx` の `RootError` と、`apps/web/src/components/page/PageUnavailableMessage.tsx`。
-- カタログ: PageUnavailableMessage の Default（実装と一緒に足す）
+- カタログ: [PageUnavailableMessage の Default](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-common-pageunavailablemessage--default)
