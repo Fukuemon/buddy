@@ -485,6 +485,10 @@ Hydra は、トークンを発行するたびに `oauth2.token_hook` でブロ�
 - 内部の API と token_hook は、ログインの画面（`PORT`）と別のポート（`INTERNAL_PORT`、デフォルトは 8081）で待ち受ける。
   - ログインの画面のポートは `/internal/` の下に 404 を返す。
   - 内部のポートは、ブラウザとリバースプロキシに開かず、予定の API、予定の API の運営用の CLI のジョブ、Hydra だけが届くようにする。
+  - 1 つのポートにしかリクエストを送らない基盤では、同じイメージを、`LISTEN_TARGET` を `public` にした公開のサービスと、`internal` にした内部のサービスの 2 つで動かす。
+    - どちらも `PORT` で待ち受け、もう片方のパスに 404 を返す。ヘルスチェックはどちらの `PORT` でも受ける。
+    - Hydra の token_hook と、予定の API と運営用の CLI の `BROKER_URL` は、内部のサービスに向ける。
+    - プロセスの中の状態は、ログインの試行の制限（ログインの画面だけが使う）と、内部の API の access token の検証に使う discovery の文書の写し（内部の API だけが使う）なので、分けても動きは変わらない。
 - 内部の API は、Hydra の client credentials の access token（`aud` は `broker`）だけを受け、Hydra の JWKS で検証する。
   - トークンが無いか検証できなければ 401 を返す。
 - 検証できても、トークンの `sub`（client credentials ではクライアントの ID）が、呼んだ操作を許したクライアントに無いか、トークンが `org_id` を持てば 403 を返す。
@@ -726,6 +730,6 @@ mock-oauth2-server はパスの最初の部分を issuer にするので、1 つ
 - ヘルスチェック: `GET /healthz`（依存先を確認しない）、`GET /readyz`（DB に届かなければ 503）、`broker healthcheck` のサブコマンド
 - 公開する画面: ログイン（`GET` と `POST /login`）、上流の IdP のコールバック（`GET /login/callback`）、同意（`GET /consent`）、ログアウト（`GET /logout`）
 - 内部の API: 職員の登録、有効化、削除、休職、復職、退職と、Hydra の `oauth2.token_hook`（`POST /internal/token-hook`）。
-  - `INTERNAL_PORT` で待ち受ける。パスは [職員の登録、休職、復職、退職](#職員の登録休職復職退職) の表にある
+  - `INTERNAL_PORT`（`LISTEN_TARGET` が `internal` なら `PORT`）で待ち受ける。パスは [職員の登録、休職、復職、退職](#職員の登録休職復職退職) の表にある
 - マイグレーションとシード: `migrate up`、`migrate down [N]`、`migrate seed`。
   - シードは職員がいない DB にだけ入る
