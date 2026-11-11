@@ -27,6 +27,9 @@ Ory Hydra の login and consent app として動くサービス。
   - デフォルトは `info`。
 - `DB_HOST`、`DB_PORT`: ブローカーの DB の接続先。
   - デフォルトは `localhost` と `5432`。
+- `DB_MAX_CONNS`: ブローカーの DB の接続のプールの接続の数の上限。
+  - 1 以上の数。ほかの値では、起動の時にエラーで終わる。
+  - デフォルトは `10`。
 - `DB_USER`、`DB_PASSWORD`、`DB_NAME`: ブローカーの DB の利用者、パスワード、データベース。
   - 必須。
 - `HYDRA_ADMIN_URL`: Hydra の admin API の URL。

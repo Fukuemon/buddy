@@ -34,3 +34,27 @@ func TestRunRejectsInvalidUpstreamConfig(t *testing.T) {
 		t.Errorf("err = %v, want issuer が空のエラー", err)
 	}
 }
+
+// DB_MAX_CONNS が 1 以上の数でないとき、DB に接続する前に、待ち受けを始めずにエラーで終わることを確認する。
+// DB の接続先は届かない宛先にし、DB に触れていればこのテストは別のエラーで失敗する。
+func TestRunRejectsInvalidDBMaxConns(t *testing.T) {
+	for _, v := range []string{"0", "many"} {
+		t.Run(v, func(t *testing.T) {
+			env := map[string]string{
+				"DB_HOST": "127.0.0.1", "DB_PORT": "1", "DB_USER": "broker", "DB_PASSWORD": "secret", "DB_NAME": "broker",
+				"DB_MAX_CONNS":                     v,
+				"HYDRA_ADMIN_URL":                  "http://127.0.0.1:1",
+				"UPSTREAM_IDPS_FILE":               "/nonexistent/idps.json",
+				"UPSTREAM_IDP_CLIENT_SECRETS_FILE": "/nonexistent/secrets.json",
+				"PUBLIC_URL":                       "http://127.0.0.1:1",
+				"HYDRA_ISSUER":                     "http://127.0.0.1:1",
+				"TOKEN_HOOK_KEY":                   "hook-key-0123456789abcdef0123456789",
+				"LOGIN_COOKIE_KEYS":                "cookie-key-0123456789abcdef012345678",
+			}
+			err := run(func(k string) string { return env[k] })
+			if err == nil || !strings.Contains(err.Error(), "DB_MAX_CONNS") {
+				t.Errorf("err = %v, want DB_MAX_CONNS のエラー", err)
+			}
+		})
+	}
+}
