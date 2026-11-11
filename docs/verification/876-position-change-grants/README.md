@@ -19,7 +19,7 @@ spec は `packages/e2e/tests/evidence/staff/position-change-acceptance.e2e.ts` �
 | 新しい役職のデフォルトにもある個別の権限は対象が残り、判定もその対象で行う | `s3-overlap-target` | チームの予定の閲覧をチーム B で個別に足したチーム A のメンバーをリーダーに変えた場合、閲覧の対象が B のまま残り、編集はチーム A の予定だけに出ること |
 | 個別に足した職員の管理の権限だけを持つ最後の管理者は、その権限の無い役職に変えられる | `s4-last-manager-individual` | 職員の管理を個別に足した唯一の有効な管理者が自分の役職をリーダーに変えた場合、変えられて職員の管理が個別に足した権限に残ること |
 
-- `s4-last-manager-individual` は、シードの唯一の管理者の青木 陽菜を、撮影の間だけリーダーに変える。`portless compose down -v` の後に起動し直してから、`-g 's4-'` で単独で流す。
+- `s4-last-manager-individual` は、シードの唯一の管理者の青木 陽菜を、撮影の間だけリーダーに変える。`portless compose down -v` の後に起動し直してから、spec のファイルを指定し、`-g 's4-last-manager-individual '` で単独で流す。`-g 's4-'` では、ほかの spec の s4 も流れる。
 - 子の pull request で撮ったエビデンス（`packages/e2e/tests/evidence/staff/position.e2e.ts` の 10 本）は撮り直さない。対応は [test-design.md](test-design.md) のケース表にある。
 
 ## spec を置かないシナリオ
@@ -32,7 +32,7 @@ spec は `packages/e2e/tests/evidence/staff/position-change-acceptance.e2e.ts` �
 
 ## 撮影のための操作
 
-- 撮る職員は、録画の外（`prepareOutsideRecording`）で、青木 陽菜のトークンで予定の API から登録する。権限を足す操作と役職を変える操作も、録画の外で予定の API から行う。ただし `s1-keep-individual` の権限の追加と役職の変更は、録画の中で画面から行う。
+- 撮る職員の登録、権限の追加、役職の変更は、録画する page を開く前に、fixture の `request` で、青木 陽菜のトークンで予定の API から行う。ただし `s1-keep-individual` の権限の追加と役職の変更は、録画の中で画面から行う。`prepareOutsideRecording` は、撮る職員のログインと cookie の移しだけに使う。
 - `s2` から `s4` は、録画の外でブローカーにログインし、cookie を録画のコンテキストに移す（`carryLoginTo`）。
 - 予定は、録画の外で、青木 陽菜のトークンで予定の API から明日に作る。
 - `s2-kept-grant-authorizes` の権限を外す操作は、録画の途中の出来事が前提なので、字幕で撮影のためと断って、録画の中で予定の API を呼ぶ。

@@ -15,7 +15,7 @@
   4. 画面の確認の表示と、データの移行とテストの方針が決まっている。
   5. 実装が要るなら、後続の issue に分けてある。
 - 職員の詳細の「役職を変える」と権限のタブ、自分の情報の「持っている権限」、予定のカレンダーの日の表示と予定の詳細
-- `PUT /v1/users/{user_id}/position` と、`POST`、`DELETE` の `/v1/users/{user_id}/policies`
+- `PUT /v1/users/{user_id}/position`、`POST /v1/users/{user_id}/policies`、`DELETE /v1/users/{user_id}/policies/{user_policy_id}`
 
 ### 対象外
 
@@ -23,7 +23,7 @@
 | --- | --- |
 | 監査の記録の中身 | [#995](https://github.com/Fukuemon/buddy/issues/995) の検証の範囲である |
 | 職員の今の役職が見つからないとき、別の事業所の役職を渡したとき | 画面と API から作れない。`TestStaffChangePosition` で確認した |
-| 照合の API の判定 | 認可のコードを変えていない。照合の API も予定の API と同じく、リクエストごとに `GET /v1/me` で権限を読む（ADR-0041 の照合の権限） |
+| 照合の API の判定 | 認可のコードを変えていない。予定の API はリクエストごとに DB の `user_policies` を読み、照合の API は照合のたびに `GET /v1/me` で権限を読む（ADR-0041 の照合の権限）。どちらも、変わった権限を次のリクエストから使う |
 
 ## 根拠
 
@@ -90,7 +90,7 @@
 | C3 | 役職を変える | 前の役職のデフォルトの権限の対象を職員ごとに直してある | 対象ごと消え、新しい役職のデフォルトに置き換わる | 子の `position-default-replaced` |
 | C4 | 役職を変える | 個別に足した権限が新しい役職のデフォルトにもある | 個別の行と対象が残り、デフォルトからコピーしない。コピーしたチームの権限は所属のチームを対象にする。予定の API の判定もその対象で行う | `s3-overlap-target`。子の `position-overlap-keeps-target`、`position-team-target` |
 | C5 | 今と同じ役職に変える | 対象を職員ごとに直してある | 200 が返り、何も変わらない | 子の `position-same-keeps-targets` |
-| C6 | 個別に権限を足す、外す | — | 権限のタブの「個別に足した権限」に出る、消える。次のリクエストから予定の API の判定に使われる、使われない | `s1-keep-individual`（足す）、`s2-kept-grant-authorizes`（外す） |
+| C6 | 個別に権限を足す、外す | — | 足すと権限のタブの「個別に足した権限」に出る。外すと、次のリクエストから予定の API の判定に使われない | `s1-keep-individual`（足す）、`s2-kept-grant-authorizes`（外す） |
 | C7 | 役職のデフォルトを変える | — | 操作が無い。今あるデータを移していない | [README.md](README.md) の spec を置かないシナリオ |
 | C8 | 最後の有効な管理者の役職を変える | 職員の管理の権限を役職のデフォルトだけで持つ | 409 で拒まれ、役職と権限が変わらない | 子の `position-last-manager-conflict` |
 | C9 | 最後の有効な管理者の役職を変える | 職員の管理の権限を個別に足してある | 職員の管理の権限の無い役職に変えられ、「個別に足した権限」に残る | `s4-last-manager-individual` |

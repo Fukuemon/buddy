@@ -2,6 +2,7 @@
 // @scenario-id: 876-keep-individual、876-kept-grant-authorizes、876-overlap-target、876-last-manager-individual
 // s4-last-manager-individual は、シードの唯一の管理者の青木 陽菜を撮影の間だけリーダーに変える。finally で戻すが、
 // 戻せなかったときにほかの撮影の前提が崩れるので、DB を作り直してから単独で流す。
+// 字幕は、シナリオの「明日」を「明日（<撮った日の翌日の日付>）」にして出す。
 import {
   expect,
   request as apiRequest,
@@ -15,19 +16,29 @@ import {
 import { issueAccessToken } from '../../fixtures/apiReference'
 import { check, intro, step } from '../../fixtures/caption'
 import { daysFromToday } from '../../fixtures/date'
-import { LEADER, LOGIN_STAFF, LOGIN_STATE, SCHEDULE_URL, TEAM_MEMBER } from '../../fixtures/env'
+import {
+  BASE_URL,
+  HAYASHI,
+  LEADER,
+  LOGIN_STAFF,
+  LOGIN_STATE,
+  SCHEDULE_URL,
+  TEAM_MEMBER,
+} from '../../fixtures/env'
 import { prepareOutsideRecording } from '../../fixtures/recording'
 import { createNormalSchedule } from '../../fixtures/schedule'
 import {
   STAFF_FORM,
   STAFF_MANAGE_CODE,
   issueManagerToken,
+  listStaff,
   newStaff,
   policyIdOf,
   removePolicy,
 } from '../../fixtures/staff'
 import { signInAtBroker } from '../../screens/login'
 import { openDetail as openScheduleDetail } from '../../screens/scheduleDetail'
+import { scheduleDetailDeleteButton } from '../../selectors/scheduleDetail'
 
 const FACILITY_ID = STAFF_FORM.facilityId
 const TEAM_A = STAFF_FORM.teamId
@@ -44,8 +55,6 @@ const USER_READ = { id: '01M5E1S42TTS7QZK05YGS0GYR9', code: 'schedule.user.read'
 const TEAM_READ = { id: '01M5E1S42TTS7QZK05YGS0GYRB', code: 'schedule.team.read' }
 /** 指定したチームの職員の予定の編集（schedule.team.edit）。リーダーの役職のデフォルトにある。 */
 const TEAM_EDIT_CODE = 'schedule.team.edit'
-/** シードの、チーム A のメンバー。 */
-const HAYASHI = { id: '01M3TC5WQ08KWBZX85WAZ1C4N7', name: '林 さくら' }
 
 /**
  * シナリオごとに撮影の前に登録する職員の仮の名前。同じ compose で続けて撮ると、前のシナリオの職員もチーム A の列に出るので、
@@ -140,6 +149,50 @@ const scheduleOf = async (
   return ((await res.json()) as { id: string }).id
 }
 
+/** 権限 user_policy_id を外す（DELETE /v1/users/{user_id}/policies/{user_policy_id}）。 */
+const revoke = async (
+  request: APIRequestContext,
+  token: string,
+  userId: string,
+  userPolicyId: string,
+) => {
+  const res = await removePolicy(request, token, userId, userPolicyId)
+  if (!res.ok()) throw new Error(`権限を外せない: ${res.status()} ${await res.text()}`)
+}
+
+/** email の職員の access token を取る。Hydra のログインを前の職員と共有しないよう、空のコンテキストで取る。 */
+const issueTokenOf = async (email: string) => {
+  const context = await apiRequest.newContext({
+    storageState: { cookies: [], origins: [] },
+    ignoreHTTPSErrors: BASE_URL.startsWith('https://'),
+  })
+  try {
+    return await issueAccessToken(context, email)
+  } finally {
+    await context.dispose()
+  }
+}
+
+/** 事業所で、職員の管理の権限を持つ有効な職員の ID を返す。s4 の前提（撮る職員が唯一の有効な管理者）を確かめるのに使う。 */
+const activeManagers = async (request: APIRequestContext, token: string) => {
+  const res = await listStaff(request, token, FACILITY_ID)
+  if (!res.ok()) throw new Error(`職員を一覧できない: ${res.status()} ${await res.text()}`)
+  const active = ((await res.json()) as { id: string; status: string }[]).filter(
+    (s) => s.status === 'active',
+  )
+  const managers: string[] = []
+  for (const s of active) {
+    const detail = await request.get(`${SCHEDULE_URL}/v1/users/${s.id}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+    if (!detail.ok())
+      throw new Error(`職員を取得できない: ${detail.status()} ${await detail.text()}`)
+    const { policies } = (await detail.json()) as { policies: { code: string }[] }
+    if (policies.some((p) => p.code === STAFF_MANAGE_CODE)) managers.push(s.id)
+  }
+  return managers
+}
+
 /** 録画の外で email の職員としてログインし、録画するコンテキストに cookie を移す。 */
 const signInOutsideRecording = (browser: Browser, context: BrowserContext, email: string) =>
   prepareOutsideRecording(browser, { carryLoginTo: context }, async (page) => {
@@ -177,7 +230,7 @@ test.describe('職員の管理', () => {
         await openStaffDetail(page, staff.id, S1_NAME)
         await intro(
           page,
-          `個別に足した権限は、役職を変えても対象ごと残る\n前提 チーム A のメンバーの「${S1_NAME}」の職員の詳細を、${LOGIN_STAFF.name} が開いている（撮影の前に API で登録した）`,
+          `個別に足した権限は、役職を変えても対象ごと残る\n前提 チーム A のメンバーの ${S1_NAME} の職員の詳細を、${LOGIN_STAFF.name} が開いている（撮影の前に API で登録した）`,
         )
 
         const policies = page.getByTestId('staff-policies-dialog')
@@ -254,7 +307,7 @@ test.describe('職員の管理', () => {
     })
 
     // 撮る職員は、spec の中で登録したシナリオごとの職員である。setup に置けないので、録画の外でログインして cookie を移す
-    test.describe(`${S2_NAME}、${S3_NAME}、${S4_NAME}（撮影の前に登録したチーム A の職員。シナリオごとに別の職員で撮る）`, () => {
+    test.describe(`${S2_NAME}、${S3_NAME}、${S4_NAME}（撮影の前に登録したチーム A のメンバーをリーダーに変えた職員。${S4_NAME} は職員の管理の権限も持つ）`, () => {
       test('s2-kept-grant-authorizes 個別に足した権限を持つメンバーをリーダーに変えた後に日の表示を開いた場合、残った権限で予定が見え、外すと見えなくなること', async ({
         browser,
         context,
@@ -267,38 +320,36 @@ test.describe('職員の管理', () => {
           target_user_ids: [LEADER.staff.id],
         })
         await changePositionByApi(request, token, staff.id, POSITION.leader)
-        await scheduleOf(request, token, HAYASHI.id, '受け入れ 林の予定', '10:00')
-        await scheduleOf(request, token, LEADER.staff.id, '受け入れ 森の予定', '11:00')
+        const hayashi = await scheduleOf(request, token, HAYASHI.id, '受け入れ 林の予定', '10:00')
+        const mori = await scheduleOf(request, token, LEADER.staff.id, '受け入れ 森の予定', '11:00')
         await scheduleOf(request, token, TEAM_MEMBER.id, '受け入れ 佐藤の予定', '12:00')
         await signInOutsideRecording(browser, context, staff.email)
 
         const page = await context.newPage()
         await openDay(page, staff.id)
+        await expect(page.getByTestId('viewer-menu')).toContainText(S2_NAME)
         await intro(
           page,
-          `残った権限が予定の判定に使われ、外すと使われない\n前提 「指定した職員の予定の閲覧」（${LEADER.staff.name}）を個別に足したチーム A のメンバーの「${S2_NAME}」をリーダーに変え、${DATE} に ${HAYASHI.name}、${LEADER.staff.name}、${TEAM_MEMBER.name} の予定を作ってある（撮影の前に API で行った）`,
+          `残った権限が予定の判定に使われ、外すと使われない\n前提 「指定した職員の予定の閲覧」（${LEADER.staff.name}）を個別に足したチーム A のメンバーの ${S2_NAME} をリーダーに変え、明日（${DATE}）に ${HAYASHI.name}、${LEADER.staff.name}、${TEAM_MEMBER.name} の予定を作ってある（撮影の前に API で行った）。${S2_NAME} でログインし、明日（${DATE}）の日の表示を開いている`,
         )
 
-        await step(page, `もし 「${S2_NAME}」でログインし、${DATE} の日の表示を開く`, async () => {
-          await expect(page.getByTestId('viewer-menu')).toContainText(S2_NAME)
-        })
+        const event = (staffId: string, scheduleId: string) =>
+          column(page, staffId).getByTestId(`schedule-event-${scheduleId}`)
         await check(
           page,
           `ならば ${HAYASHI.name}（リーダーのチームの予定の閲覧、チーム A）と ${LEADER.staff.name}（個別に足した権限）の列が出て、${TEAM_MEMBER.name} の列は出ない`,
           async () => {
-            await expect(column(page, HAYASHI.id)).toBeVisible()
-            await expect(column(page, LEADER.staff.id)).toBeVisible()
+            await expect(event(HAYASHI.id, hayashi)).toBeVisible()
+            await expect(event(LEADER.staff.id, mori)).toBeVisible()
             await expect(column(page, TEAM_MEMBER.id)).toHaveCount(0)
           },
         )
 
         await step(
           page,
-          `もし (撮影のため) ${LOGIN_STAFF.name} が API で「${S2_NAME}」から「指定した職員の予定の閲覧」を外す`,
-          async () => {
-            const res = await removePolicy(request, token, staff.id, userRead)
-            expect(res.ok()).toBe(true)
-          },
+          `もし (撮影のため) ${LOGIN_STAFF.name} が API で ${S2_NAME} から「指定した職員の予定の閲覧」を外す`,
+          // 録画が 4 分を超えることがあるので、トークンを取り直す
+          async () => revoke(request, await issueManagerToken(), staff.id, userRead),
         )
         await step(page, 'かつ 日の表示を読み込み直す', async () => {
           await page.reload()
@@ -306,7 +357,7 @@ test.describe('職員の管理', () => {
         })
         await check(page, `ならば ${LEADER.staff.name} の列が出なくなる`, async () => {
           await expect(column(page, LEADER.staff.id)).toHaveCount(0)
-          await expect(column(page, HAYASHI.id)).toBeVisible()
+          await expect(event(HAYASHI.id, hayashi)).toBeVisible()
         })
       })
 
@@ -331,7 +382,7 @@ test.describe('職員の管理', () => {
         await expect(page.getByTestId('account-profile-name')).toHaveText(S3_NAME)
         await intro(
           page,
-          `新しい役職のデフォルトにもある個別の権限は対象が残り、判定もその対象で行う\n前提 チーム A のメンバーの「${S3_NAME}」に「指定したチームの職員の予定の閲覧」を対象「B」で足してリーダーに変え、${DATE} に ${HAYASHI.name} と ${LEADER.staff.name} の予定を作ってある（撮影の前に API で行った）。「${S3_NAME}」でログインし、自分の情報を開いている`,
+          `新しい役職のデフォルトにもある個別の権限は対象が残り、判定もその対象で行う\n前提 チーム A のメンバーの ${S3_NAME} に「指定したチームの職員の予定の閲覧」を対象「B」で個別に足してリーダーに変え、明日（${DATE}）に ${HAYASHI.name} と ${LEADER.staff.name} の予定を作ってある（撮影の前に API で行った）。${S3_NAME} でログインし、自分の情報を開いている`,
         )
 
         await check(
@@ -348,12 +399,16 @@ test.describe('職員の管理', () => {
         )
 
         const modal = page.getByTestId('schedule-detail-modal')
-        await step(page, `もし ${DATE} の日の表示で ${LEADER.staff.name} の予定の詳細を開く`, () =>
-          openScheduleDetail(page, mori, DATE),
+        await step(
+          page,
+          `もし 明日（${DATE}）の日の表示で ${LEADER.staff.name} の予定の詳細を開く`,
+          () => openScheduleDetail(page, mori, DATE),
         )
         await check(page, 'ならば 「閉じる」だけが出て、「編集」は出ない', async () => {
           await expect(modal.getByTestId('schedule-detail-close')).toBeVisible()
           await expect(modal.getByTestId('schedule-detail-edit')).toHaveCount(0)
+          await expect(modal.getByTestId('schedule-detail-cancel-schedule')).toHaveCount(0)
+          await expect(scheduleDetailDeleteButton(page)).toHaveCount(0)
         })
 
         await step(page, `もし ${HAYASHI.name} の予定の詳細を開く`, () =>
@@ -378,31 +433,28 @@ test.describe('職員の管理', () => {
         )
         const manageId = await policyIdOf(request, managerToken, STAFF_MANAGE_CODE)
         const manage = await grant(request, managerToken, staff.id, { policy_id: manageId })
-        // fixture の request は Hydra のログインを覚えているので、撮る職員のトークンは空のコンテキストで取る
-        const tokenContext = await apiRequest.newContext({
-          storageState: { cookies: [], origins: [] },
-          ignoreHTTPSErrors: true,
-        })
-        const staffToken = await issueAccessToken(tokenContext, staff.email).finally(() =>
-          tokenContext.dispose(),
-        )
+        let staffToken: string | undefined
         let aokiChanged = false
+        let passed = false
         try {
+          staffToken = await issueTokenOf(staff.email)
           await changePositionByApi(request, staffToken, LOGIN_STAFF.id, POSITION.leader)
           aokiChanged = true
+          // 撮る職員が唯一の有効な管理者でなければ、変更の後の権限で判定する分岐を通らずに変えられてしまう
+          expect(await activeManagers(request, staffToken)).toEqual([staff.id])
           await signInOutsideRecording(browser, context, staff.email)
 
           const page = await context.newPage()
           await openStaffDetail(page, staff.id, S4_NAME)
           await intro(
             page,
-            `個別に足した職員の管理の権限だけを持つ最後の管理者は、その権限の無い役職に変えられる\n前提 チーム A のメンバーの「${S4_NAME}」に「職員の管理」を個別に足し、${LOGIN_STAFF.name} をリーダーに変えてあり（撮影の前に API で行った）、「${S4_NAME}」が事業所で唯一の有効な管理者である。「${S4_NAME}」でログインし、自分の職員の詳細を開いている`,
+            `個別に足した職員の管理の権限だけを持つ最後の管理者は、その権限の無い役職に変えられる\n前提 チーム A のメンバーの ${S4_NAME} に「職員の管理」を個別に足し、${LOGIN_STAFF.name} をリーダーに変えてあり（撮影の前に API で行った）、${S4_NAME} が事業所で唯一の有効な管理者である。${S4_NAME} でログインし、自分の職員の詳細を開いている`,
           )
 
           const dialog = page.getByTestId('staff-position-dialog')
           await step(
             page,
-            `もし 「${S4_NAME}」が自分の職員の詳細で「役職を変える」から「リーダー」を選んで保存する`,
+            `もし ${S4_NAME} が自分の職員の詳細で「役職を変える」から「リーダー」を選んで保存する`,
             async () => {
               await page.getByTestId('staff-detail-position-change').click()
               await dialog.getByTestId(`staff-position-option-${POSITION.leader}`).check()
@@ -424,12 +476,24 @@ test.describe('職員の管理', () => {
                 .getByTestId(`staff-policy-row-${STAFF_MANAGE_CODE}`),
             ).toBeVisible(),
           )
+          passed = true
         } finally {
-          // 青木 陽菜を管理者に戻してから、撮る職員の職員の管理を外す。position-last-manager-conflict が、青木 陽菜を唯一の管理者とする前提に戻すため
-          if (aokiChanged)
-            await changePositionByApi(request, staffToken, LOGIN_STAFF.id, POSITION.manager)
-          const removed = await removePolicy(request, managerToken, staff.id, manage)
-          expect(removed.ok()).toBe(true)
+          // 青木 陽菜を管理者に戻してから、撮る職員の職員の管理を外す。position-last-manager-conflict が、青木 陽菜を唯一の管理者とする前提に戻すため。
+          // 逆の順では、外す時点で撮る職員が唯一の管理者なので 409 になる。
+          // 撮影が先に失敗したときは、その失敗を報告に残すため、戻しの失敗は投げずに出力だけする
+          const restoreErrors: unknown[] = []
+          if (aokiChanged && staffToken !== undefined) {
+            await changePositionByApi(request, staffToken, LOGIN_STAFF.id, POSITION.manager).catch(
+              (e: unknown) => restoreErrors.push(e),
+            )
+          }
+          await revoke(request, await issueManagerToken(), staff.id, manage).catch((e: unknown) =>
+            restoreErrors.push(e),
+          )
+          if (restoreErrors.length > 0) {
+            if (passed) throw restoreErrors[0]
+            console.error('s4 の前提を戻せなかった', restoreErrors)
+          }
         }
       })
     })
