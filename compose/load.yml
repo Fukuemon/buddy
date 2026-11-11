@@ -1,0 +1,26 @@
+# web の負荷の検証の回だけ重ねる設定（ADR-0047、#1040）。compose.yml の後に -f で渡す。
+# PostgreSQL を、接続の数の上限が小さい構成に近づけ、セッションの読み取りの時間を pg_stat_statements で数える。
+# アプリの接続のプールの上限の合計を、max_connections の 25 より小さくする。合計が 25 を超えると、負荷が増えたときに
+# 接続を断られたアプリが失敗し、web の値が分からなくなる（docs/verification/1040-web-load/README.md）。
+# 内訳は、ブローカー 10（固定。#1061）、予定の API 5、calendar-worker 1 ずつ、Hydra 3、web 3 で 23 である。
+# 残りの 2 は、記録のスクリプト（apps/web/scripts/load-sample.sh）の 1 と、psql で中を見る 1 に使う。
+services:
+  postgres:
+    cpus: 1
+    mem_limit: 1g
+    command: ['postgres', '-c', 'max_connections=25', '-c', 'shared_preload_libraries=pg_stat_statements']
+  hydra:
+    environment:
+      DSN: postgres://buddy:buddy-dev@postgres:5432/hydra?sslmode=disable&max_conns=3&max_idle_conns=3
+  schedule:
+    environment:
+      DB_MAX_CONNS: '5'
+  schedule-calendar-export:
+    environment:
+      DB_MAX_CONNS: '1'
+  schedule-calendar-sync:
+    environment:
+      DB_MAX_CONNS: '1'
+  web:
+    environment:
+      SESSION_STORE_MAX_CONNS: '3'
