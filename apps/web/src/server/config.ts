@@ -16,7 +16,10 @@ export type ServerConfig = {
      */
     endSessionEndpoint?: string
   }
+  /** セッションの保存先。`redis://` なら Valkey、`postgres://` か `postgresql://` なら PostgreSQL に置く（ADR-0047）。 */
   sessionStoreUrl: string
+  /** 保存先が PostgreSQL のときの、接続のプールの接続の数の上限。 */
+  sessionStoreMaxConnections: number
   sessionSecret: string
   /** セッションの cookie に Secure を付けるか。https でないローカル環境だけ false にする。 */
   usesSecureCookie: boolean
@@ -40,13 +43,18 @@ const REQUIRED = [
   'RECEIPT_URL',
 ] as const
 
+/** SESSION_STORE_MAX_CONNS が無いときの、PostgreSQL の接続の数の上限。 */
+const DEFAULT_SESSION_STORE_MAX_CONNS = 5
+
 /** cookie の署名の鍵の最小のバイト数。HMAC-SHA256 の出力と同じ長さにする。 */
 const MIN_SECRET_BYTES = 32
 
 /**
  * env（本番では process.env）から BFF の設定を読む。
  *
- * 必須の値が欠けているときは欠けた名前を並べた Error を、SESSION_SECRET が 32 バイトより短いときは Error を投げる。
+ * 必須の値が欠けているときは欠けた名前を並べた Error を、SESSION_SECRET が 32 バイトより短いときと、
+ * SESSION_STORE_URL のスキームが redis、postgres、postgresql のどれでもないときと、
+ * SESSION_STORE_MAX_CONNS が正の整数でないときは Error を投げる。
  */
 export const loadServerConfig = (env: Record<string, string | undefined>): ServerConfig => {
   const missing = REQUIRED.filter((key) => !env[key])
@@ -54,6 +62,13 @@ export const loadServerConfig = (env: Record<string, string | undefined>): Serve
   const get = (key: (typeof REQUIRED)[number]) => env[key] as string
   if (Buffer.byteLength(get('SESSION_SECRET')) < MIN_SECRET_BYTES) {
     throw new Error(`SESSION_SECRET は ${MIN_SECRET_BYTES} バイト以上にする`)
+  }
+  if (!/^(redis|postgres|postgresql):\/\//.test(get('SESSION_STORE_URL'))) {
+    throw new Error('SESSION_STORE_URL は redis://、postgres://、postgresql:// のどれかで始める')
+  }
+  const maxConns = Number(env.SESSION_STORE_MAX_CONNS || DEFAULT_SESSION_STORE_MAX_CONNS)
+  if (!Number.isInteger(maxConns) || maxConns < 1) {
+    throw new Error('SESSION_STORE_MAX_CONNS は 1 以上の整数にする')
   }
   return {
     oidc: {
@@ -64,6 +79,7 @@ export const loadServerConfig = (env: Record<string, string | undefined>): Serve
       endSessionEndpoint: env.OIDC_END_SESSION_ENDPOINT || undefined,
     },
     sessionStoreUrl: get('SESSION_STORE_URL'),
+    sessionStoreMaxConnections: maxConns,
     sessionSecret: get('SESSION_SECRET'),
     usesSecureCookie: env.SESSION_COOKIE_SECURE !== 'false',
     publicUrl: env.PUBLIC_URL || undefined,
