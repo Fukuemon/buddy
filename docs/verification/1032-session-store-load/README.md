@@ -78,4 +78,4 @@ LOAD_USERS=300 LOAD_DB_CONTAINER=session-load-pg node apps/web/scripts/session-l
 
 ## 残っていること
 
-- 検証環境の PostgreSQL で、同じスクリプトを流し直す。ネットワークの往復の時間と、ほかのアプリと同じインスタンスを使うときの影響を測るためである。
+- 検証環境の PostgreSQL で、同じスクリプトを流し直す（#1040）。ネットワークの往復の時間と、ほかのアプリと同じインスタンスを使うときの影響を測るためである。
