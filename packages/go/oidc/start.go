@@ -10,7 +10,8 @@ import (
 )
 
 // discoveryRetryInterval は、StartVerifier が discovery を読めなかった後に、読み直すまでの間隔である。
-// Hydra が戻ってから、API がトークンを受けられるまでの時間の上限になる（ADR-0044 の「冗長化」）。
+// Hydra が戻ってから API がトークンを受けられるまでは、この間隔と 1 回の読み込みの上限（discoveryTimeout）の和、
+// 約 15 秒が最長になる（ADR-0044 の「冗長化」）。
 const discoveryRetryInterval = 5 * time.Second
 
 // ErrNotReady は、discovery をまだ読めていないので、トークンを検証できないことを表す。
@@ -39,6 +40,10 @@ func startVerifier(ctx context.Context, cfg Config, client *http.Client, log *sl
 			if err == nil {
 				s.v.Store(v)
 				log.InfoContext(ctx, "oidc discovery loaded", slog.String("issuer", cfg.Issuer))
+				return
+			}
+			// 終了の途中の失敗は障害ではないので、WARN にしない
+			if ctx.Err() != nil {
 				return
 			}
 			log.WarnContext(ctx, "oidc discovery failed", slog.String("issuer", cfg.Issuer),
