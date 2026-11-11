@@ -19,7 +19,7 @@
 
 - アクセシビリティの基準とコンポーネントの使い方は、引き続き DADS の指針を元にする。DADS は WCAG 2.2 の AA を参照し、コンポーネントごとの指針と実装例を公開している。
   - 出典: [DADS のアクセシビリティ](https://design.digital.go.jp/dads/guidance/accessibility/)
-- DESIGN.md には、DADS に従う前提を残さない。DADS の指針のうち buddy が使うものを、コンポーネントのセクションに buddy の規則として書く。規則の正本は DESIGN.md である。
+- DESIGN.md には、DADS に従う前提を残さない。DADS の指針のうち buddy が使うものを、コンポーネントのセクションに buddy の規則として書く。規則の元は DESIGN.md である。
 - DADS は、規則の直後に出典として示す。
 - DADS の指針から外れる規則は、表に分けず、その規則の本文に書き、外れる理由を隣に書く。
 - DADS の指針が変わっても、DESIGN.md の規則は自動では変わらない。取り込むときは、DADS の変更を読み、DESIGN.md の規則を直す。

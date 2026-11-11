@@ -224,5 +224,5 @@ web の BFF やクライアントが送った値は使わない。
 ## Interface
 
 - 予定の API の権限を読み書きするパスは、[権限のレコード](#権限のレコード) に書いた。
-  - `GET /v1/me` が返す権限と、ほかのパスの定義の正本は [予定の API の openapi.yaml](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/openapi.yaml) である。
+  - `GET /v1/me` が返す権限と、ほかのパスの定義の元は [予定の API の openapi.yaml](https://github.com/Fukuemon/buddy/blob/develop/services/schedule/openapi.yaml) である。
 - 照合の API の `POST /v1/checks` のエラーの一覧は、[レセプトの照合の Design Doc の Interface](https://github.com/Fukuemon/buddy/blob/develop/services/receipt/DesignDoc.md#interface) にある。

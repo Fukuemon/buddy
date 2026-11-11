@@ -71,13 +71,13 @@
 | [ADR-0027](0027-web-view-types.md) | web の画面の型を API の型と分けて持ち、ダミーデータを API の形で 1 か所に置く | 承認 |
 | [ADR-0028](0028-web-site-frame-in-root-route.md) | web の画面の枠を root の route の component で包み、左の欄を持つ画面だけを staticData で外す | 承認 |
 
-### Google カレンダーとの連携と正本のモード
+### Google カレンダーとの連携と予定の管理先
 
 | ADR | 題 | Status |
 | --- | --- | --- |
-| [ADR-0029](0029-google-calendar-sync.md) | Google カレンダーとの連携を、事業所ごとの正本のモードで分ける | 承認 |
+| [ADR-0029](0029-google-calendar-sync.md) | Google カレンダーとの連携を、事業所ごとの予定の管理先で分ける | 承認 |
 | [ADR-0030](0030-google-calendar-service-accounts.md) | 職員のカレンダーを、事業所ごとのサービスアカウントへの共有で読み書きする | 承認 |
-| [ADR-0031](0031-calendar-cutover.md) | 事業所の予定の正本を、期間のある切り替えの記録で Google カレンダーから buddy へ移す | 承認 |
+| [ADR-0031](0031-calendar-cutover.md) | 事業所の予定の管理先を、期間のある移行の記録で Google カレンダーから buddy へ移す | 承認 |
 
 ### calendar-worker
 
@@ -175,7 +175,7 @@ flowchart TB
         A0025["0025"]
         A0026["0026"]
     end
-    subgraph gcal["Google カレンダーとの連携と正本のモード"]
+    subgraph gcal["Google カレンダーとの連携と予定の管理先"]
         A0029["0029"]
         A0031["0031"]
     end

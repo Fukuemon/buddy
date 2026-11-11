@@ -25,7 +25,7 @@
 | 予定の API が返す 400 と 409 | #953 の `1-4` と `1-5` で確認した。画面は条件に当たる予定に操作を出さない |
 | 監査の記録の中身（ADR-0040 の 9） | 画面に出さない。`TestScheduleDeleteInDB` で確認した |
 | 削除した予定の ID での作成を 409 で拒むこと | 画面は新しい ID で作る。`TestSchedulesDelete` で確認した |
-| 予定の正本を切り替えている途中の事業所 | キャンセルと同じ判定（`canChangeSchedule`）を使う。`scheduleWritable.test.ts` で確認した |
+| 予定の管理を buddy に移している途中の事業所 | キャンセルと同じ判定（`canChangeSchedule`）を使う。`scheduleWritable.test.ts` で確認した |
 
 ## 根拠
 
@@ -34,7 +34,7 @@
 | 要求 | #882 の受け入れ条件 | 上の 4 つの条件 |
 | 設計 | [ADR-0040](../../adr/0040-schedule-deletion.md) の Decision | 編集できる職員が、開始の日が今日以降の有効な予定を消せる。回は 1 回だけ消せる。`google_primary` では操作を出さない。`buddy_primary` では書き出しが Google の予定を消す |
 | 画面仕様書 | [予定の詳細の「予定を削除」](../../screens/schedule-detail_予定の詳細/index.md#予定を削除) | 「予定を削除」を出す 6 つの条件 |
-| 実装 | `apps/web/src/features/schedule/lib/scheduleWritable.ts` の `canDeleteSchedule` | 事業所のモード、キャンセル、切り替え、写せない繰り返し、今日の日付で判定する |
+| 実装 | `apps/web/src/features/schedule/lib/scheduleWritable.ts` の `canDeleteSchedule` | 事業所のモード、キャンセル、移行、写せない繰り返し、今日の日付で判定する |
 | 実装 | `services/schedule/internal/features/schedule/delete.go` の `Delete` と `DeleteOccurrence` | 権限、キャンセル、日付を確認し、監査の記録を書き、書き出しの待ちを積む |
 | 実装 | `services/schedule/internal/features/calendarexport/exporter.go` | 削除の待ちで、Google の予定を消すか、親の予定の `EXDATE` にする |
 
@@ -66,7 +66,7 @@ services/schedule/internal/features/calendarexport/exporter.go
 | 単発の予定の削除 | 1、2 | `Delete`、削除の確認のダイアログ | 確認を経ずに消える。消えた予定がキャンセルした予定として出る | 単発の予定の削除 |
 | 繰り返しの予定の回の削除 | 1、2 | `DeleteOccurrence`、回の説明 | ほかの回も消える。消えた回がキャンセルした予定として出る | 繰り返しの予定の回の削除 |
 | 今日より前、キャンセル済み、編集の権限が無い予定 | 3 | `canDeleteSchedule`、`canEditScheduleOf` | 削除できない予定に操作が出る。削除できる予定に出ない | 削除できない予定 |
-| `google_primary` の事業所 | 4 | `sourceMode === 'buddy_primary'`、キャンセルの書き込み | 操作が出る。キャンセルが Google の予定を消さなくなる（回帰） | Google カレンダーで管理する事業所 |
+| `google_primary` の事業所 | 4 | `sourceMode === 'buddy_primary'`、キャンセルの書き込み | 操作が出る。キャンセルが Google の予定を消さなくなる（回帰） | Google カレンダーで管理している事業所 |
 | `buddy_primary` の事業所の書き出し | 1（ADR-0040 の書き出し） | `Outbox.ScheduleDeleted`、`Exporter` | Google の予定が残り、照合に削除した予定が残る | Google カレンダーに書き出した予定の削除 |
 
 ## テストケース
@@ -88,7 +88,7 @@ services/schedule/internal/features/calendarexport/exporter.go
 ### Google カレンダー
 
 - **REQ-5**: IF 事業所が `google_primary` ならば、the 予定の詳細 SHALL 「予定を削除」を出さず、「予定をキャンセル」で Google カレンダーの予定を消す。
-  - Google カレンダーで管理する事業所
+  - Google カレンダーで管理している事業所
 - **REQ-6**: WHEN `buddy_primary` の事業所で、Google カレンダーを結び付けた職員の書き出した予定を削除したとき、the 書き出し SHALL Google カレンダーの予定を消す。
   - Google カレンダーに書き出した予定の削除
 
