@@ -314,7 +314,7 @@ Hydra は discovery の `end_session_endpoint` を Issuer の URL から作る�
   - マイグレーションは、前のバージョンのアプリが動いたまま適用できる変更だけにする。
 - ブローカーのイメージも、`broker` と `migrate` の 2 つのバイナリを持ち、同じ手順でマイグレーションを適用する。
 - web のイメージも `/usr/local/bin/migrate` を持ち、セッションの保存先が PostgreSQL のときは、同じ手順で `up` を渡してセッションのテーブルを作る。
-  - 接続先は `SESSION_STORE_URL` で受ける。接続のプーラーを通さず、直に PostgreSQL につなぐ。
+  - 接続先は `SESSION_STORE_URL` で受ける。migrate は advisory lock を取るので、transaction のモードのプーラーを通さない。直に PostgreSQL につなぐか、session のモードのプーラーを通す。
   - ADR-0047: [web のセッションを、web 用の PostgreSQL のデータベースに暗号化して置けるようにし、期限の切れた行を web が消す](../adr/0047-web-session-postgres.md)
 - Hydra のマイグレーションは、Hydra のイメージの `migrate sql up` で適用する。
 
