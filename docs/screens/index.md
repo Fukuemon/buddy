@@ -215,3 +215,19 @@ flowchart TB
   - この状態はモックを持たないので、`page-error` の正本はこのセクションである。
 - 実装は `apps/web/src/routes/__root.tsx` の `RootError` と、`apps/web/src/components/page/PageErrorMessage.tsx`。
 - カタログ: [PageErrorMessage の Default](https://buddy-docs.emon-apps.workers.dev/storybook/?path=/story/画面-common-pageerrormessage--default)
+
+### 一時的に使えない
+
+ログインしたままの職員を、一時的に確認できないときに、どの画面もこの表示に替わる。  
+ログインの期限を延ばす処理が、ログインの仕組みの障害で失敗したときが当たる。決まりは [ADR-0044 の BFF は refresh を 1 度だけ試す](../adr/0044-token-hook-fail-closed.md#bff-は-refresh-を-1-度だけ試す) にある。  
+画面ごとの仕様書は、この状態を状態のタブに数えない。
+
+- ログインは残る。障害が直った後に読み直すと、ログインし直さずに画面が出る。
+- ヘッダーは「buddy」だけを出し、メニューのボタンとアカウントのボタンは出さない。
+  - ナビゲーションも出さない。
+- タイトルは「buddy を一時的に使えません」、説明の文は「ログインしたまま、しばらく待ってから読み直してください。」。
+- 「読み直す」のリンクを押すと、今の画面の URL を読み込み直す。
+- E2E が指す目印は、表示の全体の `page-unavailable`。
+  - この状態はモックを持たないので、`page-unavailable` の正本はこのセクションである。
+- 実装は `apps/web/src/routes/__root.tsx` の `RootError` と、`apps/web/src/components/page/PageUnavailableMessage.tsx`。
+- カタログ: PageUnavailableMessage の Default（実装と一緒に足す）
