@@ -187,3 +187,22 @@ func constraintOf(err error) string {
 	}
 	return fmt.Sprintf("制約の違反でないエラー: %v", err)
 }
+
+// MaxConns が 0 なら接続のプールの上限をデフォルトの数にし、1 以上なら、その数にすることを確認する。
+func TestOpenMaxConns(t *testing.T) {
+	if testConfig == (Config{}) {
+		t.Skip("PostgreSQL を使うテストは -short では動かさない")
+	}
+	for _, tt := range []struct{ set, want int32 }{{0, defaultMaxConns}, {3, 3}} {
+		cfg := testConfig
+		cfg.MaxConns = tt.set
+		pool, err := Open(context.Background(), cfg)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if got := pool.Config().MaxConns; got != tt.want {
+			t.Errorf("MaxConns %d の接続の数の上限 = %d, want %d", tt.set, got, tt.want)
+		}
+		pool.Close()
+	}
+}

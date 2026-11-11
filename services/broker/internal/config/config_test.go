@@ -38,6 +38,7 @@ func TestLoad(t *testing.T) {
 	m["AUTO_CONSENT_CLIENTS"] = "web, admin,"
 	m["INTERNAL_PORT"] = "9090"
 	m["INTERNAL_API_CLIENTS"] = "schedule, receipt"
+	m["DB_MAX_CONNS"] = " 3 "
 	// シークレットのファイルの末尾の改行は除く
 	m["TOKEN_HOOK_KEY"] = "hook-key-0123456789abcdef0123456789\n"
 	m["LOGIN_COOKIE_KEYS"] = "cookie-key-new-0123456789abcdef01234, cookie-key-old-0123456789abcdef01234\n"
@@ -50,7 +51,7 @@ func TestLoad(t *testing.T) {
 		InternalPort:                 "9090",
 		ListenTarget:                 config.ListenBoth,
 		LogLevel:                     slog.LevelDebug,
-		DB:                           config.DB{Host: "localhost", Port: "5432", User: "broker", Password: "secret", Name: "broker"},
+		DB:                           config.DB{Host: "localhost", Port: "5432", User: "broker", Password: "secret", Name: "broker", MaxConns: 3},
 		HydraAdminURL:                "http://hydra:4445",
 		UpstreamIdPsFile:             "/config/upstream-idps.json",
 		UpstreamClientSecretsFile:    "/secrets/upstream-idp-client-secrets.json",
@@ -80,6 +81,10 @@ func TestLoadDefaults(t *testing.T) {
 	}
 	if c.ListenTarget != config.ListenBoth {
 		t.Errorf("ListenTarget = %q, want both", c.ListenTarget)
+	}
+	// 0 は、postgres.Open が接続のプールの上限をデフォルトの数にする値である
+	if c.DB.MaxConns != 0 {
+		t.Errorf("DB.MaxConns = %d, want 0", c.DB.MaxConns)
 	}
 	if c.InternalPort != "8081" || !slices.Equal(c.InternalAPIClients, []string{"schedule"}) || !slices.Equal(c.InternalAPIOnboardingClients, []string{"schedule-ops"}) {
 		t.Errorf("InternalPort = %q, InternalAPIClients = %v, InternalAPIOnboardingClients = %v", c.InternalPort, c.InternalAPIClients, c.InternalAPIOnboardingClients)
@@ -132,6 +137,9 @@ func TestLoadErrors(t *testing.T) {
 		{"内部のポートが画面のポートと同じ", map[string]string{"PORT": "8081"}, "INTERNAL_PORT"},
 		{"LISTEN_TARGET が不正", map[string]string{"LISTEN_TARGET": "admin"}, "LISTEN_TARGET"},
 		{"DB のポートが範囲の外", map[string]string{"DB_PORT": "70000"}, "ポート"},
+		{"接続の数の上限が 0", map[string]string{"DB_MAX_CONNS": "0"}, "DB_MAX_CONNS"},
+		{"接続の数の上限が負の数", map[string]string{"DB_MAX_CONNS": "-1"}, "DB_MAX_CONNS"},
+		{"接続の数の上限が数でない", map[string]string{"DB_MAX_CONNS": "many"}, "DB_MAX_CONNS"},
 		{"HYDRA_ADMIN_URL が URL でない", map[string]string{"HYDRA_ADMIN_URL": "hydra:4445"}, "HYDRA_ADMIN_URL"},
 		{"HYDRA_ISSUER が URL でない", map[string]string{"HYDRA_ISSUER": "hydra"}, "HYDRA_ISSUER"},
 		{"PUBLIC_URL が URL でない", map[string]string{"PUBLIC_URL": "/login"}, "PUBLIC_URL"},
