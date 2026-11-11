@@ -10,6 +10,8 @@ import {
   LOGIN_EMAIL,
   LOGIN_STAFF,
   LOGIN_STATE,
+  OFFICE_B,
+  OFFICE_B_STATE,
   OFFICE_CLERK,
   OFFICE_CLERK_STATE,
   OKADA,
@@ -49,6 +51,12 @@ const ACCOUNTS = [
     path: HAYASHI_STATE,
     email: HAYASHI.email,
     staffName: HAYASHI.name,
+  },
+  {
+    title: 'compose のブローカーに 2 つ目の事業所の職員でログインした状態を保存する',
+    path: OFFICE_B_STATE,
+    email: OFFICE_B.email,
+    staffName: OFFICE_B.staff.name,
   },
   {
     title: 'compose のブローカーに訪問しない事務の職員でログインした状態を保存する',
