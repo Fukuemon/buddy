@@ -182,6 +182,8 @@ services:
       TOKEN_HOOK_KEY: buddy-dev-token-hook-key-for-compose-only
       # ログインの途中の cookie に署名する鍵。先頭で署名し、全てで検証する
       LOGIN_COOKIE_KEYS: buddy-dev-login-cookie-key-for-compose-only
+      # 負荷の検証の回だけ、k6 が職員ごとに書く送信元のヘッダーの名前を渡す（apps/web/scripts/web-load.k6.js）。空なら接続の相手のアドレスで数える
+      CLIENT_IP_HEADER: ${BROKER_CLIENT_IP_HEADER:-}
     volumes:
       - ./compose/broker/upstream-idps.json:/config/upstream-idps.json:ro
       - ./compose/broker/upstream-idp-client-secrets.json:/config/upstream-idp-client-secrets.json:ro
