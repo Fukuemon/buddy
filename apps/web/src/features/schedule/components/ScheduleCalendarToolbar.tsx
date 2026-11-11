@@ -1,11 +1,18 @@
 import { Button, SegmentedControl } from '@buddy/ui'
 import PrevIcon from '#/assets/icons/arrow-left.svg?react'
 import NextIcon from '#/assets/icons/arrow-right.svg?react'
+import SidebarToggleIcon from '#/assets/icons/calendar-month.svg?react'
 
 import { CALENDAR_VIEWS, CALENDAR_VIEW_LABEL, type CalendarView } from '../constants/calendarView'
 import { formatCalendarTitle } from '../lib/calendarRange'
 
 const VIEW_OPTIONS = CALENDAR_VIEWS.map((view) => ({ id: view, label: CALENDAR_VIEW_LABEL[view] }))
+
+/**
+ * 左の欄を開閉するボタンの文言。幅 768px 以上ではアイコンだけのボタンにし、この文言を名前とツールチップに残す。
+ * 文言のままだと、見出しが長い週でツールバーの右の操作が見出しと同じ行に収まらない。
+ */
+const SIDEBAR_TOGGLE_LABEL = '日付と絞り込み'
 
 /** ミニカレンダーと職員の絞り込みの左の欄を開閉するボタンに渡す値。 */
 export type StaffFilterToggle = {
@@ -87,12 +94,18 @@ export const ScheduleCalendarToolbar = ({
           aria-controls={staffFilterToggle.controlsId}
           aria-expanded={staffFilterToggle.isOpen}
           aria-haspopup={staffFilterToggle.opensDialog ? 'dialog' : undefined}
+          aria-label={staffFilterToggle.opensDialog ? undefined : SIDEBAR_TOGGLE_LABEL}
           data-testid="site-sidebar-open"
           onClick={staffFilterToggle.onToggle}
           size="S"
+          title={staffFilterToggle.opensDialog ? undefined : SIDEBAR_TOGGLE_LABEL}
           variant="secondary"
         >
-          日付と絞り込み
+          {staffFilterToggle.opensDialog ? (
+            SIDEBAR_TOGGLE_LABEL
+          ) : (
+            <SidebarToggleIcon aria-hidden height={24} width={24} />
+          )}
         </Button>
       )}
       {onCreate !== undefined && (
