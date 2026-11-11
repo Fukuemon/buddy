@@ -6,7 +6,7 @@
 
 ## 測った環境
 
-- 測ったコミットは `053a8187` である。Ory Hydra は v26.2.0 で、設定は `compose/hydra/hydra.yml` に、hook の宛先だけを環境変数でスタブに向けた。
+- 測ったコミットは `b77f6b41` である。1 つのコマンドの通しを 2 回と、項目ごとに 1 回流し、秒は 3 回の幅に収まる値で書いた。Ory Hydra は v26.2.0 で、設定は `compose/hydra/hydra.yml` に、hook の宛先だけを環境変数でスタブに向けた。
 - compose は、ルートの `compose.yml` の全体に `packages/e2e/faults/compose.faults.yml` を重ねた。
 - トークンのエンドポイントは、portless の https の URL で、Playwright の request で直に呼んだ。答えない hook の項目だけは、compose の中の web のコンテナからも呼んだ。
 - web の BFF は、ブラウザと同じ道でログインし、Valkey のセッションの `expiresAt` を過ぎた時刻に書き換えて、refresh を起こした。
@@ -52,7 +52,7 @@
 | Hydra の DB の停止 | 401 `invalid_client` | ブローカーのログインの画面にメールを送ると 404 | 200 | 401 `invalid_client` | refresh は 200 |
 
 - ブローカーの停止では、スタブはブローカーに届かず 502 を返す。#877 は、スタブも止めて Hydra から宛先の名前を引けなくした。どちらも Hydra が呼び直す失敗で、回数と秒は同じだった。
-- ブローカーの DB が答えない故障は、別の接続でブローカーの `staff` のテーブルを排他のロックで握って入れた。ブローカーのログの `token_hook の結果` の `failed` の `duration_ms` は、どれも 2000〜2003 だった。
+- ブローカーの DB が答えない故障は、別の接続でブローカーの `staff` のテーブルを排他のロックで握って入れた。ブローカーのログの `token_hook の結果` の `failed` の `duration_ms` は、どれも 2000〜2011 だった。
 - Hydra の DB の停止は、#877 では測っていない。#877 の PostgreSQL の全体の停止と同じく、Hydra は refresh と client credentials に `invalid_client` を返した。
   - 新しいログインは、Hydra の認可のエンドポイントがブローカーのログインの画面へリダイレクトし、メールを送るとブローカーが 404 を返した。ブローカーが Hydra のログインの要求を読めなかったためと推測する。未確認である。
 
