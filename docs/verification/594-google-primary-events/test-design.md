@@ -150,4 +150,4 @@ apps/web/src/features/schedule/components/ScheduleSourceNotices.tsx
 
 - テスト配置先: `packages/e2e/tests/evidence/schedule/google-primary-event-kinds.e2e.ts`
 - fixture・入力データ: calendarpit の管理の API で予定を作り、利用者は予定の API で登録する。撮った後に予定を消す。
-- 実行コマンド: `context/testing/evidence.md` の「撮るコマンド」に、`EVIDENCE_FOR=issue-933` と spec のファイルを渡す。
+- 実行コマンド: `context/testing/evidence.md` の「撮るコマンド」に、`<name>` を渡す。入れる先は `issue-933` である。

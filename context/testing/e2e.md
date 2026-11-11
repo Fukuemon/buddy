@@ -14,8 +14,6 @@ E2E のテストのディレクトリは、`context/project.yml` の `e2e.dir`�
 
 - テストのツールは Playwright（`@playwright/test`）である。
 - エビデンスの録画と字幕は、Playwright の録画と、スキル playwright-capture から写した撮影の config と `caption.ts` で撮る（[エビデンス](evidence.md)）。
-- npm の `@fukuemon/e2e-kit` 0.2.1 は、移す前のエビデンスの spec と薄い層 `tests/fixtures/evidence.ts` のためだけに、`packages/e2e` の開発の依存に残してある。
-  - 新しいコードから kit を import しない。エビデンスの spec を移し終えたら、kit を消す（#1008）。
 - スキル write-e2e-test の一般の語は、Playwright の次の API に当たる。
 
 | スキルの語 | Playwright の API |
@@ -86,9 +84,10 @@ E2E のテストのディレクトリは、`context/project.yml` の `e2e.dir`�
 
 - テストのデータは予定の API に作り、消さない。
   - spec は、タイトルに時刻を入れて自分の作ったデータを見分ける。
-- `setup` は、次の 6 人のログインの状態を保存する（`packages/e2e/tests/setup/login.setup.ts`）。保存した状態を使い回さず、流すたびにログインし直す。
+- `setup` は、次の 7 人のログインの状態を保存する（`packages/e2e/tests/setup/login.setup.ts`）。保存した状態を使い回さず、流すたびにログインし直す。
   - 青木 陽菜（マネージャー）、森 健太（チームリーダー）、林 さくら（メンバー）
   - 岡田 葵（Google カレンダーを正本にする 3 つ目の事業所のマネージャー）、石田 蓮（予定の正本の切り替えを確認する 4 つ目の事業所の職員）
+  - 上野 渚（2 つ目の事業所のマネージャー。止めた職員がいる事業所で撮るのに使う）
   - 中村 結衣（1 つ目の事業所の事務。訪問しない職員で、照合の権限を持つ）
   - spec が別の職員で入るときは、`ACCOUNTS` と `env.ts` の状態のファイルに足す。
   - リーダーで確認する spec は、`test.use({ storageState: LEADER_STATE })` で切り替える。
