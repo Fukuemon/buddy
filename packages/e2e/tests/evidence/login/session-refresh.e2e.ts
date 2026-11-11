@@ -4,7 +4,6 @@ import {
   type APIRequestContext,
   type Browser,
   type BrowserContext,
-  type Page,
 } from '@playwright/test'
 
 import { check, intro, step } from '../../fixtures/caption'
@@ -19,7 +18,11 @@ import {
   stopBroker,
 } from '../../fixtures/sessionFaults'
 import { issueManagerToken, leaveStaff, newStaff, registerStaffId } from '../../fixtures/staff'
-import { BROKER_RESTORE_WAIT, REFRESH_FAILURE_WAIT, SESSION_FAULT_TEST } from '../../fixtures/timeouts'
+import {
+  BROKER_RESTORE_WAIT,
+  REFRESH_FAILURE_WAIT,
+  SESSION_FAULT_TEST,
+} from '../../fixtures/timeouts'
 import { signInAtBroker } from '../../screens/login'
 import { brokerLogin } from '../../selectors/idp'
 import { pageFailure } from '../../selectors/page'
@@ -84,10 +87,14 @@ test.describe('ログインの期限の延長', () => {
           await expect(pageFailure(page).heading).toBeVisible(REFRESH_FAILURE_WAIT)
           seconds = Math.round((Date.now() - since.getTime()) / 1000)
         })
-        await check(page, '一時的に使えないことを示す画面が出て、web のセッションが残る', async () => {
-          await expect(pageFailure(page).heading).toBeVisible()
-          expect(await sessionExists(context)).toBe(true)
-        })
+        await check(
+          page,
+          '一時的に使えないことを示す画面が出て、web のセッションが残る',
+          async () => {
+            await expect(pageFailure(page).heading).toBeVisible()
+            expect(await sessionExists(context)).toBe(true)
+          },
+        )
         const hookCalls = countFailedHookCalls(since)
         await check(
           page,
@@ -128,9 +135,7 @@ test.describe('ログインの期限の延長', () => {
           restoreBroker()
           await waitBrokerHealthy()
         })
-        await step(page, '「読み直す」を押す', () =>
-          pageFailure(page).reload.click(),
-        )
+        await step(page, '「読み直す」を押す', () => pageFailure(page).reload.click())
         await check(page, 'ログインの画面を通らずに、予定のカレンダーが出る', async () => {
           await expect(calendarColumnHeaders(page).first()).toBeVisible()
           await expect(brokerLogin(page).email).toHaveCount(0)
@@ -158,10 +163,14 @@ test.describe('ログインの期限の延長', () => {
         await step(page, '予定のカレンダーを開く', async () => {
           await page.goto('/schedule')
         })
-        await check(page, 'ブローカーのメールの入力の画面に戻り、web のセッションが消える', async () => {
-          await expect(brokerLogin(page).email).toBeVisible()
-          expect(await sessionExists(context)).toBe(false)
-        })
+        await check(
+          page,
+          'ブローカーのメールの入力の画面に戻り、web のセッションが消える',
+          async () => {
+            await expect(brokerLogin(page).email).toBeVisible()
+            expect(await sessionExists(context)).toBe(false)
+          },
+        )
       },
     )
   })
