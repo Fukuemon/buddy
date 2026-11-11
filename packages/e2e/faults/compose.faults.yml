@@ -1,0 +1,21 @@
+# token_hook とブローカーの故障を入れる測定のときだけ、ルートの compose.yml に重ねる override。
+# packages/e2e/faults/run.sh が、-f compose.yml -f packages/e2e/faults/compose.faults.yml で重ねて起動する。
+# 値は全て開発用のダミーの値で、ほかの環境で使わない。本番の構成には重ねない（ADR-0044 の監視と復旧）。
+services:
+  # Hydra とブローカーの間で token_hook を受けるスタブ。既定はブローカーへの素通しで、測定の spec が答え方を切り替える
+  hook-stub:
+    image: node:24-alpine
+    command: ['node', '/stub/hook-stub.mjs']
+    volumes: [./packages/e2e/faults/hook-stub.mjs:/stub/hook-stub.mjs:ro]
+    healthcheck:
+      test: ['CMD', 'wget', '-q', '-O', '/dev/null', 'http://127.0.0.1:9000/calls']
+      interval: 2s
+      timeout: 5s
+      retries: 30
+
+  hydra:
+    environment:
+      # compose/hydra/hydra.yml の oauth2.token_hook の url だけを、スタブに向ける。鍵の設定はファイルのままにする
+      OAUTH2_TOKEN_HOOK_URL: http://hook-stub:8081/internal/token-hook
+    depends_on:
+      hook-stub: { condition: service_healthy }

@@ -5,6 +5,7 @@
   "scripts": {
     "test": "playwright test --project=e2e",
     "evidence": "playwright test -c playwright.capture.config.ts --project=evidence",
+    "faults": "sh faults/run.sh",
     "check": "vp check && eslint && tsc --noEmit",
     "lint": "eslint",
     "typecheck": "tsc --noEmit"
