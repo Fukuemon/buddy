@@ -631,6 +631,8 @@ func TestCallback(t *testing.T) {
 	tests := []struct {
 		name     string
 		identity upstream.Identity
+		// err は、上流の IdP の Exchange が返すエラーである。
+		err      error
 		linked   staff.UpstreamAccount
 		code     string
 		accepted bool
@@ -681,11 +683,25 @@ func TestCallback(t *testing.T) {
 			code:      "bad-code",
 			rejection: hydra.ServerError,
 		},
+		{
+			name:      "hd が許すドメインと合わなければ、結び付けずに拒む",
+			err:       fmt.Errorf("%w: hd %q", upstream.ErrHostedDomain, "other.example"),
+			code:      "code-1",
+			rejection: hydra.AccountMismatch,
+		},
+		{
+			name:      "hd が許すドメインと合わなければ、結び付け済みの職員も拒む",
+			err:       fmt.Errorf("%w: hd %q", upstream.ErrHostedDomain, ""),
+			linked:    staff.UpstreamAccount{Issuer: issuerA, Subject: "u-aoki"},
+			code:      "code-1",
+			rejection: hydra.AccountMismatch,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			e := newEnv(10)
 			e.upstream.identity = tt.identity
+			e.upstream.err = tt.err
 			aoki := e.staff.members[aokiID]
 			aoki.Upstream = tt.linked
 			e.staff.members[aokiID] = aoki

@@ -157,6 +157,10 @@ func (rp *RP) AuthURL(ctx context.Context, orgID string, a Attempt, loginHint st
 // ErrInvalidToken は、上流の IdP の ID token の検証に失敗したことを示す。
 var ErrInvalidToken = errors.New("上流の IdP の ID token を検証できない")
 
+// ErrHostedDomain は、検証した ID token の hd が、事業所の許すドメインと合わないことを示す。
+// 職員が事業所の Google Workspace と違うアカウントで入ったときで、ID token の検証の失敗とは分ける。
+var ErrHostedDomain = errors.New("上流のアカウントの hd が許すドメインと違う")
+
 // Exchange は、事業所 orgID の上流の IdP の認可コード code を ID token に替えて検証し、主張を返す。
 // iss は認可レスポンスの iss パラメーター（RFC 9207）で、空でなければ、認可コードを替える前に設定の issuer と比べる。
 // ID token の署名、iss、aud、exp、nonce を確認する。iss が違うとき、トークンを取れないとき、検証に失敗したときは

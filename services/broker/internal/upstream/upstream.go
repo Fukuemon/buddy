@@ -19,6 +19,9 @@ type IdP struct {
 	// ClientID と ClientSecret は、ブローカーを上流の IdP の RP として登録したときの値である。
 	ClientID     string
 	ClientSecret string
+	// AllowedHostedDomains は、ID token の hd に許す Google Workspace のドメインで、小文字にそろえてある。
+	// 空なら hd を確認しない。
+	AllowedHostedDomains []string
 }
 
 // IdPs は、組織の ID から上流の IdP を引く。
