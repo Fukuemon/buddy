@@ -28,6 +28,24 @@ describe('SchedulePageLayout', () => {
     expect(screen.getByTestId('mini-calendar')).toBeVisible()
   })
 
+  it('PC の幅では、「日付と絞り込み」をアイコンだけのボタンにし、文言を名前とツールチップに残す', async () => {
+    stubViewport(true)
+    render(<Month />)
+    const toggle = await screen.findByTestId('site-sidebar-open')
+    expect(toggle).toHaveAccessibleName('日付と絞り込み')
+    expect(toggle).toHaveAttribute('title', '日付と絞り込み')
+    expect(toggle).not.toHaveTextContent('日付と絞り込み')
+    expect(toggle.querySelector('svg')).toBeInTheDocument()
+  })
+
+  it('スマートフォンの幅では、「日付と絞り込み」を文言のボタンのままにする', async () => {
+    stubViewport(false)
+    render(<Mobile />)
+    const toggle = await screen.findByTestId('site-sidebar-open')
+    expect(toggle).toHaveTextContent('日付と絞り込み')
+    expect(toggle.querySelector('svg')).not.toBeInTheDocument()
+  })
+
   it('PC の幅で「日付と絞り込み」を押すと、左の欄をたたみ、もう一度押すと開く', async () => {
     stubViewport(true)
     render(<Month />)

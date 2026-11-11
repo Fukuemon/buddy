@@ -553,3 +553,23 @@
   border-left: 4px solid var(--wf-primary);
   background: var(--wf-primary-surface);
 }
+
+/* ツールバーの「日付と絞り込み」。幅 768px 以上ではアイコンだけのボタンにし、文言は名前とツールチップに残す（apps/web の ScheduleCalendarToolbar と同じ切り替え） */
+.sc-filter-open__icon {
+  display: none;
+}
+
+@container screen (width >= 768px) {
+  .sc-filter-open {
+    width: 44px;
+    padding: 0;
+  }
+
+  .sc-filter-open__icon {
+    display: block;
+  }
+
+  .sc-filter-open__label {
+    display: none;
+  }
+}
