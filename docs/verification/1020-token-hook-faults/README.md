@@ -6,7 +6,7 @@
 
 ## 測った環境
 
-- 測ったコミットは `b77f6b41` である。1 つのコマンドの通しを 2 回と、項目ごとに 1 回流し、秒は 3 回の幅に収まる値で書いた。Ory Hydra は v26.2.0 で、設定は `compose/hydra/hydra.yml` に、hook の宛先だけを環境変数でスタブに向けた。
+- 測ったコミットは `9e8832a5` である。1 つのコマンドの通しを 2 回と、項目ごとに 1 回流し、秒は 3 回の幅に収まる値で書いた。Ory Hydra は v26.2.0 で、設定は `compose/hydra/hydra.yml` に、hook の宛先だけを環境変数でスタブに向けた。
 - compose は、ルートの `compose.yml` の全体に `packages/e2e/faults/compose.faults.yml` を重ねた。
 - トークンのエンドポイントは、portless の https の URL で、Playwright の request で直に呼んだ。答えない hook の項目だけは、compose の中の web のコンテナからも呼んだ。
 - web の BFF は、ブラウザと同じ道でログインし、Valkey のセッションの `expiresAt` を過ぎた時刻に書き換えて、refresh を起こした。
