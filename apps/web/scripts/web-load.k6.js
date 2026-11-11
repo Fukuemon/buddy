@@ -115,6 +115,9 @@ const clientIpHeaders = (n) =>
     ? {}
     : { [CLIENT_IP_HEADER]: `10.${(n >> 16) & 255}.${(n >> 8) & 255}.${n & 255}` }
 
+/** 開発用の IdP のログインの画面（username を入れる form）に着いたかを返す。 */
+const atUpstreamLogin = (res) => res.status === 200 && (res.body || '').includes('name="username"')
+
 /**
  * Hydra の認可のエンドポイントから、ブローカーと開発用の IdP を通り、redirectTo で始まる URL に着くまで進む。
  * 手順は compose/dev-token.sh と同じである。着いた応答を返す。
@@ -128,7 +131,7 @@ const signInFrom = (authorizeUrl, email, headers, redirectTo) => {
     { login_challenge: decodeURIComponent(challenge[1]), email },
     { headers, tags: { name: 'login:email' } },
   )
-  if (!upstream.url.includes('idp'))
+  if (!atUpstreamLogin(upstream))
     fail(`ブローカーが上流の IdP へ送らない: ${upstream.status} ${email}`)
   const res = http.post(
     upstream.url,
@@ -151,6 +154,8 @@ const managerAccessToken = () => {
     login_challenge: decodeURIComponent(challenge[1]),
     email: MANAGER_EMAIL,
   })
+  if (!atUpstreamLogin(upstream))
+    fail(`ブローカーが上流の IdP へ送らない: ${upstream.status} ${MANAGER_EMAIL}`)
   let res = http.post(
     upstream.url,
     {
