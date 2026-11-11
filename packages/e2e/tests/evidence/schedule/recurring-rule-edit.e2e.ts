@@ -51,7 +51,9 @@ const openDay = async (page: Page, staffId: string, date: string) => {
 const openDetailEdit = async (page: Page, staffId: string, title: string) => {
   const event = dayEvent(page, staffId, title)
   await event.scrollIntoViewIfNeeded()
-  await event.click()
+  // ほかの spec が同じ職員の同じ時刻に残した繰り返しの予定が重なり、押すと上の予定が受け取るので、キーボードで開く
+  await event.focus()
+  await page.keyboard.press('Enter')
   await page.getByTestId('schedule-detail-edit').click()
 }
 

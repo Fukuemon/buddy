@@ -4,9 +4,8 @@ import { check, intro, step } from '../../fixtures/caption'
 import { LOGIN_STAFF, LOGIN_STATE } from '../../fixtures/env'
 import { calendarTimeLabel, calendarWeekColumns } from '../../selectors/scheduleCalendar'
 
-/** 開く週の日曜と、押す日（火曜）。ほかの spec で作った予定と重ならない週にする。ほかの spec が残す終わりの無い繰り返しの予定は 9 時より前に入らないので、8 時の枠を押す。 */
+/** 開く週の日曜。押すのはこの週の火曜（2026-12-22）である。ほかの spec で作った予定と重ならない週にする。ほかの spec が残す終わりの無い繰り返しの予定は 9 時より前に入らないので、8 時の枠を押す。 */
 const WEEK_START = '2026-12-20'
-const CLICK_DATE = '2026-12-22'
 
 test.describe('予定のカレンダー', () => {
   test.describe(`週の表示からの予定の作成（${LOGIN_STAFF.name}、マネージャー）`, () => {
@@ -33,11 +32,11 @@ test.describe('予定のカレンダー', () => {
       })
       await check(
         page,
-        `予定の作成のダイアログが開き、日時に ${CLICK_DATE} の 08:00 が入る`,
+        '予定の作成のダイアログが開き、日時に 2026年12月22日（火）の 08:00 が入る',
         async () => {
           await expect(page.getByTestId('schedule-form-modal')).toBeVisible()
           const dateTime = page.getByTestId('schedule-field-date-time')
-          await expect(dateTime).toContainText(CLICK_DATE)
+          await expect(dateTime).toContainText('2026年12月22日（火）')
           await expect(dateTime).toContainText('08:00')
         },
       )
