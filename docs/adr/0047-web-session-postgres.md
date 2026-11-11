@@ -76,7 +76,7 @@ web のセッションの保存先を、Valkey のほかに PostgreSQL からも
   - BFF の呼び出し（画面がデータを取る server function の POST）の p95 が 500 ms 以下
   - BFF の呼び出しの失敗の率が 1% 未満
 - ローカルの compose の PostgreSQL に CPU、メモリ、接続の数の上限を付けて流す。後から、k6 のようなツールで、ローカルと検証環境で流し直す（#1040）。2026-11-11 に利用者が決めた。
-- 条件と結果は、[#1032 の負荷の検証の結果](../verification/1032-session-store-load/README.md) にある。
+- 条件と結果は、[#1032 の負荷の検証の結果](../verification/1032-session-store-load/README.md) にある。k6 で流した回の条件と結果は、[#1040 の web の負荷の検証の結果](../verification/1040-web-load/README.md) にある。
 
 ## Considered Options
 
