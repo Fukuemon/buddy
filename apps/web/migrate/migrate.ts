@@ -17,4 +17,13 @@ if (url === undefined || !/^postgres(ql)?:\/\//.test(url)) {
   console.error('SESSION_STORE_URL に PostgreSQL の URL（postgres://...）が必要です')
   process.exit(2)
 }
-await migrateUp(url)
+try {
+  await migrateUp(url)
+} catch (error) {
+  // エラーの文には DB のホストとユーザーが入るので、エラーのコードだけを書く
+  const code = (error as { code?: unknown }).code
+  console.error(
+    JSON.stringify({ msg: 'migration failed', code: typeof code === 'string' ? code : 'unknown' }),
+  )
+  process.exit(1)
+}

@@ -30,7 +30,7 @@ const deriveKey = (secret: string): Buffer =>
  */
 const seal = (encKey: Buffer, key: string, value: unknown): Buffer => {
   const iv = randomBytes(IV_BYTES)
-  const cipher = createCipheriv('aes-256-gcm', encKey, iv)
+  const cipher = createCipheriv('aes-256-gcm', encKey, iv, { authTagLength: TAG_BYTES })
   cipher.setAAD(Buffer.from(key))
   const body = Buffer.concat([cipher.update(JSON.stringify(value)), cipher.final()])
   return Buffer.concat([iv, cipher.getAuthTag(), body])
@@ -38,7 +38,9 @@ const seal = (encKey: Buffer, key: string, value: unknown): Buffer => {
 
 /** seal の逆。鍵が違うか値が改ざんされていれば Error を投げる。 */
 const open = <T>(encKey: Buffer, key: string, sealed: Buffer): T => {
-  const decipher = createDecipheriv('aes-256-gcm', encKey, sealed.subarray(0, IV_BYTES))
+  const decipher = createDecipheriv('aes-256-gcm', encKey, sealed.subarray(0, IV_BYTES), {
+    authTagLength: TAG_BYTES,
+  })
   decipher.setAAD(Buffer.from(key))
   decipher.setAuthTag(sealed.subarray(IV_BYTES, IV_BYTES + TAG_BYTES))
   const body = Buffer.concat([
@@ -136,9 +138,10 @@ export const createPostgresSessionStore = (
     },
     purgeExpired: async () => {
       let purged = 0
-      for (const table of ['web_sessions', 'web_session_locks']) {
+      for (const table of ['web_sessions', 'web_session_locks'] as const) {
         const { rowCount } = await pool.query(
-          `DELETE FROM ${table} WHERE key IN
+          // 拾った後に lock が取り直した鍵を消さないよう、消すときも期限を見直す
+          `DELETE FROM ${table} WHERE expires_at <= now() AND key IN
              (SELECT key FROM ${table} WHERE expires_at <= now() LIMIT ${PURGE_LIMIT})`,
         )
         purged += rowCount ?? 0

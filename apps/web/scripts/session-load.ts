@@ -61,7 +61,12 @@ const sessionValue = () => ({
   refreshToken: randomBytes(48).toString('base64url'),
   idToken: randomBytes(700).toString('base64url'),
   expiresAt: Date.now() + 300_000,
-  staff: { id: randomBytes(13).toString('hex'), name: '負荷 検証', facilityId: 'f', canManageStaff: true },
+  staff: {
+    id: randomBytes(13).toString('hex'),
+    name: '負荷 検証',
+    facilityId: 'f',
+    canManageStaff: true,
+  },
 })
 
 const user = async (index: number) => {
@@ -101,15 +106,27 @@ const user = async (index: number) => {
 const sample = async () => {
   const admin = new pg.Client({ connectionString: url })
   await admin.connect()
-  const { rows } = await admin.query<{ max: string }>("SELECT setting AS max FROM pg_settings WHERE name = 'max_connections'")
-  const result = { maxConnections: Number(rows[0]?.max), connections: [] as number[], cpu: [] as number[] }
+  const { rows } = await admin.query<{ max: string }>(
+    "SELECT setting AS max FROM pg_settings WHERE name = 'max_connections'",
+  )
+  const result = {
+    maxConnections: Number(rows[0]?.max),
+    connections: [] as number[],
+    cpu: [] as number[],
+  }
   while (running()) {
     const active = await admin.query<{ n: string }>(
       'SELECT count(*) AS n FROM pg_stat_activity WHERE datname = current_database() AND pid <> pg_backend_pid()',
     )
     result.connections.push(Number(active.rows[0]?.n))
     if (dbContainer !== undefined) {
-      const { stdout } = await promisify(execFile)('docker', ['stats', '--no-stream', '--format', '{{.CPUPerc}}', dbContainer])
+      const { stdout } = await promisify(execFile)('docker', [
+        'stats',
+        '--no-stream',
+        '--format',
+        '{{.CPUPerc}}',
+        dbContainer,
+      ])
       result.cpu.push(Number.parseFloat(stdout))
     }
     await sleep(5000)
@@ -121,7 +138,9 @@ const sample = async () => {
 const percentile = (values: number[], p: number) => {
   if (values.length === 0) return undefined
   const sorted = [...values].sort((a, b) => a - b)
-  return Number(sorted[Math.min(sorted.length - 1, Math.ceil((p / 100) * sorted.length) - 1)]?.toFixed(2))
+  return Number(
+    sorted[Math.min(sorted.length - 1, Math.ceil((p / 100) * sorted.length) - 1)]?.toFixed(2),
+  )
 }
 
 const [samples] = await Promise.all([sample(), ...Array.from({ length: users }, (_, i) => user(i))])
@@ -130,7 +149,12 @@ await Promise.all(stores.map((store) => store.close()))
 const summary = Object.fromEntries(
   Object.entries(latencies).map(([kind, values]) => [
     kind,
-    { count: values.length, p50: percentile(values, 50), p95: percentile(values, 95), p99: percentile(values, 99) },
+    {
+      count: values.length,
+      p50: percentile(values, 50),
+      p95: percentile(values, 95),
+      p99: percentile(values, 99),
+    },
   ]),
 )
 console.log(
@@ -146,7 +170,9 @@ console.log(
       peakConnections: Math.max(...samples.connections),
       peakCpuPercent: samples.cpu.length > 0 ? Math.max(...samples.cpu) : undefined,
       meanCpuPercent:
-        samples.cpu.length > 0 ? Number((samples.cpu.reduce((a, b) => a + b, 0) / samples.cpu.length).toFixed(1)) : undefined,
+        samples.cpu.length > 0
+          ? Number((samples.cpu.reduce((a, b) => a + b, 0) / samples.cpu.length).toFixed(1))
+          : undefined,
     },
   }),
 )

@@ -40,7 +40,14 @@ const createSessionStore = (config: ServerConfig): SessionStore => {
   setInterval(() => {
     store.purgeExpired().catch((error: unknown) => {
       // 消せなくても読み取りは期限で絞るので、次の回に試し直す
-      console.warn(JSON.stringify({ msg: 'session purge failed', cause: String(error) }))
+      // エラーの文には DB のホストとユーザーが入るので、エラーのコードだけを書く
+      const code = (error as { code?: unknown }).code
+      console.warn(
+        JSON.stringify({
+          msg: 'session purge failed',
+          code: typeof code === 'string' ? code : 'unknown',
+        }),
+      )
     })
   }, PURGE_INTERVAL_MS).unref()
   return store
