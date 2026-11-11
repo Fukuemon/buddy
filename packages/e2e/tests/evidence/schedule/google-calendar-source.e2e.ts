@@ -203,36 +203,38 @@ test.describe('予定のカレンダー', () => {
       }
     })
 
-    test('google-primary-edit-guide 予定を Google カレンダーで管理している事業所で予定のカレンダーを開いた場合、予定の作成と変更の操作が出ず、Google カレンダーで編集する案内が出ること', async ({
+    test('google-primary-create-guide 予定を Google カレンダーで管理している事業所で予定のカレンダーを開いた場合、予定の作成の操作と、buddy と Google カレンダーのどちらでも作成、変更できる案内が出ること', async ({
       page,
     }) => {
+      const notice = page.getByTestId('schedule-calendar-google-primary')
       await page.goto('/schedule?view=week')
-      await expect(page.getByTestId('schedule-calendar-google-primary')).toBeVisible()
+      await expect(notice).toBeVisible()
       await intro(
         page,
-        '予定を Google カレンダーで管理している事業所では、予定の作成と変更の操作が出ず、Google カレンダーで編集する案内が出る\n前提 予定のカレンダーを週の表示で開いている',
+        '予定を Google カレンダーで管理している事業所でも、予定の作成の操作が出て、buddy と Google カレンダーのどちらでも作成、変更できる案内が出る\n前提 予定のカレンダーを週の表示で開いている',
       )
 
       await check(
         page,
-        '「予定は Google カレンダーで管理しています」の案内が出て、「予定を作成」のボタンが出ない',
+        '「予定は Google カレンダーと同期しています」の案内が出て、「予定を作成」のボタンが出る',
         async () => {
-          await expect(page.getByTestId('schedule-calendar-google-primary')).toContainText(
-            '予定は Google カレンダーで管理しています',
+          await expect(notice).toContainText('予定は Google カレンダーと同期しています')
+          await expect(notice).toContainText(
+            'Google カレンダーと buddy のどちらでも作成、変更できます',
           )
-          await expect(page.getByTestId('schedule-create-open')).toHaveCount(0)
+          await expect(page.getByTestId('schedule-create-open')).toBeVisible()
         },
       )
 
       await step(page, '日の表示に切り替え、岡田の列の空いた時間の枠を押す', async () => {
         await openDay(page, todayInTokyo())
-        await expect(page.getByTestId('schedule-create-open')).toHaveCount(0)
+        await expect(page.getByTestId('schedule-create-open')).toBeVisible()
         await page
           .getByTestId(`day-grid-staff-${OKADA.staff.id}`)
           .click({ position: { x: 40, y: 40 } })
       })
-      await check(page, '時間の枠を押しても、予定の作成のダイアログが開かない', () =>
-        expect(page.getByTestId('schedule-form-modal')).toHaveCount(0),
+      await check(page, '時間の枠を押すと、予定の作成のダイアログが開く', () =>
+        expect(page.getByTestId('schedule-form-modal')).toBeVisible(),
       )
     })
   })
