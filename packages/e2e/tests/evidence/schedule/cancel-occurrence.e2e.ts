@@ -1,16 +1,14 @@
 import { expect, test, type Page } from '@playwright/test'
 
 import { issueAccessToken } from '../../fixtures/apiReference'
-import { CALENDARPIT_URL, HAYASHI, LOGIN_EMAIL, LOGIN_STAFF } from '../../fixtures/env'
-import { EVIDENCE_VARIANTS, recordPrEvidence } from '../../fixtures/evidence'
+import { check, intro, step } from '../../fixtures/caption'
+import { CALENDARPIT_URL, HAYASHI, LOGIN_EMAIL, LOGIN_STAFF, LOGIN_STATE } from '../../fixtures/env'
 import { findGoogleEvent } from '../../fixtures/googleCalendar'
+import { prepareOutsideRecording } from '../../fixtures/recording'
 import { createWeeklyNormalSchedule } from '../../fixtures/schedule'
 import { STAFF_FORM } from '../../fixtures/staff'
-import { linkStaffCalendar, unlinkStaffCalendar } from '../../setup/calendar'
-import { signInAtBroker } from '../../screens/login'
 import { calendarpitText } from '../../selectors/calendarpit'
-
-const ACTOR = `${LOGIN_STAFF.name}（マネージャー）`
+import { linkStaffCalendar, unlinkStaffCalendar } from '../../setup/calendar'
 
 /** 毎週の予定の最初の回の日（月曜）。キャンセルする回と、残る次の回は、その後の月曜にする。 */
 const FIRST_DATE = '2026-11-16'
@@ -18,24 +16,23 @@ const CANCEL_DATE = '2026-11-23'
 const NEXT_DATE = '2026-11-30'
 
 /**
- * ログインし、林にカレンダーを結び付けてから、林の毎週の予定を予定の API で作る。予定の作成の画面からは繰り返しの予定を作れない。
+ * 録画の外で、林にカレンダーを結び付けてから、林の毎週の予定を予定の API で作る。予定の作成の画面からは繰り返しの予定を作れない。
  * 結び付けた後に作るので、書き出しが繰り返しの予定を林の Google カレンダーに書く。
  */
-const prepareWeekly = (title: string) => async (page: Page) => {
-  await page.goto('/schedule/link')
-  await signInAtBroker(page, LOGIN_EMAIL)
-  await linkStaffCalendar(page, HAYASHI.id)
-  const token = await issueAccessToken(page.request, LOGIN_EMAIL)
-  const res = await createWeeklyNormalSchedule(page.request, token, STAFF_FORM.facilityId, {
-    staffId: HAYASHI.id,
-    title,
-    date: FIRST_DATE,
+const prepareWeekly = (browser: Parameters<typeof prepareOutsideRecording>[0], title: string) =>
+  prepareOutsideRecording(browser, { storageState: LOGIN_STATE }, async (page) => {
+    await linkStaffCalendar(page, HAYASHI.id)
+    const token = await issueAccessToken(page.request, LOGIN_EMAIL)
+    const res = await createWeeklyNormalSchedule(page.request, token, STAFF_FORM.facilityId, {
+      staffId: HAYASHI.id,
+      title,
+      date: FIRST_DATE,
+    })
+    expect(res.status()).toBe(201)
+    await expect
+      .poll(async () => (await findGoogleEvent(page.request, HAYASHI.calendarId, title))?.status)
+      .toBe('confirmed')
   })
-  expect(res.status()).toBe(201)
-  await expect
-    .poll(async () => (await findGoogleEvent(page.request, HAYASHI.calendarId, title))?.status)
-    .toBe('confirmed')
-}
 
 const openDay = async (page: Page, date: string) => {
   await page.goto(`/schedule?view=day&date=${date}`)
@@ -70,131 +67,130 @@ const openGoogleEvent = (page: Page, eventId: string) =>
 /** キャンセルする回の日を除外する日にした、Google の予定の recurrence の行。 */
 const CANCEL_EXDATE = 'EXDATE;TZID=Asia/Tokyo:20261123T100000'
 
+/** 書き出しが Google の予定の recurrence に書く、毎週月曜の規則の行。 */
+const WEEKLY_RULE = 'RRULE:FREQ=WEEKLY;INTERVAL=1;BYDAY=MO'
+
 test.describe('予定の詳細', () => {
-  test.describe('繰り返しの予定の回のキャンセル', () => {
-    for (const variant of EVIDENCE_VARIANTS) {
-      const prefix = variant.label ? `${variant.label}: ` : ''
-      const isBefore = variant.name === 'before'
+  test.describe(`繰り返しの予定の回のキャンセル（${LOGIN_STAFF.name}、マネージャー）`, () => {
+    test.use({ storageState: LOGIN_STATE })
 
-      test(`${prefix}buddy で管理する事業所で繰り返しの予定の 1 回をキャンセルした場合、その回だけがカレンダーから消えること`, async ({
-        browser,
-      }) => {
-        const title = `定例 ${Date.now()}`
-        await recordPrEvidence(
-          browser,
-          {
-            name: 'cancel-occurrence-calendar',
-            title:
-              'buddy で管理する事業所で、繰り返しの予定の 1 回を予定の詳細からキャンセルすると、その回だけがカレンダーから消える',
-            actor: ACTOR,
-            variant,
-          },
-          prepareWeekly(title),
-          async ({ page, step, check }) => {
-            try {
-              await openDay(page, CANCEL_DATE)
-              const event = hayashiEvent(page, title)
-              await expect(event).toBeVisible()
-              await event.scrollIntoViewIfNeeded()
-              await step(
-                `${CANCEL_DATE} の日の表示を開いている。${HAYASHI.name} の列の 10:00〜11:00 に、毎週の予定「${title}」の回が出ている`,
-              )
+    // 改修前は回に「予定をキャンセル」が出ず、ここで流れが分かれるので、改修前と比べない
+    test('cancel-occurrence-calendar buddy で管理する事業所で繰り返しの予定の 1 回をキャンセルした場合、その回だけがカレンダーから消えること', async ({
+      browser,
+      context,
+    }) => {
+      const title = `定例 ${Date.now()}`
+      // 録画する page は前準備の後に開く。前準備で失敗したときは、結び付けを外すためだけに開く
+      let recorded: Page | undefined
+      try {
+        await prepareWeekly(browser, title)
+        const page = await context.newPage()
+        recorded = page
+        await openDay(page, CANCEL_DATE)
+        const event = hayashiEvent(page, title)
+        await expect(event).toBeVisible()
+        await event.scrollIntoViewIfNeeded()
+        await intro(
+          page,
+          `buddy で管理する事業所で、繰り返しの予定の 1 回を予定の詳細からキャンセルすると、その回だけがカレンダーから消える\n前提 ${CANCEL_DATE} の日の表示を開いている。${HAYASHI.name} の列の 10:00〜11:00 に、毎週の予定「${title}」の回が出ている`,
+        )
 
-              await step('予定を押して詳細を開く')
-              await event.click()
-              await expect(page.getByTestId('schedule-detail-modal')).toBeVisible()
-              if (isBefore) {
-                await expect(page.getByTestId('schedule-detail-edit')).toBeVisible()
-                await expect(page.getByTestId('schedule-detail-cancel-schedule')).toHaveCount(0)
-                await check('繰り返しの予定の回には「予定をキャンセル」が出ず、キャンセルできない')
-                return
-              }
-              await expect(page.getByTestId('schedule-detail-cancel-schedule')).toBeVisible()
-              await check('繰り返しの予定の回にも「予定をキャンセル」が出る')
+        await step(page, '予定を押して詳細を開く', async () => {
+          await event.click()
+          await expect(page.getByTestId('schedule-detail-modal')).toBeVisible()
+        })
+        await check(page, '繰り返しの予定の回にも「予定をキャンセル」が出る', () =>
+          expect(page.getByTestId('schedule-detail-cancel-schedule')).toBeVisible(),
+        )
 
-              await step(
-                '「予定をキャンセル」を押し、理由に「利用者の入院」を入れて「予定をキャンセルする」を押す',
-              )
-              await cancelOpened(page, '利用者の入院')
-              await expect(hayashiEvent(page, title)).toHaveCount(0)
-              await check(`${CANCEL_DATE} の ${HAYASHI.name} の列から「${title}」が消える`)
+        await step(
+          page,
+          '「予定をキャンセル」を押し、理由に「利用者の入院」を入れて「予定をキャンセルする」を押す',
+          () => cancelOpened(page, '利用者の入院'),
+        )
+        await check(page, `${CANCEL_DATE} の ${HAYASHI.name} の列から「${title}」が消える`, () =>
+          expect(hayashiEvent(page, title)).toHaveCount(0),
+        )
 
-              await step('左のサイドバーの「キャンセルした予定を出す」を入れる')
-              await page.getByTestId('calendar-show-cancelled').check()
-              await expect(hayashiEvent(page, title)).toBeVisible()
-              await check(`キャンセルした回は、キャンセルした予定として「${title}」が出る`)
+        await step(page, '左のサイドバーの「キャンセルした予定を出す」を入れる', () =>
+          page.getByTestId('calendar-show-cancelled').check(),
+        )
+        await check(page, `キャンセルした回は、キャンセルした予定として「${title}」が出る`, () =>
+          expect(hayashiEvent(page, title)).toBeVisible(),
+        )
 
-              await step(`次の回の ${NEXT_DATE} の日の表示を開く`)
-              await openDay(page, NEXT_DATE)
-              await expect(hayashiEvent(page, title)).toBeVisible()
-              await check(`${NEXT_DATE} の回の「${title}」は残る`)
-            } finally {
-              await step('（撮影のため、ほかの撮影の前提に戻すよう、結び付けを外す）')
-              await unlinkStaffCalendar(page, HAYASHI.id)
-            }
+        await step(page, `次の回の ${NEXT_DATE} の日の表示を開く`, () => openDay(page, NEXT_DATE))
+        await check(page, `${NEXT_DATE} の回の「${title}」は残る`, () =>
+          expect(hayashiEvent(page, title)).toBeVisible(),
+        )
+      } finally {
+        const opened = recorded ?? (await context.newPage())
+        await step(opened, '（撮影のため、ほかの撮影の前提に戻すよう、結び付けを外す）', () =>
+          unlinkStaffCalendar(opened, HAYASHI.id),
+        )
+      }
+    })
+
+    // 改修前は回をキャンセルできないので、改修前と比べない
+    test('cancel-occurrence-export 繰り返しの予定の 1 回をキャンセルした後に書き出しが動いた場合、Google カレンダーからその回だけが消えること', async ({
+      browser,
+      context,
+      request,
+    }) => {
+      const title = `定例 ${Date.now()}`
+      let recorded: Page | undefined
+      try {
+        await prepareWeekly(browser, title)
+        const page = await context.newPage()
+        recorded = page
+        const event = await findGoogleEvent(request, HAYASHI.calendarId, title)
+        const eventId = event?.id ?? ''
+        await openGoogleEvent(page, eventId)
+        await expect(calendarpitText(page, WEEKLY_RULE)).toBeVisible()
+        await expect(calendarpitText(page, 'EXDATE')).toHaveCount(0)
+        await intro(
+          page,
+          `繰り返しの予定の 1 回をキャンセルすると、書き出しが Google カレンダー（calendarpit）の繰り返しの予定からその回だけを消す\n前提 ${HAYASHI.name} に Google カレンダー（${HAYASHI.calendarId}、calendarpit）を結び付けてある。calendarpit の管理の API で毎週の予定「${title}」を開くと、recurrence は毎週月曜の規則だけで、除外する日（EXDATE）が無い`,
+        )
+
+        await step(
+          page,
+          `buddy の ${CANCEL_DATE} の日の表示で、その回を開いてキャンセルする`,
+          async () => {
+            await openDay(page, CANCEL_DATE)
+            await hayashiEvent(page, title).click()
+            await cancelOpened(page, '利用者の入院')
+            await expect(hayashiEvent(page, title)).toHaveCount(0)
           },
         )
-      })
-    }
 
-    // 改修前は回をキャンセルできないので、改修後だけを撮る
-    for (const variant of EVIDENCE_VARIANTS.filter(({ name }) => name !== 'before')) {
-      const prefix = variant.label ? `${variant.label}: ` : ''
-
-      test(`${prefix}繰り返しの予定の 1 回をキャンセルした後に書き出しが動いた場合、Google カレンダーからその回だけが消えること`, async ({
-        browser,
-        request,
-      }) => {
-        const title = `定例 ${Date.now()}`
-        await recordPrEvidence(
-          browser,
-          {
-            name: 'cancel-occurrence-export',
-            title:
-              '繰り返しの予定の 1 回をキャンセルすると、書き出しが Google カレンダー（calendarpit）の繰り返しの予定からその回だけを消す',
-            actor: ACTOR,
-            variant,
-          },
-          prepareWeekly(title),
-          async ({ page, step, check }) => {
-            try {
-              const event = await findGoogleEvent(request, HAYASHI.calendarId, title)
-              const eventId = event?.id ?? ''
-              await openGoogleEvent(page, eventId)
-              await expect(calendarpitText(page, 'RRULE:FREQ=WEEKLY;BYDAY=MO')).toBeVisible()
-              await expect(calendarpitText(page, 'EXDATE')).toHaveCount(0)
-              await step(
-                `${HAYASHI.name} に Google カレンダー（${HAYASHI.calendarId}、calendarpit）を結び付けてある。calendarpit の管理の API で毎週の予定「${title}」を開くと、recurrence は毎週月曜の規則だけで、除外する日（EXDATE）が無い`,
+        await step(
+          page,
+          '書き出しが動いた後に、calendarpit の管理の API で同じ予定を開き直す',
+          async () => {
+            // 書き出しは別の処理が行うので、繰り返しの予定に EXDATE が付くまで待ってから回を開き直す
+            await expect
+              .poll(async () =>
+                (await findGoogleEvent(request, HAYASHI.calendarId, title))?.recurrence?.join('\n'),
               )
-
-              await step(`buddy の ${CANCEL_DATE} の日の表示で、その回を開いてキャンセルする`)
-              await openDay(page, CANCEL_DATE)
-              await hayashiEvent(page, title).click()
-              await cancelOpened(page, '利用者の入院')
-              await expect(hayashiEvent(page, title)).toHaveCount(0)
-
-              // 書き出しは別の処理が行うので、繰り返しの予定に EXDATE が付くまで待ってから回を開き直す
-              await expect
-                .poll(async () =>
-                  (await findGoogleEvent(request, HAYASHI.calendarId, title))?.recurrence?.join(
-                    '\n',
-                  ),
-                )
-                .toContain(CANCEL_EXDATE)
-              await step('書き出しが動いた後に、calendarpit の管理の API で同じ予定を開き直す')
-              await openGoogleEvent(page, eventId)
-              await expect(calendarpitText(page, CANCEL_EXDATE)).toBeVisible()
-              await expect(calendarpitText(page, 'RRULE:FREQ=WEEKLY;BYDAY=MO')).toBeVisible()
-              await check(
-                `recurrence に ${CANCEL_DATE} の除外（${CANCEL_EXDATE}）だけが足され、毎週月曜の規則はそのまま。Google カレンダーからその回だけが消え、${NEXT_DATE} などのほかの回は残る`,
-              )
-            } finally {
-              await step('（撮影のため、ほかの撮影の前提に戻すよう、結び付けを外す）')
-              await unlinkStaffCalendar(page, HAYASHI.id)
-            }
+              .toContain(CANCEL_EXDATE)
+            await openGoogleEvent(page, eventId)
           },
         )
-      })
-    }
+        await check(
+          page,
+          `recurrence に ${CANCEL_DATE} の除外（${CANCEL_EXDATE}）だけが足され、毎週月曜の規則はそのまま。Google カレンダーからその回だけが消え、${NEXT_DATE} などのほかの回は残る`,
+          async () => {
+            await expect(calendarpitText(page, CANCEL_EXDATE)).toBeVisible()
+            await expect(calendarpitText(page, WEEKLY_RULE)).toBeVisible()
+          },
+        )
+      } finally {
+        const opened = recorded ?? (await context.newPage())
+        await step(opened, '（撮影のため、ほかの撮影の前提に戻すよう、結び付けを外す）', () =>
+          unlinkStaffCalendar(opened, HAYASHI.id),
+        )
+      }
+    })
   })
 })

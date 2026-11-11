@@ -1,10 +1,7 @@
 import { expect, test, type Locator, type Page } from '@playwright/test'
 
-import type { Recording } from '@fukuemon/e2e-kit/recording'
-
-import { EVIDENCE_VARIANTS, recordPrEvidence, storyUrl } from '../../fixtures/evidence'
-
-const ACTOR = 'ログインなし（Storybook の story）'
+import { check, intro, step } from '../../fixtures/caption'
+import { storyUrl } from '../../fixtures/evidence'
 
 /** 字幕の帯に隠れないように、story の中身を下へずらす。撮影のための操作である。 */
 const shiftStory = (page: Page) =>
@@ -24,38 +21,55 @@ type Shot = {
   select?: { field: (page: Page) => Locator; value: string }
   /** 撮る前に押す要素 */
   click?: (page: Page) => Locator
-  /** 撮る場面の字幕。改修前と改修後で出る文言の例を入れる */
+  /**
+   * 撮る場面の判定の文。字幕には after を出す。
+   * before は改修前の画面の文言の例で、字幕に出さず、改修前の判定のスクリーンショットと読み合わせるために残す
+   */
   check: { before: string; after: string }
 }
 
-/** 場面を順に開いて撮る。改修前と改修後で、同じ順に同じ数だけ check を呼ぶ。 */
-const shoot = async (
-  { page, step, check }: Recording,
-  shots: readonly Shot[],
-  isBefore: boolean,
-) => {
-  for (const shot of shots) {
-    if (shot.stay !== true) {
-      await page.goto(storyUrl(shot.story))
-      await shiftStory(page)
-    }
-    if (shot.select !== undefined) {
-      await expect(shot.select.field(page)).toBeVisible()
-      await step(shot.opened)
-      await shot.select.field(page).selectOption(shot.select.value)
-    } else if (shot.click !== undefined) {
-      await expect(shot.click(page)).toBeVisible()
-      await step(shot.opened)
-      await shot.click(page).check()
-    } else {
-      await expect(shot.target(page).first()).toBeVisible()
-      await step(shot.opened)
+/** 場面の story を開き、操作する要素か、操作が無ければ撮る要素が見えるまで待つ。 */
+const openShot = async (page: Page, shot: Shot) => {
+  if (shot.stay !== true) {
+    await page.goto(storyUrl(shot.story))
+    await shiftStory(page)
+  }
+  const ready = shot.select?.field(page) ?? shot.click?.(page) ?? shot.target(page).first()
+  await expect(ready).toBeVisible()
+}
+
+/** 場面の絞り込みを選ぶか、要素を押す。どちらも無い場面では何もしない。 */
+const operateShot = async (page: Page, shot: Shot) => {
+  if (shot.select !== undefined) await shot.select.field(page).selectOption(shot.select.value)
+  else if (shot.click !== undefined) await shot.click(page).check()
+}
+
+/**
+ * 場面を順に開いて撮る。改修前と改修後で、同じ順に同じ数だけ check を呼ぶ。
+ * 最初の場面を開いてから intro を出す。前の場面を開いたまま送るだけの場面（stay）は、送る操作に止めが入らないので、送る字幕を判定の字幕の 1 行目に書く
+ */
+const shoot = async (page: Page, title: string, shots: readonly Shot[]) => {
+  for (const [index, shot] of shots.entries()) {
+    const operates = shot.select !== undefined || shot.click !== undefined
+    if (index === 0) {
+      await openShot(page, shot)
+      await intro(page, operates ? title : `${title}\n前提 ${shot.opened}`)
+      if (operates) await step(page, shot.opened, () => operateShot(page, shot))
+    } else if (shot.stay !== true) {
+      await step(page, shot.opened, async () => {
+        await openShot(page, shot)
+        await operateShot(page, shot)
+      })
     }
     const target = shot.target(page).first()
     await expect(target).toBeVisible()
     // 字幕の帯に隠れないように、画面の中ほどに送る。カレンダーの格子のように中で送る箱にも効く
     await target.evaluate((element) => element.scrollIntoView({ block: 'center' }))
-    await check(isBefore ? `改修前: ${shot.check.before}` : shot.check.after)
+    await check(
+      page,
+      shot.stay === true ? `${shot.opened}\n${shot.check.after}` : shot.check.after,
+      () => expect(target).toBeVisible(),
+    )
   }
 }
 
@@ -294,24 +308,12 @@ const VIEWPOINTS = [
 ] as const
 
 test.describe('画面の日付と時刻', () => {
-  test.describe('日付と時刻の範囲の書き方', () => {
-    for (const variant of EVIDENCE_VARIANTS) {
-      const prefix = variant.label ? `${variant.label}: ` : ''
-      const isBefore = variant.name === 'before'
-
-      for (const viewpoint of VIEWPOINTS) {
-        test(`${prefix}${viewpoint.test}`, async ({ browser }) => {
-          const first = storyUrl(viewpoint.shots[0]!.story)
-          await recordPrEvidence(
-            browser,
-            { name: viewpoint.name, title: viewpoint.title, actor: ACTOR, variant },
-            async (page) => {
-              await page.goto(first)
-            },
-            (recording) => shoot(recording, viewpoint.shots, isBefore),
-          )
-        })
-      }
+  // 文言の違いは、改修前と改修後の判定のスクリーンショットを並べて比べる。確認する関数は、両方の版で通る要素の表示だけを見る
+  test.describe('日付と時刻の範囲の書き方（ログインなし、Storybook の story）', () => {
+    for (const viewpoint of VIEWPOINTS) {
+      test(`${viewpoint.name} ${viewpoint.test}`, { tag: '@compare' }, async ({ page }) => {
+        await shoot(page, viewpoint.title, viewpoint.shots)
+      })
     }
   })
 })
