@@ -65,6 +65,7 @@ buddy のコードと設定は、特定のデプロイ先を前提にしない�
 - DB は、自動のフェイルオーバーと、ポイントインタイムの復元ができる構成にする。
 - 予定の API と照合の API は、Hydra の discovery を読めなくても起動を続け、読めるまで 5 秒ごとに読み直す。
   - 読めるまでは、`/readyz` が 503 を、access token の付いたリクエストが 503（`auth_unavailable`）を返す。
+  - discovery の文書が設定と合わないとき（`issuer` が `OIDC_ISSUER` と違うか、`jwks_uri` が無い）も、終了せずに読み直し続ける。原因は WARN のログ `oidc discovery failed` の `error` に出る。
   - `/healthz` は 200 のままなので、`/healthz` で再起動を決めても、Hydra を待つ間に起動し直さない。
 
 ### 監視の項目とアラートの条件

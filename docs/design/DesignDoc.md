@@ -300,7 +300,7 @@ Hydra は discovery の `end_session_endpoint` を Issuer の URL から作る�
 - `GET /readyz`: 依存先に届けば 200、届かなければ 503 を返す。
   - 予定の API は PostgreSQL、web はセッションの保存先（Valkey か PostgreSQL）を確認する。
   - 予定の API と照合の API は、Hydra の discovery の文書を 1 度読めるまで 503 を返す。
-    - Hydra に届かなくても起動を続け、読めるまで 5 秒ごとに読み直す。
+    - Hydra に届かなくても起動を続け、読めるまで 5 秒ごとに読み直す。discovery の文書が設定と合わないときも、終了せずに読み直し続ける。
     - 読めた後は、Hydra に届くかを確認しない。Hydra が止まっても、既発行の access token を受けられるためである。
     - 照合の API は、読めた後はほかの依存先を確認せず、プロセスが動いていれば 200 を返す。
 - 2 つとも認証を求めない。
