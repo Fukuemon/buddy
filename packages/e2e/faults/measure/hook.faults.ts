@@ -1,7 +1,7 @@
 // hook のスタブが決まった答えを返すときの、Hydra と web の動き。
 import { expect, test } from '@playwright/test'
 
-import { setStubMode, stubCalls } from '../lib/compose'
+import { clientCredentialsInsideCompose, setStubMode, stubCalls } from '../lib/compose'
 import { describeCall, report } from '../lib/results'
 import { restoreAll } from '../lib/restore'
 import {
@@ -184,7 +184,7 @@ test('hook の 501: Hydra が呼び直すかと、失敗が決まるまでの秒
 })
 
 test(
-  'hook が答えない: Hydra は 30 秒を 3 回待ち、クライアントには答えが返らない',
+  'hook が答えない: Hydra は 30 秒を 3 回待ち、答えを返さずに接続を切る',
   { tag: '@slow' },
   async () => {
     const staff = await registerFaultStaff('hookhang')
@@ -193,16 +193,32 @@ test(
     if (!before.ok) throw new Error(`故障の前にログインできない: ${before.step}`)
 
     setStubMode({ hang: true })
-    const refreshed = await refresh(request, before.tokens.refreshToken)
+    // 約 93 秒の待ちを 1 回で済ませるため、portless を通した refresh と、compose の中からの client credentials を並べる
+    const [refreshed, inside] = await Promise.all([
+      refresh(request, before.tokens.refreshToken),
+      clientCredentialsInsideCompose(),
+    ])
     const calls = stubCalls()
 
     setStubMode()
     const after = await refresh(request, before.tokens.refreshToken)
 
     report('hook が答えない', [
-      { label: 'refresh', value: describeCall(refreshed), basis: '#877' },
       {
-        label: 'refresh で Hydra が hook を呼んだ回数',
+        label: 'compose の中から Hydra を直に呼んだ client credentials',
+        value:
+          inside.status === null
+            ? `答えが無いまま切れた（${inside.seconds} 秒、${inside.failure ?? ''}）`
+            : `${inside.status}（${inside.seconds} 秒）`,
+        basis: '#877',
+      },
+      {
+        label: 'portless を通した refresh（portless が、切れた接続を 502 にする）',
+        value: describeCall(refreshed),
+        basis: '記録だけ',
+      },
+      {
+        label: '2 つの要求で Hydra が hook を呼んだ回数',
         value: `${calls.length} 回`,
         basis: '#877',
       },
@@ -222,10 +238,12 @@ test(
       },
     ])
 
-    expect.soft(calls.length).toBe(3)
-    expect.soft(refreshed.status).toBeNull()
+    expect.soft(calls.length).toBe(6)
+    expect.soft(inside.status).toBeNull()
+    expect.soft(inside.seconds).toBeGreaterThan(85)
+    expect.soft(inside.seconds).toBeLessThan(110)
+    expect.soft(refreshed.status === 200).toBe(false)
     expect.soft(refreshed.seconds).toBeGreaterThan(85)
-    expect.soft(refreshed.seconds).toBeLessThan(110)
     expect.soft(after.status).toBe(200)
     await request.dispose()
   },

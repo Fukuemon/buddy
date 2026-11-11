@@ -1,7 +1,7 @@
 // ログインの仕組みに故障を入れるための、compose のコンテナの操作。docker で直に操作する。
 // 故障を入れる仕組みは本番のコードに足さず、テストのディレクトリに置く（ADR-0044 の監視と復旧）。
 // エビデンスの spec（tests/evidence/login/session-refresh.e2e.ts）も、tests/fixtures/sessionFaults.ts を通して使う。
-import { execFileSync, spawnSync } from 'node:child_process'
+import { execFile, execFileSync, spawnSync } from 'node:child_process'
 
 import type { BrowserContext } from '@playwright/test'
 
@@ -235,6 +235,46 @@ export const setBrokerStaffStatus = (email: string, status: 'active' | 'suspende
     `status=${status}`,
     '-At',
   )
+
+/**
+ * web のコンテナから、compose の中の名前で Hydra の client credentials のトークンを取る。portless を通さない。
+ * portless は、Hydra が答えずに切った接続を 502 にして返すので、Hydra が何を返したかは中から呼んで見る。
+ * 返すのは、状態コード（答えが無いまま切れたら null）、切れたときの理由、かかった秒である。非同期で、ほかの呼び出しと並べられる。
+ */
+export const clientCredentialsInsideCompose = (): Promise<{
+  status: number | null
+  failure?: string
+  seconds: number
+}> => {
+  const script = `const s = Date.now()
+fetch('http://hydra:4444/oauth2/token', {
+  method: 'POST',
+  headers: { authorization: 'Basic ' + btoa('schedule:schedule-dev'), 'content-type': 'application/x-www-form-urlencoded' },
+  body: 'grant_type=client_credentials&audience=broker',
+  signal: AbortSignal.timeout(150000),
+}).then(
+  (r) => console.log(JSON.stringify({ status: r.status, seconds: (Date.now() - s) / 1000 })),
+  (e) => console.log(JSON.stringify({ status: null, failure: String(e.cause?.code ?? e.name), seconds: (Date.now() - s) / 1000 })),
+)`
+  return new Promise((resolve, reject) => {
+    execFile(
+      'docker',
+      ['exec', container('web'), 'node', '-e', script],
+      { encoding: 'utf8' },
+      (error, stdout) => {
+        if (error) reject(new Error('web のコンテナから Hydra を呼べなかった'))
+        else
+          resolve(
+            JSON.parse(stdout.trim()) as {
+              status: number | null
+              failure?: string
+              seconds: number
+            },
+          )
+      },
+    )
+  })
+}
 
 /** スタブの操作の口を呼び、JSON の答えを返す。 */
 const stub = (pathAndQuery: string) =>
