@@ -35,6 +35,9 @@ status: stable
 - 照合の API のテストと web の Vitest は、外部のネットワークと環境変数を要らない。
   - 照合の API のテストは、フェイクの Issuer と Calendar API を loopback で立てる。
   - web は `VITE_API_MODE` を指定しなければフェイクの API で動く。
+- `apps/web/src/server/postgresSessionStore.test.ts` は、`SESSION_STORE_TEST_URL` の PostgreSQL につなぐ。渡さなければ飛ばす。
+  - ローカルでは、compose を起動し、`SESSION_STORE_TEST_URL=postgres://buddy:buddy-dev@localhost:<POSTGRES_PORT>/web` を渡す。テストはテーブルを空にするので、compose の web のセッションも消える。
+  - CI の `typescript` のジョブは、PostgreSQL のサービスのコンテナに向けて渡す。
 - `packages/ui` のテストは、Playwright の chromium が要る（`pnpm --filter @buddy/ui exec playwright install chromium`）。
 - E2E は、ルートの compose の全体（ポートは [CONTRIBUTING.md](../CONTRIBUTING.md) の Running Locally）と、Playwright の chromium が要る。
 - 照合の互換のテストの期待値を作り直すときだけ、元の Python の実装のチェックアウトと uv が要る（`services/receipt/tools/parity/README.md`）。

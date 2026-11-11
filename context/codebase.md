@@ -144,7 +144,7 @@ status: stable
 | 状態 | 保存先 | オーナー |
 | --- | --- | --- |
 | 事業所、職員、利用者、予定、権限 | PostgreSQL | 予定の API だけ。一覧と作成は事業所の ID で絞り、1 件を指すリクエストはリソースの事業所を確認する |
-| ログインのセッションとトークン | Valkey | web の BFF。ブラウザには署名した cookie でセッションの ID だけを渡す |
+| ログインのセッションとトークン | Valkey か PostgreSQL（`SESSION_STORE_URL` で選ぶ。ADR-0047） | web の BFF。ブラウザには署名した cookie でセッションの ID だけを渡す |
 | 照合の入力の CSV と結果 | 保存しない | 照合の API は 1 回のリクエストで返し、web は query の cache にだけ置く。画面を読み直すと消える |
 | 画面の表示の条件（表示の単位、日付、絞り込みの職員） | URL の search params | web の route。zod で検証し、デフォルト値は URL に書かない |
 | API から取ったデータ | TanStack Query の cache | web。query の key は `api/queryKeys.ts` に、queryOptions と mutation は機能ごとの `queries.ts` に置く。変更したら、機能をまたぐ invalidate も `queryKeys` から key を作る |

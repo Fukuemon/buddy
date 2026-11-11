@@ -140,6 +140,7 @@ nav = [
     "adr/0043-facility-onboarding-cli.md",
     "adr/0045-home-screen-web-app.md",
     "adr/0046-offline-own-schedules.md",
+    "adr/0047-web-session-postgres.md",
   ] },
 ]
 

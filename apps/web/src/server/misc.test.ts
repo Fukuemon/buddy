@@ -38,6 +38,23 @@ describe('loadServerConfig', () => {
     )
     expect(() => loadServerConfig({ ...env, SESSION_SECRET: 'short' })).toThrow('32')
   })
+
+  it('セッションの保存先を URL のスキームで受け、PostgreSQL の接続の数の上限のデフォルトを 5 にする', () => {
+    expect(loadServerConfig(env).sessionStoreMaxConnections).toBe(5)
+    const pgConfig = loadServerConfig({
+      ...env,
+      SESSION_STORE_URL: 'postgresql://web:p@db:5432/web?sslmode=require',
+      SESSION_STORE_MAX_CONNS: '3',
+    })
+    expect(pgConfig.sessionStoreUrl).toBe('postgresql://web:p@db:5432/web?sslmode=require')
+    expect(pgConfig.sessionStoreMaxConnections).toBe(3)
+    expect(() => loadServerConfig({ ...env, SESSION_STORE_URL: 'mysql://db/web' })).toThrow(
+      'SESSION_STORE_URL',
+    )
+    expect(() => loadServerConfig({ ...env, SESSION_STORE_MAX_CONNS: '0' })).toThrow(
+      'SESSION_STORE_MAX_CONNS',
+    )
+  })
 })
 
 describe('signValue', () => {
