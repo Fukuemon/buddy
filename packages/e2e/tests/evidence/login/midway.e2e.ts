@@ -10,8 +10,8 @@ import {
   retireStaff,
 } from '../../fixtures/staff'
 import { enterEmailAtBroker, signInAtUpstreamIdp } from '../../screens/login'
-import { brokerLogin, idpLogin } from '../../selectors/idp'
 import { brokerPage } from '../../selectors/broker'
+import { brokerLogin, idpLogin } from '../../selectors/idp'
 
 /**
  * ブローカーのシード（services/broker/db/seed/seed.sql）の 青木 陽菜 の職員の ID。予定の API の職員の ID（LOGIN_STAFF.id）とは違う。
@@ -120,6 +120,7 @@ test.describe('予定のカレンダー', () => {
       },
     )
 
+    // 休職は、退職の文が同じになったことを示すための比べる元なので、@compare を付けず改修後だけを撮る。#1013 でも改修後だけを撮った
     test('login-suspended-midway 上流の IdP にいる間に職員を休職にした場合、管理者に確認するよう伝える画面が出ること', async ({
       context,
       request,
