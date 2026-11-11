@@ -12,7 +12,7 @@ web のセッションの保存先を、Valkey のほかに PostgreSQL からも
   - ADR-0001: [認証を OIDC のブローカーと BFF のサーバー側のセッションにし、職員の身元をブローカーが、権限と業務のデータを予定の API が持つ](0001-auth.md)
 - refresh token の期限は、Hydra のデフォルトの 720 時間である。セッションは 12 時間で切れる。
 - web は、セッションの読み書きを `SessionStore` のインターフェースで行う。refresh を 1 本にするための鍵（`lock` と `unlock`）も同じインターフェースにある。
-- 検証環境と本番環境では、Hydra、ブローカー、予定の API のデータベースを同じ PostgreSQL のインスタンスに置き、アプリごとにロールを分ける。同じインスタンスでは、管理者の権限とインスタンスのバックアップが、全てのアプリのデータに届く（[基盤と運用の Databases](../../context/operations.md#databases)）。
+- 検証環境と本番環境では、Hydra、ブローカー、予定の API のデータベースを同じ PostgreSQL のインスタンスに置き、アプリごとにロールを分ける。同じインスタンスでは、管理者の権限とインスタンスのバックアップが、全てのアプリのデータに届く（[基盤と運用の Databases](https://github.com/Fukuemon/buddy/blob/develop/context/operations.md#databases)）。
 - 本番環境の PostgreSQL は、接続の数の上限が小さい構成を見込む。予定の API、ブローカー、Hydra は、それぞれ接続のプールを持つ。
 - 2026-11-11 に利用者が、利用する人数が多くないので、セッションを DB に置く案でよいと判断した。同じ日に利用者が、セッションを置くデータベース、暗号化、テーブルを作る方法、期限の切れた行の扱い、設定の渡し方、負荷の検証の条件を、下の Decision のとおりに決めた（#1032）。
 
@@ -29,7 +29,7 @@ web のセッションの保存先を、Valkey のほかに PostgreSQL からも
 
 ### データベースとロール
 
-- web 用のデータベースとロールを新しく作り、web のロールだけが CONNECT できるようにする。ほかのアプリと同じく、[基盤と運用の Databases](../../context/operations.md#databases) の規則に従う。
+- web 用のデータベースとロールを新しく作り、web のロールだけが CONNECT できるようにする。ほかのアプリと同じく、[基盤と運用の Databases](https://github.com/Fukuemon/buddy/blob/develop/context/operations.md#databases) の規則に従う。
   - 理由: 予定の API とブローカーの資格が漏れても、トークンの行を読めない。
 - ローカル環境の compose は、ほかのアプリと同じく 1 つのロールで、データベース `web` につなぐ。
 
