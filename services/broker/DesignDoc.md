@@ -488,6 +488,7 @@ Hydra は、トークンを発行するたびに `oauth2.token_hook` でブロ�
   - 1 つのポートにしかリクエストを送らない基盤では、同じイメージを、`LISTEN_TARGET` を `public` にした公開のサービスと、`internal` にした内部のサービスの 2 つで動かす。
     - どちらも `PORT` で待ち受け、もう片方のパスに 404 を返す。ヘルスチェックはどちらの `PORT` でも受ける。
     - Hydra の token_hook と、予定の API と運営用の CLI の `BROKER_URL` は、内部のサービスに向ける。
+    - 内部のサービスは、内部のポートと同じく、ブラウザとリバースプロキシに開かず、予定の API、運営用の CLI のジョブ、Hydra だけが届くようにする。
     - プロセスの中の状態は、ログインの試行の制限（ログインの画面だけが使う）と、内部の API の access token の検証に使う discovery の文書の写し（内部の API だけが使う）なので、分けても動きは変わらない。
 - 内部の API は、Hydra の client credentials の access token（`aud` は `broker`）だけを受け、Hydra の JWKS で検証する。
   - トークンが無いか検証できなければ 401 を返す。
