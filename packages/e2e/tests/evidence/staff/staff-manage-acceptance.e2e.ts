@@ -28,7 +28,7 @@ import {
   registerStaff,
   removePolicy,
 } from '../../fixtures/staff'
-import { openApiClient } from '../../screens/apiReference'
+import { openApiClient, openApiReference } from '../../screens/apiReference'
 import { apiClient } from '../../selectors/apiReference'
 import { staffProfileValue } from '../../selectors/staffProfile'
 import {
@@ -46,6 +46,7 @@ const STAFF_MANAGE = { id: '01M5E5GP6Q8BQYNWN66QHJF60J', code: 'staff.manage' }
 const USER_READ = { id: '01M5E1S42TTS7QZK05YGS0GYR9', code: 'schedule.user.read' }
 const TEAM_READ = { id: '01M5E1S42TTS7QZK05YGS0GYRB', code: 'schedule.team.read' }
 const SELF_EDIT = { id: '01M5E1S42TTS7QZK05YGS0GYR8', code: 'schedule.self.edit' }
+const TEAM_EDIT = { id: '01M5E1S42TTS7QZK05YGS0GYRC', code: 'schedule.team.edit' }
 
 /** シードの 1 つ目の事業所のチーム。 */
 const TEAM_A = { id: STAFF_FORM.teamId, name: 'A' }
@@ -205,6 +206,22 @@ const sendRequest = async (
   await expect(apiClient(page).dialog).toContainText(o.status)
 }
 
+/**
+ * 撮った後の片付けを全部流し、失敗があればまとめて投げる。1 つが失敗しても、残りの片付けを流すため。
+ *
+ * @param steps ほかの撮影の前提に戻す処理
+ */
+const cleanUp = async (...steps: (() => Promise<unknown>)[]) => {
+  const failed = (await Promise.allSettled(steps.map((s) => s()))).filter(
+    (r): r is PromiseRejectedResult => r.status === 'rejected',
+  )
+  if (failed.length > 0)
+    throw new AggregateError(
+      failed.map((r) => r.reason),
+      '片付けに失敗した',
+    )
+}
+
 /** 録画する page に API の参照のページの route を張る。 */
 const recordingPage = async (context: BrowserContext) => {
   const page = await context.newPage()
@@ -221,6 +238,7 @@ test.describe('職員の管理の権限の委譲', () => {
       request,
     }) => {
       const target = await registerFor(request, 's1-grant-add', '見本 委譲先')
+      const token = await issueManagerToken()
       try {
         const page = await recordingPage(context)
         await openDetail(page, LOGIN_STAFF.id, LOGIN_STAFF.name)
@@ -262,7 +280,6 @@ test.describe('職員の管理の権限の委譲', () => {
           expect(page.getByTestId(`staff-policy-row-${STAFF_MANAGE.code}`)).toBeVisible(),
         )
 
-        const token = await issueManagerToken()
         await step(
           page,
           `もし API の参照のページから、「${target.name}」に同じ「職員の管理」を足すリクエストを ${LOGIN_STAFF.name} のトークン（伏せ字）で送る`,
@@ -272,7 +289,7 @@ test.describe('職員の管理の権限の委譲', () => {
               token,
               vars: { user_id: target.id },
               body: { policy_id: STAFF_MANAGE.id },
-              status: '409',
+              status: '409 Conflict',
             }),
         )
         await check(page, 'ならば 409 が返る', () =>
@@ -288,7 +305,7 @@ test.describe('職員の管理の権限の委譲', () => {
               token,
               vars: { user_id: target.id },
               body: { policy_id: TEAM_READ.id, target_team_ids: [OFFICE_B_TEAM] },
-              status: '400',
+              status: '400 Bad Request',
             }),
         )
         await check(page, 'ならば 400 が返る', () =>
@@ -296,8 +313,10 @@ test.describe('職員の管理の権限の委譲', () => {
         )
       } finally {
         // ほかの撮影は、職員の管理の権限を持つ有効な職員が青木だけであることを前提にする
-        await dropPolicy(request, target.id, STAFF_MANAGE.code)
-        await dropPolicy(request, LOGIN_STAFF.id, USER_READ.code)
+        await cleanUp(
+          () => dropPolicy(request, target.id, STAFF_MANAGE.code),
+          () => dropPolicy(request, LOGIN_STAFF.id, USER_READ.code),
+        )
       }
     })
 
@@ -388,8 +407,10 @@ test.describe('職員の管理の権限の委譲', () => {
           expect(page.getByTestId(`staff-policy-row-${STAFF_MANAGE.code}`)).toBeVisible(),
         )
       } finally {
-        await dropPolicy(request, second.id, STAFF_MANAGE.code)
-        await dropPolicy(request, LOGIN_STAFF.id, USER_READ.code)
+        await cleanUp(
+          () => dropPolicy(request, second.id, STAFF_MANAGE.code),
+          () => dropPolicy(request, LOGIN_STAFF.id, USER_READ.code),
+        )
       }
     })
 
@@ -397,23 +418,25 @@ test.describe('職員の管理の権限の委譲', () => {
       context,
       request,
     }) => {
-      const third = await registerFor(
-        request,
-        's3-position-change',
-        '見本 管理者三',
-        MANAGER_POSITION.id,
-      )
       const positionName = `E2E 管理者 ${Date.now()}`
-      const created = await request.post(
-        `${SCHEDULE_URL}/v1/facilities/${STAFF_FORM.facilityId}/positions`,
-        {
-          headers: headers(await issueManagerToken()),
-          data: { name: positionName, policy_ids: [STAFF_MANAGE.id, SELF_EDIT.id] },
-        },
-      )
-      if (created.status() !== 201) throw new Error(`役職を作れなかった: ${created.status()}`)
-      const positionId = ((await created.json()) as { id: string }).id
+      let third: { id: string; name: string } | undefined
       try {
+        third = await registerFor(
+          request,
+          's3-position-change',
+          '見本 管理者三',
+          MANAGER_POSITION.id,
+        )
+        const created = await request.post(
+          `${SCHEDULE_URL}/v1/facilities/${STAFF_FORM.facilityId}/positions`,
+          {
+            headers: headers(await issueManagerToken()),
+            data: { name: positionName, policy_ids: [STAFF_MANAGE.id, SELF_EDIT.id] },
+          },
+        )
+        if (created.status() !== 201) throw new Error(`役職を作れなかった: ${created.status()}`)
+        const positionId = ((await created.json()) as { id: string }).id
+
         const page = await recordingPage(context)
         await openDetail(page, third.id, third.name)
         await expect(page.getByTestId('staff-detail-position-name')).toHaveText(
@@ -428,32 +451,30 @@ test.describe('職員の管理の権限の委譲', () => {
           const dialog = await choosePosition(page, LEADER_POSITION.id)
           await expect(dialog).toHaveCount(0)
         })
-        await check(
-          page,
-          `ならば 「${third.name}」の役職がリーダーになり、「職員の管理」が消える`,
-          async () => {
-            await expect(page.getByTestId('staff-detail-position-name')).toHaveText(
-              LEADER_POSITION.name,
-            )
-            await page.getByTestId('staff-detail-tab-policies').click()
-            await expect(page.getByTestId(`staff-policy-row-${TEAM_READ.code}`)).toBeVisible()
-            await expect(page.getByTestId(`staff-policy-row-${STAFF_MANAGE.code}`)).toHaveCount(0)
-          },
+        await check(page, `ならば 「${third.name}」の役職がリーダーになる`, () =>
+          expect(page.getByTestId('staff-detail-position-name')).toHaveText(LEADER_POSITION.name),
         )
+        await step(page, '(撮影のため、権限のタブを開く)', () =>
+          page.getByTestId('staff-detail-tab-policies').click(),
+        )
+        await check(page, 'かつ 「職員の管理」が消える', async () => {
+          await expect(page.getByTestId(`staff-policy-row-${TEAM_READ.code}`)).toBeVisible()
+          await expect(page.getByTestId(`staff-policy-row-${STAFF_MANAGE.code}`)).toHaveCount(0)
+        })
 
         await step(page, `もし 自分の役職を「${positionName}」に変えて保存する`, async () => {
           await openDetail(page, LOGIN_STAFF.id, LOGIN_STAFF.name)
           const dialog = await choosePosition(page, positionId)
           await expect(dialog).toHaveCount(0)
         })
-        await check(
-          page,
-          `ならば 自分の役職が「${positionName}」になり、「職員の管理」が残る`,
-          async () => {
-            await expect(page.getByTestId('staff-detail-position-name')).toHaveText(positionName)
-            await page.getByTestId('staff-detail-tab-policies').click()
-            await expect(page.getByTestId(`staff-policy-row-${STAFF_MANAGE.code}`)).toBeVisible()
-          },
+        await check(page, `ならば 自分の役職が「${positionName}」になる`, () =>
+          expect(page.getByTestId('staff-detail-position-name')).toHaveText(positionName),
+        )
+        await step(page, '(撮影のため、権限のタブを開く)', () =>
+          page.getByTestId('staff-detail-tab-policies').click(),
+        )
+        await check(page, 'かつ 「職員の管理」が残る', () =>
+          expect(page.getByTestId(`staff-policy-row-${STAFF_MANAGE.code}`)).toBeVisible(),
         )
 
         const dialog = page.getByTestId('staff-position-dialog')
@@ -474,17 +495,24 @@ test.describe('職員の管理の権限の委譲', () => {
           await dialog.getByTestId('staff-position-cancel').click()
           await expect(dialog).toHaveCount(0)
         })
-        await check(
-          page,
-          `かつ 自分の役職は「${positionName}」のままで、「職員の管理」が残る`,
-          async () => {
-            await expect(page.getByTestId('staff-detail-position-name')).toHaveText(positionName)
-            await page.getByTestId('staff-detail-tab-policies').click()
-            await expect(page.getByTestId(`staff-policy-row-${STAFF_MANAGE.code}`)).toBeVisible()
-          },
+        await check(page, `かつ 自分の役職は「${positionName}」のままである`, () =>
+          expect(page.getByTestId('staff-detail-position-name')).toHaveText(positionName),
+        )
+        await step(page, '(撮影のため、権限のタブを開く)', () =>
+          page.getByTestId('staff-detail-tab-policies').click(),
+        )
+        await check(page, 'かつ 「職員の管理」が残る', () =>
+          expect(page.getByTestId(`staff-policy-row-${STAFF_MANAGE.code}`)).toBeVisible(),
         )
       } finally {
-        await putPosition(request, LOGIN_STAFF.id, MANAGER_POSITION.id)
+        // 見本 管理者三が管理者のままだと、職員の管理の権限を持つ有効な職員が青木だけに戻らない
+        const thirdId = third?.id
+        await cleanUp(
+          () => putPosition(request, LOGIN_STAFF.id, MANAGER_POSITION.id),
+          async () => {
+            if (thirdId !== undefined) await putPosition(request, thirdId, LEADER_POSITION.id)
+          },
+        )
       }
     })
 
@@ -528,7 +556,7 @@ test.describe('職員の管理の権限の委譲', () => {
           await expect(page.getByTestId(`staff-policy-targets-${TEAM_READ.code}`)).toHaveText(
             TEAM_A.name,
           )
-          await expect(page.getByTestId('staff-policy-targets-schedule.team.edit')).toHaveText(
+          await expect(page.getByTestId(`staff-policy-targets-${TEAM_EDIT.code}`)).toHaveText(
             TEAM_A.name,
           )
         })
@@ -544,8 +572,7 @@ test.describe('職員の管理の権限の委譲', () => {
           expect(staffProfileValue(page, 'チーム')).toHaveText(TEAM_B.name),
         )
       } finally {
-        await restoreLeader()
-        await restoreSelf()
+        await cleanUp(restoreLeader, restoreSelf)
       }
     })
 
@@ -557,7 +584,7 @@ test.describe('職員の管理の権限の委譲', () => {
       const body = { name, policy_ids: [STAFF_MANAGE.id, SELF_EDIT.id] }
 
       const page = await recordingPage(context)
-      await openApiClient(page, 'schedule', CREATE_POSITION)
+      await openApiReference(page, 'schedule')
       await intro(
         page,
         `職員の管理をデフォルトに付けた役職を作れ、同じ名前の役職は拒まれる\n前提 ${LOGIN_STAFF.name} のトークン（伏せ字）で、API の参照のページの「役職を作る」を開いている`,
@@ -572,13 +599,14 @@ test.describe('職員の管理の権限の委譲', () => {
             token,
             vars: { facility_id: STAFF_FORM.facilityId },
             body,
-            status: '201',
+            status: '201 Created',
           }),
       )
       await check(page, 'ならば 201 が返り、名前と 2 つの権限が出る', async () => {
         await expect(apiClient(page).dialog).toContainText('201 Created')
         await expect(apiClient(page).dialog).toContainText(`"name": "${name}"`)
         await expect(apiClient(page).dialog).toContainText(`"code": "${STAFF_MANAGE.code}"`)
+        await expect(apiClient(page).dialog).toContainText(`"code": "${SELF_EDIT.code}"`)
       })
 
       await step(page, 'もし 同じ名前で役職を作るリクエストを送る', () =>
@@ -587,7 +615,7 @@ test.describe('職員の管理の権限の委譲', () => {
           token,
           vars: { facility_id: STAFF_FORM.facilityId },
           body,
-          status: '409',
+          status: '409 Conflict',
         }),
       )
       await check(page, 'ならば 409 が返る', () =>
@@ -596,9 +624,10 @@ test.describe('職員の管理の権限の委譲', () => {
     })
 
     test('s6-staff-create 職員の管理の権限を持つ職員が役職を付けて職員を登録した場合、役職の権限が付き、別の事業所の役職は拒まれること', async ({
-      page,
+      context,
     }) => {
-      await routeApiReference(page)
+      const token = await issueManagerToken()
+      const page = await recordingPage(context)
       const staff = { ...newStaff('s6-staff-create'), name: '見本 登録' }
       await page.goto('/staff')
       await expect(page.getByTestId('staff-list-table')).toBeVisible()
@@ -622,12 +651,11 @@ test.describe('職員の管理の権限の委譲', () => {
         'ならば 登録した職員の詳細が開き、リーダーの 3 つの権限が出る',
         async () => {
           const group = page.getByTestId('staff-policy-group-position')
-          for (const code of [SELF_EDIT.code, TEAM_READ.code, 'schedule.team.edit'])
+          for (const code of [SELF_EDIT.code, TEAM_READ.code, TEAM_EDIT.code])
             await expect(group.getByTestId(`staff-policy-row-${code}`)).toBeVisible()
         },
       )
 
-      const token = await issueManagerToken()
       await step(
         page,
         `もし API の参照のページから、別の事業所の役職で職員を登録するリクエストを ${LOGIN_STAFF.name} のトークン（伏せ字）で送る`,
@@ -643,7 +671,7 @@ test.describe('職員の管理の権限の委譲', () => {
               team_id: STAFF_FORM.teamId,
               position_id: OFFICE_B_POSITION,
             },
-            status: '400',
+            status: '400 Bad Request',
           }),
       )
       await check(page, 'ならば 400 が返る', () =>
@@ -660,7 +688,7 @@ test.describe('職員の管理の権限の委譲', () => {
       const token = await issueManagerToken()
 
       const page = await recordingPage(context)
-      await openApiClient(page, 'schedule', LEAVE)
+      await openApiReference(page, 'schedule')
       await intro(
         page,
         `自分は休職と退職にできず、ほかの職員は休職と退職にできる\n前提 ${LOGIN_STAFF.name} のトークン（伏せ字）で、API の参照のページを開いている。録画の前に「${retiree.name}」と「${leaver.name}」を登録してある`,
@@ -672,7 +700,7 @@ test.describe('職員の管理の権限の委譲', () => {
           token,
           vars: { user_id: LOGIN_STAFF.id },
           body: {},
-          status: '409',
+          status: '409 Conflict',
         }),
       )
       await check(page, 'ならば 409 が返り、自分を休職にできないことの文が出る', async () => {
@@ -685,7 +713,7 @@ test.describe('職員の管理の権限の委譲', () => {
           op: RETIRE,
           token,
           vars: { user_id: LOGIN_STAFF.id },
-          status: '409',
+          status: '409 Conflict',
         }),
       )
       await check(page, 'ならば 409 が返る', () =>
@@ -697,7 +725,7 @@ test.describe('職員の管理の権限の委譲', () => {
           op: RETIRE,
           token,
           vars: { user_id: retiree.id },
-          status: '200',
+          status: '200 OK',
         }),
       )
       await check(page, 'ならば 200 が返る', () =>
@@ -717,10 +745,10 @@ test.describe('職員の管理の権限の委譲', () => {
     })
   })
 
-  test.describe(`${LEADER.staff.name}（チームリーダー、職員の管理の権限なし、API の参照のページ）`, () => {
+  test.describe(`${LEADER.staff.name}（リーダー、職員の管理の権限なし、API の参照のページ）`, () => {
     test.use({ storageState: LEADER_STATE })
 
-    test('s8-forbidden 職員の管理の権限を持たない職員が職員の権限を変える 7 つの操作のリクエストを送った場合、どれも 403 が返ること', async ({
+    test('s8-forbidden 職員の管理の権限を持たない職員が職員の管理の 8 つの操作のリクエストを送った場合、どれも 403 が返ること', async ({
       browser,
       context,
       request,
@@ -729,10 +757,10 @@ test.describe('職員の管理の権限の委譲', () => {
       const target = await registerFor(request, 's8-forbidden', '見本 権限なしの対象')
 
       const page = await recordingPage(context)
-      await openApiClient(page, 'schedule', ADD_POLICY)
+      await openApiReference(page, 'schedule')
       await intro(
         page,
-        `職員の管理の権限を持たない職員の操作は、予定の API がどれも 403 で拒む\n前提 ${LEADER.staff.name}（チームリーダー、職員の管理の権限なし）のトークン（伏せ字）を API の参照のページに入れる。対象は録画の前に登録した「${target.name}」と ${HAYASHI.name}`,
+        `職員の管理の権限を持たない職員の操作は、予定の API がどれも 403 で拒む\n前提 ${LEADER.staff.name}（リーダー、職員の管理の権限なし）のトークン（伏せ字）を API の参照のページに入れる。対象は録画の前に登録した「${target.name}」と ${HAYASHI.name}`,
       )
 
       const requests: { label: string; op: Op; vars: Record<string, string>; body?: unknown }[] = [
@@ -788,10 +816,21 @@ test.describe('職員の管理の権限の委譲', () => {
           vars: { user_id: target.id },
           body: {},
         },
+        {
+          label: `「${target.name}」を退職にする`,
+          op: RETIRE,
+          vars: { user_id: target.id },
+        },
       ]
       for (const [i, r] of requests.entries()) {
         await step(page, `もし ${i + 1}. ${r.label}リクエストを送る`, () =>
-          sendRequest(page, { op: r.op, token, vars: r.vars, body: r.body, status: '403' }),
+          sendRequest(page, {
+            op: r.op,
+            token,
+            vars: r.vars,
+            body: r.body,
+            status: '403 Forbidden',
+          }),
         )
         await check(page, `ならば ${i + 1}. 403 が返る`, () =>
           expect(apiClient(page).dialog).toContainText('403 Forbidden'),

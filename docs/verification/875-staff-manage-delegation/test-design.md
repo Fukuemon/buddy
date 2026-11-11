@@ -46,7 +46,7 @@
 
 ## 処理の流れ
 
-行番号は 9bba9354 のもの。
+行番号は d874b631 のもの。
 
 ```text
 services/schedule/internal/features/staff
@@ -56,11 +56,12 @@ services/schedule/internal/features/staff
 │   ├── 同じ権限があれば 409                                   :65
 │   └── 書いた後に読み直し、grant.add を書く
 ├── remove_grant.go  RemoveGrant.Do
-│   ├── 最後の有効な管理者から staff.manage を外すなら 409      :45
+│   ├── 最後の有効な管理者から staff.manage を外すなら 409      :44-50
 │   └── grant.remove を書く
 ├── change_position.go  ChangePosition.Do
 │   ├── 役職が別の事業所のものなら入力のエラー（400）           :58
-│   ├── 変更の後の権限で、最後の有効な管理者が残らなければ 409   :100-105
+│   ├── 変更の後の権限で、最後の有効な管理者が残らなければ 409   :71-76
+│   │   └── 変更の後に staff.manage が残るかを、残す権限と新しい役職のデフォルトで決める  replaceGrants :95-107
 │   └── 前後の全量が違えば position.change を書く
 ├── update_profile.go  UpdateProfile.Do
 │   └── 権限の対象が移れば team.change を書く
@@ -87,7 +88,7 @@ services/schedule/internal/features/organization/create_position.go
 | 職員の管理を付けた役職を作る | 1、3 | `CreatePosition`、`position.create` | 作れない。同じ名前が通る。拒んだ操作の記録が残る | 役職を作る |
 | 役職を付けて職員を登録する | 1、3 | `Create`、`staff.create` | 別の事業所の役職で登録できる。記録が残らない | 職員を登録する |
 | 自分とほかの職員の休職と退職 | 1 | `status_change_app.go` | 自分を休職か退職にできる。休職と退職で記録が残る | 休職と退職 |
-| 職員の管理の権限を持たない職員の 7 つの操作 | 1、2、3 | 各操作の 403 | 画面の出し分けだけで拒んでいて、API から通る。拒んだ操作の記録が残る | 職員の管理の権限を持たない職員 |
+| 職員の管理の権限を持たない職員の 8 つの操作 | 1、2、3 | 各操作の 403 | 画面の出し分けだけで拒んでいて、API から通る。拒んだ操作の記録が残る | 職員の管理の権限を持たない職員 |
 
 ## テストケース
 
@@ -95,7 +96,6 @@ services/schedule/internal/features/organization/create_position.go
 
 - **REQ-1**: WHEN 職員の管理の権限を持つ職員が、自分かほかの職員に `staff.manage` を含む権限を足したとき、the 予定の API SHALL 権限を足し、`grant.add` を 1 行残す。
   - 記録は、操作した職員、対象、変更の前後の全量を持つ。
-  - 権限を足す
   - 権限を足す
 - **REQ-2**: IF 足す権限が対象の職員に既にあるか、対象のチームが別の事業所のものならば、the 予定の API SHALL 409 か 400 を返し、記録を残さない。
   - 権限を足す
@@ -119,8 +119,8 @@ services/schedule/internal/features/organization/create_position.go
 
 ### 職員の管理の権限を持たない職員
 
-- **REQ-10**: IF 職員の管理の権限を持たない職員が、職員の権限を変える 7 つの操作のどれかを予定の API に送ったならば、the 予定の API SHALL 403 を返し、記録を残さない。
-  - 7 つの操作は、権限を足す、権限を外す、役職を変える、チームを変える、役職を作る、職員を登録する、休職にするである。
+- **REQ-10**: IF 職員の管理の権限を持たない職員が、職員の管理の 8 つの操作のどれかを予定の API に送ったならば、the 予定の API SHALL 403 を返し、記録を残さない。
+  - 8 つの操作は、権限を足す、権限を外す、役職を変える、チームを変える、役職を作る、職員を登録する、休職にする、退職にするである。
   - 職員の管理の権限を持たない職員
 
 ## 未決事項
