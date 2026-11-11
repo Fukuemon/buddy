@@ -135,7 +135,16 @@ test.describe('ログインの期限の延長', () => {
           restoreBroker()
           await waitBrokerHealthy()
         })
-        await step(page, '「読み直す」を押す', () => pageFailure(page).reload.click())
+        // web は、refresh が一時的に失敗した後の 10 秒は試し直さない（ADR-0044）。その間に読み直すと、同じ表示がもう一度出る
+        await step(
+          page,
+          '予定のカレンダーが出るまで「読み直す」を押す（一時的に失敗した後の 10 秒は、web が試し直さない）',
+          () =>
+            expect(async () => {
+              await pageFailure(page).reload.click()
+              await expect(calendarColumnHeaders(page).first()).toBeVisible()
+            }).toPass(REFRESH_FAILURE_WAIT),
+        )
         await check(page, 'ログインの画面を通らずに、予定のカレンダーが出る', async () => {
           await expect(calendarColumnHeaders(page).first()).toBeVisible()
           await expect(brokerLogin(page).email).toHaveCount(0)
