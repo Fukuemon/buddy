@@ -142,6 +142,8 @@ nav = [
     "adr/0045-home-screen-web-app.md",
     "adr/0046-offline-own-schedules.md",
     "adr/0047-web-session-postgres.md",
+    "adr/0050-unlink-upstream-account.md",
+    "adr/0051-permission-audit-unlink.md",
   ] },
 ]
 
